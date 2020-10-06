@@ -91,7 +91,7 @@ class Fetcher:
     _BREAK_TAGS = frozenset(["br", "hr"])  # Cause paragraph breaks at outermost level
 
     # Cache of instantiated scrape helpers
-    _helpers = dict()  # type: Dict[str, ModuleType]
+    _helpers: Dict[str, ModuleType] = dict()
 
     def __init__(self):
         """ No instances are supposed to be created of this class """

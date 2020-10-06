@@ -43,7 +43,7 @@ from botocore.exceptions import ClientError
 # }
 #
 _API_KEYS_PATH = os.path.join("resources", "aws_polly_keys.mideind.json")
-_api_client = None  # type: Optional[boto3.Session]
+_api_client: Optional[boto3.Session] = None
 _api_client_lock = Lock()
 
 # Voices

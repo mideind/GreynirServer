@@ -41,12 +41,15 @@
 # TODO: "Hvernig er færðin"
 # TODO: "Hvernig eru loftgæðin [í Reykjavík] etc."
 
+from typing import Tuple, Optional
+
 import os
 import re
 import logging
 import random
-from datetime import timedelta
+from datetime import timedelta, datetime
 
+from query import Query
 from queries import gen_answer, query_json_api, cap_first, sing_or_plur
 from geo import distance, in_iceland, ICE_PLACENAME_BLACKLIST
 from iceaddr import placename_lookup
@@ -93,7 +96,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -127,6 +130,7 @@ QWeatherQuery →
 
 QWeatherCurrent →
     QWeatherHowIs? "veðrið" QWeatherAnyLoc? QWeatherNow?
+    | QWeatherHowIs? "veðrið" QWeatherNow? QWeatherAnyLoc?
     | "hvernig" "veður" "er" QWeatherAnyLoc? QWeatherNow?
     | "hvernig" "viðrar" QWeatherAnyLoc? QWeatherNow?
     | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
@@ -292,7 +296,7 @@ _OWM_KEY_PATH = os.path.join(
 )
 
 
-def _get_OWM_API_key():
+def _get_OWM_API_key() -> str:
     """ Read OpenWeatherMap API key from file """
     global _OWM_API_KEY
     if not _OWM_API_KEY:
@@ -323,7 +327,7 @@ _OWM_API_URL_BYNAME = (
 )
 
 
-def _query_owm_by_name(city, country_code=None):
+def _query_owm_by_name(city: str, country_code: Optional[str] = None):
     d = query_json_api(
         _OWM_API_URL_BYNAME.format(city, country_code or "", _get_OWM_API_key())
     )
@@ -336,7 +340,7 @@ _OWM_API_URL_BYLOC = (
 )
 
 
-def _query_owm_by_coords(lat, lon):
+def _query_owm_by_coords(lat: float, lon: float):
     d = query_json_api(_OWM_API_URL_BYLOC.format(lat, lon, _get_OWM_API_key()))
     return _postprocess_owm_data(d)
 
@@ -344,7 +348,7 @@ def _query_owm_by_coords(lat, lon):
 _BFT_THRESHOLD = (0.3, 1.5, 3.4, 5.4, 7.9, 10.7, 13.8, 17.1, 20.7, 24.4, 28.4, 32.6)
 
 
-def _wind_bft(ms):
+def _wind_bft(ms: float) -> int:
     """ Convert wind from metres per second to Beaufort scale """
     if ms is None:
         return None
@@ -372,7 +376,7 @@ _BFT_ICEDESC = {
 }
 
 
-def _wind_descr(wind_ms):
+def _wind_descr(wind_ms: float) -> Optional[str]:
     """ Icelandic-language description of wind conditions given metres
         per second. Uses Beaufort scale lookup.
         See https://www.vedur.is/vedur/frodleikur/greinar/nr/1098
@@ -383,12 +387,12 @@ def _wind_descr(wind_ms):
 _RVK_COORDS = (64.133097, -21.898145)
 
 
-def _near_capital_region(loc):
+def _near_capital_region(loc: Tuple) -> bool:
     """ Returns true if location coordinates are within 30 km of central Rvk """
     return distance(loc, _RVK_COORDS) < 30
 
 
-def _round_to_nearest_hour(t):
+def _round_to_nearest_hour(t: datetime) -> datetime:
     """ Round datetime to nearest hour """
     return t.replace(second=0, microsecond=0, minute=0, hour=t.hour) + timedelta(
         hours=t.minute // 30
@@ -398,7 +402,7 @@ def _round_to_nearest_hour(t):
 _RVK_STATION_ID = 1
 
 
-def _curr_observations(query, result):
+def _curr_observations(query: Query, result):
     """ Fetch latest weather observation data from weather station closest
         to the location associated with the query (i.e. either user location
         coordinates or a specific placename) """
@@ -457,7 +461,7 @@ def _curr_observations(query, result):
 _API_ERRMSG = "Ekki tókst að sækja veðurupplýsingar."
 
 
-def get_currweather_answer(query, result):
+def get_currweather_answer(query: Query, result):
     """ Handle queries concerning current weather conditions """
     res = _curr_observations(query, result)
     if not res:
@@ -481,9 +485,7 @@ def get_currweather_answer(query, result):
     # Meters per second string for voice. Say nothing if "logn".
 
     voice_ms = (
-        ", {0} á sekúndu".format(
-            sing_or_plur(wind_ms_str, "metri", "metrar")
-        )
+        ", {0} á sekúndu".format(sing_or_plur(wind_ms_str, "metri", "metrar"))
         if wind_ms_str != "0"
         else ""
     )
@@ -516,7 +518,7 @@ _DESCR_ABBR = {
 }
 
 
-def _descr4voice(descr):
+def _descr4voice(descr: str) -> str:
     """ Prepare natural language weather description for speech synthesizer
         by rewriting/expanding abbreviations, etc. """
 
@@ -538,7 +540,7 @@ _COUNTRY_FC_ID = 2
 _CAPITAL_FC_ID = 3
 
 
-def get_forecast_answer(query, result):
+def get_forecast_answer(query: Query, result):
     """ Handle weather forecast queries """
     loc = query.location
     txt_id = _CAPITAL_FC_ID if (loc and _near_capital_region(loc)) else _COUNTRY_FC_ID
@@ -571,7 +573,7 @@ def get_forecast_answer(query, result):
     return response, answer, voice
 
 
-def get_umbrella_answer(query, result):
+def get_umbrella_answer(query: Query, result):
     """ Handle a query concerning whether an umbrella is needed
         for current weather conditions. """
 
@@ -644,7 +646,7 @@ _HANDLERS = {
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)

@@ -28,7 +28,6 @@
 
 """
 
-from typing import TYPE_CHECKING
 from typing import Dict, Union, Callable, cast
 
 from datetime import datetime, timedelta
@@ -273,6 +272,10 @@ _RUDE = (
 def _rudeness(qs: str, q: Query) -> AnswerType:
     # Sigh + response
     answ = choice(_RUDE)
+    nd = q.client_data("name")
+    if nd and "first" in nd:
+        name = nd["first"]
+        answ = f"Æi, {name}. {answ}"
     voice = '<amazon:breath duration="long" volume="x-loud"/> {0}'.format(answ)
     return {"answer": answ, "voice": voice, "is_question": False}
 
@@ -502,9 +505,6 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
         "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
     },
     "hvað er það": {"answer": "Hvað er hvað?"},
-    "hver er ég": {
-        "answer": "Þú ert væntanlega manneskja sem talar íslensku. Meira veit ég ekki."
-    },
     # Who am I?
     "hvað heiti ég": _DUNNO,
     "veistu hvað ég heiti": _DUNNO,
@@ -518,7 +518,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað heitir eiginmaður minn": _DUNNO,
     "hvenær á ég afmæli": _DUNNO,
     "hvar á ég heima": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
-    "veistu hvar ég á heima?": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
+    "veistu hvar ég á heima?": {
+        "answer": "Það veit ég ekki, en vonandi einhvers staðar."
+    },
     "hvar bý ég": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
     "veistu hvar ég á heima": _NO,
     "hvað er ég gamall": {
@@ -845,8 +847,11 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú fórst með rangt mál": _sorry,
     "þú ert lygari": _sorry,
     "þú lýgur": _sorry,
+    "þú virkar ekki": _sorry,
     "þú ert léleg": _sorry,
     "þú ert léleg í íslensku": _sorry,
+    "þú ert takmörkuð": _sorry,
+    "þú ert ansi takmörkuð": _sorry,
     "þú ert skrítin": _sorry,
     "þú ert skrýtin": _sorry,
     "þú ert að ljúga": _sorry,
@@ -990,6 +995,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þetta var flott hjá þér": _thanks,
     "takk fyrir upplýsingarnar": _thanks,
     "takk fyrir samskiptin": _thanks,
+    "gott hjá þér": _thanks,
     # Praise & positive feedback
     "þú ert fyndin": _thanks,
     "þú ert svo fyndin": _thanks,
@@ -1024,6 +1030,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert gáfuð": _GOOD_TO_HEAR,
     "þú ert snjöll": _GOOD_TO_HEAR,
     "þú ert mjög snjöll": _GOOD_TO_HEAR,
+    "þú ert klár": _GOOD_TO_HEAR,
+    "þú ert rosa klár": _GOOD_TO_HEAR,
     "ég þrái þig": _GOOD_TO_HEAR,
     "þú veist margt": _GOOD_TO_HEAR,
     "þú stendur þig vel": _GOOD_TO_HEAR,

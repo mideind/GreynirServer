@@ -29,7 +29,6 @@ from typing import Dict
 import threading
 import time
 import uuid
-import io
 import json
 from functools import wraps
 from datetime import datetime, timedelta
@@ -92,7 +91,7 @@ def restricted(f):
     return decorated_function
 
 
-def bool_from_request(rq, name, default=False):
+def bool_from_request(rq, name, default=False) -> bool:
     """ Get a boolean from JSON encoded in a request form """
     b = rq.form.get(name)
     if b is None:
@@ -106,7 +105,7 @@ def bool_from_request(rq, name, default=False):
 _NATLANG_PERIODS = {"day": 1, "week": 7, "month": 30}
 
 
-def days_from_period_arg(arg, default=1):
+def days_from_period_arg(arg: str, default: int = 1) -> int:
     return _NATLANG_PERIODS.get(arg, default)
 
 
@@ -117,7 +116,7 @@ def better_jsonify(**kwargs):
     return resp
 
 
-def text_from_request(rq, *, post_field=None, get_field=None):
+def text_from_request(rq, *, post_field=None, get_field=None) -> str:
     """ Return text passed in a HTTP request, either using GET or POST.
         When using GET, the default parameter name is 't'. This can
         be overridden using the get_field parameter.
@@ -150,7 +149,7 @@ def text_from_request(rq, *, post_field=None, get_field=None):
 # PyCon 2016 "Flask at Scale" tutorial: https://github.com/miguelgrinberg/flack
 
 # A dictionary of currently living tasks
-_tasks = dict()  # type: Dict[str, Dict]
+_tasks: Dict[str, Dict] = dict()
 _tasks_lock = threading.Lock()
 
 

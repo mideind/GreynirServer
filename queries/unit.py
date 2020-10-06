@@ -29,10 +29,13 @@
 # TODO: Hvað eru 40 stig á selsíus mörg stig á fahrenheit
 # TODO: "hvað eru 3 metrar í tommum"
 
+from typing import Tuple
+
 import random
 from math import floor, log10
 
 import query
+from query import Query
 from queries import iceformat_float, parse_num
 
 
@@ -69,7 +72,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -436,7 +439,7 @@ def QUnitFromPounds(node, params, result):
     result._nominative = str(result.number).replace(".", ",") + " pund"
 
 
-def _convert(quantity, unit_from, unit_to):
+def _convert(quantity: float, unit_from: str, unit_to: str) -> Tuple:
     """ Converts a quantity from unit_from to unit_to, returning a tuple of:
         valid, result, si_unit, si_quantity """
     u_from, factor_from = _UNITS[unit_from]
@@ -464,7 +467,7 @@ def _convert(quantity, unit_from, unit_to):
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result and result.qtype == "Unit":
         # Successfully matched a query type
         # If no number is mentioned in the query

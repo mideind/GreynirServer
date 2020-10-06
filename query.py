@@ -656,10 +656,14 @@ class Query:
 
     def set_client_data(self, key, data):
         """ Setter for client query data """
-        Query.save_query_data(self.client_id, key, data)
+        if not self.client_id:
+            logging.warning("Couldn't save query data, no client ID provided")
+            return
+        return Query.save_query_data(self.client_id, key, data)
 
     @staticmethod
     def save_query_data(client_id, key, data):
+        assert client_id and key
         with SessionContext(commit=True) as session:
             try:
                 row = (
