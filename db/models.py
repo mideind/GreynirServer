@@ -695,7 +695,7 @@ class QueryData(Base):
 
     client_id = Column(String(256), nullable=False)
 
-    # Key to distinguish between different types of json data that can be stored
+    # Key to distinguish between different types of JSON data that can be stored
     key = Column(String(64), nullable=False)
 
     # Created timestamp

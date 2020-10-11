@@ -25,8 +25,9 @@
 """
 
 # TODO: Handle opening hours with intervals, e.g. 10:00-14:00 and 18:00-22:00
+# TODO: "Hvenær er X opið?"
 
-from typing import Dict
+from typing import List, Dict, Tuple, Optional
 
 import logging
 import re
@@ -34,6 +35,7 @@ import random
 from datetime import datetime
 
 from geo import in_iceland, iceprep_for_street
+from query import Query
 from queries import (
     gen_answer,
     query_places_api,
@@ -50,7 +52,7 @@ _PLACES_QTYPE = "Places"
 TOPIC_LEMMAS = ["opnunartími", "opna", "loka", "lokunartími"]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -192,7 +194,7 @@ _PLACES_API_ERRMSG = "Ekki tókst að fletta upp viðkomandi stað"
 _NOT_IN_ICELAND_ERRMSG = "Enginn staður með þetta heiti fannst á Íslandi"
 
 
-def _parse_coords(place):
+def _parse_coords(place: Dict) -> Optional[Tuple]:
     """ Return tuple of coordinates given a place info data structure
         from Google's Places API. """
     try:
@@ -206,15 +208,16 @@ def _parse_coords(place):
     return None
 
 
-def _top_candidate(cand):
+def _top_candidate(cand: List) -> Optional[Dict]:
     """ Return first place in Iceland in Google Places Search API results. """
     for place in cand:
         coords = _parse_coords(place)
         if coords and in_iceland(coords):
             return place
+    return None
 
 
-def answ_address(placename, loc, qtype):
+def answ_address(placename: str, loc: Tuple, qtype: str):
     """ Generate answer to a question concerning the address of a place. """
     # Look up placename in places API
     res = query_places_api(
@@ -238,7 +241,7 @@ def answ_address(placename, loc, qtype):
     addr = re.sub(r", Ísland$", "", place["formatted_address"])
     # Get street name without number to get preposition
     street_name = addr.split()[0].rstrip(",")
-    maybe_postcode = (re.search(r"^\d\d\d", street_name) is not None)
+    maybe_postcode = re.search(r"^\d\d\d", street_name) is not None
     prep = "í" if maybe_postcode else iceprep_for_street(street_name)
     # Split addr into street name w. number, and remainder
     street_addr = addr.split(",")[0]
@@ -256,7 +259,7 @@ def answ_address(placename, loc, qtype):
     return response, answer, voice
 
 
-def answ_openhours(placename, loc, qtype):
+def answ_openhours(placename: str, loc: Tuple, qtype: str):
     """ Generate answer to a question concerning the opening hours of a place. """
     # Look up placename in places API
     res = query_places_api(
@@ -360,7 +363,7 @@ _HANDLER_MAP = {
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result and "qkey" in result and "subject_nom" in result:
         # Successfully matched a query type
         subj = result["subject_nom"]

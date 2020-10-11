@@ -36,6 +36,7 @@ import re
 import logging
 from datetime import datetime, timedelta
 
+from query import Query
 from queries import gen_answer, icequote
 from reynir.bindb import BIN_Db
 
@@ -82,7 +83,7 @@ _CHAR_PRONUNCIATION = {
 
 _WORDTYPE_RX_NOM = "(?:orðið|nafnið|nafnorðið)"
 _WORDTYPE_RX_GEN = "(?:orðsins|nafnsins|nafnorðsins)"
-
+_WORDTYPE_RX_DAT = "(?:orðinu|nafninu|nafnorðinu)"
 
 _SPELLING_RX = (
     r"^hvernig stafsetur maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
@@ -103,30 +104,31 @@ _SPELLING_RX = (
 
 
 _DECLENSION_RX = (
-    r"^hvernig beygi ég {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig fallbeygi ég {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig beygirðu {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig fallbeygirðu {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig á að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig á að fallbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig á ég að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig á ég að fallbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig á maður að beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig á maður að fallbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig beygir maður {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig fallbeygir maður {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig beygist {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig fallbeygist {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig skal beygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig skal fallbeygja {0} (.+)$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig er {0} (.+) beygt$".format(_WORDTYPE_RX_NOM),
-    r"^hvernig er {0} (.+) fallbeygt$".format(_WORDTYPE_RX_NOM),
-    r"^hverjar eru beygingarmyndir {0} (.+)$".format(_WORDTYPE_RX_GEN),
-    r"^hvað eru beygingarmyndir {0} (.+)$".format(_WORDTYPE_RX_GEN),
+    r"^hvernig beygi ég {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig fallbeygi ég {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig beygirðu {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig fallbeygirðu {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á að beygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á að fallbeygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á ég að beygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á ég að fallbeygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á maður að beygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig á maður að fallbeygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig beygir maður {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig fallbeygir maður {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig beygist {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig fallbeygist {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig skal beygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig skal fallbeygja {0}\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig er {0}\s?(.+) beygt$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig er {0}\s?(.+) fallbeygt$".format(_WORDTYPE_RX_NOM),
+    r"^hverjar eru beygingarmyndir {0}\s?(.+)$".format(_WORDTYPE_RX_GEN),
+    r"^hvað eru beygingarmyndir {0}\s?(.+)$".format(_WORDTYPE_RX_GEN),
+    r"^fallbeyging á {0}\s?(.+)$".format(_WORDTYPE_RX_DAT),
 )
 
 
-def lookup_best_word(word):
+def lookup_best_word(word: str):
     """ Look up word in BÍN, pick right one acc. to a criterion. """
     with BIN_Db().get_db() as db:
 
@@ -170,7 +172,7 @@ def lookup_best_word(word):
 _NOT_IN_BIN_MSG = "Nafnorðið „{0}“ fannst ekki í Beygingarlýsingu íslensks nútímamáls."
 
 
-def declension_answer_for_word(word, query):
+def declension_answer_for_word(word: str, query: Query):
     """ Look up all morphological forms of a given word,
         construct natural language response. """
 
@@ -202,7 +204,7 @@ def declension_answer_for_word(word, query):
 _LETTER_INTERVAL = 0.3  # Seconds
 
 
-def spelling_answer_for_word(word, query):
+def spelling_answer_for_word(word: str, query: Query):
     """ Spell out a word provided in a query. """
 
     # Generate list of characters in word
@@ -229,7 +231,7 @@ def spelling_answer_for_word(word, query):
     return response, answ, voice
 
 
-def handle_plain_text(q):
+def handle_plain_text(q: Query) -> bool:
     """ Handle a plain text query, contained in the q parameter. """
     ql = q.query_lower.rstrip("?")
 

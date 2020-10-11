@@ -43,6 +43,7 @@ from treeutil import TreeUtility
 from reynir import TOK, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
+from query import Query
 
 # from query import _QUERY_ROOT
 from queries import cap_first
@@ -300,7 +301,7 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
 
 def prepare_response(q, prop_func):
     """ Prepare and return a simple (one-query) response """
-    rd = defaultdict(dict)  # type: RegisterType
+    rd: RegisterType = defaultdict(dict)
     append_answers(rd, q, prop_func)
     return make_response_list(rd)
 
@@ -364,7 +365,7 @@ def add_name_to_register(
 def create_name_register(tokens, session, all_names=False) -> RegisterType:
     """ Assemble a dictionary of person and entity names
         occurring in the token list """
-    register = {}  # type: RegisterType
+    register: RegisterType = {}
     for t in tokens:
         if t.kind == TOK.PERSON:
             gn = t.val
@@ -379,7 +380,7 @@ def _query_person_titles(session, name: str):
     """ Return a list of all titles for a person """
     # This list should never become very long, so we don't
     # apply a limit here
-    rd = defaultdict(dict)  # type: RegisterType
+    rd: RegisterType = defaultdict(dict)
     try:
         q = (
             session.query(
@@ -451,7 +452,7 @@ def _query_article_list(session, name: str):
 
 def query_person(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
     """ A query for a person by name """
-    response = dict(answers=[], sources=[])  # type: Dict[str, Any]
+    response: Dict[str, Any] = dict(answers=[], sources=[])
     if name in {"hann", "hún", "hán", "það"}:
         # Using a personal pronoun: check whether we can infer
         # the name from the query context, i.e. from a recent query result
@@ -560,7 +561,7 @@ def query_title(query, session, title: str) -> Tuple[List[Dict[str, Any]], str, 
     # and getting more name mentions than this is not likely to significantly
     # affect the outcome.
     QUERY_LIMIT = 1024
-    rd = defaultdict(dict)  # type: RegisterType
+    rd: RegisterType = defaultdict(dict)
     title_lc = title.lower()  # Query by lowercase title
     q = (
         session.query(
@@ -809,7 +810,7 @@ _Q_ONLY_VOICE = frozenset(("Repeat",))
 
 def sentence(state, result) -> None:
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)
@@ -872,7 +873,7 @@ BuiltinQueries →
 QPerson →
     Mannsnafn_nf/nkyn
     | QPersonPrefix/fall QPersonKey/fall "?"?
-    
+
 QPersonKey/fall →
     Mannsnafn/fall/nkyn
     | QPersonPronoun/fall/kyn

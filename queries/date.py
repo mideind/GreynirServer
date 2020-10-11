@@ -67,6 +67,7 @@ from datetime import datetime, timedelta
 from pytz import timezone
 from calendar import monthrange, isleap
 
+from query import Query
 from queries import timezone4loc, gen_answer, is_plural, cap_first
 from settings import changedlocale
 
@@ -109,7 +110,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -702,7 +703,7 @@ _DAY_INDEX_DAT[2] = "öðrum"
 _DAY_INDEX_DAT[22] = "tuttugasta og öðrum"
 
 
-def next_weekday(d, weekday):
+def next_weekday(d: datetime, weekday: int) -> datetime:
     """ Get the date of the next weekday after a given date.
         0 = Monday, 1 = Tuesday, 2 = Wednesday, etc. """
     days_ahead = weekday - d.weekday()
@@ -711,7 +712,7 @@ def next_weekday(d, weekday):
     return d + timedelta(days=days_ahead)
 
 
-def this_or_next_weekday(d, weekday):
+def this_or_next_weekday(d: datetime, weekday: int) -> datetime:
     """ Get the date of the next weekday after or including a given date.
         0 = Monday, 1 = Tuesday, 2 = Wednesday, etc. """
     days_ahead = weekday - d.weekday()
@@ -720,14 +721,14 @@ def this_or_next_weekday(d, weekday):
     return d + timedelta(days=days_ahead)
 
 
-def dnext(d):
+def dnext(d: datetime) -> datetime:
     """ Return datetime with year+1 if date was earlier in current year. """
     if d < datetime.utcnow():
         d = d.replace(year=d.year + 1)
     return d
 
 
-def next_easter():
+def next_easter() -> datetime:
     """ Find the date of next easter in the Gregorian calendar. """
     now = datetime.utcnow()
     e = calc_easter(now.year)
@@ -736,7 +737,7 @@ def next_easter():
     return e
 
 
-def calc_easter(year):
+def calc_easter(year: int) -> datetime:
     """ An implementation of Butcher's Algorithm for determining the date of
         Easter for the Western church. Works for any date in the Gregorian
         calendar (1583 and onward). Returns a datetime object.
@@ -752,14 +753,14 @@ def calc_easter(year):
     return datetime(year=year, month=month, day=day)
 
 
-def _date_diff(d1, d2, unit="days"):
+def _date_diff(d1: datetime, d2: datetime, unit: str = "days") -> int:
     """ Get the time difference between two dates. """
     delta = d2 - d1
     cnt = getattr(delta, unit)
     return cnt
 
 
-def howlong_answ(q, result):
+def howlong_answ(q: Query, result):
     """ Generate answer to a query about number of days since/until a given date. """
     now = datetime.utcnow()
     target = result["target"]
@@ -814,7 +815,7 @@ def howlong_answ(q, result):
     q.set_answer(response, answer, voice)
 
 
-def when_answ(q, result):
+def when_answ(q: Query, result):
     """ Generate answer to a question of the form "Hvenær er(u) [hátíðardagur]?" etc. """
     # TODO: Fix this so it includes weekday, e.g.
     # "Sunnudaginn 1. október"
@@ -831,7 +832,7 @@ def when_answ(q, result):
     q.set_answer(response, answer, voice)
 
 
-def currdate_answ(q, result):
+def currdate_answ(q: Query, result):
     """ Generate answer to a question of the form "Hver er dagsetningin?" etc. """
     now = datetime.utcnow()
     date_str = now.strftime("%A %-d. %B %Y")
@@ -847,7 +848,7 @@ def currdate_answ(q, result):
     q.set_answer(response, answer, voice)
 
 
-def days_in_month_answ(q, result):
+def days_in_month_answ(q: Query, result):
     """ Generate answer to a question of the form "Hvað eru margir dagar í [MÁNUÐI]?" etc. """
     ndays = result["days_in_month"]
     t = result["target"]
@@ -860,7 +861,7 @@ def days_in_month_answ(q, result):
     q.set_answer(response, answer, voice)
 
 
-def year_answ(q, result):
+def year_answ(q: Query, result):
     """ Generate answer to a question of the form "Hvaða ár er núna?" etc. """
     now = datetime.utcnow()
     y = now.year
@@ -872,7 +873,7 @@ def year_answ(q, result):
     q.set_answer(response, answer, voice)
 
 
-def leap_answ(q, result):
+def leap_answ(q: Query, result):
     """ Generate answer to a question of the form "Er hlaupár?" etc. """
     now = datetime.utcnow()
     t = result.get("target")
@@ -899,7 +900,7 @@ _Q2FN_MAP = [
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return

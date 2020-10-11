@@ -86,7 +86,7 @@ class SessionContext:
     """ Context manager for database sessions """
 
     # Singleton instance of Scraper_DB
-    _db = None  # type: Optional[Scraper_DB]
+    _db: Optional[Scraper_DB] = None
 
     # pylint: disable=no-self-argument
     @classproperty

@@ -32,7 +32,7 @@ _GREYNIR_API_KEY_PATH = os.path.join(
 )
 
 
-def greynir_api_key():
+def greynir_api_key() -> str:
     """ Lazy-load Greynir API key from file. """
     global _GREYNIR_API_KEY
     if _GREYNIR_API_KEY is None:
@@ -44,14 +44,14 @@ def greynir_api_key():
     return _GREYNIR_API_KEY
 
 
-# Google API key (you must obtain your own key if you want to use this code)
-_GOOGLE_API_KEY = ""
+# Google API key (third parties must obtain own key)
+_GOOGLE_API_KEY: Optional[str] = None
 _GOOGLE_API_KEY_PATH = os.path.join(
     os.path.dirname(__file__), "resources", "GoogleServerKey.txt"
 )
 
 
-def google_api_key():
+def google_api_key() -> str:
     """ Lazy-load Google API key from file """
     global _GOOGLE_API_KEY
     if not _GOOGLE_API_KEY:

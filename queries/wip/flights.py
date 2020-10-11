@@ -37,7 +37,7 @@ _FLIGHTS_QTYPE = "Flights"
 TOPIC_LEMMAS = ["flugvél", "flugvöllur", "flug", "lenda"]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -116,7 +116,7 @@ def _fetch_flight_info(from_date, to_date, ftype="arrivals"):
 _AIRPORT_ABBR_MAP = {"Köben": "Kaupmannahöfn"}
 
 
-def handle_plain_text(q):
+def handle_plain_text(q) -> bool:
     """ Handle a plain text query, contained in the q parameter """
     return False  # This module is disabled for now
 

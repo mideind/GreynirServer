@@ -26,6 +26,7 @@
 
 """
 
+import random
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -35,7 +36,7 @@ HANDLE_TREE = True
 TOPIC_LEMMAS = ["prufa"]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(

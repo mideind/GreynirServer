@@ -28,7 +28,7 @@ import random
 from datetime import datetime, timedelta
 
 from queries import parse_num, gen_answer
-
+from query import Query
 
 _COUNTING_QTYPE = "Counting"
 
@@ -36,7 +36,7 @@ _COUNTING_QTYPE = "Counting"
 TOPIC_LEMMAS = ["telja"]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég skil þig ef þú segir til dæmis: {0}.".format(
@@ -124,7 +124,7 @@ def QCountingSpeed(node, params, result):
     result.delay = _SPEED2DELAY.get(node.contained_text())
 
 
-def _gen_count(q, result):
+def _gen_count(q: Query, result):
     num_range = None
     if result.qkey == "CountUp":
         num_range = list(range(1, result.first_num + 1))
@@ -153,7 +153,7 @@ def _gen_count(q, result):
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)

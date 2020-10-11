@@ -37,7 +37,7 @@
 # TODO: Hvar er nálægasta strætóstoppistöð?
 # TODO: Hvað er ég lengi í næsta strætóskýli?
 
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from threading import Lock
 from functools import lru_cache
@@ -45,15 +45,17 @@ from datetime import datetime
 import random
 
 import query
-from queries import natlang_seq, numbers_to_neutral, cap_first
+from query import Query
+from queries import natlang_seq, numbers_to_neutral, cap_first, gen_answer
 from settings import Settings
 from reynir import correct_spaces
+from geo import in_iceland
 
 import straeto
 
 
 # Today's bus schedule, cached
-SCHEDULE_TODAY = None  # type: Optional[straeto.BusSchedule]
+SCHEDULE_TODAY: Optional[straeto.BusSchedule] = None
 SCHEDULE_LOCK = Lock()
 
 
@@ -103,7 +105,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -587,14 +589,14 @@ def _meaning_filter_func(mm):
 
 
 @lru_cache(maxsize=None)
-def to_accusative(np):
+def to_accusative(np: str) -> str:
     """ Return the noun phrase after casting it from nominative to accusative case """
     np = straeto.BusStop.voice(np)
     return query.to_accusative(np, meaning_filter_func=_meaning_filter_func)
 
 
 @lru_cache(maxsize=None)
-def to_dative(np):
+def to_dative(np: str) -> str:
     """ Return the noun phrase after casting it from nominative to dative case """
     np = straeto.BusStop.voice(np)
     return query.to_dative(np, meaning_filter_func=_meaning_filter_func)
@@ -619,7 +621,7 @@ def voice_distance(d):
     return "{0}0 metrar".format(m)
 
 
-def hms_fmt(hms):
+def hms_fmt(hms: Tuple[int, int, int]) -> str:
     """ Format a (h, m, s) tuple to a HH:MM string """
     h, m, s = hms
     if s >= 30:
@@ -638,12 +640,12 @@ def hms_fmt(hms):
     return "{0:02}:{1:02}".format(h, m)
 
 
-def hms_diff(hms1, hms2):
+def hms_diff(hms1: Tuple, hms2: Tuple) -> int:
     """ Return (hms1 - hms2) in minutes, where both are (h, m, s) tuples """
     return (hms1[0] - hms2[0]) * 60 + (hms1[1] - hms2[1])
 
 
-def query_nearest_stop(query, session, result):
+def query_nearest_stop(query: Query, session, result):
     """ A query for the stop closest to the user """
     # Retrieve the client location
     location = query.location
@@ -653,6 +655,10 @@ def query_nearest_stop(query, session, result):
         response = dict(answer=answer)
         voice_answer = "Ég veit ekki hvar þú ert."
         return response, answer, voice_answer
+    if not in_iceland(location):
+        # User's location is not in Iceland
+        return gen_answer("Ég þekki ekki strætósamgöngur utan Íslands.")
+
     # Get the stop closest to the user
     stop = straeto.BusStop.closest_to(location)
     answer = stop.name
@@ -674,7 +680,7 @@ def query_nearest_stop(query, session, result):
     return response, answer, voice_answer
 
 
-def query_arrival_time(query, session, result):
+def query_arrival_time(query: Query, session, result):
     """ Answers a query for the arrival time of a bus """
 
     # Examples:
@@ -685,7 +691,7 @@ def query_arrival_time(query, session, result):
     # Retrieve the client location, if available, and the name
     # of the bus stop, if given
     stop_name = result.get("stop_name")
-    stop = None  # type: Optional[straeto.BusStop]
+    stop: Optional[straeto.BusStop] = None
 
     if stop_name in {"þar", "þangað"}:
         # Referring to a bus stop mentioned earlier
@@ -715,7 +721,7 @@ def query_arrival_time(query, session, result):
             SCHEDULE_TODAY = straeto.BusSchedule()
 
     # Obtain the set of stops that the user may be referring to
-    stops = []  # type: List[straeto.BusStop]
+    stops: List[straeto.BusStop] = []
     if stop_name:
         stops = straeto.BusStop.named(stop_name, fuzzy=True)
         if query.location is not None:
@@ -903,7 +909,7 @@ def query_arrival_time(query, session, result):
     return response, answer, voice_answer
 
 
-def query_which_route(query, session, result):
+def query_which_route(query: Query, session, result):
     """ Which routes stop at a given bus stop """
     stop_name = result.stop_name  # 'Einarsnes', 'Fiskislóð'...
 
@@ -972,7 +978,7 @@ _QFUNC = {
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)

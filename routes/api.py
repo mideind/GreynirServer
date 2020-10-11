@@ -462,34 +462,41 @@ def query_api(version=1):
 @routes.route("/query_history.api", methods=["GET", "POST"])
 @routes.route("/query_history.api/v<int:version>", methods=["GET", "POST"])
 def query_history_api(version=1):
-    """ Delete query history for a particular unique client ID """
+    """ Delete query history and/or query data for a particular unique client ID. """
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
     # Calling this endpoint requires the Greynir API key
-    # TODO: Enable once clients have been updated
+    # TODO: Enable when clients (iOS, Android) have been updated
     # key = request.values.get("api_key")
     # gak = greynir_api_key()
-    # if not gak or key != gak:
+    # if not gak or not key or key != gak:
     #     resp["errmsg"] = "Invalid or missing API key."
     #     return better_jsonify(**resp)
 
     resp = dict(valid=True)
 
     action = request.values.get("action")
-    client_type = request.values.get("client_type")
+    # client_type = request.values.get("client_type")
     # client_version = request.values.get("client_version")
     client_id = request.values.get("client_id")
 
-    if action != "clear" or not client_type or not client_id:
+    valid_actions = ("clear", "clear_all")
+
+    if not client_id:
         return better_jsonify(valid=False, reason="Missing parameters")
+    if action not in valid_actions:
+        return better_jsonify(valid=False, reason="Invalid action parameter")
 
     with SessionContext(commit=True) as session:
+        # Clear all logged user queries
         session.execute(Query.table().delete().where(Query.client_id == client_id))
-        session.execute(
-            QueryData.table().delete().where(QueryData.client_id == client_id)
-        )
+        # Clear all user query data
+        if action == "clear_all":
+            session.execute(
+                QueryData.table().delete().where(QueryData.client_id == client_id)
+            )
 
     return better_jsonify(**resp)
 
@@ -507,7 +514,7 @@ def speech_api(version=1):
     # Calling this endpoint requires the Greynir API key
     key = request.values.get("api_key")
     gak = greynir_api_key()
-    if not gak or key != gak:
+    if not gak or not key or key != gak:
         reply["errmsg"] = "Invalid or missing API key."
         return better_jsonify(**reply)
 
@@ -618,7 +625,7 @@ def register_query_data_api(version=1):
     # Calling this endpoint requires the Greynir API key
     key = qdata.get("api_key")
     gak = greynir_api_key()
-    if not gak or key != gak:
+    if not gak or not key or key != gak:
         return better_jsonify(valid=False, errmsg="Invalid or missing API key.")
 
     if (
@@ -629,7 +636,9 @@ def register_query_data_api(version=1):
     ):
         return better_jsonify(valid=False, errmsg="Missing parameters.")
 
-    success = QueryObject.save_query_data(qdata["client_id"], qdata["key"], qdata["data"])
+    success = QueryObject.save_query_data(
+        qdata["client_id"], qdata["key"], qdata["data"]
+    )
     if success:
         return better_jsonify(valid=True, msg="Query data registered")
 

@@ -26,6 +26,7 @@
 
 from datetime import datetime, timedelta
 
+from query import Query
 from queries import gen_answer
 
 
@@ -82,7 +83,7 @@ def QOpinionSubject(node, params, result):
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
 
     if "qtype" not in result or "subject_nom" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

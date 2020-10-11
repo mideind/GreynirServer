@@ -31,7 +31,7 @@
 from datetime import datetime, timedelta
 
 
-def handle_plain_text(q):
+def handle_plain_text(q) -> bool:
     """ Handle a plain text query, contained in the q parameter
         which is an instance of the query.Query class.
         Returns True if the query was handled, and in that case
@@ -51,7 +51,7 @@ def handle_plain_text(q):
         q.set_answer(response, answer, voice)
 
         # Caching (optional)
-        # q.set_expires(datetime.utcnow() + timedelta(hours=24))
+        q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
         # Context (optional)
         # q.set_context(dict(subject="Prufuviðfangsefni"))

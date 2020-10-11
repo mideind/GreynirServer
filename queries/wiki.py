@@ -72,7 +72,7 @@ _WIKI_VARIATIONS = (
 TOPIC_LEMMAS = _WIKI_VARIATIONS
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -188,7 +188,7 @@ QWikiSubjectNlÞf = QWikiSubjectNlÞgf = QWikiSubjectNlNf
 def QWikiPrevSubjectNf(node, params, result):
     """ Reference to previous result, usually via personal
         pronouns ('Hvað segir Wikipedía um hann/hana/það?'). """
-    q = result.state.get("query")  # type: Query
+    q: Query = result.state.get("query")
     ctx = None if q is None else q.fetch_context()
     ctx_keys = ["person_name", "entity_name", "subject"]
     if ctx is not None:
@@ -215,7 +215,7 @@ def FsMeðFallstjórn(node, params, result):
     result._nominative = result._text
 
 
-def _clean_answer(answer):
+def _clean_answer(answer: str) -> str:
     # Split on newline, use only first paragraph
     a = answer.split("\n")[0].strip()
     # Get rid of "Getur líka átt við" leading sentence
@@ -234,7 +234,7 @@ def _clean_answer(answer):
     return a
 
 
-def _clean_voice_answer(answer):
+def _clean_voice_answer(answer: str) -> str:
     a = answer.replace(" m.a. ", " meðal annars ")
     a = a.replace(" þ.e. ", " það er ")
     a = a.replace(" t.d. ", " til dæmis ")
@@ -247,13 +247,13 @@ _WIKI_API_URL = (
 )
 
 
-def _query_wiki_api(subject):
+def _query_wiki_api(subject: str):
     """ Fetch JSON from Wikipedia API """
     url = _WIKI_API_URL.format(subject)
     return query_json_api(url)
 
 
-def get_wiki_summary(subject_nom):
+def get_wiki_summary(subject_nom: str) -> str:
     """ Fetch summary of subject from Icelandic Wikipedia """
 
     def has_entry(r):
@@ -293,7 +293,7 @@ def get_wiki_summary(subject_nom):
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return

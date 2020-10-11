@@ -80,6 +80,7 @@ cp treeutil.py $DEST/treeutil.py
 cp scrapers/*.py $DEST/scrapers/
 cp queries/*.py $DEST/queries/
 cp nn/*.py $DEST/nn/
+cp util.py $DEST/util.py
 
 # Sync templates and static files
 rsync -av --delete templates/ $DEST/templates/

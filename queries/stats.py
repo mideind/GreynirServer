@@ -25,13 +25,14 @@
 
 # TODO: Transition this module over to using grammar.
 
-
 from datetime import datetime, timedelta
 
 from db import SessionContext
-from db.models import Person, Query
+from db.models import Person
+from db.models import Query as QueryModel
 from db.queries import QueryTypesQuery
 
+from query import Query
 from queries import gen_answer, natlang_seq, is_plural, sing_or_plur
 from routes.people import top_persons
 
@@ -224,7 +225,7 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
 )
 
 
-def _gen_num_people_answer(q):
+def _gen_num_people_answer(q) -> bool:
     """ Answer questions about person database. """
     with SessionContext(read_only=True) as session:
         qr = session.query(Person.name).distinct().count()
@@ -247,13 +248,13 @@ def _gen_num_people_answer(q):
 _QUERIES_PERIOD = 30  # days
 
 
-def _gen_num_queries_answer(q):
+def _gen_num_queries_answer(q: Query) -> bool:
     """ Answer questions concerning the number of queries handled. """
     with SessionContext(read_only=True) as session:
         qr = (
-            session.query(Query.id)
+            session.query(QueryModel.id)
             .filter(
-                Query.timestamp >= datetime.utcnow() - timedelta(days=_QUERIES_PERIOD)
+                QueryModel.timestamp >= datetime.utcnow() - timedelta(days=_QUERIES_PERIOD)
             )
             .count()
         )
@@ -306,7 +307,7 @@ _QTYPE_TO_DESC = {
 }
 
 
-def _gen_most_freq_queries_answer(q):
+def _gen_most_freq_queries_answer(q: Query) -> bool:
     """ Answer question concerning most frequent queries. """
     with SessionContext(read_only=True) as session:
         now = datetime.utcnow()
@@ -336,7 +337,7 @@ _MOST_MENTIONED_COUNT = 3  # Individuals
 _MOST_MENTIONED_PERIOD = 7  # Days
 
 
-def _gen_most_mentioned_answer(q):
+def _gen_most_mentioned_answer(q) -> bool:
     """ Answer questions about the most mentioned/talked about people in Icelandic news. """
     top = top_persons(limit=_MOST_MENTIONED_COUNT, days=_MOST_MENTIONED_PERIOD)
 
@@ -367,7 +368,7 @@ _Q2HANDLER = {
 }
 
 
-def handle_plain_text(q):
+def handle_plain_text(q: Query) -> bool:
     """ Handle a plain text query about query statistics. """
     ql = q.query_lower.rstrip("?")
 

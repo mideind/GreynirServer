@@ -55,7 +55,7 @@ class Article:
     """ An Article represents a new article typically scraped from a web site,
         as it is tokenized, parsed and stored in the Greynir database. """
 
-    _parser = None  # type: Optional[Fast_Parser]
+    _parser: Optional[Fast_Parser] = None
 
     @classmethod
     def _init_class(cls) -> None:
@@ -238,7 +238,7 @@ class Article:
         from queries.builtin import (
             add_name_to_register, add_entity_to_register, RegisterType
         )
-        register = {}  # type: RegisterType
+        register: RegisterType = {}
 
         for name in self.person_names():
             add_name_to_register(name, register, session, all_names=all_names)
@@ -281,14 +281,14 @@ class Article:
             # List of paragraphs containing a list of sentences containing
             # token lists for sentences in string dump format
             # (1-based paragraph and sentence indices)
-            pgs = []  # type: List[List[Dict[str, Any]]]
+            pgs: List[List[Dict[str, Any]]] = []
 
             # Dict of parse trees in string dump format,
             # stored by sentence index (1-based)
             trees = OrderedDict()
 
             # Word stem dictionary, indexed by (stem, cat)
-            words = defaultdict(int)  # type: Dict[Tuple[str, str], int]
+            words: Dict[Tuple[str, str], int] = defaultdict(int)
             num_sent = 0
 
             for p in ip.paragraphs():

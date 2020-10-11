@@ -38,7 +38,7 @@ from main import app
 
 from settings import changedlocale
 from db import SessionContext
-from db.models import Query
+from db.models import Query, QueryData
 
 
 @pytest.fixture
@@ -336,10 +336,10 @@ def test_query_api(client):
     json = qmcall(c, {"q": "hver er höfuðborg norður kóreu?"}, "Geography")
     assert json["answer"] == "Pjongjang"
 
-    json = qmcall(
-        c, {"q": "hver er höfuðborg sameinuðu arabísku furstadæmanna"}, "Geography"
-    )
-    assert json["answer"] == "Abú Dabí"
+    # json = qmcall(
+    #     c, {"q": "hver er höfuðborg sameinuðu arabísku furstadæmanna"}, "Geography"
+    # )
+    # assert json["answer"] == "Abú Dabí"
 
     json = qmcall(c, {"q": "Hvað er höfuðborgin í Bretlandi"}, "Geography")
     assert json["answer"] == "Lundúnir"
@@ -360,11 +360,23 @@ def test_query_api(client):
     assert "Danmörku" in json["answer"]
 
     # Intro module
-    json = qmcall(c, {"q": "ég heiti Gunna"}, "Introduction")
-    assert json["answer"].startswith("Sæl og blessuð")
+    json = qmcall(
+        c,
+        {"q": "ég heiti Gunna Jónsdóttir", "client_id": DUMMY_CLIENT_ID},
+        "Introduction",
+    )
+    assert json["answer"].startswith("Sæl og blessuð") and "Gunna" in json["answer"]
 
-    json = qmcall(c, {"q": "ég heiti Gunnar"}, "Introduction")
+    json = qmcall(c, {"q": "hvað heiti ég", "client_id": DUMMY_CLIENT_ID})
+    assert "Gunna Jónsdóttir" in json["answer"]
+
+    json = qmcall(
+        c, {"q": "Nafn mitt er Gunnar", "client_id": DUMMY_CLIENT_ID}, "Introduction"
+    )
     assert json["answer"].startswith("Sæll og blessaður")
+
+    json = qmcall(c, {"q": "veistu hvað ég heiti", "client_id": DUMMY_CLIENT_ID})
+    assert json["answer"].startswith("Þú heitir Gunnar")
 
     json = qmcall(c, {"q": "ég heiti Boutros Boutros-Ghali"}, "Introduction")
     assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
@@ -576,10 +588,13 @@ def test_query_api(client):
     # Yule lads module
     # TODO: Implement me!
 
-    # Delete any queries logged as result of these tests
+    # Delete any queries or query data logged as result of these tests
     with SessionContext(commit=True) as session:
         session.execute(
             Query.table().delete().where(Query.client_id == DUMMY_CLIENT_ID)
+        )
+        session.execute(
+            QueryData.table().delete().where(Query.client_id == DUMMY_CLIENT_ID)
         )
 
 
