@@ -264,8 +264,9 @@ _RUDE = (
     "Svona munnsöfnuður er alveg óþarfi.",
     "Ekki vera með leiðindi.",
     "Það er aldeilis sorakjaftur á þér.",
-    "Æi, ekki vera með leiðindi.",
     "Hvers konar framkoma er þetta eiginlega?",
+    "Svona framkoma er þér ekki til framdráttar.",
+    "Svona dónaskapur er ekki til fyrirmyndar.",
 )
 
 
@@ -276,7 +277,8 @@ def _rudeness(qs: str, q: Query) -> AnswerType:
     if nd and "first" in nd:
         name = nd["first"]
         answ = f"Æi, {name}. {answ}"
-    voice = '<amazon:breath duration="long" volume="x-loud"/> {0}'.format(answ)
+    v = answ.replace(",", "")  # Tweak pronunciation
+    voice = '<amazon:breath duration="long" volume="x-loud"/> {0}'.format(v)
     return {"answer": answ, "voice": voice, "is_question": False}
 
 

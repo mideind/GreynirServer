@@ -83,9 +83,23 @@ _DUNNO_NAME = "Ég veit ekki hvað þú heitir."
 # _DUNNO_ADDRESS = "Ég veit ekki hvar þú átt heima."
 
 
+_WHO_IS_ME = "hver er {0}"
+_YOU_ARE = "Þú ert {0}"
+
+
 def handle_plain_text(q: Query) -> bool:
     """ Handle the user introducing herself """
     ql = q.query_lower.rstrip("?")
+
+    # "Hver er [nafn notanda]?"
+    nd = q.client_data("name")
+    if nd:
+        for t in ["first", "full"]:
+            if t not in nd:
+                continue
+            if ql == _WHO_IS_ME.format(nd[t].lower()):
+                q.set_answer(*gen_answer(_YOU_ARE.format(nd[t])))
+                return True
 
     # Is it a statement where the user provides his name?
     for rx in _MY_NAME_IS_REGEXES:
