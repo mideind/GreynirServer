@@ -508,23 +508,12 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     },
     "hvað er það": {"answer": "Hvað er hvað?"},
     # Who am I?
-    "hvað heiti ég": _DUNNO,
-    "veistu hvað ég heiti": _DUNNO,
-    "veistu ekki hvað ég heiti": _DUNNO,
-    "veistu hver ég er": _DUNNO,
-    "veistu ekki hver ég er": _DUNNO,
     "er ég til": {"answer": "Væntanlega, fyrst þú ert að tala við mig."},
     "hvað heitir konan mín": _DUNNO,
     "hvað heitir maðurinn minn": _DUNNO,
     "hvað heitir eiginkona mín": _DUNNO,
     "hvað heitir eiginmaður minn": _DUNNO,
     "hvenær á ég afmæli": _DUNNO,
-    "hvar á ég heima": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
-    "veistu hvar ég á heima?": {
-        "answer": "Það veit ég ekki, en vonandi einhvers staðar."
-    },
-    "hvar bý ég": {"answer": "Það veit ég ekki, en vonandi einhvers staðar."},
-    "veistu hvar ég á heima": _NO,
     "hvað er ég gamall": {
         "answer": "Það veit ég ekki, kæri notandi, en þú ert ungur í anda."
     },
