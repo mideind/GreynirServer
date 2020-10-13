@@ -42,8 +42,8 @@ from flask import (
     abort,
     request,
     url_for,
-    _request_ctx_stack,
 )
+from flask import _request_ctx_stack  # type: ignore
 from flask.ctx import RequestContext
 from werkzeug.exceptions import HTTPException, InternalServerError
 
