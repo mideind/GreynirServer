@@ -29,7 +29,7 @@
 # TODO: Identify when user is present at the location, respond "Þú ert í/á X"
 # TODO: "Hvað er langur/margra kílómetra göngutúr í/á X?"
 # TODO: Fix issue where answer complains about lack of location despite query
-#       being handable by another module, error checking should take place earlier
+#       being handlable by another module, error checking should take place earlier
 
 import re
 import logging
@@ -85,6 +85,9 @@ _QDISTANCE_REGEXES = (
     r"^hvað er (.+) langt í burtu frá mér$",
     r"^hvað er (.+) langt í burtu frá okkur$",
     r"^hvað er (.+) langt í burtu$",
+    # Home
+    r"^hvað er langt\s?(?:héðan)? (heim)\s?(?:héðan)?$",
+    r"^hvað er langt\s?(?:héðan)? (heim til mín)\s?(?:héðan)?$",
 )
 
 # Travel time questions
@@ -174,6 +177,22 @@ _QTRAVELTIME_REGEXES = (
 )
 
 
+_HOME_LOC = frozenset(
+    (
+        "heim",
+        "heim til mín",
+        "heimili mitt",
+        "heimili mínu",
+        "heimahús mitt",
+        "heimahúsi mínu",
+        "heimilisfang",
+        "heimilisfangi",
+        "heimilisfang mitt",
+        "heimilisfangi mínu",
+    )
+)
+
+
 def _addr2nom(address: str) -> str:
     """ Convert location name to nominative form. """
     if address is None or address == "":
@@ -211,21 +230,32 @@ def dist_answer_for_loc(matches, query: Query):
     ):
         return None
 
-    res = query_geocode_api_addr(loc_nf)
+    # Check if user is asking about distance from home address
+    is_home = False
+    if loc_lower in _HOME_LOC:
+        ad = query.client_data("address")
+        if not ad:
+            return gen_answer("Ég veit ekki hvar þú átt heima")
+        else:
+            is_home = True
+            loc = (ad["lat"], ad["lon"])
+            loc_nf = "{0} {1}".format(ad["street"], ad["number"])
+    else:
+        # Talk to geocode API
+        res = query_geocode_api_addr(loc_nf)
 
-    # Verify sanity of API response
-    if (
-        not res
-        or "status" not in res
-        or res["status"] != "OK"
-        or not res.get("results")
-    ):
-        return None
+        # Verify sanity of API response
+        if (
+            not res
+            or "status" not in res
+            or res["status"] != "OK"
+            or not res.get("results")
+        ):
+            return None
 
-    # Extract location coordinates from API result
-    topres = res["results"][0]
-    coords = topres["geometry"]["location"]
-    loc = (coords["lat"], coords["lng"])
+        # Extract location coordinates from result
+        coords = res["results"][0]["geometry"]["location"]
+        loc = (coords["lat"], coords["lng"])
 
     # Calculate distance, round it intelligently and format num string
     km_dist = distance(query.location, loc)
@@ -241,7 +271,7 @@ def dist_answer_for_loc(matches, query: Query):
     query.set_key(loc_nf)
 
     # Beautify by capitalizing remote loc name
-    uc = capitalize_placename(locname)
+    uc = capitalize_placename(locname) if not is_home else locname
     bq = query.beautified_query.replace(locname, uc)
 
     # Hack to fix the fact that the voice recognition often misses "ég"
