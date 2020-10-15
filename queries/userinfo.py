@@ -231,12 +231,15 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
         }
         q.set_client_data("address", d)
 
-    # Generate answer
-    prep = iceprep_for_placename(d["placename"])
-    answ = "Heimilisfang þitt hefur verið skráð sem {0} {1} {2} {3}".format(
-        d["street"], numbers_to_neutral(str(d["number"])), prep, d["placename"]
-    )
-    q.set_answer(*gen_answer(answ))
+        # Generate answer
+        prep = iceprep_for_placename(d["placename"])
+        answ = "Heimilisfang þitt hefur verið skráð sem {0} {1} {2} {3}".format(
+            d["street"], numbers_to_neutral(str(d["number"])), prep, d["placename"]
+        )
+        q.set_answer(*gen_answer(answ))
+    else:
+        q.set_answer(*gen_answer("Ekki tókst að vista heimilisfang. Auðkenni vantar."))
+
     return True
 
 

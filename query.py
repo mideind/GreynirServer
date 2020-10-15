@@ -201,6 +201,7 @@ class Query:
         auto_uppercase: bool,
         location: Optional[LocationType],
         client_id: str,
+        client_type: str,
     ) -> None:
 
         q = self._preprocess_query_string(query)
@@ -236,6 +237,8 @@ class Query:
         self._command = None
         # Client id, if known
         self._client_id = client_id
+        # Client type, if known
+        self._client_type = client_type
         # Source of answer to query
         self._source = None
         # Query context, which is None until fetched via self.fetch_context()
@@ -610,6 +613,10 @@ class Query:
     def client_id(self):
         return self._client_id
 
+    @property
+    def client_type(self):
+        return self._client_type
+
     def response(self):
         """ Return the detailed query answer """
         return self._response
@@ -963,7 +970,7 @@ def process_query(
                 return result
 
             # The answer is not found in the cache: Handle the query
-            query = Query(session, qtext, voice, auto_uppercase, location, client_id)
+            query = Query(session, qtext, voice, auto_uppercase, location, client_id, client_type)
             result = query.execute()
             if result["valid"] and "error" not in result:
                 # Successful: our job is done
