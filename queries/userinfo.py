@@ -24,11 +24,14 @@
 
 """
 
+from typing import Dict
+
 import re
 
+from reynir import NounPhrase
 from reynir.bindb import BIN_Db
 
-from geo import icelandic_addr_info, iceprep_for_placename
+from geo import icelandic_addr_info, iceprep_for_placename, iceprep_for_street
 from query import Query
 from . import gen_answer, numbers_to_neutral
 
@@ -147,6 +150,21 @@ def _mynameis_handler(q: Query, ql: str) -> bool:
     return False
 
 
+def _addr2str(addr: Dict[str, str], case: str = "nf") -> str:
+    """ Format address canonically given dict w. address info. """
+    assert case in ["nf", "þgf"]
+    prep = iceprep_for_placename(addr["placename"])
+    astr = "{0} {1} {2} {3}".format(addr["street"], addr["number"], prep, addr["placename"])
+    if case == "þgf":
+        try:
+            n = NounPhrase(astr)
+            if n:
+                astr = n.dative or astr
+        except Exception:
+            pass
+    return numbers_to_neutral(astr)
+
+
 _WHATS_MY_ADDR = frozenset(
     (
         "hvar á ég heima",
@@ -165,9 +183,21 @@ _WHATS_MY_ADDR = frozenset(
 )
 
 
+_DUNNO_ADDRESS = "Ég veit ekki hvar þú átt heima, en þú getur sagt mér það."
+
+
 def _whatsmyaddr_handler(q: Query, ql: str) -> bool:
     """ Handle queries of the form "Hvar á ég heima?" """
-    pass
+    if ql in _WHATS_MY_ADDR:
+        answ = None
+        ad = q.client_data("address")
+        if not ad:
+            answ = _DUNNO_ADDRESS
+        else:
+            prep = iceprep_for_street(ad["street"])
+            answ = "Þú átt heima {0} {1}".format(prep, _addr2str(ad, case="þgf"))
+        q.set_answer(*gen_answer(answ))
+        return True
 
 
 _MY_ADDRESS_REGEXES = (
@@ -178,7 +208,6 @@ _MY_ADDRESS_REGEXES = (
     r"heimilisfang mitt er (.+)$",
 )
 
-_DUNNO_ADDRESS = "Ég veit ekki hvar þú átt heima, en þú getur sagt mér það."
 _ADDR_LOOKUP_FAIL = "Ekki tókst að fletta upp þessu heimilisfangi."
 
 
@@ -232,10 +261,7 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
         q.set_client_data("address", d)
 
         # Generate answer
-        prep = iceprep_for_placename(d["placename"])
-        answ = "Heimilisfang þitt hefur verið skráð sem {0} {1} {2} {3}".format(
-            d["street"], numbers_to_neutral(str(d["number"])), prep, d["placename"]
-        )
+        answ = "Heimilisfang þitt hefur verið skráð sem {0}".format(_addr2str(d))
         q.set_answer(*gen_answer(answ))
     else:
         q.set_answer(*gen_answer("Ekki tókst að vista heimilisfang. Auðkenni vantar."))
@@ -269,7 +295,7 @@ _HANDLERS = [
     _whoisme_handler,
     _whatsmyname_handler,
     _mynameis_handler,
-    # _whatsmyaddr_handler,
+    _whatsmyaddr_handler,
     _myaddris_handler,
     # _whatsmynum_handler,
     # _mynumis_handler,
