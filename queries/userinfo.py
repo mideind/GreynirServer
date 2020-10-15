@@ -28,8 +28,9 @@ import re
 
 from reynir.bindb import BIN_Db
 
+from geo import icelandic_addr_info, iceprep_for_placename
 from query import Query
-from . import gen_answer
+from . import gen_answer, numbers_to_neutral
 
 
 _USERINFO_QTYPE = "UserInfo"
@@ -178,38 +179,65 @@ _MY_ADDRESS_REGEXES = (
 )
 
 _DUNNO_ADDRESS = "Ég veit ekki hvar þú átt heima, en þú getur sagt mér það."
+_ADDR_LOOKUP_FAIL = "Ekki tókst að fletta upp þessu heimilisfangi."
 
 
 def _myaddris_handler(q: Query, ql: str) -> bool:
-    """ Handle queries of the form "Ég á heima á [heimilisfang]", store this info. """
-    # for rx in _MY_ADDRESS_REGEXES:
-    #     m = re.search(rx, ql)
-    #     if m:
-    #         break
-    # if m:
-    #     name = m.group(1).strip()
-    #     # TODO: Strip any non alphabetic chars?
-    #     if not name:
-    #         return False
+    """ Handle queries of the form "Ég á heima á [heimilisfang]".
+        Store this info as query data. """
+    for rx in _MY_ADDRESS_REGEXES:
+        m = re.search(rx, ql)
+        if m:
+            break
+    if not m:
+        return False
 
-    #     # Get first name, look up gender for a gender-tailored response
-    #     with BIN_Db.get_db() as bdb:
-    #         fn = name.split()[0].title()
-    #         gender = bdb.lookup_name_gender(fn) or "hk"
-    #         answ = _INTRODUCTION_RESPONSES[gender].format(fn)
+    addr_str = m.group(1).strip()
+    if not addr_str:
+        return False
 
-    #     # Save this info about user to query data table
-    #     if q.client_id:
-    #         qdata = dict(full=name.title(), first=fn, gender=gender)
-    #         q.set_client_data("name", qdata)
+    # Try to parse address, e.g. "Öldugötu 4 [í Reykjavík]"
+    m = re.search(r"^(\w+)\s(\d+)\s?([í|á]\s)?(\w+)?$", addr_str.strip())
+    if not m:
+        q.set_answer(*gen_answer(_ADDR_LOOKUP_FAIL))
+        return True
 
-    #     # Generate answer
-    #     voice = answ.replace(",", "")
-    #     q.set_answer(dict(answer=answ), answ, voice)
-    #     q.query_is_command()
-    #     return True
+    # Matches a reasonable address
+    groups = m.groups()
+    (street, num) = (groups[0], groups[1])
+    placename = None
+    if len(groups) == 3 and groups[2] not in ["í", "á"]:
+        placename = groups[2]
+    elif len(groups) == 4:
+        placename = groups[3]
 
-    return False
+    # Look up info about address
+    addrfmt = f"{street} {num}"
+    addrinfo = icelandic_addr_info(addrfmt, placename=placename)
+
+    if not addrinfo:
+        q.set_answer(*gen_answer(_ADDR_LOOKUP_FAIL))
+        return True
+
+    # Save this info about user to query data table
+    if q.client_id:
+        d = {
+            "street": addrinfo["heiti_nf"],
+            "number": addrinfo["husnr"],
+            "lat": addrinfo["lat_wgs84"],
+            "lon": addrinfo["long_wgs84"],
+            "placename": addrinfo["stadur_nf"],
+            "area": addrinfo["svaedi_nf"],
+        }
+        q.set_client_data("address", d)
+
+    # Generate answer
+    prep = iceprep_for_placename(d["placename"])
+    answ = "Heimilisfang þitt hefur verið skráð sem {0} {1} {2} {3}".format(
+        d["street"], numbers_to_neutral(str(d["number"])), prep, d["placename"]
+    )
+    q.set_answer(*gen_answer(answ))
+    return True
 
 
 def _whatsmynum_handler(q: Query, ql: str) -> bool:
@@ -239,7 +267,7 @@ _HANDLERS = [
     _whatsmyname_handler,
     _mynameis_handler,
     # _whatsmyaddr_handler,
-    # _myaddris_handler,
+    _myaddris_handler,
     # _whatsmynum_handler,
     # _mynumis_handler,
 ]

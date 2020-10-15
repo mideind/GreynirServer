@@ -142,6 +142,7 @@ _MOST_FREQ_QUERIES = frozenset(
 )
 
 
+# TODO: Refactor this mess
 _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
     (
         "um hverja er verið að tala",
@@ -206,6 +207,12 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "hverjir hafa verið mest í fjölmiðlum að undanförnu",
         "hverjir hafa verið mest í fjölmiðlum upp á síðkastið",
         "hverjir hafa verið mest í fjölmiðlum síðustu daga",
+        "hverjir hafa oftast komið fyrir í fjölmiðlum",
+        "hverjir hafa oftast komið fyrir í fjölmiðlum nýlega",
+        "hverjir hafa oftast komið fyrir í fjölmiðlum undanfarið",
+        "hverjir hafa oftast komið fyrir í fjölmiðlum að undanförnu",
+        "hverjir hafa oftast komið fyrir í fjölmiðlum upp á síðkastið",
+        "hverjir hafa oftast komið fyrir í fjölmiðlum síðustu daga",
         "hverjir eru umtöluðustu einstaklingarnir á Íslandi",
         "hverjir eru umtalaðastir",
         "hverjir eru umtalaðastir á Íslandi",
