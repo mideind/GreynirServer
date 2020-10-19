@@ -506,6 +506,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvaða bjór er góður": {
         "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
     },
+    "hvað er besta rauðvínið": {
+        "answer": "Ég drekk ekki vín."
+    },
     "hvað er það": {"answer": "Hvað er hvað?"},
     # Who am I?
     "er ég til": {"answer": "Væntanlega, fyrst þú ert að tala við mig."},
@@ -513,6 +516,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað heitir maðurinn minn": _DUNNO,
     "hvað heitir eiginkona mín": _DUNNO,
     "hvað heitir eiginmaður minn": _DUNNO,
+    "hvenær dey ég": {
+        "answer": "Vonandi ekki í bráð."
+    },
     "hvenær á ég afmæli": _DUNNO,
     "hvað er ég gamall": {
         "answer": "Það veit ég ekki, kæri notandi, en þú ert ungur í anda."
@@ -1057,6 +1063,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "mér finnst þú frábær": _LIKEWISE,
     "mér þykir þú flott": _LIKEWISE,
     "mér finnst þú flott": _LIKEWISE,
+    "gott hjá þér": _THANKS,
     # Philosophy
     "hvað er svarið": _MEANING_OF_LIFE,
     "hvert er svarið": _MEANING_OF_LIFE,
@@ -1211,6 +1218,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hversu gömul ertu": _CREATION_DATE,
     "hve gömul ert þú": _CREATION_DATE,
     "hve gömul ertu": _CREATION_DATE,
+    "ertu gömul": _CREATION_DATE,
+    "ert þú gömul": _CREATION_DATE,
     "hvenær fæddistu": _CREATION_DATE,
     "hvenær fæddist þú": _CREATION_DATE,
     "hvenær fæddist embla": _CREATION_DATE,
