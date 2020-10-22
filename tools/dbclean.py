@@ -40,7 +40,7 @@ if basepath.endswith(_TOOLS):
     basepath = basepath[0 : -len(_TOOLS)]
     sys.path.append(basepath)
 
-from settings import Settings
+from settings import Settings, ConfigError
 # from article import Article
 from db import SessionContext
 from db.models import Article as ArticleModel
