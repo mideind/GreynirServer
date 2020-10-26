@@ -40,7 +40,7 @@ if basepath.endswith(_TOOLS):
 from settings import Settings, ConfigError
 from db import SessionContext
 from db.models import Article
-
+from tokenizer import correct_spaces
 
 def main():
 
@@ -78,6 +78,7 @@ def main():
                         text += t["x"] + " "
 
             d = dict(url=url, timestamp=ts.isoformat(), title=title, text=text)
+            d["text"] = correct_spaces(d["text"])
             items.append(d)
             # print(d)
             # print(text)
