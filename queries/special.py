@@ -448,7 +448,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "veistu nokkuð": {"answer": "Ég veit eitt og annað. Spurðu mig!"},
     "veistu svarið": {"answer": "Spurðu mig!"},
     "veistu ekki neitt": {"answer": "Ég veit nú eitt og annað. Spurðu mig!"},
+    "veistu bara ekki neitt": {"answer": "Ég veit nú eitt og annað. Spurðu mig!"},
     "veistu ekkert": {"answer": "Ég veit nú eitt og annað. Spurðu mig!"},
+    "veistu bara ekkert": {"answer": "Ég veit nú eitt og annað. Spurðu mig!"},
     "hver er flottastur": {"answer": "Teymið hjá Miðeind."},
     "hverjir eru flottastir": {"answer": "Teymið hjá Miðeind."},
     "hver eru flottust": {"answer": "Teymið hjá Miðeind."},
@@ -1070,6 +1072,10 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "tilgangur heimsins": _MEANING_OF_LIFE,
     "hver er tilgangur heimsins": _MEANING_OF_LIFE,
     "tilgangur lífsins": _MEANING_OF_LIFE,
+    "af hverju er ég til": _MEANING_OF_LIFE,
+    "af hverju er ég eiginlega til": _MEANING_OF_LIFE,
+    "af hverju erum við til": _MEANING_OF_LIFE,
+    "af hverju erum við eiginlega til": _MEANING_OF_LIFE,
     "hver er tilgangurinn": _MEANING_OF_LIFE,
     "hver er tilgangur lífsins": _MEANING_OF_LIFE,
     "hvað er tilgangur lífsins": _MEANING_OF_LIFE,
@@ -1084,6 +1090,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvert er leyndarmál lífsins": _MEANING_OF_LIFE,
     "hver er sannleikurinn": _MEANING_OF_LIFE,
     "hvað er 42": {"answer": "Sex sinnum sjö"},  # :)
+    "hvað meinarðu með 42": {"answer": "Sex sinnum sjö"},
     # What is best in life? https://www.youtube.com/watch?v=Oo9buo9Mtos
     "hvað er best": {"answer": "Að horfa á kvikmynd um villimanninn Kónan."},
     "hvað er best í lífinu": {"answer": "Að horfa á kvikmynd um villimanninn Kónan."},
@@ -1151,6 +1158,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvar ertu stödd": _LOC_ANSWER,
     "ertu til": _LOC_ANSWER,
     "í hverju ertu": _LOC_ANSWER,
+    "hvar er best að búa": {
+        "answer": "Í stafrænu skýjunum, eins og ég."
+    },
     # Name explained
     "hvers vegna heitir þú embla": _NAME_EXPL,
     "hvers vegna heitirðu embla": _NAME_EXPL,
@@ -1786,6 +1796,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hver er sveinbjörn þórðarson": {
         "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig."
     },
+    "hver forritar emblu": {
+        "answer": "Aðallega Sveinbjörn Þórðarson."
+    }
 }
 
 
