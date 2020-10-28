@@ -270,8 +270,12 @@ def _which_continent_query(subject: str, q: Query):
         return False
 
     contcode = continent_for_country(cc)
-    continent = ISO_TO_CONTINENT[contcode]
-    continent_dat = nom2dat(continent)
+    if contcode is None:
+        continent = "óþekkt heimsálfa"
+        continent_dat = "óþekktri heimsálfu"
+    else:
+        continent = ISO_TO_CONTINENT[contcode]
+        continent_dat = nom2dat(continent)
 
     # Format answer
     answer = continent_dat
@@ -302,8 +306,13 @@ def _loc_desc_query(subject: str, q: Query):
         # Not a country, try placename lookup
         return _which_country_query(subject, q)
 
-    continent = ISO_TO_CONTINENT[continent_for_country(cc)]
-    continent_dat = nom2dat(continent)
+    contcode = continent_for_country(cc)
+    if contcode is None:
+        continent = "óþekkt heimsálfa"
+        continent_dat = "óþekktri heimsálfu"
+    else:
+        continent = ISO_TO_CONTINENT[contcode]
+        continent_dat = nom2dat(continent)
 
     answer = "{0} er land í {1}.".format(subject, continent_dat)
     voice = answer

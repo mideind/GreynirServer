@@ -118,13 +118,13 @@ def handle_plain_text(q: Query) -> bool:
 
     # A query concerning the user's name?
     elif ql in _WHATS_MY_NAME:
-        answ = None
+        name_answ = None
         nd = q.client_data("name")
         if nd and "full" in nd:
-            answ = f"Þú heitir {nd['full']}"
+            name_answ = f"Þú heitir {nd['full']}"
         else:
-            answ = _DUNNO_NAME
-        q.set_answer(*gen_answer(answ))
+            name_answ = _DUNNO_NAME
+        q.set_answer(*gen_answer(name_answ))
         q.set_qtype(_INTRO_QTYPE)
         return True
 

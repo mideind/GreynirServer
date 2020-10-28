@@ -190,8 +190,8 @@ def _clean_desc(d: str) -> str:
 
 _RUV_TV_SCHEDULE_API_ENDPOINT = "https://apis.is/tv/ruv/"
 _TV_API_ERRMSG = "Ekki tókst að sækja sjónvarpsdagskrá."
-_CACHED_TV_SCHEDULE = None
-_TV_LAST_FETCHED = None
+_CACHED_TV_SCHEDULE: Optional[List] = None
+_TV_LAST_FETCHED: Optional[datetime] = None
 
 
 def _query_tv_schedule_api() -> Optional[List]:
@@ -243,10 +243,10 @@ def _query_radio_schedule_api(channel: str) -> List:
     return _RADIO_SCHED_CACHE[channel]
 
 
-def _span(p: dict):
+def _span(p: Dict) -> Tuple[datetime, datetime]:
     """ Return the time span of a program """
     start = datetime.strptime(p["startTime"], "%Y-%m-%d %H:%M:%S")
-    h, m, s = p["duration"].split(":")
+    h, m, _ = p["duration"].split(":")
     dur = timedelta(hours=int(h), minutes=int(m))
     return start, start + dur
 

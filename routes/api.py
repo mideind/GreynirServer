@@ -22,6 +22,7 @@
 
 """
 
+from typing import Dict, Any
 
 from datetime import datetime
 import logging
@@ -509,7 +510,7 @@ def speech_api(version=1):
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
-    reply = dict(err=True)
+    reply: Dict[str, Any] = dict(err=True)
 
     # Calling this endpoint requires the Greynir API key
     key = request.values.get("api_key")

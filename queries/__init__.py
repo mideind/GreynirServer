@@ -45,6 +45,10 @@ from settings import changedlocale
 from util import google_api_key
 
 
+AnswerTuple = Tuple[Dict, str, str]
+LatLonTuple = Tuple[float, float]
+
+
 def natlang_seq(words: List[str], oxford_comma: bool = False) -> str:
     """ Generate an Icelandic natural language sequence of words
         e.g. "A og B", "A, B og C", "A, B, C og D". """
@@ -251,8 +255,10 @@ def country_desc(cc: str) -> str:
     """ Generate Icelandic description of being in a particular country
         with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi'. """
     cn = country_name_for_isocode(cc)
+    if cn is None:
+        return f"í landinu '{cc}'"
     prep = iceprep_for_cc(cc)
-    return "{0} {1}".format(prep, nom2dat(cn))
+    return f"{prep} {nom2dat(cn)}"
 
 
 def cap_first(s: str) -> str:
@@ -384,7 +390,7 @@ def icequote(s: str) -> str:
     return "„{0}“".format(s.strip())
 
 
-def gen_answer(a: str) -> Tuple[Dict, str, str]:
+def gen_answer(a: str) -> AnswerTuple:
     """ Convenience function for query modules: response, answer, voice answer """
     return dict(answer=a), a, a
 
@@ -491,7 +497,7 @@ _TRAVEL_MODES = frozenset(("walking", "driving", "bicycling", "transit"))
 
 
 def query_traveltime_api(
-    startloc: Tuple, endloc: Tuple, mode: str = "walking"
+    startloc: Union[str, Tuple], endloc: Union[str, Tuple], mode: str = "walking"
 ) -> Optional[Dict]:
     """ Look up travel time between two places, given a particular mode
         of transportation, i.e. one of the modes in _TRAVEL_MODES.
@@ -510,8 +516,8 @@ def query_traveltime_api(
         return None
 
     # Format query string args
-    p1 = "{0},{1}".format(*startloc) if type(startloc) is tuple else startloc
-    p2 = "{0},{1}".format(*endloc) if type(endloc) is tuple else endloc
+    p1 = "{0},{1}".format(*startloc) if isinstance(startloc, tuple) else startloc
+    p2 = "{0},{1}".format(*endloc) if isinstance(endloc, tuple) else endloc
 
     # Send API request
     url = _MAPS_API_TRAVELTIME_URL.format(p1, p2, mode, key)

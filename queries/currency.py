@@ -489,7 +489,7 @@ def sentence(state, result):
 
         if result.op == "index":
             # target_currency = "GVT"
-            val = _query_exchange_rate("GVT", None)
+            val = _query_exchange_rate("GVT", "")
         elif result.op == "exchange":
             # 'Hvert er gengi evru gagnvart dollara?'
             target_currency = result.currencies[0]
@@ -497,6 +497,8 @@ def sentence(state, result):
         elif result.op == "general":
             # 'Hvert er gengi dollarans?'
             val = _query_exchange_rate(result.currencies[0], "ISK")
+            if val is None:
+                val = 1.0
             suffix = "krónur" if is_plural(iceformat_float(val)) else "króna"
         elif result.op == "convert":
             # 'Hvað eru 100 evrur margar krónur?'

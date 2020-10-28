@@ -45,6 +45,8 @@ from queries import (
 )
 from reynir import NounPhrase
 
+from . import LatLonTuple
+
 
 _PLACES_QTYPE = "Places"
 
@@ -194,7 +196,7 @@ _PLACES_API_ERRMSG = "Ekki tókst að fletta upp viðkomandi stað"
 _NOT_IN_ICELAND_ERRMSG = "Enginn staður með þetta heiti fannst á Íslandi"
 
 
-def _parse_coords(place: Dict) -> Optional[Tuple]:
+def _parse_coords(place: Dict) -> Optional[LatLonTuple]:
     """ Return tuple of coordinates given a place info data structure
         from Google's Places API. """
     try:
@@ -267,7 +269,7 @@ def answ_openhours(placename: str, loc: Tuple, qtype: str):
         userloc=loc,
         fields="opening_hours,place_id,formatted_address,geometry",
     )
-    if res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
+    if res is None or res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
         return gen_answer(_PLACES_API_ERRMSG)
 
     # Use top result

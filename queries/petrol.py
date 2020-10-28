@@ -36,6 +36,8 @@ from geo import distance
 from query import Query
 from queries import query_json_api, gen_answer, distance_desc, krona_desc
 
+from . import AnswerTuple, LatLonTuple
+
 
 _PETROL_QTYPE = "Petrol"
 
@@ -231,7 +233,7 @@ def _get_petrol_station_data() -> Optional[List]:
     return pd["results"]
 
 
-def _stations_with_distance(loc: Tuple) -> Optional[List]:
+def _stations_with_distance(loc: Optional[LatLonTuple]) -> Optional[List]:
     """ Return list of petrol stations w. added distance data. """
     pd = _get_petrol_station_data()
     if not pd:
@@ -245,7 +247,7 @@ def _stations_with_distance(loc: Tuple) -> Optional[List]:
     return pd
 
 
-def _closest_petrol_station(loc: Tuple) -> Optional[Dict]:
+def _closest_petrol_station(loc: LatLonTuple) -> Optional[Dict]:
     """ Find petrol station closest to the given location. """
     stations = _stations_with_distance(loc)
     if not stations:
@@ -270,7 +272,7 @@ def _cheapest_petrol_station() -> Optional[Dict]:
 _CLOSE_DISTANCE = 5.0  # km
 
 
-def _closest_cheapest_petrol_station(loc: Tuple) -> Optional[Dict]:
+def _closest_cheapest_petrol_station(loc: LatLonTuple) -> Optional[Dict]:
     stations = _stations_with_distance(loc)
     if not stations:
         return None
@@ -286,7 +288,7 @@ def _closest_cheapest_petrol_station(loc: Tuple) -> Optional[Dict]:
 _ERRMSG = "Ekki tókst að sækja upplýsingar um bensínstöðvar."
 
 
-def _answ_for_petrol_query(q: Query, result):
+def _answ_for_petrol_query(q: Query, result) -> AnswerTuple:
     req_distance = True
     if result.qkey == "ClosestStation":
         station = _closest_petrol_station(q.location)
@@ -348,7 +350,7 @@ def _answ_for_petrol_query(q: Query, result):
     return response, answer, voice
 
 
-def sentence(state, result):
+def sentence(state, result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:

@@ -21,6 +21,8 @@
 
 """
 
+from typing import Dict, Type
+
 import abc
 from io import BytesIO
 import re
@@ -55,7 +57,7 @@ class Document(abc.ABC):
     @abc.abstractmethod
     def extract_text(self) -> str:
         """ All subclasses must implement this method """
-        pass
+        raise NotImplementedError
 
     def write_to_file(self, path: str) -> None:
         with open(path, "wb") as f:
@@ -160,7 +162,7 @@ class DocxDocument(Document):
 
 
 # Map file mime type to document class
-MIMETYPE_TO_DOC_CLASS = {
+MIMETYPE_TO_DOC_CLASS: Dict[str, Type[Document]] = {
     "text/plain": PlainTextDocument,
     "text/html": HTMLDocument,
     "text/rtf": RTFDocument,
