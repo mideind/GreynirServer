@@ -45,6 +45,7 @@ from settings import changedlocale
 from util import google_api_key
 
 
+# Type definitions
 AnswerTuple = Tuple[Dict, str, str]
 LatLonTuple = Tuple[float, float]
 
@@ -79,7 +80,7 @@ def is_plural(num: Union[str, int, float]) -> bool:
     return not (sn.endswith("1") and not sn.endswith("11"))
 
 
-def sing_or_plur(num: Union[ int, float], sing: str, pl: str) -> str:
+def sing_or_plur(num: Union[int, float], sing: str, pl: str) -> str:
     """ Utility function that returns a formatted string w. Icelandic number and a subsequent
         singular or plural noun, as appropriate, e.g. "1 einstaklingur", "2 einstaklingar",
         "21 einstaklingur" etc. Accepts both floats and ints as first argument. """
@@ -151,7 +152,7 @@ def parse_num(node, num_str: str) -> float:
         several mildly differing implementions in various query modules. """
 
     # Hack to handle the word "eina" being identified as f. name "Eina"
-    if num_str in ["Eina", "Einu"]:
+    if num_str in ("Eina", "Einu"):
         return 1
 
     # If we have a number token as a direct child,
@@ -395,7 +396,7 @@ def gen_answer(a: str) -> AnswerTuple:
     return dict(answer=a), a, a
 
 
-def query_json_api(url: str):
+def query_json_api(url: str) -> Optional[Dict]:
     """ Request the URL, expecting a JSON response which is
         parsed and returned as a Python data structure. """
 
@@ -417,6 +418,7 @@ def query_json_api(url: str):
         return res
     except Exception as e:
         logging.warning("Error parsing JSON API response: {0}".format(e))
+    return None
 
 
 def query_xml_api(url: str):
@@ -497,7 +499,7 @@ _TRAVEL_MODES = frozenset(("walking", "driving", "bicycling", "transit"))
 
 
 def query_traveltime_api(
-    startloc: Union[str, Tuple], endloc: Union[str, Tuple], mode: str = "walking"
+    startloc: Union[str, LatLonTuple], endloc: Union[str, LatLonTuple], mode: str = "walking"
 ) -> Optional[Dict]:
     """ Look up travel time between two places, given a particular mode
         of transportation, i.e. one of the modes in _TRAVEL_MODES.
@@ -535,7 +537,7 @@ _PLACES_LOCBIAS_RADIUS = 5000  # Metres
 
 def query_places_api(
     placename: str,
-    userloc: Optional[Tuple] = None,
+    userloc: Optional[LatLonTuple] = None,
     radius: float = _PLACES_LOCBIAS_RADIUS,
     fields: Optional[str] = None,
 ) -> Optional[Dict]:
@@ -579,7 +581,7 @@ _PLACEDETAILS_API_URL = "https://maps.googleapis.com/maps/api/place/details/json
 
 
 @lru_cache(maxsize=32)
-def query_place_details(place_id, fields: Optional[str] = None) -> Optional[Dict]:
+def query_place_details(place_id: str, fields: Optional[str] = None) -> Optional[Dict]:
     """ Look up place details by ID in Google's Place Details API. If "fields"
         parameter is omitted, *all* fields are returned. For details, see
         https://developers.google.com/places/web-service/details """
@@ -607,7 +609,7 @@ def query_place_details(place_id, fields: Optional[str] = None) -> Optional[Dict
 _TZW: Optional[tzwhere.tzwhere] = None
 
 
-def _tzwhere_singleton():
+def _tzwhere_singleton() -> tzwhere.tzwhere:
     """ Lazy-load location/timezone database. """
     global _TZW
     if not _TZW:
@@ -615,7 +617,7 @@ def _tzwhere_singleton():
     return _TZW
 
 
-def timezone4loc(loc: Tuple, fallback: Optional[str] = None):
+def timezone4loc(loc: LatLonTuple, fallback: Optional[str] = None) -> Optional[str]:
     """ Returns timezone string given a tuple of coordinates.
         Fallback argument should be a 2-char ISO 3166 country code."""
     if loc:
@@ -627,7 +629,10 @@ def timezone4loc(loc: Tuple, fallback: Optional[str] = None):
 
 @lru_cache(maxsize=32)
 def read_jsfile(filename: str) -> str:
-    from rjsmin import jsmin
+    """ Read and return a minified JavaScript (.js) file """
+    # The file is read from the directory 'js' within the directory
+    # containing this __init__.py file
+    from rjsmin import jsmin  # type: ignore
 
     basepath, _ = os.path.split(os.path.realpath(__file__))
     fpath = os.path.join(basepath, "js", filename)

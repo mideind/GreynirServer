@@ -99,7 +99,7 @@ def top_locations(limit=_TOP_LOC_LENGTH, kind=None, days=_TOP_LOC_PERIOD):
         # Create top locations list sorted by article count
         loclist = []
         for k, v in locs.items():
-            (name, kind, country, lat, lon) = k  # Unpack tuple key
+            name, kind, country, _, _ = k  # Unpack tuple key
             # Google map links currently use the placename instead of
             # coordinates. This works well for most Icelandic and
             # international placenames, but fails on some.

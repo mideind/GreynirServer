@@ -45,7 +45,7 @@ from queries import (
 )
 from reynir import NounPhrase
 
-from . import LatLonTuple
+from . import LatLonTuple, AnswerTuple
 
 
 _PLACES_QTYPE = "Places"
@@ -219,7 +219,7 @@ def _top_candidate(cand: List) -> Optional[Dict]:
     return None
 
 
-def answ_address(placename: str, loc: Tuple, qtype: str):
+def answ_address(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
     """ Generate answer to a question concerning the address of a place. """
     # Look up placename in places API
     res = query_places_api(
@@ -261,7 +261,7 @@ def answ_address(placename: str, loc: Tuple, qtype: str):
     return response, answer, voice
 
 
-def answ_openhours(placename: str, loc: Tuple, qtype: str):
+def answ_openhours(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
     """ Generate answer to a question concerning the opening hours of a place. """
     # Look up placename in places API
     res = query_places_api(
