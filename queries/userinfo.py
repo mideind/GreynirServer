@@ -19,8 +19,8 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module generates a polite introductory response to statements
-    of the form "Ég heiti X" ("My name is X").
+    This module handles statements and queries related to user info, e.g.
+    name, address, phone number, device type, etc.
 
 """
 
@@ -154,7 +154,9 @@ def _addr2str(addr: Dict[str, str], case: str = "nf") -> str:
     """ Format address canonically given dict w. address info. """
     assert case in ["nf", "þgf"]
     prep = iceprep_for_placename(addr["placename"])
-    astr = "{0} {1} {2} {3}".format(addr["street"], addr["number"], prep, addr["placename"])
+    astr = "{0} {1} {2} {3}".format(
+        addr["street"], addr["number"], prep, addr["placename"]
+    )
     if case == "þgf":
         try:
             n = NounPhrase(astr)
@@ -287,7 +289,65 @@ _DUNNO_PHONE_NUM = "Ég veit ekki hvert símanúmer þitt er, en þú getur sagt
 
 def _mynumis_handler(q: Query, ql: str) -> bool:
     """ Handle queries of the form "Hvað er símanúmerið mitt? """
-    pass
+    return False
+
+
+_DEVICE_TYPE_QUERIES = frozenset((
+    "hvernig síma er ég með",
+    "hvernig síma á ég",
+    "hvernig síma ertu á",
+    "hvernig tæki ertu á",
+    "hvernig tæki er ég með",
+    "hvers konar síma á ég",
+    "hvers konar síma er ég með",
+    "hvers konar tæki á ég",
+    "hvers konar tæki er ég með",
+    "á hvaða tæki ertu að keyra",
+    "á hvaða síma ertu",
+    "á hvaða síma ertu að keyra",
+    "á hvaða stýrikerfi ertu",
+    "á hvaða stýrikerfi ertu að keyra",
+    "á hvernig tæki ertu að keyra",
+    "á hvernig síma ertu",
+    "á hvernig síma ertu að keyra",
+    "á hvernig stýrikerfi ertu",
+    "á hvernig stýrikerfi ertu að keyra",
+    "hvaða tæki ertu að keyra á",
+    "hvaða síma ertu á",
+    "hvaða síma ertu að keyra á",
+    "hvaða stýrikerfi ertu á",
+    "hvaða stýrikerfi ertu að keyra á",
+    "hvaða síma er ég með",
+    "hvaða síma á ég",
+))
+
+_DUNNO_DEVICE_TYPE = "Ég veit ekki á hvaða tæki ég er að keyra."
+
+_DEVICE_TYPE_TO_DESC = {
+    "www": "Ég er að keyra í vafra. Meira veit ég ekki.",
+    "ios": "Ég er að keyra á iOS stýrikerfinu frá Apple. Meira veit ég ekki.",
+    "android": "Ég er að keyra á Android stýrikerfinu frá Google. Meira veit ég ekki.",
+}
+
+
+def _device_type_handler(q: Query, ql: str) -> bool:
+    """ Handle queries about user's device. """
+    if ql not in _DEVICE_TYPE_QUERIES:
+        return False
+
+    if not q.client_type:
+        q.set_key("DeviceInfo")
+        q.set_answer(*gen_answer(_DUNNO_DEVICE_TYPE))
+        return True
+
+    for prefix in _DEVICE_TYPE_TO_DESC.keys():
+        if q.client_type.startswith(prefix):
+            answ = _DEVICE_TYPE_TO_DESC[prefix]
+            q.set_answer(*gen_answer(answ))
+            q.set_key("DeviceInfo")
+            return True
+
+    return False
 
 
 # Handler functions for all query types supported by this module.
@@ -299,6 +359,7 @@ _HANDLERS = [
     _myaddris_handler,
     # _whatsmynum_handler,
     # _mynumis_handler,
+    _device_type_handler,
 ]
 
 

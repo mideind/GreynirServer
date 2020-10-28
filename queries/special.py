@@ -1159,7 +1159,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ertu til": _LOC_ANSWER,
     "í hverju ertu": _LOC_ANSWER,
     "hvar er best að búa": {
-        "answer": "Í stafrænu skýjunum, eins og ég."
+        "answer": "Það er allavega fínt að búa á Íslandi."
     },
     # Name explained
     "hvers vegna heitir þú embla": _NAME_EXPL,
@@ -1647,6 +1647,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ertu hálfviti": _rudeness,
     "ert þú hálfviti": _rudeness,
     "ertu fokking hálfviti": _rudeness,
+    "ertu hóra": _rudeness,
+    "ert þú hóra": _rudeness,
     "ertu asni": _rudeness,
     "ert þú asni": _rudeness,
     "ertu fífl": _rudeness,
