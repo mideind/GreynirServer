@@ -198,7 +198,6 @@ QWeatherTemperature →
     | "hvað" "er" "hlýtt" QWeatherAnyLoc? QWeatherNow
     | "hvað" "er" "margra" "stiga" "hiti" QWeatherAnyLoc? QWeatherNow?
     | "hvað" "er" "mikið" "frost" QWeatherAnyLoc? QWeatherNow?
-    | "hvað" "er" "margra" "stiga" "hiti" QWeatherAnyLoc? QWeatherNow?
     | "hvað" "er" "margra" "stiga" "frost" QWeatherAnyLoc? QWeatherNow?
     | "hversu" "margra" "stiga" "hiti" "er" QWeatherAnyLoc? QWeatherNow?
     | "hversu" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
@@ -209,8 +208,11 @@ QWeatherTemperature →
     | "er" "mikill"? "kuldi" "úti"? QWeatherAnyLoc? QWeatherNow?
     | "er" "mikill"? "hiti" "úti"? QWeatherAnyLoc? QWeatherNow?
     | "er" "mikið"? "frost" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" "fyrir" "ofan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" "fyrir" "neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" QWeatherHotCold? "fyrir" "ofan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" QWeatherHotCold? "fyrir" "neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+
+QWeatherHotCold →
+    "hiti" | "hitinn" | "kuldi" | "kuldinn" | "hitastig" | "hitastigið"
 
 QWeatherWind →
     "hvað"? "er" "mikið"? "rok" QWeatherAnyLoc? QWeatherNow?
@@ -226,9 +228,8 @@ QWeatherWind →
     | "hver" "er" "vindhraðinn" QWeatherAnyLoc? QWeatherNow?
     | "hvaða"? "vindhraði" "er"? QWeatherAnyLoc? QWeatherNow?
 
-
 QWeatherUmbrella →
-    "þarf" QWeatherOne "regnhlíf" QWeatherNow
+    "þarf" QWeatherOne? "regnhlíf" QWeatherNow
     | "þarf" "ég" "að" "taka" "með" "mér" "regnhlíf" QWeatherNow
     | "þarf" "maður" "að" "taka" "með" "sér" "regnhlíf" QWeatherNow
     | "væri" "regnhlíf" "gagnleg" QWeatherForMe? QWeatherNow
@@ -283,7 +284,6 @@ QWeatherOpenLoc →
 
 QWeatherLocation →
     QWeatherCountry | QWeatherCapitalRegion
-
 
 $score(+55) QWeather
 

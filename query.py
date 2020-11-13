@@ -26,7 +26,7 @@
 
 """
 
-from typing import Optional, Tuple, List, Dict, Callable, Any
+from typing import Optional, Tuple, List, Dict, Callable, Iterator, Any
 
 from types import ModuleType
 
@@ -90,24 +90,24 @@ class QueryGrammar(BIN_Grammar):
         strings obtained from query handler plug-ins in the
         queries subdirectory, prefixed by a preamble """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         # Enable the 'include_queries' condition
         self.set_conditions({"include_queries"})
 
     @classmethod
-    def is_grammar_modified(cls):
+    def is_grammar_modified(cls) -> bool:
         """ Override inherited function to specify that query grammars
             should always be reparsed, since the set of plug-in query
             handlers may have changed, as well as their grammar fragments. """
         return True
 
-    def read(self, fname, verbose=False, binary_fname=None):
+    def read(self, fname: str, verbose: bool=False, binary_fname: Optional[str]=None) -> Iterator[str]:
         """ Overrides the inherited read() function to supply grammar
             text from a file as well as additional grammar fragments
             from query processor modules. """
 
-        def grammar_generator():
+        def grammar_generator() -> Iterator[str]:
             """ A generator that yields a grammar file, line-by-line,
                 followed by grammar additions coming from a string
                 that has been coalesced from grammar fragments in query
@@ -185,13 +185,13 @@ class Query:
         result object if successful. """
 
     # Processors that handle parse trees
-    _tree_processors = []  # type: List[ModuleType]
+    _tree_processors: List[ModuleType] = []
     # Handler functions within processors that handle plain text
-    _text_processors = []  # type: List[Callable[[Query], bool]]
+    _text_processors: List[Callable[["Query"], bool]] = []
     # Singleton instance of the query parser
-    _parser = None  # type: Optional[QueryParser]
+    _parser: Optional[QueryParser] = None
     # Help texts associated with lemmas
-    _help_texts = dict()  # type: Dict[str, List[Callable]]
+    _help_texts: Dict[str, List[Callable]] = dict()
 
     def __init__(
         self,
@@ -203,9 +203,8 @@ class Query:
         client_id: str,
     ) -> None:
 
-        q = self._preprocess_query_string(query)
+        self._query = q = self._preprocess_query_string(query)
         self._session = session
-        self._query = q or ""
         self._location = location
         # Prepare a "beautified query" string that can be
         # shown in a client user interface. By default, this
@@ -223,10 +222,10 @@ class Query:
         # A version of self._answer that can be
         # fed to a voice synthesizer
         self._voice_answer = None
-        self._tree = None  # type: Optional[Tree]
+        self._tree: Optional[Tree] = None
         self._qtype = None
         self._key = None
-        self._toklist = None
+        self._toklist: Optional[List[Tok]] = None
         # Expiration timestamp, if any
         self._expires = None
         # URL assocated with query, can be set by query response handler
@@ -242,7 +241,7 @@ class Query:
         # This should be a dict that can be represented in JSON
         self._context = None
 
-    def _preprocess_query_string(self, q):
+    def _preprocess_query_string(self, q: str) -> str:
         """ Preprocess the query string prior to further analysis """
         if not q:
             return q
@@ -252,7 +251,7 @@ class Query:
         return qf or q
 
     @classmethod
-    def init_class(cls):
+    def init_class(cls) -> None:
         """ Initialize singleton data, i.e. the list of query
             processor modules and the query parser instance """
         all_procs = []
@@ -367,15 +366,12 @@ class Query:
         self._key = None
         self._toklist = None
 
-        q = self._query.strip()
+        q = self._query
         if not q:
             self.set_error("E_EMPTY_QUERY")
             return False
 
-        toklist = tokenize(q, auto_uppercase=self._auto_uppercase and q.islower())
-        toklist = list(toklist)
-        # The following seems not to be needed and may complicate things
-        # toklist = list(recognize_entities(toklist, enclosing_session=self._session))
+        toklist = list(tokenize(q, auto_uppercase=self._auto_uppercase and q.islower()))
 
         actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
         if actual_q:

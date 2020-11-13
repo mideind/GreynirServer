@@ -414,6 +414,7 @@ def query_api(version=1):
 
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
     auto_uppercase = bool_from_request(request, "autouppercase", True)
+    # auto_uppercase = True # !!! DEBUG - to emulate mobile client behavior
 
     # Send the query to the query processor
     result = process_query(
