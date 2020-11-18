@@ -24,9 +24,9 @@
 """
 
 
-from sqlalchemy import text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy import text  # type: ignore
+from sqlalchemy.ext.declarative import declarative_base  # type: ignore
+from sqlalchemy.orm import relationship, backref  # type: ignore
 from sqlalchemy import (
     Table,
     Column,
@@ -42,9 +42,9 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB, INET
+from sqlalchemy.dialects.postgresql import JSONB, INET  # type: ignore
 from sqlalchemy.dialects.postgresql import UUID as psql_UUID
-from sqlalchemy.ext.hybrid import Comparator, hybrid_property
+from sqlalchemy.ext.hybrid import Comparator, hybrid_property  # type: ignore
 
 
 class CaseInsensitiveComparator(Comparator):

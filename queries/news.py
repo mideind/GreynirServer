@@ -30,7 +30,7 @@
 from typing import List, Optional, Dict
 
 import logging
-import cachetools
+import cachetools  # type: ignore
 import random
 
 from query import Query
@@ -77,7 +77,7 @@ QNewsTellMe →
     "segðu" "mér" | "geturðu" "sagt" "mér"
 
 QNewsNow →
-    "núna" | "þessa" "stundina"
+    "núna" | "þessa_stundina"
 
 QNewsQualifiers →
     "helst" | "eiginlega" | "núna" | "nýjast"

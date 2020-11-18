@@ -29,7 +29,7 @@
 from typing import List, Dict, Tuple, Optional
 
 import logging
-import cachetools
+import cachetools  # type: ignore
 import random
 
 from geo import distance
@@ -174,7 +174,7 @@ QPetrolHere →
     "hér" | "hérna"
 
 QPetrolNow →
-    "núna" | "í" "dag" | "eins" "og" "stendur" | "í" "augnablikinu" | "þessa" "dagana"
+    "núna" | "í" "dag" | "eins" "og" "stendur" | "í" "augnablikinu" | "þessa_dagana"
 
 QPetrolStation →
     "bensínstöð" | "bensínstöðin" | "bensínafgreiðslustöð"
@@ -290,8 +290,11 @@ _ERRMSG = "Ekki tókst að sækja upplýsingar um bensínstöðvar."
 
 def _answ_for_petrol_query(q: Query, result) -> AnswerTuple:
     req_distance = True
+    location = q.location
+    if location is None:
+        return gen_answer("Ég veit ekki hvar þú ert")
     if result.qkey == "ClosestStation":
-        station = _closest_petrol_station(q.location)
+        station = _closest_petrol_station(location)
         answer = "{0} {1} ({2}, bensínverð {3})"
         desc = "Næsta bensínstöð"
     elif result.qkey == "CheapestStation":
@@ -300,10 +303,10 @@ def _answ_for_petrol_query(q: Query, result) -> AnswerTuple:
         desc = "Ódýrasta bensínstöðin"
         req_distance = False
     elif result.qkey == "ClosestCheapestStation":
-        station = _closest_cheapest_petrol_station(q.location)
+        station = _closest_cheapest_petrol_station(location)
         desc = "Ódýrasta bensínstöðin í grenndinni"
     else:
-        raise Exception("Unknown petrol query type")
+        raise ValueError("Unknown petrol query type")
 
     if (
         not station

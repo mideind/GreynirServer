@@ -18,7 +18,6 @@
 """
 
 from flask import request
-from flask_cors import cross_origin
 
 from routes import (
     routes,
@@ -92,9 +91,7 @@ def nntranslate_api(version=1):
 
 @routes.route("/nn/translate.api", methods=["GET", "POST"])
 @routes.route("/nn/translate.api/v<int:version>", methods=["GET", "POST"])
-@cross_origin()
 def translate_api(version=1):
     from nn.client import TranslationApiClient
-
     tc = TranslationApiClient()
     return tc.dispatch(request)

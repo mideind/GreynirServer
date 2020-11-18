@@ -642,7 +642,7 @@ def _query_entity_definitions(session, name: str):
     return prepare_response(q, prop_func=lambda x: x.definition)
 
 
-def query_entity(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
+def query_entity(query: Query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
     """ A query for an entity by name """
     titles = _query_entity_definitions(session, name)
     articles = _query_article_list(session, name)
@@ -681,7 +681,7 @@ def query_entity_def(session, name: str) -> str:
     return correct_spaces(rl[0]["answer"]) if rl else ""
 
 
-def query_company(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
+def query_company(query: Query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
     """ A query for an company in the entities table """
     # Create a query name by cutting off periods at the end
     # (hf. -> hf) and adding a percent pattern match at the end
@@ -715,7 +715,7 @@ def query_company(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
     return response, answer, voice_answer
 
 
-def query_word(query, session, stem: str) -> Dict[str, Any]:
+def query_word(query: Query, session, stem: str) -> Dict[str, Any]:
     """ A query for words related to the given stem """
     # Count the articles where the stem occurs
     acnt = ArticleCountQuery.count(stem, enclosing_session=session)
@@ -730,7 +730,7 @@ def query_word(query, session, stem: str) -> Dict[str, Any]:
     )
 
 
-def launch_search(query, session, qkey: str) -> Dict[str, Any]:
+def launch_search(query: Query, session, qkey: str) -> Dict[str, Any]:
     """ Launch a search with the given search terms """
     pgs, _ = TreeUtility.raw_tag_toklist(session, query.token_list)  # root=_QUERY_ROOT
 
@@ -775,7 +775,7 @@ def launch_search(query, session, qkey: str) -> Dict[str, Any]:
     return dict(answers=result["articles"], weights=tweights)
 
 
-def repeat_query(query, session, qkey: str) -> Tuple[Dict[str, Any], str, str]:
+def repeat_query(query: Query, session, qkey: str) -> Tuple[Dict[str, Any], str, str]:
     """ Request to repeat the result of the last query """
     last = query.last_answer()
     if last is None:

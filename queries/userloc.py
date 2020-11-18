@@ -36,7 +36,7 @@ from queries import (
     numbers_to_neutral,
     cap_first
 )
-from iceaddr import iceaddr_lookup, postcodes
+from iceaddr import iceaddr_lookup, postcodes  # type: ignore
 from geo import iceprep_for_placename, iceprep_for_street
 
 
@@ -321,7 +321,7 @@ def sentence(state, result):
                     answ = answer_for_postcode(loc)
                 else:
                     answ = answer_for_location(loc)
-            if answ:
+            if answ and loc is not None:
                 # For uniformity, store the returned location in the context
                 # !!! TBD: We might want to store an address here as well
                 q.set_context({"location": loc})

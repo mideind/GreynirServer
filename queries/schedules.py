@@ -161,7 +161,7 @@ QSchTheSchedule →
     "dagskráin" | "sjónvarpsdagskráin"
 
 QSchThisEvening →
-    "núna"? "í" "kvöld"
+    "núna"? "í_kvöld"
 
 $score(+55) QSchedule
 

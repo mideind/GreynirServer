@@ -153,7 +153,7 @@ QPlNow →
     "núna" | "í" "augnablikinu" | "eins" "og" "stendur" | "nú"
 
 QPlToday →
-    "núna"? "í" "dag" | "núna"? "í" "kvöld"
+    "núna"? "í" "dag" | "núna"? "í_kvöld"
 
 $score(+35) QPlacesQuery
 
@@ -371,7 +371,9 @@ def sentence(state, result):
         subj = result["subject_nom"]
         try:
             handlerfunc = _HANDLER_MAP[result.qkey]
-            res = handlerfunc(subj, q.location, result.qkey)
+            res: Optional[AnswerTuple] = None
+            if q.location is not None:
+                res = handlerfunc(subj, q.location, result.qkey)
             if res:
                 q.set_answer(*res)
                 q.set_source("Google Maps")

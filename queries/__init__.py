@@ -34,9 +34,9 @@ import re
 import locale
 from urllib.parse import urlencode
 from functools import lru_cache
-from xml.dom import minidom
+from xml.dom import minidom  # type: ignore
 
-from tzwhere import tzwhere
+from tzwhere import tzwhere  # type: ignore
 from pytz import country_timezones
 
 from geo import country_name_for_isocode, iceprep_for_cc

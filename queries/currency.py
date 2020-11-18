@@ -29,7 +29,7 @@
 from typing import Dict, Optional
 
 import re
-import cachetools
+import cachetools  # type: ignore
 import random
 import logging
 
@@ -281,7 +281,7 @@ QCurNumberWord →
 QCurCurrencyIndex/fall →
     'gengisvísitala:kvk'_et/fall QCurISK_ef?
 
-QCurVisAVis → "gagnvart" | "á" "móti" | 'á_móti' | "gegn"
+QCurVisAVis → "gagnvart" | "á_móti" | "gegn"
 
 QCurXch → "gengi" | "gengið"
 

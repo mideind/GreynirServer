@@ -1823,9 +1823,9 @@ def handle_plain_text(q: Query) -> bool:
         response = cast(AnswerType, r)
 
     # A non-voice answer is usually a dict or a list
-    answer = response.get("answer")
+    answer = cast(str, response.get("answer")) or ""
     # A voice answer is always a plain string
-    voice = response.get("voice") or answer
+    voice = cast(str, response.get("voice")) or answer
     q.set_answer(dict(answer=answer), answer, voice)
     # If this is a command, rather than a question,
     # let the query object know so that it can represent
@@ -1833,7 +1833,9 @@ def handle_plain_text(q: Query) -> bool:
     if not response.get("is_question", True):
         q.query_is_command()
     # Add source
-    q.set_source(response.get("source"))
+    source = response.get("source")
+    if source is not None:
+        q.set_source(cast(str, source))
     # Caching for non-dynamic answers
     if fixed or response.get("can_cache", False):
         q.set_expires(datetime.utcnow() + timedelta(hours=24))

@@ -48,6 +48,7 @@ from . import routes, better_jsonify, text_from_request, bool_from_request, rest
 from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH
 from . import async_task
 
+
 # Maximum number of query string variants
 _MAX_QUERY_VARIANTS = 10
 # Maximum length of each query string
@@ -414,7 +415,8 @@ def query_api(version=1):
 
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
     auto_uppercase = bool_from_request(request, "autouppercase", True)
-    # auto_uppercase = True # !!! DEBUG - to emulate mobile client behavior
+    if Settings.DEBUG:
+        auto_uppercase = True # !!! DEBUG - to emulate mobile client behavior
 
     # Send the query to the query processor
     result = process_query(
@@ -493,9 +495,11 @@ def query_history_api(version=1):
 
     with SessionContext(commit=True) as session:
         # Clear all logged user queries
+        # pylint: disable=no-member
         session.execute(Query.table().delete().where(Query.client_id == client_id))
         # Clear all user query data
         if action == "clear_all":
+            # pylint: disable=no-member
             session.execute(
                 QueryData.table().delete().where(QueryData.client_id == client_id)
             )
@@ -638,7 +642,7 @@ def register_query_data_api(version=1):
     ):
         return better_jsonify(valid=False, errmsg="Missing parameters.")
 
-    success = QueryObject.save_query_data(
+    success = QueryObject.store_query_data(
         qdata["client_id"], qdata["key"], qdata["data"]
     )
     if success:

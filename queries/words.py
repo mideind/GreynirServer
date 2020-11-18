@@ -32,11 +32,13 @@
 # TODO: Handle numbers ("3" should be spelled as "þrír" etc.)
 # TODO "Hvaða orð rímar við X"
 
+from typing import Optional, Tuple
+
 import re
 import logging
 from datetime import datetime, timedelta
 
-from query import Query
+from query import Query, AnswerTuple
 from queries import gen_answer, icequote
 from reynir.bindb import BIN_Db
 
@@ -128,7 +130,7 @@ _DECLENSION_RX = (
 )
 
 
-def lookup_best_word(word: str):
+def lookup_best_word(word: str) -> Optional[Tuple[str, str, str, str]]:
     """ Look up word in BÍN, pick right one acc. to a criterion. """
     with BIN_Db().get_db() as db:
 
@@ -172,10 +174,12 @@ def lookup_best_word(word: str):
 _NOT_IN_BIN_MSG = "Nafnorðið „{0}“ fannst ekki í Beygingarlýsingu íslensks nútímamáls."
 
 
-def declension_answer_for_word(word: str, query: Query):
+def declension_answer_for_word(word: str, query: Query) -> AnswerTuple:
     """ Look up all morphological forms of a given word,
         construct natural language response. """
 
+    query.set_qtype("Declension")
+    query.set_key(word)
     # Look up in BÍN
     forms = lookup_best_word(word)
 
@@ -190,9 +194,6 @@ def declension_answer_for_word(word: str, query: Query):
         icequote(word), cases_desc
     )
 
-    query.set_qtype("Declension")
-    query.set_key(word)
-
     # Beautify by placing word in query within quotation marks
     bq = re.sub(word + r"\??$", icequote(word) + "?", query.beautified_query)
     query.set_beautified_query(bq)
@@ -204,7 +205,7 @@ def declension_answer_for_word(word: str, query: Query):
 _LETTER_INTERVAL = 0.3  # Seconds
 
 
-def spelling_answer_for_word(word: str, query: Query):
+def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
     """ Spell out a word provided in a query. """
 
     # Generate list of characters in word
@@ -261,6 +262,7 @@ def handle_plain_text(q: Query) -> bool:
     matching_word = matches.group(1)
 
     # Generate answer
+    answ: Optional[AnswerTuple]
     try:
         answ = handler(matching_word, q)
     except Exception as e:
@@ -268,7 +270,7 @@ def handle_plain_text(q: Query) -> bool:
         q.set_error("E_EXCEPTION: {0}".format(e))
         answ = None
 
-    if answ:
+    if answ is not None:
         q.set_answer(*answ)
         q.set_expires(datetime.utcnow() + timedelta(hours=24))
         # Beautify query by placing word being asked about within Icelandic quotation marks

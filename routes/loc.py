@@ -30,7 +30,7 @@ from collections import defaultdict
 import json
 
 from flask import request, render_template, abort, send_file
-from country_list import countries_for_language
+from country_list import countries_for_language  # type: ignore
 
 from db import SessionContext, dbfunc, desc
 from db.models import Location, Article, Root

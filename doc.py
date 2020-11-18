@@ -28,10 +28,10 @@ from io import BytesIO
 import re
 from zipfile import ZipFile
 import html2text
-from striprtf.striprtf import rtf_to_text
+from striprtf.striprtf import rtf_to_text  # type: ignore
 
 # Use defusedxml module to prevent parsing of malicious XML
-from defusedxml import ElementTree
+from defusedxml import ElementTree  # type: ignore
 
 
 DEFAULT_TEXT_ENCODING = "UTF-8"

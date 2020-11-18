@@ -31,7 +31,7 @@ import random
 import re
 from datetime import datetime, timedelta
 
-from cityloc import capital_for_cc
+from cityloc import capital_for_cc  # type: ignore
 
 from query import Query
 from queries import country_desc, nom2dat, cap_first
@@ -129,17 +129,37 @@ QGeoPreposition →
 
 QGeoSubject/fall →
     Nl/fall
+
+QGeoSubject_nf →
     # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
-    | "kostaríka" | "kostaríku"
+    "kostaríka"
     # The grammar seems to have a hard time with these
-    | "norður" "kórea" | "norður" "kóreu"
-    | "nýja" "sjáland" | "nýja" "sjálands" | "nýja" "sjálandi"
-    | "norður" "makedónía" | "norður" "makedóníu"
-    | "hvíta" "rússland" | "hvíta" "rússlands" | "hvíta-rússland"
+    | "norður" "kórea"
+    | "nýja" "sjáland"
+    | "norður" "makedónía"
+    | "hvíta" "rússland" | "hvíta-rússland"
     | "sameinuðu" "arabísku" "furstadæmin"
+    | "seychelles" "eyjar"
+
+QGeoSubject_þgf →
+    # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
+    "kostaríku"
+    | "norður" "kóreu"
+    | "nýja" "sjálandi"
+    | "norður" "makedóníu"
+    | "hvíta" "rússlandi" | "hvíta-rússlandi"
     | "sameinuðu" "arabísku" "furstadæmunum"
+    | "seychelles" "eyjum"
+
+QGeoSubject_ef →
+    # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
+    "kostaríku"
+    | "norður" "kóreu"
+    | "nýja" "sjálands"
+    | "norður" "makedóníu"
+    | "hvíta" "rússlands" | "hvíta-rússlands"
     | "sameinuðu" "arabísku" "furstadæmanna"
-    | "seychelles" "eyjar" | "seychelles" "eyja" | "seychelles" "eyjum"
+    | "seychelles" "eyja"
 
 $score(+10) QGeoSubject/fall
 $score(-100) QGeoLocationDescQuery
@@ -245,7 +265,9 @@ def _which_country_query(subject: str, q: Query):
 
     q.set_answer(response, answer, voice)
     q.set_key(subject)
-    q.set_context(dict(subject=country_name_for_isocode(cc)))
+    cname = country_name_for_isocode(cc)
+    if cname is not None:
+        q.set_context(dict(subject=cname))
 
     return True
 

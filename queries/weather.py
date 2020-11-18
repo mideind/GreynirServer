@@ -52,8 +52,8 @@ from datetime import timedelta, datetime
 from query import Query
 from queries import gen_answer, query_json_api, cap_first, sing_or_plur
 from geo import distance, in_iceland, ICE_PLACENAME_BLACKLIST
-from iceaddr import placename_lookup
-from iceweather import observation_for_closest, observation_for_station, forecast_text
+from iceaddr import placename_lookup  # type: ignore
+from iceweather import observation_for_closest, observation_for_station, forecast_text  # type: ignore
 
 from . import LatLonTuple, AnswerTuple
 
@@ -208,8 +208,8 @@ QWeatherTemperature →
     | "er" "mikill"? "kuldi" "úti"? QWeatherAnyLoc? QWeatherNow?
     | "er" "mikill"? "hiti" "úti"? QWeatherAnyLoc? QWeatherNow?
     | "er" "mikið"? "frost" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" QWeatherHotCold? "fyrir" "ofan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" QWeatherHotCold? "fyrir" "neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" QWeatherHotCold? "fyrir_ofan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" QWeatherHotCold? "fyrir_neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
 
 QWeatherHotCold →
     "hiti" | "hitinn" | "kuldi" | "kuldinn" | "hitastig" | "hitastigið"
@@ -251,7 +251,7 @@ QWeatherNow →
     | "úti"? "eins" "og" "stendur"
 
 QWeatherNextDays →
-    "á" "næstunni"
+    "á_næstunni"
     | "næstu" "daga"
     | "næstu" "dagana"
     | "fyrir" "næstu" "daga"
@@ -260,12 +260,12 @@ QWeatherNextDays →
     | "þessa" "vikuna"
     | "út" "vikuna"
     | "í" "vikunni"
-    | "á" "morgun"
+    | "á_morgun"
     | "í" "fyrramálið"
     | "fyrir" "morgundaginn"
 
 QWeatherCountry →
-    "á" "landinu" | "á" "íslandi" | "hér" "á" "landi" | "á" "landsvísu"
+    "á" "landinu" | "á" "íslandi" | "hér_á_landi" | "á" "landsvísu"
     | "um" "landið" "allt" | "um" "allt" "land" | "fyrir" "allt" "landið"
     | "á" "fróni" | "heima"
 
@@ -465,6 +465,7 @@ _API_ERRMSG = "Ekki tókst að sækja veðurupplýsingar."
 
 def get_currweather_answer(query: Query, result) -> AnswerTuple:
     """ Handle queries concerning current weather conditions """
+
     res = _curr_observations(query, result)
     if not res:
         return gen_answer(_API_ERRMSG)
@@ -498,7 +499,7 @@ def get_currweather_answer(query: Query, result) -> AnswerTuple:
     )
 
     # Text answer
-    answer = "{0}°{1} og {2} ({3} m/s)".format(temp, mdesc, wind_desc, wind_ms_str)
+    answer = "{0} °C{1} og {2} ({3} m/s)".format(temp, mdesc, wind_desc, wind_ms_str)
 
     response = dict(answer=answer)
 

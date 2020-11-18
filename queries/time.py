@@ -96,7 +96,7 @@ def handle_plain_text(q: Query) -> bool:
     # Whether user asked for the time in a particular location
     specific_desc = None
 
-    if ql in _TIME_QUERIES:
+    if ql in _TIME_QUERIES and q.location is not None:
         # Use location to determine time zone
         tz = timezone4loc(q.location, fallback="IS")
     # TODO: Replace with regex, and handle "Hvað klukkan á X", "Hvað klukkan", etc.

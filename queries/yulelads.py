@@ -250,11 +250,11 @@ QYuleWhichLad →
 
 QYuleToday →
     "í" "dag"
-    | "í" "kvöld"
+    | "í_kvöld"
     | "í" "nótt"
 
 QYuleTomorrow →
-    "á" "morgun"
+    "á_morgun"
     | "annað" "kvöld"
     | "aðra" "nótt"
 

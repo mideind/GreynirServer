@@ -51,7 +51,7 @@ from settings import Settings
 from reynir import correct_spaces
 from geo import in_iceland
 
-import straeto
+import straeto  # type: ignore  # TODO
 
 
 # Today's bus schedule, cached
@@ -323,24 +323,26 @@ QBusAtStopIncorrect_þgf →
 # Prefer the correct forms
 $score(-20) QBusAtStopIncorrect/þfþgf
 
+QBusWhen → "hvenær" | "klukkan" "hvað"
+
 QBusArrivalTime →
 
     # 'Hvenær kemur/fer/stoppar ásinn/sexan/tían/strætó númer tvö [næst] [á Hlemmi]?'
-    "hvenær" QBusArrivalVerb/þfþgf QBus_nf "næst"? QBusAtStop/þfþgf? '?'?
+    QBusWhen QBusArrivalVerb/þfþgf QBus_nf "næst"? QBusAtStop/þfþgf? '?'?
 
     # 'Hvenær er [næst] von á fimmunni / vagni númer sex?'
-    | "hvenær" "er" "næst"? "von" "á" QBus_þgf QBusAtStop_þf? '?'?
+    | QBusWhen "er" "næst"? "von" "á" QBus_þgf QBusAtStop_þf? '?'?
 
     # 'Hvenær má [næst] búast við leið þrettán?'
-    | "hvenær" "má" "næst"? "búast" "við" QBus_þgf QBusAtStop_þf? '?'?
+    | QBusWhen "má" "næst"? "búast" "við" QBus_þgf QBusAtStop_þf? '?'?
 
 QBusAnyArrivalTime →
     # 'Hvenær kemur/fer/stoppar [næsti] strætó [á Hlemmi]?'
-    "hvenær" QBusArrivalVerb/þfþgf "næsti"? QBusNounSingular_nf QBusAtStop/þfþgf? '?'?
+    QBusWhen QBusArrivalVerb/þfþgf "næsti"? QBusNounSingular_nf QBusAtStop/þfþgf? '?'?
     # 'Hvað er langt í [næsta] strætó [á Hlemm / á Hlemmi]?'
     | "hvað" "er" "langt" "í" "næsta"? QBusNounSingular_þf QBusAtStop/þfþgf? '?'?
     # 'Hvenær er von á [næsta] strætó [á Hlemm]?'
-    | "hvenær" "er" "von" "á" "næsta"? QBusNounSingular_þgf QBusAtStop_þf? '?'?
+    | QBusWhen "er" "von" "á" "næsta"? QBusNounSingular_þgf QBusAtStop_þf? '?'?
 
 QBusArrivalVerb → QBusArrivalVerb/þfþgf
 

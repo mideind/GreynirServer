@@ -35,7 +35,7 @@ import random
 from datetime import datetime, timedelta
 
 from queries import query_json_api, gen_answer, cap_first
-from query import Query
+from query import Query, ContextDict
 
 
 _WIKI_QTYPE = "Wikipedia"
@@ -192,7 +192,9 @@ def QWikiPrevSubjectNf(node, params, result):
     ctx = None if q is None else q.fetch_context()
     ctx_keys = ["person_name", "entity_name", "subject"]
     if ctx is not None:
-        keys = list(filter(lambda k: k in ctx, ctx_keys))
+        # Make mypy happy
+        c: ContextDict = ctx
+        keys = list(filter(lambda k: k in c, ctx_keys))
         if keys:
             result.context_reference = True
             result["subject_nom"] = ctx[keys[0]]

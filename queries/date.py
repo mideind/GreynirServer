@@ -194,7 +194,7 @@ QDateWhenIs →
     | "á" "hvaða" "degi" QDateIsAre QDateSpecialDay_nf QDateThisYear?
 
 QDateThisYear →
-    "núna"? "í" "ár" | "þetta" "ár" | "á" "þessu" "ári" | "þetta" "árið"
+    "núna"? "í_ár" | "þetta" "ár" | "á" "þessu" "ári" | "þetta" "árið"
 
 QDateWhichYear →
     "hvaða" "ár" "er" QDateNow?
