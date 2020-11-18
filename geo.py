@@ -209,6 +209,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Sameinuðu Arabísku Furstadæmin": "AE",
         "Norður-Súdan": "SD",
         "Taiwan": "TW",
+        "Mexico": "MX",
     }
 }
 

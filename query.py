@@ -492,10 +492,16 @@ class Query:
             self._error = None
             self._qtype = None
             # Process the tree, which has only one sentence
-            self._tree.process(self._session, processor, query=self)
-            if self._answer and self._error is None:
-                # The processor successfully answered the query
-                return True
+            try:
+                self._tree.process(self._session, processor, query=self)
+                if self._answer and self._error is None:
+                    # The processor successfully answered the query
+                    return True
+            except Exception as e:
+                logging.error(
+                    f"Exception in execute_from_tree('{processor.__name__}') "
+                    f"for query '{self._query}': {e}"
+                )
         # No processor was able to answer the query
         return False
 
