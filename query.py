@@ -99,8 +99,15 @@ $root(QueryRoot)
 
 
 # Query prefixes that we cut off before further processing
-# The 'bæjarblað' below is a common misunderstanding by the Google ASR
-_IGNORED_QUERY_PREFIXES = ("embla", "hæ embla", "hey embla", "sæl embla", "bæjarblað")
+# The 'bæjarblað'/'hæðarblað' below is a common misunderstanding by the Google ASR
+_IGNORED_QUERY_PREFIXES = (
+    "embla",
+    "hæ embla",
+    "hey embla",
+    "sæl embla",
+    "bæjarblað",
+    "hæðarblað",
+)
 _IGNORED_PREFIX_RE = r"^({0})\s*".format("|".join(_IGNORED_QUERY_PREFIXES))
 # Auto-capitalization corrections
 _CAPITALIZATION_REPLACEMENTS = (("í Dag", "í dag"),)
@@ -951,7 +958,7 @@ def process_query(
     client_type=None,
     client_version=None,
     bypass_cache=False,
-    private=False
+    private=False,
 ):
     """ Process an incoming natural language query.
         If voice is True, return a voice-friendly string to
