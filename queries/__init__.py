@@ -617,10 +617,10 @@ def _tzwhere_singleton() -> tzwhere.tzwhere:
     return _TZW
 
 
-def timezone4loc(loc: LatLonTuple, fallback: Optional[str] = None) -> Optional[str]:
+def timezone4loc(loc: Optional[LatLonTuple], fallback: Optional[str] = None) -> Optional[str]:
     """ Returns timezone string given a tuple of coordinates.
         Fallback argument should be a 2-char ISO 3166 country code."""
-    if loc:
+    if loc is not None:
         return _tzwhere_singleton().tzNameAt(loc[0], loc[1], forceTZ=True)
     if fallback and fallback in country_timezones:
         return country_timezones[fallback][0]
