@@ -91,7 +91,7 @@ def sentence(state, result):
         response = dict(answer=answ)
 
         # Set query answer
-        q.set_answer(response, answer, voice)
+        q.set_answer(response, answ, voice)
         q.set_key(result.qkey)
         return
 
