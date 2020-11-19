@@ -41,7 +41,6 @@ from reynir.simpletree import SimpleTreeBuilder
 from reynir.cache import LRU_Cache
 
 
-# !!! TODO: the following property types are incorrect
 TreeToken = NamedTuple(
     "TreeToken",
     [
@@ -1363,7 +1362,7 @@ class TreeBase:
         pass
 
     @staticmethod
-    def _parse_T(s: str):
+    def _parse_T(s: str) -> TreeToken:
         """ Parse a T (Terminal) descriptor """
         # The string s contains:
         # terminal "token" [TOKENTYPE] [auxiliary-json]
@@ -1412,7 +1411,7 @@ class TreeBase:
         # name, which is not the word category in all cases (for instance not
         # for literal terminals).
         cat = terminal.split("_", maxsplit=1)[0]
-        return (terminal, augmented_terminal, token, tokentype, aux, cat)
+        return TreeToken(terminal, augmented_terminal, token, tokentype, aux, cat)
 
     def handle_T(self, n: int, s: str) -> None:
         """ Terminal """
