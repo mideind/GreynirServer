@@ -53,22 +53,23 @@ _INTRODUCTION_RESPONSES = {
 
 _WHATS_MY_NAME = frozenset(
     (
+        "hver er ég",
         "hvað heiti ég fullu nafni",
         "hvað heiti ég",
+        "hvað heiti ég eiginlega",
         "veistu hvað ég heiti",
-        "veistu hvað ég heiti fullu nafni" "veistu ekki hvað ég heiti",
-        "hver er ég",
+        "veistu hvað ég heiti fullu nafni",
+        "veistu ekki hvað ég heiti",
         "veistu hver ég er",
         "veistu ekki hver ég er",
         "hvaða nafn er ég með",
         "hvaða nafni heiti ég",
         "veistu hvaða nafni ég heiti",
-        "hvað heiti ég eiginlega",
         "hvaða nafn ber ég",
     )
 )
 
-_DUNNO_NAME = "Ég veit ekki hvað þú heitir."
+_DUNNO_NAME = "Ég veit ekki hvað þú heitir, en þú getur sagt mér það."
 
 
 # TODO: Implement this
