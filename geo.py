@@ -210,6 +210,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Norður-Súdan": "SD",
         "Taiwan": "TW",
         "Mexico": "MX",
+        "Vietnam": "VN",
     }
 }
 
