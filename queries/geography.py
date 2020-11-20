@@ -61,7 +61,7 @@ def help_text(lemma: str) -> str:
                 "Í hvaða landi er Minsk",
                 "Í hvaða heimsálfu er Kambódía",
                 "Hvar er Kaupmannahöfn",
-                "Hvar er í heiminum er Máritanía",
+                "Hvar í heiminum er Máritanía",
             )
         )
     )
