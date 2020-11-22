@@ -872,6 +872,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þetta var vitleysa": _sorry,
     "það er ansi margt sem þú veist ekki": _sorry,
     "þú veist ekki neitt": _sorry,
+    "þú veist bara ekki neitt": _sorry,
     "þú veist ekki mikið": _sorry,
     "þú veist ekkert": _sorry,
     "þú veist mjög lítið": _sorry,
@@ -879,6 +880,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú veist nánast ekki neitt": _sorry,
     "þú veist ekki rassgat": _sorry,
     "þú kannt ekki neitt": _sorry,
+    "þú kannt bara ekki neitt": _sorry,
     "þú kannt ekkert": _sorry,
     "þú getur ekki neitt": _sorry,
     "af hverju ertu svona fúl": _sorry,
@@ -893,6 +895,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þetta var lélegur brandari": _sorry,
     "þessi brandari er lélegur": _sorry,
     "þessi brandari var lélegur": _sorry,
+    "ertu svolítið rugluð": _NOBODY_PERFECT,
     # Greetings
     "hey embla": _HELLO_DEAR,
     "hey": _HELLO_DEAR,
@@ -904,6 +907,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "sæl": _HELLO_DEAR,
     "sæll": _HELLO_DEAR,
     "sæl embla": _HELLO_DEAR,
+    "sæl elsku embla": _HELLO_DEAR,
     "sæl og blessuð": {
         "answer": "Sæll og blessaður, kæri notandi.",
         "is_question": False,
