@@ -392,7 +392,7 @@ def about():
 @routes.route("/reportimage", methods=["POST"])
 def reportimage():
     """ Notification that a (person) image is wrong or broken """
-    resp = dict(found_new=False)
+    resp: Dict[str, Any] = dict(found_new=False)
 
     name = request.form.get("name")
     url = request.form.get("url")
@@ -422,7 +422,7 @@ def image():
         thumb = 0
 
     if name:
-        img = get_image_url(name, thumb=thumb, cache_only=True)
+        img = get_image_url(name, thumb=bool(thumb), cache_only=True)
         if img:
             resp["found"] = True
             resp["image"] = img

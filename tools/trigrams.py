@@ -78,7 +78,7 @@ def dump_tokens(limit):
             )
             tree = TreeTokenList()
             tree.load(a.tree)
-            for ix, toklist in tree.sentences():
+            for ix, toklist in tree.token_lists():
                 print("\nSentence {0}:".format(ix))
                 at_start = True
                 for t in toklist:
@@ -149,7 +149,7 @@ def make_trigrams(limit, output_tsv=False):
                 #print("Processing article from {0.timestamp}: {0.url}".format(a))
                 tree = TreeTokenList()
                 tree.load(a.tree)
-                for ix, toklist in tree.sentences():
+                for _, toklist in tree.token_lists():
                     if toklist and len(toklist) > 1:
                         # For each sentence, start and end with empty strings
                         yield ""
@@ -280,7 +280,7 @@ def spin_trigrams(num):
             return correct_spaces(sent)
 
         # Spin the sentences
-        for i in range(num):
+        for _ in range(num):
             print("{0}".format(spin_trigram(first)))
 
 

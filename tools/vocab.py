@@ -74,8 +74,8 @@ class Meanings:
 
     """ Wrapper around list of additional word meanings, initialized from the config file """
 
-    DICT = defaultdict(list)  # Keyed by word form
-    ROOT = defaultdict(list)  # Keyed by word root (stem)
+    DICT = defaultdict(set)  # Keyed by word form
+    ROOT = defaultdict(set)  # Keyed by word root (stem)
 
     _conn = None
     _cursor = None
@@ -192,12 +192,12 @@ class Meanings:
             # create all 48 forms
             for b in Meanings._UNDECLINED_ADJECTIVE_TEMPLATE:
                 m = (stofn, -1, ordfl, fl or "ob", ordmynd, b)
-                Meanings.DICT[ordmynd].append(m)
-                Meanings.ROOT[stofn].append(m)
+                Meanings.DICT[ordmynd].add(m)
+                Meanings.ROOT[stofn].add(m)
         else:
             m = (stofn, -1, ordfl, fl or "ob", ordmynd, beyging or "-")
-            Meanings.DICT[ordmynd].append(m)
-            Meanings.ROOT[stofn].append(m)
+            Meanings.DICT[ordmynd].add(m)
+            Meanings.ROOT[stofn].add(m)
 
     @staticmethod
     def add_composite(stofn, ordfl, fl, *, utg=None):
@@ -239,8 +239,8 @@ class Meanings:
                         prefix + w.ordmynd,
                         w.beyging,
                     )
-                    Meanings.DICT[prefix + w.ordmynd].append(t)
-                    Meanings.ROOT[prefix + w.stofn].append(t)
+                    Meanings.DICT[prefix + w.ordmynd].add(t)
+                    Meanings.ROOT[prefix + w.stofn].add(t)
 
     @staticmethod
     def add_entry(s):
@@ -317,14 +317,41 @@ class Meanings:
                 e.set_pos(rdr.fname(), rdr.line())
             raise e
 
+    @staticmethod
+    def read_family_names(fname):
+        """ Read config/FamilyNames.conf and create corresponding family
+            name entries in the output file. Family names are identical
+            in all cases, and are listed as having neutral gender. """
+        with open(fname, "r") as f:
+            for s in f:
+                # Ignore comments
+                ix = s.find("#")
+                if ix >= 0:
+                    s = s[0:ix]
+                s = s.strip()
+                if not s:
+                    # Blank line: ignore
+                    continue
+                # Check whether the family name is already in the database
+                mm = Meanings.forms(s)
+                fl_set = set(m.fl for m in mm)
+                if fl_set & {"ism", "föð", "móð", "ætt"}:
+                    # Already known as a name: skip it
+                    continue
+                # Add the family name in all four cases, singular, neutral gender
+                for case in ("NF", "ÞF", "ÞGF", "EF"):
+                    # Format: stofn ordmynd ordfl fl (default ob) beyging (default -)
+                    Meanings.add(s, s, "hk", "ætt", case + "ET")
+
 
 if __name__ == "__main__":
 
     print("Welcome to the Greynir additional vocabulary builder\n")
 
     src = os.path.join(basepath, "config", "Vocab.conf")
+    family_names = os.path.join(basepath, "config", "FamilyNames.conf")
     fname = os.path.join(basepath, "resources", "ord.add.csv")
-    print("Reading from {0}".format(src))
+    print("Reading from {0} and {1}".format(src, family_names))
     print("Writing to {0}".format(fname))
 
     try:
@@ -336,6 +363,7 @@ if __name__ == "__main__":
         )
         Meanings.open_db(Settings.DB_HOSTNAME, Settings.DB_PORT)
         Meanings.read_config(src)
+        Meanings.read_family_names(family_names)
         Meanings.close_db()
     except ConfigError as e:
         print("Configuration error: {0}".format(e))

@@ -31,7 +31,7 @@ import logging
 import urllib.parse as urlparse
 import requests
 from datetime import datetime
-from bs4 import BeautifulSoup, NavigableString, Tag
+from bs4 import BeautifulSoup, NavigableString, Tag  # type: ignore
 
 
 MODULE_NAME = __name__

@@ -51,7 +51,7 @@ from settings import Settings
 from reynir import correct_spaces
 from geo import in_iceland
 
-import straeto
+import straeto  # type: ignore  # TODO
 
 
 # Today's bus schedule, cached
@@ -196,6 +196,8 @@ QBusNoun_þf_et → 'Vagn'_þf_kk
 QBusNoun_þgf_et → 'Vagn'_þgf_kk
 QBusNoun_ef_et → 'Vagn'_ef_kk
 
+$tag(keep) QBusNoun/fall/tala
+
 QBusNounSingular_nf →
     QBusNoun_nf_et
 
@@ -323,24 +325,26 @@ QBusAtStopIncorrect_þgf →
 # Prefer the correct forms
 $score(-20) QBusAtStopIncorrect/þfþgf
 
+QBusWhen → "hvenær" | "klukkan" "hvað"
+
 QBusArrivalTime →
 
     # 'Hvenær kemur/fer/stoppar ásinn/sexan/tían/strætó númer tvö [næst] [á Hlemmi]?'
-    "hvenær" QBusArrivalVerb/þfþgf QBus_nf "næst"? QBusAtStop/þfþgf? '?'?
+    QBusWhen QBusArrivalVerb/þfþgf QBus_nf "næst"? QBusAtStop/þfþgf? '?'?
 
     # 'Hvenær er [næst] von á fimmunni / vagni númer sex?'
-    | "hvenær" "er" "næst"? "von" "á" QBus_þgf QBusAtStop_þf? '?'?
+    | QBusWhen "er" "næst"? "von" "á" QBus_þgf QBusAtStop_þf? '?'?
 
     # 'Hvenær má [næst] búast við leið þrettán?'
-    | "hvenær" "má" "næst"? "búast" "við" QBus_þgf QBusAtStop_þf? '?'?
+    | QBusWhen "má" "næst"? "búast" "við" QBus_þgf QBusAtStop_þf? '?'?
 
 QBusAnyArrivalTime →
     # 'Hvenær kemur/fer/stoppar [næsti] strætó [á Hlemmi]?'
-    "hvenær" QBusArrivalVerb/þfþgf "næsti"? QBusNounSingular_nf QBusAtStop/þfþgf? '?'?
+    QBusWhen QBusArrivalVerb/þfþgf "næsti"? QBusNounSingular_nf QBusAtStop/þfþgf? '?'?
     # 'Hvað er langt í [næsta] strætó [á Hlemm / á Hlemmi]?'
     | "hvað" "er" "langt" "í" "næsta"? QBusNounSingular_þf QBusAtStop/þfþgf? '?'?
     # 'Hvenær er von á [næsta] strætó [á Hlemm]?'
-    | "hvenær" "er" "von" "á" "næsta"? QBusNounSingular_þgf QBusAtStop_þf? '?'?
+    | QBusWhen "er" "von" "á" "næsta"? QBusNounSingular_þgf QBusAtStop_þf? '?'?
 
 QBusArrivalVerb → QBusArrivalVerb/þfþgf
 
@@ -432,6 +436,12 @@ def FsMeðFallstjórn(node, params, result):
 def QBusNoun(node, params, result):
     """ Save the noun used to refer to a bus """
     # Use singular, indefinite form
+    # Hack: if the QBusNoun is a literal string, the _canonical logic
+    # is not able to cast it to nominative case. Do it here by brute force. """
+    if result._nominative in ("Vagni", "Vagns"):
+        result._nominative = "vagn"
+    if result._canonical in ("Vagni", "Vagns"):
+        result._canonical = "vagn"
     result.bus_noun = result._canonical
 
 
@@ -782,13 +792,10 @@ def query_arrival_time(query: Query, session, result):
     # !!! on the user's location; i.e. if she is in Eastern Iceland,
     # !!! route '1' would mean 'AL.1' instead of 'ST.1'.
     if stops:
-        stop = stops[0]
-        arrivals_dict, arrives = SCHEDULE_TODAY.arrivals(route_number, stop)
-        if not arrives and len(stops) > 1:
-            # If the requested bus doesn't stop at all at the closest
-            # stop, check the 2nd closest stop, if it is close enough
-            stop = stops[1]
+        for stop in stops:
             arrivals_dict, arrives = SCHEDULE_TODAY.arrivals(route_number, stop)
+            if arrives:
+                break
         arrivals = list(arrivals_dict.items())
         a = ["Á", to_accusative(stop.name), "í átt að"]
 
@@ -897,7 +904,13 @@ def query_arrival_time(query: Query, session, result):
     # Hack: Since we know that the query string contains no uppercase words,
     # adjust it accordingly; otherwise it may erroneously contain capitalized
     # words such as Vagn and Leið.
-    query.lowercase_beautified_query()
+    bq = query.beautified_query
+    for t in (
+        ("Vagn ", "vagn "), ("Vagni ", "vagni "), ("Vagns ", "vagns "),
+        ("Leið ", "leið "), ("Leiðar ", "leiðar ")
+    ):
+        bq = bq.replace(*t)
+    query.set_beautified_query(bq)
 
     def assemble(x):
         """ Intelligently join answer string components. """

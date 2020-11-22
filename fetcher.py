@@ -34,7 +34,7 @@ import requests
 import urllib.parse as urlparse
 from urllib.error import HTTPError
 
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import BeautifulSoup, NavigableString  # type: ignore
 
 from reynir import tokenize
 from nertokenizer import recognize_entities

@@ -194,7 +194,7 @@ QDateWhenIs →
     | "á" "hvaða" "degi" QDateIsAre QDateSpecialDay_nf QDateThisYear?
 
 QDateThisYear →
-    "núna"? "í" "ár" | "þetta" "ár" | "á" "þessu" "ári" | "þetta" "árið"
+    "núna"? "í_ár" | "þetta" "ár" | "á" "þessu" "ári" | "þetta" "árið"
 
 QDateWhichYear →
     "hvaða" "ár" "er" QDateNow?
@@ -407,7 +407,7 @@ def Árið(node, params, result):
     y_node = node.first_child(lambda n: True)
     y = y_node.contained_year
     if not y:
-        raise Exception("No year number associated with YEAR token.")
+        raise ValueError("No year number associated with YEAR token.")
     result["target"] = datetime(day=1, month=1, year=y)
 
 
@@ -435,7 +435,7 @@ def QDateAbsOrRel(node, params, result):
             result["days_in_month"] = ndays
             result["target"] = datetime(day=1, month=m, year=y)
     else:
-        raise Exception("No date in {0}".format(str(datenode)))
+        raise ValueError("No date in {0}".format(str(datenode)))
 
 
 def QDateWhitsun(node, params, result):

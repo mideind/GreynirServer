@@ -21,17 +21,17 @@
 
 """
 
-from typing import Union
+from typing import Union, Dict, Type
 
 import abc
 from io import BytesIO
 import re
 from zipfile import ZipFile
 from html2text import HTML2Text
-from striprtf.striprtf import rtf_to_text
+from striprtf.striprtf import rtf_to_text  # type: ignore
 
 # Use defusedxml module to prevent parsing of malicious XML
-from defusedxml import ElementTree
+from defusedxml import ElementTree  # type: ignore
 
 
 DEFAULT_TEXT_ENCODING = "UTF-8"
@@ -57,7 +57,7 @@ class Document(abc.ABC):
     @abc.abstractmethod
     def extract_text(self) -> str:
         """ All subclasses must implement this method """
-        pass
+        raise NotImplementedError
 
     def write_to_file(self, path: str):
         with open(path, "wb") as f:
@@ -162,7 +162,7 @@ class DocxDocument(Document):
 
 
 # Map file mime type to document class
-MIMETYPE_TO_DOC_CLASS = {
+MIMETYPE_TO_DOC_CLASS: Dict[str, Type[Document]] = {
     "text/plain": PlainTextDocument,
     "text/html": HTMLDocument,
     "text/rtf": RTFDocument,

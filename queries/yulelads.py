@@ -51,6 +51,8 @@ _YULE_QTYPE = "YuleLads"
 
 _YULE_LADS_BY_NAME = {
     "Stekkjarstaur": 12,
+    "Stekkjastaur": 12,
+    "stekkjastaur": 12,
     "Giljagaur": 13,
     "Stúfur": 14,
     "Þvörusleikir": 15,
@@ -125,7 +127,7 @@ _DATE_TO_ORDINAL_GEN[22] = "tuttugasta og annars"
 _TWENTY_PART = {"fyrsta": 1, "annan": 2, "þriðja": 3, "fjórða": 4}
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
-TOPIC_LEMMAS = ["jólasveinn"] + list(_YULE_LADS_BY_NAME.keys())
+TOPIC_LEMMAS = ["jólasveinn"] + list(_YULE_LADS_BY_NAME.keys()) + [lad.lower() for lad in _YULE_LADS_BY_NAME.keys()]
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -250,11 +252,11 @@ QYuleWhichLad →
 
 QYuleToday →
     "í" "dag"
-    | "í" "kvöld"
+    | "í_kvöld"
     | "í" "nótt"
 
 QYuleTomorrow →
-    "á" "morgun"
+    "á_morgun"
     | "annað" "kvöld"
     | "aðra" "nótt"
 

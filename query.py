@@ -26,7 +26,18 @@
 
 """
 
-from typing import Optional, Tuple, List, Dict, Callable, Any
+from typing import (
+    Optional,
+    Tuple,
+    List,
+    Dict,
+    Callable,
+    Iterator,
+    Iterable,
+    Union,
+    Any,
+    Mapping,
+)
 
 from types import ModuleType
 
@@ -59,6 +70,19 @@ from processor import modules_in_dir
 # Latitude, longitude
 LocationType = Tuple[float, float]
 
+# Query response
+ResponseDict = Dict[str, Union[str, int, bool, Mapping[str, Any]]]
+ResponseMapping = Mapping[str, Union[str, int, bool, Mapping[str, Any]]]
+
+# Query context
+ContextDict = Dict[str, Union[str, int, float, bool, LocationType, Mapping[str, Any]]]
+
+# Client data
+ClientDataDict = Dict[str, Union[str, int, float, bool]]
+
+# Answer tuple (corresponds to parameter list of Query.set_answer())
+AnswerTuple = Tuple[ResponseMapping, str, Optional[str]]
+
 # The grammar root nonterminal for queries; see Greynir.grammar in GreynirPackage
 _QUERY_ROOT = "QueryRoot"
 
@@ -72,6 +96,21 @@ QueryRoot →
 $root(QueryRoot)
 
 """
+
+
+# Query prefixes that we cut off before further processing
+# The 'bæjarblað'/'hæðarblað' below is a common misunderstanding by the Google ASR
+_IGNORED_QUERY_PREFIXES = (
+    "embla",
+    "hæ embla",
+    "hey embla",
+    "sæl embla",
+    "bæjarblað",
+    "hæðarblað",
+)
+_IGNORED_PREFIX_RE = r"^({0})\s*".format("|".join(_IGNORED_QUERY_PREFIXES))
+# Auto-capitalization corrections
+_CAPITALIZATION_REPLACEMENTS = (("í Dag", "í dag"),)
 
 
 def beautify_query(query):
@@ -90,24 +129,26 @@ class QueryGrammar(BIN_Grammar):
         strings obtained from query handler plug-ins in the
         queries subdirectory, prefixed by a preamble """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         # Enable the 'include_queries' condition
         self.set_conditions({"include_queries"})
 
     @classmethod
-    def is_grammar_modified(cls):
+    def is_grammar_modified(cls) -> bool:
         """ Override inherited function to specify that query grammars
             should always be reparsed, since the set of plug-in query
             handlers may have changed, as well as their grammar fragments. """
         return True
 
-    def read(self, fname, verbose=False, binary_fname=None):
+    def read(
+        self, fname: str, verbose: bool = False, binary_fname: Optional[str] = None
+    ) -> Iterator[str]:
         """ Overrides the inherited read() function to supply grammar
             text from a file as well as additional grammar fragments
             from query processor modules. """
 
-        def grammar_generator():
+        def grammar_generator() -> Iterator[str]:
             """ A generator that yields a grammar file, line-by-line,
                 followed by grammar additions coming from a string
                 that has been coalesced from grammar fragments in query
@@ -173,10 +214,6 @@ class QueryParser(Fast_Parser):
         return cls._grammar_additions
 
 
-_IGNORED_QUERY_PREFIXES = ("embla", "hæ embla", "hey embla", "sæl embla")
-_IGNORED_PREFIX_RE = r"^({0})\s*".format("|".join(_IGNORED_QUERY_PREFIXES))
-
-
 class Query:
 
     """ A Query is initialized by parsing a query string using QueryRoot as the
@@ -185,28 +222,27 @@ class Query:
         result object if successful. """
 
     # Processors that handle parse trees
-    _tree_processors = []  # type: List[ModuleType]
+    _tree_processors: List[ModuleType] = []
     # Handler functions within processors that handle plain text
-    _text_processors = []  # type: List[Callable[[Query], bool]]
+    _text_processors: List[Callable[["Query"], bool]] = []
     # Singleton instance of the query parser
-    _parser = None  # type: Optional[QueryParser]
+    _parser: Optional[QueryParser] = None
     # Help texts associated with lemmas
-    _help_texts = dict()  # type: Dict[str, List[Callable]]
+    _help_texts: Dict[str, List[Callable]] = dict()
 
     def __init__(
         self,
         session,
         query: str,
-        voice: str,
+        voice: bool,
         auto_uppercase: bool,
         location: Optional[LocationType],
         client_id: str,
         client_type: str,
     ) -> None:
 
-        q = self._preprocess_query_string(query)
+        self._query = q = self._preprocess_query_string(query)
         self._session = session
-        self._query = q or ""
         self._location = location
         # Prepare a "beautified query" string that can be
         # shown in a client user interface. By default, this
@@ -216,46 +252,51 @@ class Query:
         self.set_beautified_query(beautify_query(q))
         self._voice = voice
         self._auto_uppercase = auto_uppercase
-        self._error = None
+        self._error: Optional[str] = None
         # A detailed answer, which can be a list or a dict
-        self._response = None
+        self._response: Optional[ResponseMapping] = None
         # A single "best" displayable text answer
-        self._answer = None
+        self._answer: Optional[str] = None
         # A version of self._answer that can be
         # fed to a voice synthesizer
-        self._voice_answer = None
-        self._tree = None  # type: Optional[Tree]
-        self._qtype = None
-        self._key = None
-        self._toklist = None
+        self._voice_answer: Optional[str] = None
+        self._tree: Optional[Tree] = None
+        self._qtype: Optional[str] = None
+        self._key: Optional[str] = None
+        self._toklist: Optional[List[Tok]] = None
         # Expiration timestamp, if any
-        self._expires = None
+        self._expires: Optional[datetime] = None
         # URL assocated with query, can be set by query response handler
         # and subsequently provided to the remote client
-        self._url = None
+        self._url: Optional[str] = None
         # Command returned by query
-        self._command = None
+        self._command: Optional[str] = None
         # Client id, if known
         self._client_id = client_id
         # Client type, if known
         self._client_type = client_type
         # Source of answer to query
-        self._source = None
+        self._source: Optional[str] = None
         # Query context, which is None until fetched via self.fetch_context()
         # This should be a dict that can be represented in JSON
-        self._context = None
+        self._context: Optional[ContextDict] = None
 
-    def _preprocess_query_string(self, q):
+    def _preprocess_query_string(self, q: str) -> str:
         """ Preprocess the query string prior to further analysis """
         if not q:
             return q
         qf = re.sub(_IGNORED_PREFIX_RE, "", q, flags=re.IGNORECASE)
+        # Remove " embla" suffix, if present
+        qf = re.sub(r"\s+embla$", "", qf, flags=re.IGNORECASE)
+        # Fix common Google ASR mistake: 'hæ embla' is returned as 'bæjarblað'
+        if not qf and q == "bæjarblað":
+            q = "hæ embla"
         # If stripping the prefixes results in an empty query,
         # just return original query string unmodified.
         return qf or q
 
     @classmethod
-    def init_class(cls):
+    def init_class(cls) -> None:
         """ Initialize singleton data, i.e. the list of query
             processor modules and the query parser instance """
         all_procs = []
@@ -316,15 +357,15 @@ class Query:
         cls._parser = QueryParser(grammar_additions)
 
     @staticmethod
-    def _parse(toklist):
+    def _parse(toklist: Iterable[Tok]) -> Tuple[ResponseDict, Dict[int, str]]:
         """ Parse a token list as a query """
         bp = Query._parser
         assert bp is not None
         num_sent = 0
         num_parsed_sent = 0
         rdc = Reducer(bp.grammar)
-        trees = dict()
-        sent = []  # type: List[Tok]
+        trees: Dict[int, str] = dict()
+        sent: List[Tok] = []
 
         for t in toklist:
             if t[0] == TOK.S_BEGIN:
@@ -359,10 +400,27 @@ class Query:
             else:
                 sent.append(t)
 
-        result = dict(num_sent=num_sent, num_parsed_sent=num_parsed_sent)
+        result: ResponseDict = dict(num_sent=num_sent, num_parsed_sent=num_parsed_sent)
         return result, trees
 
-    def parse(self, result):
+    @staticmethod
+    def _query_string_from_toklist(toklist: Iterable[Tok]) -> str:
+        """ Re-create a query string from an auto-capitalized token list """
+        actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
+        if actual_q:
+            # Fix stuff that the auto-capitalization tends to get wrong,
+            # such as 'í Dag'
+            for wrong, correct in _CAPITALIZATION_REPLACEMENTS:
+                actual_q = actual_q.replace(wrong, correct)
+            # Capitalize the first letter of the query
+            actual_q = actual_q[0].upper() + actual_q[1:]
+            # Terminate the query with a question mark,
+            # if not otherwise terminated
+            if not any(actual_q.endswith(s) for s in ("?", ".", "!")):
+                actual_q += "?"
+        return actual_q
+
+    def parse(self, result: ResponseDict) -> bool:
         """ Parse the query from its string, returning True if valid """
         self._tree = None  # Erase previous tree, if any
         self._error = None  # Erase previous error, if any
@@ -370,25 +428,23 @@ class Query:
         self._key = None
         self._toklist = None
 
-        q = self._query.strip()
+        q = self._query
         if not q:
             self.set_error("E_EMPTY_QUERY")
             return False
 
-        toklist = tokenize(q, auto_uppercase=self._auto_uppercase and q.islower())
-        toklist = list(toklist)
-        # The following seems not to be needed and may complicate things
-        # toklist = list(recognize_entities(toklist, enclosing_session=self._session))
+        # Tokenize and auto-capitalize the query string
+        toklist = list(tokenize(q, auto_uppercase=self._auto_uppercase and q.islower()))
 
-        actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
-        if actual_q:
-            actual_q = actual_q[0].upper() + actual_q[1:]
-            if not any(actual_q.endswith(s) for s in ("?", ".", "!")):
-                actual_q += "?"
+        actual_q = self._query_string_from_toklist(toklist)
 
         # Update the beautified query string, as the actual_q string
         # probably has more correct capitalization
         self.set_beautified_query(actual_q)
+
+        # TODO: We might want to re-tokenize the actual_q string with
+        # auto_uppercase=False, since we may have fixed capitalization
+        # errors in _query_string_from_toklist()
 
         if Settings.DEBUG:
             # Log the query string as seen by the parser
@@ -426,7 +482,7 @@ class Query:
         self._toklist = toklist
         return True
 
-    def execute_from_plain_text(self):
+    def execute_from_plain_text(self) -> bool:
         """ Attempt to execute a plain text query, without having to parse it """
         if not self._query:
             return False
@@ -436,7 +492,7 @@ class Query:
             handle_plain_text(self) for handle_plain_text in self._text_processors
         )
 
-    def execute_from_tree(self):
+    def execute_from_tree(self) -> bool:
         """ Execute the query contained in the previously parsed tree;
             return True if successful """
         if self._tree is None:
@@ -446,14 +502,20 @@ class Query:
             self._error = None
             self._qtype = None
             # Process the tree, which has only one sentence
-            self._tree.process(self._session, processor, query=self)
-            if self._answer and self._error is None:
-                # The processor successfully answered the query
-                return True
+            try:
+                self._tree.process(self._session, processor, query=self)
+                if self._answer and self._error is None:
+                    # The processor successfully answered the query
+                    return True
+            except Exception as e:
+                logging.error(
+                    f"Exception in execute_from_tree('{processor.__name__}') "
+                    f"for query '{self._query}': {e}"
+                )
         # No processor was able to answer the query
         return False
 
-    def last_answer(self, *, within_minutes=5):
+    def last_answer(self, *, within_minutes: int = 5) -> Optional[Tuple[str, str]]:
         """ Return the last answer given to this client, by default
             within the last 5 minutes (0=forever) """
         if not self._client_id:
@@ -472,9 +534,9 @@ class Query:
             q = q.filter(QueryRow.timestamp >= since)
         # Sort to get the newest query that fulfills the criteria
         last = q.order_by(desc(QueryRow.timestamp)).limit(1).one_or_none()
-        return None if last is None else tuple(last)
+        return None if last is None else (last[0], last[1])
 
-    def fetch_context(self, *, within_minutes=10):
+    def fetch_context(self, *, within_minutes: int = 10) -> Optional[ContextDict]:
         """ Return the context from the last answer given to this client,
             by default within the last 10 minutes (0=forever) """
         if not self._client_id:
@@ -497,21 +559,21 @@ class Query:
         return None if ctx is None else ctx[0]
 
     @property
-    def query(self):
+    def query(self) -> str:
         """ The query text, in its original form """
         return self._query
 
     @property
-    def query_lower(self):
+    def query_lower(self) -> str:
         """ The query text, all lower case """
         return self._query.lower()
 
     @property
-    def beautified_query(self):
+    def beautified_query(self) -> str:
         """ Return the query string that will be reflected back to the client """
         return self._beautified_query
 
-    def set_beautified_query(self, q):
+    def set_beautified_query(self, q: str) -> None:
         """ Set the query string that will be reflected back to the client """
         self._beautified_query = (
             q.replace("embla", "Embla")
@@ -519,13 +581,13 @@ class Query:
             .replace("Guðni Th ", "Guðni Th. ")  # By presidential request :)
         )
 
-    def lowercase_beautified_query(self):
+    def lowercase_beautified_query(self) -> None:
         """ If we know that no uppercase words occur in the query,
             except the initial capital, this function can be called
             to adjust the beautified query string accordingly. """
         self.set_beautified_query(self._beautified_query.capitalize())
 
-    def query_is_command(self):
+    def query_is_command(self) -> None:
         """ Called from a query processor if the query is a command, not a question """
         # Put a period at the end of the beautified query text
         # instead of a question mark
@@ -533,56 +595,62 @@ class Query:
             self._beautified_query = self._beautified_query[:-1] + "."
 
     @property
-    def expires(self):
+    def expires(self) -> Optional[datetime]:
         """ Expiration time stamp for this query answer, if any """
         return self._expires
 
-    def set_expires(self, ts):
+    def set_expires(self, ts: datetime) -> None:
         """ Set an expiration time stamp for this query answer """
         self._expires = ts
 
     @property
-    def url(self):
+    def url(self) -> Optional[str]:
         """ URL answer associated with this query """
         return self._url
 
-    def set_url(self, u):
+    def set_url(self, u: str) -> None:
         """ Set the URL answer associated with this query """
         self._url = u
 
     @property
-    def command(self):
+    def command(self) -> Optional[str]:
         """ JavaScript command associated with this query """
         return self._command
 
-    def set_command(self, c):
+    def set_command(self, c: str) -> None:
         """ Set the JavaScript command associated with this query """
         self._command = c
 
     @property
-    def source(self):
+    def source(self) -> Optional[str]:
         """ Return the source of the answer to this query """
         return self._source
 
-    def set_source(self, s):
+    def set_source(self, s: str) -> None:
         """ Set the source for the answer to this query """
         self._source = s
 
     @property
-    def location(self):
+    def location(self) -> Optional[LocationType]:
         """ The client location, if known, as a (lat, lon) tuple """
         return self._location
 
     @property
-    def token_list(self):
+    def token_list(self) -> Optional[List[Tok]]:
         """ The original token list for the query """
         return self._toklist
 
-    def set_qtype(self, qtype):
+    def qtype(self) -> Optional[str]:
+        """ Return the query type """
+        return self._qtype
+
+    def set_qtype(self, qtype: str) -> None:
         """ Set the query type ('Person', 'Title', 'Company', 'Entity'...) """
         self._qtype = qtype
 
-    def set_answer(self, response, answer, voice_answer=None):
+    def set_answer(
+        self, response: ResponseMapping, answer: str, voice_answer: Optional[str] = None
+    ) -> None:
         """ Set the answer to the query """
         # Detailed response (this is usually a dict)
         self._response = response
@@ -591,58 +659,59 @@ class Query:
         # A voice version of the single best answer
         self._voice_answer = voice_answer
 
-    def set_key(self, key):
+    def set_key(self, key: str) -> None:
         """ Set the query key, i.e. the term or string used to execute the query """
         # This is for instance a person name in nominative case
         self._key = key
 
-    def set_error(self, error):
+    def set_error(self, error: str) -> None:
         """ Set an error result """
         self._error = error
 
-    def qtype(self):
-        """ Return the query type """
-        return self._qtype
-
     @property
-    def is_voice(self):
+    def is_voice(self) -> bool:
         """ Return True if this is a voice query """
         return self._voice
 
     @property
-    def client_id(self):
+    def client_id(self) -> str:
         return self._client_id
 
     @property
     def client_type(self):
         return self._client_type
 
-    def response(self):
+    def response(self) -> Optional[ResponseMapping]:
         """ Return the detailed query answer """
         return self._response
 
-    def answer(self):
+    def answer(self) -> Optional[str]:
         """ Return the 'single best' displayable query answer """
         return self._answer
 
-    def voice_answer(self):
+    def voice_answer(self) -> Optional[str]:
         """ Return a voice version of the 'single best' answer, if any """
         return self._voice_answer
 
-    def key(self):
+    def key(self) -> Optional[str]:
         """ Return the query key """
         return self._key
 
-    def error(self):
+    def error(self) -> Optional[str]:
         """ Return the query error, if any """
         return self._error
 
-    def set_context(self, ctx):
+    @property
+    def context(self) -> Optional[ContextDict]:
+        """ Return the context that has been set by self.set_context() """
+        return self._context
+
+    def set_context(self, ctx: ContextDict) -> None:
         """ Set a query context that will be stored and made available
             to the next query from the same client """
         self._context = ctx
 
-    def client_data(self, key):
+    def client_data(self, key: str) -> Optional[ClientDataDict]:
         """ Fetch client_id-associated data stored in the querydata table """
         if not self.client_id:
             return None
@@ -660,27 +729,29 @@ class Query:
                         self.client_id, key, e
                     )
                 )
+        return None
 
-    def set_client_data(self, key, data):
+    def set_client_data(self, key: str, data: ClientDataDict) -> None:
         """ Setter for client query data """
         if not self.client_id:
-            logging.warning("Couldn't save query data, no client ID provided")
+            logging.warning("Couldn't save query data, no client ID")
             return
-        return Query.save_query_data(self.client_id, key, data)
+        Query.store_query_data(self.client_id, key, data)
 
     @staticmethod
-    def save_query_data(client_id, key, data):
+    def store_query_data(client_id: str, key: str, data: ClientDataDict) -> bool:
+        """ Save client query data in the database, under the given key """
         assert client_id and key
-        with SessionContext(commit=True) as session:
-            try:
+        now = datetime.utcnow()
+        try:
+            with SessionContext(commit=True) as session:
                 row = (
                     session.query(QueryData)
                     .filter(QueryData.key == key)
                     .filter(QueryData.client_id == client_id)
                 ).one_or_none()
-
-                now = datetime.utcnow()
-                if not row:
+                if row is None:
+                    # Not already present: insert
                     row = QueryData(
                         client_id=client_id,
                         key=key,
@@ -690,20 +761,17 @@ class Query:
                     )
                     session.add(row)
                 else:
+                    # Already present: update
                     row.data = data
                     row.modified = now
-                session.commit()
-                return row
-            except Exception as e:
-                logging.error("Error saving query data to db: {0}".format(e))
-
-    @property
-    def context(self):
-        """ Return the context that has been set by self.set_context() """
-        return self._context
+            # The session is auto-committed upon exit from the context manager
+            return True
+        except Exception as e:
+            logging.error("Error storing query data in db: {0}".format(e))
+        return False
 
     @classmethod
-    def try_to_help(cls, query, result):
+    def try_to_help(cls, query: str, result: ResponseDict) -> None:
         """ Attempt to help the user in the case of a failed query,
             based on lemmas in the query string """
         # Collect a set of lemmas that occur in the query string
@@ -734,7 +802,7 @@ class Query:
             result["answer"] = result["voice"] = help_text_func(lemma)
             result["valid"] = True
 
-    def execute(self) -> Dict[str, Any]:
+    def execute(self) -> ResponseDict:
         """ Check whether the parse tree is describes a query, and if so,
             execute the query, store the query answer in the result dictionary
             and return True """
@@ -745,15 +813,17 @@ class Query:
         # as well as the beautified version of that string - which
         # usually starts with an uppercase letter and has a trailing
         # question mark (or other ending punctuation).
-        result = dict(q_raw=self.query, q=self.beautified_query)
+        result: ResponseDict = dict(q_raw=self.query, q=self.beautified_query)
         # First, try to handle this from plain text, without parsing:
         # shortcut to a successful, plain response
         if not self.execute_from_plain_text():
             if not self.parse(result):
                 # Unable to parse the query
-                if Settings.DEBUG:
-                    print("Unable to parse query, error {0}".format(self.error()))
-                result["error"] = self.error()
+                err = self.error()
+                if err is not None:
+                    if Settings.DEBUG:
+                        print("Unable to parse query, error {0}".format(err))
+                    result["error"] = err
                 result["valid"] = False
                 return result
             if not self.execute_from_tree():
@@ -775,15 +845,19 @@ class Query:
             # we don't need detailed information about alternative
             # answers or their sources
             result["response"] = dict(answer=self._answer or "")
-        else:
+        elif self._response:
             # Return a detailed response if not a voice query
             result["response"] = self._response
         # Re-assign the beautified query string, in case the query processor modified it
         result["q"] = self.beautified_query
         # ...and the query type, as a string ('Person', 'Entity', 'Title' etc.)
-        result["qtype"] = qt = self.qtype()
+        qt = self.qtype()
+        if qt:
+            result["qtype"] = qt
         # ...and the key used to retrieve the answer, if any
-        result["key"] = self.key()
+        key = self.key()
+        if key:
+            result["key"] = key
         # ...and a URL, if any has been set by the query processor
         if self.url:
             result["open_url"] = self.url
@@ -793,9 +867,10 @@ class Query:
         # .. and the source, if set by query processor
         if self.source:
             result["source"] = self.source
-        if not self._voice and qt == "Person":
+        key = self.key()
+        if not self._voice and qt == "Person" and key is not None:
             # For a person query, add an image (if available)
-            img = get_image_url(self.key(), enclosing_session=self._session)
+            img = get_image_url(key, enclosing_session=self._session)
             if img is not None:
                 result["image"] = dict(
                     src=img.src,
@@ -890,7 +965,7 @@ def process_query(
     client_type=None,
     client_version=None,
     bypass_cache=False,
-    private=False
+    private=False,
 ):
     """ Process an incoming natural language query.
         If voice is True, return a voice-friendly string to
@@ -970,7 +1045,9 @@ def process_query(
                 return result
 
             # The answer is not found in the cache: Handle the query
-            query = Query(session, qtext, voice, auto_uppercase, location, client_id, client_type)
+            query = Query(
+                session, qtext, voice, auto_uppercase, location, client_id, client_type
+            )
             result = query.execute()
             if result["valid"] and "error" not in result:
                 # Successful: our job is done

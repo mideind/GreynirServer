@@ -31,7 +31,7 @@ import random
 import re
 from datetime import datetime, timedelta
 
-from cityloc import capital_for_cc
+from cityloc import capital_for_cc  # type: ignore
 
 from query import Query
 from queries import country_desc, nom2dat, cap_first
@@ -61,7 +61,7 @@ def help_text(lemma: str) -> str:
                 "Í hvaða landi er Minsk",
                 "Í hvaða heimsálfu er Kambódía",
                 "Hvar er Kaupmannahöfn",
-                "Hvar er í heiminum er Máritanía",
+                "Hvar í heiminum er Máritanía",
             )
         )
     )
@@ -129,17 +129,37 @@ QGeoPreposition →
 
 QGeoSubject/fall →
     Nl/fall
+
+QGeoSubject_nf →
     # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
-    | "kostaríka" | "kostaríku"
+    "kostaríka"
     # The grammar seems to have a hard time with these
-    | "norður" "kórea" | "norður" "kóreu"
-    | "nýja" "sjáland" | "nýja" "sjálands" | "nýja" "sjálandi"
-    | "norður" "makedónía" | "norður" "makedóníu"
-    | "hvíta" "rússland" | "hvíta" "rússlands" | "hvíta-rússland"
+    | "norður" "kórea"
+    | "nýja" "sjáland"
+    | "norður" "makedónía"
+    | "hvíta" "rússland" | "hvíta-rússland"
     | "sameinuðu" "arabísku" "furstadæmin"
+    | "seychelles" "eyjar"
+
+QGeoSubject_þgf →
+    # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
+    "kostaríku"
+    | "norður" "kóreu"
+    | "nýja" "sjálandi"
+    | "norður" "makedóníu"
+    | "hvíta" "rússlandi" | "hvíta-rússlandi"
     | "sameinuðu" "arabísku" "furstadæmunum"
+    | "seychelles" "eyjum"
+
+QGeoSubject_ef →
+    # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
+    "kostaríku"
+    | "norður" "kóreu"
+    | "nýja" "sjálands"
+    | "norður" "makedóníu"
+    | "hvíta" "rússlands" | "hvíta-rússlands"
     | "sameinuðu" "arabísku" "furstadæmanna"
-    | "seychelles" "eyjar" | "seychelles" "eyja" | "seychelles" "eyjum"
+    | "seychelles" "eyja"
 
 $score(+10) QGeoSubject/fall
 $score(-100) QGeoLocationDescQuery
@@ -245,7 +265,9 @@ def _which_country_query(subject: str, q: Query):
 
     q.set_answer(response, answer, voice)
     q.set_key(subject)
-    q.set_context(dict(subject=country_name_for_isocode(cc)))
+    cname = country_name_for_isocode(cc)
+    if cname is not None:
+        q.set_context(dict(subject=cname))
 
     return True
 
@@ -270,8 +292,12 @@ def _which_continent_query(subject: str, q: Query):
         return False
 
     contcode = continent_for_country(cc)
-    continent = ISO_TO_CONTINENT[contcode]
-    continent_dat = nom2dat(continent)
+    if contcode is None:
+        continent = "óþekkt heimsálfa"
+        continent_dat = "óþekktri heimsálfu"
+    else:
+        continent = ISO_TO_CONTINENT[contcode]
+        continent_dat = nom2dat(continent)
 
     # Format answer
     answer = continent_dat
@@ -302,8 +328,13 @@ def _loc_desc_query(subject: str, q: Query):
         # Not a country, try placename lookup
         return _which_country_query(subject, q)
 
-    continent = ISO_TO_CONTINENT[continent_for_country(cc)]
-    continent_dat = nom2dat(continent)
+    contcode = continent_for_country(cc)
+    if contcode is None:
+        continent = "óþekkt heimsálfa"
+        continent_dat = "óþekktri heimsálfu"
+    else:
+        continent = ISO_TO_CONTINENT[contcode]
+        continent_dat = nom2dat(continent)
 
     answer = "{0} er land í {1}.".format(subject, continent_dat)
     voice = answer

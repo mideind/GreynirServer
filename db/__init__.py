@@ -25,12 +25,12 @@
 
 from typing import Optional
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine  # type: ignore
+from sqlalchemy.orm import sessionmaker  # type: ignore
 
 from settings import Settings, ConfigError
 
-from sqlalchemy.exc import SQLAlchemyError as DatabaseError
+from sqlalchemy.exc import SQLAlchemyError as DatabaseError  # type: ignore
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import DataError
 from sqlalchemy.exc import OperationalError
@@ -75,6 +75,7 @@ class Scraper_DB:
 
 
 class classproperty:
+
     def __init__(self, f):
         self.f = f
 
@@ -100,7 +101,7 @@ class SessionContext:
         """ Clean up the reference to the singleton Scraper_DB instance """
         cls._db = None
 
-    def __init__(self, session=None, commit=False, read_only=False) -> None:
+    def __init__(self, session=None, commit: bool=False, read_only: bool=False) -> None:
 
         if session is None:
             # Create a new session that will be automatically committed

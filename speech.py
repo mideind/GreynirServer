@@ -30,9 +30,9 @@ import json
 import logging
 from threading import Lock
 
-import cachetools
-import boto3
-from botocore.exceptions import ClientError
+import cachetools  # type: ignore
+import boto3  # type: ignore
+from botocore.exceptions import ClientError  # type: ignore
 
 # The AWS Polly API access keys (you must obtain your own keys if you want to use this code)
 # JSON format is the following:

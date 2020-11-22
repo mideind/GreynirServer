@@ -53,8 +53,10 @@ from datetime import timedelta, datetime
 from query import Query
 from queries import gen_answer, query_json_api, cap_first, sing_or_plur
 from geo import distance, in_iceland, ICE_PLACENAME_BLACKLIST
-from iceaddr import placename_lookup
-from iceweather import observation_for_closest, observation_for_station, forecast_text
+from iceaddr import placename_lookup  # type: ignore
+from iceweather import observation_for_closest, observation_for_station, forecast_text  # type: ignore
+
+from . import LatLonTuple, AnswerTuple
 
 
 _WEATHER_QTYPE = "Weather"
@@ -197,7 +199,6 @@ QWeatherTemperature →
     | "hvað" "er" "hlýtt" QWeatherAnyLoc? QWeatherNow
     | "hvað" "er" "margra" "stiga" "hiti" QWeatherAnyLoc? QWeatherNow?
     | "hvað" "er" "mikið" "frost" QWeatherAnyLoc? QWeatherNow?
-    | "hvað" "er" "margra" "stiga" "hiti" QWeatherAnyLoc? QWeatherNow?
     | "hvað" "er" "margra" "stiga" "frost" QWeatherAnyLoc? QWeatherNow?
     | "hversu" "margra" "stiga" "hiti" "er" QWeatherAnyLoc? QWeatherNow?
     | "hversu" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
@@ -208,8 +209,11 @@ QWeatherTemperature →
     | "er" "mikill"? "kuldi" "úti"? QWeatherAnyLoc? QWeatherNow?
     | "er" "mikill"? "hiti" "úti"? QWeatherAnyLoc? QWeatherNow?
     | "er" "mikið"? "frost" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" "fyrir" "ofan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" "fyrir" "neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" QWeatherHotCold? "fyrir_ofan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" QWeatherHotCold? "fyrir_neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+
+QWeatherHotCold →
+    "hiti" | "hitinn" | "kuldi" | "kuldinn" | "hitastig" | "hitastigið"
 
 QWeatherWind →
     "hvað"? "er" "mikið"? "rok" QWeatherAnyLoc? QWeatherNow?
@@ -225,9 +229,8 @@ QWeatherWind →
     | "hver" "er" "vindhraðinn" QWeatherAnyLoc? QWeatherNow?
     | "hvaða"? "vindhraði" "er"? QWeatherAnyLoc? QWeatherNow?
 
-
 QWeatherUmbrella →
-    "þarf" QWeatherOne "regnhlíf" QWeatherNow
+    "þarf" QWeatherOne? "regnhlíf" QWeatherNow
     | "þarf" "ég" "að" "taka" "með" "mér" "regnhlíf" QWeatherNow
     | "þarf" "maður" "að" "taka" "með" "sér" "regnhlíf" QWeatherNow
     | "væri" "regnhlíf" "gagnleg" QWeatherForMe? QWeatherNow
@@ -249,7 +252,7 @@ QWeatherNow →
     | "úti"? "eins" "og" "stendur"
 
 QWeatherNextDays →
-    "á" "næstunni"
+    "á_næstunni"
     | "næstu" "daga"
     | "næstu" "dagana"
     | "fyrir" "næstu" "daga"
@@ -258,12 +261,12 @@ QWeatherNextDays →
     | "þessa" "vikuna"
     | "út" "vikuna"
     | "í" "vikunni"
-    | "á" "morgun"
+    | "á_morgun"
     | "í" "fyrramálið"
     | "fyrir" "morgundaginn"
 
 QWeatherCountry →
-    "á" "landinu" | "á" "íslandi" | "hér" "á" "landi" | "á" "landsvísu"
+    "á" "landinu" | "á" "íslandi" | "hér_á_landi" | "á" "landsvísu"
     | "um" "landið" "allt" | "um" "allt" "land" | "fyrir" "allt" "landið"
     | "á" "fróni" | "heima"
 
@@ -282,7 +285,6 @@ QWeatherOpenLoc →
 
 QWeatherLocation →
     QWeatherCountry | QWeatherCapitalRegion
-
 
 $score(+55) QWeather
 
@@ -388,7 +390,7 @@ def _wind_descr(wind_ms: float) -> Optional[str]:
 _RVK_COORDS = (64.133097, -21.898145)
 
 
-def _near_capital_region(loc: Tuple) -> bool:
+def _near_capital_region(loc: LatLonTuple) -> bool:
     """ Returns true if location coordinates are within 30 km of central Rvk """
     return distance(loc, _RVK_COORDS) < 30
 
@@ -462,8 +464,9 @@ def _curr_observations(query: Query, result):
 _API_ERRMSG = "Ekki tókst að sækja veðurupplýsingar."
 
 
-def get_currweather_answer(query: Query, result):
+def get_currweather_answer(query: Query, result) -> AnswerTuple:
     """ Handle queries concerning current weather conditions """
+
     res = _curr_observations(query, result)
     if not res:
         return gen_answer(_API_ERRMSG)
@@ -486,7 +489,7 @@ def get_currweather_answer(query: Query, result):
     # Meters per second string for voice. Say nothing if "logn".
 
     voice_ms = (
-        ", {0} á sekúndu".format(sing_or_plur(wind_ms_str, "metri", "metrar"))
+        ", {0} á sekúndu".format(sing_or_plur(float(wind_ms_str), "metri", "metrar"))
         if wind_ms_str != "0"
         else ""
     )
@@ -497,7 +500,7 @@ def get_currweather_answer(query: Query, result):
     )
 
     # Text answer
-    answer = "{0}°{1} og {2} ({3} m/s)".format(temp, mdesc, wind_desc, wind_ms_str)
+    answer = "{0} °C{1} og {2} ({3} m/s)".format(temp, mdesc, wind_desc, wind_ms_str)
 
     response = dict(answer=answer)
 

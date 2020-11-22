@@ -41,7 +41,7 @@ from settings import Settings
 # server are truly blocking, even under Gunicorn/eventlet.
 
 try:
-    import eventlet
+    import eventlet  # type: ignore
     USING_EVENTLET = True
     socket = eventlet.patcher.original("socket")
 except ImportError:

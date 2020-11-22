@@ -22,6 +22,7 @@
 
 """
 
+from typing import Dict, Any
 
 from datetime import datetime
 import logging
@@ -46,6 +47,7 @@ from util import greynir_api_key
 from . import routes, better_jsonify, text_from_request, bool_from_request, restricted
 from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH
 from . import async_task
+
 
 # Maximum number of query string variants
 _MAX_QUERY_VARIANTS = 10
@@ -413,6 +415,8 @@ def query_api(version=1):
 
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
     auto_uppercase = bool_from_request(request, "autouppercase", True)
+    if Settings.DEBUG:
+        auto_uppercase = True # !!! DEBUG - to emulate mobile client behavior
 
     # Send the query to the query processor
     result = process_query(
@@ -491,9 +495,11 @@ def query_history_api(version=1):
 
     with SessionContext(commit=True) as session:
         # Clear all logged user queries
+        # pylint: disable=no-member
         session.execute(Query.table().delete().where(Query.client_id == client_id))
         # Clear all user query data
         if action == "clear_all":
+            # pylint: disable=no-member
             session.execute(
                 QueryData.table().delete().where(QueryData.client_id == client_id)
             )
@@ -509,7 +515,7 @@ def speech_api(version=1):
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
-    reply = dict(err=True)
+    reply: Dict[str, Any] = dict(err=True)
 
     # Calling this endpoint requires the Greynir API key
     key = request.values.get("api_key")
@@ -636,7 +642,7 @@ def register_query_data_api(version=1):
     ):
         return better_jsonify(valid=False, errmsg="Missing parameters.")
 
-    success = QueryObject.save_query_data(
+    success = QueryObject.store_query_data(
         qdata["client_id"], qdata["key"], qdata["data"]
     )
     if success:

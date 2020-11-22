@@ -10,7 +10,7 @@
 
 """
 
-from typing import Optional
+from typing import Optional, Callable, Type, Any
 
 import sys
 import os
@@ -19,9 +19,9 @@ import platform
 import urllib.parse as urlparse
 from datetime import datetime
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship, backref
+from sqlalchemy import create_engine, text  # type: ignore
+from sqlalchemy.ext.declarative import declarative_base  # type: ignore
+from sqlalchemy.orm import sessionmaker, relationship, backref  # type: ignore
 from sqlalchemy import (
     Table,
     Column,
@@ -35,7 +35,7 @@ from sqlalchemy import (
     ForeignKey,
     PrimaryKeyConstraint,
 )
-from sqlalchemy.exc import SQLAlchemyError as SqlError
+from sqlalchemy.exc import SQLAlchemyError as SqlError  # type: ignore
 from sqlalchemy.exc import IntegrityError as SqlIntegrityError
 from sqlalchemy.exc import DataError as SqlDataError
 from sqlalchemy import desc as SqlDesc
@@ -84,10 +84,11 @@ class Reykjanes_DB:
 
 
 class classproperty:
-    def __init__(self, f):
+
+    def __init__(self, f: Callable[[Type["SessionContext"]], Reykjanes_DB]) -> None:
         self.f = f
 
-    def __get__(self, obj, owner):
+    def __get__(self, obj: Any, owner: Type["SessionContext"]) -> Reykjanes_DB:
         return self.f(owner)
 
 
@@ -96,20 +97,20 @@ class SessionContext:
     """ Context manager for database sessions """
 
     # Singleton instance of Reykjanes_DB
-    _db = None  # type: Optional[Reykjanes_DB]
+    _db: Optional[Reykjanes_DB] = None
 
     @classproperty
-    def db(cls):  # pylint: disable(no-self-argument)
-        if cls._db is None:
-            cls._db = Reykjanes_DB()
-        return cls._db
+    def db(self: Type[SessionContext]) -> Reykjanes_DB:  # pylint: disable(no-self-argument)
+        if self._db is None:
+            self._db = Reykjanes_DB()
+        return self._db
 
     @classmethod
-    def cleanup(cls):
+    def cleanup(cls) -> None:
         """ Clean up the reference to the singleton Scraper_DB instance """
         cls._db = None
 
-    def __init__(self, session=None, commit=False):
+    def __init__(self, session: Optional[SessionContext]=None, commit: bool=False) -> None:
 
         if session is None:
             # Create a new session that will be automatically committed

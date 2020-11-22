@@ -31,9 +31,9 @@ import re
 import sys
 import os
 import math
-from iceaddr import iceaddr_lookup, placename_lookup
-from cityloc import city_lookup
-from country_list import countries_for_language, available_languages
+from iceaddr import iceaddr_lookup, placename_lookup  # type: ignore
+from cityloc import city_lookup  # type: ignore
+from country_list import countries_for_language, available_languages  # type: ignore
 from functools import lru_cache
 
 LatLonTuple = Tuple[float, float]
@@ -210,6 +210,8 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Norður-Súdan": "SD",
         "Taiwan": "TW",
         "Litáen": "LT",  # Bæði Litháen og Litáen í BÍN
+        "Mexico": "MX",
+        "Vietnam": "VN",
     }
 }
 

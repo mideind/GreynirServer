@@ -224,7 +224,7 @@ def people_recent():
 @max_age(seconds=10 * 60)
 def people_top():
     """ Page showing people most frequently mentioned in recent articles """
-    period = request.args.get("period")
+    period = request.args.get("period", "")
     days = days_from_period_arg(period, _TOP_PERSONS_PERIOD)
     persons = top_persons(days=days)
 

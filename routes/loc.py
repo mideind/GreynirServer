@@ -30,7 +30,7 @@ from collections import defaultdict
 import json
 
 from flask import request, render_template, abort, send_file
-from country_list import countries_for_language
+from country_list import countries_for_language  # type: ignore
 
 from db import SessionContext, dbfunc, desc
 from db.models import Location, Article, Root
@@ -99,7 +99,7 @@ def top_locations(limit=_TOP_LOC_LENGTH, kind=None, days=_TOP_LOC_PERIOD):
         # Create top locations list sorted by article count
         loclist = []
         for k, v in locs.items():
-            (name, kind, country, lat, lon) = k  # Unpack tuple key
+            name, kind, country, _, _ = k  # Unpack tuple key
             # Google map links currently use the placename instead of
             # coordinates. This works well for most Icelandic and
             # international placenames, but fails on some.
@@ -173,7 +173,7 @@ def locations():
     kind = request.args.get("kind")
     kind = kind if kind in LOCATION_TAXONOMY else None
 
-    period = request.args.get("period")
+    period = request.args.get("period", "")
     days = days_from_period_arg(period, _TOP_LOC_PERIOD)
     locs = top_locations(kind=kind, days=days)
 
@@ -186,7 +186,7 @@ def locations():
 @cache.cached(timeout=30 * 60, key_prefix="icemap", query_string=True)
 def locations_icemap():
     """ Render Icelandic map locations page. """
-    period = request.args.get("period")
+    period = request.args.get("period", "")
     days = days_from_period_arg(period, _TOP_LOC_PERIOD)
     markers = icemap_markers(days=days)
 
@@ -202,7 +202,7 @@ def locations_icemap():
 @cache.cached(timeout=30 * 60, key_prefix="worldmap", query_string=True)
 def locations_worldmap():
     """ Render world map locations page. """
-    period = request.args.get("period")
+    period = request.args.get("period", "")
     days = days_from_period_arg(period, _TOP_LOC_PERIOD)
 
     d = world_map_data(days=days)

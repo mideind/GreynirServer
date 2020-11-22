@@ -1010,16 +1010,14 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þetta virkaði": _GOOD_TO_HEAR,
     "ánægður með þig": _GOOD_TO_HEAR,
     "ánægð með þig": _GOOD_TO_HEAR,
-    "ég er mjög ánægður með þig": _GOOD_TO_HEAR,
-    "ég er mjög ánægð með þig": _GOOD_TO_HEAR,
     "ég er ánægður með þig": _GOOD_TO_HEAR,
     "ég er ánægð með þig": _GOOD_TO_HEAR,
     "ég er ánægð": _GOOD_TO_HEAR,
     "ég er ánægður": _GOOD_TO_HEAR,
     "ég er mjög ánægð": _GOOD_TO_HEAR,
     "ég er mjög ánægður": _GOOD_TO_HEAR,
-    "ég er mjög ánægð með þig": _GOOD_TO_HEAR,
     "ég er mjög ánægður með þig": _GOOD_TO_HEAR,
+    "ég er mjög ánægð með þig": _GOOD_TO_HEAR,
     "þú ert góð manneskja": _GOOD_TO_HEAR,
     "þú ert gott forrit": _GOOD_TO_HEAR,
     "þú ert ljómandi góð": _GOOD_TO_HEAR,
@@ -1118,7 +1116,6 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     # Why am I here?
     "af hverju er ég hérna": _GOOD_QUESTION,
     "afhverju er ég hérna": _GOOD_QUESTION,
-    "af hverju er ég til": _GOOD_QUESTION,
     "afhverju er ég til": _GOOD_QUESTION,
     "hvenær mun ég deyja": _GOOD_QUESTION,
     # Identity
@@ -1828,9 +1825,9 @@ def handle_plain_text(q: Query) -> bool:
         response = cast(AnswerType, r)
 
     # A non-voice answer is usually a dict or a list
-    answer = response.get("answer")
+    answer = cast(str, response.get("answer")) or ""
     # A voice answer is always a plain string
-    voice = response.get("voice") or answer
+    voice = cast(str, response.get("voice")) or answer
     q.set_answer(dict(answer=answer), answer, voice)
     # If this is a command, rather than a question,
     # let the query object know so that it can represent
@@ -1838,7 +1835,9 @@ def handle_plain_text(q: Query) -> bool:
     if not response.get("is_question", True):
         q.query_is_command()
     # Add source
-    q.set_source(response.get("source"))
+    source = response.get("source")
+    if source is not None:
+        q.set_source(cast(str, source))
     # Caching for non-dynamic answers
     if fixed or response.get("can_cache", False):
         q.set_expires(datetime.utcnow() + timedelta(hours=24))

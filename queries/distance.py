@@ -258,7 +258,10 @@ def dist_answer_for_loc(matches, query: Query):
         loc = (coords["lat"], coords["lng"])
 
     # Calculate distance, round it intelligently and format num string
-    km_dist = distance(query.location, loc)
+    if query.location is None:
+        km_dist = 0.0
+    else:
+        km_dist = distance(query.location, loc)
 
     # Generate answer
     answer = distance_desc(km_dist, abbr=True)
@@ -294,7 +297,10 @@ def traveltime_answer_for_loc(matches, query: Query):
     mode = _TT_MODES.get(tmode, "walking")
 
     # Query API
-    res = query_traveltime_api(query.location, loc_nf, mode=mode)
+    if query.location is None:
+        res = None
+    else:
+        res = query_traveltime_api(query.location, loc_nf, mode=mode)
 
     # Verify sanity of API response
     if (

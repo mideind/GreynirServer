@@ -30,7 +30,7 @@
 from typing import List, Optional, Dict
 
 import logging
-import cachetools
+import cachetools  # type: ignore
 import random
 
 from query import Query
@@ -77,7 +77,7 @@ QNewsTellMe →
     "segðu" "mér" | "geturðu" "sagt" "mér"
 
 QNewsNow →
-    "núna" | "þessa" "stundina"
+    "núna" | "þessa_stundina"
 
 QNewsQualifiers →
     "helst" | "eiginlega" | "núna" | "nýjast"
@@ -162,7 +162,7 @@ def sentence(state, result):
                 q.set_answer(*res)
             else:
                 errmsg = "Ekki tókst að sækja fréttir"
-                q.set_answer(gen_answer(errmsg))
+                q.set_answer(*gen_answer(errmsg))
             q.set_source("RÚV")
         except Exception as e:
             logging.warning("Exception answering news query '{0}': {1}".format(q, e))
