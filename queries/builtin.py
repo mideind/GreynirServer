@@ -622,6 +622,8 @@ def query_title(query, session, title: str) -> Tuple[List[Dict[str, Any]], str, 
 
 def _query_entity_definitions(session, name: str):
     """ A query for definitions of an entity by name """
+    # Note: the comparison below between name_lc and name
+    # is automatically case-insensitive, so name.lower() is not required
     q = (
         session.query(
             Entity.verb,

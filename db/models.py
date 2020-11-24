@@ -250,8 +250,8 @@ class Entity(Base):
         return self.name.lower()
 
     # pylint: disable=no-self-argument
-    @name_lc.comparator
-    def name_lc_comparator(cls):
+    @name_lc.comparator  # type: ignore
+    def name_lc(cls):
         return CaseInsensitiveComparator(cls.name)
 
     # Verb ('er', 'var', 'sé')
@@ -569,8 +569,8 @@ class Query(Base):
         return self.question.lower()
 
     # pylint: disable=no-self-argument
-    @question_lc.comparator
-    def question_lc_comparator(cls):
+    @question_lc.comparator  # type: ignore
+    def question_lc(cls):
         return CaseInsensitiveComparator(cls.question)
 
     # Beautified question
@@ -584,8 +584,8 @@ class Query(Base):
         return self.answer.lower()
 
     # pylint: disable=no-self-argument
-    @answer_lc.comparator
-    def answer_lc_comparator(cls):
+    @answer_lc.comparator  # type: ignore
+    def answer_lc(cls):
         return CaseInsensitiveComparator(cls.answer)
 
     # Voice answer
@@ -596,8 +596,8 @@ class Query(Base):
         return self.voice.lower()
 
     # pylint: disable=no-self-argument
-    @voice_lc.comparator
-    def voice_lc_comparator(cls):
+    @voice_lc.comparator  # type: ignore
+    def voice_lc(cls):
         return CaseInsensitiveComparator(cls.voice)
 
     # Error code
