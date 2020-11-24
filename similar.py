@@ -25,6 +25,8 @@
 
 """
 
+from typing import cast, Callable
+
 import os
 import sys
 from contextlib import closing
@@ -42,10 +44,12 @@ from settings import Settings
 
 try:
     import eventlet  # type: ignore
+
     USING_EVENTLET = True
     socket = eventlet.patcher.original("socket")
 except ImportError:
     import socket  # type: ignore
+
     USING_EVENTLET = False
 
 # The following two functions replicate and hack/tweak corresponding functions
@@ -60,7 +64,9 @@ def _SocketClient(address):
     with closing(socket.socket(socket.AF_INET)) as s:
         s.setblocking(True)
         s.connect(address)
-        return Connection(s.detach())
+        # The following cast() hack is required since Connection()
+        # appears to have a wrong signature in typeshed
+        return cast(Callable, Connection)(s.detach())
 
 
 def _Client(address, authkey=None):
