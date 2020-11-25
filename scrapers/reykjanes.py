@@ -20,7 +20,7 @@ import urllib.parse as urlparse
 from datetime import datetime
 
 from sqlalchemy import create_engine, text  # type: ignore
-from sqlalchemy.ext.declarative import declarative_base  # type: ignore
+from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base  # type: ignore
 from sqlalchemy.orm import sessionmaker, relationship, backref  # type: ignore
 from sqlalchemy import (
     Table,
@@ -49,7 +49,7 @@ MODULE_NAME = __name__
 
 
 # Create the SQLAlchemy ORM Base class
-Base = declarative_base()
+Base: DeclarativeMeta = declarative_base()
 
 
 class Reykjanes_DB:
@@ -100,7 +100,7 @@ class SessionContext:
     _db: Optional[Reykjanes_DB] = None
 
     @classproperty
-    def db(self: Type[SessionContext]) -> Reykjanes_DB:  # pylint: disable(no-self-argument)
+    def db(self: Any) -> Reykjanes_DB:
         if self._db is None:
             self._db = Reykjanes_DB()
         return self._db
@@ -110,14 +110,14 @@ class SessionContext:
         """ Clean up the reference to the singleton Scraper_DB instance """
         cls._db = None
 
-    def __init__(self, session: Optional[SessionContext]=None, commit: bool=False) -> None:
+    def __init__(self, session: Optional["SessionContext"]=None, commit: bool=False) -> None:
 
         if session is None:
             # Create a new session that will be automatically committed
             # (if commit == True) and closed upon exit from the context
             db = self.db  # Creates a new Reykjanes_DB instance if needed
             self._new_session = True
-            self._session = db.session
+            self._session = db.session  # pylint: disable=no-member
             self._commit = commit
         else:
             self._new_session = False

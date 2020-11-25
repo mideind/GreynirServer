@@ -59,6 +59,7 @@ from platform import system as os_name
 from reynir import __version__ as greynir_version
 from tokenizer import __version__ as tokenizer_version
 
+
 # RUNNING_AS_SERVER is True if we're executing under nginx/Gunicorn,
 # but False if the program was invoked directly as a Python main module.
 RUNNING_AS_SERVER = __name__ != "__main__"

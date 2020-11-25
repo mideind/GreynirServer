@@ -25,7 +25,7 @@
 
 
 from sqlalchemy import text  # type: ignore
-from sqlalchemy.ext.declarative import declarative_base  # type: ignore
+from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base  # type: ignore
 from sqlalchemy.orm import relationship, backref  # type: ignore
 from sqlalchemy import (
     Table,
@@ -59,7 +59,7 @@ class CaseInsensitiveComparator(Comparator):
 
 
 # Create the SQLAlchemy ORM Base class
-Base = declarative_base()
+Base: DeclarativeMeta = declarative_base()
 
 # Add a table() function to the Base class, returning the __table__ member.
 # Note that this hack is necessary because SqlAlchemy doesn't readily allow
@@ -225,6 +225,7 @@ class Person(Base):
 
 
 class Entity(Base):
+
     """ Represents a named entity """
 
     __tablename__ = "entities"
@@ -249,7 +250,7 @@ class Entity(Base):
         return self.name.lower()
 
     # pylint: disable=no-self-argument
-    @name_lc.comparator
+    @name_lc.comparator  # type: ignore
     def name_lc(cls):
         return CaseInsensitiveComparator(cls.name)
 
@@ -568,7 +569,7 @@ class Query(Base):
         return self.question.lower()
 
     # pylint: disable=no-self-argument
-    @question_lc.comparator
+    @question_lc.comparator  # type: ignore
     def question_lc(cls):
         return CaseInsensitiveComparator(cls.question)
 
@@ -583,7 +584,7 @@ class Query(Base):
         return self.answer.lower()
 
     # pylint: disable=no-self-argument
-    @answer_lc.comparator
+    @answer_lc.comparator  # type: ignore
     def answer_lc(cls):
         return CaseInsensitiveComparator(cls.answer)
 
@@ -595,7 +596,7 @@ class Query(Base):
         return self.voice.lower()
 
     # pylint: disable=no-self-argument
-    @voice_lc.comparator
+    @voice_lc.comparator  # type: ignore
     def voice_lc(cls):
         return CaseInsensitiveComparator(cls.voice)
 

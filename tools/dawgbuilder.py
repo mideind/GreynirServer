@@ -119,7 +119,7 @@ if basepath.endswith(os.sep + "tools"):
     basepath = basepath[0:-6]
     sys.path.append(basepath)
 
-from settings import changedlocale, sort_strings
+from settings import changedlocale, sort_strings  # pylint: disable=no-name-in-module
 
 MAXLEN = 64
 KEY_FUNC = None  # Module-wide sort key function
@@ -214,7 +214,7 @@ class _Dawg:
         self._lastlen = 0
         self._root = dict()
         # Initialize empty list of starting dictionaries
-        self._dicts = [ None for _ in range(MAXLEN) ]
+        self._dicts = [None for _ in range(MAXLEN)]
         self._dicts[0] = self._root
         # Initialize the result list of unique nodes
         self._unique_nodes = dict()
@@ -376,8 +376,7 @@ class _Dawg:
             the DAWG to the standard output """
         self._dump_level(0, self._root)
         print(
-            "Total of {0} nodes and {1} edges with {2} prefix characters"
-            .format(
+            "Total of {0} nodes and {1} edges with {2} prefix characters".format(
                 self.num_unique_nodes(), self.num_edges(), self.num_edge_chars()
             )
         )
@@ -386,8 +385,7 @@ class _Dawg:
                 print("Node {0}{1}".format(n.id, "|" if n.final else ""))
                 for prefix, nd in n.edges.items():
                     print(
-                        "   Edge {0} to node {1}"
-                        .format(
+                        "   Edge {0} to node {1}".format(
                             prefix, 0 if nd is None else nd.id
                         )
                     )
@@ -755,8 +753,7 @@ class DawgBuilder:
                 if lastkey > key:
                     print(
                         "Warning: input files should be in ascending order, "
-                        "but '{0}' > '{1}'"
-                        .format(lastword, word)
+                        "but '{0}' > '{1}'".format(lastword, word)
                     )
                 else:
                     # Identical to previous word
