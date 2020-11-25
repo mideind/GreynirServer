@@ -347,9 +347,7 @@ _CREATION_DATE: AnswerType = {"answer": "Ég var sköpuð af Miðeind árið 201
 
 _LANGUAGES: AnswerType = {"answer": "Ég kann bara íslensku, kæri notandi."}
 
-_ALL_GOOD: AnswerType = {
-    "answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."
-}
+_ALL_GOOD: AnswerType = {"answer": "Ég segi bara allt fínt. Takk fyrir að spyrja."}
 
 _GOOD_TO_HEAR: AnswerType = {
     "answer": "Gott að heyra, kæri notandi.",
@@ -374,9 +372,7 @@ _NAME_EXPL: AnswerType = {
     "voice": "Ég heiti Embla því Embla er fallegt og hljómfagurt nafn.",
 }
 
-_JUST_QA: AnswerType = {
-    "answer": "Nei, ég er nú bara ósköp einfalt fyrirspurnakerfi."
-}
+_JUST_QA: AnswerType = {"answer": "Nei, ég er nú bara ósköp einfalt fyrirspurnakerfi."}
 
 _SINGING: AnswerType = {"answer": "Ó sóle míó!"}
 
@@ -389,9 +385,7 @@ _SKY_BLUE: AnswerType = {
     "annað og því er himinninn blár."
 }
 
-_EMOTION_INCAPABLE: AnswerType = {
-    "answer": "Ég er ekki fær um slíkar tilfinningar."
-}
+_EMOTION_INCAPABLE: AnswerType = {"answer": "Ég er ekki fær um slíkar tilfinningar."}
 
 _LOC_ANSWER: AnswerType = {"answer": "Ég bý víðsvegar í stafrænu skýjunum."}
 
@@ -508,9 +502,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvaða bjór er góður": {
         "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
     },
-    "hvað er besta rauðvínið": {
-        "answer": "Ég drekk ekki vín."
-    },
+    "hvað er besta rauðvínið": {"answer": "Ég drekk ekki vín."},
     "hvað er það": {"answer": "Hvað er hvað?"},
     # Who am I?
     "er ég til": {"answer": "Væntanlega, fyrst þú ert að tala við mig."},
@@ -518,9 +510,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað heitir maðurinn minn": _DUNNO,
     "hvað heitir eiginkona mín": _DUNNO,
     "hvað heitir eiginmaður minn": _DUNNO,
-    "hvenær dey ég": {
-        "answer": "Vonandi ekki í bráð."
-    },
+    "hvenær dey ég": {"answer": "Vonandi ekki í bráð."},
     "hvenær á ég afmæli": _DUNNO,
     "hvað er ég gamall": {
         "answer": "Það veit ég ekki, kæri notandi, en þú ert ungur í anda."
@@ -550,8 +540,12 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hver bjó emblu til": _CREATOR,
     "hverjir bjuggu þig til": _CREATOR,
     "hvaða fólk bjó þig til": _CREATOR,
+    "hverjir bjuggu emblu til": _CREATOR,
+    "hvaða fólk bjó til emblu": _CREATOR,
     "hver forritaði þig": _CREATOR,
     "hver forritaði emblu": _CREATOR,
+    "hver forritar þig": _CREATOR,
+    "hver forritar emblu": _CREATOR,
     "hver skapaði þig": _CREATOR,
     "hver skapaði emblu": _CREATOR,
     "hver er höfundur emblu": _CREATOR,
@@ -576,12 +570,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hver framleiðir emblu": _CREATOR,
     "hver framleiddi þig": _CREATOR,
     "hver á þig": _CREATOR,
-    "ert þú íslensk": {
-        "answer": "Ég var allavega sköpuð af Íslendingum."
-    },
-    "ertu íslensk": {
-        "answer": "Ég var allavega sköpuð af Íslendingum."
-    },
+    "ert þú íslensk": {"answer": "Ég var allavega sköpuð af Íslendingum."},
+    "ertu íslensk": {"answer": "Ég var allavega sköpuð af Íslendingum."},
     # Miðeind
     "hvað er miðeind": _ABOUT_MIDEIND,
     "hvaða fyrirtæki er miðeind": _ABOUT_MIDEIND,
@@ -1127,9 +1117,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað er það besta í lífinu": {
         "answer": "Að horfa á kvikmynd um villimanninn Kónan."
     },
-    "er líf eftir dauðann": {
-        "answer": "Nei. Moldin erfir okkur."  # ;)
-    },
+    "er líf eftir dauðann": {"answer": "Nei. Moldin erfir okkur."},  # ;)
     # God
     "guð er dauður": {
         "answer": "Það sagði heimspekingurinn Nietzsche allavega.",
@@ -1190,9 +1178,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvar ertu stödd": _LOC_ANSWER,
     "ertu til": _LOC_ANSWER,
     "í hverju ertu": _LOC_ANSWER,
-    "hvar er best að búa": {
-        "answer": "Það er allavega fínt að búa á Íslandi."
-    },
+    "hvar er best að búa": {"answer": "Það er allavega fínt að búa á Íslandi."},
     # Name explained
     "hvers vegna heitir þú embla": _NAME_EXPL,
     "hvers vegna heitirðu embla": _NAME_EXPL,
@@ -1735,9 +1721,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvernig hefurðu það í dag": {
         "answer": "Ég hef það mjög fínt. Takk fyrir að spyrja."
     },
-    "hvernig er staðan": {
-        "answer": "Staðan er bara mjög fín. Takk fyrir að spyrja."
-    },
+    "hvernig er staðan": {"answer": "Staðan er bara mjög fín. Takk fyrir að spyrja."},
     "finnst þér þetta gaman": {"answer": "Já, mér finnst alltaf gaman í vinnunni."},
     "finnst þér gaman": {"answer": "Já, mér finnst alltaf gaman í vinnunni."},
     "er gaman hjá þér": {"answer": "Já, mér finnst alltaf gaman í vinnunni."},
@@ -1841,9 +1825,6 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hver er sveinbjörn þórðarson": {
         "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig."
     },
-    "hver forritar emblu": {
-        "answer": "Aðallega Sveinbjörn Þórðarson."
-    }
 }
 
 

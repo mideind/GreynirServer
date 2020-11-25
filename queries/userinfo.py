@@ -292,34 +292,36 @@ def _mynumis_handler(q: Query, ql: str) -> bool:
     return False
 
 
-_DEVICE_TYPE_QUERIES = frozenset((
-    "hvernig síma er ég með",
-    "hvernig síma á ég",
-    "hvernig síma ertu á",
-    "hvernig tæki ertu á",
-    "hvernig tæki er ég með",
-    "hvers konar síma á ég",
-    "hvers konar síma er ég með",
-    "hvers konar tæki á ég",
-    "hvers konar tæki er ég með",
-    "á hvaða tæki ertu að keyra",
-    "á hvaða síma ertu",
-    "á hvaða síma ertu að keyra",
-    "á hvaða stýrikerfi ertu",
-    "á hvaða stýrikerfi ertu að keyra",
-    "á hvernig tæki ertu að keyra",
-    "á hvernig síma ertu",
-    "á hvernig síma ertu að keyra",
-    "á hvernig stýrikerfi ertu",
-    "á hvernig stýrikerfi ertu að keyra",
-    "hvaða tæki ertu að keyra á",
-    "hvaða síma ertu á",
-    "hvaða síma ertu að keyra á",
-    "hvaða stýrikerfi ertu á",
-    "hvaða stýrikerfi ertu að keyra á",
-    "hvaða síma er ég með",
-    "hvaða síma á ég",
-))
+_DEVICE_TYPE_QUERIES = frozenset(
+    (
+        "hvernig síma er ég með",
+        "hvernig síma á ég",
+        "hvernig síma ertu á",
+        "hvernig tæki ertu á",
+        "hvernig tæki er ég með",
+        "hvers konar síma á ég",
+        "hvers konar síma er ég með",
+        "hvers konar tæki á ég",
+        "hvers konar tæki er ég með",
+        "á hvaða tæki ertu að keyra",
+        "á hvaða síma ertu",
+        "á hvaða síma ertu að keyra",
+        "á hvaða stýrikerfi ertu",
+        "á hvaða stýrikerfi ertu að keyra",
+        "á hvernig tæki ertu að keyra",
+        "á hvernig síma ertu",
+        "á hvernig síma ertu að keyra",
+        "á hvernig stýrikerfi ertu",
+        "á hvernig stýrikerfi ertu að keyra",
+        "hvaða tæki ertu að keyra á",
+        "hvaða síma ertu á",
+        "hvaða síma ertu að keyra á",
+        "hvaða stýrikerfi ertu á",
+        "hvaða stýrikerfi ertu að keyra á",
+        "hvaða síma er ég með",
+        "hvaða síma á ég",
+    )
+)
 
 _DUNNO_DEVICE_TYPE = "Ég veit ekki á hvaða tæki ég er að keyra."
 
@@ -351,7 +353,7 @@ def _device_type_handler(q: Query, ql: str) -> bool:
 
 
 # Handler functions for all query types supported by this module.
-_HANDLERS = [
+_HANDLERS = tuple(
     _whoisme_handler,
     _whatsmyname_handler,
     _mynameis_handler,
@@ -360,7 +362,7 @@ _HANDLERS = [
     # _whatsmynum_handler,
     # _mynumis_handler,
     _device_type_handler,
-]
+)
 
 
 def handle_plain_text(q: Query) -> bool:
