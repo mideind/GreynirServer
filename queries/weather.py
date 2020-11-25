@@ -42,7 +42,7 @@
 # TODO: "Hvernig er færðin"
 # TODO: "Hvernig eru loftgæðin [í Reykjavík] etc."
 
-from typing import Tuple, Optional
+from typing import Optional
 
 import os
 import re

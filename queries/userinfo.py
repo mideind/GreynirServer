@@ -111,7 +111,7 @@ _MY_NAME_IS_REGEXES = frozenset(
     )
 )
 
-_INTRODUCTION_RESPONSES = {
+_MY_NAME_IS_RESPONSES = {
     "hk": "Gaman að kynnast þér, {0}. Ég heiti Embla.",
     "kk": "Sæll og blessaður, {0}. Ég heiti Embla.",
     "kvk": "Sæl og blessuð, {0}. Ég heiti Embla.",
@@ -126,15 +126,24 @@ def _mynameis_handler(q: Query, ql: str) -> bool:
             break
     if m:
         name = m.group(1).strip()
-        # TODO: Strip any non alphabetic chars?
         if not name:
             return False
 
+        # Clean up name string
+        name = name.split(" og ")[0]  # "ég heiti X og blablabla"
+        name = name.split(" hvað ")[0]  # "ég heiti X hvað heitir þú"
+
+        # Handle "ég heiti ekki X"
+        components = name.split()
+        if components[0] == "ekki":
+            q.set_answer(*gen_answer("Hvað heitirðu þá?"))
+            return True
+
         # Get first name, look up gender for a gender-tailored response
         with BIN_Db.get_db() as bdb:
-            fn = name.split()[0].title()
+            fn = components[0].title()
             gender = bdb.lookup_name_gender(fn) or "hk"
-            answ = _INTRODUCTION_RESPONSES[gender].format(fn)
+            answ = _MY_NAME_IS_RESPONSES[gender].format(fn)
 
         # Save this info about user to query data table
         if q.client_id:
@@ -354,14 +363,16 @@ def _device_type_handler(q: Query, ql: str) -> bool:
 
 # Handler functions for all query types supported by this module.
 _HANDLERS = tuple(
-    _whoisme_handler,
-    _whatsmyname_handler,
-    _mynameis_handler,
-    _whatsmyaddr_handler,
-    _myaddris_handler,
-    # _whatsmynum_handler,
-    # _mynumis_handler,
-    _device_type_handler,
+    [
+        _whoisme_handler,
+        _whatsmyname_handler,
+        _mynameis_handler,
+        _whatsmyaddr_handler,
+        _myaddris_handler,
+        # _whatsmynum_handler,
+        # _mynumis_handler,
+        _device_type_handler,
+    ]
 )
 
 

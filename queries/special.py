@@ -1117,7 +1117,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað er það besta í lífinu": {
         "answer": "Að horfa á kvikmynd um villimanninn Kónan."
     },
-    "er líf eftir dauðann": {"answer": "Nei. Moldin erfir okkur."},  # ;)
+    "er líf eftir dauðann": {"answer": "Ég veit það ekki. Held samt ekki."},
     # God
     "guð er dauður": {
         "answer": "Það sagði heimspekingurinn Nietzsche allavega.",
