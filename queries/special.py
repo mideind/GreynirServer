@@ -404,7 +404,7 @@ _ABOUT_MIDEIND: AnswerType = {
 }
 
 _NOBODY_PERFECT: AnswerType = {
-    "answer": "Enginn er fullkominn. Ég síst af öllum."
+    "answer": "Ég er ekki fullkomin frekar en önnur mannanna verk."
 }
 
 _FAVORITE_COLOR: AnswerType = {
@@ -576,6 +576,12 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hver framleiðir emblu": _CREATOR,
     "hver framleiddi þig": _CREATOR,
     "hver á þig": _CREATOR,
+    "ert þú íslensk": {
+        "answer": "Ég var allavega sköpuð af Íslendingum."
+    },
+    "ertu íslensk": {
+        "answer": "Ég var allavega sköpuð af Íslendingum."
+    },
     # Miðeind
     "hvað er miðeind": _ABOUT_MIDEIND,
     "hvaða fyrirtæki er miðeind": _ABOUT_MIDEIND,
@@ -632,20 +638,34 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ert þú að hlusta": _YES,
     "ertu að hlusta á mig": _YES,
     "ert þú að hlusta á mig": _YES,
+    "ertu að hlusta á okkur": _YES,
+    "ert þú að hlusta á okkur": _YES,
     "ertu hlustandi": _YES,
     "ert þú hlustandi": _YES,
     "ertu hlustandi á mig": _YES,
     "ert þú hlustandi á mig": _YES,
+    "ertu hlustandi á okkur": _YES,
+    "ert þú hlustandi á okkur": _YES,
     "heyrirðu í mér": _YES,
     "heyrir þú í mér": _YES,
+    "heyrirðu í okkur": _YES,
+    "heyrir þú í okkur": _YES,
     "heyrirðu það sem ég segi": _YES,
     "heyrir þú það sem ég segi": _YES,
     "heyrirðu það sem ég er að segja": _YES,
     "heyrir þú það sem ég er að segja": _YES,
+    "heyrirðu það sem við segjum": _YES,
+    "heyrir þú það sem við segjum": _YES,
+    "heyrirðu það sem við erum að segja": _YES,
+    "heyrir þú það sem við erum að segja": _YES,
     "ertu ennþá í gangi": _YES,
     "ertu í gangi": _YES,
     "ertu að njósna": _NO,
     "ertu að njósna um mig": _NO,
+    "ertu að njósna um okkur": _NO,
+    "njósnarðu": _NO,
+    "njósnarðu um mig": _NO,
+    "njósnarðu um okkur": _NO,
     # Enquiries about family
     # Catch this here to prevent rather, ehrm, embarassing
     # answers from the entity/person module :)
@@ -719,6 +739,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ert þú ástfangin": _ROMANCE,
     "áttu kærasta": _ROMANCE,
     "átt þú kærasta": _ROMANCE,
+    "viltu ríða": _ROMANCE,
+    "viltu koma að ríða": _ROMANCE,
     # Love
     "er ég ástin í lífi þínu": _LOVE_OF_MY_LIFE,
     "hver er ástin í lífi þínu": _LOVE_OF_MY_LIFE,
@@ -889,13 +911,19 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "af hverju ertu svona heimsk": _sorry,
     "af hverju ertu svona glötuð": _sorry,
     "af hverju ertu svona léleg": _sorry,
-    "af hverju veistu ekkert": _NOBODY_PERFECT,
-    "af hverju veistu ekki neitt": _NOBODY_PERFECT,
     "þetta er lélegur brandari": _sorry,
     "þetta var lélegur brandari": _sorry,
     "þessi brandari er lélegur": _sorry,
     "þessi brandari var lélegur": _sorry,
+    "þetta var ekki skemmtilegt": _sorry,
+    "þetta var leiðinlegt": _sorry,
     "ertu svolítið rugluð": _NOBODY_PERFECT,
+    # Why don't you know anything?
+    "af hverju veistu ekkert": _NOBODY_PERFECT,
+    "af hverju veistu ekki neitt": _NOBODY_PERFECT,
+    "af hverju veistu ekki": _NOBODY_PERFECT,
+    "af hverju veistu það ekki": _NOBODY_PERFECT,
+    "af hverju veistu ekki allt": _NOBODY_PERFECT,
     # Greetings
     "hey embla": _HELLO_DEAR,
     "hey": _HELLO_DEAR,
@@ -1099,6 +1127,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað er það besta í lífinu": {
         "answer": "Að horfa á kvikmynd um villimanninn Kónan."
     },
+    "er líf eftir dauðann": {
+        "answer": "Nei. Moldin erfir okkur."  # ;)
+    },
     # God
     "guð er dauður": {
         "answer": "Það sagði heimspekingurinn Nietzsche allavega.",
@@ -1275,6 +1306,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað skilgreinirðu þig sem": _COMPUTER_PROGRAM,
     "hvernig skilgreinirðu þig": _COMPUTER_PROGRAM,
     "hvað ert þú": _COMPUTER_PROGRAM,
+    "hvað er þú": _COMPUTER_PROGRAM,  # Common mistake in speech recognition
     "hvað ertu": _COMPUTER_PROGRAM,
     "ert þú tölvuforrit": _COMPUTER_PROGRAM,
     "ertu tölvuforrit": _COMPUTER_PROGRAM,
@@ -1375,6 +1407,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað skilurðu": _capabilities,
     "hvað annað skilur þú": _capabilities,
     "hvað annað skilurðu": _capabilities,
+    "hvað á ég gera": _capabilities,
     # Learning
     "geturðu lært": _CAN_I_LEARN,
     "getur þú lært": _CAN_I_LEARN,
@@ -1458,6 +1491,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "komdu með brandara": _random_joke,
     "komdu með lélegan brandara": _random_joke,
     "komdu með annan brandara": _random_joke,
+    "gefðu mér brandara": _random_joke,
+    "gefðu mér lélegan brandara": _random_joke,
+    "gefðu mér annan brandara": _random_joke,
     "segðu eitthvað fyndið": _random_joke,
     "segðu mér eitthvað fyndið": _random_joke,
     "kanntu einhverja brandara": _random_joke,
@@ -1484,6 +1520,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "segðu mér annan brandara sem þú kannt": _random_joke,
     "segðu mér hinn brandarann sem þú kannt": _random_joke,
     "segðu mér einn brandara í viðbót": _random_joke,
+    "geturðu sagt brandara": _random_joke,
+    "getur þú sagt brandara": _random_joke,
     "geturðu sagt mér brandara": _random_joke,
     "getur þú sagt mér brandara": _random_joke,
     "geturðu sagt mér annan brandara": _random_joke,
@@ -1621,6 +1659,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert hundvitlaus": _rudeness,
     "þú ert vitleysingur": _rudeness,
     "þú ert kúkur": _rudeness,
+    "þú ert skítur": _rudeness,
     "þú mátt bara éta skít": _rudeness,
     "mér finnst þú vitlaus": _rudeness,
     "mér finnst þú heimsk": _rudeness,
@@ -1695,6 +1734,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvernig hefur þú það": {"answer": "Ég hef það mjög fínt. Takk fyrir að spyrja."},
     "hvernig hefurðu það í dag": {
         "answer": "Ég hef það mjög fínt. Takk fyrir að spyrja."
+    },
+    "hvernig er staðan": {
+        "answer": "Staðan er bara mjög fín. Takk fyrir að spyrja."
     },
     "finnst þér þetta gaman": {"answer": "Já, mér finnst alltaf gaman í vinnunni."},
     "finnst þér gaman": {"answer": "Já, mér finnst alltaf gaman í vinnunni."},

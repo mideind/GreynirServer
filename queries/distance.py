@@ -236,6 +236,8 @@ def dist_answer_for_loc(matches, query: Query):
         ad = query.client_data("address")
         if not ad:
             return gen_answer("Ég veit ekki hvar þú átt heima")
+        elif "lat" not in ad or "lon" not in ad:
+            return gen_answer("Ég veit ekki hvar heimili þitt er staðsett")
         else:
             is_home = True
             loc = (ad["lat"], ad["lon"])
