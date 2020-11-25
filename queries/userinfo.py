@@ -79,6 +79,10 @@ _WHATS_MY_NAME = frozenset(
         "veistu hvaða nafni ég heiti",
         "hvað heiti ég eiginlega",
         "hvaða nafn ber ég",
+        "hvað er nafnið mitt",
+        "hvað er nafn mitt",
+        "hvert er nafnið mitt",
+        "hvert er nafn mitt",
     )
 )
 
@@ -104,6 +108,7 @@ def _whatsmyname_handler(q: Query, ql: str) -> bool:
 _MY_NAME_IS_REGEXES = frozenset(
     (
         r"^ég heiti (.+)$",
+        r"^hæ ég heiti (.+)$",
         r"^nafn mitt er (.+)$",
         r"^nafnið mitt er (.+)$",
         r"^ég ber heitið (.+)$",
@@ -326,6 +331,8 @@ _DEVICE_TYPE_QUERIES = frozenset(
         "hvaða síma ertu á",
         "hvaða síma ertu að keyra á",
         "hvaða stýrikerfi ertu á",
+        "hvaða stýrikerfi ertu að keyra",
+        "hvaða stýrikerfi er ég að keyra",
         "hvaða stýrikerfi ertu að keyra á",
         "hvaða síma er ég með",
         "hvaða síma á ég",
@@ -337,7 +344,9 @@ _DUNNO_DEVICE_TYPE = "Ég veit ekki á hvaða tæki ég er að keyra."
 _DEVICE_TYPE_TO_DESC = {
     "www": "Ég er að keyra í vafra. Meira veit ég ekki.",
     "ios": "Ég er að keyra á iOS stýrikerfinu frá Apple. Meira veit ég ekki.",
+    "ios_flutter": "Ég er að keyra á iOS stýrikerfinu frá Apple. Meira veit ég ekki.",
     "android": "Ég er að keyra á Android stýrikerfinu frá Google. Meira veit ég ekki.",
+    "android_flutter": "Ég er að keyra á Android stýrikerfinu frá Google. Meira veit ég ekki.",
 }
 
 
@@ -367,8 +376,8 @@ _HANDLERS = tuple(
         _whoisme_handler,
         _whatsmyname_handler,
         _mynameis_handler,
-        _whatsmyaddr_handler,
-        _myaddris_handler,
+        # _whatsmyaddr_handler,
+        # _myaddris_handler,
         # _whatsmynum_handler,
         # _mynumis_handler,
         _device_type_handler,

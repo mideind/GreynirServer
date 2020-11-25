@@ -96,6 +96,7 @@ QPetrolClosestStation →
     | "hver" "er" QPetrolClosest QPetrolStation
     | QPetrolWhichStation "er"? QPetrolNearMe
     | QPetrolWhichStation "er"? "nálægust" "mér"?
+    | "hvað" "kostar" QPetrolPetrol QPetrolNearMe?
 
 QPetrolCheapestStation →
     "ódýrasta" QPetrolPetrol

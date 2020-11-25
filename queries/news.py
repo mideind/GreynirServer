@@ -77,7 +77,7 @@ QNewsTellMe →
     "segðu" "mér" | "geturðu" "sagt" "mér"
 
 QNewsNow →
-    "núna" | "þessa_stundina"
+    "núna" | "þessa_stundina" | "í" "dag"
 
 QNewsQualifiers →
     "helst" | "eiginlega" | "núna" | "nýjast"

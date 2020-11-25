@@ -212,6 +212,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Litáen": "LT",  # Bæði Litháen og Litáen í BÍN
         "Mexico": "MX",
         "Vietnam": "VN",
+        "Belize": "BZ",
     }
 }
 

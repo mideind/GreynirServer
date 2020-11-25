@@ -246,7 +246,7 @@ def _capital_query(country: str, q: Query):
 
 def _which_country_query(subject: str, q: Query):
     """ Generate answer to question concerning the country in which
-        a given placename is located. """
+        a given placename or street is located. """
     info = location_info(subject, "placename")
     if not info:
         return False

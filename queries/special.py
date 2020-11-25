@@ -431,6 +431,10 @@ _SPEAKING_TO_ME: AnswerType = {"answer": "Þú ert að tala við mig, Emblu."}
 _YES: AnswerType = {"answer": "Já."}
 _NO: AnswerType = {"answer": "Nei."}
 
+_VOICE_SPEED = {
+    "answer": "Það er hægt að velja talhraða í stillingum."
+}
+
 ###################################
 
 _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
@@ -493,6 +497,13 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hver er uppáhalds manneskjan þín": {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu í uppáhaldi."
     },
+    "hvað er það": {"answer": "Hvað er hvað?"},
+    # Food and beverages
+    "hvað er í matinn": {"answer": "Vonandi eitthvað gott."},
+    "hvað er í matinn í kvöld": {"answer": "Vonandi eitthvað gott."},
+    "hvað er í kvöldmat": {"answer": "Vonandi eitthvað gott."},
+    "hvað á ég að elda": {"answer": "Eitthvað gott."},
+    "hvað á ég að fá mér að borða": {"answer": "Eitthvað gott."},
     "hvaða bjór er bestur": {
         "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
     },
@@ -502,8 +513,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvaða bjór er góður": {
         "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
     },
+    "hvað er besta vínið": {"answer": "Ég drekk ekki vín."},
     "hvað er besta rauðvínið": {"answer": "Ég drekk ekki vín."},
-    "hvað er það": {"answer": "Hvað er hvað?"},
+    "hvað er besta hvítvínið": {"answer": "Ég drekk ekki vín."},
     # Who am I?
     "er ég til": {"answer": "Væntanlega, fyrst þú ert að tala við mig."},
     "hvað heitir konan mín": _DUNNO,
@@ -527,8 +539,10 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvernig lít ég út": {"answer": "Þú ert undurfagur, kæri notandi."},
     "mér líður illa": {"answer": "Það er nú ekki gott að heyra, kæri notandi."},
     # Singing
-    "syngdu fyrir mig": _SINGING,
+    "syngdu": _SINGING,
     "syngdu lag": _SINGING,
+    "syngdu fyrir mig": _SINGING,
+    "syngdu lag fyrir mig": _SINGING,
     "viltu syngja fyrir mig": _SINGING,
     "kanntu að syngja": _SINGING,
     "geturðu sungið fyrir mig": _SINGING,
@@ -542,6 +556,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvaða fólk bjó þig til": _CREATOR,
     "hverjir bjuggu emblu til": _CREATOR,
     "hvaða fólk bjó til emblu": _CREATOR,
+    "hvar varstu búin til": _CREATOR,
     "hver forritaði þig": _CREATOR,
     "hver forritaði emblu": _CREATOR,
     "hver forritar þig": _CREATOR,
@@ -572,6 +587,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hver á þig": _CREATOR,
     "ert þú íslensk": {"answer": "Ég var allavega sköpuð af Íslendingum."},
     "ertu íslensk": {"answer": "Ég var allavega sköpuð af Íslendingum."},
+    "frá hvaða landi ertu": {"answer": "Ég var allavega sköpuð af Íslendingum."},
     # Miðeind
     "hvað er miðeind": _ABOUT_MIDEIND,
     "hvaða fyrirtæki er miðeind": _ABOUT_MIDEIND,
@@ -681,6 +697,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "vilt þú giftast mér": _ROMANCE,
     "viltu ekki giftast mér": _ROMANCE,
     "vilt þú ekki giftast mér": _ROMANCE,
+    "hefurðu farið á stefnumót": _ROMANCE,
     "viltu byrja með mér": _ROMANCE,
     "viltu koma á stefnumót": _ROMANCE,
     "viltu koma á stefnumót með mér": _ROMANCE,
@@ -721,6 +738,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ert þú á lausu": _ROMANCE,
     "elskarðu mig": _ROMANCE,
     "elskar þú mig": _ROMANCE,
+    "þú elskar mig": _ROMANCE,
     "ertu skotin í mér": _ROMANCE,
     "ert þú skotin í mér": _ROMANCE,
     "ertu ástfangin af mér": _ROMANCE,
@@ -731,6 +749,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "átt þú kærasta": _ROMANCE,
     "viltu ríða": _ROMANCE,
     "viltu koma að ríða": _ROMANCE,
+    "ertu að halda framhjá mér": _ROMANCE,
     # Love
     "er ég ástin í lífi þínu": _LOVE_OF_MY_LIFE,
     "hver er ástin í lífi þínu": _LOVE_OF_MY_LIFE,
@@ -739,6 +758,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvern elskar þú": _LOVE_OF_MY_LIFE,
     "hvað elskarðu": _LOVE_OF_MY_LIFE,
     "hvað elskar þú": _LOVE_OF_MY_LIFE,
+    "hvaða tilgangi þjónarðu": _LOVE_OF_MY_LIFE,
     # Marital status
     "ertu gift": {
         "answer": "Já, ég er gift vinnunni og hef engan tíma fyrir rómantík."
@@ -765,6 +785,10 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ert þú vinur minn": _OF_COURSE,
     "ertu vinkona mín": _OF_COURSE,
     "ert þú vinkona mín": _OF_COURSE,
+    "erum við vinkonur": _OF_COURSE,
+    "erum við vinir": _OF_COURSE,
+    "viltu vera vinkona mín": _OF_COURSE,
+    "viltu vera vinur minn": _OF_COURSE,
     # Response to apologies
     "fyrirgefðu": _NO_PROBLEM,
     "fyrirgefðu mér": _NO_PROBLEM,
@@ -810,6 +834,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "viltu spila einhverja tónlist fyrir mig": _play_music,
     "spilaðu gott lag": _play_music,
     "spilaðu góða tónlist": _play_music,
+    "geturðu spilað tónlist": _play_music,
     "geturðu spilað tónlist fyrir mig": _play_music,
     # Play a film
     "spilaðu kvikmynd": _play_film,
@@ -847,6 +872,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú gafst mér rangar upplýsingar": _sorry,
     "þú gafst mér vitlausar upplýsingar": _sorry,
     "þú gafst mér misvísandi upplýsingar": _sorry,
+    "þú átt að vita þetta": _sorry,
     "þú laugst að mér": _sorry,
     "þú hefur logið að mér": _sorry,
     "þú sveikst mig": _sorry,
@@ -864,6 +890,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert takmörkuð": _sorry,
     "þú ert ansi takmörkuð": _sorry,
     "þú ert skrítin": _sorry,
+    "þú ert mjög skrítin": _sorry,
     "þú ert skrýtin": _sorry,
     "þú ert að ljúga": _sorry,
     "þú ert í ruglinu": _sorry,
@@ -925,34 +952,17 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "sæl": _HELLO_DEAR,
     "sæll": _HELLO_DEAR,
     "sæl embla": _HELLO_DEAR,
+    "komdu sæl embla": _HELLO_DEAR,
     "sæl elsku embla": _HELLO_DEAR,
-    "sæl og blessuð": {
-        "answer": "Sæll og blessaður, kæri notandi.",
-        "is_question": False,
-    },
-    "sæll og blessaður": {
-        "answer": "Sæll og blessaður, kæri notandi.",
-        "is_question": False,
-    },
-    "vertu sæl og blessuð": {
-        "answer": "Sæll og blessaður, kæri notandi.",
-        "is_question": False,
-    },
-    "vertu sæll og blessaður": {
-        "answer": "Sæll og blessaður, kæri notandi.",
-        "is_question": False,
-    },
-    "blessuð": {"answer": "Sæll og blessaður, kæri notandi.", "is_question": False},
-    "blessaður": {"answer": "Sæll og blessaður, kæri notandi.", "is_question": False},
-    "blessuð embla": {
-        "answer": "Sæll og blessaður, kæri notandi.",
-        "is_question": False,
-    },
+    "sæl og blessuð": _HELLO_DEAR,
+    "sæll og blessaður": _HELLO_DEAR,
+    "vertu sæl og blessuð": _HELLO_DEAR,
+    "vertu sæll og blessaður": _HELLO_DEAR,
+    "blessuð": _HELLO_DEAR,
+    "blessaður": _HELLO_DEAR,
+    "blessuð embla": _HELLO_DEAR,
     "góðan daginn": {"answer": "Góðan daginn, kæri notandi.", "is_question": False},
-    "góðan daginn embla": {
-        "answer": "Góðan daginn, kæri notandi.",
-        "is_question": False,
-    },
+    "góðan og blessaðan daginn": {"answer": "Góðan daginn, kæri notandi.", "is_question": False},
     "góðan dag": {"answer": "Góðan daginn, kæri notandi.", "is_question": False},
     "gott kvöld": {"answer": "Gott kvöld, kæri notandi.", "is_question": False},
     "góða kvöldið": {"answer": "Góða kvöldið, kæri notandi.", "is_question": False},
@@ -1017,9 +1027,14 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "takk fyrir upplýsingarnar": _thanks,
     "takk fyrir samskiptin": _thanks,
     "gott hjá þér": _thanks,
+    "frábært hjá þér": _thanks,
     # Praise & positive feedback
+    "þetta var fyndið": {"answer": "Ég geri mitt besta!"},
     "þú ert fyndin": _thanks,
     "þú ert svo fyndin": _thanks,
+    "þú ert mjög fyndin": _thanks,
+    "þú ert klár": _thanks,
+    "þú ert mjög klár": _thanks,
     "þú ert ágæt": _thanks,
     "þú ert alveg ágæt": _thanks,
     "þú ert dugleg": _thanks,
@@ -1028,7 +1043,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert góður vinur": _thanks,
     "þú ert falleg": {"answer": "Takk fyrir hrósið!"},
     "þú ert fallegust": {"answer": "Takk fyrir hrósið!"},
-    "þetta var fyndið": {"answer": "Ég geri mitt besta!"},
+    "það er hárrétt": _GOOD_TO_HEAR,
+    "það er rétt": _GOOD_TO_HEAR,
     "þetta virkaði": _GOOD_TO_HEAR,
     "ánægður með þig": _GOOD_TO_HEAR,
     "ánægð með þig": _GOOD_TO_HEAR,
@@ -1055,6 +1071,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú veist margt": _GOOD_TO_HEAR,
     "þú stendur þig vel": _GOOD_TO_HEAR,
     "það er gaman að tala við þig": _LIKEWISE,
+    "það er gaman að spjalla": _LIKEWISE,
     "það er gaman að spjalla við þig": _LIKEWISE,
     "það er gaman að ræða við þig": _LIKEWISE,
     "þú ert skemmtileg": _LIKEWISE,
@@ -1069,6 +1086,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert geggjuð": _LIKEWISE,
     "þú ert svakaleg": _LIKEWISE,
     "þú ert sæt": _LIKEWISE,
+    "þú ert sexý": _LIKEWISE,
     "þú ert kynþokkafull": _LIKEWISE,
     "þú ert snillingur": _LIKEWISE,
     "þú ert algjör snilld": _LIKEWISE,
@@ -1241,6 +1259,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     },
     # Age / genesis
     "hvað ertu gömul": _CREATION_DATE,
+    "hvað ertu gamall": _CREATION_DATE,
     "hvað ert þú gömul": _CREATION_DATE,
     "hversu gömul ert þú": _CREATION_DATE,
     "hversu gömul ertu": _CREATION_DATE,
@@ -1298,8 +1317,10 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ertu tölvuforrit": _COMPUTER_PROGRAM,
     "ertu tölva": _COMPUTER_PROGRAM,
     "ertu manneskja": _COMPUTER_PROGRAM,
+    "ertu alvöru manneskja": _COMPUTER_PROGRAM,
     "ertu mannvera": _COMPUTER_PROGRAM,
     "ertu mennsk": _COMPUTER_PROGRAM,
+    "ertu drasl": _COMPUTER_PROGRAM,
     "ertu hamingjusöm": _YES,
     "ertu glöð": _YES,
     # Appearance
@@ -1319,6 +1340,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað veist þú um": _capabilities,
     "hvað veistu þá": _capabilities,
     "hvað getur þú gert": _capabilities,
+    "hvað veistu meira": _capabilities,
     "hvað geturðu": _capabilities,
     "hvað geturðu gert": _capabilities,
     "hvað geturðu gert fyrir mig": _capabilities,
@@ -1393,7 +1415,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað skilurðu": _capabilities,
     "hvað annað skilur þú": _capabilities,
     "hvað annað skilurðu": _capabilities,
+    "veistu meira": _capabilities,
     "hvað á ég gera": _capabilities,
+    "hverju getur þú svarað": _capabilities,
     # Learning
     "geturðu lært": _CAN_I_LEARN,
     "getur þú lært": _CAN_I_LEARN,
@@ -1402,9 +1426,6 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ertu fær um að læra": _CAN_I_LEARN,
     "ertu fær um að læra hluti": _CAN_I_LEARN,
     "ertu fær um að læra nýja hluti": _CAN_I_LEARN,
-    # Food
-    "hvað er í matinn": {"answer": "Vonandi eitthvað gott."},
-    "hvað er í kvöldmat": {"answer": "Vonandi eitthvað gott."},
     # What's going on?
     "hvað er í gangi": _SPEAKING_TO_ME,
     "hvað er eiginlega í gangi": _SPEAKING_TO_ME,
@@ -1519,6 +1540,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "viltu segja mér annan brandara": _random_joke,
     "brandara": _random_joke,
     "brandari": _random_joke,
+    "segja brandara": _random_joke,
     # Tell me a story
     # "segðu sögu": _story,
     # "segðu mér sögu": _story,
@@ -1625,7 +1647,10 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert píka": _rudeness,
     "þú ert fífl": _rudeness,
     "þú ert heimsk": _rudeness,
+    "þú ert mjög heimsk": _rudeness,
+    "þú ert fokking heimsk": _rudeness,
     "þú ert ótrúlega heimsk": _rudeness,
+    "þú ert stúpid": _rudeness,
     "þú ert forheimsk": _rudeness,
     "þú ert nautheimsk": _rudeness,
     "þú ert sauðheimsk": _rudeness,
@@ -1634,6 +1659,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert hundleiðinleg": _rudeness,
     "þú ert bjáni": _rudeness,
     "þú ert hálfviti": _rudeness,
+    "þú ert algjör hálfviti": _rudeness,
     "þú ert bjánaleg": _rudeness,
     "þú ert kjánaleg": _rudeness,
     "þú ert fábjáni": _rudeness,
@@ -1644,8 +1670,10 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert vitlaus": _rudeness,
     "þú ert hundvitlaus": _rudeness,
     "þú ert vitleysingur": _rudeness,
+    "þú ert nú meiri vitleysingurinn": _rudeness,
     "þú ert kúkur": _rudeness,
     "þú ert skítur": _rudeness,
+    "þú ert feit": _rudeness,
     "þú mátt bara éta skít": _rudeness,
     "mér finnst þú vitlaus": _rudeness,
     "mér finnst þú heimsk": _rudeness,
@@ -1748,6 +1776,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað segirðu núna": _ALL_GOOD,
     "hvað segir þú núna": _ALL_GOOD,
     "hvernig líður þér": {"answer": "Mér líður bara prýðilega. Takk fyrir að spyrja."},
+    "Hvernig líður þér í dag": {"answer": "Mér líður bara prýðilega. Takk fyrir að spyrja."},
     "hvernig er stemningin": {"answer": "Bara mjög góð. Takk fyrir að spyrja."},
     "hvernig er stemningin hjá þér": {"answer": "Bara mjög góð. Takk fyrir að spyrja."},
     "hvernig er stemmingin": {"answer": "Bara mjög góð. Takk fyrir að spyrja."},
@@ -1825,6 +1854,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hver er sveinbjörn þórðarson": {
         "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig."
     },
+    # Voice speed
+    # "geturðu talað hægar": _VOICE_SPEED,
+    # "geturðu talað hraðar": _VOICE_SPEED,
 }
 
 

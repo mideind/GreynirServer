@@ -27,6 +27,7 @@
 # TODO: Support TV schedule queries for other stations than RÚV
 # TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str
 # TODO: "Hvað er á dagskrá á rúv annað kvöld?"
+# TODO: "Hvaða þættir eru á rúv?"
 
 from typing import List, Dict, Optional, Tuple, Any
 
