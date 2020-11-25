@@ -666,6 +666,7 @@ class QueryLog(Base):
         server_default=text("uuid_generate_v1()"),
     )
 
+    # See Query model wrt. what these fields represents
     timestamp = Column(DateTime, index=True, nullable=False)
 
     interpretations = Column(JSONB, nullable=True)
@@ -682,6 +683,8 @@ class QueryLog(Base):
 
     key = Column(String(256), index=True, nullable=True)
 
+    error = Column(String(256), nullable=True)
+
     @staticmethod
     def from_Query(q: Query):
         """ Create QueryLog object from Query object. """
@@ -694,6 +697,7 @@ class QueryLog(Base):
             voice=q.voice,
             qtype=q.qtype,
             key=q.key,
+            error=q.error,
         )
 
     def __repr__(self):

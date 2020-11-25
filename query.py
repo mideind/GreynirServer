@@ -53,7 +53,7 @@ from settings import Settings
 
 from db import SessionContext, desc
 from db.models import Query as QueryRow
-from db.models import QueryData
+from db.models import QueryData, QueryLog
 
 from tree import Tree
 from reynir import TOK, Tok, tokenize, correct_spaces
@@ -997,7 +997,6 @@ def process_query(
         # assuming that they are in decreasing order of probability,
         # attempting to execute them in turn until we find
         # one that works (or we're stumped)
-
         for qtext in it:
 
             qtext = qtext.strip()
@@ -1054,6 +1053,7 @@ def process_query(
                 if not private:
                     # If not in private mode, log the result
                     try:
+                        # Standard query logging
                         qrow = QueryRow(
                             timestamp=now,
                             interpretations=it,
@@ -1080,6 +1080,8 @@ def process_query(
                             # All other fields are set to NULL
                         )
                         session.add(qrow)
+                        # Also log anonymised query
+                        session.add(QueryLog.from_Query(qrow))
                     except Exception as e:
                         logging.error("Error logging query: {0}".format(e))
                 return result
@@ -1117,5 +1119,7 @@ def process_query(
                 # All other fields are set to NULL
             )
             session.add(qrow)
+            # Also log anonymised query
+            session.add(QueryLog.from_Query(qrow))
 
         return result
