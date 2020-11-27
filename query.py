@@ -288,9 +288,6 @@ class Query:
         qf = re.sub(_IGNORED_PREFIX_RE, "", q, flags=re.IGNORECASE)
         # Remove " embla" suffix, if present
         qf = re.sub(r"\s+embla$", "", qf, flags=re.IGNORECASE)
-        # Remove "embla " and "hæ embla" prefixes, if present
-        qf = re.sub(r"^embla\s?", "", qf, flags=re.IGNORECASE)
-        qf = re.sub(r"^hæ embla\s?", "", qf, flags=re.IGNORECASE)
         # Fix common Google ASR mistake: 'hæ embla' is returned as 'bæjarblað'
         if not qf and q == "bæjarblað":
             q = "hæ embla"

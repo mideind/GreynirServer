@@ -86,8 +86,8 @@ _QDISTANCE_REGEXES = (
     r"^hvað er (.+) langt í burtu frá okkur$",
     r"^hvað er (.+) langt í burtu$",
     # Home
-    r"^hvað er langt\s?(?:héðan)? (heim)\s?(?:héðan)?$",
-    r"^hvað er langt\s?(?:héðan)? (heim til mín)\s?(?:héðan)?$",
+    # r"^hvað er langt\s?(?:héðan)? (heim)\s?(?:héðan)?$",
+    # r"^hvað er langt\s?(?:héðan)? (heim til mín)\s?(?:héðan)?$",
 )
 
 # Travel time questions
@@ -185,8 +185,8 @@ _HOME_LOC = frozenset(
         "heimili mínu",
         "heimahús mitt",
         "heimahúsi mínu",
-        "heimilisfang",
-        "heimilisfangi",
+        # "heimilisfang",
+        # "heimilisfangi",
         "heimilisfang mitt",
         "heimilisfangi mínu",
     )
