@@ -197,6 +197,15 @@ ROOTS = [
     #     "VisindavefurScraper",
     #     True,
     # ),
+    (
+        "https://sedlabanki.is/",
+        "sedlabanki.is",
+        "Seðlabankinn",
+        1.0,
+        "scrapers.default",
+        "SedlabankinnScraper",
+        True,
+    ),
 ]
 
 

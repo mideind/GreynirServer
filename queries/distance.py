@@ -276,7 +276,7 @@ def dist_answer_for_loc(matches, query: Query):
     query.set_key(loc_nf)
 
     # Beautify by capitalizing remote loc name
-    uc = capitalize_placename(locname) if not is_home else locname
+    uc = locname if is_home else capitalize_placename(locname)
     bq = query.beautified_query.replace(locname, uc)
 
     # Hack to fix the fact that the voice recognition often misses "ég"

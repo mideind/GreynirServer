@@ -1840,3 +1840,48 @@ class VisindavefurScraper(ScrapeHelper):
         ScrapeHelper.del_tag(content, "table")
         ScrapeHelper.del_tag(content, "ul")
         return content
+
+
+class SedlabankinnScraper(ScrapeHelper):
+    """ Scraping helper for sedlabanki.is """
+
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["https://www.sedlabanki.is/extensions/news/rss/Frettatilkynningar.rss"]
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+
+        # Author
+        author = "Seðlabanki Íslands"
+
+        # Extract the publication time from the media tag
+        timestamp = datetime.utcnow()
+        try:
+            media = ScrapeHelper.div_class(soup, "media")
+            if media:
+                tstr = media['data-last-modified']
+                timestamp = datetime.strptime(tstr, "%Y-%m-%d %H:%M:%S")
+        except Exception as e:
+            pass
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        content = ScrapeHelper.div_class(soup_body, "media-body")
+        ScrapeHelper.del_tag(content, "h2")
+        ScrapeHelper.del_tag(content, "table")
+        ScrapeHelper.del_div_class(content, "muted")
+        for a in content.find_all("a", {"class": "til-baka"}):
+            a.decompose()
+
+        return content
