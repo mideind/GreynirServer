@@ -209,8 +209,10 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
         "Sameinuðu Arabísku Furstadæmin": "AE",
         "Norður-Súdan": "SD",
         "Taiwan": "TW",
+        "Litáen": "LT",  # Bæði Litháen og Litáen í BÍN
         "Mexico": "MX",
         "Vietnam": "VN",
+        "Belize": "BZ",
     }
 }
 

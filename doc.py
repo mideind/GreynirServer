@@ -21,13 +21,13 @@
 
 """
 
-from typing import Dict, Type
+from typing import Union, Dict, Type
 
 import abc
 from io import BytesIO
 import re
 from zipfile import ZipFile
-import html2text
+from html2text import HTML2Text
 from striprtf.striprtf import rtf_to_text  # type: ignore
 
 # Use defusedxml module to prevent parsing of malicious XML
@@ -44,7 +44,7 @@ class MalformedDocumentError(Exception):
 class Document(abc.ABC):
     """ Abstract base class for documents. """
 
-    def __init__(self, path_or_bytes):
+    def __init__(self, path_or_bytes: Union[str, bytes]):
         """ Accepts either a file path or bytes object """
         if isinstance(path_or_bytes, str):
             # It's a file path
@@ -59,7 +59,7 @@ class Document(abc.ABC):
         """ All subclasses must implement this method """
         raise NotImplementedError
 
-    def write_to_file(self, path: str) -> None:
+    def write_to_file(self, path: str):
         with open(path, "wb") as f:
             f.write(self.data)
 
@@ -67,7 +67,7 @@ class Document(abc.ABC):
 class PlainTextDocument(Document):
     """ Plain text document """
 
-    def extract_text(self):
+    def extract_text(self) -> str:
         return self.data.decode(DEFAULT_TEXT_ENCODING)
 
 
@@ -84,10 +84,10 @@ class HTMLDocument(Document):
                 lines[i] = re.sub(r"[#]+\s", "", line)
         return "\n".join(lines)
 
-    def extract_text(self):
+    def extract_text(self) -> str:
         html = self.data.decode(DEFAULT_TEXT_ENCODING)
 
-        h = html2text.HTML2Text()
+        h = HTML2Text()
         # See https://github.com/Alir3z4/html2text/blob/master/html2text/cli.py
         h.ignore_links = True
         h.ignore_emphasis = True
@@ -105,7 +105,7 @@ class HTMLDocument(Document):
 class RTFDocument(Document):
     """ Rich text document """
 
-    def extract_text(self):
+    def extract_text(self) -> str:
         txt = self.data.decode(DEFAULT_TEXT_ENCODING)
 
         # Hack to handle Apple's extensions to the RTF format
@@ -117,7 +117,7 @@ class RTFDocument(Document):
 class PDFDocument(Document):
     """ Adobe PDF document """
 
-    def extract_text(self):
+    def extract_text(self) -> str:
         raise NotImplementedError
 
 
@@ -130,7 +130,7 @@ class DocxDocument(Document):
     TEXT_TAG = WORD_NAMESPACE + "t"
     BREAK_TAG = WORD_NAMESPACE + "br"
 
-    def extract_text(self):
+    def extract_text(self) -> str:
 
         zipfile = ZipFile(BytesIO(self.data), "r")
 

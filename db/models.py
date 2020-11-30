@@ -652,6 +652,87 @@ class Query(Base):
         return "Query(question='{0}', answer='{1}')".format(self.question, self.answer)
 
 
+class QueryLog(Base):
+    """ Represents a fully anonymised, logged query with its answer. """
+
+    __tablename__ = "querylog"
+
+    # UUID
+    id = Column(
+        psql_UUID(as_uuid=False),
+        index=True,
+        nullable=False,
+        unique=True,
+        primary_key=True,
+        server_default=text("uuid_generate_v1()"),
+    )
+
+    # See Query model wrt. what these fields represents
+    timestamp = Column(DateTime, index=True, nullable=False)
+
+    interpretations = Column(JSONB, nullable=True)
+
+    question = Column(String, index=True, nullable=False)
+
+    bquestion = Column(String, index=False, nullable=True)
+
+    answer = Column(String, index=False, nullable=True)
+
+    voice = Column(String, index=False, nullable=True)
+
+    qtype = Column(String(80), index=True, nullable=True)
+
+    key = Column(String(256), index=True, nullable=True)
+
+    error = Column(String(256), nullable=True)
+
+    @staticmethod
+    def from_Query(q: Query):
+        """ Create QueryLog object from Query object. """
+        return QueryLog(
+            timestamp=q.timestamp,
+            interpretations=q.interpretations,
+            question=q.question,
+            bquestion=q.bquestion,
+            answer=q.answer,
+            voice=q.voice,
+            qtype=q.qtype,
+            key=q.key,
+            error=q.error,
+        )
+
+    def __repr__(self):
+        return "QueryLog(question='{0}', answer='{1}')".format(
+            self.question, self.answer
+        )
+
+
+class QueryData(Base):
+
+    __tablename__ = "querydata"
+
+    __table_args__ = (PrimaryKeyConstraint("client_id", "key", name="querydata_pkey"),)
+
+    client_id = Column(String(256), nullable=False)
+
+    # Key to distinguish between different types of JSON data that can be stored
+    key = Column(String(64), nullable=False)
+
+    # Created timestamp
+    created = Column(DateTime, nullable=False)
+
+    # Last modified timestamp
+    modified = Column(DateTime, nullable=False)
+
+    # JSON data
+    data = Column(JSONB, nullable=False)
+
+    def __repr__(self):
+        return "QueryData(client_id='{0}', created='{1}', modified='{2}', key='{3}', data='{4}')".format(
+            self.client_id, self.created, self.modified, self.key, self.data
+        )
+
+
 class Feedback(Base):
     """ Represents a feedback form submission. """
 
@@ -685,30 +766,4 @@ class Feedback(Base):
     def __repr__(self):
         return "Feedback(name='{0}', email='{1}', topic='{2}', comment='{3}')".format(
             self.name, self.email, self.topic, self.comment
-        )
-
-
-class QueryData(Base):
-
-    __tablename__ = "querydata"
-
-    __table_args__ = (PrimaryKeyConstraint("client_id", "key", name="querydata_pkey"),)
-
-    client_id = Column(String(256), nullable=False)
-
-    # Key to distinguish between different types of JSON data that can be stored
-    key = Column(String(64), nullable=False)
-
-    # Created timestamp
-    created = Column(DateTime, nullable=False)
-
-    # Last modified timestamp
-    modified = Column(DateTime, nullable=False)
-
-    # JSON data
-    data = Column(JSONB, nullable=False)
-
-    def __repr__(self):
-        return "QueryData(client_id='{0}', created='{1}', modified='{2}', key='{3}', data='{4}')".format(
-            self.client_id, self.created, self.modified, self.key, self.data
         )

@@ -37,11 +37,12 @@
 # TODO: "Er gott veður úti?"
 # TODO: "Hvað er mikið frost?" "Hversu mikið frost er úti?"
 # TODO: "Verður snjór á morgun?"
+# TODO: "Hvað er mikill hiti úti?"
 # TODO: "Hvernig er veðurspáin fyrir garðabæ?"
 # TODO: "Hvernig er færðin"
 # TODO: "Hvernig eru loftgæðin [í Reykjavík] etc."
 
-from typing import Tuple, Optional
+from typing import Optional
 
 import os
 import re

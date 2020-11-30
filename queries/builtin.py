@@ -992,7 +992,7 @@ QRepeatThis → "þetta" | "síðasta" "svar" | "svarið"
 
 QRepeatQuery →
     QPlease? "endurtaktu" QRepeatThis?
-    | QPlease? "segðu" "mér"? QRepeatThis "aftur"
+    | QPlease? "segðu" "mér"? QRepeatThis? "aftur"
     | "geturðu" "endurtekið" QRepeatThis?
     | "geturðu" "sagt" QRepeatThis "aftur"
     | "gætirðu" "endurtekið" QRepeatThis?

@@ -53,7 +53,7 @@ from settings import Settings
 
 from db import SessionContext, desc
 from db.models import Query as QueryRow
-from db.models import QueryData
+from db.models import QueryData, QueryLog
 
 from tree import Tree
 from reynir import TOK, Tok, tokenize, correct_spaces
@@ -238,6 +238,7 @@ class Query:
         auto_uppercase: bool,
         location: Optional[LocationType],
         client_id: str,
+        client_type: str,
     ) -> None:
 
         self._query = q = self._preprocess_query_string(query)
@@ -272,6 +273,8 @@ class Query:
         self._command: Optional[str] = None
         # Client id, if known
         self._client_id = client_id
+        # Client type, if known
+        self._client_type = client_type
         # Source of answer to query
         self._source: Optional[str] = None
         # Query context, which is None until fetched via self.fetch_context()
@@ -674,6 +677,11 @@ class Query:
     def client_id(self) -> str:
         return self._client_id
 
+    @property
+    def client_type(self) -> str:
+        """ Return client type string, e.g. "ios", "android", "www", etc. """
+        return self._client_type
+
     def response(self) -> Optional[ResponseMapping]:
         """ Return the detailed query answer """
         return self._response
@@ -990,7 +998,6 @@ def process_query(
         # assuming that they are in decreasing order of probability,
         # attempting to execute them in turn until we find
         # one that works (or we're stumped)
-
         for qtext in it:
 
             qtext = qtext.strip()
@@ -1038,13 +1045,16 @@ def process_query(
                 return result
 
             # The answer is not found in the cache: Handle the query
-            query = Query(session, qtext, voice, auto_uppercase, location, client_id)
+            query = Query(
+                session, qtext, voice, auto_uppercase, location, client_id, client_type
+            )
             result = query.execute()
             if result["valid"] and "error" not in result:
                 # Successful: our job is done
                 if not private:
                     # If not in private mode, log the result
                     try:
+                        # Standard query logging
                         qrow = QueryRow(
                             timestamp=now,
                             interpretations=it,
@@ -1071,6 +1081,8 @@ def process_query(
                             # All other fields are set to NULL
                         )
                         session.add(qrow)
+                        # Also log anonymised query
+                        session.add(QueryLog.from_Query(qrow))
                     except Exception as e:
                         logging.error("Error logging query: {0}".format(e))
                 return result
@@ -1108,5 +1120,7 @@ def process_query(
                 # All other fields are set to NULL
             )
             session.add(qrow)
+            # Also log anonymised query
+            session.add(QueryLog.from_Query(qrow))
 
         return result

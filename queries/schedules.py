@@ -27,8 +27,7 @@
 # TODO: Support TV schedule queries for other stations than RÚV
 # TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str
 # TODO: "Hvað er á dagskrá á rúv annað kvöld?"
-# TODO: "Hvað er verið að sýna á rúv í kvöld?"
-# TODO: "Hvað er mikill hiti úti?"
+# TODO: "Hvaða þættir eru á rúv?"
 
 from typing import List, Dict, Optional, Tuple, Any
 
@@ -156,6 +155,7 @@ QSchOnSchedule →
     | "á" "dagskránni"
     | "í" "boði"
     | "boðið" "upp" "á"
+    | "verið" "að" "sýna"
 
 QSchTheSchedule →
     "dagskráin" | "sjónvarpsdagskráin"

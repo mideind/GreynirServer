@@ -60,8 +60,6 @@ _AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
 _DEFAULT_TEXT_FORMAT = "ssml"
 _TEXT_FORMATS = frozenset(("text", "ssml"))
 
-_AWS_URL_TTL = 300  # 5 mins in seconds
-
 
 def _initialize_client() -> Optional[boto3.Session]:
     """ Set up AWS Polly client """
@@ -86,13 +84,17 @@ def _initialize_client() -> Optional[boto3.Session]:
 # TTL (in seconds) for get_synthesized_text_url caching
 # Add a safe 30 second margin to ensure that clients are never provided with an
 # audio URL that's just about to expire and could do so before playback starts.
+_AWS_URL_TTL = 300  # 5 mins in seconds
 _CACHE_TTL = _AWS_URL_TTL - 30  # seconds
 _CACHE_MAXITEMS = 30
 
 
 @cachetools.cached(cachetools.TTLCache(_CACHE_MAXITEMS, _CACHE_TTL))
 def get_synthesized_text_url(
-    text: str, txt_format=_DEFAULT_TEXT_FORMAT, voice_id=_DEFAULT_VOICE, speed=1.0
+    text: str,
+    txt_format: str = _DEFAULT_TEXT_FORMAT,
+    voice_id: str = _DEFAULT_VOICE,
+    speed: float = 1.0,
 ) -> Optional[str]:
     """ Returns AWS URL to audio file with speech-synthesised text """
 
