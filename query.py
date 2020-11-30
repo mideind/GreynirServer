@@ -678,7 +678,8 @@ class Query:
         return self._client_id
 
     @property
-    def client_type(self):
+    def client_type(self) -> str:
+        """ Return client type string, e.g. "ios", "android", "www", etc. """
         return self._client_type
 
     def response(self) -> Optional[ResponseMapping]:

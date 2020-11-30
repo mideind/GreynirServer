@@ -2,8 +2,6 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Distance query response module
-
     Copyright (C) 2020 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
@@ -49,7 +47,7 @@ def _whoisme_handler(q: Query, ql: str) -> bool:
     if not nd:
         return False
 
-    for t in ["first", "full"]:
+    for t in ["full", "first"]:
         if t not in nd:
             continue
         if ql == _WHO_IS_ME.format(nd[t].lower()):
@@ -93,7 +91,7 @@ _DUNNO_NAME = "Ég veit ekki hvað þú heitir, en þú getur sagt mér það."
 def _whatsmyname_handler(q: Query, ql: str) -> bool:
     """ Handle queries of the form "Hvað heiti ég?" """
     if ql in _WHATS_MY_NAME:
-        answ = None
+        answ: str = None
         nd = q.client_data("name")
         if nd and "full" in nd:
             answ = f"Þú heitir {nd['full']}"
@@ -204,16 +202,18 @@ _DUNNO_ADDRESS = "Ég veit ekki hvar þú átt heima, en þú getur sagt mér þ
 
 def _whatsmyaddr_handler(q: Query, ql: str) -> bool:
     """ Handle queries of the form "Hvar á ég heima?" """
-    if ql in _WHATS_MY_ADDR:
-        answ = None
-        ad = q.client_data("address")
-        if not ad:
-            answ = _DUNNO_ADDRESS
-        else:
-            prep = iceprep_for_street(ad["street"])
-            answ = "Þú átt heima {0} {1}".format(prep, _addr2str(ad, case="þgf"))
-        q.set_answer(*gen_answer(answ))
-        return True
+    if ql not in _WHATS_MY_ADDR:
+        return False
+
+    answ = None
+    ad = q.client_data("address")
+    if not ad:
+        answ = _DUNNO_ADDRESS
+    else:
+        prep = iceprep_for_street(ad["street"])
+        answ = "Þú átt heima {0} {1}".format(prep, _addr2str(ad, case="þgf"))
+    q.set_answer(*gen_answer(answ))
+    return True
 
 
 _MY_ADDRESS_REGEXES = (
@@ -224,7 +224,7 @@ _MY_ADDRESS_REGEXES = (
     r"heimilisfang mitt er (.+)$",
 )
 
-_ADDR_LOOKUP_FAIL = "Ekki tókst að fletta upp þessu heimilisfangi."
+_ADDR_LOOKUP_FAIL = "Ég fann ekki þetta heimilisfang."
 
 
 def _myaddris_handler(q: Query, ql: str) -> bool:
@@ -280,7 +280,7 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
         answ = "Heimilisfang þitt hefur verið skráð sem {0}".format(_addr2str(d))
         q.set_answer(*gen_answer(answ))
     else:
-        q.set_answer(*gen_answer("Ekki tókst að vista heimilisfang. Auðkenni vantar."))
+        q.set_answer(*gen_answer("Ekki tókst að vista heimilisfang. Auðkenni tækis vantar."))
 
     return True
 

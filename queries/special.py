@@ -585,8 +585,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hver framleiðir emblu": _CREATOR,
     "hver framleiddi þig": _CREATOR,
     "hver á þig": _CREATOR,
-    "ert þú íslensk": {"answer": "Ég var allavega sköpuð af Íslendingum."},
-    "ertu íslensk": {"answer": "Ég var allavega sköpuð af Íslendingum."},
+    "ert þú íslensk": {"answer": "Já, í húð og hár."},
+    "ertu íslensk": {"answer": "Já, í húð og hár."},
     "frá hvaða landi ertu": {"answer": "Ég var allavega sköpuð af Íslendingum."},
     # Miðeind
     "hvað er miðeind": _ABOUT_MIDEIND,
