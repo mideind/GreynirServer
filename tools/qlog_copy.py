@@ -47,11 +47,14 @@ def main():
         quit()
 
     with SessionContext(commit=True) as session:
-
+        i = 0
         for q in session.query(Query).all():
             ql: QueryLog = QueryLog.from_Query(q)
             session.add(ql)
-            session.commit()
+            i += 1
+            if i % 1000 == 0:
+                session.commit()
+        session.commit()
 
 if __name__ == "__main__":
     main()
