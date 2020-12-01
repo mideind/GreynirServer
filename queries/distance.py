@@ -31,6 +31,8 @@
 # TODO: Fix issue where answer complains about lack of location despite query
 #       being handlable by another module, error checking should take place earlier
 
+from typing import Tuple, cast
+
 import re
 import logging
 
@@ -232,6 +234,7 @@ def dist_answer_for_loc(matches, query: Query):
 
     # Check if user is asking about distance from home address
     is_home = False
+    loc: Tuple[float, float]
     if loc_lower in _HOME_LOC:
         ad = query.client_data("address")
         if not ad:
@@ -240,7 +243,7 @@ def dist_answer_for_loc(matches, query: Query):
             return gen_answer("Ég veit ekki hvar heimili þitt er")
         else:
             is_home = True
-            loc = (ad["lat"], ad["lon"])
+            loc = (cast(float, ad["lat"]), cast(float, ad["lon"]))
             loc_nf = "{0} {1}".format(ad["street"], ad["number"])
     else:
         # Talk to geocode API

@@ -22,7 +22,7 @@
 
 """
 
-from typing import Dict
+from typing import Dict, cast
 
 import re
 
@@ -50,8 +50,9 @@ def _whoisme_handler(q: Query, ql: str) -> bool:
     for t in ["full", "first"]:
         if t not in nd:
             continue
-        if ql == _WHO_IS_ME.format(nd[t].lower()):
-            q.set_answer(*gen_answer(_YOU_ARE.format(nd[t])))
+        name = cast(str, nd[t])
+        if ql == _WHO_IS_ME.format(name.lower()):
+            q.set_answer(*gen_answer(_YOU_ARE.format(name)))
             return True
 
     return False
@@ -90,17 +91,18 @@ _DUNNO_NAME = "Ég veit ekki hvað þú heitir, en þú getur sagt mér það."
 
 def _whatsmyname_handler(q: Query, ql: str) -> bool:
     """ Handle queries of the form "Hvað heiti ég?" """
-    if ql in _WHATS_MY_NAME:
-        answ: str = None
-        nd = q.client_data("name")
-        if nd and "full" in nd:
-            answ = f"Þú heitir {nd['full']}"
-        elif nd and "first" in nd:
-            answ = f"Þú heitir {nd['first']}"
-        else:
-            answ = _DUNNO_NAME
-        q.set_answer(*gen_answer(answ))
-        return True
+    if ql not in _WHATS_MY_NAME:
+        return False
+    answ: str
+    nd = q.client_data("name")
+    if nd and "full" in nd:
+        answ = f"Þú heitir {nd['full']}"
+    elif nd and "first" in nd:
+        answ = f"Þú heitir {nd['first']}"
+    else:
+        answ = _DUNNO_NAME
+    q.set_answer(*gen_answer(answ))
+    return True
 
 
 _MY_NAME_IS_REGEXES = frozenset(
@@ -204,14 +206,15 @@ def _whatsmyaddr_handler(q: Query, ql: str) -> bool:
     """ Handle queries of the form "Hvar á ég heima?" """
     if ql not in _WHATS_MY_ADDR:
         return False
-
     answ = None
     ad = q.client_data("address")
     if not ad:
         answ = _DUNNO_ADDRESS
     else:
-        prep = iceprep_for_street(ad["street"])
-        answ = "Þú átt heima {0} {1}".format(prep, _addr2str(ad, case="þgf"))
+        addr = cast(Dict[str, str], ad)
+        street = addr["street"]
+        prep = iceprep_for_street(street)
+        answ = "Þú átt heima {0} {1}".format(prep, _addr2str(addr, case="þgf"))
     q.set_answer(*gen_answer(answ))
     return True
 
