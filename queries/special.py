@@ -1065,7 +1065,6 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert gáfuð": _GOOD_TO_HEAR,
     "þú ert snjöll": _GOOD_TO_HEAR,
     "þú ert mjög snjöll": _GOOD_TO_HEAR,
-    "þú ert klár": _GOOD_TO_HEAR,
     "þú ert rosa klár": _GOOD_TO_HEAR,
     "ég þrái þig": _GOOD_TO_HEAR,
     "þú veist margt": _GOOD_TO_HEAR,
@@ -1103,7 +1102,6 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "mér finnst þú frábær": _LIKEWISE,
     "mér þykir þú flott": _LIKEWISE,
     "mér finnst þú flott": _LIKEWISE,
-    "gott hjá þér": _THANKS,
     # Philosophy
     "hvað er svarið": _MEANING_OF_LIFE,
     "hvert er svarið": _MEANING_OF_LIFE,

@@ -23,7 +23,6 @@
 
 """
 
-
 from sqlalchemy import text  # type: ignore
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base  # type: ignore
 from sqlalchemy.orm import relationship, backref  # type: ignore
@@ -68,6 +67,7 @@ setattr(Base, "table", classmethod(lambda cls: cls.__table__))
 
 
 class Root(Base):
+
     """ Represents a scraper root, i.e. a base domain and root URL """
 
     __tablename__ = "roots"
@@ -105,6 +105,7 @@ class Root(Base):
 
 
 class Article(Base):
+
     """ Represents an article from one of the roots, to be scraped
         or having already been scraped """
 
@@ -182,6 +183,7 @@ class Article(Base):
 
 
 class Person(Base):
+
     """ Represents a person """
 
     __tablename__ = "persons"
@@ -278,6 +280,7 @@ class Entity(Base):
 
 
 class Location(Base):
+
     """ Represents a location """
 
     __tablename__ = "locations"
@@ -335,6 +338,7 @@ class Location(Base):
 
 
 class Word(Base):
+
     """ Represents a word occurring in an article """
 
     __tablename__ = "words"
@@ -371,6 +375,7 @@ class Word(Base):
 
 
 class Topic(Base):
+
     """ Represents a topic for an article """
 
     __tablename__ = "topics"
@@ -402,6 +407,7 @@ class Topic(Base):
 
 
 class ArticleTopic(Base):
+
     """ Represents an article having a topic, a 1:N relationship """
 
     __tablename__ = "atopics"
@@ -434,6 +440,7 @@ class ArticleTopic(Base):
 
 
 class Trigram(Base):
+
     """ Represents a trigram of tokens from a parsed sentence """
 
     __tablename__ = "trigrams"
@@ -539,6 +546,7 @@ class BlacklistedLink(Base):
 
 
 class Query(Base):
+
     """ Represents a logged incoming query with its answer """
 
     __tablename__ = "queries"
@@ -653,7 +661,8 @@ class Query(Base):
 
 
 class QueryLog(Base):
-    """ Represents a fully anonymised, logged query with its answer. """
+
+    """ Represents a fully anonymized, logged query and its answer. """
 
     __tablename__ = "querylog"
 
@@ -667,7 +676,7 @@ class QueryLog(Base):
         server_default=text("uuid_generate_v1()"),
     )
 
-    # See Query model wrt. what these fields represents
+    # See the Query class for documentation of these fields
     timestamp = Column(DateTime, index=True, nullable=False)
 
     interpretations = Column(JSONB, nullable=True)

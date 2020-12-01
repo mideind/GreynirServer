@@ -22,7 +22,7 @@
 
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional, cast
 
 from datetime import datetime
 import logging
@@ -443,7 +443,7 @@ def query_api(version=1):
         )
         if url:
             result["audio"] = url
-        response = result.get("response")
+        response = cast(Optional[Dict[str, str]], result.get("response"))
         if response:
             if "sources" in response:
                 # A list of sources is not needed for voice results

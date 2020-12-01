@@ -38,7 +38,7 @@ from main import app
 
 from settings import changedlocale
 from db import SessionContext
-from db.models import Query, QueryData
+from db.models import Query, QueryData, QueryLog
 
 
 @pytest.fixture
@@ -616,8 +616,10 @@ def test_query_api(client):
             Query.table().delete().where(Query.client_id == DUMMY_CLIENT_ID)
         )
         session.execute(
-            QueryData.table().delete().where(Query.client_id == DUMMY_CLIENT_ID)
+            QueryData.table().delete().where(QueryData.client_id == DUMMY_CLIENT_ID)
         )
+        # Note: there is no client_id in the querylog table
+        # so we cannot delete the logged queries there by this criterion.
 
 
 def test_query_utility_functions():

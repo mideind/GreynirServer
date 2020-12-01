@@ -5,7 +5,6 @@
     Query module
 
     Copyright (C) 2020 Miðeind ehf.
-    Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -38,6 +37,7 @@ from typing import (
     Any,
     Mapping,
 )
+from typing_extensions import Protocol
 
 from types import ModuleType
 
@@ -60,7 +60,7 @@ from reynir import TOK, Tok, tokenize, correct_spaces
 from reynir.fastparser import Fast_Parser, ParseForestDumper, ParseError, ffi
 from reynir.binparser import BIN_Grammar, GrammarError
 from reynir.reducer import Reducer
-from reynir.bindb import BIN_Db
+from reynir.bindb import BIN_Db, BIN_Meaning
 
 # from nertokenizer import recognize_entities
 from images import get_image_url
@@ -82,6 +82,15 @@ ClientDataDict = Dict[str, Union[str, int, float, bool]]
 
 # Answer tuple (corresponds to parameter list of Query.set_answer())
 AnswerTuple = Tuple[ResponseMapping, str, Optional[str]]
+
+LookupFunc = Callable[[str], Tuple[str, List[BIN_Meaning]]]
+MeaningFilterFunc = Optional[Callable[[BIN_Meaning], bool]]
+
+
+class CastFunc(Protocol):
+    def __call__(self, word: str, *, meaning_filter_func: MeaningFilterFunc) -> str:
+        ...
+
 
 # The grammar root nonterminal for queries; see Greynir.grammar in GreynirPackage
 _QUERY_ROOT = "QueryRoot"
@@ -113,7 +122,7 @@ _IGNORED_PREFIX_RE = r"^({0})\s*".format("|".join(_IGNORED_QUERY_PREFIXES))
 _CAPITALIZATION_REPLACEMENTS = (("í Dag", "í dag"),)
 
 
-def beautify_query(query):
+def beautify_query(query: str) -> str:
     """ Return a minimally beautified version of the given query string """
     # Make sure the query starts with an uppercase letter
     bq = (query[0].upper() + query[1:]) if query else ""
@@ -192,25 +201,25 @@ class QueryParser(Fast_Parser):
     # Keep a separate grammar class instance and time stamp for
     # QueryParser. This Python sleight-of-hand overrides
     # class attributes that are defined in BIN_Parser, see binparser.py.
-    _grammar_ts = None
+    _grammar_ts: Optional[float] = None
     _grammar = None
     _grammar_class = QueryGrammar
 
     # Also keep separate class instances of the C grammar and its timestamp
     _c_grammar = ffi.NULL
-    _c_grammar_ts = None
+    _c_grammar_ts: Optional[float] = None
 
     # Store the grammar additions for queries
     # (these remain constant for all query parsers, so there is no
     # need to store them per-instance)
     _grammar_additions = ""
 
-    def __init__(self, grammar_additions):
+    def __init__(self, grammar_additions: str) -> None:
         QueryParser._grammar_additions = grammar_additions
         super().__init__(verbose=False, root=_QUERY_ROOT)
 
     @classmethod
-    def grammar_additions(cls):
+    def grammar_additions(cls) -> str:
         return cls._grammar_additions
 
 
@@ -232,13 +241,13 @@ class Query:
 
     def __init__(
         self,
-        session,
+        session,  # SQLAlchemy session
         query: str,
         voice: bool,
         auto_uppercase: bool,
         location: Optional[LocationType],
-        client_id: str,
-        client_type: str,
+        client_id: Optional[str],
+        client_type: Optional[str],
     ) -> None:
 
         self._query = q = self._preprocess_query_string(query)
@@ -674,11 +683,11 @@ class Query:
         return self._voice
 
     @property
-    def client_id(self) -> str:
+    def client_id(self) -> Optional[str]:
         return self._client_id
 
     @property
-    def client_type(self) -> str:
+    def client_type(self) -> Optional[str]:
         """ Return client type string, e.g. "ios", "android", "www", etc. """
         return self._client_type
 
@@ -898,7 +907,12 @@ class Query:
         return result
 
 
-def _to_case(np, lookup_func, cast_func, meaning_filter_func):
+def _to_case(
+    np: str,
+    lookup_func: LookupFunc,
+    cast_func: CastFunc,
+    meaning_filter_func: MeaningFilterFunc,
+) -> str:
     """ Return the noun phrase after casting it from nominative to accusative case """
     # Split the phrase into words and punctuation, respectively
     a = re.split(r"([\w]+)", np)
@@ -933,7 +947,7 @@ def _to_case(np, lookup_func, cast_func, meaning_filter_func):
     return "".join(a)
 
 
-def to_accusative(np, *, meaning_filter_func=None):
+def to_accusative(np: str, *, meaning_filter_func: MeaningFilterFunc = None) -> str:
     """ Return the noun phrase after casting it from nominative to accusative case """
     with BIN_Db.get_db() as db:
         return _to_case(
@@ -944,7 +958,7 @@ def to_accusative(np, *, meaning_filter_func=None):
         )
 
 
-def to_dative(np, *, meaning_filter_func=None):
+def to_dative(np: str, *, meaning_filter_func: MeaningFilterFunc = None) -> str:
     """ Return the noun phrase after casting it from nominative to dative case """
     with BIN_Db.get_db() as db:
         return _to_case(
@@ -956,18 +970,19 @@ def to_dative(np, *, meaning_filter_func=None):
 
 
 def process_query(
-    q,
-    voice,
+    q: Union[str, Iterable[str]],
+    voice: bool,
     *,
-    auto_uppercase=False,
-    location=None,
-    remote_addr=None,
-    client_id=None,
-    client_type=None,
-    client_version=None,
-    bypass_cache=False,
-    private=False,
-):
+    auto_uppercase: bool = False,
+    location: Optional[LocationType] = None,
+    remote_addr: Optional[str] = None,
+    client_id: Optional[str] = None,
+    client_type: Optional[str] = None,
+    client_version: Optional[str] = None,
+    bypass_cache: bool = False,
+    private: bool = False,
+) -> ResponseDict:
+
     """ Process an incoming natural language query.
         If voice is True, return a voice-friendly string to
         be spoken to the user. If auto_uppercase is True,
@@ -979,13 +994,14 @@ def process_query(
         order until a successful one is found. """
 
     now = datetime.utcnow()
-    result = None
+    result: ResponseDict = dict()
     client_id = client_id[:256] if client_id else None
-    first_clean_q = None
-    first_qtext = None
+    first_clean_q: Optional[str] = None
+    first_qtext = ""
 
     with SessionContext(commit=True) as session:
 
+        it: Iterable[str]
         if isinstance(q, str):
             # This is a single string
             it = [q]
