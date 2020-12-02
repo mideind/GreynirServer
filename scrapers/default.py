@@ -1883,5 +1883,7 @@ class SedlabankinnScraper(ScrapeHelper):
         ScrapeHelper.del_div_class(content, "muted")
         for a in content.find_all("a", {"class": "til-baka"}):
             a.decompose()
+        for span in content.find_all("span", {"class": "news-img"}):
+            span.decompose()
 
         return content
