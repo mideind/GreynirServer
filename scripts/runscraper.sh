@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Scraper
-cd ~/Greynir
+cd ~/Greynir || exit 1
 source venv/bin/activate
 GREYNIR_DB_HOST="greynir.is" timeout 20m python scraper.py --limit=2500
 # Use control group to limit memory usage and swap
@@ -9,7 +9,7 @@ GREYNIR_DB_HOST="greynir.is" timeout 20m python scraper.py --limit=2500
 deactivate
 
 # Processor
-cd ~/Greynir
+cd ~/Greynir || exit 1
 source venv/bin/activate
 GREYNIR_DB_HOST="greynir.is" timeout 20m python processor.py --limit=3000
 deactivate

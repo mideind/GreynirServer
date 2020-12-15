@@ -10,13 +10,13 @@ command -v ipython >/dev/null 2>&1 || \
 SCRIPT_DIR=$(dirname "$0")
 CONFIG_PATH="${SCRIPT_DIR}/.ipython.py"
 
-if [ ! -e $CONFIG_PATH ]; then
+if [ ! -e "$CONFIG_PATH" ]; then
     echo "Warning: IPython config not found at ${CONFIG_PATH}"
 fi
 
 # Change to parent directory of the script
 # This should be the repo root
-cd $SCRIPT_DIR/..
+cd "$SCRIPT_DIR/.." || exit 1
 
 # Make sure we're running in a virtual environment
 if [ -z "$VIRTUAL_ENV" ]; then
@@ -24,7 +24,7 @@ if [ -z "$VIRTUAL_ENV" ]; then
   	exit
 fi
 
-VENV_DIR="`basename \"$VIRTUAL_ENV\"`"
+VENV_DIR="$(basename "$VIRTUAL_ENV")"
 
 if [ ! -d "$VENV_DIR" ]; then
 	echo "virtualenv directory '${VENV_DIR}' not found"

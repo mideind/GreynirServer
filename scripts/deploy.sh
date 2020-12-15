@@ -11,16 +11,16 @@
 
 SRC=~/github/Greynir
 MODE="PRODUCTION"
-DEST=/usr/share/nginx/greynir.is # Production
+DEST="/usr/share/nginx/greynir.is" # Production
 SERVICE="greynir"
 
 if [ "$1" = "staging" ]; then
     MODE="STAGING"
-    DEST=/usr/share/nginx/staging # Staging
+    DEST="/usr/share/nginx/staging" # Staging
     SERVICE="staging"
 fi
 
-read -p "This will deploy Greynir to **${MODE}**. Confirm? (y/n): " CONFIRMED
+read -rp "This will deploy Greynir to **${MODE}**. Confirm? (y/n): " CONFIRMED
 
 if [ "$CONFIRMED" != "y" ]; then
     echo "Deployment aborted"
@@ -29,15 +29,15 @@ fi
 
 echo "Deploying $SRC to $DEST..."
 
-cd $SRC
+cd $SRC || exit 1
 
 cp requirements.txt $DEST/requirements.txt
 
-cd $DEST
+cd $DEST || exit 1
 
 # echo "Upgrading dependencies according to requirements.txt"
 
-source venv/bin/activate
+source "venv/bin/activate"
 pip install --upgrade -r requirements.txt
 deactivate
 
@@ -45,7 +45,7 @@ echo "Removing binary grammar files"
 rm venv/site-packages/reynir/Greynir.grammar.bin
 rm venv/site-packages/reynir/Greynir.grammar.query.bin
 
-cd $SRC
+cd $SRC || exit 1
 
 echo "Copying files"
 
@@ -89,8 +89,8 @@ cp resources/*.json $DEST/resources/
 cp -r resources/geo $DEST/resources/
 
 # Put a version identifier (date + commit ID) into the about.html template
-sed -i "s/\[Þróunarútgáfa\]/Útgáfa `date "+%Y-%m-%d %H:%M"`/g" $DEST/templates/about.html
-GITVERS=`git rev-parse HEAD` # Get git commit ID
+sed -i "s/\[Þróunarútgáfa\]/Útgáfa $(date "+%Y-%m-%d %H:%M")/g" $DEST/templates/about.html
+GITVERS=$(git rev-parse HEAD) # Get git commit ID
 GITVERS=${GITVERS:0:7} # Truncate it
 sed -i "s/\[Gitútgáfa\]/${GITVERS}/g" $DEST/templates/about.html
 
