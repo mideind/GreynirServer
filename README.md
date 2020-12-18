@@ -122,7 +122,7 @@ sentences and recognizes entities such as dates, numbers,
 amounts and person names, as well as common abbreviations and punctuation.
 
 Grammar rules are laid out in a separate text file,
-`[Greynir.grammar](https://github.com/mideind/GreynirPackage/blob/master/src/reynir/Greynir.grammar)`,
+[`Greynir.grammar`](https://github.com/mideind/GreynirPackage/blob/master/src/reynir/Greynir.grammar),
 which is a part of [GreynirPackage](https://github.com/mideind/GreynirPackage). The standard
 [Backus-Naur form](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form) has been
 augmented with repeat specifiers for right-hand-side tokens (`*` for 0..n instances,
