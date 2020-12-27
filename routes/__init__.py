@@ -24,7 +24,7 @@
 
 """
 
-from typing import Dict, Callable
+from typing import Dict, Callable, Optional
 
 import threading
 import time
@@ -48,6 +48,7 @@ from flask import _request_ctx_stack  # type: ignore
 from flask.ctx import RequestContext
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import HTTPException, InternalServerError
+import flask_caching  # type: ignore
 
 
 ProgressFunc = Callable[[float], None]
@@ -61,7 +62,7 @@ _MAX_UUID_LENGTH = 36
 
 _TRUTHY = frozenset(("true", "1", "yes"))
 
-cache = current_app.config["CACHE"]
+cache: flask_caching.Cache = current_app.config["CACHE"]
 routes: Blueprint = Blueprint("routes", __name__)
 
 
