@@ -5,7 +5,7 @@
 
     POS tagging accuracy measurement tool
 
-    Copyright (C) 2017 Miðeind ehf
+    Copyright (C) 2021 Miðeind ehf.
     Original author: Hulda Óladóttir
 
        This program is free software: you can redistribute it and/or modify
