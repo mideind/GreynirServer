@@ -275,7 +275,7 @@ def test_query_api(client):
     assert str(now.year) in json["answer"]
 
     json = qmcall(c, {"q": "er 2020 hlaupár?"}, "Date")
-    assert "er hlaupár" in json["answer"]
+    assert "var hlaupár" in json["answer"]
 
     json = qmcall(c, {"q": "var árið 1999 hlaupár?"}, "Date")
     assert "ekki hlaupár" in json["answer"]
