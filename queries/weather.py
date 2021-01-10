@@ -266,7 +266,7 @@ QWeatherNextDays →
     | "fyrir" "morgundaginn"
 
 QWeatherCountry →
-    "á" "landinu" | "á" "íslandi" | "hér_á_landi" | "á" "landsvísu"
+    "á" "landinu" | "á" "íslandi" | "hér" "á" "landi" | "á" "landsvísu"
     | "um" "landið" "allt" | "um" "allt" "land" | "fyrir" "allt" "landið"
     | "á" "fróni" | "heima"
 
@@ -489,7 +489,7 @@ def get_currweather_answer(query: Query, result) -> AnswerTuple:
     # Meters per second string for voice. Say nothing if "logn".
 
     voice_ms = (
-        ", {0} á sekúndu".format(sing_or_plur(float(wind_ms_str), "metri", "metrar"))
+        ", {0} á sekúndu".format(sing_or_plur(int(wind_ms_str), "metri", "metrar"))
         if wind_ms_str != "0"
         else ""
     )
