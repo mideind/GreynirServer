@@ -92,7 +92,7 @@ cp -r resources/geo $DEST/resources/
 sed -i "s/\[Þróunarútgáfa\]/Útgáfa $(date "+%Y-%m-%d %H:%M")/g" $DEST/templates/about.html
 GITVERS=$(git rev-parse HEAD) # Get git commit ID
 GITVERS=${GITVERS:0:7} # Truncate it
-sed -i "s/\[Gitútgáfa\]/${GITVERS}/g" $DEST/templates/about.html
+sed -i "s/\[Git-útgáfa\]/${GITVERS}/g" $DEST/templates/about.html
 
 echo "Reloading gunicorn server..."
 

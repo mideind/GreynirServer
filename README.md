@@ -111,12 +111,6 @@ input. The server runs on the [Flask](http://flask.pocoo.org/) framework, implem
 can for instance be plugged into [Gunicorn](http://gunicorn.org/) and
 [nginx](https://www.nginx.com/).
 
-Greynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](http://bin.arnastofnun.is))
-lexicon and database of Icelandic word forms to identify word forms, and find their
-potential meanings and lemmas. The database is included in
-[GreynirPackage](https://github.com/mideind/GreynirPackage) in compressed form,
-under license from and by permission of the [BÍN copyright holder](http://bin.arnastofnun.is/DMII/).
-
 The [tokenizer](https://github.com/mideind/Tokenizer) divides text chunks into
 sentences and recognizes entities such as dates, numbers,
 amounts and person names, as well as common abbreviations and punctuation.
@@ -206,7 +200,7 @@ python main.py
 Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be 
 changed in `config/Greynir.conf`.
 
-### Scrapers
+### Web scrapers
 
 ```
 python scraper.py
@@ -231,7 +225,7 @@ See [Contributing to Greynir](CONTRIBUTING.md).
 
 ## Copyright and licensing
 
-Greynir is Copyright (C) 2020 [Miðeind ehf.](https://mideind.is)
+Greynir is Copyright (C) 2021 [Miðeind ehf.](https://mideind.is)
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
 <img src="static/img/GPLv3.png" align="right" style="margin-left:20px;">
@@ -254,3 +248,14 @@ GNU GPLv3 license, please contact us at [mideind@mideind.is](mailto:mideind@mide
 to negotiate a custom license. This applies for instance if you want to include or use
 this software, in part or in full, in other software that is not licensed under
 GNU GPLv3 or other compatible licenses.
+
+----
+
+Greynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](https://bin.arnastofnun.is))
+lexicon and database of Icelandic word forms to identify words and find their
+potential meanings and lemmas. The database is included in
+[GreynirPackage](https://github.com/mideind/GreynirPackage) in compressed form.
+BÍN is licensed under CC-BY-4.0, and credit is hereby given as follows:
+
+*Beygingarlýsing íslensks nútímamáls. Stofnun Árna Magnússonar í íslenskum fræðum. Höfundur og ritstjóri Kristín Bjarnadóttir.*
+
