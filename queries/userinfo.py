@@ -113,6 +113,7 @@ _MY_NAME_IS_REGEXES = frozenset(
         r"^nafnið mitt er (.+)$",
         r"^ég ber heitið (.+)$",
         r"^ég ber nafnið (.+)$",
+        r"^ég er kallaður (.+)$",
     )
 )
 
