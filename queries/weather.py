@@ -266,7 +266,7 @@ QWeatherNextDays →
     | "fyrir" "morgundaginn"
 
 QWeatherCountry →
-    "á" "landinu" | "á" "íslandi" | "hér" "á" "landi" | "á" "landsvísu"
+    "á" "landinu" | "á" "íslandi" | "hér_á_landi" | "á" "landsvísu"
     | "um" "landið" "allt" | "um" "allt" "land" | "fyrir" "allt" "landið"
     | "á" "fróni" | "heima"
 
@@ -413,7 +413,7 @@ def _curr_observations(query: Query, result):
 
     # User asked about a specific location
     # Try to find a matching Icelandic placename
-    if "location" in result and result.location != "Ísland":
+    if "location" in result and result.location != "Ísland" and result.location != "general":
         if result.location == "capital":
             loc = _RVK_COORDS
             result.subject = "Í Reykjavík"
@@ -466,7 +466,6 @@ _API_ERRMSG = "Ekki tókst að sækja veðurupplýsingar."
 
 def get_currweather_answer(query: Query, result) -> AnswerTuple:
     """ Handle queries concerning current weather conditions """
-
     res = _curr_observations(query, result)
     if not res:
         return gen_answer(_API_ERRMSG)
@@ -487,7 +486,6 @@ def get_currweather_answer(query: Query, result) -> AnswerTuple:
     locdesc = result.get("subject") or "Úti"
 
     # Meters per second string for voice. Say nothing if "logn".
-
     voice_ms = (
         ", {0} á sekúndu".format(sing_or_plur(int(wind_ms_str), "metri", "metrar"))
         if wind_ms_str != "0"
