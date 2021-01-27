@@ -114,6 +114,7 @@ _MY_NAME_IS_REGEXES = frozenset(
         r"^ég ber heitið (.+)$",
         r"^ég ber nafnið (.+)$",
         r"^ég er kallaður (.+)$",
+        r"^ég kallast (.+)$",
     )
 )
 
@@ -131,12 +132,12 @@ def _mynameis_handler(q: Query, ql: str) -> bool:
         if m:
             break
     if m:
-        name = m.group(1).strip()
-        if not name:
+        fname = m.group(1).strip()
+        if not fname:
             return False
 
         # Clean up name string
-        name = name.split(" og ")[0]  # "ég heiti X og blablabla"
+        name = fname.split(" og ")[0]  # "ég heiti X og blablabla"
         name = name.split(" hvað ")[0]  # "ég heiti X hvað heitir þú"
 
         # Handle "ég heiti ekki X"
@@ -156,10 +157,15 @@ def _mynameis_handler(q: Query, ql: str) -> bool:
             qdata = dict(full=name.title(), first=fn, gender=gender)
             q.set_client_data("name", qdata)
 
+        # Beautify query by capitalizing the name provided
+        bq = q.beautified_query
+        q.set_beautified_query(bq.replace(name, name.title()))
+
         # Generate answer
         voice = answ.replace(",", "")
         q.set_answer(dict(answer=answ), answ, voice)
         q.query_is_command()
+
         return True
 
     return False
