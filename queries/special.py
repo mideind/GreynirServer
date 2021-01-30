@@ -1151,6 +1151,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hver skapaði heiminn": {"answer": "Enginn sem ég þekki."},
     "hver er skapari heimsins": {"answer": "Enginn sem ég þekki."},
     "hvar endar alheimurinn": {"answer": "Inni í þér."},
+    "hvar er húfan mín": {"answer": "Hvar er hettan mín?"},
     "hvar er draumurinn": {"answer": "Hvar ertu lífið sem ég þrái?"},  # :)
     # Why am I here?
     "af hverju er ég hérna": _GOOD_QUESTION,

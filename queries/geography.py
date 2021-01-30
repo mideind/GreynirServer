@@ -25,6 +25,7 @@
 
 # TODO: "Hvað búa margir í/á [BORG/LAND]?" etc. Wiki api?
 # TODO: Beautify queries by fixing capitalization of countries, placenames
+# TODO: Beautify query: "Hver er höfuðborg Norður-Kóreu"
 
 import logging
 import random

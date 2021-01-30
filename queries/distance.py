@@ -159,7 +159,7 @@ _TT_MODES = {
     "á bíl": "driving",
 }
 
-_PREPS = ("á", "í", "til")
+_PREPS = ("á", "í", "til", "að")
 _TT_PREP_PREFIX = ("út", "upp", "niður", "vestur", "norður", "austur", "suður")
 _TT_PREPS = []
 
