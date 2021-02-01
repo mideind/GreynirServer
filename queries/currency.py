@@ -281,7 +281,7 @@ QCurNumberWord →
 QCurCurrencyIndex/fall →
     'gengisvísitala:kvk'_et/fall QCurISK_ef?
 
-QCurVisAVis → "gagnvart" | "á_móti" | "gegn"
+QCurVisAVis → "gagnvart" | "á" "móti" | "gegn"
 
 QCurXch → "gengi" | "gengið"
 
