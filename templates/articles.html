@@ -1,5 +1,4 @@
 
-
 {% if articles %}
 
    <div class="table-scroll-wrapper">
@@ -17,7 +16,7 @@
       <tbody>
    {% for article in articles %}
       <tr class="topitem" onClick="openURL('{{ url_for('routes.page') }}?id={{ article.uuid }}', event);">
-         <td class="timestamp text-muted hidden-xs"
+         <td class="timestamp text-muted hidden-xs {{ '' if display_time else 'wide' }}"
             title="{{ article.time }}, {{ article.fulldate }}">
             {{ article.time if display_time else article.date }}
          </td>

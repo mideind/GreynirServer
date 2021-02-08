@@ -69,24 +69,25 @@ def fetch_articles(
         if start is not None:
             q = q.filter(Article.timestamp > start)
 
-        # Filter by location
-        if location is not None:
-            q = q.join(Location).filter(Location.name == location)
-
-        # Filter by country code
-        if country is not None:
-            q = q.join(Location).filter(Location.country == country)
+        if location or country:
+            q = q.join(Location)
+            if location:
+                # Filter by location
+                q = q.filter(Location.name == location)
+            if country:
+                # Filter by country code
+                q = q.filter(Location.country == country)
 
         # Filter by source (root) using domain (e.g. "kjarninn.is")
-        if root is not None:
+        if root:
             q = q.filter(Root.domain == root)
 
         # Filter by author name
-        if author is not None:
+        if author:
             q = q.filter(Article.author == author)
 
         # Filter by topic identifier
-        if topic is not None:
+        if topic:
             q = q.join(ArticleTopic).join(Topic).filter(Topic.identifier == topic)
 
         q = q.order_by(desc(Article.timestamp)).offset(offset).limit(limit)
@@ -218,6 +219,7 @@ def news():
         limit=limit,
         selected_root=root,
         roots=roots,
+        author=author,
     )
 
 
