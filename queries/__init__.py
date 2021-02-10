@@ -42,7 +42,7 @@ from pytz import country_timezones
 from geo import country_name_for_isocode, iceprep_for_cc
 from reynir import NounPhrase
 from settings import changedlocale
-from util import google_api_key
+from util import read_api_key
 
 
 # Type definitions
@@ -456,7 +456,7 @@ _MAPS_API_COORDS_URL = (
 def query_geocode_api_coords(lat: float, lon: float) -> Optional[Dict]:
     """ Look up coordinates in Google's geocode API. """
     # Load API key
-    key = google_api_key()
+    key = read_api_key("GoogleServerKey")
     if not key:
         # No key, can't query Google location API
         logging.warning("No API key for coordinates lookup")
@@ -477,7 +477,7 @@ _MAPS_API_ADDR_URL = (
 def query_geocode_api_addr(addr: str) -> Optional[Dict]:
     """ Look up address in Google's geocode API. """
     # Load API key
-    key = google_api_key()
+    key = read_api_key("GoogleServerKey")
     if not key:
         # No key, can't query the API
         logging.warning("No API key for address lookup")
@@ -513,7 +513,7 @@ def query_traveltime_api(
     assert mode in _TRAVEL_MODES
 
     # Load API key
-    key = google_api_key()
+    key = read_api_key("GoogleServerKey")
     if not key:
         # No key, can't query the API
         logging.warning("No API key for travel time lookup")
@@ -551,7 +551,7 @@ def query_places_api(
         fields = "place_id,opening_hours,geometry/location,formatted_address"
 
     # Load API key
-    key = google_api_key()
+    key = read_api_key("GoogleServerKey")
     if not key:
         # No key, can't query the API
         logging.warning("No API key for Google Places lookup")
@@ -589,7 +589,7 @@ def query_place_details(place_id: str, fields: Optional[str] = None) -> Optional
     https://developers.google.com/places/web-service/details"""
 
     # Load API key
-    key = google_api_key()
+    key = read_api_key("GoogleServerKey")
     if not key:
         # No key, can't query the API
         logging.warning("No API key for Google Place Details lookup")

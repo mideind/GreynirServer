@@ -37,7 +37,7 @@ if mainpath not in sys.path:
 from main import app
 from db import SessionContext
 from db.models import Query, QueryData
-from util import greynir_api_key
+from util import read_api_key
 
 # pylint: disable=unused-wildcard-import
 from geo import *
@@ -61,7 +61,7 @@ def in_ci_environment() -> bool:
         is a dummy value (set in .travis.yml). """
     global DUMMY_API_KEY
     try:
-        greynir_api_key() == DUMMY_API_KEY
+        read_api_key("GreynirServerKey") == DUMMY_API_KEY
     except Exception:
         return False
 

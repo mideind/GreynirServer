@@ -42,7 +42,7 @@ from query import process_query
 from query import Query as QueryObject
 from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
 from speech import get_synthesized_text_url
-from util import greynir_api_key
+from util import read_api_key
 
 from . import routes, better_jsonify, text_from_request, bool_from_request, restricted
 from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH
@@ -474,7 +474,7 @@ def query_history_api(version=1):
     # Calling this endpoint requires the Greynir API key
     # TODO: Enable when clients (iOS, Android) have been updated
     # key = request.values.get("api_key")
-    # gak = greynir_api_key()
+    # gak = read_api_key("GreynirServerKey")
     # if not gak or not key or key != gak:
     #     resp["errmsg"] = "Invalid or missing API key."
     #     return better_jsonify(**resp)
@@ -519,7 +519,7 @@ def speech_api(version=1):
 
     # Calling this endpoint requires the Greynir API key
     key = request.values.get("api_key")
-    gak = greynir_api_key()
+    gak = read_api_key("GreynirServerKey")
     if not gak or not key or key != gak:
         reply["errmsg"] = "Invalid or missing API key."
         return better_jsonify(**reply)
@@ -630,7 +630,7 @@ def register_query_data_api(version=1):
 
     # Calling this endpoint requires the Greynir API key
     key = qdata.get("api_key")
-    gak = greynir_api_key()
+    gak = read_api_key("GreynirServerKey")
     if not gak or not key or key != gak:
         return better_jsonify(valid=False, errmsg="Invalid or missing API key.")
 

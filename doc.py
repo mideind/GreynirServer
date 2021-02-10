@@ -166,9 +166,9 @@ MIMETYPE_TO_DOC_CLASS: Dict[str, Type[Document]] = {
     "text/plain": PlainTextDocument,
     "text/html": HTMLDocument,
     "text/rtf": RTFDocument,
-    "application/rtf": RTFDocument,
     # "application/pdf": PDFDocument,
     # "application/x-pdf": PDFDocument,
+    "application/rtf": RTFDocument,
     # Yes, really!
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": DocxDocument,
 }
