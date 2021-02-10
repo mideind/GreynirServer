@@ -152,7 +152,7 @@ $RECYCLE.BIN/
 *.msp
 
 # API keys
-resources/GoogleServerKey.txt
+resources/*Key.txt
 resources/aws_polly_keys.*.json
 resources/salescloud_key.bin
 

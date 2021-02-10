@@ -51,8 +51,8 @@ LatLonTuple = Tuple[float, float]
 
 
 def natlang_seq(words: List[str], oxford_comma: bool = False) -> str:
-    """ Generate an Icelandic natural language sequence of words
-        e.g. "A og B", "A, B og C", "A, B, C og D". """
+    """Generate an Icelandic natural language sequence of words
+    e.g. "A og B", "A, B og C", "A, B, C og D"."""
     if not words:
         return ""
     if len(words) == 1:
@@ -73,17 +73,17 @@ def nom2dat(w: str) -> str:
 
 
 def is_plural(num: Union[str, int, float]) -> bool:
-    """ Determine whether an Icelandic word following a given number should be
-        plural or not, e.g. "21 maður", "22 menn", "1,1 kílómetri", "11 menn" etc.
-        Accepts string, float or int as argument. """
+    """Determine whether an Icelandic word following a given number should be
+    plural or not, e.g. "21 maður", "22 menn", "1,1 kílómetri", "11 menn" etc.
+    Accepts string, float or int as argument."""
     sn = str(num)
     return not (sn.endswith("1") and not sn.endswith("11"))
 
 
 def sing_or_plur(num: Union[int, float], sing: str, pl: str) -> str:
-    """ Utility function that returns a formatted string w. Icelandic number and a subsequent
-        singular or plural noun, as appropriate, e.g. "1 einstaklingur", "2 einstaklingar",
-        "21 einstaklingur" etc. Accepts both floats and ints as first argument. """
+    """Utility function that returns a formatted string w. Icelandic number and a subsequent
+    singular or plural noun, as appropriate, e.g. "1 einstaklingur", "2 einstaklingar",
+    "21 einstaklingur" etc. Accepts both floats and ints as first argument."""
     return f"{iceformat_float(num)} {pl if is_plural(num) else sing}"
 
 
@@ -147,9 +147,9 @@ _NUMBER_WORDS = {
 
 
 def parse_num(node, num_str: str) -> float:
-    """ Parse Icelandic number string to float or int.
-        TODO: This needs to be a more capable, generic function. There are
-        several mildly differing implementions in various query modules. """
+    """Parse Icelandic number string to float or int.
+    TODO: This needs to be a more capable, generic function. There are
+    several mildly differing implementions in various query modules."""
 
     # Hack to handle the word "eina" being identified as f. name "Eina"
     if num_str in ("Eina", "Einu"):
@@ -228,9 +228,9 @@ HUNDREDS = ("tvö", "þrjú", "fjögur", "fimm", "sex", "sjö", "átta", "níu")
 
 
 def numbers_to_neutral(s: str) -> str:
-    """ Convert integers within the string s to voice
-        representations using neutral gender, i.e.
-        4 -> 'fjögur', 21 -> 'tuttugu og eitt' """
+    """Convert integers within the string s to voice
+    representations using neutral gender, i.e.
+    4 -> 'fjögur', 21 -> 'tuttugu og eitt'"""
 
     def convert(m):
         match = m.group(0)
@@ -253,8 +253,8 @@ def numbers_to_neutral(s: str) -> str:
 
 
 def country_desc(cc: str) -> str:
-    """ Generate Icelandic description of being in a particular country
-        with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi'. """
+    """Generate Icelandic description of being in a particular country
+    with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi'."""
     cn = country_name_for_isocode(cc)
     if cn is None:
         return f"í landinu '{cc}'"
@@ -298,8 +298,8 @@ _CASE_ABBR = ["nf", "þf", "þgf", "ef"]
 
 
 def time_period_desc(seconds: int, case: str = "nf", omit_seconds: bool = True) -> str:
-    """ Generate Icelandic description of the length of a given time
-        span, e.g. "4 dagar, 6 klukkustundir og 21 mínúta. """
+    """Generate Icelandic description of the length of a given time
+    span, e.g. "4 dagar, 6 klukkustundir og 21 mínúta."""
     assert case in _CASE_ABBR
     cidx = _CASE_ABBR.index(case)
     # Round to nearest minute if omitting second precision
@@ -327,8 +327,8 @@ _METER_NOUN = (
 def distance_desc(
     km_dist: float, case: str = "nf", in_metres: float = 1.0, abbr: bool = False
 ) -> str:
-    """ Generate an Icelandic description of distance in km/m w. option to
-        specify case, abbreviations, cutoff for returning desc in metres. """
+    """Generate an Icelandic description of distance in km/m w. option to
+    specify case, abbreviations, cutoff for returning desc in metres."""
     assert case in _CASE_ABBR
     cidx = _CASE_ABBR.index(case)
 
@@ -360,8 +360,8 @@ _KRONA_NOUN = (
 
 
 def krona_desc(amount: float, case: str = "nf") -> str:
-    """ Generate description of an amount in krónas, e.g.
-        "213,5 krónur", "361 króna", "70,11 krónur", etc. """
+    """Generate description of an amount in krónas, e.g.
+    "213,5 krónur", "361 króna", "70,11 krónur", etc."""
     assert case in _CASE_ABBR
     cidx = _CASE_ABBR.index(case)
     plidx = 1 if is_plural(amount) else 0
@@ -369,8 +369,8 @@ def krona_desc(amount: float, case: str = "nf") -> str:
 
 
 def strip_trailing_zeros(num_str: str) -> str:
-    """ Strip trailing decimal zeros from an Icelandic-style
-        float num string, e.g. "17,0" -> "17". """
+    """Strip trailing decimal zeros from an Icelandic-style
+    float num string, e.g. "17,0" -> "17"."""
     if "," in num_str:
         return num_str.rstrip("0").rstrip(",")
     return num_str
@@ -396,13 +396,13 @@ def gen_answer(a: str) -> AnswerTuple:
     return dict(answer=a), a, a
 
 
-def query_json_api(url: str) -> Optional[Dict]:
-    """ Request the URL, expecting a JSON response which is
-        parsed and returned as a Python data structure. """
+def query_json_api(url: str, headers: Optional[Dict] = None) -> Optional[Dict]:
+    """Request the URL, expecting a JSON response which is
+    parsed and returned as a Python data structure."""
 
     # Send request
     try:
-        r = requests.get(url)
+        r = requests.get(url, headers=headers)
     except Exception as e:
         logging.warning(str(e))
         return None
@@ -422,8 +422,8 @@ def query_json_api(url: str) -> Optional[Dict]:
 
 
 def query_xml_api(url: str):
-    """ Request the URL, expecting an XML response which is
-        parsed and returned as an XML document object. """
+    """Request the URL, expecting an XML response which is
+    parsed and returned as an XML document object."""
 
     # Send request
     try:
@@ -499,14 +499,16 @@ _TRAVEL_MODES = frozenset(("walking", "driving", "bicycling", "transit"))
 
 
 def query_traveltime_api(
-    startloc: Union[str, LatLonTuple], endloc: Union[str, LatLonTuple], mode: str = "walking"
+    startloc: Union[str, LatLonTuple],
+    endloc: Union[str, LatLonTuple],
+    mode: str = "walking",
 ) -> Optional[Dict]:
-    """ Look up travel time between two places, given a particular mode
-        of transportation, i.e. one of the modes in _TRAVEL_MODES.
-        The location arguments can be names, to be resolved by the API, or
-        a tuple of coordinates, e.g. (64.156742, -21.949426)
-        Uses Google Maps' Distance Matrix API. For more info, see:
-        https://developers.google.com/maps/documentation/distance-matrix/intro
+    """Look up travel time between two places, given a particular mode
+    of transportation, i.e. one of the modes in _TRAVEL_MODES.
+    The location arguments can be names, to be resolved by the API, or
+    a tuple of coordinates, e.g. (64.156742, -21.949426)
+    Uses Google Maps' Distance Matrix API. For more info, see:
+    https://developers.google.com/maps/documentation/distance-matrix/intro
     """
     assert mode in _TRAVEL_MODES
 
@@ -541,8 +543,8 @@ def query_places_api(
     radius: float = _PLACES_LOCBIAS_RADIUS,
     fields: Optional[str] = None,
 ) -> Optional[Dict]:
-    """ Look up a placename in Google's Places API. For details, see:
-        https://developers.google.com/places/web-service/search """
+    """Look up a placename in Google's Places API. For details, see:
+    https://developers.google.com/places/web-service/search"""
 
     if not fields:
         # Default fields requested from API
@@ -582,9 +584,9 @@ _PLACEDETAILS_API_URL = "https://maps.googleapis.com/maps/api/place/details/json
 
 @lru_cache(maxsize=32)
 def query_place_details(place_id: str, fields: Optional[str] = None) -> Optional[Dict]:
-    """ Look up place details by ID in Google's Place Details API. If "fields"
-        parameter is omitted, *all* fields are returned. For details, see
-        https://developers.google.com/places/web-service/details """
+    """Look up place details by ID in Google's Place Details API. If "fields"
+    parameter is omitted, *all* fields are returned. For details, see
+    https://developers.google.com/places/web-service/details"""
 
     # Load API key
     key = google_api_key()
@@ -617,9 +619,11 @@ def _tzwhere_singleton() -> tzwhere.tzwhere:
     return _TZW
 
 
-def timezone4loc(loc: Optional[LatLonTuple], fallback: Optional[str] = None) -> Optional[str]:
-    """ Returns timezone string given a tuple of coordinates.
-        Fallback argument should be a 2-char ISO 3166 country code."""
+def timezone4loc(
+    loc: Optional[LatLonTuple], fallback: Optional[str] = None
+) -> Optional[str]:
+    """Returns timezone string given a tuple of coordinates.
+    Fallback argument should be a 2-char ISO 3166 country code."""
     if loc is not None:
         return _tzwhere_singleton().tzNameAt(loc[0], loc[1], forceTZ=True)
     if fallback and fallback in country_timezones:
