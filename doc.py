@@ -29,6 +29,8 @@ import re
 from zipfile import ZipFile
 from html2text import HTML2Text
 from striprtf.striprtf import rtf_to_text  # type: ignore
+from odf import text, teletype
+from odf.opendocument import load
 
 # Use defusedxml module to prevent parsing of malicious XML
 from defusedxml import ElementTree  # type: ignore
@@ -76,8 +78,8 @@ class HTMLDocument(Document):
 
     @staticmethod
     def _remove_header_prefixes(text: str) -> str:
-        """ Removes '#' in all lines starting with '#'. Annoyingly,
-            html2text adds markdown-style headers for <h*> tags. """
+        """Removes '#' in all lines starting with '#'. Annoyingly,
+        html2text adds markdown-style headers for <h*> tags."""
         lines = text.split("\n")
         for i, line in enumerate(lines):
             if line.startswith("#"):
@@ -161,6 +163,16 @@ class DocxDocument(Document):
         return "\n\n".join(paragraphs)
 
 
+class ODTDocument(Document):
+    """ OpenDocument format. """
+
+    def extract_text(self) -> str:
+        pass
+        # textdoc = load("your.odt")
+        # allparas = textdoc.getElementsByType(text.P)
+        # teletype.extractText(allparas[0])
+
+
 # Map file mime type to document class
 MIMETYPE_TO_DOC_CLASS: Dict[str, Type[Document]] = {
     "text/plain": PlainTextDocument,
@@ -169,6 +181,7 @@ MIMETYPE_TO_DOC_CLASS: Dict[str, Type[Document]] = {
     # "application/pdf": PDFDocument,
     # "application/x-pdf": PDFDocument,
     "application/rtf": RTFDocument,
+    "application/vnd.oasis.opendocument.text": ODTDocument,
     # Yes, really!
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": DocxDocument,
 }

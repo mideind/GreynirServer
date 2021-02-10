@@ -23,3 +23,4 @@ iceweather>=0.1.1
 cachetools>=3.1.1
 Flask-Cors==3.0.8
 rjsmin>=1.1.0
+odfpy>=1.4.1
