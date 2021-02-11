@@ -99,9 +99,9 @@ class HTMLDocument(Document):
         h.decode_errors = "ignore"
         h.body_width = 0
 
-        text = h.handle(html)
+        txt = h.handle(html)
 
-        return self._remove_header_prefixes(text)
+        return self._remove_header_prefixes(txt)
 
 
 class RTFDocument(Document):
@@ -167,10 +167,10 @@ class ODTDocument(Document):
     """ OpenDocument format. """
 
     def extract_text(self) -> str:
-        pass
-        # textdoc = load("your.odt")
-        # allparas = textdoc.getElementsByType(text.P)
-        # teletype.extractText(allparas[0])
+        textdoc = load(BytesIO(self.data))
+        paragraphs = textdoc.getElementsByType(text.P)  # Find all paragraphs
+        ptexts = [teletype.extractText(p) for p in paragraphs]
+        return "\n\n".join(ptexts)
 
 
 # Map file mime type to document class
