@@ -128,15 +128,20 @@ class PDFDocument(Document):
 
     def extract_text(self) -> str:
         output_string = StringIO()
+
         parser = PDFParser(BytesIO(self.data))
         doc = PDFMinerDocument(parser)
         rsrcmgr = PDFResourceManager()
         device = TextConverter(rsrcmgr, output_string, laparams=LAParams())
         interpreter = PDFPageInterpreter(rsrcmgr, device)
+
         for page in PDFPage.create_pages(doc):
             interpreter.process_page(page)
-        # TODO: This needs postprocessing
-        return output_string.getvalue()
+
+        # Postprocessing
+        txt = output_string.getvalue()
+        txt = txt.replace("\n", " ")
+        return txt
 
 
 class DocxDocument(Document):
