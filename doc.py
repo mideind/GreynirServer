@@ -24,13 +24,20 @@
 from typing import Union, Dict, Type
 
 import abc
-from io import BytesIO
+from io import BytesIO, StringIO
 import re
 from zipfile import ZipFile
 from html2text import HTML2Text
 from striprtf.striprtf import rtf_to_text  # type: ignore
 from odf import text, teletype
 from odf.opendocument import load
+
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfdocument import PDFDocument as PDFMinerDocument
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.pdfpage import PDFPage
+from pdfminer.pdfparser import PDFParser
 
 # Use defusedxml module to prevent parsing of malicious XML
 from defusedxml import ElementTree  # type: ignore
@@ -120,7 +127,16 @@ class PDFDocument(Document):
     """ Adobe PDF document """
 
     def extract_text(self) -> str:
-        raise NotImplementedError
+        output_string = StringIO()
+        parser = PDFParser(BytesIO(self.data))
+        doc = PDFMinerDocument(parser)
+        rsrcmgr = PDFResourceManager()
+        device = TextConverter(rsrcmgr, output_string, laparams=LAParams())
+        interpreter = PDFPageInterpreter(rsrcmgr, device)
+        for page in PDFPage.create_pages(doc):
+            interpreter.process_page(page)
+        # TODO: This needs postprocessing
+        return output_string.getvalue()
 
 
 class DocxDocument(Document):
@@ -178,8 +194,8 @@ MIMETYPE_TO_DOC_CLASS: Dict[str, Type[Document]] = {
     "text/plain": PlainTextDocument,
     "text/html": HTMLDocument,
     "text/rtf": RTFDocument,
-    # "application/pdf": PDFDocument,
-    # "application/x-pdf": PDFDocument,
+    "application/pdf": PDFDocument,
+    "application/x-pdf": PDFDocument,
     "application/rtf": RTFDocument,
     "application/vnd.oasis.opendocument.text": ODTDocument,
     # Yes, really!
