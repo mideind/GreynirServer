@@ -23,30 +23,12 @@
 
 from typing import Dict, Optional
 
-import os
 import logging
 from urllib.parse import urlencode
 
 from . import query_json_api, gen_answer
 from query import Query
-
-
-_JA_API_KEY: Optional[str] = None
-_JA_API_KEY_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "resources", "JaServerKey.txt"
-)
-
-
-def ja_api_key() -> str:
-    """ Lazy-load API key from file. """
-    global _JA_API_KEY
-    if _JA_API_KEY is None:
-        try:
-            with open(_JA_API_KEY_PATH) as f:
-                _JA_API_KEY = f.read().strip()
-        except FileNotFoundError:
-            _JA_API_KEY = ""
-    return _JA_API_KEY
+from util import read_api_key
 
 
 _JA_API_URL = "https://api.ja.is/search/v6/?{0}"
@@ -54,7 +36,7 @@ _JA_API_URL = "https://api.ja.is/search/v6/?{0}"
 
 def query_ja_api(q: str) -> Optional[Dict]:
     """ Send query to ja.is API. """
-    key = ja_api_key()
+    key = read_api_key("JaServerKey")
     if not key:
         # No key, can't query the API
         logging.warning("No API key for ja.is")
@@ -75,7 +57,6 @@ def handle_plain_text(q: Query) -> bool:
     which is an instance of the query.Query class."""
     ql = q.query_lower.rstrip("?")
     if ql == "hvar býr sveinbjörn þórðarson":
-        print(_JA_API_KEY_PATH)
         print(query_ja_api("Sveinbjörn Þórðarson"))
         q.set_answer(*gen_answer("Öldugötu?"))
         return True
