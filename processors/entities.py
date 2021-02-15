@@ -365,51 +365,54 @@ def SvigaInnihaldFsRuna(node, params, result):
 
 
 def SvigaInnihald(node, params, result):
-    if node.has_variant("et"):
-        tengiliður = result.find_child(nt_base="Tilvísunarsetning")
-        if tengiliður:
-            # '...sem framleiðir álumgjörina fyrir iPhone'
-            tengisetning = tengiliður.find_child(nt_base="Tengisetning")
-            if tengisetning:
-                setning_án_f = tengisetning.find_child(nt_base="BeygingarliðurÁnF")
-                if setning_án_f:
-                    skilgr = setning_án_f._text
-                    # Remove extraneous prefixes
-                    for s in ("í dag",):
-                        if skilgr.startswith(s + " "):
-                            # Skera framan af
-                            skilgr = skilgr[len(s) + 1 :]
-                            break
-                    sögn = None
-                    for s in (
-                        "er",
-                        "var",
-                        "sé",
-                        "hefur verið",
-                        "væri",
-                        "hefði orðið",
-                        "verður",
-                    ):
-                        if skilgr.startswith(s + " "):
-                            # Skera framan af
-                            sögn = s
-                            skilgr = skilgr[len(s) + 1 :]
-                            break
-                    if skilgr:
-                        result.sviga_innihald = skilgr
-                        if sögn:
-                            result.sviga_sögn = sögn
-        elif result.find_child(nt_base="HreinYfirsetning") is not None:
-            # Hrein yfirsetning: sleppa því að nota hana
-            pass
-        elif result.find_child(nt_base="SvigaInnihaldFsRuna") is not None:
-            # Forsetningaruna: sleppa því að nota hana
-            pass
-        elif result.find_child(nt_base="SvigaInnihaldNl") is not None:
-            # Nafnliður sem passar ekki við fall eða tölu: sleppa því að nota hann
-            pass
-        else:
-            # Nl/fall/tala: OK
+    if not node.has_variant("et"):
+        return
+    tengiliður = result.find_child(nt_base="Tilvísunarsetning")
+    if tengiliður:
+        # '...sem framleiðir álumgjörina fyrir iPhone'
+        tengisetning = tengiliður.find_child(nt_base="Tengisetning")
+        if tengisetning:
+            setning_án_f = tengisetning.find_child(nt_base="BeygingarliðurÁnF")
+            if setning_án_f:
+                skilgr = setning_án_f._text
+                # Remove extraneous prefixes
+                for s in ("í dag",):
+                    if skilgr.startswith(s + " "):
+                        # Skera framan af
+                        skilgr = skilgr[len(s) + 1 :]
+                        break
+                sögn = None
+                for s in (
+                    "er",
+                    "var",
+                    "sé",
+                    "hefur verið",
+                    "væri",
+                    "hefði orðið",
+                    "verður",
+                ):
+                    if skilgr.startswith(s + " "):
+                        # Skera framan af
+                        sögn = s
+                        skilgr = skilgr[len(s) + 1 :]
+                        break
+                if skilgr:
+                    result.sviga_innihald = skilgr
+                    if sögn:
+                        result.sviga_sögn = sögn
+    elif result.find_child(nt_base="HreinYfirsetning") is not None:
+        # Hrein yfirsetning: sleppa því að nota hana
+        pass
+    elif result.find_child(nt_base="SvigaInnihaldFsRuna") is not None:
+        # Forsetningaruna: sleppa því að nota hana
+        pass
+    elif result.find_child(nt_base="SvigaInnihaldNl") is not None:
+        # Nafnliður sem passar ekki við fall eða tölu: sleppa því að nota hann
+        pass
+    else:
+        p = params[0]
+        if p is not None and p.has_nt_base("Nl") and p.has_variant("et"):
+            # Nl/fall_et: OK
             result.sviga_innihald = result._nominative
 
 

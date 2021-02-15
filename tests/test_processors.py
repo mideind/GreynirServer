@@ -106,35 +106,39 @@ def test_entities():
        Íslendingar stofnuðu skipafélagið Eimskipafélag Íslands.
        
     """
-    toklist = tokenize(text)
-    fp = Fast_Parser(verbose=False)
-    ip = IncrementalParser(fp, toklist, verbose=False)
-    # Dict of parse trees in string dump format,
-    # stored by sentence index (1-based)
-    trees = OrderedDict()
-    num_sent = 0
-    for p in ip.paragraphs():
-        for sent in p.sentences():
-            num_sent += 1
-            num_tokens = len(sent)
-            assert sent.parse(), "Sentence does not parse: " + sent.text
-            # Obtain a text representation of the parse tree
-            token_dicts = TreeUtility.dump_tokens(sent.tokens, sent.tree)
-            # Create a verbose text representation of
-            # the highest scoring parse tree
-            tree = ParseForestDumper.dump_forest(sent.tree, token_dicts=token_dicts)
-            # Add information about the sentence tree's score
-            # and the number of tokens
-            trees[num_sent] = "\n".join(
-                ["C{0}".format(sent.score), "L{0}".format(num_tokens), tree]
-            )
-    # Create a tree representation string out of
-    # all the accumulated parse trees
-    tree_string = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
 
-    tree = Tree()
-    tree.load(tree_string)
+    def make_tree(text: str) -> Tree:
+        toklist = tokenize(text)
+        fp = Fast_Parser(verbose=False)
+        ip = IncrementalParser(fp, toklist, verbose=False)
+        # Dict of parse trees in string dump format,
+        # stored by sentence index (1-based)
+        trees = OrderedDict()
+        num_sent = 0
+        for p in ip.paragraphs():
+            for sent in p.sentences():
+                num_sent += 1
+                num_tokens = len(sent)
+                assert sent.parse(), "Sentence does not parse: " + sent.text
+                # Obtain a text representation of the parse tree
+                token_dicts = TreeUtility.dump_tokens(sent.tokens, sent.tree)
+                # Create a verbose text representation of
+                # the highest scoring parse tree
+                tree = ParseForestDumper.dump_forest(sent.tree, token_dicts=token_dicts)
+                # Add information about the sentence tree's score
+                # and the number of tokens
+                trees[num_sent] = "\n".join(
+                    ["C{0}".format(sent.score), "L{0}".format(num_tokens), tree]
+                )
+        # Create a tree representation string out of
+        # all the accumulated parse trees
+        tree_string = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
 
+        tree = Tree()
+        tree.load(tree_string)
+        return tree
+
+    tree = make_tree(text)
     session = SessionShim()
     tree.process(session, entities)
 
@@ -155,6 +159,25 @@ def test_entities():
     session.check(("Apple-búðin", "er", "fyrirtæki"))
     session.check(("AirBerlin", "er", "flugfélag"))
 
+    assert session.is_empty()
+
+    text = """
+    Ég segi að Kópavogur (vinalegur staður) og Hafnarfjörður (einstakur bær)
+    séu efst á vinsældalistanum.
+    Til samanburðar áttu þau nágrannasveitafélög höfuðborgarinnar sem koma þar næst,
+    Kópavogur (436 félagslegar íbúðir) og Hafnarfjörður (245 félagslegar íbúðir)
+    samtals 681 félagslega íbúð í lok árs 2016.
+    """
+
+    tree = make_tree(text)
+    session = SessionShim()
+    tree.process(session, entities)
+
+    session.check(("Kópavogur", "er", "vinalegur staður"))
+    session.check(("Hafnarfjörður", "er", "einstakur bær"))
+
+    # We are inter alia checking that the system is not inferring that
+    # Kópavogur is '436 félagslegar íbúðir'.
     assert session.is_empty()
 
 
