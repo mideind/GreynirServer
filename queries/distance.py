@@ -207,8 +207,8 @@ def _addr2nom(address: str) -> str:
 
 
 def dist_answer_for_loc(matches, query: Query):
-    """ Generate response to distance query, e.g.
-        "Hvað er ég langt frá X?" """
+    """Generate response to distance query, e.g.
+    "Hvað er ég langt frá X?" """
     locname = matches.group(1)
     loc_nf = _addr2nom(locname) or locname
 
@@ -238,7 +238,9 @@ def dist_answer_for_loc(matches, query: Query):
     if loc_lower in _HOME_LOC:
         ad = query.client_data("address")
         if not ad:
-            return gen_answer("Ég veit ekki hvar þú átt heima, en þú getur sagt mér það")
+            return gen_answer(
+                "Ég veit ekki hvar þú átt heima, en þú getur sagt mér það"
+            )
         elif "lat" not in ad or "lon" not in ad:
             return gen_answer("Ég veit ekki hvar heimili þitt er")
         else:
@@ -294,8 +296,8 @@ def dist_answer_for_loc(matches, query: Query):
 
 
 def traveltime_answer_for_loc(matches, query: Query):
-    """ Generate answer to travel time query e.g.
-        "Hvað er ég lengi að ganga/keyra í/til X?" """
+    """Generate answer to travel time query e.g.
+    "Hvað er ég lengi að ganga/keyra í/til X?" """
     action_desc, tmode, locname = matches.group(2, 3, 5)
 
     loc_nf = _addr2nom(locname)
@@ -349,6 +351,11 @@ def traveltime_answer_for_loc(matches, query: Query):
     return response, answer, voice
 
 
+_UNKNOWN_LOC_RESP = (
+    "Ég veit ekki hvar þú ert, og get þar af leiðandi ekki reiknað út vegalengdir."
+)
+
+
 def handle_plain_text(q: Query) -> bool:
     """ Handle a plain text query, contained in the q parameter. """
     ql = q.query_lower.rstrip("?")
@@ -380,7 +387,7 @@ def handle_plain_text(q: Query) -> bool:
         if q.location:
             answ = handler(matches, q)
         else:
-            answ = gen_answer("Ég veit ekki hvar þú ert.")
+            answ = gen_answer(_UNKNOWN_LOC_RESP)
     except Exception as e:
         logging.warning("Exception gen. answer from geocode API: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))

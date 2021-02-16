@@ -232,8 +232,8 @@ _ADDR_LOOKUP_FAIL = "Ég fann ekki þetta heimilisfang."
 
 
 def _myaddris_handler(q: Query, ql: str) -> bool:
-    """ Handle queries of the form "Ég á heima á [heimilisfang]".
-        Store this info as query data. """
+    """Handle queries of the form "Ég á heima á [heimilisfang]".
+    Store this info as query data."""
     for rx in _MY_ADDRESS_REGEXES:
         m = re.search(rx, ql)
         if m:
@@ -284,7 +284,9 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
         answ = "Heimilisfang þitt hefur verið skráð sem {0}".format(_addr2str(d))
         q.set_answer(*gen_answer(answ))
     else:
-        q.set_answer(*gen_answer("Ekki tókst að vista heimilisfang. Auðkenni tækis vantar."))
+        q.set_answer(
+            *gen_answer("Ekki tókst að vista heimilisfang. Auðkenni tækis vantar.")
+        )
 
     return True
 
@@ -374,6 +376,37 @@ def _device_type_handler(q: Query, ql: str) -> bool:
     return False
 
 
+_CLIENT_VERSION_QUERIES = frozenset(
+    (
+        "hvaða útgáfu er ég að keyra",
+        "hvaða útgáfu er verið að keyra",
+        "hvaða útgáfu af emblu er ég að keyra",
+    )
+)
+
+_DUNNO_CLIENT_VERSION = "Ég veit ekki hvaða útgáfu ég er að keyra."
+
+
+def _client_version_handler(q: Query, ql: str) -> bool:
+    """ Handle queries about client version. """
+    if ql not in _CLIENT_VERSION_QUERIES:
+        return False
+
+    if not q.client_version:
+        q.set_key("ClientVersion")
+        q.set_answer(*gen_answer(_DUNNO_CLIENT_VERSION))
+        return True
+
+    # for prefix in _DEVICE_TYPE_TO_DESC.keys():
+    #     if q.client_type.startswith(prefix):
+    #         answ = _DEVICE_TYPE_TO_DESC[prefix]
+    #         q.set_answer(*gen_answer(answ))
+    #         q.set_key("ClientVersion")
+    #         return True
+
+    return False
+
+
 # Handler functions for all query types supported by this module.
 _HANDLERS = tuple(
     [
@@ -385,6 +418,7 @@ _HANDLERS = tuple(
         # _whatsmynum_handler,
         # _mynumis_handler,
         _device_type_handler,
+        _client_version_handler,
     ]
 )
 
