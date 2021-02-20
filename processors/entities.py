@@ -105,6 +105,20 @@ NOT_ENTITIES = {
     "milljónir",
     "milljarður",
     "milljarðar",
+    "mamma",
+    "pabbi",
+    "afi",
+    "amma",
+    "frændi",
+    "frænka",
+    "bróðir",
+    "systir",
+    "strákur",
+    "drengur",
+    "stelpa",
+    "stúlka",
+    "karl",
+    "kona",
 }
 
 # Lower-case abbreviations that are allowed to be a part of entity names
@@ -215,7 +229,7 @@ def sentence(state, result):
             # Avoid chaff
             continue
 
-        def def_ok(definition):
+        def def_ok(definition: str) -> bool:
             """ Returns True if a definition meets basic sanity criteria """
             if definition.lower() in NOT_DEFINITIONS:
                 return False
@@ -224,7 +238,7 @@ def sentence(state, result):
                 return False
             return True
 
-        def name_ok(entity):
+        def name_ok(entity: str) -> bool:
             """ Returns True if an entity name meets basic sanity criteria """
             if entity.lower() in NOT_ENTITIES or entity in Abbreviations.DICT:
                 # Don't redefine abbreviations
