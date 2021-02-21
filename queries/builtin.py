@@ -54,6 +54,10 @@ RegisterType = Dict[str, Dict[str, Any]]
 # Indicate that this module wants to handle parse trees for queries
 HANDLE_TREE = True
 
+# Invoke this processor after other tree processors
+# (unless they have even lower priority)
+PRIORITY = -1
+
 # Maximum number of top answers to send in response to queries
 _MAXLEN_ANSWER = 20
 # Maximum number of article search responses

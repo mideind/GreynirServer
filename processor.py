@@ -55,10 +55,10 @@ from tree import Tree
 _PROFILING = False
 
 
-def modules_in_dir(directory):
+def modules_in_dir(directory: str) -> List[str]:
     """ Find all python modules in a given directory """
     files = os.listdir(directory)
-    modnames = list()
+    modnames: List[str] = list()
     for fname in files:
         if not fname.endswith(".py"):
             continue

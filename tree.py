@@ -27,15 +27,30 @@
 
 """
 
-from typing import Dict, Optional, List, Tuple, Any, Union, Callable, Iterator, Iterable, NamedTuple, cast
+from typing import (
+    Dict, Iterable,
+    Optional,
+    List, TYPE_CHECKING,
+    Tuple,
+    Any,
+    Union,
+    Callable,
+    Iterator,
+    NamedTuple,
+    cast,
+)
+
+from types import ModuleType
 
 import json
 import re
 
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 import abc
 
-from reynir.bindb import BIN_Db
+from sqlalchemy.orm import Session
+
+from reynir.bindb import BIN_Db, BIN_Meaning
 from reynir.binparser import BIN_Token
 from reynir.simpletree import SimpleTreeBuilder
 from reynir.cache import LRU_Cache
@@ -50,7 +65,7 @@ TreeToken = NamedTuple(
         ("tokentype", str),
         ("aux", str),
         ("cat", str),
-    ]
+    ],
 )
 OptionalNode = Optional["Node"]
 FilterFunction = Callable[["Node"], bool]
@@ -89,13 +104,13 @@ class Node(abc.ABC):
         trees in text format loaded from the scraper database """
 
     def __init__(self) -> None:
-        self.child: OptionalNode = None
-        self.nxt: OptionalNode = None
+        self.child: Optional["Node"] = None
+        self.nxt: Optional["Node"] = None
 
-    def set_next(self, n: OptionalNode) -> None:
+    def set_next(self, n: Optional["Node"]) -> None:
         self.nxt = n
 
-    def set_child(self, n: OptionalNode) -> None:
+    def set_child(self, n: Optional["Node"]) -> None:
         self.child = n
 
     def has_nt_base(self, s: str) -> bool:
@@ -127,9 +142,7 @@ class Node(abc.ABC):
             return False
         return ch.has_nt_base(s)
 
-    def children(
-        self, test_f: Optional[FilterFunction] = None
-    ) -> Iterator["Node"]:
+    def children(self, test_f: Optional[FilterFunction] = None) -> Iterator["Node"]:
         """ Yield all children of this node (that pass a test function, if given) """
         c = self.child
         while c:
@@ -140,25 +153,23 @@ class Node(abc.ABC):
     def first_child(self, test_f: FilterFunction) -> OptionalNode:
         """ Return the first child of this node that matches a test function, or None """
         c = self.child
-        while c:
+        while c is not None:
             if test_f(c):
                 return c
             c = c.nxt
         return None
 
-    def descendants(
-        self, test_f: Optional[FilterFunction] = None
-    ) -> Iterator["Node"]:
+    def descendants(self, test_f: Optional[FilterFunction] = None) -> Iterator["Node"]:
         """ Do a depth-first traversal of all children of this node,
             returning those that pass a test function, if given """
         c = self.child
-        while c:
+        while c is not None:
             for cc in c.descendants():
                 if test_f is None or test_f(cc):
                     yield cc
             if test_f is None or test_f(c):
                 yield c
-            c = c.nxt
+            c = cast(Node, c.nxt)
 
     @abc.abstractmethod
     def contained_text(self) -> str:
@@ -229,14 +240,14 @@ class Result:
 
     """
 
-    def __init__(self, node, state, params):
-        self.dict = dict()  # Our own custom dict for instance attributes
+    def __init__(self, node: Node, state, params) -> None:
+        self.dict: Dict[str, Any] = dict()  # Our own custom dict for instance attributes
         self._node = node
         self._state = state
         self._params = params
 
     @property
-    def node(self):
+    def node(self) -> Node:
         return self._node
 
     @property
@@ -252,7 +263,7 @@ class Result:
             len(self._params) if self._params else 0, self.dict
         )
 
-    def __setattr__(self, key, val):
+    def __setattr__(self, key: str, val: Any) -> None:
         """ Fancy attribute setter using our own dict for instance attributes """
         if key == "__dict__" or key == "dict" or key in self.__dict__:
             # Relay to Python's default attribute resolution mechanism
@@ -261,7 +272,7 @@ class Result:
             # Set attribute in our own dict
             self.dict[key] = val
 
-    def __getattr__(self, key):
+    def __getattr__(self, key: str) -> Any:
         """ Fancy attribute getter with special cases for _root and _nominative """
         # Note: this is only called for attributes that are not found by 'normal' means
         d = self.dict
@@ -296,33 +307,33 @@ class Result:
         # Not found in our custom dict
         raise AttributeError("Result object has no attribute named '{0}'".format(key))
 
-    def __contains__(self, key):
+    def __contains__(self, key: str) -> bool:
         return key in self.dict
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Any:
         return self.dict[key]
 
-    def __setitem__(self, key, val):
+    def __setitem__(self, key: str, val: Any) -> None:
         self.dict[key] = val
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: str) -> None:
         del self.dict[key]
 
-    def get(self, key, default=None):
+    def get(self, key: str, default: Any=None) -> Any:
         return self.dict.get(key, default)
 
-    def attribs(self):
+    def attribs(self) -> Iterator[Tuple[str, Any]]:
         """ Enumerate all attributes, and values, of this result object """
         for key, val in self.dict.items():
             yield (key, val)
 
-    def user_attribs(self):
+    def user_attribs(self) -> Iterator[Tuple[str, Any]]:
         """ Enumerate all user-defined attributes and values of this result object """
         for key, val in self.dict.items():
             if isinstance(key, str) and not key.startswith("_") and not callable(val):
                 yield (key, val)
 
-    def copy_from(self, p):
+    def copy_from(self, p: "Result") -> None:
         """ Copy all user attributes from p into this result """
         if p is self or p is None:
             return
@@ -350,7 +361,7 @@ class Result:
                     # (This gives left priority; left.update(val) would give right priority)
                     d[key] = dict(val, **left)
 
-    def del_attribs(self, alist):
+    def del_attribs(self, alist: Union[str, Iterable[str]]) -> None:
         """ Delete the attribs in alist from the result object """
         if isinstance(alist, str):
             alist = (alist,)
@@ -558,15 +569,15 @@ class TerminalDescriptor:
             self._clean_cat = self.clean_terminal.split("_")[0]
         return self._clean_cat
 
-    def has_t_base(self, s):
+    def has_t_base(self, s: str) -> bool:
         """ Does the node have the given terminal base name? """
         return self.cat == s
 
-    def has_variant(self, s):
+    def has_variant(self, s: str) -> bool:
         """ Does the node have the given variant? """
         return s in self.variants
 
-    def _bin_filter(self, m, case_override=None):
+    def _bin_filter(self, m: BIN_Meaning, case_override: Optional[str]=None) -> bool:
         """ Return True if the BIN meaning in m matches the variants for this terminal """
         if self.bin_cat is not None and m.ordfl not in self.bin_cat:
             return False
@@ -656,7 +667,7 @@ class TerminalDescriptor:
 
         return True
 
-    def stem(self, bindb, word, at_start=False):
+    def stem(self, bindb: BIN_Db, word: str, at_start: bool=False) -> str:
         """ Returns the stem of a word matching this terminal """
         if self.is_literal or self.is_stem:
             # A literal or stem terminal only matches a word if it has the given stem
@@ -675,20 +686,21 @@ class TerminalDescriptor:
         return word
 
 
-def _root_lookup(text, at_start, terminal):
+def _root_lookup(text: str, at_start: bool, terminal: str) -> str:
     """ Look up the root of a word that isn't found in the cache """
+    mm: Optional[BIN_Meaning] = None
     with BIN_Db.get_db() as bin_db:
         w, m = bin_db.lookup_word(text, at_start)
     if m:
         # Find the meaning that matches the terminal
         td = TerminalNode._TD[terminal]
-        m = next((x for x in m if td._bin_filter(x)), None)
-    if m:
-        if m.fl == "skst":
+        mm = next((x for x in m if td._bin_filter(x)), None)
+    if mm is not None:
+        if mm.fl == "skst":
             # For abbreviations, return the original text as the
             # root (lemma), not the meaning of the abbreviation
             return text
-        w = m.stofn
+        w = mm.stofn
     return w.replace("-", "")
 
 
@@ -1470,7 +1482,7 @@ class Tree(TreeBase):
             state, [self.visit_children(state, child) for child in node.children()]
         )
 
-    def process_sentence(self, state, tree):
+    def process_sentence(self, state, tree) -> None:
         """ Process a single sentence tree """
         assert tree.nxt is None
         result = self.visit_children(state, tree)
@@ -1481,7 +1493,7 @@ class Tree(TreeBase):
         if sentence is not None:
             sentence(state, result)
 
-    def process(self, session, processor, **kwargs):
+    def process(self, session: Session, processor: ModuleType, **kwargs: Any) -> None:
         """ Process a tree for an entire article """
         # For each sentence in turn, do a depth-first traversal,
         # visiting each parent node after visiting its children

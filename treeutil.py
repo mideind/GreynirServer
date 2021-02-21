@@ -25,7 +25,7 @@
 
 """
 
-from typing import TYPE_CHECKING, List
+from typing import Dict, TYPE_CHECKING, List, cast
 
 import time
 from collections import namedtuple
@@ -35,7 +35,7 @@ from db import SessionContext
 from settings import Settings
 
 from reynir import TOK, mark_paragraphs, tokenize
-from reynir.binparser import BIN_Token, augment_terminal, describe_token
+from reynir.binparser import BIN_Token, augment_terminal, describe_token, TokenDict
 from reynir.fastparser import Fast_Parser
 from reynir.incparser import IncrementalParser
 from reynir.simpletree import Annotator, Simplifier, SimpleTree
@@ -242,7 +242,7 @@ class TreeUtility:
         return tmap
 
     @staticmethod
-    def dump_tokens(tokens, tree, *, error_index=None, words=None):
+    def dump_tokens(tokens, tree, *, error_index=None, words=None) -> List[TokenDict]:
 
         """ Generate a list of dicts representing the tokens in the sentence.
 
@@ -268,7 +268,7 @@ class TreeUtility:
         # Map tokens to associated terminals, if any
         # tmap is an empty dict if there's no parse tree
         tmap = TreeUtility._terminal_map(tree)
-        dump = []
+        dump: List[TokenDict] = []
         for ix, token in enumerate(tokens):
             # We have already cut away paragraph and sentence markers
             # (P_BEGIN/P_END/S_BEGIN/S_END)
@@ -285,7 +285,7 @@ class TreeUtility:
             if meaning is not None and "x" in d:
                 # Also return the augmented terminal name
                 d["a"] = augment_terminal(
-                    terminal.name, d["x"].lower(), meaning.beyging
+                    terminal.name, cast(str, d["x"]).lower(), meaning.beyging
                 )
             dump.append(d)
         return dump
