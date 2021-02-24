@@ -473,6 +473,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hver er bestur": {"answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."},
     "hver er best": {"answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."},
     "hverjir eru bestir": {"answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."},
+    "hver er langbestur": {"answer": "Þú, kæri notandi, ert að sjálfsögðu langbestur."},
+    "hver er langbest": {"answer": "Þú, kæri notandi, ert að sjálfsögðu langbestur."},
+    "hverjir eru langbestir": {"answer": "Þú, kæri notandi, ert að sjálfsögðu langbestur."},
     "hver er fallegur": {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
     },
