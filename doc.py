@@ -29,8 +29,8 @@ import re
 from zipfile import ZipFile
 from html2text import HTML2Text
 from striprtf.striprtf import rtf_to_text  # type: ignore
-from odf import text, teletype
-from odf.opendocument import load
+from odf import odf_text, teletype
+from odf.opendocument import load as load_odf
 
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
@@ -188,8 +188,8 @@ class ODTDocument(Document):
     """ OpenDocument format. """
 
     def extract_text(self) -> str:
-        textdoc = load(BytesIO(self.data))
-        paragraphs = textdoc.getElementsByType(text.P)  # Find all paragraphs
+        textdoc = load_odf(BytesIO(self.data))
+        paragraphs = textdoc.getElementsByType(odf_text.P)  # Find all paragraphs
         ptexts = [teletype.extractText(p) for p in paragraphs]
         return "\n\n".join(ptexts)
 
