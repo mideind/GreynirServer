@@ -24,15 +24,17 @@
 
 """
 
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Iterator, Optional, List, Dict, Any, TYPE_CHECKING, Tuple, cast
 
 import json
 import uuid
 from datetime import datetime
 from collections import OrderedDict, defaultdict
 
+from reynir.binparser import TokenDict
+
 from settings import NoIndexWords
-from db import SessionContext, DataError, desc
+from db import Session, SessionContext, DataError, desc
 from db.models import Article as ArticleRow, Word, Root
 from fetcher import Fetcher
 from reynir import TOK
@@ -42,6 +44,10 @@ from tree import Tree
 from treeutil import TreeUtility
 from settings import Settings
 from tokenizer import __version__ as tokenizer_version
+
+
+if TYPE_CHECKING:
+    from queries.builtin import RegisterType
 
 
 # We don't bother parsing sentences that have more than 90 tokens,
@@ -73,37 +79,38 @@ class Article:
     def get_parser(cls) -> Fast_Parser:
         if cls._parser is None:
             cls._init_class()
+        assert cls._parser is not None
         return cls._parser
 
     @classmethod
-    def reload_parser(cls):
+    def reload_parser(cls) -> None:
         """ Force reload of a fresh parser instance """
         cls._parser = None
         cls._init_class()
 
     @classmethod
-    def parser_version(cls):
+    def parser_version(cls) -> str:
         """ Return the current grammar timestamp + parser version """
         cls._init_class()
         assert cls._parser is not None
         return cls._parser.version
 
-    def __init__(self, uuid=None, url=None):
+    def __init__(self, uuid: Optional[str]=None, url: Optional[str]=None) -> None:
         self._uuid = uuid
         self._url = url
         self._heading = ""
         self._author = ""
         self._timestamp = datetime.utcnow()
         self._authority = 1.0
-        self._scraped = None
-        self._parsed = None
-        self._processed = None
-        self._indexed = None
+        self._scraped: Optional[datetime] = None
+        self._parsed: Optional[datetime] = None
+        self._processed: Optional[datetime] = None
+        self._indexed: Optional[datetime] = None
         self._scr_module = None
         self._scr_class = None
         self._scr_version = None
         self._parser_version = None
-        self._num_tokens = None
+        self._num_tokens: Optional[int] = None
         self._num_sentences = 0
         self._num_parsed = 0
         self._ambiguity = 1.0
@@ -113,11 +120,14 @@ class Article:
         self._root_domain = None
         self._helper = None
         self._tokens = None  # JSON string
-        self._raw_tokens = None  # The tokens themselves
-        self._words = None  # The individual word stems, in a dictionary
+        # The tokens themselves: Lists of paragraphs of sentences
+        # (which are lists of TokenDicts)
+        self._raw_tokens: Optional[List[List[List[TokenDict]]]] = None
+        # The individual word stems, in a dictionary
+        self._words: Optional[Dict[Tuple[str, str], int]] = None
 
     @classmethod
-    def _init_from_row(cls, ar):
+    def _init_from_row(cls, ar: ArticleRow) -> "Article":
         """ Initialize a fresh Article instance from a database row object """
         a = cls(uuid=ar.id)
         a._url = ar.url
@@ -164,6 +174,7 @@ class Article:
                 a._authority = metadata.authority
             a._scraped = datetime.utcnow()
             if helper is not None:
+                helper = cast(Any, helper)
                 a._scr_module = helper.scr_module
                 a._scr_class = helper.scr_class
                 a._scr_version = helper.scr_version
@@ -207,7 +218,7 @@ class Article:
                 ar = None
             return None if ar is None else cls._init_from_row(ar)
 
-    def person_names(self):
+    def person_names(self) -> Iterator[str]:
         """ A generator yielding all person names in an article token stream """
         if self._raw_tokens is None and self._tokens:
             # Lazy generation of the raw tokens from the JSON rep
@@ -218,9 +229,9 @@ class Article:
                     for t in sent:
                         if t.get("k") == TOK.PERSON:
                             # The full name of the person is in the v field
-                            yield t["v"]
+                            yield cast(str, t["v"])
 
-    def entity_names(self):
+    def entity_names(self) -> Iterator[str]:
         """ A generator for entity names from an article token stream """
         if self._raw_tokens is None and self._tokens:
             # Lazy generation of the raw tokens from the JSON rep
@@ -231,9 +242,9 @@ class Article:
                     for t in sent:
                         if t.get("k") == TOK.ENTITY:
                             # The entity name
-                            yield t["x"]
+                            yield cast(str, t["x"])
 
-    def create_register(self, session, all_names=False):
+    def create_register(self, session: Session, all_names: bool=False) -> "RegisterType":
         """ Create a name register dictionary for this article """
         from queries.builtin import (
             add_name_to_register, add_entity_to_register, RegisterType

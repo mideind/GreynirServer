@@ -41,7 +41,7 @@
 
 """
 
-from typing import Dict, Tuple, Any, Iterable, Iterator
+from typing import Dict, Optional, Tuple, Any, Iterable, Iterator
 
 import math
 import os
@@ -336,12 +336,14 @@ class NgramTagger:
         best_prob = []
         len_tokens = len(tokens)
 
-        def fwd_prob(ix, history, fwd):
+        def fwd_prob(ix, history, fwd) -> Tuple[int, float]:
             """ Find the most probable tag from the tagset at position `ix`,
                 using the history for 'backwards' probability - as well as
                 looking forward up to `n - 1` tokens """
             if self._verbose:
                 indent = "  " * (fwd + 1)
+            else:
+                indent = ""
             if ix >= len_tokens:
                 # Looking past the token string: return a log prob of 0.0
                 return 0, 0.0
@@ -388,7 +390,8 @@ class NgramTagger:
             log_p_tags = math.log(cnt_tags) + math.log(
                 sum(lex_p for _, lex_p in tagset)
             )
-            best_ix, best_prob = None, None
+            best_ix: Optional[int] = None
+            best_prob: Optional[float] = None
             for tag_ix, tp in enumerate(tagset):
                 # Calculate the independent probability, given the history, of each
                 # tag in the tagset
@@ -436,6 +439,8 @@ class NgramTagger:
                         print(indent + "New best")
                     best_ix = tag_ix
                     best_prob = total_p
+            assert best_ix is not None
+            assert best_prob is not None
             return best_ix, best_prob
 
         for ix, tagset in enumerate(tokens):

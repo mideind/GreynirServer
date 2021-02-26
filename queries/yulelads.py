@@ -451,6 +451,7 @@ def sentence(state, result):
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
+    answer = voice_answer = ""
     if result.qtype == "YuleDate":
         # 'Hvenær kemur [jólasveinn X]'
         yule_lad = result.yule_lad

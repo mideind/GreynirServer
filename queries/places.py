@@ -294,6 +294,7 @@ def answ_openhours(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
 
     now = datetime.utcnow()
     wday = now.weekday()
+    answer = voice = ""
 
     try:
         name = res["result"]["name"]

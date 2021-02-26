@@ -22,7 +22,7 @@
 
 """
 
-from typing import Dict, cast
+from typing import Dict, Match, Optional, cast
 
 import re
 
@@ -126,6 +126,7 @@ _MY_NAME_IS_RESPONSES = {
 
 def _mynameis_handler(q: Query, ql: str) -> bool:
     """ Handle queries of the form "Ég heiti X", store this information. """
+    m: Optional[Match[str]] = None
     for rx in _MY_NAME_IS_REGEXES:
         m = re.search(rx, ql)
         if m:
@@ -234,6 +235,7 @@ _ADDR_LOOKUP_FAIL = "Ég fann ekki þetta heimilisfang."
 def _myaddris_handler(q: Query, ql: str) -> bool:
     """ Handle queries of the form "Ég á heima á [heimilisfang]".
         Store this info as query data. """
+    m: Optional[Match[str]] = None
     for rx in _MY_ADDRESS_REGEXES:
         m = re.search(rx, ql)
         if m:

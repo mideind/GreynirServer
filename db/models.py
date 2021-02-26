@@ -58,7 +58,8 @@ class CaseInsensitiveComparator(Comparator):
 
 
 # Create the SQLAlchemy ORM Base class
-Base: DeclarativeMeta = declarative_base()
+# Base: DeclarativeMeta = declarative_base()  # Pylance/Pyright doesn't like this
+Base = declarative_base()
 
 # Add a table() function to the Base class, returning the __table__ member.
 # Note that this hack is necessary because SqlAlchemy doesn't readily allow
@@ -248,12 +249,11 @@ class Entity(Base):
     name = Column(String, index=True)
 
     @hybrid_property
-    def name_lc(self):
+    def name_lc(self) -> str:  # type: ignore
         return self.name.lower()
 
-    # pylint: disable=no-self-argument
-    @name_lc.comparator  # type: ignore
-    def name_lc(cls):
+    @name_lc.comparator
+    def name_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.name)
 
     # Verb ('er', 'var', 'sé')
@@ -573,12 +573,11 @@ class Query(Base):
     question = Column(String, index=True, nullable=False)
 
     @hybrid_property
-    def question_lc(self):
+    def question_lc(self) -> str:  # type: ignore
         return self.question.lower()
 
-    # pylint: disable=no-self-argument
-    @question_lc.comparator  # type: ignore
-    def question_lc(cls):
+    @question_lc.comparator
+    def question_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.question)
 
     # Beautified question
@@ -588,24 +587,22 @@ class Query(Base):
     answer = Column(String, index=False, nullable=True)
 
     @hybrid_property
-    def answer_lc(self):
+    def answer_lc(self) -> str:  # type: ignore
         return self.answer.lower()
 
-    # pylint: disable=no-self-argument
-    @answer_lc.comparator  # type: ignore
-    def answer_lc(cls):
+    @answer_lc.comparator
+    def answer_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.answer)
 
     # Voice answer
     voice = Column(String, index=False, nullable=True)
 
     @hybrid_property
-    def voice_lc(self):
+    def voice_lc(self) -> str:  # type: ignore
         return self.voice.lower()
 
-    # pylint: disable=no-self-argument
-    @voice_lc.comparator  # type: ignore
-    def voice_lc(cls):
+    @voice_lc.comparator
+    def voice_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.voice)
 
     # Error code

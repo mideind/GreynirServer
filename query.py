@@ -79,8 +79,9 @@ from processor import modules_in_dir
 LocationType = Tuple[float, float]
 
 # Query response
-ResponseDict = Dict[str, Union[str, int, bool, datetime, Mapping[str, Any]]]
-ResponseMapping = Mapping[str, Union[str, int, bool, Mapping[str, Any]]]
+ResponseDict = Dict[str, Any]
+ResponseMapping = Mapping[str, Any]
+ResponseType = Union[ResponseDict, List[ResponseDict]]
 
 # Query context
 ContextDict = Dict[str, Union[str, int, float, bool, LocationType, Mapping[str, Any]]]
@@ -89,7 +90,7 @@ ContextDict = Dict[str, Union[str, int, float, bool, LocationType, Mapping[str, 
 ClientDataDict = Dict[str, Union[str, int, float, bool]]
 
 # Answer tuple (corresponds to parameter list of Query.set_answer())
-AnswerTuple = Tuple[ResponseMapping, str, Optional[str]]
+AnswerTuple = Tuple[ResponseType, str, Optional[str]]
 
 LookupFunc = Callable[[str], Tuple[str, List[BIN_Meaning]]]
 
@@ -275,7 +276,7 @@ class Query:
         self._auto_uppercase = auto_uppercase
         self._error: Optional[str] = None
         # A detailed answer, which can be a list or a dict
-        self._response: Optional[ResponseMapping] = None
+        self._response: Optional[ResponseType] = None
         # A single "best" displayable text answer
         self._answer: Optional[str] = None
         # A version of self._answer that can be
@@ -683,7 +684,7 @@ class Query:
         self._qtype = qtype
 
     def set_answer(
-        self, response: ResponseMapping, answer: str, voice_answer: Optional[str] = None
+        self, response: ResponseType, answer: str, voice_answer: Optional[str] = None
     ) -> None:
         """ Set the answer to the query """
         # Detailed response (this is usually a dict)
@@ -716,7 +717,7 @@ class Query:
         """ Return client type string, e.g. "ios", "android", "www", etc. """
         return self._client_type
 
-    def response(self) -> Optional[ResponseMapping]:
+    def response(self) -> Optional[ResponseType]:
         """ Return the detailed query answer """
         return self._response
 

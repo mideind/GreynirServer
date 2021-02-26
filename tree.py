@@ -28,9 +28,10 @@
 """
 
 from typing import (
-    Dict, Iterable,
+    Dict,
+    Iterable,
     Optional,
-    List, TYPE_CHECKING,
+    List,
     Tuple,
     Any,
     Union,
@@ -52,7 +53,7 @@ from sqlalchemy.orm import Session
 
 from reynir.bindb import BIN_Db, BIN_Meaning
 from reynir.binparser import BIN_Token
-from reynir.simpletree import SimpleTreeBuilder
+from reynir.simpletree import SimpleTree, SimpleTreeBuilder
 from reynir.cache import LRU_Cache
 
 
@@ -182,6 +183,22 @@ class Node(abc.ABC):
         """ String representation of the name of this node """
         raise NotImplementedError  # Should be overridden
 
+    @abc.abstractmethod
+    def nominative(self, state, params):
+        raise NotImplementedError  # Should be overridden
+
+    @abc.abstractmethod
+    def indefinite(self, state, params):
+        raise NotImplementedError  # Should be overridden
+
+    @abc.abstractmethod
+    def canonical(self, state, params):
+        raise NotImplementedError  # Should be overridden
+
+    @abc.abstractmethod
+    def root(self, state, params):
+        raise NotImplementedError  # Should be overridden
+
     @abc.abstractproperty
     def text(self) -> str:
         raise NotImplementedError
@@ -241,7 +258,9 @@ class Result:
     """
 
     def __init__(self, node: Node, state, params) -> None:
-        self.dict: Dict[str, Any] = dict()  # Our own custom dict for instance attributes
+        self.dict: Dict[
+            str, Any
+        ] = dict()  # Our own custom dict for instance attributes
         self._node = node
         self._state = state
         self._params = params
@@ -319,7 +338,7 @@ class Result:
     def __delitem__(self, key: str) -> None:
         del self.dict[key]
 
-    def get(self, key: str, default: Any=None) -> Any:
+    def get(self, key: str, default: Any = None) -> Any:
         return self.dict.get(key, default)
 
     def attribs(self) -> Iterator[Tuple[str, Any]]:
@@ -577,7 +596,7 @@ class TerminalDescriptor:
         """ Does the node have the given variant? """
         return s in self.variants
 
-    def _bin_filter(self, m: BIN_Meaning, case_override: Optional[str]=None) -> bool:
+    def _bin_filter(self, m: BIN_Meaning, case_override: Optional[str] = None) -> bool:
         """ Return True if the BIN meaning in m matches the variants for this terminal """
         if self.bin_cat is not None and m.ordfl not in self.bin_cat:
             return False
@@ -617,21 +636,23 @@ class TerminalDescriptor:
                     # return False
                     return False
             for v in ["sagnb", "lhþt", "bh"]:
-                if BIN_Token.VARIANT[v] in m.beyging and v not in self.variants:
+                vv = BIN_Token.VARIANT[v]
+                if vv and vv in m.beyging and v not in self.variants:
                     return False
             if "bh" in self.variants and "ST" in m.beyging:
                 return False
             if self.varlist[0] not in "012":
                 # No need for argument check: we're done, unless...
                 if "lhþt" in self.variants:
-                    # Special check for lhþt: may specify a case without it being an argument case
-                    if any(
-                        c in self.variants and BIN_Token.VARIANT[c] not in m.beyging
-                        for c in BIN_Token.CASES
-                    ):
-                        # Terminal specified a non-argument case but the token doesn't have it:
-                        # no match
-                        return False
+                    # Special check for lhþt: may specify a case
+                    # without it being an argument case
+                    for c in BIN_Token.CASES:
+                        if c in self.variants:
+                            vv = BIN_Token.VARIANT[c]
+                            if vv and vv not in m.beyging:
+                                # The terminal specified a non-argument case
+                                # but the token doesn't have it: no match
+                                return False
             # We can't check the arguments here, but assume that is not necessary
             # to disambiguate between verbs
             return True
@@ -667,7 +688,7 @@ class TerminalDescriptor:
 
         return True
 
-    def stem(self, bindb: BIN_Db, word: str, at_start: bool=False) -> str:
+    def stem(self, bindb: BIN_Db, word: str, at_start: bool = False) -> str:
         """ Returns the stem of a word matching this terminal """
         if self.is_literal or self.is_stem:
             # A literal or stem terminal only matches a word if it has the given stem
@@ -1299,7 +1320,9 @@ class TreeBase:
         """ Return the length of the sentence with index n, in tokens, or 0 if unknown """
         return self.lengths.get(n, 0)
 
-    def simple_trees(self, nt_map=None, id_map=None, terminal_map=None):
+    def simple_trees(
+        self, nt_map=None, id_map=None, terminal_map=None
+    ) -> Iterator[Tuple[int, SimpleTree]]:
         """ Generate simple trees out of the sentences in this tree """
         # Hack to allow nodes to access the BIN database
         with BIN_Db.get_db() as bin_db:

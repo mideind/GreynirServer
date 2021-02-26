@@ -26,12 +26,14 @@
 
 """
 
-from typing import Dict, Optional, List, Any, Tuple, cast
+from typing import Callable, Dict, Iterable, Optional, List, Any, Tuple, cast
 
 import math
 from datetime import datetime
 from collections import defaultdict
 import logging
+
+from sqlalchemy.orm.session import Session
 
 from settings import Settings
 
@@ -40,10 +42,10 @@ from db.models import Article, Person, Entity, Root
 from db.queries import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
 
 from treeutil import TreeUtility
-from reynir import TOK, correct_spaces
+from reynir import TOK, Tok, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
-from query import Query
+from query import AnswerTuple, Query, ResponseDict, ResponseType
 
 # from query import _QUERY_ROOT
 from queries import cap_first
@@ -350,7 +352,7 @@ def add_entity_to_register(
 
 
 def add_name_to_register(
-    name, register: RegisterType, session, all_names=False
+    name: str, register: RegisterType, session: Session, all_names: bool=False
 ) -> None:
     """ Add the name and the 'best' title to the given name register dictionary """
     if name in register:
@@ -366,7 +368,7 @@ def add_name_to_register(
             register[name_key] = dict(kind="name", title=None)
 
 
-def create_name_register(tokens, session, all_names=False) -> RegisterType:
+def create_name_register(tokens: Iterable[Tok], session: Session, all_names: bool=False) -> RegisterType:
     """ Assemble a dictionary of person and entity names
         occurring in the token list """
     register: RegisterType = {}
@@ -380,7 +382,7 @@ def create_name_register(tokens, session, all_names=False) -> RegisterType:
     return register
 
 
-def _query_person_titles(session, name: str):
+def _query_person_titles(session: Session, name: str):
     """ Return a list of all titles for a person """
     # This list should never become very long, so we don't
     # apply a limit here
@@ -454,7 +456,7 @@ def _query_article_list(session, name: str):
     return sorted(adict.values(), key=lambda x: x["ts"], reverse=True)
 
 
-def query_person(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
+def query_person(query: Query, session: Session, name: str) -> AnswerTuple:
     """ A query for a person by name """
     response: Dict[str, Any] = dict(answers=[], sources=[])
     if name in {"hann", "hún", "hán", "það"}:
@@ -463,7 +465,7 @@ def query_person(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
         ctx = None if name == "það" else query.fetch_context()
         if ctx and "person_name" in ctx:
             # Yes, success
-            name = ctx["person_name"]
+            name = cast(str, ctx["person_name"])
         else:
             # No - give up
             if name == "hann":
@@ -501,8 +503,9 @@ def query_person(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
         voice_answer = name + " er " + " ".join(v) + "."
         # Set the context for a subsequent query
         query.set_context({"person_name": name})
-        # Set source
-        query.set_source(source)
+        # Set source, if known
+        if source is not None:
+            query.set_source(source)
         response = dict(answer=answer)
     else:
         # Not voice
@@ -557,7 +560,7 @@ def query_person_title(session, name: str) -> Tuple[str, Optional[str]]:
     return correct_spaces(rl[index]["answer"]), rl[index]["sources"][0]["domain"]
 
 
-def query_title(query, session, title: str) -> Tuple[List[Dict[str, Any]], str, str]:
+def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
     """ A query for a person by title """
     # !!! Consider doing a LIKE '%title%', not just LIKE 'title%'
     # We impose a LIMIT of 1024 on each query result,
@@ -606,6 +609,8 @@ def query_title(query, session, title: str) -> Tuple[List[Dict[str, Any]], str, 
     )
     append_names(rd, q, prop_func=lambda x: x.name)
     response = make_response_list(rd)
+    answer: str
+    voice_answer: str
     if response and title and "answer" in response[0]:
         first_response = response[0]
         # Return 'Seðlabankastjóri er Már Guðmundsson.'
@@ -624,7 +629,7 @@ def query_title(query, session, title: str) -> Tuple[List[Dict[str, Any]], str, 
     return response, answer, voice_answer
 
 
-def _query_entity_definitions(session, name: str):
+def _query_entity_definitions(session: Session, name: str) -> List[Dict[str, Any]]:
     """ A query for definitions of an entity by name """
     # Note: the comparison below between name_lc and name
     # is automatically case-insensitive, so name.lower() is not required
@@ -648,11 +653,11 @@ def _query_entity_definitions(session, name: str):
     return prepare_response(q, prop_func=lambda x: x.definition)
 
 
-def query_entity(query: Query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
+def query_entity(query: Query, session: Session, name: str) -> AnswerTuple:
     """ A query for an entity by name """
     titles = _query_entity_definitions(session, name)
     articles = _query_article_list(session, name)
-    response = dict(answers=titles, sources=articles)
+    response: ResponseDict = dict(answers=titles, sources=articles)
     if titles and "answer" in titles[0]:
         # 'Mál og menning er bókmenntafélag.'
         answer = titles[0]["answer"]
@@ -687,7 +692,7 @@ def query_entity_def(session, name: str) -> str:
     return correct_spaces(rl[0]["answer"]) if rl else ""
 
 
-def query_company(query: Query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
+def query_company(query: Query, session: Session, name: str) -> Tuple[List[Dict[str, Any]], str, str]:
     """ A query for an company in the entities table """
     # Create a query name by cutting off periods at the end
     # (hf. -> hf) and adding a percent pattern match at the end
@@ -721,7 +726,7 @@ def query_company(query: Query, session, name: str) -> Tuple[Dict[str, Any], str
     return response, answer, voice_answer
 
 
-def query_word(query: Query, session, stem: str) -> Dict[str, Any]:
+def query_word(query: Query, session: Session, stem: str) -> AnswerTuple:
     """ A query for words related to the given stem """
     # Count the articles where the stem occurs
     acnt = ArticleCountQuery.count(stem, enclosing_session=session)
@@ -733,28 +738,29 @@ def query_word(query: Query, session, stem: str) -> Dict[str, Any]:
         answers=[
             dict(stem=rstem, cat=rcat) for rstem, rcat, rcnt in rlist if rstem != stem
         ],
-    )
+    ), "", None
 
 
-def launch_search(query: Query, session, qkey: str) -> Dict[str, Any]:
+def launch_search(query: Query, session: Session, qkey: str) -> AnswerTuple:
     """ Launch a search with the given search terms """
-    pgs, _ = TreeUtility.raw_tag_toklist(session, query.token_list)  # root=_QUERY_ROOT
+    toklist = query.token_list
+    assert toklist is not None
+    pg, _ = TreeUtility.raw_tag_toklist(toklist)  # root=_QUERY_ROOT
 
     # Collect the list of search terms
     terms = []
     tweights = []
     fixups = []
-    for pg in pgs:
-        for sent in pg:
-            for t in sent:
-                # Obtain search stems for the tokens.
-                d = dict(x=t["x"], w=0.0)
-                tweights.append(d)
-                # The terms are represented as (stem, category) tuples.
-                stems = stems_of_token(t)
-                if stems:
-                    terms.extend(stems)
-                    fixups.append((d, len(stems)))
+    for sent in pg:
+        for t in sent:
+            # Obtain search stems for the tokens.
+            d = dict(x=t["x"], w=0.0)
+            tweights.append(d)
+            # The terms are represented as (stem, category) tuples.
+            stems = stems_of_token(t)
+            if stems:
+                terms.extend(stems)
+                fixups.append((d, len(stems)))
 
     assert sum(n for _, n in fixups) == len(terms)
 
@@ -778,10 +784,10 @@ def launch_search(query: Query, session, qkey: str) -> Dict[str, Any]:
     for d, n in fixups:
         d["w"] = sum(weights[index : index + n]) / n
         index += n
-    return dict(answers=result["articles"], weights=tweights)
+    return dict(answers=result["articles"], weights=tweights), "", None
 
 
-def repeat_query(query: Query, session, qkey: str) -> Tuple[Dict[str, Any], str, str]:
+def repeat_query(query: Query, session: Session, qkey: str) -> AnswerTuple:
     """ Request to repeat the result of the last query """
     last = query.last_answer()
     if last is None:
@@ -797,7 +803,7 @@ def repeat_query(query: Query, session, qkey: str) -> Tuple[Dict[str, Any], str,
 
 
 # Map query types to handler functions
-_QFUNC = {
+_QFUNC: Dict[str, Callable[[Query, Session, str], AnswerTuple]] = {
     "Person": query_person,
     "Title": query_title,
     "Entity": query_entity,
@@ -817,47 +823,42 @@ _Q_ONLY_VOICE = frozenset(("Repeat",))
 def sentence(state, result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
-    if "qtype" in result:
-        # Successfully matched a query type
-        q.set_qtype(result.qtype)
-        q.set_key(result.qkey)
-        if q.is_voice and result.qtype in _Q_NO_VOICE:
-            # We don't do topic searches or word relationship
-            # queries via voice; that would be pretty meaningless.
-            q.set_error("E_VOICE_NOT_SUPPORTED")
-            return
-        if not q.is_voice and result.qtype in _Q_ONLY_VOICE:
-            # We don't allow repeat requests in non-voice queries
-            q.set_error("E_ONLY_VOICE_SUPPORTED")
-            return
-        if result.qtype == "Search":
-            # For searches, don't add a question mark at the end
-            if q.beautified_query.endswith("?") and not q.query.endswith("?"):
-                q.set_beautified_query(q.beautified_query[:-1])
-        session = state["session"]
-        # Select a query function and exceute it
-        qfunc = _QFUNC.get(result.qtype)
-        if qfunc is None:
-            answer = result.qtype + ": " + result.qkey
-            response = dict(answer=answer)
-            q.set_answer(response, answer)
-        else:
-            try:
-                answer = None
-                voice_answer = None
-                rtuple = qfunc(q, session, result.qkey)
-                if isinstance(rtuple, tuple):
-                    # We have both a normal and a voice answer
-                    response, answer, voice_answer = rtuple
-                else:
-                    response = cast(Dict[str, Any], rtuple)
-                q.set_answer(response, answer, voice_answer)
-            except AssertionError:
-                raise
-            except Exception as e:
-                q.set_error("E_EXCEPTION: {0}".format(e))
-    else:
+    if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        return
+    # Successfully matched a query type
+    q.set_qtype(result.qtype)
+    q.set_key(result.qkey)
+    if q.is_voice and result.qtype in _Q_NO_VOICE:
+        # We don't do topic searches or word relationship
+        # queries via voice; that would be pretty meaningless
+        q.set_error("E_VOICE_NOT_SUPPORTED")
+        return
+    if not q.is_voice and result.qtype in _Q_ONLY_VOICE:
+        # We don't allow repeat requests in non-voice queries
+        q.set_error("E_ONLY_VOICE_SUPPORTED")
+        return
+    if result.qtype == "Search":
+        # For searches, don't add a question mark at the end
+        if q.beautified_query.endswith("?") and not q.query.endswith("?"):
+            q.set_beautified_query(q.beautified_query[:-1])
+    session = state["session"]
+    # Select a query function and exceute it
+    qfunc = _QFUNC.get(result.qtype)
+    answer: str
+    response: ResponseType
+    if qfunc is None:
+        answer = cast(str, result.qtype + ": " + result.qkey)
+        response = dict(answer=answer)
+        q.set_answer(response, answer)
+        return
+    try:
+        response, answer, voice_answer = qfunc(q, session, result.qkey)
+        q.set_answer(response, answer, voice_answer)
+    except AssertionError:
+        raise
+    except Exception as e:
+        q.set_error("E_EXCEPTION: {0}".format(e))
 
 
 GRAMMAR = """

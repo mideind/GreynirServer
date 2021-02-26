@@ -31,7 +31,7 @@ import time
 import uuid
 import json
 from functools import wraps
-from datetime import datetime, timedelta
+from datetime import timedelta, datetime
 
 from flask import (
     Blueprint,
@@ -51,14 +51,15 @@ from werkzeug.exceptions import HTTPException, InternalServerError
 import flask_caching  # type: ignore
 
 
+utcnow = datetime.utcnow  # Funny hack to satisfy Pylance/Pyright
 ProgressFunc = Callable[[float], None]
 
 # Maximum length of incoming GET/POST parameters
-_MAX_TEXT_LENGTH = 16384
-_MAX_TEXT_LENGTH_VIA_URL = 512
+MAX_TEXT_LENGTH = 16384
+MAX_TEXT_LENGTH_VIA_URL = 512
 
-_MAX_URL_LENGTH = 512
-_MAX_UUID_LENGTH = 36
+MAX_URL_LENGTH = 512
+MAX_UUID_LENGTH = 36
 
 _TRUTHY = frozenset(("true", "1", "yes"))
 
@@ -142,9 +143,9 @@ def text_from_request(
             # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." \
             #     https://greynir.is/postag.api
             text = rq.form.get(post_field or "text", "")
-        text = text[0:_MAX_TEXT_LENGTH]
+        text = text[0:MAX_TEXT_LENGTH]
     elif rq.method == "GET":
-        text = rq.args.get(get_field or "t", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+        text = rq.args.get(get_field or "t", "")[0:MAX_TEXT_LENGTH_VIA_URL]
     else:
         # Unknown/unsupported method
         text = ""
@@ -185,7 +186,7 @@ def before_first_request() -> None:
         while True:
             # Only keep tasks that are running or
             # that finished less than 5 minutes ago
-            five_min_ago = datetime.utcnow() - timedelta(minutes=5)
+            five_min_ago = utcnow() - timedelta(minutes=5)
             with _tasks_lock:
                 _tasks = {
                     task_id: task
@@ -287,7 +288,7 @@ def async_task(f: Callable) -> Callable:
             # ratio is a float from 0.0 (just started) to 1.0 (finished)
             _tasks[task_id]["progress"] = ratio
 
-        def task(app: Any, rq: Request) -> None:
+        def task(app: Any, rq: _RequestProxy) -> None:
             """ Run the decorated route function in a new thread """
             this_task = _tasks[task_id]
             # Pretty ugly hack, but no better solution is apparent:
@@ -310,7 +311,7 @@ def async_task(f: Callable) -> Callable:
                 finally:
                     # We record the time of the response, to help in garbage
                     # collecting old tasks
-                    this_task["t"] = datetime.utcnow()
+                    this_task["t"] = utcnow()
 
         # Record the task, and then launch it
         with _tasks_lock:
