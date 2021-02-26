@@ -29,7 +29,8 @@ import re
 from zipfile import ZipFile
 from html2text import HTML2Text
 from striprtf.striprtf import rtf_to_text  # type: ignore
-from odf import odf_text, teletype
+from odf import teletype
+from odf import text as odf_text
 from odf.opendocument import load as load_odf
 
 from pdfminer.converter import TextConverter

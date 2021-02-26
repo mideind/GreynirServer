@@ -22,6 +22,8 @@
 
 """
 
+# TODO: "Heinsaðu fyrirspurnasögu [mína]", "Hreinsaðu öll gögn um mig", etc. commands
+
 from typing import Dict, cast
 
 import re
