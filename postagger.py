@@ -41,7 +41,7 @@
 
 """
 
-from typing import Dict, Optional, Tuple, Any, Iterable, Iterator
+from typing import Dict, List, Optional, Tuple, Any, Iterable, Iterator
 
 import math
 import os
@@ -50,9 +50,10 @@ from itertools import islice, tee
 import xml.etree.ElementTree as ET
 
 from reynir import TOK, tokenize
-from reynir.binparser import canonicalize_token
+from reynir.binparser import TokenDict, canonicalize_token
 from reynir.ifdtagger import IFD_Tagset
 from reynir.settings import Prepositions
+from tokenizer.tokenizer import Tok
 
 from treeutil import TreeUtility
 
@@ -225,13 +226,13 @@ class NgramTagger:
         d = self.lemma_cnt.get(lemma)
         return 0 if d is None else sum(d.values())
 
-    def train(self, sentence_stream):
+    def train(self, sentence_stream: Iterable[Iterable[TokenDict]]):
         """ Iterate through a token stream harvested from parsed articles
             and extract tag trigrams """
 
         n = self.n
 
-        def tag_stream(sentence_stream: Iterable[Iterable[Dict[str, Any]]]) -> Iterator[str]:
+        def tag_stream(sentence_stream: Iterable[Iterable[TokenDict]]) -> Iterator[str]:
             """ Generator for tag stream from a token stream """
             for sent in sentence_stream:
                 if not sent:
@@ -243,10 +244,10 @@ class NgramTagger:
                     tag = None
                     # Skip punctuation
                     if t.get("k", TOK.WORD) != TOK.PUNCTUATION:
-                        canonicalize_token(t)
-                        tag = str(IFD_Tagset(t))
+                        ct = canonicalize_token(t)
+                        tag = str(IFD_Tagset(ct))
                         if tag:
-                            self.lemma_cnt[t["x"]][tag] += 1
+                            self.lemma_cnt[ct["x"]][tag] += 1
                     if tag:
                         yield tag
                 for _ in range(n - 1):
@@ -460,7 +461,7 @@ class NgramTagger:
 
     _CONJ_REF = frozenset(["sem", "er"])
 
-    def tag_single_token(self, token):
+    def tag_single_token(self, token: Tok) -> Optional[List[Tuple[str, float]]]:
         """ Return a tagset, with probabilities, for a single token """
 
         def ifd_tag(kind, txt, m):

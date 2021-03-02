@@ -68,10 +68,15 @@ def help_text(lemma: str) -> str:
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
+QUERY_NONTERMINALS = { "QPlaces" }
+
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
 Query →
+    QPlaces
+
+QPlaces →
     QPlacesQuery '?'?
 
 QPlacesQuery →

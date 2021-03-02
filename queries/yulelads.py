@@ -133,6 +133,8 @@ TOPIC_LEMMAS = ["jólasveinn"] + list(_YULE_LADS_BY_NAME.keys()) + [lad.lower() 
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
+QUERY_NONTERMINALS = { "QYuleQuery" }
+
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 

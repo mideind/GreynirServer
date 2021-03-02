@@ -94,7 +94,7 @@ class HTMLDocument(Document):
         h.ignore_images = True
         h.unicode_snob = True
         h.ignore_tables = True
-        h.decode_errors = "ignore"
+        h.decode_errors = "ignore"  # type: ignore
         h.body_width = 0
 
         text = h.handle(html)

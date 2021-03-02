@@ -8,7 +8,6 @@ Author: Vilhjalmur Thorsteinsson 2015
 
 Copy the result into PostgreSQL with the following statement:
 
-\c bin
 COPY ord FROM '/home/user/github/Reynir/resources/obeygd.csv' WITH (FORMAT CSV, DELIMITER ';', ENCODING 'utf8');
 
 """

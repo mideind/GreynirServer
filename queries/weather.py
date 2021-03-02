@@ -117,6 +117,8 @@ def help_text(lemma: str) -> str:
     )
 
 
+QUERY_NONTERMINALS = { "QWeather" }
+
 # The context-free grammar for the queries recognized by this module
 GRAMMAR = """
 

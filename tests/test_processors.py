@@ -23,6 +23,7 @@
 
 from collections import OrderedDict
 import os, sys
+from typing import cast
 
 # Shenanigans to enable Pytest to discover modules in the
 # main workspace directory (the parent of /tests)
@@ -34,8 +35,9 @@ if mainpath not in sys.path:
 from reynir import tokenize
 from reynir.incparser import IncrementalParser
 from reynir.fastparser import Fast_Parser, ParseForestDumper
-from tree import Tree
+from tree import Tree, Session
 from treeutil import TreeUtility
+
 
 import processors.entities as entities
 
@@ -124,6 +126,7 @@ def test_entities():
                 token_dicts = TreeUtility.dump_tokens(sent.tokens, sent.tree)
                 # Create a verbose text representation of
                 # the highest scoring parse tree
+                assert sent.tree is not None
                 tree = ParseForestDumper.dump_forest(sent.tree, token_dicts=token_dicts)
                 # Add information about the sentence tree's score
                 # and the number of tokens
@@ -140,7 +143,7 @@ def test_entities():
 
     tree = make_tree(text)
     session = SessionShim()
-    tree.process(session, entities)
+    tree.process(cast(Session, session), entities)
 
     session.check(("Bygma", "er", "dönsk byggingavörukeðja"))
     session.check(("Húsasmiðjan", "er", "íslenskt verslunarfyrirtæki"))
@@ -171,7 +174,7 @@ def test_entities():
 
     tree = make_tree(text)
     session = SessionShim()
-    tree.process(session, entities)
+    tree.process(cast(Session, session), entities)
 
     session.check(("Kópavogur", "er", "vinalegur staður"))
     session.check(("Hafnarfjörður", "er", "einstakur bær"))

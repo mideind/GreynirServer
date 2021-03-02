@@ -27,8 +27,10 @@
 
 from typing import (
     DefaultDict,
+    FrozenSet,
     Optional,
     Sequence,
+    Set,
     Tuple,
     List,
     Dict,
@@ -58,7 +60,7 @@ from db import SessionContext, Session, desc
 from db.models import Query as QueryRow
 from db.models import QueryData, QueryLog
 
-from tree import Tree
+from tree import Tree, TreeStateDict, Node
 from reynir import TOK, Tok, tokenize, correct_spaces
 from reynir.fastparser import (
     Fast_Parser,
@@ -97,6 +99,10 @@ LookupFunc = Callable[[str], Tuple[str, List[BIN_Meaning]]]
 HelpFunc = Callable[[str], str]
 
 
+class QueryStateDict(TreeStateDict):
+    query: "Query"
+
+
 class CastFunc(Protocol):
     def __call__(
         self, w: str, *, meaning_filter_func: Optional[MeaningFilterFunc] = None
@@ -116,8 +122,12 @@ QueryRoot →
 # Mark the QueryRoot nonterminal as a root in the grammar
 $root(QueryRoot)
 
-"""
+# Keep all child families of Query, i.e. all possible query
+# trees, rather than just the highest-scoring one
 
+$tag(no_reduce) Query
+
+"""
 
 # Query prefixes that we cut off before further processing
 # The 'bæjarblað'/'hæðarblað' below is a common misunderstanding by the Google ASR
@@ -235,6 +245,66 @@ class QueryParser(Fast_Parser):
         return cls._grammar_additions
 
 
+class QueryTree(Tree):
+
+    """ Extend the tree.Tree class to collect all child families of the
+        Query nonterminal from a query parse forest """
+
+    def __init__(self):
+        super().__init__()
+        self._query_trees: List[Node] = []
+
+    def handle_O(self, n: int, s: str) -> None:
+        """ Handle the O (option) tree record """
+        assert n == 1
+
+    def handle_Q(self, n: int) -> None:
+        """ Handle the Q (final) tree record """
+        super().handle_Q(n)
+        # Access the QueryRoot node
+        root = self.s[1]
+        # Access the Query node
+        query = root.child
+        # The child nodes of the Query node are the valid query parse trees
+        self._query_trees = list(query.children())
+
+    @property
+    def query_trees(self) -> List[Node]:
+        """ Returns the list of valid query parse trees, i.e. child nodes of Query """
+        return self._query_trees
+
+    @property
+    def query_nonterminals(self) -> Set[str]:
+        """ Return the set of query nonterminals that match this query """
+        return set(node.string_self() for node in self._query_trees)
+
+    def process_queries(
+        self, query: "Query", session: Session, processor: ModuleType
+    ) -> bool:
+        """ Process all query trees that the given processor is interested in """
+        processor_query_types: FrozenSet[str] = getattr(
+            processor, "QUERY_NONTERMINALS", set()
+        )
+        # Every tree processor must be interested in at least one query type
+        assert isinstance(processor_query_types, set)
+        assert len(processor_query_types) > 0
+        if self.query_nonterminals.isdisjoint(processor_query_types):
+            # But this processor is not interested in any of the nonterminals
+            # in this query's parse forest: don't waste more cycles on it
+            return False
+        with self.context(session, processor, query=query) as state:
+            for query_tree in self._query_trees:
+                # Is the processor interested in the root nonterminal
+                # of this query tree?
+                if query_tree.string_self() in processor_query_types:
+                    # Yes: hand the query tree over to the processor
+                    self.process_sentence(state, query_tree)
+                    if query.has_answer():
+                        # The processor successfully answered the query: We're done
+                        return True
+        return False
+
+
 class Query:
 
     """ A Query is initialized by parsing a query string using QueryRoot as the
@@ -282,7 +352,7 @@ class Query:
         # A version of self._answer that can be
         # fed to a voice synthesizer
         self._voice_answer: Optional[str] = None
-        self._tree: Optional[Tree] = None
+        self._tree: Optional[QueryTree] = None
         self._qtype: Optional[str] = None
         self._key: Optional[str] = None
         self._toklist: Optional[List[Tok]] = None
@@ -352,8 +422,8 @@ class Query:
                 )
         # Sort the processors by descending priority
         # so that the higher-priority ones get invoked bfore the lower-priority ones
-        cls._tree_processors = [t[1] for t in sorted(tree_procs, key=lambda x:-x[0])]
-        cls._text_processors = [t[1] for t in sorted(text_procs, key=lambda x:-x[0])]
+        cls._tree_processors = [t[1] for t in sorted(tree_procs, key=lambda x: -x[0])]
+        cls._text_processors = [t[1] for t in sorted(text_procs, key=lambda x: -x[0])]
 
         # Obtain query grammar fragments from the tree processors
         grammar_fragments: List[str] = []
@@ -399,6 +469,9 @@ class Query:
 
         for t in toklist:
             if t[0] == TOK.S_BEGIN:
+                if num_sent > 0:
+                    # A second sentence is beginning: this is not valid for a query
+                    raise ParseError("A query cannot contain more than one sentence")
                 sent = []
             elif t[0] == TOK.S_END:
                 slen = len(sent)
@@ -481,7 +554,11 @@ class Query:
             # Log the query string as seen by the parser
             print("Query is: '{0}'".format(actual_q))
 
-        parse_result, trees = Query._parse(toklist)
+        try:
+            parse_result, trees = Query._parse(toklist)
+        except ParseError:
+            self.set_error("E_PARSE_ERROR")
+            return False
 
         if not trees:
             # No parse at all
@@ -507,7 +584,7 @@ class Query:
         tree_string = "S1\n" + trees[1]
         if Settings.DEBUG:
             print(tree_string)
-        self._tree = Tree()
+        self._tree = QueryTree()
         self._tree.load(tree_string)
         # Store the token list
         self._toklist = toklist
@@ -524,20 +601,25 @@ class Query:
         )
 
     def execute_from_tree(self) -> bool:
-        """ Execute the query contained in the previously parsed tree;
+        """ Execute the query or queries contained in the previously parsed tree;
             return True if successful """
         if self._tree is None:
             self.set_error("E_QUERY_NOT_PARSED")
             return False
-        # Try each tree processor in turn
+        # Try each tree processor in turn, in priority order (highest priority first)
         for processor in self._tree_processors:
             self._error = None
             self._qtype = None
-            # Process the tree, which has only one sentence
+            # Process the tree, which has only one sentence, but may
+            # have multiple matching query nonterminals
+            # (children of Query in the grammar)
             try:
-                self._tree.process(self._session, processor, query=self)
-                if self._answer and self._error is None:
-                    # The processor successfully answered the query: We're done
+                # Note that passing query=self here means that the
+                # "query" field of the TreeStateDict is populated,
+                # turning it into a QueryStateDict.
+                if self._tree.process_queries(self, self._session, processor):
+                    # This processor found an answer, which is already stored
+                    # in the Query object: return True
                     return True
             except Exception as e:
                 logging.error(
@@ -546,6 +628,10 @@ class Query:
                 )
         # No processor was able to answer the query
         return False
+
+    def has_answer(self) -> bool:
+        """ Return True if the query currently has an answer """
+        return bool(self._answer) and self._error is None
 
     def last_answer(self, *, within_minutes: int = 5) -> Optional[Tuple[str, str]]:
         """ Return the last answer given to this client, by default
@@ -778,16 +864,16 @@ class Query:
 
     def set_client_data(self, key: str, data: ClientDataDict) -> None:
         """ Setter for client query data """
-        if not self.client_id:
-            logging.warning("Couldn't save query data, no client ID")
+        if not self.client_id or not key:
+            logging.warning("Couldn't save query data, no client ID or key")
             return
         Query.store_query_data(self.client_id, key, data)
 
     @staticmethod
     def store_query_data(client_id: str, key: str, data: ClientDataDict) -> bool:
         """ Save client query data in the database, under the given key """
-        assert client_id
-        assert key
+        if not client_id or not key:
+            return False
         now = datetime.utcnow()
         try:
             with SessionContext(commit=True) as session:

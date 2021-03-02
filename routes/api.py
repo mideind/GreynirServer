@@ -379,6 +379,8 @@ def query_api(version=1):
     lon = request.values.get("longitude")
 
     # Additional client info
+    # !!! FIXME: The client_id for web browser clients is the browser version,
+    # !!! which is not particularly useful. Consider using an empty string instead.
     client_id = request.values.get("client_id")
     client_type = request.values.get("client_type")
     client_version = request.values.get("client_version")

@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# type: ignore
+
 """
     Greynir: Natural language processing for Icelandic
 
@@ -26,9 +28,7 @@
 import os
 import sys
 from itertools import islice, tee
-from contextlib import closing
 from random import randint
-import json
 import collections 
 
 
@@ -41,10 +41,10 @@ if __name__ == "__main__":
 else:
     basepath = ""
 
-from settings import Settings, ConfigError, Prepositions
-from tokenizer import tokenize, correct_spaces, TOK
+from settings import Settings, ConfigError
+from tokenizer import correct_spaces
 from reynir.bindb import BIN_Db
-from db import SessionContext, DatabaseError, desc
+from db import SessionContext, DatabaseError
 from db.models import Article, Trigram
 from tree import TreeTokenList, TerminalDescriptor
 

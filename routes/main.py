@@ -21,7 +21,7 @@
 
 """
 
-from typing import Dict, Any, List, Tuple, Union
+from typing import Dict, Any, List, Tuple, Union, cast
 
 import platform
 import sys
@@ -36,7 +36,7 @@ import reynir
 from reynir.fastparser import ParseForestFlattener
 
 from db import SessionContext, desc, dbfunc
-from db.models import Person, Article, ArticleTopic, Entity
+from db.models import Person, Article, ArticleTopic, Entity, Column
 
 from settings import Settings
 from article import Article as ArticleProxy
@@ -312,7 +312,7 @@ def parsefail():
             .filter(Article.heading > "")
             .filter(Article.num_sentences > 0)
             .filter(Article.num_sentences != Article.num_parsed)
-            .order_by(desc(Article.timestamp))
+            .order_by(desc(cast(Column, Article.timestamp)))
             .limit(num)
         )
 

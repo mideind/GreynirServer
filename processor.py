@@ -31,7 +31,7 @@
 
 """
 
-from typing import Optional, List
+from typing import Optional, List, cast
 from types import ModuleType
 
 import getopt
@@ -48,7 +48,7 @@ from datetime import datetime
 
 from settings import Settings, ConfigError
 from db import Scraper_DB
-from db.models import Article, Person
+from db.models import Article, Person, Column
 from tree import Tree
 
 
@@ -310,7 +310,8 @@ class Processor:
                         if update:
                             # If update, we re-process articles that have been parsed
                             # again in the meantime
-                            q = q.filter(Article.processed < Article.parsed).order_by(
+                            q = q.filter(
+                                cast(Column, Article.processed) < cast(Column, Article.parsed)).order_by(
                                 Article.processed
                             )
                         else:

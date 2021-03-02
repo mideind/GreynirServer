@@ -21,7 +21,7 @@
 
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, cast
 
 from . import routes, max_age, better_jsonify, cache, days_from_period_arg
 
@@ -33,7 +33,7 @@ from flask import request, render_template, abort, send_file
 from country_list import countries_for_language  # type: ignore
 
 from db import SessionContext, dbfunc, desc
-from db.models import Location, Article, Root
+from db.models import Location, Article, Root, Column
 
 from geo import (
     location_info,
@@ -82,7 +82,7 @@ def top_locations(limit=_TOP_LOC_LENGTH, kind=None, days=_TOP_LOC_PERIOD):
         if kind:
             q = q.filter(Location.kind == kind)
 
-        q = q.order_by(desc(Article.timestamp))
+        q = q.order_by(desc(cast(Column, Article.timestamp)))
 
         # Group articles by unique location
         locs = defaultdict(list)

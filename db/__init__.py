@@ -25,18 +25,16 @@
 
 from typing import Any, Callable, Optional, Type, cast
 
-from sqlalchemy import create_engine
-from sqlalchemy.engine.result import ResultProxy
+from sqlalchemy import create_engine, desc, func as dbfunc
 from sqlalchemy.orm import sessionmaker, Session
-
-from settings import Settings, ConfigError
+from sqlalchemy.engine.result import ResultProxy
 
 from sqlalchemy.exc import SQLAlchemyError as DatabaseError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import DataError
 from sqlalchemy.exc import OperationalError
-from sqlalchemy import desc
-from sqlalchemy import func as dbfunc
+
+from settings import Settings, ConfigError
 
 from .models import Base
 

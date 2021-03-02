@@ -30,7 +30,7 @@ from reynir import NounPhrase
 from reynir.bindb import BIN_Db
 
 from geo import icelandic_addr_info, iceprep_for_placename, iceprep_for_street
-from query import Query
+from query import ClientDataDict, Query
 from . import gen_answer, numbers_to_neutral
 
 
@@ -154,7 +154,7 @@ def _mynameis_handler(q: Query, ql: str) -> bool:
 
         # Save this info about user to query data table
         if q.client_id:
-            qdata = dict(full=name.title(), first=fn, gender=gender)
+            qdata: ClientDataDict = dict(full=name.title(), first=fn, gender=gender)
             q.set_client_data("name", qdata)
 
         # Generate answer
@@ -293,7 +293,7 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
 
 def _whatsmynum_handler(q: Query, ql: str) -> bool:
     """ Handle queries of the form "Hvað er símanúmerið mitt? """
-    pass
+    return False
 
 
 _MY_PHONE_IS_REGEXES = (

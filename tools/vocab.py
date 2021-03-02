@@ -44,8 +44,8 @@ try:
     import psycopg2cffi as psycopg2
 except ImportError:
     # Try plain Psycopg2 for CPython
-    import psycopg2.extensions as psycopg2ext
-    import psycopg2
+    import psycopg2.extensions as psycopg2ext  # type: ignore
+    import psycopg2  # type: ignore
 
 
 # Make Psycopg2 and PostgreSQL happy with UTF-8

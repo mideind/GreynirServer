@@ -33,6 +33,7 @@
 
 import random
 from datetime import datetime
+from typing import cast
 from pytz import country_timezones, timezone
 
 from reynir.bindb import BIN_Db
@@ -125,7 +126,10 @@ def handle_plain_text(q: Query) -> bool:
                 info = lookup_city_info(w)
                 if info:
                     top = info[0]
-                    location = (top.get("lat_wgs84"), top.get("long_wgs84"))
+                    location = (
+                        cast(float, top.get("lat_wgs84")),
+                        cast(float, top.get("long_wgs84")),
+                    )
                     tz = timezone4loc(location)
             if tz:
                 # We have a timezone
