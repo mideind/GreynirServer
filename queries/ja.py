@@ -90,7 +90,7 @@ def query_ja_api(q: str) -> Optional[Dict]:
 
 
 def _answer_phone_num_query(q: Query, result):
-    """ Answer query of the form "hvað er síminn hjá [Sveinbirni Þórðarsyni]?" """
+    """ Answer query of the form "hvað er síminn hjá [íslenskt mannsnafn]?" """
     res = query_ja_api(q.key())
     from pprint import pprint
     pprint(res)
