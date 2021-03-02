@@ -124,7 +124,7 @@ def test_api(client):
 
 
 def test_postag_api(client):
-    resp = client.get(r"/postag.api?t=Hér%20sé%20ást%20og%20friður")
+    resp = client.get(r"/postag.api?t=Hér%20er%20ást%20og%20friður")
     assert resp.status_code == 200
     assert resp.content_type == "application/json; charset=utf-8"
     assert "result" in resp.json
@@ -133,7 +133,7 @@ def test_postag_api(client):
 
 
 def test_ifdtag_api(client):
-    resp = client.get(r"/ifdtag.api?t=Hér%20sé%20ást%20og%20friður")
+    resp = client.get(r"/ifdtag.api?t=Hér%20er%20ást%20og%20friður")
     assert resp.status_code == 200
     assert resp.content_type == "application/json; charset=utf-8"
     assert "valid" in resp.json

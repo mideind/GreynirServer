@@ -119,7 +119,7 @@ def _answer_dictionary_query(q: Query, result):
         answ = "{0} er {1}".format(icequote(cap_first(word)), expl[0])
         voice = answ
     else:
-        # Otherwise, do some nice formatting + impr. voice synthesis
+        # Otherwise, do some nice formatting + spell things out to impr. voice synthesis
         answ = ""
         voice = "Orðið {0} getur þýtt: ".format(icequote(word))
         for i, x in enumerate(expl):

@@ -26,7 +26,7 @@
 
 """
 
-from typing import Dict, Optional, List, Any, Tuple, cast
+from typing import Callable, Dict, Iterable, Optional, List, Any, Tuple, cast
 
 import math
 from datetime import datetime
@@ -35,24 +35,302 @@ import logging
 
 from settings import Settings
 
-from db import desc, OperationalError
-from db.models import Article, Person, Entity, Root
+from db import desc, OperationalError, Session
+from db.models import Article, Person, Entity, Root, Column
 from db.queries import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
 
 from treeutil import TreeUtility
-from reynir import TOK, correct_spaces
+from reynir import TOK, Tok, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
-from query import Query
+from query import AnswerTuple, Query, ResponseDict, ResponseType
 
-# from query import _QUERY_ROOT
 from queries import cap_first
 
 # The type of a name/entity register
 RegisterType = Dict[str, Dict[str, Any]]
 
+# --- Begin "magic" module constants ---
+
+# The following constants - HANDLE_TREE, PRIORITY and GRAMMAR -
+# are "magic"; they are read by query.py to determine how to
+# integrate this query module into the server's set of active modules.
+
 # Indicate that this module wants to handle parse trees for queries
 HANDLE_TREE = True
+
+# Invoke this processor after other tree processors
+# (unless they have even lower priority)
+PRIORITY = -1
+
+QUERY_NONTERMINALS = { "BuiltinQueries" }
+
+GRAMMAR = """
+
+# ----------------------------------------------
+#
+# Query grammar
+#
+# The following grammar is used for queries only
+#
+# ----------------------------------------------
+
+Query →
+    BuiltinQueries
+
+BuiltinQueries →
+    QPerson > QCompany > QEntity > QTitle > QRepeat > QWord > QSearch
+
+QPerson →
+    Mannsnafn_nf/nkyn
+    | QPersonPrefix/fall QPersonKey/fall "?"?
+
+QPersonKey/fall →
+    Mannsnafn/fall/nkyn
+    | QPersonPronoun/fall/kyn
+
+QPersonKey/fall →
+    > Sérnafn
+
+QPersonPronoun/fall/kyn →
+    Pfn_et/fall/kyn
+
+$tag(keep) QPersonPronoun/fall/kyn
+
+QPersonPrefix_nf →
+    "hver" "er"
+    | "hver" "var"
+    | "hvað" "gerir"
+    | "hvað" "gerði"
+    | "hvað" "starfar"
+    | "hvað" "starfaði"
+    | "hvaða" "titil" "hefur"
+    | "hvaða" "titil" "hafði"
+    | "hvaða" "starfi" "gegnir"
+    | "hvaða" "starfi" "gegndi"
+
+QPersonPrefix_þf →
+    "hvað" "veistu" "um"
+    | "hvað" "geturðu" "sagt" "mér"? "um"
+
+QPersonPrefix_ef →
+    "hver" "er" "titill"
+    | "hver" "var" "titill"
+    | "hver" "er" "starfstitill"
+    | "hver" "var" "starfstitill"
+    | "hvert" "er" "starf"
+    | "hvert" "var" "starf"
+
+QPersonPrefix_þgf →
+    "segðu" "mér"? "frá"
+
+QCompany →
+    # Það þarf að gera ráð fyrir sérstökum punkti í
+    # enda fyrirspurnarinnar þar sem punktur á eftir 'hf.'
+    # eða 'ehf.' í enda setningar er skilinn frá
+    # skammstöfunar-tókanum.
+    QCompanyPrefix_nf Fyrirtæki_nf "."? "?"?
+    | QCompanyPrefix_þf Fyrirtæki_þf "."? "?"?
+    | QCompanyPrefix_þgf Fyrirtæki_þgf "."? # "?"?
+
+QCompanyPrefix_nf →
+    "hvað" "er"
+
+QCompanyPrefix_þf →
+    "hvað" "veistu" "um"
+    | "hvað" "geturðu" "sagt" "mér"? "um"
+
+QCompanyPrefix_þgf →
+    "segðu" "mér"? "frá"
+
+# A question about the definition of a named entity
+
+QEntity → QEntityPrefix/fall QEntityKey/fall "."? "?"?
+
+QEntityKey/fall →
+    Sérnafn/fall > Sérnafn > Nl/fall
+
+QEntityPrefix_nf →
+    "hvað" "er"
+    | "hvað" "eru"
+    # Allowing epsilon here makes this production catch too much
+
+QEntityPrefix_þf →
+    "hvað" "veistu" "um"
+    | "hvað" "geturðu" "sagt" "mér"? "um"
+
+QEntityPrefix_þgf →
+    "segðu" "mér"? "frá"
+
+QEntityPrefix_ef →
+    "" # Never matches
+
+QTitle →
+    QTitlePrefix_nf QTitleKey_nf "?"?
+    | QTitlePrefix_ef QTitleKey_ef "?"?
+
+QSegðuMér →
+    "segðu" "mér"
+    | "mig" "langar" "að" "vita"
+    | "ég" "vil" "gjarnan"? "vita"
+
+QTitlePrefix_nf →
+    QSegðuMér? QTitlePrefixFrh_nf
+
+QTitlePrefixFrh_nf →
+    "hver" "er"
+    | "hver" "var"
+    | "hver" "hefur" "verið"
+    | "hvað" "heitir"
+
+QTitlePrefix_ef →
+    QSegðuMér? "hver" "gegnir" "starfi"
+
+QTitleKey_nf →
+    EinnTitill_nf OgTitill_nf*
+
+QTitleKey_ef →
+    EinnTitill_ef OgTitill_ef*
+
+# Request to repeat the last answer
+
+QRepeat →
+    QRepeatQuery '?'?
+
+QRepeatThis → "þetta" | "síðasta" "svar" | "svarið"
+
+QRepeatQuery →
+    QPlease? "endurtaktu" QRepeatThis?
+    | QPlease? "segðu" "mér"? QRepeatThis? "aftur"
+    | "geturðu" "endurtekið" QRepeatThis?
+    | "geturðu" "sagt" QRepeatThis "aftur"
+    | "gætirðu" "endurtekið" QRepeatThis?
+    | "gætirðu" "sagt" QRepeatThis "aftur"
+
+QPlease →
+    "vinsamlega" | "vinsamlegast"
+
+# Word relation query
+
+QWord →
+    QWordPerson
+    > QWordEntity
+    > QWordNoun
+    > QWordVerb
+
+QWordPrefix_þgf →
+    "hvað" "tengist"
+    | "hvað" "er" "tengt"
+    | "hvaða" "orð" "tengjast"
+    | "hvaða" "orð" "tengist"
+    | "hvaða" "orð" "eru" "tengd"
+
+QWordPrefix_nf →
+    "hverju" "tengist"
+    | "hvaða" "orðum" "tengist"
+
+# 'Hvað tengist [orðinu/nafnorðinu] útihátíð?'
+
+QWordNoun →
+    QWordNoun_nf
+    | QWordNoun_þgf
+
+QWordNoun_þgf →
+    QWordPrefix_þgf QWordNounKey_þgf "?"?
+
+QWordNoun_nf →
+    QWordNounKey_nf
+    | QWordPrefix_þgf "orðinu" QWordNounKey_nf "?"?
+    | QWordPrefix_þgf "nafnorðinu" QWordNounKey_nf "?"?
+    | QWordPrefix_nf "orðið" QWordNounKey_nf "?"?
+    | QWordPrefix_nf "nafnorðið" QWordNounKey_nf "?"?
+
+QWordNounKey/fall → no/fall
+
+# 'Hvaða orð tengjast Ragnheiði Ríkharðsdóttur?'
+# 'Hvaða orð eru tengd nafninu Elliði Vignisson?'
+
+QWordPerson →
+    QWordPerson_nf
+    | QWordPerson_þgf
+
+QWordPerson_þgf →
+    QWordPrefix_þgf QWordPersonKey_þgf "?"?
+
+QWordPerson_nf →
+    QWordPrefix_þgf "nafninu" QWordPersonKey_nf "?"?
+    | QWordPrefix_nf "nafnið" QWordPersonKey_nf "?"?
+
+QWordPersonKey/fall → person/fall
+
+# 'Hvaða orð tengjast sögninni að teikna?'
+
+QWordVerb →
+    Nhm? QWordVerbKey
+    | QWordPrefix_þgf "orðinu" QWordVerbKey "?"?
+    | QWordPrefix_þgf "sögninni" Nhm? QWordVerbKey "?"?
+    | QWordPrefix_þgf "sagnorðinu" Nhm? QWordVerbKey "?"?
+    | QWordPrefix_nf "orðið" QWordVerbKey "?"?
+    | QWordPrefix_nf "sögnin" Nhm? QWordVerbKey "?"?
+    | QWordPrefix_nf "sagnorðið" Nhm? QWordVerbKey "?"?
+
+QWordVerbKey → so_nh
+
+# 'Hvaða orð tengjast Wintris?'
+
+QWordEntity →
+    QWordEntityKey_nf
+    | QWordPrefix_þgf QWordEntityKey_þgf "?"?
+    | QWordPrefix_þgf "orðinu" QWordEntityKey_nf "?"?
+    | QWordPrefix_þgf "nafninu" QWordEntityKey_nf "?"?
+    | QWordPrefix_þgf "sérnafninu" QWordEntityKey_nf "?"?
+    | QWordPrefix_þgf "heitinu" QWordEntityKey_nf "?"?
+    | QWordPrefix_nf "orðið" QWordEntityKey_nf "?"?
+    | QWordPrefix_nf "nafnið" QWordEntityKey_nf "?"?
+    | QWordPrefix_nf "sérnafnið" QWordEntityKey_nf "?"?
+    | QWordPrefix_nf "heitið" QWordEntityKey_nf "?"?
+
+QWordEntityKey/fall → Sérnafn/fall > Sérnafn
+
+# Arbitrary search
+
+# Try to recognize the search query first as a sentence,
+# then as a noun phrase, and finally as an arbitrary sequence of tokens
+
+QSearch →
+    QSearchSentence
+    | QSearchNl
+    | QSearchArbitrary
+
+# Prefer other parses to QSearch
+$score(-999) QSearch
+
+QSearchSentence →
+    Málsgrein
+    | SetningÁnF_et_p3/kyn Lokatákn? # 'Stefndi í átt til Bláfjalla'
+    | SetningÁnF_ft_p3/kyn Lokatákn? # 'Aftengdu fjarstýringu'
+
+$score(+4) QSearchSentence
+
+QSearchNl →
+    Nl_nf Atviksliður? Lokatákn? # 'Tobías í turninum'
+
+QSearchArbitrary →
+    QSearchToken+ Lokatákn?
+
+$score(-100) QSearchArbitrary
+
+QSearchToken →
+    person/fall/kyn > fyrirtæki > no/fall/tala/kyn
+    > fn/fall/tala/kyn > pfn/fall/tala/kyn > entity > lo > so
+    > eo > ao > fs/fall
+    > dags > dagsafs > dagsföst
+    > tímapunkturafs > tímapunkturfast > tími
+    > raðnr > to > töl > ártal > tala > sérnafn
+
+"""
+
+# --- End of "magic" module constants ---
 
 # Maximum number of top answers to send in response to queries
 _MAXLEN_ANSWER = 20
@@ -346,7 +624,7 @@ def add_entity_to_register(
 
 
 def add_name_to_register(
-    name, register: RegisterType, session, all_names=False
+    name: str, register: RegisterType, session: Session, all_names: bool=False
 ) -> None:
     """ Add the name and the 'best' title to the given name register dictionary """
     if name in register:
@@ -362,7 +640,7 @@ def add_name_to_register(
             register[name_key] = dict(kind="name", title=None)
 
 
-def create_name_register(tokens, session, all_names=False) -> RegisterType:
+def create_name_register(tokens: Iterable[Tok], session: Session, all_names: bool=False) -> RegisterType:
     """ Assemble a dictionary of person and entity names
         occurring in the token list """
     register: RegisterType = {}
@@ -376,7 +654,7 @@ def create_name_register(tokens, session, all_names=False) -> RegisterType:
     return register
 
 
-def _query_person_titles(session, name: str):
+def _query_person_titles(session: Session, name: str):
     """ Return a list of all titles for a person """
     # This list should never become very long, so we don't
     # apply a limit here
@@ -450,7 +728,7 @@ def _query_article_list(session, name: str):
     return sorted(adict.values(), key=lambda x: x["ts"], reverse=True)
 
 
-def query_person(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
+def query_person(query: Query, session: Session, name: str) -> AnswerTuple:
     """ A query for a person by name """
     response: Dict[str, Any] = dict(answers=[], sources=[])
     if name in {"hann", "hún", "hán", "það"}:
@@ -459,7 +737,7 @@ def query_person(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
         ctx = None if name == "það" else query.fetch_context()
         if ctx and "person_name" in ctx:
             # Yes, success
-            name = ctx["person_name"]
+            name = cast(str, ctx["person_name"])
         else:
             # No - give up
             if name == "hann":
@@ -497,8 +775,9 @@ def query_person(query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
         voice_answer = name + " er " + " ".join(v) + "."
         # Set the context for a subsequent query
         query.set_context({"person_name": name})
-        # Set source
-        query.set_source(source)
+        # Set source, if known
+        if source is not None:
+            query.set_source(source)
         response = dict(answer=answer)
     else:
         # Not voice
@@ -553,7 +832,7 @@ def query_person_title(session, name: str) -> Tuple[str, Optional[str]]:
     return correct_spaces(rl[index]["answer"]), rl[index]["sources"][0]["domain"]
 
 
-def query_title(query, session, title: str) -> Tuple[List[Dict[str, Any]], str, str]:
+def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
     """ A query for a person by title """
     # !!! Consider doing a LIKE '%title%', not just LIKE 'title%'
     # We impose a LIMIT of 1024 on each query result,
@@ -576,7 +855,7 @@ def query_title(query, session, title: str) -> Tuple[List[Dict[str, Any]], str, 
         .filter(Root.visible == True)
         .join(Article, Article.url == Person.article_url)
         .join(Root)
-        .order_by(desc(Article.timestamp))
+        .order_by(desc(cast(Column, Article.timestamp)))
         .limit(QUERY_LIMIT)
         .all()
     )
@@ -596,12 +875,14 @@ def query_title(query, session, title: str) -> Tuple[List[Dict[str, Any]], str, 
         .filter(Root.visible == True)
         .join(Article, Article.url == Entity.article_url)
         .join(Root)
-        .order_by(desc(Article.timestamp))
+        .order_by(desc(cast(Column, Article.timestamp)))
         .limit(QUERY_LIMIT)
         .all()
     )
     append_names(rd, q, prop_func=lambda x: x.name)
     response = make_response_list(rd)
+    answer: str
+    voice_answer: str
     if response and title and "answer" in response[0]:
         first_response = response[0]
         # Return 'Seðlabankastjóri er Már Guðmundsson.'
@@ -620,7 +901,7 @@ def query_title(query, session, title: str) -> Tuple[List[Dict[str, Any]], str, 
     return response, answer, voice_answer
 
 
-def _query_entity_definitions(session, name: str):
+def _query_entity_definitions(session: Session, name: str) -> List[Dict[str, Any]]:
     """ A query for definitions of an entity by name """
     # Note: the comparison below between name_lc and name
     # is automatically case-insensitive, so name.lower() is not required
@@ -644,11 +925,11 @@ def _query_entity_definitions(session, name: str):
     return prepare_response(q, prop_func=lambda x: x.definition)
 
 
-def query_entity(query: Query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
+def query_entity(query: Query, session: Session, name: str) -> AnswerTuple:
     """ A query for an entity by name """
     titles = _query_entity_definitions(session, name)
     articles = _query_article_list(session, name)
-    response = dict(answers=titles, sources=articles)
+    response: ResponseDict = dict(answers=titles, sources=articles)
     if titles and "answer" in titles[0]:
         # 'Mál og menning er bókmenntafélag.'
         answer = titles[0]["answer"]
@@ -683,7 +964,7 @@ def query_entity_def(session, name: str) -> str:
     return correct_spaces(rl[0]["answer"]) if rl else ""
 
 
-def query_company(query: Query, session, name: str) -> Tuple[Dict[str, Any], str, str]:
+def query_company(query: Query, session: Session, name: str) -> Tuple[List[Dict[str, Any]], str, str]:
     """ A query for an company in the entities table """
     # Create a query name by cutting off periods at the end
     # (hf. -> hf) and adding a percent pattern match at the end
@@ -717,7 +998,7 @@ def query_company(query: Query, session, name: str) -> Tuple[Dict[str, Any], str
     return response, answer, voice_answer
 
 
-def query_word(query: Query, session, stem: str) -> Dict[str, Any]:
+def query_word(query: Query, session: Session, stem: str) -> AnswerTuple:
     """ A query for words related to the given stem """
     # Count the articles where the stem occurs
     acnt = ArticleCountQuery.count(stem, enclosing_session=session)
@@ -729,12 +1010,14 @@ def query_word(query: Query, session, stem: str) -> Dict[str, Any]:
         answers=[
             dict(stem=rstem, cat=rcat) for rstem, rcat, rcnt in rlist if rstem != stem
         ],
-    )
+    ), "", None
 
 
-def launch_search(query: Query, session, qkey: str) -> Dict[str, Any]:
+def launch_search(query: Query, session: Session, qkey: str) -> AnswerTuple:
     """ Launch a search with the given search terms """
-    pgs, _ = TreeUtility.raw_tag_toklist(session, query.token_list)  # root=_QUERY_ROOT
+    toklist = query.token_list
+    assert toklist is not None
+    pgs, _ = TreeUtility.raw_tag_toklist(toklist)  # root=_QUERY_ROOT
 
     # Collect the list of search terms
     terms = []
@@ -774,10 +1057,10 @@ def launch_search(query: Query, session, qkey: str) -> Dict[str, Any]:
     for d, n in fixups:
         d["w"] = sum(weights[index : index + n]) / n
         index += n
-    return dict(answers=result["articles"], weights=tweights)
+    return dict(answers=result["articles"], weights=tweights), "", None
 
 
-def repeat_query(query: Query, session, qkey: str) -> Tuple[Dict[str, Any], str, str]:
+def repeat_query(query: Query, session: Session, qkey: str) -> AnswerTuple:
     """ Request to repeat the result of the last query """
     last = query.last_answer()
     if last is None:
@@ -793,7 +1076,7 @@ def repeat_query(query: Query, session, qkey: str) -> Tuple[Dict[str, Any], str,
 
 
 # Map query types to handler functions
-_QFUNC = {
+_QFUNC: Dict[str, Callable[[Query, Session, str], AnswerTuple]] = {
     "Person": query_person,
     "Title": query_title,
     "Entity": query_entity,
@@ -813,313 +1096,42 @@ _Q_ONLY_VOICE = frozenset(("Repeat",))
 def sentence(state, result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
-    if "qtype" in result:
-        # Successfully matched a query type
-        q.set_qtype(result.qtype)
-        q.set_key(result.qkey)
-        if q.is_voice and result.qtype in _Q_NO_VOICE:
-            # We don't do topic searches or word relationship
-            # queries via voice; that would be pretty meaningless.
-            q.set_error("E_VOICE_NOT_SUPPORTED")
-            return
-        if not q.is_voice and result.qtype in _Q_ONLY_VOICE:
-            # We don't allow repeat requests in non-voice queries
-            q.set_error("E_ONLY_VOICE_SUPPORTED")
-            return
-        if result.qtype == "Search":
-            # For searches, don't add a question mark at the end
-            if q.beautified_query.endswith("?") and not q.query.endswith("?"):
-                q.set_beautified_query(q.beautified_query[:-1])
-        session = state["session"]
-        # Select a query function and exceute it
-        qfunc = _QFUNC.get(result.qtype)
-        if qfunc is None:
-            answer = result.qtype + ": " + result.qkey
-            response = dict(answer=answer)
-            q.set_answer(response, answer)
-        else:
-            try:
-                answer = None
-                voice_answer = None
-                rtuple = qfunc(q, session, result.qkey)
-                if isinstance(rtuple, tuple):
-                    # We have both a normal and a voice answer
-                    response, answer, voice_answer = rtuple
-                else:
-                    response = cast(Dict[str, Any], rtuple)
-                q.set_answer(response, answer, voice_answer)
-            except AssertionError:
-                raise
-            except Exception as e:
-                q.set_error("E_EXCEPTION: {0}".format(e))
-    else:
+    if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
-
-
-GRAMMAR = """
-
-# ----------------------------------------------
-#
-# Query grammar
-#
-# The following grammar is used for queries only
-#
-# ----------------------------------------------
-
-Query →
-    BuiltinQueries
-
-BuiltinQueries →
-    QPerson > QCompany > QEntity > QTitle > QRepeat > QWord > QSearch
-
-QPerson →
-    Mannsnafn_nf/nkyn
-    | QPersonPrefix/fall QPersonKey/fall "?"?
-
-QPersonKey/fall →
-    Mannsnafn/fall/nkyn
-    | QPersonPronoun/fall/kyn
-
-QPersonKey/fall →
-    > Sérnafn
-
-QPersonPronoun/fall/kyn →
-    Pfn_et/fall/kyn
-
-$tag(keep) QPersonPronoun/fall/kyn
-
-QPersonPrefix_nf →
-    "hver" "er"
-    | "hver" "var"
-    | "hvað" "gerir"
-    | "hvað" "gerði"
-    | "hvað" "starfar"
-    | "hvað" "starfaði"
-    | "hvaða" "titil" "hefur"
-    | "hvaða" "titil" "hafði"
-    | "hvaða" "starfi" "gegnir"
-    | "hvaða" "starfi" "gegndi"
-
-QPersonPrefix_þf →
-    "hvað" "veistu" "um"
-    | "hvað" "geturðu" "sagt" "mér"? "um"
-
-QPersonPrefix_ef →
-    "hver" "er" "titill"
-    | "hver" "var" "titill"
-    | "hver" "er" "starfstitill"
-    | "hver" "var" "starfstitill"
-    | "hvert" "er" "starf"
-    | "hvert" "var" "starf"
-
-QPersonPrefix_þgf →
-    "segðu" "mér"? "frá"
-
-QCompany →
-    # Það þarf að gera ráð fyrir sérstökum punkti í
-    # enda fyrirspurnarinnar þar sem punktur á eftir 'hf.'
-    # eða 'ehf.' í enda setningar er skilinn frá
-    # skammstöfunar-tókanum.
-    QCompanyPrefix_nf Fyrirtæki_nf "."? "?"?
-    | QCompanyPrefix_þf Fyrirtæki_þf "."? "?"?
-    | QCompanyPrefix_þgf Fyrirtæki_þgf "." # "?"?
-
-QCompanyPrefix_nf →
-    "hvað" "er"
-
-QCompanyPrefix_þf →
-    "hvað" "veistu" "um"
-    | "hvað" "geturðu" "sagt" "mér"? "um"
-
-QCompanyPrefix_þgf →
-    "segðu" "mér"? "frá"
-
-# A question about the definition of a named entity
-
-QEntity → QEntityPrefix/fall QEntityKey/fall "."? "?"?
-
-QEntityKey/fall →
-    Sérnafn/fall > Sérnafn > Nl/fall
-
-QEntityPrefix_nf →
-    "hvað" "er"
-    | "hvað" "eru"
-    # Allowing epsilon here makes this production catch too much
-
-QEntityPrefix_þf →
-    "hvað" "veistu" "um"
-    | "hvað" "geturðu" "sagt" "mér"? "um"
-
-QEntityPrefix_þgf →
-    "segðu" "mér"? "frá"
-
-QEntityPrefix_ef →
-    "" # Never matches
-
-QTitle →
-    QTitlePrefix_nf QTitleKey_nf "?"?
-    | QTitlePrefix_ef QTitleKey_ef "?"?
-
-QSegðuMér →
-    "segðu" "mér"
-    | "mig" "langar" "að" "vita"
-    | "ég" "vil" "gjarnan"? "vita"
-
-QTitlePrefix_nf →
-    QSegðuMér? QTitlePrefixFrh_nf
-
-QTitlePrefixFrh_nf →
-    "hver" "er"
-    | "hver" "var"
-    | "hver" "hefur" "verið"
-    | "hvað" "heitir"
-
-QTitlePrefix_ef →
-    QSegðuMér? "hver" "gegnir" "starfi"
-
-QTitleKey_nf →
-    EinnTitill_nf OgTitill_nf*
-
-QTitleKey_ef →
-    EinnTitill_ef OgTitill_ef*
-
-# Request to repeat the last answer
-
-QRepeat →
-    QRepeatQuery '?'?
-
-QRepeatThis → "þetta" | "síðasta" "svar" | "svarið"
-
-QRepeatQuery →
-    QPlease? "endurtaktu" QRepeatThis?
-    | QPlease? "segðu" "mér"? QRepeatThis? "aftur"
-    | "geturðu" "endurtekið" QRepeatThis?
-    | "geturðu" "sagt" QRepeatThis "aftur"
-    | "gætirðu" "endurtekið" QRepeatThis?
-    | "gætirðu" "sagt" QRepeatThis "aftur"
-
-QPlease →
-    "vinsamlega" | "vinsamlegast"
-
-# Word relation query
-
-QWord →
-    QWordPerson
-    > QWordEntity
-    > QWordNoun
-    > QWordVerb
-
-QWordPrefix_þgf →
-    "hvað" "tengist"
-    | "hvað" "er" "tengt"
-    | "hvaða" "orð" "tengjast"
-    | "hvaða" "orð" "tengist"
-    | "hvaða" "orð" "eru" "tengd"
-
-QWordPrefix_nf →
-    "hverju" "tengist"
-    | "hvaða" "orðum" "tengist"
-
-# 'Hvað tengist [orðinu/nafnorðinu] útihátíð?'
-
-QWordNoun →
-    QWordNoun_nf
-    | QWordNoun_þgf
-
-QWordNoun_þgf →
-    QWordPrefix_þgf QWordNounKey_þgf "?"?
-
-QWordNoun_nf →
-    QWordNounKey_nf
-    | QWordPrefix_þgf "orðinu" QWordNounKey_nf "?"?
-    | QWordPrefix_þgf "nafnorðinu" QWordNounKey_nf "?"?
-    | QWordPrefix_nf "orðið" QWordNounKey_nf "?"?
-    | QWordPrefix_nf "nafnorðið" QWordNounKey_nf "?"?
-
-QWordNounKey/fall → no/fall
-
-# 'Hvaða orð tengjast Ragnheiði Ríkharðsdóttur?'
-# 'Hvaða orð eru tengd nafninu Elliði Vignisson?'
-
-QWordPerson →
-    QWordPerson_nf
-    | QWordPerson_þgf
-
-QWordPerson_þgf →
-    QWordPrefix_þgf QWordPersonKey_þgf "?"?
-
-QWordPerson_nf →
-    QWordPrefix_þgf "nafninu" QWordPersonKey_nf "?"?
-    | QWordPrefix_nf "nafnið" QWordPersonKey_nf "?"?
-
-QWordPersonKey/fall → person/fall
-
-# 'Hvaða orð tengjast sögninni að teikna?'
-
-QWordVerb →
-    Nhm? QWordVerbKey
-    | QWordPrefix_þgf "orðinu" QWordVerbKey "?"?
-    | QWordPrefix_þgf "sögninni" Nhm? QWordVerbKey "?"?
-    | QWordPrefix_þgf "sagnorðinu" Nhm? QWordVerbKey "?"?
-    | QWordPrefix_nf "orðið" QWordVerbKey "?"?
-    | QWordPrefix_nf "sögnin" Nhm? QWordVerbKey "?"?
-    | QWordPrefix_nf "sagnorðið" Nhm? QWordVerbKey "?"?
-
-QWordVerbKey → so_nh
-
-# 'Hvaða orð tengjast Wintris?'
-
-QWordEntity →
-    QWordEntityKey_nf
-    | QWordPrefix_þgf QWordEntityKey_þgf "?"?
-    | QWordPrefix_þgf "orðinu" QWordEntityKey_nf "?"?
-    | QWordPrefix_þgf "nafninu" QWordEntityKey_nf "?"?
-    | QWordPrefix_þgf "sérnafninu" QWordEntityKey_nf "?"?
-    | QWordPrefix_þgf "heitinu" QWordEntityKey_nf "?"?
-    | QWordPrefix_nf "orðið" QWordEntityKey_nf "?"?
-    | QWordPrefix_nf "nafnið" QWordEntityKey_nf "?"?
-    | QWordPrefix_nf "sérnafnið" QWordEntityKey_nf "?"?
-    | QWordPrefix_nf "heitið" QWordEntityKey_nf "?"?
-
-QWordEntityKey/fall → Sérnafn/fall > Sérnafn
-
-# Arbitrary search
-
-# Try to recognize the search query first as a sentence,
-# then as a noun phrase, and finally as an arbitrary sequence of tokens
-
-QSearch →
-    QSearchSentence
-    | QSearchNl
-    | QSearchArbitrary
-
-# Prefer other parses to QSearch
-$score(-999) QSearch
-
-QSearchSentence →
-    Málsgrein
-    | SetningÁnF_et_p3/kyn Lokatákn? # 'Stefndi í átt til Bláfjalla'
-    | SetningÁnF_ft_p3/kyn Lokatákn? # 'Aftengdu fjarstýringu'
-
-$score(+4) QSearchSentence
-
-QSearchNl →
-    Nl_nf Atviksliður? Lokatákn? # 'Tobías í turninum'
-
-QSearchArbitrary →
-    QSearchToken+ Lokatákn?
-
-$score(-100) QSearchArbitrary
-
-QSearchToken →
-    person/fall/kyn > fyrirtæki > no/fall/tala/kyn
-    > fn/fall/tala/kyn > pfn/fall/tala/kyn > entity > lo > so
-    > eo > ao > fs/fall
-    > dags > dagsafs > dagsföst
-    > tímapunkturafs > tímapunkturfast > tími
-    > raðnr > to > töl > ártal > tala > sérnafn
-
-"""
+        return
+    # Successfully matched a query type
+    q.set_qtype(result.qtype)
+    q.set_key(result.qkey)
+    if q.is_voice and result.qtype in _Q_NO_VOICE:
+        # We don't do topic searches or word relationship
+        # queries via voice; that would be pretty meaningless
+        q.set_error("E_VOICE_NOT_SUPPORTED")
+        return
+    if not q.is_voice and result.qtype in _Q_ONLY_VOICE:
+        # We don't allow repeat requests in non-voice queries
+        q.set_error("E_ONLY_VOICE_SUPPORTED")
+        return
+    if result.qtype == "Search":
+        # For searches, don't add a question mark at the end
+        if q.beautified_query.endswith("?") and not q.query.endswith("?"):
+            q.set_beautified_query(q.beautified_query[:-1])
+    session = state["session"]
+    # Select a query function and exceute it
+    qfunc = _QFUNC.get(result.qtype)
+    answer: str
+    response: ResponseType
+    if qfunc is None:
+        answer = cast(str, result.qtype + ": " + result.qkey)
+        response = dict(answer=answer)
+        q.set_answer(response, answer)
+        return
+    try:
+        response, answer, voice_answer = qfunc(q, session, result.qkey)
+        q.set_answer(response, answer, voice_answer)
+    except AssertionError:
+        raise
+    except Exception as e:
+        q.set_error("E_EXCEPTION: {0}".format(e))
 
 
 # The following functions correspond to grammar nonterminals (see Greynir.grammar)

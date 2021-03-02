@@ -117,6 +117,8 @@ def help_text(lemma: str) -> str:
     )
 
 
+QUERY_NONTERMINALS = { "QWeather" }
+
 # The context-free grammar for the queries recognized by this module
 GRAMMAR = """
 
@@ -354,7 +356,8 @@ _BFT_THRESHOLD = (0.3, 1.5, 3.4, 5.4, 7.9, 10.7, 13.8, 17.1, 20.7, 24.4, 28.4, 3
 def _wind_bft(ms: float) -> int:
     """ Convert wind from metres per second to Beaufort scale """
     if ms is None:
-        return None
+        return 0
+    ix = 0
     for ix, bft in enumerate(_BFT_THRESHOLD):
         if ms < bft:
             return ix

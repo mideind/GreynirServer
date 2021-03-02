@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# type: ignore
 
 # Quick and dirty parser speed test
 

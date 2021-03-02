@@ -21,7 +21,7 @@
 
 """
 
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Union, cast
 
 import platform
 import sys
@@ -36,17 +36,17 @@ import reynir
 from reynir.fastparser import ParseForestFlattener
 
 from db import SessionContext, desc, dbfunc
-from db.models import Person, Article, ArticleTopic, Entity
+from db.models import Person, Article, ArticleTopic, Entity, Column
 
 from settings import Settings
 from article import Article as ArticleProxy
 from search import Search
 from treeutil import TreeUtility
-from images import get_image_url, update_broken_image_url, blacklist_image_url
+from images import Img, get_image_url, update_broken_image_url, blacklist_image_url
 from doc import SUPPORTED_DOC_MIMETYPES
 
 from . import routes, max_age, cache, text_from_request, better_jsonify, restricted
-from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH, _MAX_TEXT_LENGTH_VIA_URL
+from . import MAX_URL_LENGTH, MAX_UUID_LENGTH, MAX_TEXT_LENGTH_VIA_URL
 
 
 # Default text shown in the URL/text box
@@ -91,7 +91,7 @@ def main():
 @routes.route("/analysis")
 def analysis():
     """ Handler for a page with grammatical analysis of user-entered text """
-    txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+    txt = request.args.get("txt", "")[0:MAX_TEXT_LENGTH_VIA_URL]
     return render_template("analysis.html", title="Málgreining", default_text=txt)
 
 
@@ -123,7 +123,7 @@ def similar():
     # Parse query args
     try:
         uuid = request.values.get("id")
-        uuid = uuid.strip()[0:_MAX_UUID_LENGTH]
+        uuid = uuid.strip()[0:MAX_UUID_LENGTH]
     except Exception:
         uuid = None
 
@@ -147,9 +147,9 @@ def page():
     url = request.args.get("url")
     uuid = request.args.get("id")
     if url:
-        url = url.strip()[0:_MAX_URL_LENGTH]
+        url = url.strip()[0:MAX_URL_LENGTH]
     if uuid:
-        uuid = uuid.strip()[0:_MAX_UUID_LENGTH]
+        uuid = uuid.strip()[0:MAX_UUID_LENGTH]
     if url:
         # URL has priority, if both are specified
         uuid = None
@@ -312,7 +312,7 @@ def parsefail():
             .filter(Article.heading > "")
             .filter(Article.num_sentences > 0)
             .filter(Article.num_sentences != Article.num_parsed)
-            .order_by(desc(Article.timestamp))
+            .order_by(desc(cast(Column, Article.timestamp)))
             .limit(num)
         )
 
@@ -399,6 +399,7 @@ def reportimage():
     status = request.form.get("status")
 
     if name and url and status:
+        new_img = False
         if status == "broken":
             new_img = update_broken_image_url(name, url)
         elif status == "wrong":
@@ -413,7 +414,7 @@ def reportimage():
 @routes.route("/image", methods=["GET"])
 def image():
     """ Get image for (person) name """
-    resp = dict(found=False)
+    resp: Dict[str, Union[bool, Img]] = dict(found=False)
 
     name = request.args.get("name")
     try:
@@ -486,5 +487,5 @@ def suggest(limit=10):
 @restricted
 def translate():
     """ Handler for a page with machine translation of user-entered text """
-    txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+    txt = request.args.get("txt", "")[0:MAX_TEXT_LENGTH_VIA_URL]
     return render_template("translate.html", title="Vélþýðing", default_text=txt)

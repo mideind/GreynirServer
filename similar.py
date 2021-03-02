@@ -25,7 +25,7 @@
 
 """
 
-from typing import cast, Callable
+from typing import Any, cast, Callable
 
 import os
 import sys
@@ -61,7 +61,8 @@ except ImportError:
 
 def _SocketClient(address):
     """ Return a connection object connected to the socket given by `address` """
-    with closing(socket.socket(socket.AF_INET)) as s:
+    sock = cast(Any, socket)
+    with closing(sock.socket(sock.AF_INET)) as s:
         s.setblocking(True)
         s.connect(address)
         # The following cast() hack is required since Connection()

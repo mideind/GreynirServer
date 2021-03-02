@@ -36,7 +36,7 @@ from flask import request, render_template
 from settings import changedlocale
 
 from db import SessionContext, desc
-from db.models import Person, Article, Root, Word
+from db.models import Person, Article, Root, Word, Column
 
 from reynir import correct_spaces
 from reynir.bindb import BIN_Db
@@ -62,9 +62,8 @@ def recent_persons(limit=_RECENT_PERSONS_LENGTH):
             .join(Article)
             .join(Root)
             .filter(Root.visible)
-            .order_by(desc(Article.timestamp))[
-                0 : limit * 2
-            ]  # Go through up to 2 * N records
+            # Go through up to 2 * N records
+            .order_by(desc(cast(Column, Article.timestamp)))[0 : limit * 2]
         )
 
         def is_better_title(new_title, old_title):

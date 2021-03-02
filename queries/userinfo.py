@@ -24,7 +24,7 @@
 
 # TODO: "Heinsaðu fyrirspurnasögu [mína]", "Hreinsaðu öll gögn um mig", etc. commands
 
-from typing import Dict, cast
+from typing import Dict, Match, Optional, cast
 
 import re
 
@@ -32,7 +32,7 @@ from reynir import NounPhrase
 from reynir.bindb import BIN_Db
 
 from geo import icelandic_addr_info, iceprep_for_placename, iceprep_for_street
-from query import Query
+from query import ClientDataDict, Query
 from . import gen_answer, numbers_to_neutral
 
 
@@ -129,6 +129,7 @@ _MY_NAME_IS_RESPONSES = {
 
 def _mynameis_handler(q: Query, ql: str) -> bool:
     """ Handle queries of the form "Ég heiti X", store this information. """
+    m: Optional[Match[str]] = None
     for rx in _MY_NAME_IS_REGEXES:
         m = re.search(rx, ql)
         if m:
@@ -156,7 +157,7 @@ def _mynameis_handler(q: Query, ql: str) -> bool:
 
         # Save this info about user to query data table
         if q.client_id:
-            qdata = dict(full=name.title(), first=fn, gender=gender)
+            qdata: ClientDataDict = dict(full=name.title(), first=fn, gender=gender)
             q.set_client_data("name", qdata)
 
         # Beautify query by capitalizing the name provided
@@ -242,6 +243,7 @@ _ADDR_LOOKUP_FAIL = "Ég fann ekki þetta heimilisfang."
 def _myaddris_handler(q: Query, ql: str) -> bool:
     """Handle queries of the form "Ég á heima á [heimilisfang]".
     Store this info as query data."""
+    m: Optional[Match[str]] = None
     for rx in _MY_ADDRESS_REGEXES:
         m = re.search(rx, ql)
         if m:
@@ -301,7 +303,7 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
 
 def _whatsmynum_handler(q: Query, ql: str) -> bool:
     """ Handle queries of the form "Hvað er símanúmerið mitt? """
-    pass
+    return False
 
 
 _MY_PHONE_IS_REGEXES = (

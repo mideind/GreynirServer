@@ -22,6 +22,7 @@
 """
 
 
+from typing import cast
 from . import routes, max_age, better_jsonify
 
 from datetime import datetime, timedelta
@@ -30,7 +31,7 @@ from flask import request, render_template
 from settings import changedlocale
 
 from db import SessionContext, desc
-from db.models import Article, Root, Location, ArticleTopic, Topic
+from db.models import Article, Root, Location, ArticleTopic, Topic, Column
 
 
 # Default number of top news items to show in /news
@@ -90,7 +91,7 @@ def fetch_articles(
         if topic:
             q = q.join(ArticleTopic).join(Topic).filter(Topic.identifier == topic)
 
-        q = q.order_by(desc(Article.timestamp)).offset(offset).limit(limit)
+        q = q.order_by(desc(cast(Column, Article.timestamp))).offset(offset).limit(limit)
 
         class ArticleDisplay:
             """ Utility class to carry information about an article to the web template """

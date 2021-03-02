@@ -22,7 +22,7 @@
 
 """
 
-from typing import Optional
+from typing import Any, Optional, cast
 
 import sys
 import os
@@ -138,7 +138,7 @@ def get_synthesized_text_url(
     }
 
     try:
-        url = client.generate_presigned_url(
+        url = cast(Any, client).generate_presigned_url(
             ClientMethod="synthesize_speech",
             Params=params,
             ExpiresIn=_AWS_URL_TTL,

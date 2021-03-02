@@ -22,23 +22,45 @@
     This module implements a data structure for parsed sentence trees that can
     be loaded from text strings and processed by plug-in processing functions.
 
-    A set of provided utility functions allow the extraction of nominative, indefinite
-    and canonical (nominative + indefinite + singular) forms of the text within any subtree.
+    A set of provided utility functions allow the extraction of nominative,
+    indefinite and canonical (nominative + indefinite + singular) forms of
+    the text within any subtree.
 
 """
 
-from typing import Dict, Optional, List, Tuple, Any, Union, Callable, Iterator, Iterable, NamedTuple, cast
+from typing import (
+    Dict,
+    FrozenSet,
+    Iterable,
+    Mapping,
+    Optional,
+    List,
+    Set,
+    Tuple,
+    Any,
+    Union,
+    Callable,
+    Iterator,
+    NamedTuple,
+    cast,
+)
+
+from types import ModuleType
 
 import json
 import re
 
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 import abc
+from contextlib import contextmanager
 
-from reynir.bindb import BIN_Db
+from sqlalchemy.orm import Session
+
+from reynir.bindb import BIN_Db, BIN_Meaning
 from reynir.binparser import BIN_Token
-from reynir.simpletree import SimpleTreeBuilder
+from reynir.simpletree import SimpleTree, SimpleTreeBuilder
 from reynir.cache import LRU_Cache
+from typing_extensions import TypedDict
 
 
 TreeToken = NamedTuple(
@@ -50,12 +72,30 @@ TreeToken = NamedTuple(
         ("tokentype", str),
         ("aux", str),
         ("cat", str),
-    ]
+    ],
 )
 OptionalNode = Optional["Node"]
 FilterFunction = Callable[["Node"], bool]
+SentenceFunction = Callable[["TreeStateDict", Optional["Result"]], None]
+VisitFunction = Callable[["TreeStateDict", "Node"], bool]
+ParamList = List[Optional["Result"]]
+NonterminalFunction = Callable[["Node", ParamList, "Result"], None]
+ChildTuple = Tuple["Node", Optional["Result"]]
 
-BIN_ORDFL = {
+
+class TreeStateDict(TypedDict, total=False):
+    session: Session
+    processor: ModuleType
+    bin_db: BIN_Db
+    url: str
+    authority: float
+    _sentence: Optional[SentenceFunction]
+    _visit: Optional[VisitFunction]
+    _default: Optional[NonterminalFunction]
+    index: int
+
+
+BIN_ORDFL: Mapping[str, Set[str]] = {
     "no": {"kk", "kvk", "hk"},
     "kk": {"kk"},
     "kvk": {"kvk"},
@@ -80,7 +120,7 @@ BIN_ORDFL = {
     "nhm": {"nhm"},
 }
 
-_REPEAT_SUFFIXES = frozenset(("+", "*", "?"))
+_REPEAT_SUFFIXES: FrozenSet[str] = frozenset(("+", "*", "?"))
 
 
 class Node(abc.ABC):
@@ -89,13 +129,13 @@ class Node(abc.ABC):
         trees in text format loaded from the scraper database """
 
     def __init__(self) -> None:
-        self.child: OptionalNode = None
-        self.nxt: OptionalNode = None
+        self.child: Optional["Node"] = None
+        self.nxt: Optional["Node"] = None
 
-    def set_next(self, n: OptionalNode) -> None:
+    def set_next(self, n: Optional["Node"]) -> None:
         self.nxt = n
 
-    def set_child(self, n: OptionalNode) -> None:
+    def set_child(self, n: Optional["Node"]) -> None:
         self.child = n
 
     def has_nt_base(self, s: str) -> bool:
@@ -127,9 +167,7 @@ class Node(abc.ABC):
             return False
         return ch.has_nt_base(s)
 
-    def children(
-        self, test_f: Optional[FilterFunction] = None
-    ) -> Iterator["Node"]:
+    def children(self, test_f: Optional[FilterFunction] = None) -> Iterator["Node"]:
         """ Yield all children of this node (that pass a test function, if given) """
         c = self.child
         while c:
@@ -140,25 +178,23 @@ class Node(abc.ABC):
     def first_child(self, test_f: FilterFunction) -> OptionalNode:
         """ Return the first child of this node that matches a test function, or None """
         c = self.child
-        while c:
+        while c is not None:
             if test_f(c):
                 return c
             c = c.nxt
         return None
 
-    def descendants(
-        self, test_f: Optional[FilterFunction] = None
-    ) -> Iterator["Node"]:
+    def descendants(self, test_f: Optional[FilterFunction] = None) -> Iterator["Node"]:
         """ Do a depth-first traversal of all children of this node,
             returning those that pass a test function, if given """
         c = self.child
-        while c:
+        while c is not None:
             for cc in c.descendants():
                 if test_f is None or test_f(cc):
                     yield cc
             if test_f is None or test_f(c):
                 yield c
-            c = c.nxt
+            c = cast(Node, c.nxt)
 
     @abc.abstractmethod
     def contained_text(self) -> str:
@@ -169,6 +205,22 @@ class Node(abc.ABC):
     @abc.abstractmethod
     def string_self(self) -> str:
         """ String representation of the name of this node """
+        raise NotImplementedError  # Should be overridden
+
+    @abc.abstractmethod
+    def nominative(self, state: TreeStateDict, params: ParamList) -> str:
+        raise NotImplementedError  # Should be overridden
+
+    @abc.abstractmethod
+    def indefinite(self, state: TreeStateDict, params: ParamList) -> str:
+        raise NotImplementedError  # Should be overridden
+
+    @abc.abstractmethod
+    def canonical(self, state: TreeStateDict, params: ParamList) -> str:
+        raise NotImplementedError  # Should be overridden
+
+    @abc.abstractmethod
+    def root(self, state: TreeStateDict, params: ParamList) -> str:
         raise NotImplementedError  # Should be overridden
 
     @abc.abstractproperty
@@ -196,15 +248,19 @@ class Node(abc.ABC):
             s += ",\n" + self.nxt.string_rep(indent)
         return s
 
+    @abc.abstractmethod
+    def process(self, state: TreeStateDict, params: ParamList) -> "Result":
+        raise NotImplementedError
+
     def build_simple_tree(self, builder: Any) -> None:
         """ Default action: recursively build the child nodes """
         for child in self.children():
             child.build_simple_tree(builder)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.string_rep("")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
 
@@ -229,22 +285,23 @@ class Result:
 
     """
 
-    def __init__(self, node, state, params):
-        self.dict = dict()  # Our own custom dict for instance attributes
+    def __init__(self, node: Node, state: TreeStateDict, params: ParamList) -> None:
+        # Our own custom dict for instance attributes
+        self.dict: Dict[str, Any] = dict()
         self._node = node
-        self._state = state
+        self._state: TreeStateDict = state
         self._params = params
 
     @property
-    def node(self):
+    def node(self) -> Node:
         return self._node
 
     @property
-    def state(self):
+    def state(self) -> TreeStateDict:
         return self._state
 
     @property
-    def params(self):
+    def params(self) -> ParamList:
         return self._params
 
     def __repr__(self):
@@ -252,7 +309,7 @@ class Result:
             len(self._params) if self._params else 0, self.dict
         )
 
-    def __setattr__(self, key, val):
+    def __setattr__(self, key: str, val: Any) -> None:
         """ Fancy attribute setter using our own dict for instance attributes """
         if key == "__dict__" or key == "dict" or key in self.__dict__:
             # Relay to Python's default attribute resolution mechanism
@@ -261,7 +318,7 @@ class Result:
             # Set attribute in our own dict
             self.dict[key] = val
 
-    def __getattr__(self, key):
+    def __getattr__(self, key: str) -> Any:
         """ Fancy attribute getter with special cases for _root and _nominative """
         # Note: this is only called for attributes that are not found by 'normal' means
         d = self.dict
@@ -296,33 +353,32 @@ class Result:
         # Not found in our custom dict
         raise AttributeError("Result object has no attribute named '{0}'".format(key))
 
-    def __contains__(self, key):
+    def __contains__(self, key: str) -> bool:
         return key in self.dict
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Any:
         return self.dict[key]
 
-    def __setitem__(self, key, val):
+    def __setitem__(self, key: str, val: Any) -> None:
         self.dict[key] = val
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: str) -> None:
         del self.dict[key]
 
-    def get(self, key, default=None):
+    def get(self, key: str, default: Any = None) -> Any:
         return self.dict.get(key, default)
 
-    def attribs(self):
+    def attribs(self) -> Iterator[Tuple[str, Any]]:
         """ Enumerate all attributes, and values, of this result object """
-        for key, val in self.dict.items():
-            yield (key, val)
+        yield from self.dict.items()
 
-    def user_attribs(self):
+    def user_attribs(self) -> Iterator[Tuple[str, Any]]:
         """ Enumerate all user-defined attributes and values of this result object """
         for key, val in self.dict.items():
             if isinstance(key, str) and not key.startswith("_") and not callable(val):
                 yield (key, val)
 
-    def copy_from(self, p):
+    def copy_from(self, p: "Result") -> None:
         """ Copy all user attributes from p into this result """
         if p is self or p is None:
             return
@@ -350,7 +406,7 @@ class Result:
                     # (This gives left priority; left.update(val) would give right priority)
                     d[key] = dict(val, **left)
 
-    def del_attribs(self, alist):
+    def del_attribs(self, alist: Union[str, Iterable[str]]) -> None:
         """ Delete the attribs in alist from the result object """
         if isinstance(alist, str):
             alist = (alist,)
@@ -359,7 +415,9 @@ class Result:
             if a in d:
                 del d[a]
 
-    def enum_children(self, test_f=None):
+    def enum_children(
+        self, test_f: Optional[Callable[[Node], bool]] = None
+    ) -> Iterator[ChildTuple]:
         """ Enumerate the child parameters of this node, yielding (child_node, result)
             where the child node meets the given test, if any """
         if self._params:
@@ -367,7 +425,9 @@ class Result:
                 if test_f is None or test_f(c):
                     yield (c, p)
 
-    def enum_descendants(self, test_f=None):
+    def enum_descendants(
+        self, test_f: Optional[Callable[[Node], bool]] = None
+    ) -> Iterator[ChildTuple]:
         """ Enumerate the descendant parameters of this node, yielding (child_node, result)
             where the child node meets the given test, if any """
         if self._params:
@@ -379,10 +439,10 @@ class Result:
                 if test_f is None or test_f(c):
                     yield (c, p)
 
-    def find_child(self, **kwargs):
+    def find_child(self, **kwargs: Any) -> Optional["Result"]:
         """ Find a child parameter meeting the criteria given in kwargs """
 
-        def test_f(c):
+        def test_f(c: Node) -> bool:
             for key, val in kwargs.items():
                 f = getattr(c, "has_" + key, None)
                 if f is None or not f(val):
@@ -395,10 +455,10 @@ class Result:
         # No child node found: return None
         return None
 
-    def all_children(self, **kwargs):
+    def all_children(self, **kwargs: Any) -> ParamList:
         """ Return all child parameters meeting the criteria given in kwargs """
 
-        def test_f(c):
+        def test_f(c: Node) -> bool:
             for key, val in kwargs.items():
                 f = getattr(c, "has_" + key, None)
                 if f is None or not f(val):
@@ -407,10 +467,10 @@ class Result:
 
         return [p for _, p in self.enum_children(test_f)]
 
-    def find_descendant(self, **kwargs):
+    def find_descendant(self, **kwargs: Any) -> Optional["Result"]:
         """ Find a descendant parameter meeting the criteria given in kwargs """
 
-        def test_f(c):
+        def test_f(c: Node) -> bool:
             for key, val in kwargs.items():
                 f = getattr(c, "has_" + key, None)
                 if f is None or not f(val):
@@ -424,19 +484,19 @@ class Result:
         return None
 
     @property
-    def at_start(self):
+    def at_start(self) -> bool:
         """ Return True if the associated node spans the start of the sentence """
         return self._node.at_start
 
-    def has_nt_base(self, s):
+    def has_nt_base(self, s: str) -> bool:
         """ Does the associated node have the given nonterminal base name? """
         return self._node.has_nt_base(s)
 
-    def has_t_base(self, s):
+    def has_t_base(self, s: str) -> bool:
         """ Does the associated node have the given terminal base name? """
         return self._node.has_t_base(s)
 
-    def has_variant(self, s):
+    def has_variant(self, s: str) -> bool:
         """ Does the associated node have the given variant? """
         return self._node.has_variant(s)
 
@@ -520,7 +580,7 @@ class TerminalDescriptor:
         if number:
             self.number = next(iter(number))
 
-    _OLD_BUGS = {
+    _OLD_BUGS: Mapping[str, str] = {
         "'margur'": "lo",
         "'fyrri'": "lo",
         "'seinni'": "lo",
@@ -531,7 +591,7 @@ class TerminalDescriptor:
     }
 
     @property
-    def clean_terminal(self):
+    def clean_terminal(self) -> str:
         """ Return a 'clean' terminal name, having converted literals
             to a corresponding category, if available """
         if self._clean_terminal is None:
@@ -549,7 +609,7 @@ class TerminalDescriptor:
         return self._clean_terminal
 
     @property
-    def clean_cat(self):
+    def clean_cat(self) -> str:
         """ Return the category from the front of the clean terminal name.
             This returns 'no' for all nouns (instead of 'kk', 'kvk', 'hk'),
             and handles stem literals correctly (i.e. the terminal
@@ -558,15 +618,15 @@ class TerminalDescriptor:
             self._clean_cat = self.clean_terminal.split("_")[0]
         return self._clean_cat
 
-    def has_t_base(self, s):
+    def has_t_base(self, s: str) -> bool:
         """ Does the node have the given terminal base name? """
         return self.cat == s
 
-    def has_variant(self, s):
+    def has_variant(self, s: str) -> bool:
         """ Does the node have the given variant? """
         return s in self.variants
 
-    def _bin_filter(self, m, case_override=None):
+    def _bin_filter(self, m: BIN_Meaning, case_override: Optional[str] = None) -> bool:
         """ Return True if the BIN meaning in m matches the variants for this terminal """
         if self.bin_cat is not None and m.ordfl not in self.bin_cat:
             return False
@@ -606,21 +666,23 @@ class TerminalDescriptor:
                     # return False
                     return False
             for v in ["sagnb", "lhþt", "bh"]:
-                if BIN_Token.VARIANT[v] in m.beyging and v not in self.variants:
+                vv = BIN_Token.VARIANT[v]
+                if vv and vv in m.beyging and v not in self.variants:
                     return False
             if "bh" in self.variants and "ST" in m.beyging:
                 return False
             if self.varlist[0] not in "012":
                 # No need for argument check: we're done, unless...
                 if "lhþt" in self.variants:
-                    # Special check for lhþt: may specify a case without it being an argument case
-                    if any(
-                        c in self.variants and BIN_Token.VARIANT[c] not in m.beyging
-                        for c in BIN_Token.CASES
-                    ):
-                        # Terminal specified a non-argument case but the token doesn't have it:
-                        # no match
-                        return False
+                    # Special check for lhþt: may specify a case
+                    # without it being an argument case
+                    for c in BIN_Token.CASES:
+                        if c in self.variants:
+                            vv = BIN_Token.VARIANT[c]
+                            if vv and vv not in m.beyging:
+                                # The terminal specified a non-argument case
+                                # but the token doesn't have it: no match
+                                return False
             # We can't check the arguments here, but assume that is not necessary
             # to disambiguate between verbs
             return True
@@ -656,7 +718,7 @@ class TerminalDescriptor:
 
         return True
 
-    def stem(self, bindb, word, at_start=False):
+    def stem(self, bindb: BIN_Db, word: str, at_start: bool = False) -> str:
         """ Returns the stem of a word matching this terminal """
         if self.is_literal or self.is_stem:
             # A literal or stem terminal only matches a word if it has the given stem
@@ -675,20 +737,21 @@ class TerminalDescriptor:
         return word
 
 
-def _root_lookup(text, at_start, terminal):
+def _root_lookup(text: str, at_start: bool, terminal: str) -> str:
     """ Look up the root of a word that isn't found in the cache """
+    mm: Optional[BIN_Meaning] = None
     with BIN_Db.get_db() as bin_db:
         w, m = bin_db.lookup_word(text, at_start)
     if m:
         # Find the meaning that matches the terminal
         td = TerminalNode._TD[terminal]
-        m = next((x for x in m if td._bin_filter(x)), None)
-    if m:
-        if m.fl == "skst":
+        mm = next((x for x in m if td._bin_filter(x)), None)
+    if mm is not None:
+        if mm.fl == "skst":
             # For abbreviations, return the original text as the
             # root (lemma), not the meaning of the abbreviation
             return text
-        w = m.stofn
+        w = mm.stofn
     return w.replace("-", "")
 
 
@@ -701,7 +764,7 @@ class TerminalNode(Node):
         ["ao", "eo", "spao", "fs", "st", "stt", "nhm", "uh", "töl"]
     )
     # Cache of terminal descriptors
-    _TD = dict()  # type: Dict[str, TerminalDescriptor]
+    _TD: Dict[str, TerminalDescriptor] = dict()
 
     # Cache of word roots (stems) keyed by (word, at_start, terminal)
     _root_cache = LRU_Cache(_root_lookup, maxsize=16384)
@@ -741,9 +804,9 @@ class TerminalNode(Node):
         # Cache the root form of this word so that it is only looked up
         # once, even if multiple processors scan this tree
         self.root_cache: Optional[str] = None
-        self.nominative_cache = None
-        self.indefinite_cache = None
-        self.canonical_cache = None
+        self.nominative_cache: Optional[str] = None
+        self.indefinite_cache: Optional[str] = None
+        self.canonical_cache: Optional[str] = None
 
     @property
     def text(self) -> str:
@@ -824,7 +887,7 @@ class TerminalNode(Node):
             return self.text
         return self._root_cache, (self.text, self._at_start, self.td.terminal)
 
-    def lookup_alternative(self, bin_db, replace_func, sort_func=None):
+    def lookup_alternative(self, bin_db: BIN_Db, replace_func, sort_func=None) -> str:
         """ Return a different (but always nominative case) word form, if available,
             by altering the beyging spec via the given replace_func function """
         w, m = bin_db.lookup_word(self.text, self._at_start)
@@ -877,7 +940,7 @@ class TerminalNode(Node):
                 w = result[0].ordmynd
         return w.replace("-", "")
 
-    def _nominative(self, bin_db):
+    def _nominative(self, bin_db: BIN_Db) -> str:
         """ Look up the nominative form of the word associated with this terminal """
         # Lookup the token in the BIN database
         if (not self.is_word) or self.td.case_nf or not self.is_declinable:
@@ -886,14 +949,14 @@ class TerminalNode(Node):
         if not self.text:
             assert False
 
-        def replace_beyging(b, by_case="NF"):
+        def replace_beyging(b: str, by_case: str = "NF") -> str:
             """ Change a beyging string to specify a different case """
             for case in ("NF", "ÞF", "ÞGF", "EF"):
                 if case != by_case and case in b:
                     return b.replace(case, by_case)
             return b
 
-        def sort_by_gr(m):
+        def sort_by_gr(m: BIN_Meaning) -> int:
             """ Sort meanings having a definite article (greinir) after those that do not """
             return 1 if "gr" in m.beyging else 0
 
@@ -912,7 +975,7 @@ class TerminalNode(Node):
             w = w[0].upper() + w[1:]
         return w
 
-    def _indefinite(self, bin_db):
+    def _indefinite(self, bin_db: BIN_Db) -> str:
         """ Look up the indefinite nominative form of a noun
             or adjective associated with this terminal """
         # Lookup the token in the BIN database
@@ -934,7 +997,7 @@ class TerminalNode(Node):
             # print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.td.terminal))
             assert False
 
-        def replace_beyging(b, by_case="NF"):
+        def replace_beyging(b: str, by_case: str = "NF") -> str:
             """ Change a beyging string to specify a different case,
                 without the definitive article """
             for case in ("NF", "ÞF", "ÞGF", "EF"):
@@ -949,7 +1012,7 @@ class TerminalNode(Node):
         w = self.lookup_alternative(bin_db, replace_beyging)
         return w
 
-    def _canonical(self, bin_db):
+    def _canonical(self, bin_db: BIN_Db) -> str:
         """ Look up the singular indefinite nominative form of a noun
             or adjective associated with this terminal """
         # Lookup the token in the BIN database
@@ -974,7 +1037,7 @@ class TerminalNode(Node):
             # print("self.text is empty, token is {0}, terminal is {1}".format(self.token, self.terminal))
             assert False
 
-        def replace_beyging(b, by_case="NF"):
+        def replace_beyging(b: str, by_case: str = "NF") -> str:
             """ Change a 'beyging' string to specify a different case,
                 without the definitive article """
             for case in ("NF", "ÞF", "ÞGF", "EF"):
@@ -992,7 +1055,7 @@ class TerminalNode(Node):
         w = self.lookup_alternative(bin_db, replace_beyging)
         return w
 
-    def root(self, state, params):
+    def root(self, state: TreeStateDict, params: ParamList) -> str:
         """ Calculate the root form (stem) of this node's text """
         if self.root_cache is None:
             # Not already cached: look up in database
@@ -1000,7 +1063,7 @@ class TerminalNode(Node):
             self.root_cache = self._root(bin_db)
         return self.root_cache
 
-    def nominative(self, state, params):
+    def nominative(self, state: TreeStateDict, params: ParamList) -> str:
         """ Calculate the nominative form of this node's text """
         if self.nominative_cache is None:
             # Not already cached: look up in database
@@ -1008,7 +1071,7 @@ class TerminalNode(Node):
             self.nominative_cache = self._nominative(bin_db)
         return self.nominative_cache
 
-    def indefinite(self, state, params):
+    def indefinite(self, state: TreeStateDict, params: ParamList) -> str:
         """ Calculate the nominative, indefinite form of this node's text """
         if self.indefinite_cache is None:
             # Not already cached: look up in database
@@ -1016,7 +1079,7 @@ class TerminalNode(Node):
             self.indefinite_cache = self._indefinite(bin_db)
         return self.indefinite_cache
 
-    def canonical(self, state, params):
+    def canonical(self, state: TreeStateDict, params: ParamList) -> str:
         """ Calculate the singular, nominative, indefinite form of this node's text """
         if self.canonical_cache is None:
             # Not already cached: look up in database
@@ -1024,13 +1087,13 @@ class TerminalNode(Node):
             self.canonical_cache = self._canonical(bin_db)
         return self.canonical_cache
 
-    def string_self(self):
+    def string_self(self) -> str:
         return self.td.terminal + " <" + self.token + ">"
 
-    def process(self, state, params):
+    def process(self, state: TreeStateDict, params: ParamList) -> Result:
         """ Prepare a result object to be passed up to enclosing nonterminals """
         assert not params  # A terminal node should not have parameters
-        result = Result(self, state, None)  # No params
+        result = Result(self, state, [])  # No params
         result._terminal = self.td.terminal
         result._text = self.text
         result._token = self.token
@@ -1143,7 +1206,7 @@ class PersonNode(TerminalNode):
         # Category = gender
         d["c"] = self.td.gender or self.td.cat
         # Stem
-        d["s"] = self.root(builder.state, None)
+        d["s"] = self.root(builder.state, [])
         # Terminal
         d["t"] = self.td.terminal
         builder.push_terminal(d)
@@ -1189,31 +1252,31 @@ class NonterminalNode(Node):
     def string_self(self) -> str:
         return self.nt
 
-    def root(self, state, params):
+    def root(self, state: TreeStateDict, params: ParamList) -> str:
         """ The root form of a nonterminal is a sequence of the root
             forms of its children (parameters) """
         return " ".join(p._root for p in params if p is not None and p._root)
 
-    def nominative(self, state, params):
+    def nominative(self, state: TreeStateDict, params: ParamList) -> str:
         """ The nominative form of a nonterminal is a sequence of the
             nominative forms of its children (parameters) """
         return " ".join(
             p._nominative for p in params if p is not None and p._nominative
         )
 
-    def indefinite(self, state, params):
+    def indefinite(self, state: TreeStateDict, params: ParamList) -> str:
         """ The indefinite form of a nonterminal is a sequence of the
             indefinite forms of its children (parameters) """
         return " ".join(
             p._indefinite for p in params if p is not None and p._indefinite
         )
 
-    def canonical(self, state, params):
+    def canonical(self, state: TreeStateDict, params: ParamList) -> str:
         """ The canonical form of a nonterminal is a sequence of the canonical
             forms of its children (parameters) """
         return " ".join(p._canonical for p in params if p is not None and p._canonical)
 
-    def process(self, state, params):
+    def process(self, state: TreeStateDict, params: ParamList) -> Result:
         """ Apply any requested processing to this node """
         result = Result(self, state, params)
         result._nonterminal = self.nt
@@ -1233,10 +1296,11 @@ class NonterminalNode(Node):
             # Don't invoke if this is an epsilon nonterminal (i.e. has no children),
             # or if this is a repetition parent (X?, X* or X+)
             processor = state["processor"]
-            func = (
+            func = cast(
+                Optional[NonterminalFunction],
                 getattr(processor, self.nt_base, state["_default"])
                 if processor
-                else None
+                else None,
             )
             if func is not None:
                 try:
@@ -1259,18 +1323,18 @@ class TreeBase:
     _TC = {"person": PersonNode}
 
     def __init__(self) -> None:
-        self.s: Dict[int, Union[None, Node]] = OrderedDict()  # Sentence dictionary
+        self.s: Dict[int, Optional[Node]] = OrderedDict()  # Sentence dictionary
         self.scores: Dict[int, int] = dict()  # Sentence scores
         self.lengths: Dict[int, int] = dict()  # Sentence lengths, in tokens
         self.stack: Optional[List[Node]] = None
         self.n: Optional[int] = None  # Index of current sentence
         self.at_start = False  # First token of sentence?
 
-    def __getitem__(self, n):
+    def __getitem__(self, n: int) -> Optional[Node]:
         """ Allow indexing to get sentence roots from the tree """
         return self.s[n]
 
-    def __contains__(self, n):
+    def __contains__(self, n: int) -> bool:
         """ Allow query of sentence indices """
         return n in self.s
 
@@ -1287,7 +1351,9 @@ class TreeBase:
         """ Return the length of the sentence with index n, in tokens, or 0 if unknown """
         return self.lengths.get(n, 0)
 
-    def simple_trees(self, nt_map=None, id_map=None, terminal_map=None):
+    def simple_trees(
+        self, nt_map=None, id_map=None, terminal_map=None
+    ) -> Iterator[Tuple[int, SimpleTree]]:
         """ Generate simple trees out of the sentences in this tree """
         # Hack to allow nodes to access the BIN database
         with BIN_Db.get_db() as bin_db:
@@ -1458,7 +1524,7 @@ class Tree(TreeBase):
         self.url = url
         self.authority = authority
 
-    def visit_children(self, state, node):
+    def visit_children(self, state: TreeStateDict, node: Node) -> Optional[Result]:
         """ Visit the children of node, obtain results from them and pass them to the node """
         # First check whether the processor has a visit() method
         visit = state["_visit"]
@@ -1470,9 +1536,8 @@ class Tree(TreeBase):
             state, [self.visit_children(state, child) for child in node.children()]
         )
 
-    def process_sentence(self, state, tree):
+    def process_sentence(self, state: TreeStateDict, tree: Node) -> None:
         """ Process a single sentence tree """
-        assert tree.nxt is None
         result = self.visit_children(state, tree)
         # Sentence processing completed:
         # Invoke a function called 'sentence(state, result)',
@@ -1481,23 +1546,43 @@ class Tree(TreeBase):
         if sentence is not None:
             sentence(state, result)
 
-    def process(self, session, processor, **kwargs):
-        """ Process a tree for an entire article """
+    def process_trees(self, state: TreeStateDict) -> None:
+        """ Overridable inner loop for processing the sentence trees in an article """
         # For each sentence in turn, do a depth-first traversal,
         # visiting each parent node after visiting its children
-        # Initialize the running state that we keep between sentences
+        for index, tree in self.s.items():
+            if tree is not None:
+                state["index"] = index
+                self.process_sentence(state, tree)
 
+    @contextmanager
+    def context(
+        self, session: Session, processor: ModuleType, **kwargs: Any
+    ) -> Iterator[TreeStateDict]:
+        """ Context manager for tree processing, setting up the environment
+            and encapsulating the sentence tree processing """
+
+        # Obtain the processor's handler functions
         article_begin = getattr(processor, "article_begin", None) if processor else None
         article_end = getattr(processor, "article_end", None) if processor else None
-        sentence = getattr(processor, "sentence", None) if processor else None
+        sentence = cast(
+            Optional[SentenceFunction],
+            getattr(processor, "sentence", None) if processor else None,
+        )
         # If visit(state, node) returns False for a node, do not visit child nodes
-        visit = getattr(processor, "visit", None) if processor else None
+        visit = cast(
+            Optional[VisitFunction],
+            getattr(processor, "visit", None) if processor else None,
+        )
         # If no handler exists for a nonterminal, call default() instead
-        default = getattr(processor, "default", None) if processor else None
+        default = cast(
+            Optional[NonterminalFunction],
+            getattr(processor, "default", None) if processor else None,
+        )
 
         with BIN_Db.get_db() as bin_db:
 
-            state = {
+            state: TreeStateDict = {
                 "session": session,
                 "processor": processor,
                 "bin_db": bin_db,
@@ -1509,18 +1594,23 @@ class Tree(TreeBase):
                 "index": 0,
             }
             # Add state parameters passed via keyword arguments, if any
-            state.update(kwargs)
+            state.update(cast(TreeStateDict, kwargs))
 
             # Call the article_begin(state) function, if it exists
             if article_begin is not None:
                 article_begin(state)
-            # Process the (parsed) sentences in the article
-            for index, tree in self.s.items():
-                state["index"] = index
-                self.process_sentence(state, tree)
+
+            # Now that the context environment has been set up, invoke the
+            # sentence handler(s), i.e. the body of the enclosing with statement
+            yield state
+
             # Call the article_end(state) function, if it exists
             if article_end is not None:
                 article_end(state)
+
+    def process(self, session: Session, processor: ModuleType, **kwargs: Any) -> None:
+        with self.context(session, processor, **kwargs) as state:
+            self.process_trees(state)
 
 
 class TreeGist(TreeBase):
@@ -1572,11 +1662,11 @@ class TreeTokenList(TreeBase):
 
     """ A tree that allows easy iteration of its token/terminal matches """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.result: Dict[int, List[TreeToken]] = dict()
 
-    def handle_Q(self, n):
+    def handle_Q(self, n: int) -> None:
         """ End of sentence """
         assert self.n is not None
         assert self.n not in self.result
@@ -1585,14 +1675,14 @@ class TreeTokenList(TreeBase):
         self.stack = None
         self.n = None
 
-    def handle_T(self, n, s):
+    def handle_T(self, n: int, s: str) -> None:
         """ Terminal """
         t = self._parse_T(s)
         # Append to token list for current sentence
         assert self.stack is not None
         cast(List[TreeToken], self.stack).append(TreeToken(*t))
 
-    def handle_N(self, n, nonterminal):
+    def handle_N(self, n: int, nonterminal: str) -> None:
         """ Nonterminal """
         # No action required for token lists
         pass

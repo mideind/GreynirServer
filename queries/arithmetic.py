@@ -23,7 +23,7 @@
 
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Mapping, Optional, Sequence, cast
 
 import math
 import json
@@ -31,15 +31,16 @@ import re
 import logging
 import random
 
-from query import Query
+from query import AnswerTuple, ContextDict, Query, QueryStateDict
 from queries import iceformat_float, gen_answer
+from tree import Result
 
 
 _ARITHMETIC_QTYPE = "Arithmetic"
 
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
-TOPIC_LEMMAS = [
+TOPIC_LEMMAS: Sequence[str] = [
     "plús",
     "mínus",
     "margfalda",
@@ -82,7 +83,7 @@ def help_text(lemma: str) -> str:
     )
 
 
-_NUMBER_WORDS = {
+_NUMBER_WORDS: Mapping[str, float] = {
     "núll": 0,
     "einn": 1,
     "einu": 1,
@@ -125,7 +126,7 @@ _NUMBER_WORDS = {
     "milljarður": 1e9,
 }
 
-_FRACTION_WORDS = {
+_FRACTION_WORDS: Mapping[str, float] = {
     "helmingur": 1 / 2,
     "helmingurinn": 1 / 2,
     "þriðjungur": 1 / 3,
@@ -139,7 +140,7 @@ _FRACTION_WORDS = {
 }
 
 # Ordinal words in the nominative case
-_ORDINAL_WORDS_NOM = {
+_ORDINAL_WORDS_NOM: Mapping[str, float] = {
     "fyrsti": 1,
     "annar": 2,
     "þriðji": 3,
@@ -173,7 +174,7 @@ _ORDINAL_WORDS_NOM = {
 }
 
 # Ordinal words in the dative case
-_ORDINAL_WORDS_DATIVE = {
+_ORDINAL_WORDS_DATIVE: Mapping[str, float] = {
     "fyrsta": 1,
     "öðru": 2,
     "þriðja": 3,
@@ -210,6 +211,8 @@ _ORDINAL_WORDS_DATIVE = {
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
+QUERY_NONTERMINALS = { "QArithmetic", "QArPi" }
+
 # The context-free grammar for the queries recognized by this plug-in module
 # Uses "QAr" as prefix for grammar namespace
 GRAMMAR = """
@@ -220,10 +223,13 @@ GRAMMAR = """
 Query →
     QArithmetic
     # 'Hvaða tala er pí'
-    | QArPi '?'?
+    | QArPi
 
 QArithmetic →
     QArithmeticQuery '?'?
+
+QArPi →
+    QArPiQuery '?'?
 
 $score(+55) QArithmetic
 $score(+55) QArPi
@@ -349,7 +355,7 @@ QArWithoutVAT →
 QArCurrencyOrNum →
     QArNumberWordAny | QArNumberWordAny "íslenskar"? "krónur" | amount
 
-QArPi →
+QArPiQuery →
     "hvað" "er" "pí"
     | "hvaða" "tala" "er" "pí"
     | "hver" "er" "talan"? "pí"
@@ -368,7 +374,7 @@ QArPi →
 )
 
 
-def parse_num(num_str: str):
+def parse_num(num_str: str) -> float:
     """ Parse Icelandic number string to float or int """
     num = None
     try:
@@ -399,7 +405,7 @@ def parse_num(num_str: str):
     return num
 
 
-def add_num(num, result):
+def add_num(num, result: Result):
     """ Add a number to accumulated number args """
     if "numbers" not in result:
         result.numbers = []
@@ -419,7 +425,7 @@ def terminal_num(t):
         return aux[0]
 
 
-def QArNumberWord(node, params, result):
+def QArNumberWord(node, params, result: Result):
     if "context_reference" in result or "error_context_reference" in result:
         # Already pushed the context reference
         # ('það', 'því'): we're done
@@ -431,11 +437,11 @@ def QArNumberWord(node, params, result):
         add_num(result._nominative, result)
 
 
-def QArOrdinalWord(node, params, result):
+def QArOrdinalWord(node, params, result: Result):
     add_num(result._canonical, result)
 
 
-def QArFractionWord(node, params, result):
+def QArFractionWord(node, params, result: Result):
     fn = result._canonical.lower()
     fp = _FRACTION_WORDS.get(fn)
     if not fp:
@@ -446,13 +452,13 @@ def QArFractionWord(node, params, result):
     add_num(fp, result)
 
 
-def QArMultOperator(node, params, result):
+def QArMultOperator(node, params, result: Result):
     """ 'tvisvar_sinnum', 'þrisvar_sinnum', 'fjórum_sinnum' """
     add_num(result._nominative, result)
     result.operator = "multiply"
 
 
-def QArLastResult(node, params, result):
+def QArLastResult(node, params, result: Result):
     """ Reference to previous result, usually via the words
         'það' or 'því' ('Hvað er það sinnum sautján?') """
     q = result.state.get("query")
@@ -466,44 +472,44 @@ def QArLastResult(node, params, result):
         result.context_reference = True
 
 
-def QArPlusOperator(node, params, result):
+def QArPlusOperator(node, params, result: Result):
     result.operator = "plus"
 
 
-def QArSumOperator(node, params, result):
+def QArSumOperator(node, params, result: Result):
     result.operator = "plus"
 
 
-def QArMinusOperator(node, params, result):
+def QArMinusOperator(node, params, result: Result):
     result.operator = "minus"
 
 
-def QArDivisionOperator(node, params, result):
+def QArDivisionOperator(node, params, result: Result):
     result.operator = "divide"
 
 
-def QArMultiplicationOperator(node, params, result):
+def QArMultiplicationOperator(node, params, result: Result):
     """ 'Hvað er 17 sinnum 34?' """
     result.operator = "multiply"
 
 
-def QArSquareRootOperator(node, params, result):
+def QArSquareRootOperator(node, params, result: Result):
     result.operator = "sqrt"
 
 
-def QArPowOperator(node, params, result):
+def QArPowOperator(node, params, result: Result):
     result.operator = "pow"
 
 
-def QArPercentOperator(node, params, result):
+def QArPercentOperator(node, params, result: Result):
     result.operator = "percent"
 
 
-def QArFractionOperator(node, params, result):
+def QArFractionOperator(node, params, result: Result):
     result.operator = "fraction"
 
 
-def Prósenta(node, params, result):
+def Prósenta(node, params, result: Result):
     # Find percentage terminal
     d = result.find_descendant(t_base="prósenta")
     if d:
@@ -513,7 +519,7 @@ def Prósenta(node, params, result):
         raise ValueError("No auxiliary information in percentage token")
 
 
-def QArCurrencyOrNum(node, params, result):
+def QArCurrencyOrNum(node, params, result: Result):
     amount = node.first_child(lambda n: n.has_t_base("amount"))
     if amount is not None:
         # Found an amount terminal node
@@ -521,63 +527,63 @@ def QArCurrencyOrNum(node, params, result):
         add_num(result.amount, result)
 
 
-def QArStd(node, params, result):
+def QArStd(node, params, result: Result):
     # Used later for formatting voice answer string,
     # e.g. "[tveir plús tveir] er [fjórir]"
     result.desc = result._canonical
 
 
-def QArSum(node, params, result):
+def QArSum(node, params, result: Result):
     result.desc = result._canonical
 
 
-def QArMult(node, params, result):
+def QArMult(node, params, result: Result):
     result.desc = result._canonical
 
 
-def QArSqrt(node, params, result):
+def QArSqrt(node, params, result: Result):
     result.desc = result._canonical
 
 
-def QArPow(node, params, result):
+def QArPow(node, params, result: Result):
     result.desc = result._canonical
 
 
-def QArPercent(node, params, result):
+def QArPercent(node, params, result: Result):
     result.desc = result._canonical
 
 
-def QArFraction(node, params, result):
+def QArFraction(node, params, result: Result):
     result.desc = result._canonical
 
 
-def QArPi(node, params, result):
+def QArPiQuery(node, params, result: Result):
     result.qtype = "PI"
 
 
-def QArWithVAT(node, params, result):
+def QArWithVAT(node, params, result: Result):
     result.operator = "with_vat"
 
 
-def QArWithoutVAT(node, params, result):
+def QArWithoutVAT(node, params, result: Result):
     result.operator = "without_vat"
 
 
-def QArVAT(node, params, result):
+def QArVAT(node, params, result: Result):
     result.desc = result._canonical
     result.qtype = "VSK"
 
 
-def QArithmetic(node, params, result):
+def QArithmetic(node, params, result: Result):
     # Set query type
     result.qtype = _ARITHMETIC_QTYPE
 
 
 # Map operator name to corresponding python operator
-_STD_OPERATORS = {"multiply": "*", "divide": "/", "plus": "+", "minus": "-"}
+_STD_OPERATORS: Mapping[str, str] = {"multiply": "*", "divide": "/", "plus": "+", "minus": "-"}
 
 # Number of args required for each operator
-_OP_NUM_ARGS = {
+_OP_NUM_ARGS: Mapping[str, int] = {
     "multiply": 2,
     "divide": 2,
     "plus": 2,
@@ -595,7 +601,7 @@ _OP_NUM_ARGS = {
 _VAT_MULT = 1.24
 
 
-def calc_arithmetic(query: Query, result):
+def calc_arithmetic(query: Query, result: Result) -> Optional[AnswerTuple]:
     """ Calculate the answer to an arithmetic query """
     operator = result.operator
     nums = result.numbers
@@ -663,7 +669,7 @@ def calc_arithmetic(query: Query, result):
     result.qkey = s
 
     # Run eval on expression
-    res = eval(s, eval_globals, {})
+    res: float = eval(s, eval_globals, {})
 
     if isinstance(res, float):
         # Convert result to Icelandic decimal format
@@ -677,7 +683,7 @@ def calc_arithmetic(query: Query, result):
     return response, answer, voice_answer
 
 
-def pi_answer(q: Query, result):
+def pi_answer(q: Query, result: Result) -> AnswerTuple:
     """ Define pi (π) """
     answer = "Talan π („pí“) er stærðfræðilegi fastinn 3,14159265359 eða þar um bil."
     voice = "Talan pí er stærðfræðilegi fastinn 3,14159265359 eða þar um bil."
@@ -686,14 +692,15 @@ def pi_answer(q: Query, result):
     return response, answer, voice
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
-    q: Query = state["query"]
+    q = state["query"]
     if "qtype" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)
 
         try:
+            r: Optional[AnswerTuple]
             if result.qtype == "PI":
                 r = pi_answer(q, result)
             else:
@@ -704,7 +711,9 @@ def sentence(state, result):
                 if "result" in r[0]:
                     # Pass the result into a query context having
                     # the 'result' property
-                    q.set_context(dict(result=r[0]["result"]))
+                    res: float = cast(Any, r[0])["result"]
+                    ctx = cast(ContextDict, dict(result=res))
+                    q.set_context(ctx)
             else:
                 raise Exception("Failed to answer arithmetic query")
         except Exception as e:

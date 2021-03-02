@@ -209,6 +209,8 @@ _CONVERT_UNITS = {
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
+QUERY_NONTERMINALS = { "QUnitQuery" }
+
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 

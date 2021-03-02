@@ -51,6 +51,8 @@ def help_text(lemma) -> str:
     )
 
 
+QUERY_NONTERMINALS = { "QNewsQuery" }
+
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True

@@ -26,7 +26,7 @@
 
 """
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 
 import sys
 import json
@@ -39,7 +39,7 @@ from datetime import datetime, timedelta
 from collections import namedtuple
 from contextlib import closing
 import requests
-from db import SessionContext
+from db import Session, SessionContext
 from db.models import Link, BlacklistedLink
 from settings import Settings
 from util import read_api_key
@@ -48,7 +48,7 @@ from util import read_api_key
 QUERY_TIMEOUT = 4.0
 
 
-def _server_query(url: str, q: Dict[str, str]) -> Optional[bytes]:
+def _server_query(url: str, q: Dict[str, Union[int, str]]) -> Optional[bytes]:
     """ Query a server via HTTP GET with a URL-encoded query string obtained q """
     doc = None
     if len(q):
@@ -98,28 +98,28 @@ def get_image_url(
     hints: List = [],
     size: str = "large",
     thumb: bool = False,
-    enclosing_session: Optional[SessionContext] = None,
+    enclosing_session: Optional[Session] = None,
     cache_only: bool = False,
-):
+) -> Optional[Img]:
     """ Use Google Custom Search API to obtain an image corresponding to a (person) name """
     jdoc = None
     ctype = _CTYPE + size
 
     with SessionContext(commit=True, session=enclosing_session) as session:
-        q = (
+        link = (
             session.query(Link.content, Link.timestamp)
             .filter(Link.ctype == ctype)
             .filter(Link.key == name)
             .one_or_none()
         )
-        if q is not None:
+        if link is not None:
             # Found in cache. If the result is old, purge it
             period = timedelta(days=_CACHE_EXPIRATION_DAYS)
-            expired = datetime.utcnow() - q.timestamp > period
+            expired = datetime.utcnow() - link.timestamp > period
             if expired and not cache_only:
                 _purge_single(name, ctype=ctype, enclosing_session=session)
             else:
-                jdoc = q.content
+                jdoc = link.content
 
         if not jdoc and cache_only:
             return None
@@ -134,7 +134,7 @@ def get_image_url(
 
             # Assemble the query parameters
             search_str = '"{0}" {1}'.format(name, " ".join(hints)).strip()
-            q = dict(
+            q: Dict[str, Union[str, int]] = dict(
                 q=search_str,
                 num=_NUM_IMG_URLS,
                 start=1,
@@ -185,7 +185,7 @@ def get_image_url(
     return None
 
 
-def blacklist_image_url(name: str, url: str) -> Optional[str]:
+def blacklist_image_url(name: str, url: str) -> Optional[Img]:
     """ Blacklist image URL for a given key """
 
     with SessionContext(commit=True) as session:
@@ -206,7 +206,7 @@ def blacklist_image_url(name: str, url: str) -> Optional[str]:
         return get_image_url(name, enclosing_session=session)
 
 
-def update_broken_image_url(name: str, url: str) -> Optional[str]:
+def update_broken_image_url(name: str, url: str) -> Optional[Img]:
     """ Refetch image URL for name if broken """
 
     with SessionContext() as session:
@@ -236,7 +236,7 @@ def check_image_url(url: str) -> bool:
 
 
 def _blacklisted_urls_for_key(
-    key: str, enclosing_session: Optional[SessionContext] = None
+    key: str, enclosing_session: Optional[Session] = None
 ) -> List[str]:
     """ Fetch blacklisted urls for a given key """
     with SessionContext(commit=True, session=enclosing_session) as session:
@@ -250,7 +250,7 @@ def _blacklisted_urls_for_key(
 
 
 def _get_cached_entry(
-    name: str, url: str, enclosing_session: Optional[SessionContext] = None
+    name: str, url: str, enclosing_session: Optional[Session] = None
 ):
     """ Fetch cached entry by key and url """
     with SessionContext(commit=True, session=enclosing_session) as session:
@@ -267,8 +267,8 @@ def _get_cached_entry(
 def _purge_single(
     key: str,
     ctype: Optional[str] = None,
-    enclosing_session: Optional[SessionContext] = None,
-):
+    enclosing_session: Optional[Session] = None,
+) -> None:
     """ Remove cache entry """
     with SessionContext(commit=True, session=enclosing_session) as session:
         filters = [Link.key == key]
