@@ -264,9 +264,9 @@ class QueryTree(Tree):
         # Access the QueryRoot node
         root = self.s[1]
         # Access the Query node
-        query = root.child
+        query = None if root is None else root.child
         # The child nodes of the Query node are the valid query parse trees
-        self._query_trees = list(query.children())
+        self._query_trees = [] if query is None else list(query.children())
 
     @property
     def query_trees(self) -> List[Node]:

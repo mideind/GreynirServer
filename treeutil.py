@@ -217,8 +217,8 @@ class TreeUtility:
                 fn_list = [(fn, g, c)]
         # If there are many choices, select the nominative case,
         # or the first element as a last resort
-        fn = next((fn for fn in fn_list if fn[2] == "nf"), fn_list[0])
-        return fn[0], fn[1] if gender is None else gender
+        ft = next((fn for fn in fn_list if fn[2] == "nf"), fn_list[0])
+        return ft[0], ft[1] if gender is None else gender
 
     @staticmethod
     def _word_tuple(

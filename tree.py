@@ -804,9 +804,9 @@ class TerminalNode(Node):
         # Cache the root form of this word so that it is only looked up
         # once, even if multiple processors scan this tree
         self.root_cache: Optional[str] = None
-        self.nominative_cache = None
-        self.indefinite_cache = None
-        self.canonical_cache = None
+        self.nominative_cache: Optional[str] = None
+        self.indefinite_cache: Optional[str] = None
+        self.canonical_cache: Optional[str] = None
 
     @property
     def text(self) -> str:

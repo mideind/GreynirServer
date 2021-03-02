@@ -32,7 +32,7 @@ from typing import (
     Dict,
     Any,
     TYPE_CHECKING,
-    Tuple,
+    Tuple, Union,
     cast,
 )
 
@@ -133,7 +133,7 @@ class Article:
         self._root_id: Optional[int] = None
         self._root_domain = None
         self._helper = None
-        self._tokens = None  # JSON string
+        self._tokens: Optional[str] = None  # JSON string
         # The tokens themselves: Lists of paragraphs of sentences
         # (which are lists of TokenDicts)
         self._raw_tokens: Optional[List[List[List[TokenDict]]]] = None
@@ -305,6 +305,7 @@ class Article:
         with SessionContext(enclosing_session) as session:
 
             # Convert the content soup to a token iterable (generator)
+            toklist: Union[List[Tok], Iterator[Tok], None]
             if not self._url or not self._html:
                 toklist = []
             else:
