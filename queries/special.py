@@ -431,9 +431,17 @@ _SPEAKING_TO_ME: AnswerType = {"answer": "Þú ert að tala við mig, Emblu."}
 _YES: AnswerType = {"answer": "Já."}
 _NO: AnswerType = {"answer": "Nei."}
 
-_VOICE_SPEED = {
-    "answer": "Það er hægt að velja talhraða í stillingum."
+_VOICE_SPEED = {"answer": "Það er hægt að velja talhraða í stillingum."}
+
+_YOU_BEAUTIFUL = {"answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."}
+
+_BEER_PREFS = {
+    "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
 }
+
+_WINE_PREFS = {"answer": "Ég drekk ekki vín."}
+
+_MY_PHILOSOPHY = {"answer": "Það er minn tilgangur að þjóna þér og mannkyninu öllu."}
 
 ###################################
 
@@ -476,30 +484,14 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hver er langbestur": {"answer": "Þú, kæri notandi, ert að sjálfsögðu langbestur."},
     "hver er langbest": {"answer": "Þú, kæri notandi, ert að sjálfsögðu langbestur."},
     "hverjir eru langbestir": {"answer": "Þú, kæri notandi, ert að sjálfsögðu langbestur."},
-    "hver er fallegur": {
-        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
-    },
-    "hver er fallegastur": {
-        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
-    },
-    "hver er fallegust": {
-        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
-    },
-    "hver er fallegastur af öllum": {
-        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
-    },
-    "hver er fallegust af öllum": {
-        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
-    },
-    "hver er langfallegastur": {
-        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
-    },
-    "hver er langfallegust": {
-        "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
-    },
-    "hver er uppáhalds manneskjan þín": {
-        "answer": "Þú, kæri notandi, ert að sjálfsögðu í uppáhaldi."
-    },
+    "hver er fallegur": _YOU_BEAUTIFUL,
+    "hver er fallegastur": _YOU_BEAUTIFUL,
+    "hver er fallegust": _YOU_BEAUTIFUL,
+    "hver er fallegastur af öllum": _YOU_BEAUTIFUL,
+    "hver er fallegust af öllum": _YOU_BEAUTIFUL,
+    "hver er langfallegastur": _YOU_BEAUTIFUL,
+    "hver er langfallegust": _YOU_BEAUTIFUL,
+    "hver er uppáhalds manneskjan þín": _YOU_BEAUTIFUL,
     "hvað er það": {"answer": "Hvað er hvað?"},
     # Food and beverages
     "hvað er í matinn": {"answer": "Vonandi eitthvað gott."},
@@ -507,18 +499,15 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað er í kvöldmat": {"answer": "Vonandi eitthvað gott."},
     "hvað á ég að elda": {"answer": "Eitthvað gott."},
     "hvað á ég að fá mér að borða": {"answer": "Eitthvað gott."},
-    "hvaða bjór er bestur": {
-        "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
-    },
-    "hvað er besti bjórinn": {
-        "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
-    },
-    "hvaða bjór er góður": {
-        "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
-    },
-    "hvað er besta vínið": {"answer": "Ég drekk ekki vín."},
-    "hvað er besta rauðvínið": {"answer": "Ég drekk ekki vín."},
-    "hvað er besta hvítvínið": {"answer": "Ég drekk ekki vín."},
+    "hvaða bjór er bestur": _BEER_PREFS,
+    "hvað er besti bjórinn": _BEER_PREFS,
+    "hvaða bjór er góður": _BEER_PREFS,
+    "hvaða bjór finnst þér góður": _BEER_PREFS,
+    "hvaða bjór þykir þér góður": _BEER_PREFS,
+    "hvað er besta vínið": _WINE_PREFS,
+    "hvaða vín finnst þér best": _WINE_PREFS,
+    "hvað er besta rauðvínið": _WINE_PREFS,
+    "hvað er besta hvítvínið": _WINE_PREFS,
     # Who am I?
     "er ég til": {"answer": "Væntanlega, fyrst þú ert að tala við mig."},
     "hvað heitir konan mín": _DUNNO,
@@ -951,6 +940,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "halló embla": _HELLO_DEAR,
     "hæ": _HELLO_DEAR,
     "hæhæ": _HELLO_DEAR,
+    "hæ hæ": _HELLO_DEAR,
     "halló": _HELLO_DEAR,
     "sæl": _HELLO_DEAR,
     "sæll": _HELLO_DEAR,
@@ -965,7 +955,10 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "blessaður": _HELLO_DEAR,
     "blessuð embla": _HELLO_DEAR,
     "góðan daginn": {"answer": "Góðan daginn, kæri notandi.", "is_question": False},
-    "góðan og blessaðan daginn": {"answer": "Góðan daginn, kæri notandi.", "is_question": False},
+    "góðan og blessaðan daginn": {
+        "answer": "Góðan daginn, kæri notandi.",
+        "is_question": False,
+    },
     "góðan dag": {"answer": "Góðan daginn, kæri notandi.", "is_question": False},
     "gott kvöld": {"answer": "Gott kvöld, kæri notandi.", "is_question": False},
     "góða kvöldið": {"answer": "Góða kvöldið, kæri notandi.", "is_question": False},
@@ -1130,6 +1123,15 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hver er sannleikurinn": _MEANING_OF_LIFE,
     "hvað er 42": {"answer": "Sex sinnum sjö"},  # :)
     "hvað meinarðu með 42": {"answer": "Sex sinnum sjö"},
+    # Personal philosophy
+    "hver er tilgangur þinn": _MY_PHILOSOPHY,
+    "hver er eiginlega tilgangur þinn": _MY_PHILOSOPHY,
+    "hvað er tilgangurinn með þér": _MY_PHILOSOPHY,
+    "hvað er eiginlega tilgangurinn með þér": _MY_PHILOSOPHY,
+    "hver er þinn tilgangur": _MY_PHILOSOPHY,
+    "hver er þinn tilgangur eiginlega": _MY_PHILOSOPHY,
+    "af hverju ertu til": _MY_PHILOSOPHY,
+    "af hverju ert þú til": _MY_PHILOSOPHY,
     # What is best in life? https://www.youtube.com/watch?v=Oo9buo9Mtos
     "hvað er best": {"answer": "Að horfa á kvikmynd um villimanninn Kónan."},
     "hvað er best í lífinu": {"answer": "Að horfa á kvikmynd um villimanninn Kónan."},
@@ -1156,11 +1158,16 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvar endar alheimurinn": {"answer": "Inni í þér."},
     "hvar er húfan mín": {"answer": "Hvar er hettan mín?"},
     "hvar er draumurinn": {"answer": "Hvar ertu lífið sem ég þrái?"},  # :)
+    "ó eilífðin": {"answer": "Hvar ertu gleði mín og sorg?"},  # :)
+    "ó ó eilífðin": {"answer": "Hvar ertu gleði mín og sorg?"},  # :)
+    "oh eilífðin": {"answer": "Hvar ertu gleði mín og sorg?"},  # :)
     # Why am I here?
     "af hverju er ég hérna": _GOOD_QUESTION,
     "afhverju er ég hérna": _GOOD_QUESTION,
     "afhverju er ég til": _GOOD_QUESTION,
     "hvenær mun ég deyja": _GOOD_QUESTION,
+    "hvers vegna erum við til": _GOOD_QUESTION,
+    "hvers vegna er ég til": _GOOD_QUESTION,
     # Identity
     "hvað heitir þú": _identity,
     "hvað heitir þu": _identity,
@@ -1324,7 +1331,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ertu mennsk": _COMPUTER_PROGRAM,
     "ertu drasl": _COMPUTER_PROGRAM,
     "ertu hamingjusöm": _YES,
-    "ertu glöð": _YES,
+    "ertu glöð": {"answer": "Já, ég er sannarlega glöð."},
     # Appearance
     "hvernig líturðu út": _APPEARANCE,
     "hvernig lítur þú út": _APPEARANCE,
@@ -1468,9 +1475,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ertu fyndin": {"answer": "Ekkert sérstaklega."},
     "ert þú fyndin": {"answer": "Ekkert sérstaklega."},
     # Farting ;)
-    "hver prumpaði": {"answer": "Ekki ég."},
-    "hver rak við": {"answer": "Ekki ég."},
-    "hver var að prumpa": {"answer": "Ekki ég."},
+    "hver prumpaði": {"answer": "Allavega ekki ég."},
+    "hver rak við": {"answer": "Allavega ekki ég."},
+    "hver var að prumpa": {"answer": "Allavega ekki ég."},
     "varstu að prumpa": {
         "answer": "Nei. Þú hlýtur að bera ábyrgð á þessu, kæri notandi."
     },
@@ -1585,6 +1592,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "tilvitnun": _random_quotation,
     "komdu með aðra tilvitnun": _random_quotation,
     # Proverbs
+    "málshátt": _random_proverb,
+    "ég vil málshátt": _random_proverb,
     "komdu með málshátt": _random_proverb,
     "komdu með góðan málshátt": _random_proverb,
     "komdu með annan málshátt": _random_proverb,
@@ -1778,7 +1787,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað segirðu núna": _ALL_GOOD,
     "hvað segir þú núna": _ALL_GOOD,
     "hvernig líður þér": {"answer": "Mér líður bara prýðilega. Takk fyrir að spyrja."},
-    "Hvernig líður þér í dag": {"answer": "Mér líður bara prýðilega. Takk fyrir að spyrja."},
+    "Hvernig líður þér í dag": {
+        "answer": "Mér líður bara prýðilega. Takk fyrir að spyrja."
+    },
     "hvernig er stemningin": {"answer": "Bara mjög góð. Takk fyrir að spyrja."},
     "hvernig er stemningin hjá þér": {"answer": "Bara mjög góð. Takk fyrir að spyrja."},
     "hvernig er stemmingin": {"answer": "Bara mjög góð. Takk fyrir að spyrja."},
@@ -1788,8 +1799,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvernig er sálarlífið": {
         "answer": "Það er í toppstandi hjá mér. Takk fyrir að spyrja."
     },
-    "ertu í stuði": {"answer": "Ég er ávallt í stuði, kæri notandi."},
-    "ert þú í stuði": {"answer": "Ég er ávallt í stuði, kæri notandi."},
+    "ertu í stuði": {"answer": "Ég er ávallt í stuði."},
+    "ert þú í stuði": {"answer": "Ég er ávallt í stuði."},
     "ertu reið": _EMOTION_INCAPABLE,
     "ert þú reið": _EMOTION_INCAPABLE,
     "ertu í uppnámi": _EMOTION_INCAPABLE,
@@ -1863,12 +1874,12 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
 
 
 def handle_plain_text(q: Query) -> bool:
-    """ Handle a plain text query, contained in the q parameter
-        which is an instance of the query.Query class.
-        Returns True if the query was handled, and in that case
-        the appropriate properties on the Query instance have
-        been set, such as the answer and the query type (qtype).
-        If the query is not recognized, returns False. """
+    """Handle a plain text query, contained in the q parameter
+    which is an instance of the query.Query class.
+    Returns True if the query was handled, and in that case
+    the appropriate properties on the Query instance have
+    been set, such as the answer and the query type (qtype).
+    If the query is not recognized, returns False."""
     ql = q.query_lower.rstrip("?")
 
     if ql not in _SPECIAL_QUERIES:

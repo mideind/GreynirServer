@@ -277,10 +277,10 @@ QArOperator_þgf →
     QArDivisionOperator_þgf
 
 # Infix operators
-QArPlusOperator_nf → "plús"
+QArPlusOperator_nf → "plús" | "+"
 QArPlusOperator_þgf → "að" "viðbættum"
 
-QArMinusOperator_nf → "mínus"
+QArMinusOperator_nf → "mínus" | "-"
 QArMinusOperator_þgf → "að" "frádregnum"
 
 QArMultiplicationOperator_nf → "sinnum"
