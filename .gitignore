@@ -123,12 +123,13 @@ console/
 fonts/
 
 # Virtual environments
-venv/
+venv*
 p3*/
 p7*/
 pypy/
 cpython*/
 venv
+
 
 # Installer logs
 pip-log.txt
