@@ -277,16 +277,16 @@ QArOperator_þgf →
     QArDivisionOperator_þgf
 
 # Infix operators
-QArPlusOperator_nf → "plús"
+QArPlusOperator_nf → "plús" | "+"
 QArPlusOperator_þgf → "að" "viðbættum"
 
-QArMinusOperator_nf → "mínus"
+QArMinusOperator_nf → "mínus" | "-"
 QArMinusOperator_þgf → "að" "frádregnum"
 
-QArMultiplicationOperator_nf → "sinnum"
+QArMultiplicationOperator_nf → "sinnum" | "x"
 QArMultiplicationOperator_þgf → "margfaldað" "með" | "margfaldaðir" "með"
 
-QArDivisionOperator_þgf → "deilt" "með" | "skipt" "með"
+QArDivisionOperator_þgf → "deilt" "með" | "skipt" "með" | "/"
 
 QArSum → QArSumOperator QArNumberWordAny "og" QArNumberWordAny
 QArMult → QArMultOperator QArNumberWord_nf

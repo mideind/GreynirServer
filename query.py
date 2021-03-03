@@ -68,7 +68,7 @@ from reynir.fastparser import (
     ParseError,
     ffi,  # type: ignore
 )
-from reynir.binparser import BIN_Grammar, GrammarError
+from reynir.binparser import BIN_Grammar, BIN_Token, GrammarError
 from reynir.reducer import Reducer
 from reynir.bindb import BIN_Db, BIN_Meaning, MeaningFilterFunc
 
@@ -217,6 +217,10 @@ class QueryGrammar(BIN_Grammar):
 class QueryParser(Fast_Parser):
 
     """ A subclass of Fast_Parser, specialized to parse queries """
+
+    # Override the punctuation that is understood by the parser,
+    # adding the forward slash ('/')
+    _UNDERSTOOD_PUNCTUATION = BIN_Token._UNDERSTOOD_PUNCTUATION + "+/"
 
     _GRAMMAR_BINARY_FILE = Fast_Parser._GRAMMAR_FILE + ".query.bin"
 
