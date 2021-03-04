@@ -96,7 +96,6 @@ def analysis():
 
 
 @routes.route("/correct", methods=["GET", "POST"])
-@restricted
 def correct():
     """ Handler for a page for spelling and grammar correction
         of user-entered text """
