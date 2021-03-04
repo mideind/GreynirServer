@@ -44,7 +44,7 @@ from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
 from speech import get_synthesized_text_url
 from util import greynir_api_key
 
-from . import routes, better_jsonify, text_from_request, bool_from_request, restricted
+from . import routes, better_jsonify, text_from_request, bool_from_request
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH
 from . import async_task, _RequestProxy
 
@@ -94,7 +94,6 @@ def analyze_api(version=1):
 
 @routes.route("/correct.api", methods=["GET", "POST"])
 @routes.route("/correct.api/v<int:version>", methods=["GET", "POST"])
-@restricted  # Route is only valid when running on a development server
 def correct_api(version=1):
     """ Correct text provided by the user, i.e. not coming from an article.
         This can be either an uploaded file or a string.
@@ -138,7 +137,6 @@ def correct_api(version=1):
 
 @routes.route("/correct.task", methods=["POST"])
 @routes.route("/correct.task/v<int:version>", methods=["POST"])
-@restricted  # This means that the route is only visible on a development server
 @async_task  # This means that the function is automatically run on a separate thread
 def correct_task(version=1):
     """ Correct text provided by the user, i.e. not coming from an article.
