@@ -67,6 +67,11 @@ def help_text(lemma: str) -> str:
 _TIME_QUERIES = frozenset(
     (
         "klukkan",
+        "tíminn",
+        "hvað klukkan",
+        "hver klukkan",
+        "hvað tíminn",
+        "hver tíminn",
         "hvað er klukkan",
         "hvað er klukkan eiginlega",
         "hvað er klukkan nákvæmlega",
@@ -75,19 +80,32 @@ _TIME_QUERIES = frozenset(
         "hvað er klukkan hér",
         "hver er klukkan",
         "hver er klukkan núna",
+        "hver er klukkan nákvæmlega",
+        "hver er klukkan eins og stendur",
         "hvað er tíminn",
         "hvað er tíminn núna",
+        "hvað er tíminn nákvæmlega",
+        "hvað er tíminn eins og stendur",
+        "hver er tíminn",
+        "hver er tíminn núna",
         "hvað líður tímanum",
         "veistu hvað klukkan er",
+        "veist þú hvað klukkan er",
+        "veistu hvað klukkan er núna",
+        "veist þú hvað klukkan er núna",
     )
 )
 
 _TIME_IN_LOC_QUERIES = frozenset(
     (
-        "hvað er klukkan í ",
-        "hvað er klukkan á ",
-        "hver er klukkan í ",
-        "hver er klukkan á ",
+        "klukkan í",
+        "klukkan á",
+        "hvað er klukkan í",
+        "hvað er klukkan á",
+        "hver er klukkan í",
+        "hver er klukkan á",
+        "hvað er tíminn í",
+        "hver er tíminn í",
     )
 )
 
@@ -109,12 +127,15 @@ def handle_plain_text(q: Query) -> bool:
     if ql in _TIME_QUERIES:
         # Use location to determine time zone
         tz = timezone4loc(q.location, fallback="IS")
-    # TODO: Replace with regex, and handle "Hvað klukkan á X", "Hvað klukkan", etc.
-    elif [x for x in _TIME_IN_LOC_QUERIES if ql.startswith(x)]:
-        # Query about the time in a particular location, i.e. country or city
+    else:
+        # TODO: Replace with regex, and handle "Hvað klukkan á X", "Hvað klukkan", etc.
+        locq = [x for x in _TIME_IN_LOC_QUERIES if ql.startswith(x.lower())]
+        if not locq:
+            return False  # Not matching any time queries
+        # This is a auery about the time in a particular location, i.e. country or city
         # TODO: Fix, hacky.
-        loc = ql[18:].strip()  # Cut away question prefix, leaving only placename
-        # Capitalize each word in country/city name
+        loc = ql[len(locq):].strip()  # Cut away question prefix, leaving only placename
+        # Intelligently capitalize country/city/location name
         loc = capitalize_placename(loc)
         # Look up nominative
         # This only works for single-word city/country names found
@@ -146,7 +167,7 @@ def handle_plain_text(q: Query) -> bool:
                 break
 
         # "Klukkan í Lundúnum er" - Used for voice answer
-        specific_desc = "{0} er".format(ql[8:])
+        specific_desc = "{0} er".format(ql[8:]).strip()
 
         # Beautify query by capitalizing the country/city name
         q.set_beautified_query("{0}{1}?".format(q.beautified_query[:18], loc))
