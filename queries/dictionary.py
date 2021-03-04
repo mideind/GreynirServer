@@ -108,6 +108,8 @@ _ENUM_WORDS = [
 
 def _answer_dictionary_query(q: Query, result):
     """ Answer query of the form "hver er orðabókaskilgreiningin á X?" """
+    # TODO: Note, here we are taking only the first word of a potential noun phrase
+    # containing multiple words. This will have to do for now but can be improved.
     word = result.qkey.split()[0].lower()
     wnat = result.qkey
     url = _WORD_SEARCH_URL.format(word)
