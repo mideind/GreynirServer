@@ -163,7 +163,7 @@ class Settings:
     except ValueError:
         raise ConfigError(
             "Invalid environment variable value: NN_TRANSLATION_PORT = {0}".format(
-                NN_TRANSLATION_PORT
+                NN_TRANSLATION_PORT_STR
             )
         )
 

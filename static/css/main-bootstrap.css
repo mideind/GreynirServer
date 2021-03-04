@@ -705,7 +705,11 @@ tr.article td.heading img {
 }
 
 td.timestamp {
-   width: 4.5em;
+   width: 4.5em; /* Normal HH:MM time */
+}
+
+td.timestamp.wide {
+   width: 7em; /* Full time and date */
 }
 
 td.ratio {

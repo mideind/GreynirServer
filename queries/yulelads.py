@@ -133,6 +133,8 @@ TOPIC_LEMMAS = ["jólasveinn"] + list(_YULE_LADS_BY_NAME.keys()) + [lad.lower() 
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
+QUERY_NONTERMINALS = { "QYuleQuery" }
+
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
@@ -451,6 +453,7 @@ def sentence(state, result):
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
+    answer = voice_answer = ""
     if result.qtype == "YuleDate":
         # 'Hvenær kemur [jólasveinn X]'
         yule_lad = result.yule_lad

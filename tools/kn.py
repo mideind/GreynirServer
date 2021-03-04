@@ -1,3 +1,5 @@
+# type: ignore
+
 import math
 import random
 from collections import Counter, defaultdict

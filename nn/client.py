@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# type: ignore
 """
     Greynir: Natural language processing for Icelandic
 
@@ -47,7 +47,7 @@ class ApiClient:
     https = True
 
     _url = None  # type: Optional[str]
-    _data = None  # type: Dict[str, Any]
+    _data = None  # type: Optional[Dict[str, Any]]
 
     required_fields = []  # type: List[str]
     default_field_values = {}  # type: Dict[str, Any]

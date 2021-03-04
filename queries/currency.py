@@ -128,6 +128,8 @@ _NUMBER_WORDS = {
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
+QUERY_NONTERMINALS = { "QCurrency" }
+
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
@@ -281,7 +283,7 @@ QCurNumberWord →
 QCurCurrencyIndex/fall →
     'gengisvísitala:kvk'_et/fall QCurISK_ef?
 
-QCurVisAVis → "gagnvart" | "á_móti" | "gegn"
+QCurVisAVis → "gagnvart" | "á" "móti" | "gegn"
 
 QCurXch → "gengi" | "gengið"
 

@@ -22,7 +22,7 @@
 
 """
 
-from typing import Tuple, Optional
+from typing import Any, Tuple, Optional, cast
 
 import re
 import logging
@@ -45,6 +45,8 @@ _LOC_QTYPE = "UserLocation"
 
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
+
+QUERY_NONTERMINALS = { "QUserLocation" }
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -295,7 +297,7 @@ def answer_for_postcode(loc: Tuple):
 
     # Only support Icelandic postcodes for now
     if country_code == "IS" and postcode:
-        pc = postcodes.get(int(postcode))
+        pc = cast(Any, postcodes).get(int(postcode))
         pd = "{0} {1}".format(postcode, pc["stadur_nf"])
         (response, answer, voice) = gen_answer(pd)
         voice = "Þú ert í {0}".format(pd)

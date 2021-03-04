@@ -92,7 +92,7 @@ cache = Cache(app, config={"CACHE_TYPE": cache_type})
 app.config["CACHE"] = cache
 
 # Register blueprint routes
-from routes import routes, max_age
+from routes import routes, max_age  # type: ignore
 
 app.register_blueprint(routes)
 

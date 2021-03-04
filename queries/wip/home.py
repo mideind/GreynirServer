@@ -364,9 +364,9 @@ def sentence(state, result):
 
         number = result.numbers[0]
 
-        stofn = None
+        stofn = ""
 
-        for i, token in enumerate(q.token_list):
+        for token in q.token_list:
             if token.txt == result.subject:
                 stofn = token[2][0].stofn
                 stofn = _FIX_MAP.get(stofn, stofn)

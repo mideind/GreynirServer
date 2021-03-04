@@ -1,3 +1,4 @@
+# type: ignore
 # Greynir configuration file for ipython.
 
 from platform import python_version, python_implementation

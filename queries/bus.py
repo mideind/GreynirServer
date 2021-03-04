@@ -37,7 +37,7 @@
 # TODO: Hvar er nálægasta strætóstoppistöð?
 # TODO: Hvað er ég lengi í næsta strætóskýli?
 
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union, cast
 
 from threading import Lock
 from functools import lru_cache
@@ -45,7 +45,8 @@ from datetime import datetime
 import random
 
 import query
-from query import Query
+from query import AnswerTuple, Query, ResponseType, Session
+from tree import Result
 from queries import natlang_seq, numbers_to_neutral, cap_first, gen_answer
 from settings import Settings
 from reynir import correct_spaces
@@ -121,6 +122,13 @@ def help_text(lemma: str) -> str:
         )
     )
 
+
+QUERY_NONTERMINALS = {
+    "QBusArrivalTime",
+    "QBusAnyArrivalTime",
+    "QBusNearestStop",
+    "QBusWhich",
+}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -655,7 +663,7 @@ def hms_diff(hms1: Tuple, hms2: Tuple) -> int:
     return (hms1[0] - hms2[0]) * 60 + (hms1[1] - hms2[1])
 
 
-def query_nearest_stop(query: Query, session, result):
+def query_nearest_stop(query: Query, session: Session, result: Result) -> AnswerTuple:
     """ A query for the stop closest to the user """
     # Retrieve the client location
     location = query.location
@@ -671,6 +679,8 @@ def query_nearest_stop(query: Query, session, result):
 
     # Get the stop closest to the user
     stop = straeto.BusStop.closest_to(location)
+    if stop is None:
+        return gen_answer("Ég finn enga stoppistöð nálægt þér.")
     answer = stop.name
     # Use the same word for the bus stop as in the query
     stop_word = result.stop_word if "stop_word" in result else "stoppistöð"
@@ -690,7 +700,7 @@ def query_nearest_stop(query: Query, session, result):
     return response, answer, voice_answer
 
 
-def query_arrival_time(query: Query, session, result):
+def query_arrival_time(query: Query, session: Session, result: Result):
     """ Answers a query for the arrival time of a bus """
 
     # Examples:
@@ -700,22 +710,21 @@ def query_arrival_time(query: Query, session, result):
 
     # Retrieve the client location, if available, and the name
     # of the bus stop, if given
-    stop_name = result.get("stop_name")
+    stop_name: Optional[str] = result.get("stop_name")
     stop: Optional[straeto.BusStop] = None
+    location: Optional[Tuple[float, float]] = None
 
     if stop_name in {"þar", "þangað"}:
         # Referring to a bus stop mentioned earlier
         ctx = query.fetch_context()
         if ctx and "bus_stop" in ctx:
-            stop_name = ctx["bus_stop"]
+            stop_name = cast(str, ctx["bus_stop"])
         else:
             answer = voice_answer = "Ég veit ekki við hvaða stað þú átt."
             response = dict(answer=answer)
             return response, answer, voice_answer
 
-    if stop_name:
-        location = None
-    else:
+    if not stop_name:
         location = query.location
         if location is None:
             answer = "Staðsetning óþekkt"
@@ -740,10 +749,14 @@ def query_arrival_time(query: Query, session, result):
             straeto.BusStop.sort_by_proximity(stops, query.location)
     else:
         # Obtain the closest stops (at least within 400 meters radius)
-        stops = straeto.BusStop.closest_to(location, n=2, within_radius=0.4)
+        assert location is not None
+        stops = cast(
+            List[straeto.BusStop],
+            straeto.BusStop.closest_to_list(location, n=2, within_radius=0.4),
+        )
         if not stops:
             # This will fetch the single closest stop, regardless of distance
-            stops = [straeto.BusStop.closest_to(location)]
+            stops = [cast(straeto.BusStop, straeto.BusStop.closest_to(location))]
 
     # Handle the case where no bus number was specified (i.e. is 'Any')
     if result.bus_number == "Any" and stops:
@@ -784,6 +797,7 @@ def query_arrival_time(query: Query, session, result):
     va = [bus_name]
     a = []
     arrivals = []
+    arrivals_dict = {}
     arrives = False
     route_number = str(bus_number)
 
@@ -906,8 +920,11 @@ def query_arrival_time(query: Query, session, result):
     # words such as Vagn and Leið.
     bq = query.beautified_query
     for t in (
-        ("Vagn ", "vagn "), ("Vagni ", "vagni "), ("Vagns ", "vagns "),
-        ("Leið ", "leið "), ("Leiðar ", "leiðar ")
+        ("Vagn ", "vagn "),
+        ("Vagni ", "vagni "),
+        ("Vagns ", "vagns "),
+        ("Leið ", "leið "),
+        ("Leiðar ", "leiðar "),
     ):
         bq = bq.replace(*t)
     query.set_beautified_query(bq)
@@ -922,15 +939,15 @@ def query_arrival_time(query: Query, session, result):
     return response, answer, voice_answer
 
 
-def query_which_route(query: Query, session, result):
+def query_which_route(query: Query, session: Session, result: Result):
     """ Which routes stop at a given bus stop """
-    stop_name = result.stop_name  # 'Einarsnes', 'Fiskislóð'...
+    stop_name = cast(str, result.stop_name)  # 'Einarsnes', 'Fiskislóð'...
 
     if stop_name in {"þar", "þangað"}:
         # Referring to a bus stop mentioned earlier
         ctx = query.fetch_context()
         if ctx and "bus_stop" in ctx:
-            stop_name = ctx["bus_stop"]
+            stop_name = cast(str, ctx["bus_stop"])
             result.qkey = stop_name
         else:
             answer = voice_answer = "Ég veit ekki við hvaða stað þú átt."
@@ -1000,18 +1017,19 @@ def sentence(state, result):
         session = state["session"]
         # Select a query function and execute it
         qfunc = _QFUNC.get(result.qtype)
+        answer: Optional[str] = None
         if qfunc is None:
             # Something weird going on - should not happen
-            answer = result.qtype + ": " + result.qkey
+            answer = cast(str, result.qtype) + ": " + cast(str, result.qkey)
             q.set_answer(dict(answer=answer), answer)
         else:
             try:
-                answer = None
                 voice_answer = None
-                response = qfunc(q, session, result)
+                response: Union[AnswerTuple, ResponseType] = qfunc(q, session, result)
                 if isinstance(response, tuple):
                     # We have both a normal and a voice answer
                     response, answer, voice_answer = response
+                assert answer is not None
                 q.set_answer(response, answer, voice_answer)
             except AssertionError:
                 raise

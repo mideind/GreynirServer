@@ -22,44 +22,31 @@
 
 from typing import Optional, Callable, Type, Any
 
-import sys
 import os
 import platform
 
 import urllib.parse as urlparse
 from datetime import datetime
 
-from sqlalchemy import create_engine, text  # type: ignore
-from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base  # type: ignore
-from sqlalchemy.orm import sessionmaker, relationship, backref  # type: ignore
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy import (
-    Table,
     Column,
     Integer,
     String,
-    Float,
     DateTime,
-    Sequence,
-    Boolean,
-    UniqueConstraint,
-    ForeignKey,
-    PrimaryKeyConstraint,
 )
-from sqlalchemy.exc import SQLAlchemyError as SqlError  # type: ignore
-from sqlalchemy.exc import IntegrityError as SqlIntegrityError
-from sqlalchemy.exc import DataError as SqlDataError
-from sqlalchemy import desc as SqlDesc
-
 # Provide access to modules in the parent directory
 # sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
-from .default import Metadata, ScrapeHelper
+from .default import ScrapeHelper
 
 MODULE_NAME = __name__
 
 
 # Create the SQLAlchemy ORM Base class
-Base: DeclarativeMeta = declarative_base()
+Base = declarative_base()
 
 
 class Reykjanes_DB:
@@ -120,7 +107,7 @@ class SessionContext:
         """ Clean up the reference to the singleton Scraper_DB instance """
         cls._db = None
 
-    def __init__(self, session: Optional["SessionContext"]=None, commit: bool=False) -> None:
+    def __init__(self, session: Optional["Session"]=None, commit: bool=False) -> None:
 
         if session is None:
             # Create a new session that will be automatically committed

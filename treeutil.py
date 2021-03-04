@@ -25,29 +25,52 @@
 
 """
 
-from typing import TYPE_CHECKING, List
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    Mapping,
+    Sequence,
+    TYPE_CHECKING,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
 import time
 from collections import namedtuple
 
-from nertokenizer import recognize_entities
-from db import SessionContext
-from settings import Settings
+from sqlalchemy.orm.session import Session
 
-from reynir import TOK, mark_paragraphs, tokenize
-from reynir.binparser import BIN_Token, augment_terminal, describe_token
-from reynir.fastparser import Fast_Parser
+from nertokenizer import recognize_entities
+
+from reynir import TOK, Tok, mark_paragraphs, tokenize
+from reynir.binparser import (
+    BIN_Parser,
+    BIN_Terminal,
+    BIN_Meaning,
+    CanonicalTokenDict,
+    augment_terminal,
+    describe_token,
+    TokenDict,
+)
+from reynir.fastparser import Fast_Parser, Node
 from reynir.incparser import IncrementalParser
-from reynir.simpletree import Annotator, Simplifier, SimpleTree
+from reynir.simpletree import Annotator, SimpleTreeNode, Simplifier
 
 if TYPE_CHECKING:
     from reynir.simpletree import TerminalMap
+    from queries.builtin import RegisterType
 
 
 WordTuple = namedtuple("WordTuple", ["stem", "cat"])
+StatsDict = Dict[str, Union[int, float]]
+PgsList = List[List[List[TokenDict]]]
+XformFunc = Callable[[List[Tok], Optional[Node], Optional[int]], List[TokenDict]]
 
-
-_TEST_NT_MAP = {  # Til að prófa í parse_text_to_bracket_form()
+_TEST_NT_MAP: Mapping[str, str] = {  # Til að prófa í parse_text_to_bracket_form()
     "S0": "M",  # P veldur ruglingi við FS, breyti í M
     "HreinYfirsetning": "S",
     "Setning": "S",
@@ -166,7 +189,9 @@ class TreeUtility:
         with parse trees and tokens """
 
     @staticmethod
-    def choose_full_name(val, case, gender):
+    def choose_full_name(
+        val: Sequence[Tuple[str, str, str]], case: Optional[str], gender: Optional[str]
+    ) -> Tuple[str, str]:
         """ From a list of name possibilities in val, and given a case and a gender
             (which may be None), return the best matching full name and gender """
         fn_list = [
@@ -192,11 +217,13 @@ class TreeUtility:
                 fn_list = [(fn, g, c)]
         # If there are many choices, select the nominative case,
         # or the first element as a last resort
-        fn = next((fn for fn in fn_list if fn[2] == "nf"), fn_list[0])
-        return fn[0], fn[1] if gender is None else gender
+        ft = next((fn for fn in fn_list if fn[2] == "nf"), fn_list[0])
+        return ft[0], ft[1] if gender is None else gender
 
     @staticmethod
-    def _word_tuple(t, terminal, meaning):
+    def _word_tuple(
+        t: Tok, terminal: Optional[BIN_Terminal], meaning: Optional[BIN_Meaning]
+    ) -> Optional[WordTuple]:
         """ Return a WordTuple describing the token t, matching the
             given terminal with the given meaning  """
         wt = None
@@ -233,16 +260,22 @@ class TreeUtility:
         return wt
 
     @staticmethod
-    def _terminal_map(tree):
+    def _terminal_map(tree: Optional[Node]) -> "TerminalMap":
         """ Return a dict containing a map from original token indices
             to matched terminals """
-        tmap = dict()  # type: TerminalMap
+        tmap: "TerminalMap" = dict()
         if tree is not None:
             Annotator(tmap).go(tree)
         return tmap
 
     @staticmethod
-    def dump_tokens(tokens, tree, *, error_index=None, words=None):
+    def dump_tokens(
+        tokens: Iterable[Tok],
+        tree: Optional[Node],
+        *,
+        error_index: Optional[int] = None,
+        words: Optional[Dict[WordTuple, int]] = None
+    ) -> List[TokenDict]:
 
         """ Generate a list of dicts representing the tokens in the sentence.
 
@@ -258,7 +291,6 @@ class TreeUtility:
                     t.m[3] is the word meaning/declination (beyging)
                 t.v contains auxiliary information, depending on the token kind
                 t.err is 1 if the token is an error token
-                t.corr contains explanatory text if a correction has been applied
 
             This function has the side effect of filling in the words dictionary
             with (stem, cat) keys and occurrence counts.
@@ -268,7 +300,7 @@ class TreeUtility:
         # Map tokens to associated terminals, if any
         # tmap is an empty dict if there's no parse tree
         tmap = TreeUtility._terminal_map(tree)
-        dump = []
+        dump: List[TokenDict] = []
         for ix, token in enumerate(tokens):
             # We have already cut away paragraph and sentence markers
             # (P_BEGIN/P_END/S_BEGIN/S_END)
@@ -291,7 +323,13 @@ class TreeUtility:
         return dump
 
     @staticmethod
-    def _simplify_tree(tokens, tree, nt_map=None, id_map=None, terminal_map=None):
+    def _simplify_tree(
+        tokens: List[Tok],
+        tree: Optional[Node],
+        nt_map=None,
+        id_map=None,
+        terminal_map=None,
+    ) -> Optional[CanonicalTokenDict]:
         """ Return a simplified parse tree for a sentence, including POS-tagged,
             normalized terminal leaves """
         if tree is None:
@@ -301,11 +339,13 @@ class TreeUtility:
         return s.result
 
     @staticmethod
-    def _process_toklist(parser, session, toklist, xform):
+    def _process_toklist(
+        parser: Fast_Parser, toklist: Iterable[Tok], xform: XformFunc
+    ) -> Tuple[PgsList, StatsDict]:
         """ Low-level utility function to parse token lists and return
             the result of a transformation function (xform) for each sentence """
         # Paragraph list, containing sentences, containing tokens
-        pgs = []  # type: List[List[BIN_Token]]
+        pgs: PgsList = []
         ip = IncrementalParser(parser, toklist, verbose=True)
         for p in ip.paragraphs():
             pgs.append([])
@@ -317,7 +357,7 @@ class TreeUtility:
                     # Error in parse
                     pgs[-1].append(xform(sent.tokens, None, sent.err_index))
 
-        stats = dict(
+        stats: StatsDict = dict(
             num_tokens=ip.num_tokens,
             num_sentences=ip.num_sentences,
             num_parsed=ip.num_parsed,
@@ -329,7 +369,13 @@ class TreeUtility:
         return pgs, stats
 
     @staticmethod
-    def _process_text(parser, session, text, all_names, xform):
+    def _process_text(
+        parser: Fast_Parser,
+        session: Session,
+        text: str,
+        all_names: bool,
+        xform: XformFunc,
+    ) -> Tuple[PgsList, StatsDict, Optional["RegisterType"]]:
         """ Low-level utility function to parse text and return the result of
             a transformation function (xform) for each sentence.
             Set all_names = True to get a comprehensive name register.
@@ -342,7 +388,7 @@ class TreeUtility:
         token_stream = tokenize(text)
         toklist = list(recognize_entities(token_stream, enclosing_session=session))
         t1 = time.time()
-        pgs, stats = TreeUtility._process_toklist(parser, session, toklist, xform)
+        pgs, stats = TreeUtility._process_toklist(parser, toklist, xform)
 
         if all_names is None:
             register = None
@@ -355,15 +401,19 @@ class TreeUtility:
         stats["tok_time"] = t1 - t0
         stats["parse_time"] = t2 - t1
         stats["total_time"] = t2 - t0
-        return (pgs, stats, register)
+        return pgs, stats, register
 
     @staticmethod
-    def raw_tag_text(parser, session, text, all_names=False):
+    def raw_tag_text(
+        parser: Fast_Parser, session: Session, text: str, all_names: bool = False
+    ) -> Tuple[PgsList, StatsDict, Optional["RegisterType"]]:
         """ Parse plain text and return the parsed paragraphs as lists of sentences
             where each sentence is a list of tagged tokens. Uses a caller-provided
             parser object. """
 
-        def xform(tokens, tree, err_index):
+        def xform(
+            tokens: List[Tok], tree: Optional[Node], err_index: Optional[int]
+        ) -> List[TokenDict]:
             """ Transformation function that simply returns a list of POS-tagged,
                 normalized tokens for the sentence """
             return TreeUtility.dump_tokens(tokens, tree, error_index=err_index)
@@ -371,7 +421,9 @@ class TreeUtility:
         return TreeUtility._process_text(parser, session, text, all_names, xform)
 
     @staticmethod
-    def tag_text(session, text, all_names=False):
+    def tag_text(
+        session: Session, text: str, all_names: bool = False
+    ) -> Tuple[PgsList, StatsDict, Optional["RegisterType"]]:
         """ Parse plain text and return the parsed paragraphs as lists of sentences
             where each sentence is a list of tagged tokens """
         # Don't emit diagnostic messages
@@ -379,41 +431,51 @@ class TreeUtility:
             return TreeUtility.raw_tag_text(parser, session, text, all_names=all_names)
 
     @staticmethod
-    def tag_toklist(session, toklist, all_names=False):
+    def tag_toklist(session: Session, toklist: Iterable[Tok], all_names: bool = False):
         """ Parse plain text and return the parsed paragraphs as lists of sentences
             where each sentence is a list of tagged tokens """
 
-        def xform(tokens, tree, err_index):
+        def xform(
+            tokens: List[Tok], tree: Optional[Node], err_index: Optional[int]
+        ) -> List[TokenDict]:
             """ Transformation function that simply returns a list of POS-tagged,
                 normalized tokens for the sentence """
             return TreeUtility.dump_tokens(tokens, tree, error_index=err_index)
 
         with Fast_Parser(verbose=False) as parser:  # Don't emit diagnostic messages
-            pgs, stats = TreeUtility._process_toklist(parser, session, toklist, xform)
+            pgs, stats = TreeUtility._process_toklist(parser, toklist, xform)
         from queries.builtin import create_name_register
 
         register = create_name_register(toklist, session, all_names=all_names)
         return pgs, stats, register
 
     @staticmethod
-    def raw_tag_toklist(session, toklist, root=None):
+    def raw_tag_toklist(
+        toklist: Iterable[Tok], root: Optional[str] = None
+    ) -> Tuple[PgsList, StatsDict]:
         """ Parse plain text and return the parsed paragraphs as lists of sentences
             where each sentence is a list of tagged tokens. The result does not
             include a name register. """
 
-        def xform(tokens, tree, err_index):
+        def xform(
+            tokens: List[Tok], tree: Optional[Node], err_index: Optional[int]
+        ) -> List[TokenDict]:
             """ Transformation function that simply returns a list of POS-tagged,
                 normalized tokens for the sentence """
             return TreeUtility.dump_tokens(tokens, tree, error_index=err_index)
 
         with Fast_Parser(verbose=False, root=root) as parser:
-            return TreeUtility._process_toklist(parser, session, toklist, xform)
+            return TreeUtility._process_toklist(parser, toklist, xform)
 
     @staticmethod
-    def parse_text(session, text, all_names=False):
+    def parse_text(
+        session: Session, text: str, all_names: bool = False
+    ) -> Tuple[PgsList, StatsDict, Optional["RegisterType"]]:
         """ Parse plain text and return the parsed paragraphs as simplified trees """
 
-        def xform(tokens, tree, err_index):
+        def xform(
+            tokens: List[Tok], tree: Optional[Node], err_index: Optional[int]
+        ) -> Union[None, List[TokenDict], CanonicalTokenDict]:
             """ Transformation function that yields a simplified parse tree
                 with POS-tagged, normalized terminal leaves for the sentence """
             if err_index is not None:
@@ -422,21 +484,18 @@ class TreeUtility:
             return TreeUtility._simplify_tree(tokens, tree)
 
         with Fast_Parser(verbose=False) as parser:  # Don't emit diagnostic messages
-            return TreeUtility._process_text(parser, session, text, all_names, xform)
+            # The type annotation cast(XformFunc, xform) is a hack
+            return TreeUtility._process_text(
+                parser, session, text, all_names, cast(XformFunc, xform)
+            )
 
     @staticmethod
-    def simple_parse(text):
-        """ No-frills parse of text, returning a SimpleTree object """
-        if not Settings.loaded:
-            Settings.read("config/Greynir.conf")
-        with SessionContext(read_only=True) as session:
-            return SimpleTree(*TreeUtility.parse_text(session, text))
-
-    @staticmethod
-    def parse_text_to_bracket_form(session, text):
+    def parse_text_to_bracket_form(session: Session, text: str):
         """ Parse plain text and return the parsed paragraphs as bracketed strings """
 
-        def xform(tokens, tree, err_index):
+        def xform(
+            tokens: List[Tok], tree: Optional[Node], err_index: Optional[int]
+        ) -> str:
             """ Transformation function that yields a simplified parse tree
                 with POS-tagged, normalized terminal leaves for the sentence """
             if err_index is not None:
@@ -445,12 +504,13 @@ class TreeUtility:
             # Successfully parsed: obtain a simplified tree for the sentence
             result = []
 
-            def push(node):
+            def push(node: Optional[CanonicalTokenDict]) -> None:
                 """ Append information about a node to the result list """
                 if node is None:
                     return
                 nonlocal result
                 if node["k"] == "NONTERMINAL":
+                    node = cast(SimpleTreeNode, node)
                     result.append("(" + node["i"])
                     # Recursively add the children of this nonterminal
                     for child in node["p"]:
@@ -478,21 +538,26 @@ class TreeUtility:
             return "".join(result)
 
         with Fast_Parser(verbose=False) as parser:
+            # The cast(XformFunc, xform) type annotation is a hack
             pgs, stats, _ = TreeUtility._process_text(
-                parser, session, text, all_names=None, xform=xform
+                parser, session, text, all_names=False, xform=cast(XformFunc, xform)
             )
         # pgs is a list of paragraphs, each being a list of sentences
         # To access the first parsed sentence, use pgs[0][0]
         return (pgs, stats)
 
     @staticmethod
-    def parse_text_with_full_tree(session, text, all_names=False):
+    def parse_text_with_full_tree(
+        session: Session, text: str, all_names: bool = False
+    ) -> Tuple[Optional[List[TokenDict]], Optional[Node], StatsDict]:
         """ Parse plain text, assumed to contain one sentence only, and
             return its simplified form as well as its full form. """
 
-        full_tree = None
+        full_tree: Optional[Node] = None
 
-        def xform(tokens, tree, err_index):
+        def xform(
+            tokens: List[Tok], tree: Optional[Node], err_index: Optional[int]
+        ) -> Union[None, List[TokenDict], CanonicalTokenDict]:
             """ Transformation function that yields a simplified parse tree
                 with POS-tagged, normalized terminal leaves for the sentence """
             if err_index is not None:
@@ -506,8 +571,9 @@ class TreeUtility:
             return TreeUtility._simplify_tree(tokens, tree)
 
         with Fast_Parser(verbose=False) as parser:
+            # The cast(XformFunction, xform) type annotation is a hack
             pgs, stats, _ = TreeUtility._process_text(
-                parser, session, text, all_names, xform
+                parser, session, text, all_names, cast(XformFunc, xform)
             )
 
         if (

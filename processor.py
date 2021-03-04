@@ -31,7 +31,7 @@
 
 """
 
-from typing import Optional, List
+from typing import Optional, List, cast
 from types import ModuleType
 
 import getopt
@@ -48,17 +48,17 @@ from datetime import datetime
 
 from settings import Settings, ConfigError
 from db import Scraper_DB
-from db.models import Article, Person
+from db.models import Article, Person, Column
 from tree import Tree
 
 
 _PROFILING = False
 
 
-def modules_in_dir(directory):
+def modules_in_dir(directory: str) -> List[str]:
     """ Find all python modules in a given directory """
     files = os.listdir(directory)
-    modnames = list()
+    modnames: List[str] = list()
     for fname in files:
         if not fname.endswith(".py"):
             continue
@@ -242,7 +242,7 @@ class Processor:
                     print("Article not found in scraper database")
                 else:
                     if article.tree and article.tokens:
-                        tree = Tree(url, article.authority)
+                        tree = Tree(url, float(article.authority))
                         tree.load(article.tree)
 
                         token_container = TokenContainer(
@@ -251,7 +251,7 @@ class Processor:
 
                         # Run all processors in turn
                         for p in self.pmodules:
-                            ptype = getattr(p, "PROCESSOR_TYPE")  # type: str
+                            ptype: str = getattr(p, "PROCESSOR_TYPE")
                             if ptype == "tree":
                                 tree.process(session, p)
                             elif ptype == "token":
@@ -263,7 +263,7 @@ class Processor:
                                 )
 
                     # Mark the article as being processed
-                    article.processed = datetime.utcnow()
+                    article.processed = datetime.utcnow()  # type: ignore
 
                 # So far, so good: commit to the database
                 session.commit()
@@ -310,7 +310,8 @@ class Processor:
                         if update:
                             # If update, we re-process articles that have been parsed
                             # again in the meantime
-                            q = q.filter(Article.processed < Article.parsed).order_by(
+                            q = q.filter(
+                                cast(Column, Article.processed) < cast(Column, Article.parsed)).order_by(
                                 Article.processed
                             )
                         else:

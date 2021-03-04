@@ -24,7 +24,8 @@
 
 """
 
-from typing import Optional, List, Dict, Tuple, Union
+from tree import Node
+from typing import Mapping, Optional, List, Dict, Tuple, Union, cast
 
 import logging
 import requests
@@ -88,7 +89,7 @@ def sing_or_plur(num: Union[int, float], sing: str, pl: str) -> str:
 
 
 # The following needs to include at least nominative and dative forms of number words
-_NUMBER_WORDS = {
+_NUMBER_WORDS: Mapping[str, float] = {
     "núll": 0,
     "hálfur": 0.5,
     "hálfum": 0.5,
@@ -146,14 +147,14 @@ _NUMBER_WORDS = {
 }
 
 
-def parse_num(node, num_str: str) -> float:
+def parse_num(node: Node, num_str: str) -> float:
     """ Parse Icelandic number string to float or int.
         TODO: This needs to be a more capable, generic function. There are
         several mildly differing implementions in various query modules. """
 
     # Hack to handle the word "eina" being identified as f. name "Eina"
     if num_str in ("Eina", "Einu"):
-        return 1
+        return 1.0
 
     # If we have a number token as a direct child,
     # return its numeric value directly
@@ -177,7 +178,7 @@ def parse_num(node, num_str: str) -> float:
     except Exception as e:
         logging.warning("Unexpected exception: {0}".format(e))
         raise
-    return num
+    return num or 0.0
 
 
 # Neutral gender form of numbers
@@ -637,4 +638,4 @@ def read_jsfile(filename: str) -> str:
     basepath, _ = os.path.split(os.path.realpath(__file__))
     fpath = os.path.join(basepath, "js", filename)
     with open(fpath, mode="r") as file:
-        return jsmin(file.read())
+        return cast(str, jsmin(file.read()))

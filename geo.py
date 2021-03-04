@@ -24,17 +24,18 @@
 # corresponding country code, e.g. "Norður-Ítalía" -> "IT"
 # TODO: Most of this stuff should go into its own module, iceloc or something
 
-from typing import Optional, Dict, Union, Tuple, List, Any
+from typing import Mapping, Optional, Dict, Union, Tuple, List, Any
 
 import json
 import re
 import sys
 import os
 import math
+from functools import lru_cache
+
 from iceaddr import iceaddr_lookup, placename_lookup  # type: ignore
 from cityloc import city_lookup  # type: ignore
 from country_list import countries_for_language, available_languages  # type: ignore
-from functools import lru_cache
 
 LatLonTuple = Tuple[float, float]
 
@@ -42,7 +43,7 @@ ICELAND_ISOCODE = "IS"  # ISO 3166-1 alpha-2
 ICELANDIC_LANG_ISOCODE = "is"  # ISO 639-1
 
 # Map Icelandic continent names to ISO continent code
-CONTINENTS = {
+CONTINENTS: Mapping[str, str] = {
     "Afríka": "AF",
     "Norður-Afríka": "AF",
     "Austur-Afríka": "AF",
@@ -74,7 +75,7 @@ CONTINENTS = {
 }
 
 # Map ISO continent codes to canonical Icelandic name
-ISO_TO_CONTINENT = {
+ISO_TO_CONTINENT: Mapping[str, str] = {
     "AF": "Afríka",
     "NA": "Norður-Ameríka",
     "OC": "Eyjaálfa",
@@ -220,7 +221,7 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
 NEVER_US_STATE = frozenset(("Georgía", "Georgia",))
 
 
-def location_description(loc: Dict) -> str:
+def location_description(loc: Dict[str, str]) -> str:
     """ Return a natural language description string (in Icelandic) for a given
         location. Argument is a dictionary with at least "name" and "kind" keys. """
     if "kind" not in loc or "name" not in loc:
@@ -245,7 +246,7 @@ def location_description(loc: Dict) -> str:
         c = loc.get("continent")
         if c is None and "country" in loc:
             c = continent_for_country(loc["country"])
-        if c in ISO_TO_CONTINENT:
+        if c is not None and c in ISO_TO_CONTINENT:
             cname = ISO_TO_CONTINENT[c]
             desc = "land í {0}u".format(cname[:-1])
         return desc
@@ -371,10 +372,11 @@ def _load_city_names() -> Dict[str, str]:
     if ICE_CITY_NAMES is None:
         with open(ICE_CITIES_JSONPATH) as f:
             ICE_CITY_NAMES = json.load(f)
+    assert ICE_CITY_NAMES is not None
     return ICE_CITY_NAMES
 
 
-def lookup_city_info(name: str) -> Optional[Dict]:
+def lookup_city_info(name: str) -> Optional[List[Dict[str, str]]]:
     """ Look up name in city database. Convert Icelandic-specific
         city names (e.g. "Lundúnir") to their corresponding
         English/international name before querying. """
@@ -396,6 +398,7 @@ def _load_us_state_names() -> Dict:
     if US_STATE_NAMES is None:
         with open(US_STATES_JSONPATH) as f:
             US_STATE_NAMES = json.load(f)
+    assert US_STATE_NAMES is not None
     return US_STATE_NAMES
 
 
@@ -419,6 +422,7 @@ def _load_us_state_coords() -> Dict:
     if US_STATE_COORDS is None:
         with open(US_STATE_COORDS_JSONPATH) as f:
             US_STATE_COORDS = json.load(f)
+    assert US_STATE_COORDS is not None
     return US_STATE_COORDS
 
 
@@ -454,6 +458,7 @@ def _load_country_data() -> Dict:
     if COUNTRY_DATA is None:
         with open(COUNTRY_DATA_JSONPATH) as f:
             COUNTRY_DATA = json.load(f)
+    assert COUNTRY_DATA is not None
     return COUNTRY_DATA
 
 
@@ -644,19 +649,20 @@ ICELOC_PREP_JSONPATH = os.path.join(
 )
 
 
-def _load_placename_prepositions() -> Dict:
+def _load_placename_prepositions() -> Dict[str, str]:
     """ Load data mapping Icelandic placenames to the correct
         prepositions ("á" or "í") from JSON file. """
     global ICELOC_PREP
     if ICELOC_PREP is None:
         with open(ICELOC_PREP_JSONPATH) as f:
             ICELOC_PREP = json.load(f)
+    assert ICELOC_PREP is not None
     return ICELOC_PREP
 
 
 # This is not strictly accurate as the correct prepositions
 # are based on convention, not rational rules. :/
-_SUFFIX2PREP = {
+_SUFFIX2PREP: Mapping[str, str] = {
     "vík": "í",
     "fjörður": "á",
     "eyri": "á",

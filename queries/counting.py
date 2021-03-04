@@ -47,6 +47,8 @@ def help_text(lemma: str) -> str:
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
 
+QUERY_NONTERMINALS = { "QCounting" }
+
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 

@@ -26,7 +26,11 @@
 """
 
 from typing import (
+    DefaultDict,
+    FrozenSet,
     Optional,
+    Sequence,
+    Set,
     Tuple,
     List,
     Dict,
@@ -36,6 +40,7 @@ from typing import (
     Union,
     Any,
     Mapping,
+    cast,
 )
 from typing_extensions import Protocol
 
@@ -51,16 +56,21 @@ from collections import defaultdict
 
 from settings import Settings
 
-from db import SessionContext, desc
+from db import SessionContext, Session, desc
 from db.models import Query as QueryRow
 from db.models import QueryData, QueryLog
 
-from tree import Tree
+from tree import Tree, TreeStateDict, Node
 from reynir import TOK, Tok, tokenize, correct_spaces
-from reynir.fastparser import Fast_Parser, ParseForestDumper, ParseError, ffi
-from reynir.binparser import BIN_Grammar, GrammarError
+from reynir.fastparser import (
+    Fast_Parser,
+    ParseForestDumper,
+    ParseError,
+    ffi,  # type: ignore
+)
+from reynir.binparser import BIN_Grammar, BIN_Token, GrammarError
 from reynir.reducer import Reducer
-from reynir.bindb import BIN_Db, BIN_Meaning
+from reynir.bindb import BIN_Db, BIN_Meaning, MeaningFilterFunc
 
 # from nertokenizer import recognize_entities
 from images import get_image_url
@@ -71,8 +81,9 @@ from processor import modules_in_dir
 LocationType = Tuple[float, float]
 
 # Query response
-ResponseDict = Dict[str, Union[str, int, bool, Mapping[str, Any]]]
-ResponseMapping = Mapping[str, Union[str, int, bool, Mapping[str, Any]]]
+ResponseDict = Dict[str, Any]
+ResponseMapping = Mapping[str, Any]
+ResponseType = Union[ResponseDict, List[ResponseDict]]
 
 # Query context
 ContextDict = Dict[str, Union[str, int, float, bool, LocationType, Mapping[str, Any]]]
@@ -81,14 +92,21 @@ ContextDict = Dict[str, Union[str, int, float, bool, LocationType, Mapping[str, 
 ClientDataDict = Dict[str, Union[str, int, float, bool]]
 
 # Answer tuple (corresponds to parameter list of Query.set_answer())
-AnswerTuple = Tuple[ResponseMapping, str, Optional[str]]
+AnswerTuple = Tuple[ResponseType, str, Optional[str]]
 
 LookupFunc = Callable[[str], Tuple[str, List[BIN_Meaning]]]
-MeaningFilterFunc = Optional[Callable[[BIN_Meaning], bool]]
+
+HelpFunc = Callable[[str], str]
+
+
+class QueryStateDict(TreeStateDict):
+    query: "Query"
 
 
 class CastFunc(Protocol):
-    def __call__(self, word: str, *, meaning_filter_func: MeaningFilterFunc) -> str:
+    def __call__(
+        self, w: str, *, meaning_filter_func: Optional[MeaningFilterFunc] = None
+    ) -> str:
         ...
 
 
@@ -104,8 +122,12 @@ QueryRoot →
 # Mark the QueryRoot nonterminal as a root in the grammar
 $root(QueryRoot)
 
-"""
+# Keep all child families of Query, i.e. all possible query
+# trees, rather than just the highest-scoring one
 
+$tag(no_reduce) Query
+
+"""
 
 # Query prefixes that we cut off before further processing
 # The 'bæjarblað'/'hæðarblað' below is a common misunderstanding by the Google ASR
@@ -152,7 +174,7 @@ class QueryGrammar(BIN_Grammar):
 
     def read(
         self, fname: str, verbose: bool = False, binary_fname: Optional[str] = None
-    ) -> Iterator[str]:
+    ) -> None:
         """ Overrides the inherited read() function to supply grammar
             text from a file as well as additional grammar fragments
             from query processor modules. """
@@ -181,7 +203,7 @@ class QueryGrammar(BIN_Grammar):
             # in query development, as query grammar fragment strings may change
             # without any .grammar source file change (which is the default
             # trigger for generating new binary grammar files).
-            return self.read_from_generator(
+            self.read_from_generator(
                 fname,
                 grammar_generator(),
                 verbose,
@@ -196,6 +218,10 @@ class QueryParser(Fast_Parser):
 
     """ A subclass of Fast_Parser, specialized to parse queries """
 
+    # Override the punctuation that is understood by the parser,
+    # adding the forward slash ('/')
+    _UNDERSTOOD_PUNCTUATION = BIN_Token._UNDERSTOOD_PUNCTUATION + "+/"
+
     _GRAMMAR_BINARY_FILE = Fast_Parser._GRAMMAR_FILE + ".query.bin"
 
     # Keep a separate grammar class instance and time stamp for
@@ -206,7 +232,7 @@ class QueryParser(Fast_Parser):
     _grammar_class = QueryGrammar
 
     # Also keep separate class instances of the C grammar and its timestamp
-    _c_grammar = ffi.NULL
+    _c_grammar: Any = cast(Any, ffi).NULL
     _c_grammar_ts: Optional[float] = None
 
     # Store the grammar additions for queries
@@ -223,6 +249,67 @@ class QueryParser(Fast_Parser):
         return cls._grammar_additions
 
 
+class QueryTree(Tree):
+
+    """ Extend the tree.Tree class to collect all child families of the
+        Query nonterminal from a query parse forest """
+
+    def __init__(self):
+        super().__init__()
+        self._query_trees: List[Node] = []
+
+    def handle_O(self, n: int, s: str) -> None:
+        """ Handle the O (option) tree record """
+        assert n == 1
+
+    def handle_Q(self, n: int) -> None:
+        """ Handle the Q (final) tree record """
+        super().handle_Q(n)
+        # Access the QueryRoot node
+        root = self.s[1]
+        # Access the Query node
+        query = None if root is None else root.child
+        # The child nodes of the Query node are the valid query parse trees
+        self._query_trees = [] if query is None else list(query.children())
+
+    @property
+    def query_trees(self) -> List[Node]:
+        """ Returns the list of valid query parse trees, i.e. child nodes of Query """
+        return self._query_trees
+
+    @property
+    def query_nonterminals(self) -> Set[str]:
+        """ Return the set of query nonterminals that match this query """
+        return set(node.string_self() for node in self._query_trees)
+
+    def process_queries(
+        self, query: "Query", session: Session, processor: ModuleType
+    ) -> bool:
+        """ Process all query trees that the given processor is interested in """
+        processor_query_types: FrozenSet[str] = getattr(
+            processor, "QUERY_NONTERMINALS", set()
+        )
+        # Every tree processor must be interested in at least one query type
+        assert isinstance(processor_query_types, set)
+        # For development, we allow processors to be disinterested in any query
+        # assert len(processor_query_types) > 0
+        if self.query_nonterminals.isdisjoint(processor_query_types):
+            # But this processor is not interested in any of the nonterminals
+            # in this query's parse forest: don't waste more cycles on it
+            return False
+        with self.context(session, processor, query=query) as state:
+            for query_tree in self._query_trees:
+                # Is the processor interested in the root nonterminal
+                # of this query tree?
+                if query_tree.string_self() in processor_query_types:
+                    # Yes: hand the query tree over to the processor
+                    self.process_sentence(state, query_tree)
+                    if query.has_answer():
+                        # The processor successfully answered the query: We're done
+                        return True
+        return False
+
+
 class Query:
 
     """ A Query is initialized by parsing a query string using QueryRoot as the
@@ -237,11 +324,11 @@ class Query:
     # Singleton instance of the query parser
     _parser: Optional[QueryParser] = None
     # Help texts associated with lemmas
-    _help_texts: Dict[str, List[Callable]] = dict()
+    _help_texts: Dict[str, List[HelpFunc]] = dict()
 
     def __init__(
         self,
-        session,  # SQLAlchemy session
+        session: Session,  # SQLAlchemy session
         query: str,
         voice: bool,
         auto_uppercase: bool,
@@ -259,17 +346,18 @@ class Query:
         # question mark, but this can be modified during the
         # processing of the query.
         self.set_beautified_query(beautify_query(q))
+        # Boolean flag for whether this is a voice query
         self._voice = voice
         self._auto_uppercase = auto_uppercase
         self._error: Optional[str] = None
         # A detailed answer, which can be a list or a dict
-        self._response: Optional[ResponseMapping] = None
+        self._response: Optional[ResponseType] = None
         # A single "best" displayable text answer
         self._answer: Optional[str] = None
         # A version of self._answer that can be
         # fed to a voice synthesizer
         self._voice_answer: Optional[str] = None
-        self._tree: Optional[Tree] = None
+        self._tree: Optional[QueryTree] = None
         self._qtype: Optional[str] = None
         self._key: Optional[str] = None
         self._toklist: Optional[List[Tok]] = None
@@ -308,9 +396,9 @@ class Query:
     def init_class(cls) -> None:
         """ Initialize singleton data, i.e. the list of query
             processor modules and the query parser instance """
-        all_procs = []
-        tree_procs = []
-        text_procs = []
+        all_procs: List[ModuleType] = []
+        tree_procs: List[Tuple[int, ModuleType]] = []
+        text_procs: List[Tuple[int, Callable[["Query"], bool]]] = []
         # Load the query processor modules found in the
         # queries directory. The modules can be tree and/or text processors,
         # and we sort them into two lists, accordingly.
@@ -318,25 +406,33 @@ class Query:
         for modname in sorted(modnames):
             try:
                 m = importlib.import_module(modname)
-                all_procs.append(m)
+                is_proc = False
+                # Obtain module priority, if any
+                priority: int = getattr(m, "PRIORITY", 0)
                 if getattr(m, "HANDLE_TREE", False):
                     # This is a tree processor
-                    tree_procs.append(m)
+                    is_proc = True
+                    tree_procs.append((priority, m))
                 handle_plain_text = getattr(m, "handle_plain_text", None)
                 if handle_plain_text is not None:
                     # This is a text processor:
                     # store a reference to its handler function
-                    text_procs.append(handle_plain_text)
+                    is_proc = True
+                    text_procs.append((priority, handle_plain_text))
+                if is_proc:
+                    all_procs.append(m)
             except ImportError as e:
                 logging.error(
                     "Error importing query processor module {0}: {1}".format(modname, e)
                 )
-        cls._tree_processors = tree_procs
-        cls._text_processors = text_procs
+        # Sort the processors by descending priority
+        # so that the higher-priority ones get invoked bfore the lower-priority ones
+        cls._tree_processors = [t[1] for t in sorted(tree_procs, key=lambda x: -x[0])]
+        cls._text_processors = [t[1] for t in sorted(text_procs, key=lambda x: -x[0])]
 
         # Obtain query grammar fragments from the tree processors
-        grammar_fragments = []
-        for processor in tree_procs:
+        grammar_fragments: List[str] = []
+        for processor in cls._tree_processors:
             # Check whether this tree processor supplies a query grammar fragment
             fragment = getattr(processor, "GRAMMAR", None)
             if fragment and isinstance(fragment, str):
@@ -345,7 +441,7 @@ class Query:
 
         # Collect topic lemmas that can be used to provide
         # context-sensitive help texts when queries cannot be parsed
-        help_texts = defaultdict(list)
+        help_texts: DefaultDict[str, List[HelpFunc]] = defaultdict(list)
         for processor in all_procs:
             # Collect topic lemmas and corresponding help text functions
             topic_lemmas = getattr(processor, "TOPIC_LEMMAS", None)
@@ -378,6 +474,9 @@ class Query:
 
         for t in toklist:
             if t[0] == TOK.S_BEGIN:
+                if num_sent > 0:
+                    # A second sentence is beginning: this is not valid for a query
+                    raise ParseError("A query cannot contain more than one sentence")
                 sent = []
             elif t[0] == TOK.S_END:
                 slen = len(sent)
@@ -400,6 +499,7 @@ class Query:
                 if num > 0:
                     num_parsed_sent += 1
                     # Obtain a text representation of the parse tree
+                    assert forest is not None
                     trees[num_sent] = ParseForestDumper.dump_forest(forest)
 
             elif t[0] == TOK.P_BEGIN:
@@ -459,7 +559,11 @@ class Query:
             # Log the query string as seen by the parser
             print("Query is: '{0}'".format(actual_q))
 
-        parse_result, trees = Query._parse(toklist)
+        try:
+            parse_result, trees = Query._parse(toklist)
+        except ParseError:
+            self.set_error("E_PARSE_ERROR")
+            return False
 
         if not trees:
             # No parse at all
@@ -485,7 +589,7 @@ class Query:
         tree_string = "S1\n" + trees[1]
         if Settings.DEBUG:
             print(tree_string)
-        self._tree = Tree()
+        self._tree = QueryTree()
         self._tree.load(tree_string)
         # Store the token list
         self._toklist = toklist
@@ -502,27 +606,37 @@ class Query:
         )
 
     def execute_from_tree(self) -> bool:
-        """ Execute the query contained in the previously parsed tree;
+        """ Execute the query or queries contained in the previously parsed tree;
             return True if successful """
         if self._tree is None:
             self.set_error("E_QUERY_NOT_PARSED")
             return False
+        # Try each tree processor in turn, in priority order (highest priority first)
         for processor in self._tree_processors:
             self._error = None
             self._qtype = None
-            # Process the tree, which has only one sentence
+            # Process the tree, which has only one sentence, but may
+            # have multiple matching query nonterminals
+            # (children of Query in the grammar)
             try:
-                self._tree.process(self._session, processor, query=self)
-                if self._answer and self._error is None:
-                    # The processor successfully answered the query
+                # Note that passing query=self here means that the
+                # "query" field of the TreeStateDict is populated,
+                # turning it into a QueryStateDict.
+                if self._tree.process_queries(self, self._session, processor):
+                    # This processor found an answer, which is already stored
+                    # in the Query object: return True
                     return True
             except Exception as e:
                 logging.error(
                     f"Exception in execute_from_tree('{processor.__name__}') "
-                    f"for query '{self._query}': {e}"
+                    f"for query '{self._query}': {repr(e)}"
                 )
         # No processor was able to answer the query
         return False
+
+    def has_answer(self) -> bool:
+        """ Return True if the query currently has an answer """
+        return bool(self._answer) and self._error is None
 
     def last_answer(self, *, within_minutes: int = 5) -> Optional[Tuple[str, str]]:
         """ Return the last answer given to this client, by default
@@ -563,7 +677,10 @@ class Query:
             since = datetime.utcnow() - timedelta(minutes=within_minutes)
             q = q.filter(QueryRow.timestamp >= since)
         # Sort to get the newest query that fulfills the criteria
-        ctx = q.order_by(desc(QueryRow.timestamp)).limit(1).one_or_none()
+        ctx = cast(
+            Optional[Sequence[ContextDict]],
+            q.order_by(desc(QueryRow.timestamp)).limit(1).one_or_none(),
+        )
         # This function normally returns a dict that has been decoded from JSON
         return None if ctx is None else ctx[0]
 
@@ -658,7 +775,7 @@ class Query:
         self._qtype = qtype
 
     def set_answer(
-        self, response: ResponseMapping, answer: str, voice_answer: Optional[str] = None
+        self, response: ResponseType, answer: str, voice_answer: Optional[str] = None
     ) -> None:
         """ Set the answer to the query """
         # Detailed response (this is usually a dict)
@@ -691,7 +808,7 @@ class Query:
         """ Return client type string, e.g. "ios", "android", "www", etc. """
         return self._client_type
 
-    def response(self) -> Optional[ResponseMapping]:
+    def response(self) -> Optional[ResponseType]:
         """ Return the detailed query answer """
         return self._response
 
@@ -699,9 +816,14 @@ class Query:
         """ Return the 'single best' displayable query answer """
         return self._answer
 
-    def voice_answer(self) -> Optional[str]:
+    def voice_answer(self) -> str:
         """ Return a voice version of the 'single best' answer, if any """
-        return self._voice_answer
+        va = self._voice_answer
+        if va is None:
+            return ""
+        # TODO: Replace acronyms with pronounced characters
+        # (ASÍ -> a ess í, BHM -> bé há emm)
+        return va
 
     def key(self) -> Optional[str]:
         """ Return the query key """
@@ -732,7 +854,11 @@ class Query:
                     .filter(QueryData.key == key)
                     .filter(QueryData.client_id == self.client_id)
                 ).one_or_none()
-                return None if client_data is None else client_data.data
+                return (
+                    None
+                    if client_data is None
+                    else cast(ClientDataDict, client_data.data)
+                )
             except Exception as e:
                 logging.error(
                     "Error fetching client '{0}' query data for key '{1}' from db: {2}".format(
@@ -743,15 +869,16 @@ class Query:
 
     def set_client_data(self, key: str, data: ClientDataDict) -> None:
         """ Setter for client query data """
-        if not self.client_id:
-            logging.warning("Couldn't save query data, no client ID")
+        if not self.client_id or not key:
+            logging.warning("Couldn't save query data, no client ID or key")
             return
         Query.store_query_data(self.client_id, key, data)
 
     @staticmethod
     def store_query_data(client_id: str, key: str, data: ClientDataDict) -> bool:
         """ Save client query data in the database, under the given key """
-        assert client_id and key
+        if not client_id or not key:
+            return False
         now = datetime.utcnow()
         try:
             with SessionContext(commit=True) as session:
@@ -772,8 +899,8 @@ class Query:
                     session.add(row)
                 else:
                     # Already present: update
-                    row.data = data
-                    row.modified = now
+                    row.data = data  # type: ignore
+                    row.modified = now  # type: ignore
             # The session is auto-committed upon exit from the context manager
             return True
         except Exception as e:
@@ -796,7 +923,7 @@ class Query:
                     if m:
                         lemmas |= set(mm.stofn.lower().replace("-", "") for mm in m)
         # Collect a list of potential help text functions from the query modules
-        help_text_funcs = []
+        help_text_funcs: List[Tuple[str, HelpFunc]] = []
         for lemma in lemmas:
             help_text_funcs.extend(
                 [
@@ -847,9 +974,11 @@ class Query:
         # Successful query: return the answer in response
         if self._answer:
             result["answer"] = self._answer
-        if self._voice and self._voice_answer:
+        if self._voice:
             # This is a voice query and we have a voice answer to it
-            result["voice"] = self._voice_answer
+            va = self.voice_answer()
+            if va:
+                result["voice"] = va
         if self._voice:
             # Optimize the response to voice queries:
             # we don't need detailed information about alternative
@@ -911,7 +1040,7 @@ def _to_case(
     np: str,
     lookup_func: LookupFunc,
     cast_func: CastFunc,
-    meaning_filter_func: MeaningFilterFunc,
+    meaning_filter_func: Optional[MeaningFilterFunc],
 ) -> str:
     """ Return the noun phrase after casting it from nominative to accusative case """
     # Split the phrase into words and punctuation, respectively
@@ -947,7 +1076,9 @@ def _to_case(
     return "".join(a)
 
 
-def to_accusative(np: str, *, meaning_filter_func: MeaningFilterFunc = None) -> str:
+def to_accusative(
+    np: str, *, meaning_filter_func: Optional[MeaningFilterFunc] = None
+) -> str:
     """ Return the noun phrase after casting it from nominative to accusative case """
     with BIN_Db.get_db() as db:
         return _to_case(
@@ -958,13 +1089,28 @@ def to_accusative(np: str, *, meaning_filter_func: MeaningFilterFunc = None) -> 
         )
 
 
-def to_dative(np: str, *, meaning_filter_func: MeaningFilterFunc = None) -> str:
+def to_dative(
+    np: str, *, meaning_filter_func: Optional[MeaningFilterFunc] = None
+) -> str:
     """ Return the noun phrase after casting it from nominative to dative case """
     with BIN_Db.get_db() as db:
         return _to_case(
             np,
             db.lookup_word,
             db.cast_to_dative,
+            meaning_filter_func=meaning_filter_func,
+        )
+
+
+def to_genitive(
+    np: str, *, meaning_filter_func: Optional[MeaningFilterFunc] = None
+) -> str:
+    """ Return the noun phrase after casting it from nominative to genitive case """
+    with BIN_Db.get_db() as db:
+        return _to_case(
+            np,
+            db.lookup_word,
+            db.cast_to_genitive,
             meaning_filter_func=meaning_filter_func,
         )
 
@@ -1086,9 +1232,9 @@ def process_query(
                             latitude=location[0] if location else None,
                             longitude=location[1] if location else None,
                             # Client identifier
-                            client_id=client_id,
-                            client_type=client_type or None,
-                            client_version=client_version or None,
+                            client_id=client_id[:256] if client_id else None,
+                            client_type=client_type[:80] if client_id else None,
+                            client_version=client_version[:10] if client_version else None,
                             # IP address
                             remote_addr=remote_addr or None,
                             # Context dict, stored as JSON, if present
