@@ -44,10 +44,26 @@ QDictQuery →
     QDictWordQuery
 
 QDictWordQuery →
-    "hvað" "segir" "orðabókin" "um" "orðið" QDictSubjectNom
-    | "hver" "er" "skilgreiningin" "á" "orðinu"? QDictSubjectNom
-    | "flettu" "upp" "orðinu"? QDictSubjectNom "í" "orðabók"
-    | "hvernig" "skilgreinir" "orðabókin" "orðið"? QDictSubjectNom
+    "hvað" "segir" QDictDict "um" "orðið"? QDictSubjectNom
+    | "hver" "er" "skilgreiningin" "á" "orðinu"? QDictSubjectNom QDictInDictionary?
+    | "flettu" "upp" "orðinu"? QDictSubjectNom QDictInDictionary?
+    | "hvernig" "skilgreinir" QDictDict "orðið"? QDictSubjectNom
+    | "hvernig" "er" "orðið"? QDictSubjectNom "skilgreint" QDictInDictionary?
+    | "skilgreining" "á" "orðinu"? QDictSubjectNom
+    | "skilgreiningin" "á" "orðinu"? QDictSubjectNom
+    | "orðabókarskilgreining" "á" "orðinu"? QDictSubjectNom
+    | "orðabókarskilgreiningin" "á" "orðinu"? QDictSubjectNom
+    | "orðabókaskilgreining" "á" "orðinu"? QDictSubjectNom
+    | "orðabókaskilgreiningin" "á" "orðinu"? QDictSubjectNom
+    | "skilgreindu" "orðið"? QDictSubjectNom
+    | "komdu" "með" "skilgreininguna" "á" "orðinu"? QDictSubjectNom
+
+QDictInDictionary →
+    "í" "orðabók" | "í" "orðabókinni"
+    | "í" "íslenskri" "orðabók" | "í" "íslensku" "orðabókinni"
+
+QDictDict →
+    "orðabók" | "orðabókin" | "íslensk" "orðabók" | "íslenska" "orðabókin"
 
 QDictSubjectNom →
     Nl_nf
