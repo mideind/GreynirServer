@@ -1233,7 +1233,7 @@ def process_query(
                             longitude=location[1] if location else None,
                             # Client identifier
                             client_id=client_id[:256] if client_id else None,
-                            client_type=client_type[:80] if client_id else None,
+                            client_type=client_type[:80] if client_type else None,
                             client_version=client_version[:10] if client_version else None,
                             # IP address
                             remote_addr=remote_addr or None,
