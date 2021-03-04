@@ -45,6 +45,25 @@ from queries import timezone4loc
 _TIME_QTYPE = "Time"
 
 
+# Lemmas of keywords that could indicate that the user is trying to use this module
+TOPIC_LEMMAS = ["klukka", "tími"]
+
+
+def help_text(lemma: str) -> str:
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice(
+            (
+                "Hvað er klukkan",
+                "Hvað líður tímanum",
+                "Hvað er klukkan í Kaupmannahöfn",
+                "Hvað er klukkan í Tókýó",
+            )
+        )
+    )
+
+
 _TIME_QUERIES = frozenset(
     (
         "klukkan",
@@ -63,33 +82,23 @@ _TIME_QUERIES = frozenset(
     )
 )
 
-
-# Lemmas of keywords that could indicate that the user is trying to use this module
-TOPIC_LEMMAS = ["klukka", "tími"]
-
-
-def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
-    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-        random.choice(
-            (
-                "Hvað er klukkan",
-                "Hvað líður tímanum",
-                "Hvað er klukkan í Kaupmannahöfn",
-                "Hvað er klukkan í Tókýó",
-            )
-        )
+_TIME_IN_LOC_QUERIES = frozenset(
+    (
+        "hvað er klukkan í ",
+        "hvað er klukkan á ",
+        "hver er klukkan í ",
+        "hver er klukkan á ",
     )
+)
 
 
 def handle_plain_text(q: Query) -> bool:
-    """ Handle a plain text query, contained in the q parameter
-        which is an instance of the query.Query class.
-        Returns True if the query was handled, and in that case
-        the appropriate properties on the Query instance have
-        been set, such as the answer and the query type (qtype).
-        If the query is not recognized, returns False. """
+    """Handle a plain text query, contained in the q parameter
+    which is an instance of the query.Query class.
+    Returns True if the query was handled, and in that case
+    the appropriate properties on the Query instance have
+    been set, such as the answer and the query type (qtype).
+    If the query is not recognized, returns False."""
     ql = q.query_lower.rstrip("?")
 
     # Timezone being asked about
@@ -101,9 +110,10 @@ def handle_plain_text(q: Query) -> bool:
         # Use location to determine time zone
         tz = timezone4loc(q.location, fallback="IS")
     # TODO: Replace with regex, and handle "Hvað klukkan á X", "Hvað klukkan", etc.
-    elif ql.startswith("hvað er klukkan á ") or ql.startswith("hvað er klukkan í "):
+    elif [x for x in _TIME_IN_LOC_QUERIES if ql.startswith(x)]:
         # Query about the time in a particular location, i.e. country or city
-        loc = ql[18:]  # Cut away question prefix, leaving only placename
+        # TODO: Fix, hacky.
+        loc = ql[18:].strip()  # Cut away question prefix, leaving only placename
         # Capitalize each word in country/city name
         loc = capitalize_placename(loc)
         # Look up nominative
