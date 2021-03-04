@@ -679,7 +679,8 @@ def query_nearest_stop(query: Query, session: Session, result: Result) -> Answer
 
     # Get the stop closest to the user
     stop = straeto.BusStop.closest_to(location)
-    assert isinstance(stop, straeto.BusStop)
+    if stop is None:
+        return gen_answer("Ég finn enga stoppistöð nálægt þér.")
     answer = stop.name
     # Use the same word for the bus stop as in the query
     stop_word = result.stop_word if "stop_word" in result else "stoppistöð"
@@ -751,7 +752,7 @@ def query_arrival_time(query: Query, session: Session, result: Result):
         assert location is not None
         stops = cast(
             List[straeto.BusStop],
-            straeto.BusStop.closest_to(location, n=2, within_radius=0.4),
+            straeto.BusStop.closest_to_list(location, n=2, within_radius=0.4),
         )
         if not stops:
             # This will fetch the single closest stop, regardless of distance

@@ -63,6 +63,17 @@ from reynir.cache import LRU_Cache
 from typing_extensions import TypedDict
 
 
+class TreeStateDict(TypedDict, total=False):
+    session: Session
+    processor: ModuleType
+    bin_db: BIN_Db
+    url: str
+    authority: float
+    index: int
+    _sentence: Optional["SentenceFunction"]
+    _visit: Optional["VisitFunction"]
+    _default: Optional["NonterminalFunction"]
+
 TreeToken = NamedTuple(
     "TreeToken",
     [
@@ -74,25 +85,14 @@ TreeToken = NamedTuple(
         ("cat", str),
     ],
 )
+
 OptionalNode = Optional["Node"]
 FilterFunction = Callable[["Node"], bool]
-SentenceFunction = Callable[["TreeStateDict", Optional["Result"]], None]
-VisitFunction = Callable[["TreeStateDict", "Node"], bool]
+SentenceFunction = Callable[[TreeStateDict, Optional["Result"]], None]
+VisitFunction = Callable[[TreeStateDict, "Node"], bool]
 ParamList = List[Optional["Result"]]
 NonterminalFunction = Callable[["Node", ParamList, "Result"], None]
 ChildTuple = Tuple["Node", Optional["Result"]]
-
-
-class TreeStateDict(TypedDict, total=False):
-    session: Session
-    processor: ModuleType
-    bin_db: BIN_Db
-    url: str
-    authority: float
-    _sentence: Optional[SentenceFunction]
-    _visit: Optional[VisitFunction]
-    _default: Optional[NonterminalFunction]
-    index: int
 
 
 BIN_ORDFL: Mapping[str, Set[str]] = {
@@ -1588,10 +1588,10 @@ class Tree(TreeBase):
                 "bin_db": bin_db,
                 "url": self.url,
                 "authority": self.authority,
+                "index": 0,
                 "_sentence": sentence,
                 "_visit": visit,
                 "_default": default,
-                "index": 0,
             }
             # Add state parameters passed via keyword arguments, if any
             state.update(cast(TreeStateDict, kwargs))

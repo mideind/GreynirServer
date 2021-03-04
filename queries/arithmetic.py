@@ -121,9 +121,14 @@ _NUMBER_WORDS: Mapping[str, float] = {
     "áttatíu": 80,
     "níutíu": 90,
     "hundrað": 100,
+    "hundruð": 100,
+    "hundruðir": 100,
     "þúsund": 1000,
+    "þúsundir": 1000,
     "milljón": 1e6,
+    "milljónir": 1e6,
     "milljarður": 1e9,
+    "milljarðar": 1e9,
 }
 
 _FRACTION_WORDS: Mapping[str, float] = {
@@ -211,7 +216,7 @@ _ORDINAL_WORDS_DATIVE: Mapping[str, float] = {
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
-QUERY_NONTERMINALS = { "QArithmetic", "QArPi" }
+QUERY_NONTERMINALS = {"QArithmetic", "QArPi"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 # Uses "QAr" as prefix for grammar namespace
@@ -286,7 +291,7 @@ QArMinusOperator_þgf → "að" "frádregnum"
 QArMultiplicationOperator_nf → "sinnum" | "x"
 QArMultiplicationOperator_þgf → "margfaldað" "með" | "margfaldaðir" "með"
 
-QArDivisionOperator_þgf → "deilt" "með" | "skipt" "með" # | "/"
+QArDivisionOperator_þgf → "deilt" "með" | "skipt" "með" | "/"
 
 QArSum → QArSumOperator QArNumberWordAny "og" QArNumberWordAny
 QArMult → QArMultOperator QArNumberWord_nf
@@ -323,7 +328,7 @@ QArNumberWord/arfall →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
     # töl is an undeclinable number word ('sautján')
     # tala is a number ('17')
-    to/arfall | töl | tala | "pí"
+    to/arfall | töl | tala | "pí" | 'milljarður:kk'/arfall
 
 QArNumberWord_nf →
     "núll" | QArLastResult_nf
@@ -426,6 +431,7 @@ def terminal_num(t):
 
 
 def QArNumberWord(node, params, result: Result):
+    result._canonical = result._text
     if "context_reference" in result or "error_context_reference" in result:
         # Already pushed the context reference
         # ('það', 'því'): we're done
@@ -530,7 +536,13 @@ def QArCurrencyOrNum(node, params, result: Result):
 def QArStd(node, params, result: Result):
     # Used later for formatting voice answer string,
     # e.g. "[tveir plús tveir] er [fjórir]"
-    result.desc = result._canonical
+    result.desc = (
+        result._canonical
+        .replace("+", " plús ")
+        .replace("-", " mínus ")
+        .replace("/", " deilt með ")
+        .replace(" x ", " sinnum ")
+    )
 
 
 def QArSum(node, params, result: Result):
@@ -580,7 +592,12 @@ def QArithmetic(node, params, result: Result):
 
 
 # Map operator name to corresponding python operator
-_STD_OPERATORS: Mapping[str, str] = {"multiply": "*", "divide": "/", "plus": "+", "minus": "-"}
+_STD_OPERATORS: Mapping[str, str] = {
+    "multiply": "*",
+    "divide": "/",
+    "plus": "+",
+    "minus": "-",
+}
 
 # Number of args required for each operator
 _OP_NUM_ARGS: Mapping[str, int] = {

@@ -68,7 +68,7 @@ from reynir.fastparser import (
     ParseError,
     ffi,  # type: ignore
 )
-from reynir.binparser import BIN_Grammar, GrammarError
+from reynir.binparser import BIN_Grammar, BIN_Token, GrammarError
 from reynir.reducer import Reducer
 from reynir.bindb import BIN_Db, BIN_Meaning, MeaningFilterFunc
 
@@ -218,6 +218,10 @@ class QueryParser(Fast_Parser):
 
     """ A subclass of Fast_Parser, specialized to parse queries """
 
+    # Override the punctuation that is understood by the parser,
+    # adding the forward slash ('/')
+    _UNDERSTOOD_PUNCTUATION = BIN_Token._UNDERSTOOD_PUNCTUATION + "+/"
+
     _GRAMMAR_BINARY_FILE = Fast_Parser._GRAMMAR_FILE + ".query.bin"
 
     # Keep a separate grammar class instance and time stamp for
@@ -287,7 +291,8 @@ class QueryTree(Tree):
         )
         # Every tree processor must be interested in at least one query type
         assert isinstance(processor_query_types, set)
-        assert len(processor_query_types) > 0
+        # For development, we allow processors to be disinterested in any query
+        # assert len(processor_query_types) > 0
         if self.query_nonterminals.isdisjoint(processor_query_types):
             # But this processor is not interested in any of the nonterminals
             # in this query's parse forest: don't waste more cycles on it
@@ -624,7 +629,7 @@ class Query:
             except Exception as e:
                 logging.error(
                     f"Exception in execute_from_tree('{processor.__name__}') "
-                    f"for query '{self._query}': {e}"
+                    f"for query '{self._query}': {repr(e)}"
                 )
         # No processor was able to answer the query
         return False
