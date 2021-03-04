@@ -21,6 +21,8 @@
 
 """
 
+# TODO: Properly handle verbs, such as "að veiða"
+
 import logging
 from pprint import pprint
 
@@ -66,7 +68,7 @@ QDictDict →
     "orðabók" | "orðabókin" | "íslensk" "orðabók" | "íslenska" "orðabókin"
 
 QDictSubjectNom →
-    Nl_nf
+    Nl
 
 $score(+135) QDictQuery
 
@@ -106,13 +108,15 @@ _ENUM_WORDS = [
 
 def _answer_dictionary_query(q: Query, result):
     """ Answer query of the form "hver er orðabókaskilgreiningin á X?" """
-    word = result.qkey.lower()
+    word = result.qkey.split()[0].lower()
     wnat = result.qkey
     url = _WORD_SEARCH_URL.format(word)
+
+    # Search for word via islenskordabok REST API
     res = query_json_api(url)
 
     # Nothing found
-    if "results" not in res or not len(res["results"]):
+    if not res or "results" not in res or not len(res["results"]):
         return None
 
     # We have at least one result. Does it match?
@@ -120,24 +124,28 @@ def _answer_dictionary_query(q: Query, result):
     if first.get("fletta") != word or "flid" not in first:
         return None
 
-    # Look it up by ID
+    # For now, we just naively use the first result
+    # Look it up by ID via the REST API
     url = _WORD_LOOKUP_URL.format(first["flid"])
     r = query_json_api(url)
+    if not r:
+        return None
+
     items = r.get("items")
     if not items:
         return None
 
-    # Get all definitions
+    # Get all definitions ("skýringar")
     expl = [i["texti"] for i in items if i.get("teg") == "SKÝRING"]
 
     # If only one definition found, things are simple
     if len(expl) == 1:
-        answ = "{0} er {1}".format(icequote(cap_first(word)), expl[0])
+        answ = "{0} er {1}".format(icequote(cap_first(word)), icequote(expl[0]))
         voice = answ
     else:
-        # Otherwise, do some nice formatting + spell things out to impr. voice synthesis
-        answ = ""
+        # Otherwise, do some nice formatting + spell things out nicely to impr. voice synthesis
         voice = "Orðið {0} getur þýtt: ".format(icequote(word))
+        answ = ""
         for i, x in enumerate(expl):
             answ += "{0}. {1}\n".format(i + 1, x)
             enum = "í {0} lagi,".format(_ENUM_WORDS[i])
@@ -146,7 +154,7 @@ def _answer_dictionary_query(q: Query, result):
         voice = voice.rstrip(", ") + "."
 
     # Beautify query by placing word being asked about within parentheses
-    bq = q.beautified_query.replace(wnat, icequote(cap_first(wnat)))
+    bq = q.beautified_query.replace(wnat, icequote(cap_first(word)))
     q.set_beautified_query(bq)
 
     # Note source
