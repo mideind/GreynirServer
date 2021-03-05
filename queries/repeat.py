@@ -75,6 +75,10 @@ def gen_repeat_answ(text: str, cmd_prefix: str, q: Query):
 
 def handle_plain_text(q: Query) -> bool:
     """ Handles a plain text query. """
+
+    # Temporarily disable this module
+    return False
+
     ql = q.query_lower.rstrip("?")
 
     # for blw in _PREFIX_BLACKLIST:
