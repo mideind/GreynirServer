@@ -40,7 +40,7 @@ from reynir.binparser import TokenDict, canonicalize_token
 from article import Article as ArticleProxy
 from query import process_query
 from query import Query as QueryObject
-from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
+from doc import SUPPORTED_DOC_MIMETYPES, doc_class_for_mime_type
 from speech import get_synthesized_text_url
 from util import read_api_key
 
@@ -103,7 +103,6 @@ def correct_api(version=1):
 
     file = request.files.get("file")
     if file is not None:
-
         # file is a Werkzeug FileStorage object
         mimetype = file.content_type
         if mimetype not in SUPPORTED_DOC_MIMETYPES:
@@ -113,7 +112,7 @@ def correct_api(version=1):
         try:
             # Instantiate appropriate class for mime type from file data
             # filename = werkzeug.secure_filename(file.filename)
-            doc_class = MIMETYPE_TO_DOC_CLASS[mimetype]
+            doc_class = doc_class_for_mime_type(mimetype)
             doc = doc_class(file.read())
             text = doc.extract_text()
         except Exception as e:
@@ -147,7 +146,6 @@ def correct_task(version=1):
 
     file = request.files.get("file")
     if file is not None:
-
         # Handle uploaded file
         # file is a proxy object that emulates a Werkzeug FileStorage object
         mimetype = file.mimetype
@@ -157,7 +155,7 @@ def correct_task(version=1):
         # Create document object from an uploaded file and extract its text
         try:
             # Instantiate an appropriate class for the MIME type of the file
-            doc_class = MIMETYPE_TO_DOC_CLASS[mimetype]
+            doc_class = doc_class_for_mime_type(mimetype)
             doc = doc_class(file.read())
             text = doc.extract_text()
         except Exception as e:

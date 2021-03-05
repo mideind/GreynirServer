@@ -209,3 +209,8 @@ MIMETYPE_TO_DOC_CLASS: Dict[str, Type[Document]] = {
 }
 
 SUPPORTED_DOC_MIMETYPES = frozenset(MIMETYPE_TO_DOC_CLASS.keys())
+
+
+def doc_class_for_mime_type(mime_type: str) -> Type[Document]:
+    assert mime_type in SUPPORTED_DOC_MIMETYPES
+    return MIMETYPE_TO_DOC_CLASS[mime_type]
