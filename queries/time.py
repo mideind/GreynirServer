@@ -137,6 +137,8 @@ def handle_plain_text(q: Query) -> bool:
         # This is a auery about the time in a particular location, i.e. country or city
         # TODO: Fix, hacky.
         loc = ql[len(locq):].strip()  # Cut away question prefix, leaving only placename
+        if not loc:
+            return False  # No location string
         # Intelligently capitalize country/city/location name
         loc = capitalize_placename(loc)
         # Look up nominative

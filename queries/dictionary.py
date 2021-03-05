@@ -47,18 +47,19 @@ QDictQuery →
 
 QDictWordQuery →
     "hvað" "segir" QDictDict "um" "orðið"? QDictSubjectNom
-    | "hver" "er" "skilgreiningin" "á" "orðinu"? QDictSubjectNom QDictInDictionary?
+    | "hvað" "stendur" QDictInDictionary "um" "orðið"? QDictSubjectNom
+    | QDictWhatWhich "er" QDictDefinition "á" "orðinu"? QDictSubjectNom QDictInDictionary?
     | "flettu" "upp" "orðinu"? QDictSubjectNom QDictInDictionary?
+    | QDictCanYou "flett" "upp" "orðinu"? QDictSubjectNom QDictInDictionary?
     | "hvernig" "skilgreinir" QDictDict "orðið"? QDictSubjectNom
     | "hvernig" "er" "orðið"? QDictSubjectNom "skilgreint" QDictInDictionary?
-    | "skilgreining" "á" "orðinu"? QDictSubjectNom
-    | "skilgreiningin" "á" "orðinu"? QDictSubjectNom
-    | "orðabókarskilgreining" "á" "orðinu"? QDictSubjectNom
-    | "orðabókarskilgreiningin" "á" "orðinu"? QDictSubjectNom
-    | "orðabókaskilgreining" "á" "orðinu"? QDictSubjectNom
-    | "orðabókaskilgreiningin" "á" "orðinu"? QDictSubjectNom
+    | QDictDefinition "á" "orðinu"? QDictSubjectNom
     | "skilgreindu" "orðið"? QDictSubjectNom
     | "komdu" "með" "skilgreininguna" "á" "orðinu"? QDictSubjectNom
+    | "komdu" "með" "skilgreiningu" "á" "orðinu"? QDictSubjectNom
+    | "komdu" "með" "orðabókarskilgreiningu" "á" "orðinu"? QDictSubjectNom
+    | "komdu" "með" "orðabókarskilgreininguna" "á" "orðinu"? QDictSubjectNom
+    | QDictCanYou "skilgreint" "orðið"? QDictSubjectNom
 
 QDictInDictionary →
     "í" "orðabók" | "í" "orðabókinni"
@@ -66,6 +67,19 @@ QDictInDictionary →
 
 QDictDict →
     "orðabók" | "orðabókin" | "íslensk" "orðabók" | "íslenska" "orðabókin"
+
+QDictWhatWhich →
+    "hvað" | "hver"
+
+QDictCanYou →
+    "getur" "þú" | "geturðu"
+
+QDictDefinition →
+    "skilgreining" | "skilgreiningin"
+    | "orðabókarskilgreining" | "orðabókarskilgreiningin"
+    | "orðabókaskilgreining" | "orðabókaskilgreiningin"
+    | "skilgreining" "íslenskrar"? "orðabókar" | "skilgreining" "íslensku"? "orðabókarinnar"
+    | "skilgreining" "í" "íslenskri"? "orðabók" | "skilgreiningin" "í" "íslenskri"? "orðabók"
 
 QDictSubjectNom →
     Nl
@@ -82,7 +96,7 @@ def QDictSubjectNom(node, params, result):
 
 
 def QDictWordQuery(node, params, result):
-    result.qtype = "DictionaryWord"
+    result.qtype = "Dictionary"
 
 
 _DICT_SOURCE = "Íslensk nútímamálsorðabók"
@@ -145,7 +159,7 @@ def _answer_dictionary_query(q: Query, result):
         answ = "{0} er {1}".format(icequote(cap_first(word)), icequote(expl[0]))
         voice = answ
     else:
-        # Otherwise, do some nice formatting + spell things out nicely to impr. voice synthesis
+        # Otherwise, do some nice formatting + spell things out nicely for voice synthesis
         voice = "Orðið {0} getur þýtt: ".format(icequote(word))
         answ = ""
         for i, x in enumerate(expl):
