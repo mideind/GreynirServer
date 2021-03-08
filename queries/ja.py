@@ -47,12 +47,32 @@ QJaQuery →
     QJaPhoneNumQuery
 
 QJaPhoneNumQuery →
-    "hvað" "er" "símanúmerið" "hjá" QJaSubject
+    QJaName2PhoneNumQuery | QJaPhoneNum2NameQuery
+
+QJaName2PhoneNumQuery →
+    QJaWhatWhich "er" QJaTheNumber "hjá" QJaSubject
+    | "hvaða" QJaTheNumber "er" QJaSubject "með"
+    | "flettu" "upp" "símanúmerinu" "hjá" QJaSubject
+
+QJaPhoneNum2NameQuery →
+    "hver" "er" "með" QJaTheNumber QJaPhoneNum
+    | "hver" "er" "með" "símann" QJaPhoneNum
+    | "flettu" "upp" "símanúmerinu" QJaPhoneNum
+    | "flettu" "upp" "númerinu" QJaPhoneNum
+
+QJaPhoneNum →
+    Nl
 
 QJaSubject →
     Nl_þgf
 
-$score(+35) QJaQuery
+QJaTheNumber →
+    "númerið" | "símanúmerið" | "númer" | "símanúmer"
+
+QJaWhatWhich →
+    "hvert" | "hvað"
+
+$score(+135) QJaQuery
 
 """
 
@@ -89,7 +109,7 @@ def query_ja_api(q: str) -> Optional[Dict]:
     return res
 
 
-def _answer_phone_num_query(q: Query, result):
+def _answer_name2phonenum_query(q: Query, result):
     """ Answer query of the form "hvað er síminn hjá [íslenskt mannsnafn]?" """
     res = query_ja_api(q.key())
     from pprint import pprint
@@ -109,6 +129,10 @@ def _answer_phone_num_query(q: Query, result):
     return gen_answer(pnum)
 
 
+def _answer_phonenum2name_query(q: Query, result):
+    pass
+
+
 def sentence(state, result):
     """ Called when sentence processing is complete """
     q: Query = state["query"]
@@ -118,7 +142,7 @@ def sentence(state, result):
         q.set_key(result.qkey)
 
         try:
-            r = _answer_phone_num_query(q, result)
+            r = _answer_name2phonenum_query(q, result)
             if not r:
                 r = gen_answer("Ekki tókst að fletta upp viðkomandi.")
             q.set_answer(*r)
