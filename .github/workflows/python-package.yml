@@ -1,0 +1,64 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Greynir
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8, 3.9]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Set up Icelandic locale
+      run: |
+        sudo apt-get install language-pack-is
+        sudo locale-gen is_IS.UTF-8
+        sudo update-locale
+    - name: Set up PostgreSQL
+      uses: harmon758/postgresql-action@v1
+      with:
+        postgresql version: '12'  # See https://hub.docker.com/_/postgres for available versions
+    - name: Populate database
+      run: |
+        sudo systemctl start postgresql
+        psql -c "create database scraper with encoding 'UTF8' LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' TEMPLATE=template0;" -U postgres
+        psql -d scraper -c "create extension if not exists \"uuid-ossp\";" -U postgres
+        psql -c "create user reynir with password 'reynir';" -U postgres
+        python scraper.py --init
+        Insert dummy database data from CSV files
+        cp tests/test_files/testdb_articles.csv /tmp/
+        psql -d scraper -c "copy articles from '/tmp/testdb_articles.csv' delimiter ',' csv;"
+        cp tests/test_files/testdb_persons.csv /tmp/
+        psql -d scraper -c "copy persons from '/tmp/testdb_persons.csv' delimiter ',' csv;"
+        cp tests/test_files/testdb_queries.csv /tmp/
+        psql -d scraper -c "copy queries from '/tmp/testdb_queries.csv' delimiter ',' csv;"
+        cp tests/test_files/testdb_querydata.csv /tmp/
+        psql -d scraper -c "copy querydata from '/tmp/testdb_querydata.csv' delimiter ',' csv;"
+    - name: Create dummy API key
+      run: |
+        cat "tests/test_files/dummy_greynir_api_key.txt" > "resources/GreynirServerKey.txt"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pytest
+        pip install --upgrade git+https://github.com/mideind/Tokenizer#egg=tokenizer
+        pip install --upgrade git+https://github.com/mideind/GreynirPackage#egg=reynir
+        pip install --upgrade git+https://github.com/mideind/GreynirCorrect#egg=reynir-correct
+        pip install -r requirements.txt
+    - name: Test with pytest
+      run: |
+        python -m pytest
