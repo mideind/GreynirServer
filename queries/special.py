@@ -483,7 +483,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hverjir eru bestir": {"answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."},
     "hver er langbestur": {"answer": "Þú, kæri notandi, ert að sjálfsögðu langbestur."},
     "hver er langbest": {"answer": "Þú, kæri notandi, ert að sjálfsögðu langbestur."},
-    "hverjir eru langbestir": {"answer": "Þú, kæri notandi, ert að sjálfsögðu langbestur."},
+    "hverjir eru langbestir": {
+        "answer": "Þú, kæri notandi, ert að sjálfsögðu langbestur."
+    },
     "hver er fallegur": _YOU_BEAUTIFUL,
     "hver er fallegastur": _YOU_BEAUTIFUL,
     "hver er fallegust": _YOU_BEAUTIFUL,
@@ -1121,8 +1123,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað er leyndarmál lífsins": _MEANING_OF_LIFE,
     "hvert er leyndarmál lífsins": _MEANING_OF_LIFE,
     "hver er sannleikurinn": _MEANING_OF_LIFE,
-    "hvað er 42": {"answer": "Sex sinnum sjö"},  # :)
-    "hvað meinarðu með 42": {"answer": "Sex sinnum sjö"},
+    "hvað er 42": {"answer": "Sex sinnum níu"},  # :)
+    "hvað meinarðu með 42": {"answer": "Sex sinnum níu"},  # :)
+    "hvað þýðir 42": {"answer": "Sex sinnum níu"},  # :)
     # Personal philosophy
     "hver er tilgangur þinn": _MY_PHILOSOPHY,
     "hver er eiginlega tilgangur þinn": _MY_PHILOSOPHY,
