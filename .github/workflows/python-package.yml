@@ -92,7 +92,7 @@ jobs:
       uses: 8398a7/action-slack@v2
       with:
         status: ${{ job.status }}
-        author_name: Integration Testing
+        author_name: Integration Testing (Python ${{ matrix.python-version }})
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} # required
-      if: always() # Pick up events even if the job fails or is canceled.
+      if: failure() # Pick up event if the job fails
