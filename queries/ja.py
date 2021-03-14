@@ -130,7 +130,7 @@ def _answer_name2phonenum_query(q: Query, result):
 
 
 def _answer_phonenum2name_query(q: Query, result):
-    """ Answer query of the form "hver er með símanúmerið [númer]?"
+    """ Answer query of the form "hver er með símanúmerið [númer]?"""
     pass
 
 
