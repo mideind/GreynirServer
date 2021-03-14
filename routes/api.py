@@ -46,7 +46,7 @@ from util import read_api_key
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH
-from . import async_task, _RequestProxy
+from . import async_task
 
 
 # Maximum number of query string variants
@@ -171,8 +171,8 @@ def correct_task(version=1):
             logging.warning("Exception in correct_task(): {0}".format(e))
             return better_jsonify(valid=False, reason="Invalid request")
 
-    assert isinstance(request, _RequestProxy)
-    pgs, stats = check_grammar(text, progress_func=request.progress_func)
+    # assert isinstance(request, _RequestProxy)
+    pgs, stats = check_grammar(text, progress_func=cast(Any, request).progress_func)
 
     # Return the annotated paragraphs/sentences and stats
     # in a JSON structure to the client
