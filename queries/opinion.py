@@ -4,7 +4,7 @@
 
     Opinion query response module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 
 from datetime import datetime, timedelta
 
+from query import Query
 from queries import gen_answer
 
 
@@ -36,10 +37,15 @@ _OPINION_QTYPE = "Opinion"
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
+QUERY_NONTERMINALS = { "QOpinion" }
+
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
 Query →
+    QOpinion
+
+QOpinion →
     QOpinionQuery '?'?
 
 QOpinionQuery →
@@ -82,7 +88,7 @@ def QOpinionSubject(node, params, result):
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
 
     if "qtype" not in result or "subject_nom" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

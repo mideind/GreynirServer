@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -22,10 +22,10 @@
 
 """
 
+from typing import Dict, Any, List, Optional, cast
 
 from datetime import datetime
 import logging
-import os
 
 from flask import request, abort
 
@@ -33,19 +33,21 @@ from settings import Settings
 
 from tnttagger import ifd_tag
 from db import SessionContext
-from db.models import ArticleTopic, Query, Feedback
+from db.models import ArticleTopic, Query, Feedback, QueryData
 from treeutil import TreeUtility
 from correct import check_grammar
-from reynir.binparser import canonicalize_token
+from reynir.binparser import TokenDict, canonicalize_token
 from article import Article as ArticleProxy
 from query import process_query
+from query import Query as QueryObject
 from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
 from speech import get_synthesized_text_url
+from util import greynir_api_key
 
-
-from . import routes, better_jsonify, text_from_request, bool_from_request, restricted
-from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH
+from . import routes, better_jsonify, text_from_request, bool_from_request
+from . import MAX_URL_LENGTH, MAX_UUID_LENGTH
 from . import async_task
+
 
 # Maximum number of query string variants
 _MAX_QUERY_VARIANTS = 10
@@ -65,7 +67,7 @@ def ifdtag_api(version=1):
 
     try:
         text = text_from_request(request)
-    except:
+    except Exception:
         return better_jsonify(valid=False, reason="Invalid request")
 
     pgs = ifd_tag(text)
@@ -92,7 +94,6 @@ def analyze_api(version=1):
 
 @routes.route("/correct.api", methods=["GET", "POST"])
 @routes.route("/correct.api/v<int:version>", methods=["GET", "POST"])
-@restricted  # Route is only valid when running on a development server
 def correct_api(version=1):
     """ Correct text provided by the user, i.e. not coming from an article.
         This can be either an uploaded file or a string.
@@ -136,7 +137,6 @@ def correct_api(version=1):
 
 @routes.route("/correct.task", methods=["POST"])
 @routes.route("/correct.task/v<int:version>", methods=["POST"])
-@restricted  # This means that the route is only visible on a development server
 @async_task  # This means that the function is automatically run on a separate thread
 def correct_task(version=1):
     """ Correct text provided by the user, i.e. not coming from an article.
@@ -173,7 +173,8 @@ def correct_task(version=1):
             logging.warning("Exception in correct_task(): {0}".format(e))
             return better_jsonify(valid=False, reason="Invalid request")
 
-    pgs, stats = check_grammar(text, progress_func=request.progress_func)
+    # assert isinstance(request, _RequestProxy)
+    pgs, stats = check_grammar(text, progress_func=cast(Any, request).progress_func)
 
     # Return the annotated paragraphs/sentences and stats
     # in a JSON structure to the client
@@ -190,23 +191,22 @@ def postag_api(version=1):
 
     try:
         text = text_from_request(request)
-    except:
+    except Exception:
         return better_jsonify(valid=False, reason="Invalid request")
 
     with SessionContext(commit=True) as session:
         pgs, stats, register = TreeUtility.tag_text(session, text, all_names=True)
         # Amalgamate the result into a single list of sentences
+        pa: List[List[TokenDict]] = []
         if pgs:
             # Only process the first paragraph, if there are many of them
             if len(pgs) == 1:
-                pgs = pgs[0]
+                pa = pgs[0]
             else:
                 # More than one paragraph: gotta concatenate 'em all
-                pa = []
                 for pg in pgs:
                     pa.extend(pg)
-                pgs = pa
-        for sent in pgs:
+        for sent in pa:
             # Transform the token representation into a
             # nice canonical form for outside consumption
             # err = any("err" in t for t in sent)
@@ -214,7 +214,7 @@ def postag_api(version=1):
                 canonicalize_token(t)
 
     # Return the tokens as a JSON structure to the client
-    return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
+    return better_jsonify(valid=True, result=pa, stats=stats, register=register)
 
 
 @routes.route("/parse.api", methods=["GET", "POST"])
@@ -227,7 +227,7 @@ def parse_api(version=1):
 
     try:
         text = text_from_request(request)
-    except:
+    except Exception:
         return better_jsonify(valid=False, reason="Invalid request")
 
     with SessionContext(commit=True) as session:
@@ -260,9 +260,9 @@ def article_api(version=1):
     uuid = request.values.get("id")
 
     if url:
-        url = url.strip()[0:_MAX_URL_LENGTH]
+        url = url.strip()[0:MAX_URL_LENGTH]
     if uuid:
-        uuid = uuid.strip()[0:_MAX_UUID_LENGTH]
+        uuid = uuid.strip()[0:MAX_UUID_LENGTH]
     if url:
         # URL has priority, if both are specified
         uuid = None
@@ -315,7 +315,7 @@ def reparse_api(version=1):
     if not (1 <= version <= 1):
         return better_jsonify(valid="False", reason="Unsupported version")
 
-    uuid = request.form.get("id", "").strip()[0:_MAX_UUID_LENGTH]
+    uuid = request.form.get("id", "").strip()[0:MAX_UUID_LENGTH]
     tokens = None
     register = {}
     stats = {}
@@ -377,6 +377,8 @@ def query_api(version=1):
     lon = request.values.get("longitude")
 
     # Additional client info
+    # !!! FIXME: The client_id for web browser clients is the browser version,
+    # !!! which is not particularly useful. Consider using an empty string instead.
     client_id = request.values.get("client_id")
     client_type = request.values.get("client_type")
     client_version = request.values.get("client_version")
@@ -413,6 +415,8 @@ def query_api(version=1):
 
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
     auto_uppercase = bool_from_request(request, "autouppercase", True)
+    if Settings.DEBUG:
+        auto_uppercase = True # !!! DEBUG - to emulate mobile client behavior
 
     # Send the query to the query processor
     result = process_query(
@@ -439,7 +443,7 @@ def query_api(version=1):
         )
         if url:
             result["audio"] = url
-        response = result.get("response")
+        response = cast(Optional[Dict[str, str]], result.get("response"))
         if response:
             if "sources" in response:
                 # A list of sources is not needed for voice results
@@ -462,38 +466,45 @@ def query_api(version=1):
 @routes.route("/query_history.api", methods=["GET", "POST"])
 @routes.route("/query_history.api/v<int:version>", methods=["GET", "POST"])
 def query_history_api(version=1):
-    """ Delete query history for a particular unique client ID """
+    """ Delete query history and/or query data for a particular unique client ID. """
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
+    # Calling this endpoint requires the Greynir API key
+    # TODO: Enable when clients (iOS, Android) have been updated
+    # key = request.values.get("api_key")
+    # gak = greynir_api_key()
+    # if not gak or not key or key != gak:
+    #     resp["errmsg"] = "Invalid or missing API key."
+    #     return better_jsonify(**resp)
+
+    resp = dict(valid=True)
+
     action = request.values.get("action")
-    client_type = request.values.get("client_type")
+    # client_type = request.values.get("client_type")
     # client_version = request.values.get("client_version")
     client_id = request.values.get("client_id")
 
-    if action != "clear" or not client_type or not client_id:
+    valid_actions = ("clear", "clear_all")
+
+    if not client_id:
         return better_jsonify(valid=False, reason="Missing parameters")
+    if action not in valid_actions:
+        return better_jsonify(valid=False, reason="Invalid action parameter")
 
     with SessionContext(commit=True) as session:
+        # Clear all logged user queries
+        # pylint: disable=no-member
         session.execute(Query.table().delete().where(Query.client_id == client_id))
+        # Clear all user query data
+        if action == "clear_all":
+            # pylint: disable=no-member
+            session.execute(
+                QueryData.table().delete().where(QueryData.client_id == client_id)
+            )
 
-    return better_jsonify(valid=True)
-
-
-_SPEECH_API_KEY = None
-_SPEECH_API_KEY_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "resources", "GreynirSpeechKey.txt"
-)
-
-
-def _speech_api_key():
-    """ Load speech key from file. """
-    global _SPEECH_API_KEY
-    if _SPEECH_API_KEY is None:
-        with open(_SPEECH_API_KEY_PATH) as f:
-            _SPEECH_API_KEY = f.read().strip()
-    return _SPEECH_API_KEY
+    return better_jsonify(**resp)
 
 
 @routes.route("/speech.api", methods=["GET", "POST"])
@@ -504,13 +515,19 @@ def speech_api(version=1):
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
-    reply = dict(err=True)
+    reply: Dict[str, Any] = dict(err=True)
+
+    # Calling this endpoint requires the Greynir API key
+    key = request.values.get("api_key")
+    gak = greynir_api_key()
+    if not gak or not key or key != gak:
+        reply["errmsg"] = "Invalid or missing API key."
+        return better_jsonify(**reply)
 
     text = request.values.get("text")
     if not text:
         return better_jsonify(**reply)
 
-    key = request.values.get("key")
     fmt = request.values.get("format", "ssml")
     if fmt not in ["text", "ssml"]:
         fmt = "ssml"
@@ -521,19 +538,14 @@ def speech_api(version=1):
             speed = float(speed)
             if speed < 0.1 or speed > 3.0:
                 speed = 1.0
-        except:
+        except Exception:
             speed = 1.0
-
-    sak = _speech_api_key()
-    if not sak or key != sak:
-        reply["errmsg"] = "Invalid or missing API key."
-        return better_jsonify(**reply)
 
     try:
         url = get_synthesized_text_url(
             text, txt_format=fmt, voice_id=voice_id, speed=speed
         )
-    except:
+    except Exception:
         return better_jsonify(**reply)
 
     reply["audio_url"] = url
@@ -583,3 +595,57 @@ def exit_api():
         raise RuntimeError("Not running with the Werkzeug Server")
     shutdown_func()
     return "The server has shut down"
+
+
+@routes.route("/register_query_data.api", methods=["POST"])
+@routes.route("/register_query_data.api/v<int:version>", methods=["POST"])
+def register_query_data_api(version=1):
+    """
+    Stores or updates query data for the given client ID
+
+    Hinrik's comment:
+    Data format example from js code
+    {
+        'device_id': device_id,
+        'key': 'smartlights',
+        'data': {
+            'smartlights': {
+                'selected_light': 'philips_hue',
+                'philips_hue': {
+                    'username': username,
+                    'ipAddress': internalipaddress
+                }
+            }
+        }
+    }
+
+    """
+
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, reason="Unsupported version")
+
+    qdata = request.json
+    if qdata is None:
+        return better_jsonify(valid=False, errmsg="Empty request.")
+
+    # Calling this endpoint requires the Greynir API key
+    key = qdata.get("api_key")
+    gak = greynir_api_key()
+    if not gak or not key or key != gak:
+        return better_jsonify(valid=False, errmsg="Invalid or missing API key.")
+
+    if (
+        not qdata
+        or "data" not in qdata
+        or "key" not in qdata
+        or "client_id" not in qdata
+    ):
+        return better_jsonify(valid=False, errmsg="Missing parameters.")
+
+    success = QueryObject.store_query_data(
+        qdata["client_id"], qdata["key"], qdata["data"]
+    )
+    if success:
+        return better_jsonify(valid=True, msg="Query data registered")
+
+    return better_jsonify(valid=False, errmsg="Error registering query data.")

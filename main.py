@@ -5,7 +5,7 @@
 
     Web server main module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
     Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
@@ -59,6 +59,7 @@ from platform import system as os_name
 from reynir import __version__ as greynir_version
 from tokenizer import __version__ as tokenizer_version
 
+
 # RUNNING_AS_SERVER is True if we're executing under nginx/Gunicorn,
 # but False if the program was invoked directly as a Python main module.
 RUNNING_AS_SERVER = __name__ != "__main__"
@@ -91,7 +92,7 @@ cache = Cache(app, config={"CACHE_TYPE": cache_type})
 app.config["CACHE"] = cache
 
 # Register blueprint routes
-from routes import routes, max_age
+from routes import routes, max_age  # type: ignore
 
 app.register_blueprint(routes)
 

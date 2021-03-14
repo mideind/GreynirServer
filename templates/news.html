@@ -2,11 +2,8 @@
 {% extends "container-normal.html" %}
 
 {% block meta %}
-
 <meta name="robots" content="nofollow" />
-
 {% endblock %}
-
 
 {% block styles %}
 
@@ -39,7 +36,6 @@
    </div>
    <div class="headline visible-xs-inline-block">Nýjustu fréttir</div>
 
-
    <!-- Topics dropdown -->
    <div class="btn-group pull-right">
       <button class="btn {{ labelmap.get(topics.id, 'btn-default') }} dropdown-toggle"
@@ -54,7 +50,6 @@
 {% endfor %}
       </ul>
    </div>
-
 
    <!-- Sources (roots) dropdown -->
    <div class="btn-group pull-right hidden-xs" style="margin-right: 10px;">
@@ -80,7 +75,6 @@
 {% endfor %}
       </ul>
    </div>
-
 
 </div>
 
@@ -125,14 +119,14 @@
 {% if articles and offset != 0 %}
       $("#prev-page").click(function(ev) {
          // Go to the previous page
-         openURL("{{ url_for('routes.news', topic=topics.id, root=selected_root, offset=offset-limit) | safe }}", ev);
+         openURL("{{ url_for('routes.news', topic=topics.id, root=selected_root, author=author, offset=offset-limit) | safe }}", ev);
       });
 {% endif %}
 
 {% if articles and articles|length == limit %}
       $("#next-page").click(function(ev) {
          // Go to the next page
-         openURL("{{ url_for('routes.news', topic=topics.id, root=selected_root, offset=offset+limit) | safe }}", ev);
+         openURL("{{ url_for('routes.news', topic=topics.id, root=selected_root, author=author, offset=offset+limit) | safe }}", ev);
       });
 {% endif %}
    }
@@ -142,4 +136,3 @@
 </script>
 
 {% endblock %}
-

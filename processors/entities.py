@@ -4,7 +4,7 @@
 
     Processor module to extract entity names & definitions
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -61,6 +61,8 @@ NOT_DEFINITIONS = {
     "búinn",
     "búið",
     "búin",
+    "þessi",
+    "þetta",
     "sá",
     "sú",
     "það",
@@ -68,10 +70,30 @@ NOT_DEFINITIONS = {
     "inna",
     "hjónin",
     "hjónanna",
+    "hann",
+    "hún",
+    "lokið",
+    "ég",
+    "is",
+    "hvað",
+    "bæði",
+    "ver",
+    "verið",
+    "eitthvað",
+    "einhver",
+    "eitthvert",
+    "sú sama",
+    "sá sami",
+    "það sama",
+    "svar",
+    "rek",
 }
 
 # The following set should contain lowercase words
 NOT_ENTITIES = {
+    "hann",
+    "hún",
+    "það",
     "þeir",
     "þær",
     "þau",
@@ -105,6 +127,248 @@ NOT_ENTITIES = {
     "milljónir",
     "milljarður",
     "milljarðar",
+    "mamma",
+    "mamman",
+    "móðir",
+    "móðirin",
+    "faðir",
+    "faðirinn",
+    "pabbi",
+    "pabbinn",
+    "sonur",
+    "sonurinn",
+    "dóttir",
+    "dóttirin",
+    "afi",
+    "afinn",
+    "amma",
+    "amman",
+    "frændi",
+    "frændinn",
+    "frænka",
+    "frænkan",
+    "bróðir",
+    "bróðirinn",
+    "systir",
+    "systirin",
+    "strákur",
+    "strákurinn",
+    "drengur",
+    "drengurinn",
+    "stelpa",
+    "stelpan",
+    "stúlka",
+    "stúlkan",
+    "karl",
+    "karlinn",
+    "kona",
+    "konan",
+    "maður",
+    "maðurinn",
+    "menn",
+    "mennirnir",
+    "eiginkona",
+    "eiginkonan",
+    "eiginmaður",
+    "eiginmaðurinn",
+    # Very common, but useless, definitions here:
+    "höfundur",
+    "höfundurinn",
+    "ástæða",
+    "ástæðan",
+    "staða",
+    "staðan",
+    "leikur",
+    "leikurinn",
+    "nú",
+    "tilefni",
+    "tilefnið",
+    "fólk",
+    "fólkið",
+    "fólki",
+    "málið",
+    "fjöldi",
+    "fjöldinn",
+    "heildarfjöldi",
+    "heildarfjöldinn",
+    "meðal",
+    "munurinn",
+    "hlutfall",
+    "niðurstaða",
+    "framundan",
+    "já",
+    "nei",
+    "félag",
+    "félagið",
+    "fyrirtæki",
+    "fyrirtækið",
+    "hluti",
+    "sýning",
+    "sýningin",
+    "útlit",
+    "staðreynd",
+    "staðreyndin",
+    "verk",
+    "verkið",
+    "dæmi",
+    "dæmið",
+    "markmið",
+    "markmiðið",
+    "rannsókn",
+    "rannsóknin",
+    "annar",
+    "velta",
+    "veltan",
+    "hlutfall",
+    "hlutfallið",
+    "svar",
+    "svarið",
+    "magn",
+    "magnið",
+    "staða",
+    "staðan",
+    "flokkur",
+    "flokkurinn",
+    "fjölskylda",
+    "fjölskyldan",
+    "verðið",
+    "útkoma",
+    "útkoman",
+    "leið",
+    "leiðin",
+    "tilgangur",
+    "tilgangurinn",
+    "ástand",
+    "ástandið",
+    "vegur",
+    "vegurinn",
+    "markaður",
+    "markaðurinn",
+    "fylgi",
+    "fylgið",
+    "kostnaður",
+    "kostnaðurinn",
+    "ákvörðun",
+    "ákvörðunin",
+    # Terms for groups of people, in some cases derogatory,
+    # that are not stored as entity names with definitions
+    "kristinn",
+    "kristnir",
+    "gyðingur",
+    "gyðingar",
+    "júði",
+    "júðar",
+    "múslimi",
+    "múslími",
+    "múslimar",
+    "múslímar",
+    "hindúi",
+    "hindúar",
+    "búddisti",
+    "búddistar",
+    "ásatrúarmaður",
+    "ásatrúarmenn",
+    "ásatrúarfólk",
+    "heiðingi",
+    "heiðingjar",
+    "trúleysingi",
+    "trúleysingjar",
+    "múhameðstrúarmaður",
+    "múhameðstrúarmenn",
+    "múhameðstrúarfólk",
+    "hvítur",
+    "hvítir",
+    "svertingi",
+    "svertingjar",
+    "blökkumaður",
+    "blökkumenn",
+    "blökkufólk",
+    "negri",
+    "negrar",
+    "eskimói",
+    "eskimóar",
+    "inúíti",
+    "inúítar",
+    "indíáni",
+    "indíánar",
+    "baháíi",
+    "baháíar",
+    "asíubúi",
+    "asíubúar",
+    "asíumaður",
+    "asíumenn",
+    "asíufólk",
+    "afríkubúi",
+    "afríkubúar",
+    "afríkumaður",
+    "afríkumenn",
+    "afríkufólk",
+    "afríkunegri",
+    "afríkunegrar",
+    "evrópubúi",
+    "evrópubúar",
+    "evrópumaður",
+    "evrópumenn",
+    "evrópufólk",
+    "ameríkumaður",
+    "ameríkumenn",
+    "ameríkufólk",
+    # Terms for religions, where media-derived definitions may cause offense
+    "trú",
+    "trúin",
+    "trúleysi",
+    "trúleysið",
+    "trúarbragð",
+    "trúarbrögð",
+    "trúarbrögðin",
+    "trúarleiðtogi",
+    "trúarleiðtoginn",
+    "trúarleiðtogar",
+    "trúarleiðtogarnir",
+    "ásatrú",
+    "ásatrúin",
+    "heiðni",
+    "heiðnin",
+    "heiðingdómur",
+    "heiðingdómurinn",
+    "kristni",
+    "kristnin",
+    "kristindómur",
+    "kristindómurinn",
+    "islam",
+    "íslam",
+    "múhameðstrú",
+    "múhameðstrúin",
+    "búddismi",
+    "búddisminn",
+    "búddatrú",
+    "búddatrúin",
+    "hindúismi",
+    "hindúisminn",
+    "hindútrú",
+    "hindútrúin",
+    "gyðingatrú",
+    "gyðingatrúin",
+    "gyðingdómur",
+    "gyðingdómurinn",
+    "júðatrú",
+    "júðatrúin",
+    "júðadómur",
+    "júðadómurinn",
+    "konfúsíusatrú",
+    "konfúsíusatrúin",
+    "shinto",
+    "shintó",
+    "sjinto",
+    "sjintó",
+    "shintotrú",
+    "shintótrú",
+    "sjintotrú",
+    "sjintótrú",
+    "shintotrúin",
+    "shintótrúin",
+    "sjintotrúin",
+    "sjintótrúin",
 }
 
 # Lower-case abbreviations that are allowed to be a part of entity names
@@ -215,7 +479,7 @@ def sentence(state, result):
             # Avoid chaff
             continue
 
-        def def_ok(definition):
+        def def_ok(definition: str) -> bool:
             """ Returns True if a definition meets basic sanity criteria """
             if definition.lower() in NOT_DEFINITIONS:
                 return False
@@ -224,7 +488,7 @@ def sentence(state, result):
                 return False
             return True
 
-        def name_ok(entity):
+        def name_ok(entity: str) -> bool:
             """ Returns True if an entity name meets basic sanity criteria """
             if entity.lower() in NOT_ENTITIES or entity in Abbreviations.DICT:
                 # Don't redefine abbreviations
@@ -365,51 +629,54 @@ def SvigaInnihaldFsRuna(node, params, result):
 
 
 def SvigaInnihald(node, params, result):
-    if node.has_variant("et"):
-        tengiliður = result.find_child(nt_base="Tilvísunarsetning")
-        if tengiliður:
-            # '...sem framleiðir álumgjörina fyrir iPhone'
-            tengisetning = tengiliður.find_child(nt_base="Tengisetning")
-            if tengisetning:
-                setning_án_f = tengisetning.find_child(nt_base="BeygingarliðurÁnF")
-                if setning_án_f:
-                    skilgr = setning_án_f._text
-                    # Remove extraneous prefixes
-                    for s in ("í dag",):
-                        if skilgr.startswith(s + " "):
-                            # Skera framan af
-                            skilgr = skilgr[len(s) + 1 :]
-                            break
-                    sögn = None
-                    for s in (
-                        "er",
-                        "var",
-                        "sé",
-                        "hefur verið",
-                        "væri",
-                        "hefði orðið",
-                        "verður",
-                    ):
-                        if skilgr.startswith(s + " "):
-                            # Skera framan af
-                            sögn = s
-                            skilgr = skilgr[len(s) + 1 :]
-                            break
-                    if skilgr:
-                        result.sviga_innihald = skilgr
-                        if sögn:
-                            result.sviga_sögn = sögn
-        elif result.find_child(nt_base="HreinYfirsetning") is not None:
-            # Hrein yfirsetning: sleppa því að nota hana
-            pass
-        elif result.find_child(nt_base="SvigaInnihaldFsRuna") is not None:
-            # Forsetningaruna: sleppa því að nota hana
-            pass
-        elif result.find_child(nt_base="SvigaInnihaldNl") is not None:
-            # Nafnliður sem passar ekki við fall eða tölu: sleppa því að nota hann
-            pass
-        else:
-            # Nl/fall/tala: OK
+    if not node.has_variant("et"):
+        return
+    tengiliður = result.find_child(nt_base="Tilvísunarsetning")
+    if tengiliður:
+        # '...sem framleiðir álumgjörina fyrir iPhone'
+        tengisetning = tengiliður.find_child(nt_base="Tengisetning")
+        if tengisetning:
+            setning_án_f = tengisetning.find_child(nt_base="BeygingarliðurÁnF")
+            if setning_án_f:
+                skilgr = setning_án_f._text
+                # Remove extraneous prefixes
+                for s in ("í dag",):
+                    if skilgr.startswith(s + " "):
+                        # Skera framan af
+                        skilgr = skilgr[len(s) + 1 :]
+                        break
+                sögn = None
+                for s in (
+                    "er",
+                    "var",
+                    "sé",
+                    "hefur verið",
+                    "væri",
+                    "hefði orðið",
+                    "verður",
+                ):
+                    if skilgr.startswith(s + " "):
+                        # Skera framan af
+                        sögn = s
+                        skilgr = skilgr[len(s) + 1 :]
+                        break
+                if skilgr:
+                    result.sviga_innihald = skilgr
+                    if sögn:
+                        result.sviga_sögn = sögn
+    elif result.find_child(nt_base="HreinYfirsetning") is not None:
+        # Hrein yfirsetning: sleppa því að nota hana
+        pass
+    elif result.find_child(nt_base="SvigaInnihaldFsRuna") is not None:
+        # Forsetningaruna: sleppa því að nota hana
+        pass
+    elif result.find_child(nt_base="SvigaInnihaldNl") is not None:
+        # Nafnliður sem passar ekki við fall eða tölu: sleppa því að nota hann
+        pass
+    else:
+        p = params[0]
+        if p is not None and p.has_nt_base("Nl") and p.has_variant("et"):
+            # Nl/fall_et: OK
             result.sviga_innihald = result._nominative
 
 

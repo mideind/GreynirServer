@@ -4,7 +4,7 @@
 
     Weather query response module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -37,20 +37,26 @@
 # TODO: "Er gott veður úti?"
 # TODO: "Hvað er mikið frost?" "Hversu mikið frost er úti?"
 # TODO: "Verður snjór á morgun?"
+# TODO: "Hvað er mikill hiti úti?"
 # TODO: "Hvernig er veðurspáin fyrir garðabæ?"
 # TODO: "Hvernig er færðin"
 # TODO: "Hvernig eru loftgæðin [í Reykjavík] etc."
+
+from typing import Optional
 
 import os
 import re
 import logging
 import random
-from datetime import timedelta
+from datetime import timedelta, datetime
 
+from query import Query
 from queries import gen_answer, query_json_api, cap_first, sing_or_plur
 from geo import distance, in_iceland, ICE_PLACENAME_BLACKLIST
-from iceaddr import placename_lookup
-from iceweather import observation_for_closest, observation_for_station, forecast_text
+from iceaddr import placename_lookup  # type: ignore
+from iceweather import observation_for_closest, observation_for_station, forecast_text  # type: ignore
+
+from . import LatLonTuple, AnswerTuple
 
 
 _WEATHER_QTYPE = "Weather"
@@ -93,7 +99,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -111,6 +117,8 @@ def help_text(lemma):
     )
 
 
+QUERY_NONTERMINALS = { "QWeather" }
+
 # The context-free grammar for the queries recognized by this module
 GRAMMAR = """
 
@@ -127,6 +135,7 @@ QWeatherQuery →
 
 QWeatherCurrent →
     QWeatherHowIs? "veðrið" QWeatherAnyLoc? QWeatherNow?
+    | QWeatherHowIs? "veðrið" QWeatherNow? QWeatherAnyLoc?
     | "hvernig" "veður" "er" QWeatherAnyLoc? QWeatherNow?
     | "hvernig" "viðrar" QWeatherAnyLoc? QWeatherNow?
     | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
@@ -192,7 +201,6 @@ QWeatherTemperature →
     | "hvað" "er" "hlýtt" QWeatherAnyLoc? QWeatherNow
     | "hvað" "er" "margra" "stiga" "hiti" QWeatherAnyLoc? QWeatherNow?
     | "hvað" "er" "mikið" "frost" QWeatherAnyLoc? QWeatherNow?
-    | "hvað" "er" "margra" "stiga" "hiti" QWeatherAnyLoc? QWeatherNow?
     | "hvað" "er" "margra" "stiga" "frost" QWeatherAnyLoc? QWeatherNow?
     | "hversu" "margra" "stiga" "hiti" "er" QWeatherAnyLoc? QWeatherNow?
     | "hversu" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
@@ -203,8 +211,11 @@ QWeatherTemperature →
     | "er" "mikill"? "kuldi" "úti"? QWeatherAnyLoc? QWeatherNow?
     | "er" "mikill"? "hiti" "úti"? QWeatherAnyLoc? QWeatherNow?
     | "er" "mikið"? "frost" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" "fyrir" "ofan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" "fyrir" "neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" QWeatherHotCold? "fyrir_ofan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" QWeatherHotCold? "fyrir_neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+
+QWeatherHotCold →
+    "hiti" | "hitinn" | "kuldi" | "kuldinn" | "hitastig" | "hitastigið"
 
 QWeatherWind →
     "hvað"? "er" "mikið"? "rok" QWeatherAnyLoc? QWeatherNow?
@@ -220,9 +231,8 @@ QWeatherWind →
     | "hver" "er" "vindhraðinn" QWeatherAnyLoc? QWeatherNow?
     | "hvaða"? "vindhraði" "er"? QWeatherAnyLoc? QWeatherNow?
 
-
 QWeatherUmbrella →
-    "þarf" QWeatherOne "regnhlíf" QWeatherNow
+    "þarf" QWeatherOne? "regnhlíf" QWeatherNow
     | "þarf" "ég" "að" "taka" "með" "mér" "regnhlíf" QWeatherNow
     | "þarf" "maður" "að" "taka" "með" "sér" "regnhlíf" QWeatherNow
     | "væri" "regnhlíf" "gagnleg" QWeatherForMe? QWeatherNow
@@ -244,7 +254,7 @@ QWeatherNow →
     | "úti"? "eins" "og" "stendur"
 
 QWeatherNextDays →
-    "á" "næstunni"
+    "á_næstunni"
     | "næstu" "daga"
     | "næstu" "dagana"
     | "fyrir" "næstu" "daga"
@@ -253,12 +263,12 @@ QWeatherNextDays →
     | "þessa" "vikuna"
     | "út" "vikuna"
     | "í" "vikunni"
-    | "á" "morgun"
+    | "á_morgun"
     | "í" "fyrramálið"
     | "fyrir" "morgundaginn"
 
 QWeatherCountry →
-    "á" "landinu" | "á" "íslandi" | "hér" "á" "landi" | "á" "landsvísu"
+    "á" "landinu" | "á" "íslandi" | "hér_á_landi" | "á" "landsvísu"
     | "um" "landið" "allt" | "um" "allt" "land" | "fyrir" "allt" "landið"
     | "á" "fróni" | "heima"
 
@@ -278,7 +288,6 @@ QWeatherOpenLoc →
 QWeatherLocation →
     QWeatherCountry | QWeatherCapitalRegion
 
-
 $score(+55) QWeather
 
 """
@@ -292,7 +301,7 @@ _OWM_KEY_PATH = os.path.join(
 )
 
 
-def _get_OWM_API_key():
+def _get_OWM_API_key() -> str:
     """ Read OpenWeatherMap API key from file """
     global _OWM_API_KEY
     if not _OWM_API_KEY:
@@ -323,7 +332,7 @@ _OWM_API_URL_BYNAME = (
 )
 
 
-def _query_owm_by_name(city, country_code=None):
+def _query_owm_by_name(city: str, country_code: Optional[str] = None):
     d = query_json_api(
         _OWM_API_URL_BYNAME.format(city, country_code or "", _get_OWM_API_key())
     )
@@ -336,7 +345,7 @@ _OWM_API_URL_BYLOC = (
 )
 
 
-def _query_owm_by_coords(lat, lon):
+def _query_owm_by_coords(lat: float, lon: float):
     d = query_json_api(_OWM_API_URL_BYLOC.format(lat, lon, _get_OWM_API_key()))
     return _postprocess_owm_data(d)
 
@@ -344,10 +353,11 @@ def _query_owm_by_coords(lat, lon):
 _BFT_THRESHOLD = (0.3, 1.5, 3.4, 5.4, 7.9, 10.7, 13.8, 17.1, 20.7, 24.4, 28.4, 32.6)
 
 
-def _wind_bft(ms):
+def _wind_bft(ms: float) -> int:
     """ Convert wind from metres per second to Beaufort scale """
     if ms is None:
-        return None
+        return 0
+    ix = 0
     for ix, bft in enumerate(_BFT_THRESHOLD):
         if ms < bft:
             return ix
@@ -372,7 +382,7 @@ _BFT_ICEDESC = {
 }
 
 
-def _wind_descr(wind_ms):
+def _wind_descr(wind_ms: float) -> Optional[str]:
     """ Icelandic-language description of wind conditions given metres
         per second. Uses Beaufort scale lookup.
         See https://www.vedur.is/vedur/frodleikur/greinar/nr/1098
@@ -383,12 +393,12 @@ def _wind_descr(wind_ms):
 _RVK_COORDS = (64.133097, -21.898145)
 
 
-def _near_capital_region(loc):
+def _near_capital_region(loc: LatLonTuple) -> bool:
     """ Returns true if location coordinates are within 30 km of central Rvk """
     return distance(loc, _RVK_COORDS) < 30
 
 
-def _round_to_nearest_hour(t):
+def _round_to_nearest_hour(t: datetime) -> datetime:
     """ Round datetime to nearest hour """
     return t.replace(second=0, microsecond=0, minute=0, hour=t.hour) + timedelta(
         hours=t.minute // 30
@@ -398,7 +408,7 @@ def _round_to_nearest_hour(t):
 _RVK_STATION_ID = 1
 
 
-def _curr_observations(query, result):
+def _curr_observations(query: Query, result):
     """ Fetch latest weather observation data from weather station closest
         to the location associated with the query (i.e. either user location
         coordinates or a specific placename) """
@@ -406,7 +416,7 @@ def _curr_observations(query, result):
 
     # User asked about a specific location
     # Try to find a matching Icelandic placename
-    if "location" in result and result.location != "Ísland":
+    if "location" in result and result.location != "Ísland" and result.location != "general":
         if result.location == "capital":
             loc = _RVK_COORDS
             result.subject = "Í Reykjavík"
@@ -457,7 +467,7 @@ def _curr_observations(query, result):
 _API_ERRMSG = "Ekki tókst að sækja veðurupplýsingar."
 
 
-def get_currweather_answer(query, result):
+def get_currweather_answer(query: Query, result) -> AnswerTuple:
     """ Handle queries concerning current weather conditions """
     res = _curr_observations(query, result)
     if not res:
@@ -479,11 +489,8 @@ def get_currweather_answer(query, result):
     locdesc = result.get("subject") or "Úti"
 
     # Meters per second string for voice. Say nothing if "logn".
-
     voice_ms = (
-        ", {0} á sekúndu".format(
-            sing_or_plur(wind_ms_str, "metri", "metrar")
-        )
+        ", {0} á sekúndu".format(sing_or_plur(int(wind_ms_str), "metri", "metrar"))
         if wind_ms_str != "0"
         else ""
     )
@@ -494,7 +501,7 @@ def get_currweather_answer(query, result):
     )
 
     # Text answer
-    answer = "{0}°{1} og {2} ({3} m/s)".format(temp, mdesc, wind_desc, wind_ms_str)
+    answer = "{0} °C{1} og {2} ({3} m/s)".format(temp, mdesc, wind_desc, wind_ms_str)
 
     response = dict(answer=answer)
 
@@ -516,7 +523,7 @@ _DESCR_ABBR = {
 }
 
 
-def _descr4voice(descr):
+def _descr4voice(descr: str) -> str:
     """ Prepare natural language weather description for speech synthesizer
         by rewriting/expanding abbreviations, etc. """
 
@@ -538,7 +545,7 @@ _COUNTRY_FC_ID = 2
 _CAPITAL_FC_ID = 3
 
 
-def get_forecast_answer(query, result):
+def get_forecast_answer(query: Query, result):
     """ Handle weather forecast queries """
     loc = query.location
     txt_id = _CAPITAL_FC_ID if (loc and _near_capital_region(loc)) else _COUNTRY_FC_ID
@@ -571,7 +578,7 @@ def get_forecast_answer(query, result):
     return response, answer, voice
 
 
-def get_umbrella_answer(query, result):
+def get_umbrella_answer(query: Query, result):
     """ Handle a query concerning whether an umbrella is needed
         for current weather conditions. """
 
@@ -644,7 +651,7 @@ _HANDLERS = {
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)

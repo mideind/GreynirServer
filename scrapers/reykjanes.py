@@ -4,46 +4,43 @@
     Special scraping module for preloaded local data
     used for entiment analysis experiment
 
-    Copyright (c) 2016 Vilhjalmur Thorsteinsson
-    All rights reserved
-    See the accompanying README.md file for further licensing and copyright information.
+    Copyright (C) 2021 Miðeind ehf.
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
 
 """
 
-from typing import Optional
+from typing import Optional, Callable, Type, Any
 
-import sys
 import os
 import platform
 
 import urllib.parse as urlparse
 from datetime import datetime
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship, backref
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy import (
-    Table,
     Column,
     Integer,
     String,
-    Float,
     DateTime,
-    Sequence,
-    Boolean,
-    UniqueConstraint,
-    ForeignKey,
-    PrimaryKeyConstraint,
 )
-from sqlalchemy.exc import SQLAlchemyError as SqlError
-from sqlalchemy.exc import IntegrityError as SqlIntegrityError
-from sqlalchemy.exc import DataError as SqlDataError
-from sqlalchemy import desc as SqlDesc
-
 # Provide access to modules in the parent directory
 # sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
-from .default import Metadata, ScrapeHelper
+from .default import ScrapeHelper
 
 MODULE_NAME = __name__
 
@@ -84,10 +81,11 @@ class Reykjanes_DB:
 
 
 class classproperty:
-    def __init__(self, f):
+
+    def __init__(self, f: Callable[[Type["SessionContext"]], Reykjanes_DB]) -> None:
         self.f = f
 
-    def __get__(self, obj, owner):
+    def __get__(self, obj: Any, owner: Type["SessionContext"]) -> Reykjanes_DB:
         return self.f(owner)
 
 
@@ -96,27 +94,27 @@ class SessionContext:
     """ Context manager for database sessions """
 
     # Singleton instance of Reykjanes_DB
-    _db = None  # type: Optional[Reykjanes_DB]
+    _db: Optional[Reykjanes_DB] = None
 
     @classproperty
-    def db(cls):  # pylint: disable(no-self-argument)
-        if cls._db is None:
-            cls._db = Reykjanes_DB()
-        return cls._db
+    def db(self: Any) -> Reykjanes_DB:
+        if self._db is None:
+            self._db = Reykjanes_DB()
+        return self._db
 
     @classmethod
-    def cleanup(cls):
+    def cleanup(cls) -> None:
         """ Clean up the reference to the singleton Scraper_DB instance """
         cls._db = None
 
-    def __init__(self, session=None, commit=False):
+    def __init__(self, session: Optional["Session"]=None, commit: bool=False) -> None:
 
         if session is None:
             # Create a new session that will be automatically committed
             # (if commit == True) and closed upon exit from the context
             db = self.db  # Creates a new Reykjanes_DB instance if needed
             self._new_session = True
-            self._session = db.session
+            self._session = db.session  # pylint: disable=no-member
             self._commit = commit
         else:
             self._new_session = False

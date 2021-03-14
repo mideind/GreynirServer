@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -26,11 +26,14 @@
 # TODO: "hvað eru 10 evrur í íslenskum krónum"
 # TODO: "Hvert er gengi krónunnar?"
 
+from typing import Dict, Optional
+
 import re
-import cachetools
+import cachetools  # type: ignore
 import random
 import logging
 
+from query import Query
 from queries import query_json_api, iceformat_float, is_plural
 from settings import Settings
 
@@ -56,7 +59,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -124,6 +127,8 @@ _NUMBER_WORDS = {
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
+
+QUERY_NONTERMINALS = { "QCurrency" }
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -278,7 +283,7 @@ QCurNumberWord →
 QCurCurrencyIndex/fall →
     'gengisvísitala:kvk'_et/fall QCurISK_ef?
 
-QCurVisAVis → "gagnvart" | "á" "móti" | 'á_móti' | "gegn"
+QCurVisAVis → "gagnvart" | "á" "móti" | "gegn"
 
 QCurXch → "gengi" | "gengið"
 
@@ -324,7 +329,7 @@ QCurAmountConversion →
 """
 
 
-def parse_num(num_str):
+def parse_num(num_str: str):
     """ Parse Icelandic number string to float or int """
     num = None
     try:
@@ -354,7 +359,7 @@ def add_num(num, result):
         result.numbers.append(num)
 
 
-def add_currency(curr, result):
+def add_currency(curr: str, result):
     if "currencies" not in result:
         result.currencies = []
     result.currencies.append(curr)
@@ -438,7 +443,7 @@ _CURR_CACHE_TTL = 3600  # seconds
 
 
 @cachetools.cached(cachetools.TTLCache(1, _CURR_CACHE_TTL))
-def _fetch_exchange_rates():
+def _fetch_exchange_rates() -> Optional[Dict]:
     """ Fetch exchange rate data from apis.is and cache it. """
     res = query_json_api(_CURR_API_URL)
     if not res or "results" not in res:
@@ -449,7 +454,7 @@ def _fetch_exchange_rates():
     return {c["shortName"]: c["value"] for c in res["results"]}
 
 
-def _query_exchange_rate(curr1, curr2):
+def _query_exchange_rate(curr1: str, curr2: str) -> Optional[float]:
     """ Returns exchange rate of two ISO 4217 currencies """
     # print("Gengi {0} gagnvart {1}".format(curr1, curr2))
 
@@ -476,7 +481,7 @@ def _query_exchange_rate(curr1, curr2):
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result and "op" in result:
         # Successfully matched a query type
         val = None
@@ -486,7 +491,7 @@ def sentence(state, result):
 
         if result.op == "index":
             # target_currency = "GVT"
-            val = _query_exchange_rate("GVT", None)
+            val = _query_exchange_rate("GVT", "")
         elif result.op == "exchange":
             # 'Hvert er gengi evru gagnvart dollara?'
             target_currency = result.currencies[0]
@@ -494,6 +499,8 @@ def sentence(state, result):
         elif result.op == "general":
             # 'Hvert er gengi dollarans?'
             val = _query_exchange_rate(result.currencies[0], "ISK")
+            if val is None:
+                val = 1.0
             suffix = "krónur" if is_plural(iceformat_float(val)) else "króna"
         elif result.op == "convert":
             # 'Hvað eru 100 evrur margar krónur?'

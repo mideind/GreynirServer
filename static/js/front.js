@@ -4,7 +4,7 @@
 
    Greynir front page script
 
-    Copyright (C) 2018 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -533,6 +533,7 @@ function _submitQuery(q) {
    clearQueryResult();
    q.client_type = "www";
    q.client_id = navigator.userAgent;
+   q.client_version = "";
    // Launch the query
    serverQuery('/query.api',
       q, // Query dictionary

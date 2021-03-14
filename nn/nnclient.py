@@ -4,7 +4,7 @@
 
     Neural Network Query Client
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -204,7 +204,7 @@ class ParsingClient(NnClient):
                 print("Received parse tokens from nnserver:", parse_toks)
                 print("ParseResult: ", p_result)
                 print("Parsed by nntree into:")
-                tree.pprint()
+                tree.pprint()  # type: ignore
                 if p_result != ParseResult.SUCCESS:
                     print(
                         "NnParse not successful for input: '{text}'".format(text=sent)

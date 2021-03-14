@@ -5,7 +5,7 @@
 
     Similarity query client
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@
 
 """
 
+from typing import Any, cast, Callable
+
 import os
 import sys
 from contextlib import closing
@@ -41,11 +43,13 @@ from settings import Settings
 # server are truly blocking, even under Gunicorn/eventlet.
 
 try:
-    import eventlet
+    import eventlet  # type: ignore
+
     USING_EVENTLET = True
     socket = eventlet.patcher.original("socket")
 except ImportError:
     import socket  # type: ignore
+
     USING_EVENTLET = False
 
 # The following two functions replicate and hack/tweak corresponding functions
@@ -57,10 +61,13 @@ except ImportError:
 
 def _SocketClient(address):
     """ Return a connection object connected to the socket given by `address` """
-    with closing(socket.socket(socket.AF_INET)) as s:
+    sock = cast(Any, socket)
+    with closing(sock.socket(sock.AF_INET)) as s:
         s.setblocking(True)
         s.connect(address)
-        return Connection(s.detach())
+        # The following cast() hack is required since Connection()
+        # appears to have a wrong signature in typeshed
+        return cast(Callable, Connection)(s.detach())
 
 
 def _Client(address, authkey=None):

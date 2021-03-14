@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -22,18 +22,20 @@
 
 """
 
-from typing import Optional
+from typing import Any, Dict, Optional, cast
 
 import logging
 import json
 import hmac
 import hashlib
 
+from datetime import datetime
+
 from db import SessionContext
 
 # from db.models import Customer, Subscription
 
-from . import routes, better_jsonify, request, datetime
+from . import routes, better_jsonify, request
 
 
 # Maximum age of received requests to be valid, in seconds
@@ -45,14 +47,14 @@ class _Secret:
     """ A wrapper for private and public key data used
         in communications with SalesCloud """
 
-    _SC_SECRET_KEY = None  # type: Optional[bytes]
-    _SC_PUBLIC_KEY = None  # type: Optional[str]
+    _SC_SECRET_KEY: Optional[bytes] = None
+    _SC_PUBLIC_KEY: Optional[str] = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     @classmethod
-    def load(cls):
+    def load(cls) -> None:
         """ Fetch secret key and client UUID from a file """
         try:
             with open("resources/salescloud_key.bin", "r", encoding="utf-8") as f:
@@ -64,17 +66,19 @@ class _Secret:
             cls._SC_PUBLIC_KEY = ""
 
     @property
-    def key(self):
+    def key(self) -> bytes:
         """ Return the secret key value, which is a bytes object """
         if not self._SC_SECRET_KEY:
             _Secret.load()
+        assert self._SC_SECRET_KEY is not None
         return self._SC_SECRET_KEY
 
     @property
-    def public_key(self):
+    def public_key(self) -> str:
         """ Return Greynir's public key """
         if not self._SC_PUBLIC_KEY:
             _Secret.load()
+        assert self._SC_PUBLIC_KEY is not None
         return self._SC_PUBLIC_KEY
 
 
@@ -167,7 +171,7 @@ def sales_create():
     """ Webhook handler for SalesCloud """
     j, status = handle_request(request)
     if status != 200:
-        return better_jsonify(**j), status
+        return better_jsonify(**cast(Dict[str, Any], j)), status
     if j is None or j.get("type") != "subscription_created":
         return (
             better_jsonify(success=False, reason="Unknown request type"),
@@ -192,7 +196,7 @@ def sales_modify():
     """ Webhook handler for SalesCloud """
     j, status = handle_request(request)
     if status != 200:
-        return better_jsonify(**j), status
+        return better_jsonify(**cast(Dict[str, Any], j)), status
     if j is None or j.get("type") != "subscription_updated":
         return (
             better_jsonify(success=False, reason="Unknown request type"),

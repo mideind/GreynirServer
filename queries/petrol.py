@@ -4,7 +4,7 @@
 
     Petrol query response module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -26,12 +26,17 @@
 # TODO: "Hver er ódýrasta bensínstöðin innan X kílómetra? Innan X kílómetra radíus?" etc.
 # TODO: Laga krónutölur og fjarlægðartölur f. talgervil
 
+from typing import List, Dict, Tuple, Optional
+
 import logging
-import cachetools
+import cachetools  # type: ignore
 import random
 
 from geo import distance
+from query import Query
 from queries import query_json_api, gen_answer, distance_desc, krona_desc
+
+from . import AnswerTuple, LatLonTuple
 
 
 _PETROL_QTYPE = "Petrol"
@@ -52,7 +57,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -69,6 +74,8 @@ def help_text(lemma):
 
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
+
+QUERY_NONTERMINALS = { "QPetrol" }
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -91,6 +98,7 @@ QPetrolClosestStation →
     | "hver" "er" QPetrolClosest QPetrolStation
     | QPetrolWhichStation "er"? QPetrolNearMe
     | QPetrolWhichStation "er"? "nálægust" "mér"?
+    | "hvað" "kostar" QPetrolPetrol QPetrolNearMe?
 
 QPetrolCheapestStation →
     "ódýrasta" QPetrolPetrol
@@ -169,7 +177,7 @@ QPetrolHere →
     "hér" | "hérna"
 
 QPetrolNow →
-    "núna" | "í" "dag" | "eins" "og" "stendur" | "í" "augnablikinu" | "þessa" "dagana"
+    "núna" | "í" "dag" | "eins" "og" "stendur" | "í" "augnablikinu" | "þessa_dagana"
 
 QPetrolStation →
     "bensínstöð" | "bensínstöðin" | "bensínafgreiðslustöð"
@@ -214,7 +222,7 @@ _PETROL_CACHE_TTL = 3600  # seconds, ttl 1 hour
 
 
 @cachetools.cached(cachetools.TTLCache(1, _PETROL_CACHE_TTL))
-def _get_petrol_station_data():
+def _get_petrol_station_data() -> Optional[List]:
     """ Fetch list of petrol stations w. prices from apis.is (Gasvaktin) """
     pd = query_json_api(_PETROL_API)
     if not pd or "results" not in pd:
@@ -228,7 +236,7 @@ def _get_petrol_station_data():
     return pd["results"]
 
 
-def _stations_with_distance(loc):
+def _stations_with_distance(loc: Optional[LatLonTuple]) -> Optional[List]:
     """ Return list of petrol stations w. added distance data. """
     pd = _get_petrol_station_data()
     if not pd:
@@ -242,7 +250,7 @@ def _stations_with_distance(loc):
     return pd
 
 
-def _closest_petrol_station(loc):
+def _closest_petrol_station(loc: LatLonTuple) -> Optional[Dict]:
     """ Find petrol station closest to the given location. """
     stations = _stations_with_distance(loc)
     if not stations:
@@ -253,7 +261,7 @@ def _closest_petrol_station(loc):
     return dist_sorted[0] if dist_sorted else None
 
 
-def _cheapest_petrol_station():
+def _cheapest_petrol_station() -> Optional[Dict]:
     stations = _get_petrol_station_data()
     if not stations:
         return None
@@ -267,7 +275,7 @@ def _cheapest_petrol_station():
 _CLOSE_DISTANCE = 5.0  # km
 
 
-def _closest_cheapest_petrol_station(loc):
+def _closest_cheapest_petrol_station(loc: LatLonTuple) -> Optional[Dict]:
     stations = _stations_with_distance(loc)
     if not stations:
         return None
@@ -283,10 +291,13 @@ def _closest_cheapest_petrol_station(loc):
 _ERRMSG = "Ekki tókst að sækja upplýsingar um bensínstöðvar."
 
 
-def _answ_for_petrol_query(q, result):
+def _answ_for_petrol_query(q: Query, result) -> AnswerTuple:
     req_distance = True
+    location = q.location
+    if location is None:
+        return gen_answer("Ég veit ekki hvar þú ert")
     if result.qkey == "ClosestStation":
-        station = _closest_petrol_station(q.location)
+        station = _closest_petrol_station(location)
         answer = "{0} {1} ({2}, bensínverð {3})"
         desc = "Næsta bensínstöð"
     elif result.qkey == "CheapestStation":
@@ -295,10 +306,10 @@ def _answ_for_petrol_query(q, result):
         desc = "Ódýrasta bensínstöðin"
         req_distance = False
     elif result.qkey == "ClosestCheapestStation":
-        station = _closest_cheapest_petrol_station(q.location)
+        station = _closest_cheapest_petrol_station(location)
         desc = "Ódýrasta bensínstöðin í grenndinni"
     else:
-        raise Exception("Unknown petrol query type")
+        raise ValueError("Unknown petrol query type")
 
     if (
         not station
@@ -345,9 +356,9 @@ def _answ_for_petrol_query(q, result):
     return response, answer, voice
 
 
-def sentence(state, result):
+def sentence(state, result) -> None:
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type
         try:

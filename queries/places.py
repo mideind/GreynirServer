@@ -4,7 +4,7 @@
 
     Places query response module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -25,7 +25,9 @@
 """
 
 # TODO: Handle opening hours with intervals, e.g. 10:00-14:00 and 18:00-22:00
+# TODO: "Hvenær er X opið?"
 
+from typing import List, Dict, Tuple, Optional
 
 import logging
 import re
@@ -33,6 +35,7 @@ import random
 from datetime import datetime
 
 from geo import in_iceland, iceprep_for_street
+from query import Query
 from queries import (
     gen_answer,
     query_places_api,
@@ -42,6 +45,8 @@ from queries import (
 )
 from reynir import NounPhrase
 
+from . import LatLonTuple, AnswerTuple
+
 
 _PLACES_QTYPE = "Places"
 
@@ -49,7 +54,7 @@ _PLACES_QTYPE = "Places"
 TOPIC_LEMMAS = ["opnunartími", "opna", "loka", "lokunartími"]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -63,10 +68,15 @@ def help_text(lemma):
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
+QUERY_NONTERMINALS = { "QPlaces" }
+
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
 Query →
+    QPlaces
+
+QPlaces →
     QPlacesQuery '?'?
 
 QPlacesQuery →
@@ -99,6 +109,7 @@ QPlacesOpeningHours →
     | "hvað" "er" QPlacesSubject_nf QPlOpen "lengi"
     | "hve" "lengi" "er" QPlacesSubject_nf QPlOpen
     | "hversu" "lengi" "er" QPlacesSubject_nf QPlOpen
+    | "hvenær" "er" QPlacesSubject_nf QPlOpen
 
 QPlacesIsOpen →
     "er" "opið" QPlacesPrepAndSubject QPlNow?
@@ -147,17 +158,17 @@ QPlNow →
     "núna" | "í" "augnablikinu" | "eins" "og" "stendur" | "nú"
 
 QPlToday →
-    "núna"? "í" "dag" | "núna"? "í" "kvöld"
+    "núna"? "í" "dag" | "núna"? "í_kvöld"
 
 $score(+35) QPlacesQuery
 
 """
 
 
-_PLACENAME_MAP = {}
+_PLACENAME_MAP: Dict[str, str] = {}
 
 
-def _fix_placename(pn):
+def _fix_placename(pn: str) -> str:
     p = pn.capitalize()
     return _PLACENAME_MAP.get(p, p)
 
@@ -190,7 +201,7 @@ _PLACES_API_ERRMSG = "Ekki tókst að fletta upp viðkomandi stað"
 _NOT_IN_ICELAND_ERRMSG = "Enginn staður með þetta heiti fannst á Íslandi"
 
 
-def _parse_coords(place):
+def _parse_coords(place: Dict) -> Optional[LatLonTuple]:
     """ Return tuple of coordinates given a place info data structure
         from Google's Places API. """
     try:
@@ -204,15 +215,16 @@ def _parse_coords(place):
     return None
 
 
-def _top_candidate(cand):
+def _top_candidate(cand: List) -> Optional[Dict]:
     """ Return first place in Iceland in Google Places Search API results. """
     for place in cand:
         coords = _parse_coords(place)
         if coords and in_iceland(coords):
             return place
+    return None
 
 
-def answ_address(placename, loc, qtype):
+def answ_address(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
     """ Generate answer to a question concerning the address of a place. """
     # Look up placename in places API
     res = query_places_api(
@@ -236,7 +248,7 @@ def answ_address(placename, loc, qtype):
     addr = re.sub(r", Ísland$", "", place["formatted_address"])
     # Get street name without number to get preposition
     street_name = addr.split()[0].rstrip(",")
-    maybe_postcode = (re.search(r"^\d\d\d", street_name) is not None)
+    maybe_postcode = re.search(r"^\d\d\d", street_name) is not None
     prep = "í" if maybe_postcode else iceprep_for_street(street_name)
     # Split addr into street name w. number, and remainder
     street_addr = addr.split(",")[0]
@@ -254,7 +266,7 @@ def answ_address(placename, loc, qtype):
     return response, answer, voice
 
 
-def answ_openhours(placename, loc, qtype):
+def answ_openhours(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
     """ Generate answer to a question concerning the opening hours of a place. """
     # Look up placename in places API
     res = query_places_api(
@@ -262,7 +274,7 @@ def answ_openhours(placename, loc, qtype):
         userloc=loc,
         fields="opening_hours,place_id,formatted_address,geometry",
     )
-    if res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
+    if res is None or res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
         return gen_answer(_PLACES_API_ERRMSG)
 
     # Use top result
@@ -287,6 +299,7 @@ def answ_openhours(placename, loc, qtype):
 
     now = datetime.utcnow()
     wday = now.weekday()
+    answer = voice = ""
 
     try:
         name = res["result"]["name"]
@@ -358,13 +371,15 @@ _HANDLER_MAP = {
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result and "qkey" in result and "subject_nom" in result:
         # Successfully matched a query type
         subj = result["subject_nom"]
         try:
             handlerfunc = _HANDLER_MAP[result.qkey]
-            res = handlerfunc(subj, q.location, result.qkey)
+            res: Optional[AnswerTuple] = None
+            if q.location is not None:
+                res = handlerfunc(subj, q.location, result.qkey)
             if res:
                 q.set_answer(*res)
                 q.set_source("Google Maps")

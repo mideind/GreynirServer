@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -28,8 +28,10 @@
 import random
 from datetime import datetime
 
+from query import Query
 
-def help_text(lemma):
+
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -49,6 +51,8 @@ _YULE_QTYPE = "YuleLads"
 
 _YULE_LADS_BY_NAME = {
     "Stekkjarstaur": 12,
+    "Stekkjastaur": 12,
+    "stekkjastaur": 12,
     "Giljagaur": 13,
     "Stúfur": 14,
     "Þvörusleikir": 15,
@@ -123,11 +127,13 @@ _DATE_TO_ORDINAL_GEN[22] = "tuttugasta og annars"
 _TWENTY_PART = {"fyrsta": 1, "annan": 2, "þriðja": 3, "fjórða": 4}
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
-TOPIC_LEMMAS = ["jólasveinn"] + list(_YULE_LADS_BY_NAME.keys())
+TOPIC_LEMMAS = ["jólasveinn"] + list(_YULE_LADS_BY_NAME.keys()) + [lad.lower() for lad in _YULE_LADS_BY_NAME.keys()]
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
+
+QUERY_NONTERMINALS = { "QYuleQuery" }
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -248,11 +254,11 @@ QYuleWhichLad →
 
 QYuleToday →
     "í" "dag"
-    | "í" "kvöld"
+    | "í_kvöld"
     | "í" "nótt"
 
 QYuleTomorrow →
-    "á" "morgun"
+    "á_morgun"
     | "annað" "kvöld"
     | "aðra" "nótt"
 
@@ -442,11 +448,12 @@ def QYuleDateRel(node, params, result):
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
+    answer = voice_answer = ""
     if result.qtype == "YuleDate":
         # 'Hvenær kemur [jólasveinn X]'
         yule_lad = result.yule_lad

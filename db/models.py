@@ -4,7 +4,7 @@
 
     Scraper database models
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -23,12 +23,12 @@
 
 """
 
-
+from datetime import datetime
+from typing import Optional, cast
 from sqlalchemy import text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy import (
-    Table,
     Column,
     Integer,
     String,
@@ -59,6 +59,7 @@ class CaseInsensitiveComparator(Comparator):
 
 
 # Create the SQLAlchemy ORM Base class
+# Base: DeclarativeMeta = declarative_base()  # Pylance/Pyright doesn't like this
 Base = declarative_base()
 
 # Add a table() function to the Base class, returning the __table__ member.
@@ -68,6 +69,7 @@ setattr(Base, "table", classmethod(lambda cls: cls.__table__))
 
 
 class Root(Base):
+
     """ Represents a scraper root, i.e. a base domain and root URL """
 
     __tablename__ = "roots"
@@ -105,13 +107,14 @@ class Root(Base):
 
 
 class Article(Base):
+
     """ Represents an article from one of the roots, to be scraped
         or having already been scraped """
 
     __tablename__ = "articles"
 
     # The article URL is the primary key
-    url = Column(String, primary_key=True)
+    url = cast(str, Column(String, primary_key=True))
 
     # UUID
     id = Column(
@@ -123,50 +126,50 @@ class Article(Base):
     )
 
     # Foreign key to a root
-    root_id = Column(
+    root_id = cast(Optional[int], Column(
         Integer,
         # We don't delete associated articles if the root is deleted
         ForeignKey("roots.id", onupdate="CASCADE", ondelete="SET NULL"),
-    )
+    ))
 
     # Article heading, if known
-    heading = Column(String)
+    heading = cast(str, Column(String))
     # Article author, if known
-    author = Column(String)
+    author = cast(str, Column(String))
     # Article time stamp, if known
-    timestamp = Column(DateTime, index=True)
+    timestamp = cast(datetime, Column(DateTime, index=True))
 
     # Authority of this article, 1.0 = most authoritative, 0.0 = least authoritative
-    authority = Column(Float)
+    authority = cast(float, Column(Float))
     # Time of the last scrape of this article
-    scraped = Column(DateTime, index=True)
+    scraped = cast(Optional[datetime], Column(DateTime, index=True))
     # Time of the last parse of this article
-    parsed = Column(DateTime, index=True)
+    parsed = cast(Optional[datetime], Column(DateTime, index=True))
     # Time of the last processing of this article
-    processed = Column(DateTime, index=True)
+    processed = cast(Optional[datetime], Column(DateTime, index=True))
     # Time of the last indexing of this article
-    indexed = Column(DateTime, index=True)
+    indexed = cast(Optional[datetime], Column(DateTime, index=True))
     # Module used for scraping
-    scr_module = Column(String(80))
+    scr_module = cast(Optional[str], Column(String(80)))
     # Class within module used for scraping
-    scr_class = Column(String(80))
+    scr_class = cast(Optional[str], Column(String(80)))
     # Version of scraper class
-    scr_version = Column(String(16))
+    scr_version = cast(Optional[str], Column(String(16)))
     # Version of parser/grammar/config
-    parser_version = Column(String(64))
+    parser_version = cast(Optional[str], Column(String(64)))
     # Parse statistics
-    num_sentences = Column(Integer)
-    num_parsed = Column(Integer)
-    ambiguity = Column(Float)
+    num_sentences = cast(int, Column(Integer))
+    num_parsed = cast(int, Column(Integer))
+    ambiguity = cast(float, Column(Float))
 
     # The HTML obtained in the last scrape
-    html = Column(String)
+    html = cast(Optional[str], Column(String))
     # The parse tree obtained in the last parse
-    tree = Column(String)
+    tree = cast(Optional[str], Column(String))
     # The tokens of the article in JSON string format
-    tokens = Column(String)
+    tokens = cast(Optional[str], Column(String))
     # The article topic vector as an array of floats in JSON string format
-    topic_vector = Column(String)
+    topic_vector = cast(Optional[str], Column(String))
 
     # The back-reference to the Root parent of this Article
     root = relationship(
@@ -182,6 +185,7 @@ class Article(Base):
 
 
 class Person(Base):
+
     """ Represents a person """
 
     __tablename__ = "persons"
@@ -225,6 +229,7 @@ class Person(Base):
 
 
 class Entity(Base):
+
     """ Represents a named entity """
 
     __tablename__ = "entities"
@@ -245,12 +250,11 @@ class Entity(Base):
     name = Column(String, index=True)
 
     @hybrid_property
-    def name_lc(self):
+    def name_lc(self) -> str:  # type: ignore
         return self.name.lower()
 
-    # pylint: disable=no-self-argument
     @name_lc.comparator
-    def name_lc(cls):
+    def name_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.name)
 
     # Verb ('er', 'var', 'sé')
@@ -277,6 +281,7 @@ class Entity(Base):
 
 
 class Location(Base):
+
     """ Represents a location """
 
     __tablename__ = "locations"
@@ -334,6 +339,7 @@ class Location(Base):
 
 
 class Word(Base):
+
     """ Represents a word occurring in an article """
 
     __tablename__ = "words"
@@ -370,6 +376,7 @@ class Word(Base):
 
 
 class Topic(Base):
+
     """ Represents a topic for an article """
 
     __tablename__ = "topics"
@@ -401,6 +408,7 @@ class Topic(Base):
 
 
 class ArticleTopic(Base):
+
     """ Represents an article having a topic, a 1:N relationship """
 
     __tablename__ = "atopics"
@@ -433,6 +441,7 @@ class ArticleTopic(Base):
 
 
 class Trigram(Base):
+
     """ Represents a trigram of tokens from a parsed sentence """
 
     __tablename__ = "trigrams"
@@ -538,6 +547,7 @@ class BlacklistedLink(Base):
 
 
 class Query(Base):
+
     """ Represents a logged incoming query with its answer """
 
     __tablename__ = "queries"
@@ -564,12 +574,11 @@ class Query(Base):
     question = Column(String, index=True, nullable=False)
 
     @hybrid_property
-    def question_lc(self):
+    def question_lc(self) -> str:  # type: ignore
         return self.question.lower()
 
-    # pylint: disable=no-self-argument
     @question_lc.comparator
-    def question_lc(cls):
+    def question_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.question)
 
     # Beautified question
@@ -579,24 +588,22 @@ class Query(Base):
     answer = Column(String, index=False, nullable=True)
 
     @hybrid_property
-    def answer_lc(self):
+    def answer_lc(self) -> str:  # type: ignore
         return self.answer.lower()
 
-    # pylint: disable=no-self-argument
     @answer_lc.comparator
-    def answer_lc(cls):
+    def answer_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.answer)
 
     # Voice answer
     voice = Column(String, index=False, nullable=True)
 
     @hybrid_property
-    def voice_lc(self):
+    def voice_lc(self) -> str:  # type: ignore
         return self.voice.lower()
 
-    # pylint: disable=no-self-argument
     @voice_lc.comparator
-    def voice_lc(cls):
+    def voice_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.voice)
 
     # Error code
@@ -649,6 +656,88 @@ class Query(Base):
 
     def __repr__(self):
         return "Query(question='{0}', answer='{1}')".format(self.question, self.answer)
+
+
+class QueryLog(Base):
+
+    """ Represents a fully anonymized, logged query and its answer. """
+
+    __tablename__ = "querylog"
+
+    # UUID
+    id = Column(
+        psql_UUID(as_uuid=False),
+        index=True,
+        nullable=False,
+        unique=True,
+        primary_key=True,
+        server_default=text("uuid_generate_v1()"),
+    )
+
+    # See the Query class for documentation of these fields
+    timestamp = Column(DateTime, index=True, nullable=False)
+
+    interpretations = Column(JSONB, nullable=True)
+
+    question = Column(String, index=True, nullable=False)
+
+    bquestion = Column(String, index=False, nullable=True)
+
+    answer = Column(String, index=False, nullable=True)
+
+    voice = Column(String, index=False, nullable=True)
+
+    qtype = Column(String(80), index=True, nullable=True)
+
+    key = Column(String(256), index=True, nullable=True)
+
+    error = Column(String(256), nullable=True)
+
+    @staticmethod
+    def from_Query(q: Query):
+        """ Create QueryLog object from Query object. """
+        return QueryLog(
+            timestamp=q.timestamp,
+            interpretations=q.interpretations,
+            question=q.question,
+            bquestion=q.bquestion,
+            answer=q.answer,
+            voice=q.voice,
+            qtype=q.qtype,
+            key=q.key,
+            error=q.error,
+        )
+
+    def __repr__(self):
+        return "QueryLog(question='{0}', answer='{1}')".format(
+            self.question, self.answer
+        )
+
+
+class QueryData(Base):
+
+    __tablename__ = "querydata"
+
+    __table_args__ = (PrimaryKeyConstraint("client_id", "key", name="querydata_pkey"),)
+
+    client_id = Column(String(256), nullable=False)
+
+    # Key to distinguish between different types of JSON data that can be stored
+    key = Column(String(64), nullable=False)
+
+    # Created timestamp
+    created = Column(DateTime, nullable=False)
+
+    # Last modified timestamp
+    modified = Column(DateTime, nullable=False)
+
+    # JSON data
+    data = Column(JSONB, nullable=False)
+
+    def __repr__(self):
+        return "QueryData(client_id='{0}', created='{1}', modified='{2}', key='{3}', data='{4}')".format(
+            self.client_id, self.created, self.modified, self.key, self.data
+        )
 
 
 class Feedback(Base):

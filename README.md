@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.com/mideind/Greynir.svg?branch=master)](https://travis-ci.com/mideind/Greynir) 
-[![Join the chat at https://gitter.im/Greynir/Lobby](https://badges.gitter.im/Greynir/Lobby.svg)](https://gitter.im/Greynir/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
 
@@ -59,7 +57,7 @@ functions that are linked to grammar nonterminals.
 
 **Greynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
 and many well-written articles can be parsed completely. It presently has more than 600,000 parsed articles
-in its database, containing over 10 million parsed sentences. A recent version of this database is available
+in its database, containing over 11 million parsed sentences. A recent version of this database is available
 via the [GreynirCorpus](https://github.com/mideind/GreynirCorpus) project.
 
 Greynir supports natural language querying of its databases. Users can ask about person names, titles and
@@ -80,7 +78,7 @@ Greynir is written in [Python 3](https://www.python.org/) except for its core
 Earley-based parser module which is written in C++ and called
 via [CFFI](https://cffi.readthedocs.org/en/latest/index.html).
 Greynir requires Python 3.6 or later, and runs on CPython and
-[PyPy](http://pypy.org/) with the latter being recommended.
+[PyPy](http://pypy.org/) with the latter being recommended for performance reasons.
 
 Greynir works in stages, roughly as follows:
 
@@ -111,18 +109,12 @@ input. The server runs on the [Flask](http://flask.pocoo.org/) framework, implem
 can for instance be plugged into [Gunicorn](http://gunicorn.org/) and
 [nginx](https://www.nginx.com/).
 
-Greynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](http://bin.arnastofnun.is))
-lexicon and database of Icelandic word forms to identify word forms, and find their
-potential meanings and lemmas. The database is included in
-[GreynirPackage](https://github.com/mideind/GreynirPackage) in compressed form,
-under license from and by permission of the [BÍN copyright holder](http://bin.arnastofnun.is/DMII/).
-
 The [tokenizer](https://github.com/mideind/Tokenizer) divides text chunks into
 sentences and recognizes entities such as dates, numbers,
 amounts and person names, as well as common abbreviations and punctuation.
 
 Grammar rules are laid out in a separate text file,
-`[Greynir.grammar](https://github.com/mideind/GreynirPackage/blob/master/src/reynir/Greynir.grammar)`,
+[`Greynir.grammar`](https://github.com/mideind/GreynirPackage/blob/master/src/reynir/Greynir.grammar),
 which is a part of [GreynirPackage](https://github.com/mideind/GreynirPackage). The standard
 [Backus-Naur form](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form) has been
 augmented with repeat specifiers for right-hand-side tokens (`*` for 0..n instances,
@@ -176,7 +168,8 @@ in `queries/examples`.
 * `doc.py`: Extract plain text from various document formats
 * `geo.py`: Geography and location-related utility functions
 * `speech.py`: Speech synthesis-related utility functions
-* `utils/*.py`: Various utility programs
+* `tools/*.py`: Various command line tools
+* `util.py`: Various utility functions
 
 ## Installation and setup
 
@@ -205,7 +198,7 @@ python main.py
 Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be 
 changed in `config/Greynir.conf`.
 
-### Scrapers
+### Web scrapers
 
 ```
 python scraper.py
@@ -230,7 +223,7 @@ See [Contributing to Greynir](CONTRIBUTING.md).
 
 ## Copyright and licensing
 
-Greynir is Copyright (C) 2020 [Miðeind ehf.](https://mideind.is)
+Greynir is Copyright (C) 2021 [Miðeind ehf.](https://mideind.is)
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
 <img src="static/img/GPLv3.png" align="right" style="margin-left:20px;">
@@ -253,3 +246,14 @@ GNU GPLv3 license, please contact us at [mideind@mideind.is](mailto:mideind@mide
 to negotiate a custom license. This applies for instance if you want to include or use
 this software, in part or in full, in other software that is not licensed under
 GNU GPLv3 or other compatible licenses.
+
+----
+
+Greynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](https://bin.arnastofnun.is))
+lexicon and database of Icelandic word forms to identify words and find their
+potential meanings and lemmas. The database is included in
+[GreynirPackage](https://github.com/mideind/GreynirPackage) in compressed form.
+BÍN is licensed under CC-BY-4.0, and credit is hereby given as follows:
+
+*Beygingarlýsing íslensks nútímamáls. Stofnun Árna Magnússonar í íslenskum fræðum. Höfundur og ritstjóri Kristín Bjarnadóttir.*
+

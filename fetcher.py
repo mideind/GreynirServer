@@ -4,7 +4,7 @@
 
     Fetcher module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 
 """
 
-from typing import Dict
+from typing import Any, Dict, Iterator, Optional, cast
 from types import ModuleType
 
 import re
@@ -34,11 +34,12 @@ import requests
 import urllib.parse as urlparse
 from urllib.error import HTTPError
 
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import BeautifulSoup, NavigableString  # type: ignore
 
-from reynir import tokenize
+from reynir import tokenize, Tok
 from nertokenizer import recognize_entities
-from db import SessionContext
+
+from db import SessionContext, Session
 from db.models import Root, Article as ArticleRow
 
 # The HTML parser to use with BeautifulSoup
@@ -91,7 +92,7 @@ class Fetcher:
     _BREAK_TAGS = frozenset(["br", "hr"])  # Cause paragraph breaks at outermost level
 
     # Cache of instantiated scrape helpers
-    _helpers = dict()  # type: Dict[str, ModuleType]
+    _helpers: Dict[str, ModuleType] = dict()
 
     def __init__(self):
         """ No instances are supposed to be created of this class """
@@ -238,7 +239,7 @@ class Fetcher:
         return html_doc
 
     @classmethod
-    def _get_helper(cls, root):
+    def _get_helper(cls, root) -> Optional[ModuleType]:
         """ Return a scrape helper instance for the given root """
         # Obtain an instance of a scraper helper class for this root
         helper_id = root.scr_module + "." + root.scr_class
@@ -250,9 +251,10 @@ class Fetcher:
             mod = importlib.import_module(root.scr_module)
             helper_class = getattr(mod, root.scr_class, None) if mod else None
             helper = helper_class(root) if helper_class else None
-            Fetcher._helpers[helper_id] = helper
             if not helper:
                 logging.error("Unable to instantiate helper {0}".format(helper_id))
+            else:
+                Fetcher._helpers[helper_id] = helper
         return helper
 
     @staticmethod
@@ -267,7 +269,9 @@ class Fetcher:
         return soup
 
     @classmethod
-    def tokenize_html(cls, url, html, enclosing_session=None):
+    def tokenize_html(
+        cls, url: str, html: str, enclosing_session: Optional[Session] = None
+    ) -> Optional[Iterator[Tok]]:
         """ Convert HTML into a token iterable (generator) """
         with SessionContext(enclosing_session) as session:
             helper = cls.helper_for(session, url)
@@ -277,7 +281,7 @@ class Fetcher:
             elif helper is None:
                 content = soup.html.body
             else:
-                content = helper.get_content(soup)
+                content = cast(Any, helper).get_content(soup)
             # Convert the content soup to a token iterable (generator)
             return (
                 Fetcher.to_tokens(content, enclosing_session=session)
@@ -340,7 +344,7 @@ class Fetcher:
         return fetch
 
     @classmethod
-    def helper_for(cls, session, url):
+    def helper_for(cls, session: Session, url: str) -> Optional[ModuleType]:
         """ Return a scrape helper for the root of the given url """
         s = urlparse.urlsplit(url)
         root = None
@@ -359,7 +363,9 @@ class Fetcher:
 
     # noinspection PyComparisonWithNone
     @classmethod
-    def find_article(cls, url, enclosing_session=None):
+    def find_article(
+        cls, url: str, enclosing_session: Optional[Session] = None
+    ) -> Optional[ArticleRow]:
         """ Return a scraped article object, if found, else None """
         with SessionContext(enclosing_session, commit=True) as session:
             article = (
@@ -399,8 +405,8 @@ class Fetcher:
                 return (None, None, None)
 
             # Obtain the metadata and the content from the resulting soup
-            metadata = helper.get_metadata(soup) if helper else None
-            content = helper.get_content(soup) if helper else soup.html.body
+            metadata = cast(Any, helper).get_metadata(soup) if helper else None
+            content = cast(Any, helper).get_content(soup) if helper else soup.html.body
             return (article, metadata, content)
 
     @classmethod
@@ -417,7 +423,7 @@ class Fetcher:
                 html_doc = cls.raw_fetch_url(url)
             else:
                 # Hand off to the helper
-                html_doc = helper.fetch_url(url)
+                html_doc = cast(Any, helper).fetch_url(url)
 
             if not html_doc:
                 return None
@@ -431,8 +437,8 @@ class Fetcher:
                 return None
 
             # Obtain the metadata and the content from the resulting soup
-            metadata = helper.get_metadata(soup) if helper else None
-            content = helper.get_content(soup) if helper else soup.html.body
+            metadata = cast(Any, helper).get_metadata(soup) if helper else None
+            content = cast(Any, helper).get_content(soup) if helper else soup.html.body
             return (metadata, content)
 
     @classmethod
@@ -449,7 +455,7 @@ class Fetcher:
                 html_doc = cls.raw_fetch_url(url)
             else:
                 # Hand off to the helper
-                html_doc = helper.fetch_url(url)
+                html_doc = cast(Any, helper).fetch_url(url)
 
             if not html_doc:
                 return (None, None, None)
@@ -461,5 +467,5 @@ class Fetcher:
                 return (None, None, None)
 
             # Obtain the metadata from the resulting soup
-            metadata = helper.get_metadata(soup) if helper else None
+            metadata = cast(Any, helper).get_metadata(soup) if helper else None
             return (html_doc, metadata, helper)

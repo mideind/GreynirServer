@@ -1,7 +1,7 @@
 """
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -21,15 +21,17 @@
 
 """
 
+from typing import Union, Dict, Type
+
 import abc
 from io import BytesIO
 import re
 from zipfile import ZipFile
-import html2text
-from striprtf.striprtf import rtf_to_text
+from html2text import HTML2Text
+from striprtf.striprtf import rtf_to_text  # type: ignore
 
 # Use defusedxml module to prevent parsing of malicious XML
-from defusedxml import ElementTree
+from defusedxml import ElementTree  # type: ignore
 
 
 DEFAULT_TEXT_ENCODING = "UTF-8"
@@ -42,7 +44,7 @@ class MalformedDocumentError(Exception):
 class Document(abc.ABC):
     """ Abstract base class for documents. """
 
-    def __init__(self, path_or_bytes):
+    def __init__(self, path_or_bytes: Union[str, bytes]):
         """ Accepts either a file path or bytes object """
         if isinstance(path_or_bytes, str):
             # It's a file path
@@ -53,11 +55,11 @@ class Document(abc.ABC):
             self.data = path_or_bytes
 
     @abc.abstractmethod
-    def extract_text(self):
+    def extract_text(self) -> str:
         """ All subclasses must implement this method """
-        pass
+        raise NotImplementedError
 
-    def write_to_file(self, path):
+    def write_to_file(self, path: str):
         with open(path, "wb") as f:
             f.write(self.data)
 
@@ -65,7 +67,7 @@ class Document(abc.ABC):
 class PlainTextDocument(Document):
     """ Plain text document """
 
-    def extract_text(self):
+    def extract_text(self) -> str:
         return self.data.decode(DEFAULT_TEXT_ENCODING)
 
 
@@ -73,7 +75,7 @@ class HTMLDocument(Document):
     """ HTML document """
 
     @staticmethod
-    def _remove_header_prefixes(text):
+    def _remove_header_prefixes(text: str) -> str:
         """ Removes '#' in all lines starting with '#'. Annoyingly,
             html2text adds markdown-style headers for <h*> tags. """
         lines = text.split("\n")
@@ -82,17 +84,17 @@ class HTMLDocument(Document):
                 lines[i] = re.sub(r"[#]+\s", "", line)
         return "\n".join(lines)
 
-    def extract_text(self):
+    def extract_text(self) -> str:
         html = self.data.decode(DEFAULT_TEXT_ENCODING)
 
-        h = html2text.HTML2Text()
+        h = HTML2Text()
         # See https://github.com/Alir3z4/html2text/blob/master/html2text/cli.py
         h.ignore_links = True
         h.ignore_emphasis = True
         h.ignore_images = True
         h.unicode_snob = True
         h.ignore_tables = True
-        h.decode_errors = "ignore"
+        h.decode_errors = "ignore"  # type: ignore
         h.body_width = 0
 
         text = h.handle(html)
@@ -103,7 +105,7 @@ class HTMLDocument(Document):
 class RTFDocument(Document):
     """ Rich text document """
 
-    def extract_text(self):
+    def extract_text(self) -> str:
         txt = self.data.decode(DEFAULT_TEXT_ENCODING)
 
         # Hack to handle Apple's extensions to the RTF format
@@ -115,7 +117,7 @@ class RTFDocument(Document):
 class PDFDocument(Document):
     """ Adobe PDF document """
 
-    def extract_text(self):
+    def extract_text(self) -> str:
         raise NotImplementedError
 
 
@@ -128,7 +130,7 @@ class DocxDocument(Document):
     TEXT_TAG = WORD_NAMESPACE + "t"
     BREAK_TAG = WORD_NAMESPACE + "br"
 
-    def extract_text(self):
+    def extract_text(self) -> str:
 
         zipfile = ZipFile(BytesIO(self.data), "r")
 
@@ -160,14 +162,15 @@ class DocxDocument(Document):
 
 
 # Map file mime type to document class
-MIMETYPE_TO_DOC_CLASS = {
+MIMETYPE_TO_DOC_CLASS: Dict[str, Type[Document]] = {
     "text/plain": PlainTextDocument,
     "text/html": HTMLDocument,
     "text/rtf": RTFDocument,
     "application/rtf": RTFDocument,
     # "application/pdf": PDFDocument,
     # "application/x-pdf": PDFDocument,
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": DocxDocument,  # Yes, really
+    # Yes, really!
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": DocxDocument,
 }
 
 SUPPORTED_DOC_MIMETYPES = frozenset(MIMETYPE_TO_DOC_CLASS.keys())

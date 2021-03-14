@@ -4,7 +4,7 @@
 
     Wikipedia query response module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ import random
 from datetime import datetime, timedelta
 
 from queries import query_json_api, gen_answer, cap_first
-from query import Query
+from query import Query, ContextDict
 
 
 _WIKI_QTYPE = "Wikipedia"
@@ -72,7 +72,7 @@ _WIKI_VARIATIONS = (
 TOPIC_LEMMAS = _WIKI_VARIATIONS
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -90,10 +90,15 @@ def help_text(lemma):
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
+QUERY_NONTERMINALS = { "QWiki" }
+
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
 Query →
+    QWiki
+
+QWiki →
     QWikiQuery '?'?
 
 QWikiQuery →
@@ -103,6 +108,7 @@ QWikiQuery →
     # These take the subject in the accusative case
     | "hvað" "segir" QWikipedia "um"? QWikiSubjectÞf
     | "hvað" "stendur" "í" QWikipedia "um" QWikiSubjectÞf
+    | "hvað" "stendur" "á" QWikipedia "um" QWikiSubjectÞf
     | "hvað" "stendur" "um" QWikiSubjectÞf "í" QWikipedia
     | "hvað" "getur" "þú" "sagt" QWikiMeOrUsÞgf? "um" QWikiSubjectÞf
     | "hvað" "geturðu" "sagt" QWikiMeOrUsÞgf? "um" QWikiSubjectÞf
@@ -188,11 +194,13 @@ QWikiSubjectNlÞf = QWikiSubjectNlÞgf = QWikiSubjectNlNf
 def QWikiPrevSubjectNf(node, params, result):
     """ Reference to previous result, usually via personal
         pronouns ('Hvað segir Wikipedía um hann/hana/það?'). """
-    q = result.state.get("query")  # type: Query
+    q: Query = result.state.get("query")
     ctx = None if q is None else q.fetch_context()
     ctx_keys = ["person_name", "entity_name", "subject"]
     if ctx is not None:
-        keys = list(filter(lambda k: k in ctx, ctx_keys))
+        # Make mypy happy
+        c: ContextDict = ctx
+        keys = list(filter(lambda k: k in c, ctx_keys))
         if keys:
             result.context_reference = True
             result["subject_nom"] = ctx[keys[0]]
@@ -215,7 +223,7 @@ def FsMeðFallstjórn(node, params, result):
     result._nominative = result._text
 
 
-def _clean_answer(answer):
+def _clean_answer(answer: str) -> str:
     # Split on newline, use only first paragraph
     a = answer.split("\n")[0].strip()
     # Get rid of "Getur líka átt við" leading sentence
@@ -234,7 +242,7 @@ def _clean_answer(answer):
     return a
 
 
-def _clean_voice_answer(answer):
+def _clean_voice_answer(answer: str) -> str:
     a = answer.replace(" m.a. ", " meðal annars ")
     a = a.replace(" þ.e. ", " það er ")
     a = a.replace(" t.d. ", " til dæmis ")
@@ -247,13 +255,13 @@ _WIKI_API_URL = (
 )
 
 
-def _query_wiki_api(subject):
+def _query_wiki_api(subject: str):
     """ Fetch JSON from Wikipedia API """
     url = _WIKI_API_URL.format(subject)
     return query_json_api(url)
 
 
-def get_wiki_summary(subject_nom):
+def get_wiki_summary(subject_nom: str) -> str:
     """ Fetch summary of subject from Icelandic Wikipedia """
 
     def has_entry(r):
@@ -293,7 +301,7 @@ def get_wiki_summary(subject_nom):
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return

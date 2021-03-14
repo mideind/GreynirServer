@@ -4,7 +4,7 @@
 
     Stats query response module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -25,13 +25,14 @@
 
 # TODO: Transition this module over to using grammar.
 
-
 from datetime import datetime, timedelta
 
 from db import SessionContext
-from db.models import Person, Query
+from db.models import Person
+from db.models import Query as QueryModel
 from db.queries import QueryTypesQuery
 
+from query import Query
 from queries import gen_answer, natlang_seq, is_plural, sing_or_plur
 from routes.people import top_persons
 
@@ -141,6 +142,7 @@ _MOST_FREQ_QUERIES = frozenset(
 )
 
 
+# TODO: Refactor this mess
 _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
     (
         "um hverja er verið að tala",
@@ -169,6 +171,12 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "hvaða fólk hefur verið mest í fréttum upp á síðkastið",
         "hvaða fólk hefur verið mest í fréttum að undanförnu",
         "hvaða fólk hefur verið mest í fréttum síðustu daga",
+        "hverjir hafa verið í fréttum",
+        "hverjir hafa verið í fréttum nýlega",
+        "hverjir hafa verið í fréttum undanfarið",
+        "hverjir hafa verið í fréttum að undanförnu",
+        "hverjir hafa verið í fréttum upp á síðkastið",
+        "hverjir hafa verið í fréttum síðustu daga",
         "hverjir hafa verið mest í fréttum",
         "hverjir hafa verið mest í fréttum nýlega",
         "hverjir hafa verið mest í fréttum undanfarið",
@@ -205,16 +213,24 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "hverjir hafa verið mest í fjölmiðlum að undanförnu",
         "hverjir hafa verið mest í fjölmiðlum upp á síðkastið",
         "hverjir hafa verið mest í fjölmiðlum síðustu daga",
+        "hverjir hafa oftast komið fyrir í fjölmiðlum",
+        "hverjir hafa oftast komið fyrir í fjölmiðlum nýlega",
+        "hverjir hafa oftast komið fyrir í fjölmiðlum undanfarið",
+        "hverjir hafa oftast komið fyrir í fjölmiðlum að undanförnu",
+        "hverjir hafa oftast komið fyrir í fjölmiðlum upp á síðkastið",
+        "hverjir hafa oftast komið fyrir í fjölmiðlum síðustu daga",
         "hverjir eru umtöluðustu einstaklingarnir á Íslandi",
         "hverjir eru umtalaðastir",
         "hverjir eru umtalaðastir á Íslandi",
         "um hverja er mest talað",
         "um hverja er mest skrifað",
+        "hverjir hafa verið áberandi í fjölmiðlum",
         "hverjir hafa verið áberandi í fjölmiðlum síðustu daga",
         "hverjir hafa verið áberandi í fjölmiðlum undanfarið",
         "hverjir hafa verið áberandi í fjölmiðlum að undanförnu",
         "hverjir hafa verið áberandi í fjölmiðlum nýlega",
         "hverjir hafa verið áberandi í fjölmiðlum upp á síðkastið",
+        "hverjir hafa verið mikið í fjölmiðlum",
         "hverjir hafa verið mikið í fjölmiðlum síðustu daga",
         "hverjir hafa verið mikið í fjölmiðlum undanfarið",
         "hverjir hafa verið mikið í fjölmiðlum að undanförnu",
@@ -224,7 +240,7 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
 )
 
 
-def _gen_num_people_answer(q):
+def _gen_num_people_answer(q) -> bool:
     """ Answer questions about person database. """
     with SessionContext(read_only=True) as session:
         qr = session.query(Person.name).distinct().count()
@@ -247,13 +263,13 @@ def _gen_num_people_answer(q):
 _QUERIES_PERIOD = 30  # days
 
 
-def _gen_num_queries_answer(q):
+def _gen_num_queries_answer(q: Query) -> bool:
     """ Answer questions concerning the number of queries handled. """
     with SessionContext(read_only=True) as session:
         qr = (
-            session.query(Query.id)
+            session.query(QueryModel.id)
             .filter(
-                Query.timestamp >= datetime.utcnow() - timedelta(days=_QUERIES_PERIOD)
+                QueryModel.timestamp >= datetime.utcnow() - timedelta(days=_QUERIES_PERIOD)
             )
             .count()
         )
@@ -306,7 +322,7 @@ _QTYPE_TO_DESC = {
 }
 
 
-def _gen_most_freq_queries_answer(q):
+def _gen_most_freq_queries_answer(q: Query) -> bool:
     """ Answer question concerning most frequent queries. """
     with SessionContext(read_only=True) as session:
         now = datetime.utcnow()
@@ -336,7 +352,7 @@ _MOST_MENTIONED_COUNT = 3  # Individuals
 _MOST_MENTIONED_PERIOD = 7  # Days
 
 
-def _gen_most_mentioned_answer(q):
+def _gen_most_mentioned_answer(q) -> bool:
     """ Answer questions about the most mentioned/talked about people in Icelandic news. """
     top = top_persons(limit=_MOST_MENTIONED_COUNT, days=_MOST_MENTIONED_PERIOD)
 
@@ -367,7 +383,7 @@ _Q2HANDLER = {
 }
 
 
-def handle_plain_text(q):
+def handle_plain_text(q: Query) -> bool:
     """ Handle a plain text query about query statistics. """
     ql = q.query_lower.rstrip("?")
 

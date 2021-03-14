@@ -5,7 +5,7 @@
 
     TnT Tagger module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@
 
 """
 
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import os
 import time
@@ -64,6 +64,9 @@ from contextlib import contextmanager
 from reynir.bindb import BIN_Db
 from reynir.bintokenizer import raw_tokenize, parse_tokens, paragraphs, TOK
 from postagger import NgramTagger
+
+
+StateList = List[Tuple[float, List[Tuple[str, bool]]]]
 
 
 @contextmanager
@@ -431,12 +434,12 @@ class TnT:
         _tri = self._tri
         _C = self._C
 
-        current_state = [(0.0, [("BOS", False), ("BOS", False)])]
+        current_state: StateList = [(0.0, [("BOS", False), ("BOS", False)])]
         keyfunc = lambda x: x[0]
 
         for index, word in enumerate(sent):
 
-            new_state = []
+            new_state: StateList = []
 
             # if the Capitalisation is requested,
             # initalise the flag for this word
@@ -468,7 +471,7 @@ class TnT:
                 # otherwise a new word, set of possible tags is unknown
                 self.unknown += 1
 
-                taglist = None
+                taglist: Optional[List[Tuple[str, float]]] = None
                 if self._unk is not None:
                     # Apply the unknown word tagger
                     taglist = self._unk.tagset([word], index == 0)

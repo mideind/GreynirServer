@@ -4,9 +4,20 @@
 
     Image retrieval module
 
-    Copyright (c) 2016 Vilhjalmur Thorsteinsson
-    All rights reserved
-    See the accompanying README.md file for further licensing and copyright information.
+    Copyright (C) 2021 Miðeind ehf.
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
 
     This module contains a function that retrieves the URL of an image corresponding to
     a (person) name. It uses a Google API on top of the Google Custom Search feature.
@@ -14,6 +25,8 @@
     Retrieved image information is cached in the database.
 
 """
+
+from typing import List, Dict, Optional, Union
 
 import sys
 import json
@@ -26,17 +39,17 @@ from datetime import datetime, timedelta
 from collections import namedtuple
 from contextlib import closing
 import requests
-from db import SessionContext
+from db import Session, SessionContext
 from db.models import Link, BlacklistedLink
 from settings import Settings
-
+from util import google_api_key
 
 # HTTP request timeout
 QUERY_TIMEOUT = 4.0
 
 
-def _server_query(url, q):
-    """ Query a server via HTTP GET with a URL-encoded query string obtained from the dict q """
+def _server_query(url: str, q: Dict[str, Union[int, str]]) -> Optional[bytes]:
+    """ Query a server via HTTP GET with a URL-encoded query string obtained q """
     doc = None
     if len(q):
         url += "?" + urllib.parse.urlencode(q)
@@ -63,25 +76,6 @@ def _server_query(url, q):
     return doc
 
 
-# The Google API identifier (you must obtain your own key if you want to use this code)
-_API_KEY = ""
-_API_KEY_PATH = "resources/GoogleServerKey.txt"
-
-
-def _get_API_key():
-    """ Read Google API key from file """
-    global _API_KEY
-    if not _API_KEY:
-        try:
-            # You need to obtain your own key and put it in
-            # _API_KEY_PATH if you want to use this code
-            with open(_API_KEY_PATH) as f:
-                _API_KEY = f.read().rstrip()
-        except FileNotFoundError:
-            _API_KEY = ""
-    return _API_KEY
-
-
 # Google Custom Search Engine identifier
 _CX = "001858240983628375092:9aogptqla5e"
 
@@ -99,34 +93,40 @@ Img = namedtuple("Img", ["src", "width", "height", "link", "origin", "name"])
 
 
 def get_image_url(
-    name, hints=[], size="large", thumb=False, enclosing_session=None, cache_only=False
-):
+    name: str,
+    *,
+    hints: List = [],
+    size: str = "large",
+    thumb: bool = False,
+    enclosing_session: Optional[Session] = None,
+    cache_only: bool = False,
+) -> Optional[Img]:
     """ Use Google Custom Search API to obtain an image corresponding to a (person) name """
     jdoc = None
     ctype = _CTYPE + size
 
     with SessionContext(commit=True, session=enclosing_session) as session:
-        q = (
+        link = (
             session.query(Link.content, Link.timestamp)
             .filter(Link.ctype == ctype)
             .filter(Link.key == name)
             .one_or_none()
         )
-        if q is not None:
+        if link is not None:
             # Found in cache. If the result is old, purge it
             period = timedelta(days=_CACHE_EXPIRATION_DAYS)
-            expired = datetime.utcnow() - q.timestamp > period
+            expired = datetime.utcnow() - link.timestamp > period
             if expired and not cache_only:
                 _purge_single(name, ctype=ctype, enclosing_session=session)
             else:
-                jdoc = q.content
+                jdoc = link.content
 
         if not jdoc and cache_only:
             return None
 
         if not jdoc:
             # Not found in cache: prepare to ask Google
-            key = _get_API_key()
+            key = google_api_key()
             if not key:
                 # No API key: can't ask for an image
                 logging.warning("No API key for image lookup")
@@ -134,7 +134,7 @@ def get_image_url(
 
             # Assemble the query parameters
             search_str = '"{0}" {1}'.format(name, " ".join(hints)).strip()
-            q = dict(
+            q: Dict[str, Union[str, int]] = dict(
                 q=search_str,
                 num=_NUM_IMG_URLS,
                 start=1,
@@ -185,7 +185,7 @@ def get_image_url(
     return None
 
 
-def blacklist_image_url(name, url):
+def blacklist_image_url(name: str, url: str) -> Optional[Img]:
     """ Blacklist image URL for a given key """
 
     with SessionContext(commit=True) as session:
@@ -206,7 +206,7 @@ def blacklist_image_url(name, url):
         return get_image_url(name, enclosing_session=session)
 
 
-def update_broken_image_url(name, url):
+def update_broken_image_url(name: str, url: str) -> Optional[Img]:
     """ Refetch image URL for name if broken """
 
     with SessionContext() as session:
@@ -220,11 +220,10 @@ def update_broken_image_url(name, url):
                 blacklist_image_url(name, url)
                 _purge_single(name, ctype=r.ctype, enclosing_session=session)
                 return get_image_url(name)
-
     return None
 
 
-def check_image_url(url):
+def check_image_url(url: str) -> bool:
     """ Check if image exists at URL by sending HEAD request """
     req = urllib.request.Request(url, method="HEAD")
     try:
@@ -236,7 +235,9 @@ def check_image_url(url):
     return False
 
 
-def _blacklisted_urls_for_key(key, enclosing_session=None):
+def _blacklisted_urls_for_key(
+    key: str, enclosing_session: Optional[Session] = None
+) -> List[str]:
     """ Fetch blacklisted urls for a given key """
     with SessionContext(commit=True, session=enclosing_session) as session:
         q = (
@@ -248,7 +249,9 @@ def _blacklisted_urls_for_key(key, enclosing_session=None):
         return [r for (r,) in q]
 
 
-def _get_cached_entry(name, url, enclosing_session=None):
+def _get_cached_entry(
+    name: str, url: str, enclosing_session: Optional[Session] = None
+):
     """ Fetch cached entry by key and url """
     with SessionContext(commit=True, session=enclosing_session) as session:
         # TODO: content column should be converted to jsonb
@@ -261,7 +264,11 @@ def _get_cached_entry(name, url, enclosing_session=None):
         )
 
 
-def _purge_single(key, ctype=None, enclosing_session=None):
+def _purge_single(
+    key: str,
+    ctype: Optional[str] = None,
+    enclosing_session: Optional[Session] = None,
+) -> None:
     """ Remove cache entry """
     with SessionContext(commit=True, session=enclosing_session) as session:
         filters = [Link.key == key]
@@ -286,9 +293,15 @@ STATICMAP_URL = (
 )
 
 
-def get_staticmap_image(latitude, longitude, zoom=6, width=180, height=180):
+def get_staticmap_image(
+    latitude: float,
+    longitude: float,
+    zoom: int = 6,
+    width: int = 180,
+    height: int = 180,
+) -> Optional[BytesIO]:
     """ Request image from Google Static Maps API, return image data as bytes """
-    key = _get_API_key()
+    key = google_api_key()
     if not key:
         return None
 

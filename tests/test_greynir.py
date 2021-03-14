@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -23,11 +23,21 @@
 
 import pytest
 import os
+import json
 from urllib.parse import urlencode
+import sys
+
+# Shenanigans to enable Pytest to discover modules in the
+# main workspace directory (the parent of /tests)
+basepath, _ = os.path.split(os.path.realpath(__file__))
+mainpath = os.path.join(basepath, "..")
+if mainpath not in sys.path:
+    sys.path.insert(0, mainpath)
 
 from main import app
 from db import SessionContext
-from db.models import Query
+from db.models import Query, QueryData
+from util import greynir_api_key
 
 # pylint: disable=unused-wildcard-import
 from geo import *
@@ -41,7 +51,26 @@ def client():
     return app.test_client()
 
 
-# Routes that don't return 200 OK without certain query/post parameters or external services
+# See .travis.yml, this value is dumped to the API key path during CI testing
+DUMMY_API_KEY = "123456789"
+
+
+def in_ci_environment() -> bool:
+    """ This function determines whether the tests are running in the
+        continuous integration environment by checking if the API key
+        is a dummy value (set in .travis.yml). """
+    global DUMMY_API_KEY
+    try:
+        return greynir_api_key() == DUMMY_API_KEY
+    except:
+        return False
+
+
+IN_CI_TESTING_ENV = in_ci_environment()
+
+
+# Routes that don't return 200 OK without certain
+# query/post parameters or external services
 SKIP_ROUTES = frozenset(
     (
         "/staticmap",
@@ -95,7 +124,7 @@ def test_api(client):
 
 
 def test_postag_api(client):
-    resp = client.get(r"/postag.api?t=Hér%20sé%20ást%20og%20friður")
+    resp = client.get(r"/postag.api?t=Hér%20er%20ást%20og%20friður")
     assert resp.status_code == 200
     assert resp.content_type == "application/json; charset=utf-8"
     assert "result" in resp.json
@@ -104,7 +133,7 @@ def test_postag_api(client):
 
 
 def test_ifdtag_api(client):
-    resp = client.get(r"/ifdtag.api?t=Hér%20sé%20ást%20og%20friður")
+    resp = client.get(r"/ifdtag.api?t=Hér%20er%20ást%20og%20friður")
     assert resp.status_code == 200
     assert resp.content_type == "application/json; charset=utf-8"
     assert "valid" in resp.json
@@ -118,35 +147,95 @@ def test_ifdtag_api(client):
     # assert len(resp.json["result"][0]) == 5
 
 
-def test_del_query_history(client):
-    """ Test query history deletion API. """
+_KEY_RESTRICTED_ROUTES = frozenset(
+    (
+        # "/query_history.api",  # Disabled for now until clients are updated w. API key
+        "/speech.api",
+    )
+)
+
+
+def test_api_key_restriction(client):
+    """ Make calls to routes that are API key restricted, make sure they complain if no
+        API key is provided as a parameter and accept when correct API key is provided. """
+
+    # Try routes without API key, expect complaint about missing API key
+    for path in _KEY_RESTRICTED_ROUTES:
+        resp = client.post(path)
+        assert resp.status_code == 200
+        assert resp.content_type == "application/json; charset=utf-8"
+        assert isinstance(resp.json, dict)
+        assert "errmsg" in resp.json.keys() and "missing API key" in resp.json["errmsg"]
+
+    # Try routes w. correct API key, expect no complaints about missing API key
+    # This only runs in the CI testing environment, which creates the dummy key
+    global DUMMY_API_KEY
+    if IN_CI_TESTING_ENV:
+        return  # Disabled for now
+        for path in _KEY_RESTRICTED_ROUTES:
+            resp = client.post(f"{path}?key={DUMMY_API_KEY}")
+            assert resp.status_code == 200
+            assert resp.content_type == "application/json; charset=utf-8"
+            assert isinstance(resp.json, dict)
+            assert "errmsg" not in resp.json.keys()
+
+    # This route requires special handling since it receives JSON via POST
+    resp = client.post(
+        "/register_query_data.api",
+        data=json.dumps(dict()),
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    assert resp.content_type == "application/json; charset=utf-8"
+    assert "errmsg" in resp.json and "missing API key" in resp.json["errmsg"]
+
+
+def test_query_history_api(client):
+    """ Test query history and query data deletion API. """
+
+    # We don't run these tests except during the CI testing process, for fear of
+    # corrupting existing data when developers run them on their local machine.
+    if not IN_CI_TESTING_ENV:
+        return
+
+    _TEST_CLIENT_ID = "123456789"
 
     with SessionContext(commit=False) as session:
-        # If database contains the logged query "GREYNIR_TESTING" we know the
-        # tests are running on the dummy data in tests/test_files/test_queries.csv.
-        cnt = session.query(Query).filter(Query.question == "GREYNIR_TESTING").count()
-        if not cnt == 1:
-            return
-
+        # First test API w. "clear" action (which clears query history only)
         # Num queries in dummy test data
         TEST_EXPECTED_NUM_QUERIES = 6
 
-        # We expect one query with this client ID
-        TEST_CLIENT_ID = "123456789"
-
         # Number of queries prior to API call
         pre_numq = session.query(Query).count()
-        assert pre_numq == TEST_EXPECTED_NUM_QUERIES, "Malformed dummy test data"
+        assert (
+            pre_numq == TEST_EXPECTED_NUM_QUERIES
+        ), "Malformed queries dummy test data"
 
-        qstr = urlencode(
-            {"action": "clear", "client_type": "some_type", "client_id": TEST_CLIENT_ID}
-        )
+        qstr = urlencode({"action": "clear", "client_id": _TEST_CLIENT_ID})
 
         _ = client.get("/query_history.api?" + qstr)
 
         post_numq = session.query(Query).count()
 
         assert post_numq == pre_numq - 1
+
+        # Test API w. "clear_all" action (which clears query both history and querydata)
+        # Num queries in dummy test data
+        TEST_EXPECTED_NUM_QUERYDATA = 2
+
+        # Number of querydata rows prior to API call
+        pre_numq = session.query(QueryData).count()
+        assert (
+            pre_numq == TEST_EXPECTED_NUM_QUERYDATA
+        ), "Malformed querydata dummy test data"
+
+        qstr = urlencode({"action": "clear_all", "client_id": _TEST_CLIENT_ID})
+
+        _ = client.get("/query_history.api?" + qstr)
+
+        post_numqdata_cnt = session.query(QueryData).count()
+
+        assert post_numqdata_cnt == pre_numq - 1
 
 
 def test_processors():
@@ -262,7 +351,7 @@ def test_geo():
     assert parse_address_string("   Fiskislóð  31") == {
         "street": "Fiskislóð",
         "number": 31,
-        "letter": None,
+        "letter": "",
     }
     assert parse_address_string("Öldugata 19c ") == {
         "street": "Öldugata",
@@ -272,7 +361,7 @@ def test_geo():
     assert parse_address_string("    Dúfnahólar   10   ") == {
         "street": "Dúfnahólar",
         "number": 10,
-        "letter": None,
+        "letter": "",
     }
 
     # Test prepositions for street names

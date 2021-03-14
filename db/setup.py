@@ -4,7 +4,7 @@
 
     Scraper database initialization module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -114,15 +114,15 @@ ROOTS = [
         "StjornarradScraper",
         True,
     ),
-    (
-        "http://reykjanes.local",
-        "reykjanes.local",
-        "Reykjanesbær",
-        1.0,
-        "scrapers.reykjanes",
-        "ReykjanesScraper",
-        False,
-    ),
+    # (
+    #     "http://reykjanes.local",
+    #     "reykjanes.local",
+    #     "Reykjanesbær",
+    #     1.0,
+    #     "scrapers.reykjanes",
+    #     "ReykjanesScraper",
+    #     False,
+    # ),
     (
         "https://althingi.is",
         "althingi.is",
@@ -141,15 +141,15 @@ ROOTS = [
         "StundinScraper",
         True,
     ),
-    (
-        "https://hringbraut.frettabladid.is",
-        "hringbraut.is",
-        "Hringbraut",
-        1.0,
-        "scrapers.default",
-        "HringbrautScraper",
-        True,
-    ),
+    # (
+    #     "https://hringbraut.frettabladid.is",
+    #     "hringbraut.is",
+    #     "Hringbraut",
+    #     1.0,
+    #     "scrapers.default",
+    #     "HringbrautScraper",
+    #     True,
+    # ),
     (
         "https://www.frettabladid.is/",
         "frettabladid.is",
@@ -206,6 +206,15 @@ ROOTS = [
     #     "VisindavefurScraper",
     #     True,
     # ),
+    (
+        "https://sedlabanki.is/",
+        "sedlabanki.is",
+        "Seðlabankinn",
+        1.0,
+        "scrapers.default",
+        "SedlabankinnScraper",
+        True,
+    ),
 ]
 
 

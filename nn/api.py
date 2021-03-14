@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+# type: ignore
 """
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -18,7 +19,6 @@
 """
 
 from flask import request
-from flask_cors import cross_origin
 
 from routes import (
     routes,
@@ -92,9 +92,7 @@ def nntranslate_api(version=1):
 
 @routes.route("/nn/translate.api", methods=["GET", "POST"])
 @routes.route("/nn/translate.api/v<int:version>", methods=["GET", "POST"])
-@cross_origin()
 def translate_api(version=1):
     from nn.client import TranslationApiClient
-
     tc = TranslationApiClient()
     return tc.dispatch(request)

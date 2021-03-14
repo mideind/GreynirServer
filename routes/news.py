@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 """
 
 
+from typing import cast
 from . import routes, max_age, better_jsonify
 
 from datetime import datetime, timedelta
@@ -30,7 +31,7 @@ from flask import request, render_template
 from settings import changedlocale
 
 from db import SessionContext, desc
-from db.models import Article, Root, Location, ArticleTopic, Topic
+from db.models import Article, Root, Location, ArticleTopic, Topic, Column
 
 
 # Default number of top news items to show in /news
@@ -69,27 +70,28 @@ def fetch_articles(
         if start is not None:
             q = q.filter(Article.timestamp > start)
 
-        # Filter by location
-        if location is not None:
-            q = q.join(Location).filter(Location.name == location)
-
-        # Filter by country code
-        if country is not None:
-            q = q.join(Location).filter(Location.country == country)
+        if location or country:
+            q = q.join(Location)
+            if location:
+                # Filter by location
+                q = q.filter(Location.name == location)
+            if country:
+                # Filter by country code
+                q = q.filter(Location.country == country)
 
         # Filter by source (root) using domain (e.g. "kjarninn.is")
-        if root is not None:
+        if root:
             q = q.filter(Root.domain == root)
 
         # Filter by author name
-        if author is not None:
+        if author:
             q = q.filter(Article.author == author)
 
         # Filter by topic identifier
-        if topic is not None:
+        if topic:
             q = q.join(ArticleTopic).join(Topic).filter(Topic.identifier == topic)
 
-        q = q.order_by(desc(Article.timestamp)).offset(offset).limit(limit)
+        q = q.order_by(desc(cast(Column, Article.timestamp))).offset(offset).limit(limit)
 
         class ArticleDisplay:
             """ Utility class to carry information about an article to the web template """
@@ -218,6 +220,7 @@ def news():
         limit=limit,
         selected_root=root,
         roots=roots,
+        author=author,
     )
 
 

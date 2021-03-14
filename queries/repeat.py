@@ -4,7 +4,7 @@
 
     Repeat-after-me query response module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 
 """
 
+from query import Query
 from queries import gen_answer, icequote
 from datetime import datetime, timedelta
 
@@ -58,7 +59,7 @@ _REPEAT_PREFIXES = tuple(
 # )
 
 
-def gen_repeat_answ(text, cmd_prefix, q):
+def gen_repeat_answ(text: str, cmd_prefix: str, q: Query):
     atxt = text.strip()
     atxt = atxt[:1].upper() + atxt[1:]  # Capitalize first character
     q.set_answer(*gen_answer(atxt))
@@ -72,8 +73,12 @@ def gen_repeat_answ(text, cmd_prefix, q):
     )
 
 
-def handle_plain_text(q):
+def handle_plain_text(q: Query) -> bool:
     """ Handles a plain text query. """
+
+    # Temporarily disable this module
+    return False
+
     ql = q.query_lower.rstrip("?")
 
     # for blw in _PREFIX_BLACKLIST:

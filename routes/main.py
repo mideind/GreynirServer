@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 
 """
 
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Union, cast
 
 import platform
 import sys
@@ -36,17 +36,17 @@ import reynir
 from reynir.fastparser import ParseForestFlattener
 
 from db import SessionContext, desc, dbfunc
-from db.models import Person, Article, ArticleTopic, Entity
+from db.models import Person, Article, ArticleTopic, Entity, Column
 
 from settings import Settings
 from article import Article as ArticleProxy
 from search import Search
 from treeutil import TreeUtility
-from images import get_image_url, update_broken_image_url, blacklist_image_url
+from images import Img, get_image_url, update_broken_image_url, blacklist_image_url
 from doc import SUPPORTED_DOC_MIMETYPES
 
 from . import routes, max_age, cache, text_from_request, better_jsonify, restricted
-from . import _MAX_URL_LENGTH, _MAX_UUID_LENGTH, _MAX_TEXT_LENGTH_VIA_URL
+from . import MAX_URL_LENGTH, MAX_UUID_LENGTH, MAX_TEXT_LENGTH_VIA_URL
 
 
 # Default text shown in the URL/text box
@@ -91,12 +91,11 @@ def main():
 @routes.route("/analysis")
 def analysis():
     """ Handler for a page with grammatical analysis of user-entered text """
-    txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+    txt = request.args.get("txt", "")[0:MAX_TEXT_LENGTH_VIA_URL]
     return render_template("analysis.html", title="Málgreining", default_text=txt)
 
 
 @routes.route("/correct", methods=["GET", "POST"])
-@restricted
 def correct():
     """ Handler for a page for spelling and grammar correction
         of user-entered text """
@@ -118,12 +117,12 @@ MAX_SIM_ARTICLES = 10  # Display at most 10 similarity matches
 @routes.route("/similar", methods=["GET", "POST"])
 def similar():
     """ Return rendered HTML list of articles similar to a given article, given a UUID """
-    resp = dict(err=True)  # type: Dict[str, Any]
+    resp: Dict[str, Any] = dict(err=True)
 
     # Parse query args
     try:
         uuid = request.values.get("id")
-        uuid = uuid.strip()[0:_MAX_UUID_LENGTH]
+        uuid = uuid.strip()[0:MAX_UUID_LENGTH]
     except Exception:
         uuid = None
 
@@ -147,9 +146,9 @@ def page():
     url = request.args.get("url")
     uuid = request.args.get("id")
     if url:
-        url = url.strip()[0:_MAX_URL_LENGTH]
+        url = url.strip()[0:MAX_URL_LENGTH]
     if uuid:
-        uuid = uuid.strip()[0:_MAX_UUID_LENGTH]
+        uuid = uuid.strip()[0:MAX_UUID_LENGTH]
     if url:
         # URL has priority, if both are specified
         uuid = None
@@ -241,8 +240,8 @@ def tree_grid():
                 row.append((1, None))
                 rw += 1
 
-    tbl = []  # type: List[List[Tuple[int, Any]]]
-    full_tbl = []  # type: List[List[Tuple[int, Any]]]
+    tbl: List[List[Tuple[int, Any]]] = []
+    full_tbl: List[List[Tuple[int, Any]]] = []
     if tree is None:
         full_tree = None
         width = 0
@@ -312,7 +311,7 @@ def parsefail():
             .filter(Article.heading > "")
             .filter(Article.num_sentences > 0)
             .filter(Article.num_sentences != Article.num_parsed)
-            .order_by(desc(Article.timestamp))
+            .order_by(desc(cast(Column, Article.timestamp)))
             .limit(num)
         )
 
@@ -392,13 +391,14 @@ def about():
 @routes.route("/reportimage", methods=["POST"])
 def reportimage():
     """ Notification that a (person) image is wrong or broken """
-    resp = dict(found_new=False)
+    resp: Dict[str, Any] = dict(found_new=False)
 
     name = request.form.get("name")
     url = request.form.get("url")
     status = request.form.get("status")
 
     if name and url and status:
+        new_img = False
         if status == "broken":
             new_img = update_broken_image_url(name, url)
         elif status == "wrong":
@@ -413,7 +413,7 @@ def reportimage():
 @routes.route("/image", methods=["GET"])
 def image():
     """ Get image for (person) name """
-    resp = dict(found=False)
+    resp: Dict[str, Union[bool, Img]] = dict(found=False)
 
     name = request.args.get("name")
     try:
@@ -422,7 +422,7 @@ def image():
         thumb = 0
 
     if name:
-        img = get_image_url(name, thumb=thumb, cache_only=True)
+        img = get_image_url(name, thumb=bool(thumb), cache_only=True)
         if img:
             resp["found"] = True
             resp["image"] = img
@@ -437,7 +437,7 @@ def suggest(limit=10):
     limit = request.args.get("limit", limit)
     txt = request.args.get("q", "").strip()
 
-    suggestions = []  # type: List[Dict[str, str]]
+    suggestions: List[Dict[str, str]] = []
     whois_prefix = "hver er "
     whatis_prefix = "hvað er "
 
@@ -486,5 +486,5 @@ def suggest(limit=10):
 @restricted
 def translate():
     """ Handler for a page with machine translation of user-entered text """
-    txt = request.args.get("txt", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+    txt = request.args.get("txt", "")[0:MAX_TEXT_LENGTH_VIA_URL]
     return render_template("translate.html", title="Vélþýðing", default_text=txt)

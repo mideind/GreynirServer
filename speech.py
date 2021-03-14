@@ -3,7 +3,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 
 """
 
-from typing import Optional
+from typing import Any, Optional, cast
 
 import sys
 import os
@@ -30,9 +30,9 @@ import json
 import logging
 from threading import Lock
 
-import cachetools
-import boto3
-from botocore.exceptions import ClientError
+import cachetools  # type: ignore
+import boto3  # type: ignore
+from botocore.exceptions import ClientError  # type: ignore
 
 # The AWS Polly API access keys (you must obtain your own keys if you want to use this code)
 # JSON format is the following:
@@ -43,7 +43,7 @@ from botocore.exceptions import ClientError
 # }
 #
 _API_KEYS_PATH = os.path.join("resources", "aws_polly_keys.mideind.json")
-_api_client = None  # type: Optional[boto3.Session]
+_api_client: Optional[boto3.Session] = None
 _api_client_lock = Lock()
 
 # Voices
@@ -59,8 +59,6 @@ _AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
 # https://developer.amazon.com/en-US/docs/alexa/custom-skills/speech-synthesis-markup-language-ssml-reference.html
 _DEFAULT_TEXT_FORMAT = "ssml"
 _TEXT_FORMATS = frozenset(("text", "ssml"))
-
-_AWS_URL_TTL = 300  # 5 mins in seconds
 
 
 def _initialize_client() -> Optional[boto3.Session]:
@@ -86,13 +84,17 @@ def _initialize_client() -> Optional[boto3.Session]:
 # TTL (in seconds) for get_synthesized_text_url caching
 # Add a safe 30 second margin to ensure that clients are never provided with an
 # audio URL that's just about to expire and could do so before playback starts.
+_AWS_URL_TTL = 300  # 5 mins in seconds
 _CACHE_TTL = _AWS_URL_TTL - 30  # seconds
 _CACHE_MAXITEMS = 30
 
 
 @cachetools.cached(cachetools.TTLCache(_CACHE_MAXITEMS, _CACHE_TTL))
 def get_synthesized_text_url(
-    text: str, txt_format=_DEFAULT_TEXT_FORMAT, voice_id=_DEFAULT_VOICE, speed=1.0
+    text: str,
+    txt_format: str = _DEFAULT_TEXT_FORMAT,
+    voice_id: str = _DEFAULT_VOICE,
+    speed: float = 1.0,
 ) -> Optional[str]:
     """ Returns AWS URL to audio file with speech-synthesised text """
 
@@ -136,7 +138,7 @@ def get_synthesized_text_url(
     }
 
     try:
-        url = client.generate_presigned_url(
+        url = cast(Any, client).generate_presigned_url(
             ClientMethod="synthesize_speech",
             Params=params,
             ExpiresIn=_AWS_URL_TTL,

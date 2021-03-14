@@ -4,7 +4,7 @@
 
     User location query response module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -22,9 +22,12 @@
 
 """
 
+from typing import Any, Tuple, Optional, cast
+
 import re
 import logging
 
+from query import Query
 from queries import (
     gen_answer,
     query_geocode_api_coords,
@@ -33,7 +36,7 @@ from queries import (
     numbers_to_neutral,
     cap_first
 )
-from iceaddr import iceaddr_lookup, postcodes
+from iceaddr import iceaddr_lookup, postcodes  # type: ignore
 from geo import iceprep_for_placename, iceprep_for_street
 
 
@@ -42,6 +45,8 @@ _LOC_QTYPE = "UserLocation"
 
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
+
+QUERY_NONTERMINALS = { "QUserLocation" }
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -122,7 +127,7 @@ def QUserLocationPostcode(node, params, result):
     result.qkey = "CurrentPostcode"
 
 
-def _addrinfo_from_api_result(result):
+def _addrinfo_from_api_result(result) -> Tuple:
     """ Extract relevant address components from Google API result """
 
     comp = result["address_components"]
@@ -158,7 +163,7 @@ def _addrinfo_from_api_result(result):
     return (street, num, locality, postcode, country)
 
 
-def street_desc(street_nom, street_num, locality_nom):
+def street_desc(street_nom: str, street_num: int, locality_nom: str) -> str:
     """ Generate description of being on a particular (Icelandic) street with
         correct preposition and case + locality e.g. 'á Fiskislóð 31 í Reykjavík'. """
     street_dat = None
@@ -185,7 +190,7 @@ def street_desc(street_nom, street_num, locality_nom):
     # Create street descr. ("á Fiskislóð 31")
     street_comp = iceprep_for_street(street_nom) + " " + street_dat
     if street_num:
-        street_comp += " " + street_num
+        street_comp += " " + str(street_num)
 
     # Append locality if available ("í Reykjavík")
     if locality_dat:
@@ -195,22 +200,22 @@ def street_desc(street_nom, street_num, locality_nom):
     return street_comp
 
 
-def _locality_desc(locality_nom):
+def _locality_desc(locality_nom: str) -> str:
     """ Return an appropriate preposition plus a locality name in dative case """
     locality_dat = nom2dat(locality_nom)
     return iceprep_for_placename(locality_nom) + " " + locality_dat
 
 
-def _addr4voice(addr):
+def _addr4voice(addr: str) -> Optional[str]:
     """ Prepare an address string for voice synthesizer. """
     # E.g. "Fiskislóð 5-9" becomes "Fiskislóð 5 til 9"
     s = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", addr)
     # Convert numbers to neutral gender:
     # 'Fiskislóð 2 til 4' -> 'Fiskislóð tvö til fjögur'
-    return numbers_to_neutral(s)
+    return numbers_to_neutral(s) if s else None
 
 
-def answer_for_location(loc):
+def answer_for_location(loc: Tuple):
     # Send API request
     res = query_geocode_api_coords(loc[0], loc[1])
 
@@ -231,7 +236,7 @@ def answer_for_location(loc):
     # Extract address info from top result
     street, num, locality, postcode, country_code = _addrinfo_from_api_result(top)
 
-    descr = None
+    descr = ""
 
     # Special handling of Icelandic locations since we have more info
     # about them and street/locality names need to be declined.
@@ -269,7 +274,7 @@ def answer_for_location(loc):
     return response, answer, voice
 
 
-def answer_for_postcode(loc):
+def answer_for_postcode(loc: Tuple):
     # Send API request
     res = query_geocode_api_coords(loc[0], loc[1])
 
@@ -292,7 +297,7 @@ def answer_for_postcode(loc):
 
     # Only support Icelandic postcodes for now
     if country_code == "IS" and postcode:
-        pc = postcodes.get(int(postcode))
+        pc = cast(Any, postcodes).get(int(postcode))
         pd = "{0} {1}".format(postcode, pc["stadur_nf"])
         (response, answer, voice) = gen_answer(pd)
         voice = "Þú ert í {0}".format(pd)
@@ -303,7 +308,7 @@ def answer_for_postcode(loc):
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type
         q.set_qtype(result.qtype)
@@ -318,7 +323,7 @@ def sentence(state, result):
                     answ = answer_for_postcode(loc)
                 else:
                     answ = answer_for_location(loc)
-            if answ:
+            if answ and loc is not None:
                 # For uniformity, store the returned location in the context
                 # !!! TBD: We might want to store an address here as well
                 q.set_context({"location": loc})

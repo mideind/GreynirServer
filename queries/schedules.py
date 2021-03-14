@@ -4,7 +4,7 @@
 
     TV & radio schedule query response module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -27,11 +27,15 @@
 # TODO: Support TV schedule queries for other stations than RÚV
 # TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str
 # TODO: "Hvað er á dagskrá á rúv annað kvöld?"
+# TODO: "Hvaða þættir eru á rúv?"
+
+from typing import List, Dict, Optional, Tuple, Any
 
 import logging
 import random
 from datetime import datetime, timedelta
 
+from query import Query
 from queries import query_json_api, query_xml_api, gen_answer
 
 
@@ -52,7 +56,7 @@ TOPIC_LEMMAS = [
 ]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -72,14 +76,19 @@ def help_text(lemma):
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
 
+QUERY_NONTERMINALS = { "QSchedule" }
+
 # The context-free grammar for the queries recognized by this plug-in module
 # Uses "QSch" as prefix for grammar namespace
 GRAMMAR = """
 
 Query →
-    QSchedule '?'?
+    QSchedule
 
 QSchedule →
+    QScheduleQuery '?'?
+
+QScheduleQuery →
     QScheduleTV # | QScheduleRadio
 
 QScheduleTV →
@@ -151,12 +160,13 @@ QSchOnSchedule →
     | "á" "dagskránni"
     | "í" "boði"
     | "boðið" "upp" "á"
+    | "verið" "að" "sýna"
 
 QSchTheSchedule →
     "dagskráin" | "sjónvarpsdagskráin"
 
 QSchThisEvening →
-    "núna"? "í" "kvöld"
+    "núna"? "í_kvöld"
 
 $score(+55) QSchedule
 
@@ -178,18 +188,18 @@ def QSchRadioStationNowQuery(node, params, result):
     result.qkey = _RADIO_QKEY
 
 
-def _clean_desc(d):
+def _clean_desc(d: str) -> str:
     """ Return first sentence in multi-sentence string. """
     return d.replace("Dr.", "Doktor").replace("?", ".").split(".")[0]
 
 
 _RUV_TV_SCHEDULE_API_ENDPOINT = "https://apis.is/tv/ruv/"
 _TV_API_ERRMSG = "Ekki tókst að sækja sjónvarpsdagskrá."
-_CACHED_TV_SCHEDULE = None
-_TV_LAST_FETCHED = None
+_CACHED_TV_SCHEDULE: Optional[List] = None
+_TV_LAST_FETCHED: Optional[datetime] = None
 
 
-def _query_tv_schedule_api():
+def _query_tv_schedule_api() -> Optional[List]:
     """ Fetch current television schedule from API, or return cached copy. """
     global _CACHED_TV_SCHEDULE
     global _TV_LAST_FETCHED
@@ -209,11 +219,11 @@ def _query_tv_schedule_api():
 
 _RUV_RADIO_SCHEDULE_API_ENDPOINT = "https://muninn.ruv.is/files/xml/{0}/{1}/"
 _RADIO_API_ERRMSG = "Ekki tókst að sækja útvarpsdagskrá."
-_RADIO_SCHED_CACHE = {}
-_RADIO_LAST_FETCHED = {}
+_RADIO_SCHED_CACHE: Dict[str, Any] = {}
+_RADIO_LAST_FETCHED: Dict[str, datetime] = {}
 
 
-def _query_radio_schedule_api(channel):
+def _query_radio_schedule_api(channel: str) -> List:
     """ Fetch current radio schedule from API, or return cached copy. """
     assert channel in ("ras1", "ras2")
     global _RADIO_SCHED_CACHE
@@ -238,15 +248,15 @@ def _query_radio_schedule_api(channel):
     return _RADIO_SCHED_CACHE[channel]
 
 
-def _span(p):
+def _span(p: Dict) -> Tuple[datetime, datetime]:
     """ Return the time span of a program """
     start = datetime.strptime(p["startTime"], "%Y-%m-%d %H:%M:%S")
-    h, m, s = p["duration"].split(":")
+    h, m, _ = p["duration"].split(":")
     dur = timedelta(hours=int(h), minutes=int(m))
     return start, start + dur
 
 
-def _curr_prog(sched):
+def _curr_prog(sched: List) -> Optional[Dict]:
     """ Return current TV program, given a TV schedule
         i.e. a list of programs in chronological sequence. """
     now = datetime.utcnow()
@@ -260,7 +270,7 @@ def _curr_prog(sched):
     return None
 
 
-def _evening_prog(sched):
+def _evening_prog(sched: List) -> List:
     """ Return programs on a TV schedule starting from 19:00,
         or at the current time if later """
     start = datetime.utcnow()
@@ -275,7 +285,7 @@ def _evening_prog(sched):
     return result
 
 
-def _gen_curr_tv_program_answer(q):
+def _gen_curr_tv_program_answer(q: Query):
     """ Generate answer to query about current TV program """
     sched = _query_tv_schedule_api()
     if not sched:
@@ -293,7 +303,7 @@ def _gen_curr_tv_program_answer(q):
     return gen_answer(answ)
 
 
-def _gen_evening_tv_program_answer(q):
+def _gen_evening_tv_program_answer(q: Query) -> Tuple:
     """ Generate answer to query about the evening's TV programs """
     sched = _query_tv_schedule_api()
     if not sched:
@@ -311,10 +321,9 @@ def _gen_evening_tv_program_answer(q):
     return dict(answer=answer), answer, voice_answer
 
 
-def _gen_curr_radio_program_answer(q):
+def _gen_curr_radio_program_answer(q: Query):
     xmldoc = _query_radio_schedule_api("ras1")
-    print(xmldoc)
-    return None
+    return xmldoc
 
 
 _HANDLER_MAP = {
@@ -326,7 +335,7 @@ _HANDLER_MAP = {
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     handler_keys = _HANDLER_MAP.keys()
     if "qtype" in result and "qkey" in result and result["qkey"] in handler_keys:
         # Successfully matched a query type

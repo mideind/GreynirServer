@@ -4,7 +4,7 @@
 
     Example of a grammar query processor module.
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 
 """
 
+import random
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -35,7 +36,7 @@ HANDLE_TREE = True
 TOPIC_LEMMAS = ["prufa"]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
@@ -90,7 +91,7 @@ def sentence(state, result):
         response = dict(answer=answ)
 
         # Set query answer
-        q.set_answer(response, answer, voice)
+        q.set_answer(response, answ, voice)
         q.set_key(result.qkey)
         return
 

@@ -7,7 +7,7 @@
    Scripts for displaying tokenized and parsed text,
    with pop-up tags on hover, name registry, statistics, etc.
 
-   Copyright (C) 2020 Miðeind ehf.
+   Copyright (C) 2021 Miðeind ehf.
    Original author: Vilhjálmur Þorsteinsson
 
       This program is free software: you can redistribute it and/or modify
@@ -456,7 +456,7 @@ function displayTokens(j) {
 }
 
 function populateStats(stats) {
-   var parsedRatio = stats.num_sentences > 0 ? format_is(10 * stats.num_parsed / stats.num_sentences, 1) : "0,0";
+   var parsedRatio = stats.num_sentences > 0 ? format_is(100 * stats.num_parsed / stats.num_sentences, 1) : "0,0";
    var statisticsSummary = $("#statistics-summary");
    statisticsSummary.html("");
    statisticsSummary.append(

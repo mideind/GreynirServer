@@ -4,7 +4,7 @@
 
     Scraper database model
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -23,19 +23,18 @@
 
 """
 
-from typing import Optional
+from typing import Any, Callable, Optional, Type, cast
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-from settings import Settings, ConfigError
+from sqlalchemy import create_engine, desc, func as dbfunc
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.engine.result import ResultProxy
 
 from sqlalchemy.exc import SQLAlchemyError as DatabaseError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import DataError
 from sqlalchemy.exc import OperationalError
-from sqlalchemy import desc
-from sqlalchemy import func as dbfunc
+
+from settings import Settings, ConfigError
 
 from .models import Base
 
@@ -43,7 +42,7 @@ from .models import Base
 class Scraper_DB:
     """ Wrapper around the SQLAlchemy connection, engine and session """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """ Initialize the SQLAlchemy connection to the scraper database """
 
         # Assemble the connection string, using psycopg2cffi which
@@ -58,27 +57,29 @@ class Scraper_DB:
 
         # Create engine and bind session
         self._engine = create_engine(conn_str)
-        self._Session = sessionmaker(bind=self._engine)
+        self._Session: Type[Session] = cast(
+            Type[Session], sessionmaker(bind=self._engine)
+        )
 
-    def create_tables(self):
+    def create_tables(self) -> None:
         """ Create all missing tables in the database """
-        Base.metadata.create_all(self._engine)
+        Base.metadata.create_all(self._engine)  # type: ignore
 
-    def execute(self, sql, **kwargs):
+    def execute(self, sql: str, **kwargs: Any) -> ResultProxy:
         """ Execute raw SQL directly on the engine """
-        return self._engine.execute(sql, **kwargs)
+        return self._engine.execute(sql, **kwargs)  # type: ignore
 
     @property
-    def session(self):
+    def session(self) -> Session:
         """ Returns a freshly created Session instance from the sessionmaker """
         return self._Session()
 
 
 class classproperty:
-    def __init__(self, f):
+    def __init__(self, f: Callable[..., Any]) -> None:
         self.f = f
 
-    def __get__(self, obj, owner):
+    def __get__(self, obj: Any, owner: Any) -> Any:
         return self.f(owner)
 
 
@@ -86,7 +87,7 @@ class SessionContext:
     """ Context manager for database sessions """
 
     # Singleton instance of Scraper_DB
-    _db = None  # type: Optional[Scraper_DB]
+    _db: Optional[Scraper_DB] = None
 
     # pylint: disable=no-self-argument
     @classproperty
@@ -100,7 +101,12 @@ class SessionContext:
         """ Clean up the reference to the singleton Scraper_DB instance """
         cls._db = None
 
-    def __init__(self, session=None, commit=False, read_only=False) -> None:
+    def __init__(
+        self,
+        session: Optional[Session] = None,
+        commit: bool = False,
+        read_only: bool = False,
+    ) -> None:
 
         if session is None:
             # Create a new session that will be automatically committed
@@ -126,7 +132,7 @@ class SessionContext:
         return self._session
 
     # noinspection PyUnusedLocal
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any):
         """ Python context manager protocol """
         if self._new_session:
             if self._commit:

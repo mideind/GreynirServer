@@ -3,7 +3,7 @@
 
     Settings module
 
-    Copyright (c) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -31,104 +31,12 @@
 
 """
 
-from typing import Set, Tuple
+from typing import Set, Tuple, Union
 
 import os
-import codecs
-import locale
 import threading
 
-from contextlib import contextmanager
-
-
-# The locale used by default in the changedlocale function
-_DEFAULT_LOCALE = ("IS_is", "UTF-8")
-# A set of all valid argument cases
-_ALL_CASES = frozenset(("nf", "þf", "þgf", "ef"))
-_ALL_GENDERS = frozenset(("kk", "kvk", "hk"))
-
-
-class ConfigError(Exception):
-
-    """ Exception class for configuration errors """
-
-    def __init__(self, s):
-        Exception.__init__(self, s)
-        self.fname = None
-        self.line = 0
-
-    def set_pos(self, fname, line):
-        """ Set file name and line information, if not already set """
-        if not self.fname:
-            self.fname = fname
-            self.line = line
-
-    def __str__(self):
-        """ Return a string representation of this exception """
-        s = Exception.__str__(self)
-        if not self.fname:
-            return s
-        return "File {0}, line {1}: {2}".format(self.fname, self.line, s)
-
-
-class LineReader:
-
-    """ Read lines from a text file, recognizing $include directives """
-
-    def __init__(self, fname, outer_fname=None, outer_line=0):
-        self._fname = fname
-        self._line = 0
-        self._inner_rdr = None
-        self._outer_fname = outer_fname
-        self._outer_line = outer_line
-
-    def fname(self):
-        return self._fname if self._inner_rdr is None else self._inner_rdr.fname()
-
-    def line(self):
-        return self._line if self._inner_rdr is None else self._inner_rdr.line()
-
-    def lines(self):
-        """ Generator yielding lines from a text file """
-        self._line = 0
-        try:
-            with codecs.open(self._fname, "r", "utf-8") as inp:
-                # Read config file line-by-line
-                for s in inp:
-                    self._line += 1
-                    # Check for include directive: $include filename.txt
-                    if s.startswith("$") and s.lower().startswith("$include "):
-                        iname = s.split(maxsplit=1)[1].strip()
-                        # Do some path magic to allow the included path
-                        # to be relative to the current file path, or a
-                        # fresh (absolute) path by itself
-                        head, _ = os.path.split(self._fname)
-                        iname = os.path.join(head, iname)
-                        rdr = self._inner_rdr = LineReader(
-                            iname, self._fname, self._line
-                        )
-                        for incl_s in rdr.lines():
-                            yield incl_s
-                        self._inner_rdr = None
-                    else:
-                        yield s
-        except (IOError, OSError):
-            if self._outer_fname:
-                # This is an include file within an outer config file
-                c = ConfigError(
-                    "Error while opening or reading include file '{0}'".format(
-                        self._fname
-                    )
-                )
-                c.set_pos(self._outer_fname, self._outer_line)
-            else:
-                # This is an outermost config file
-                c = ConfigError(
-                    "Error while opening or reading config file '{0}'".format(
-                        self._fname
-                    )
-                )
-            raise c
+from reynir.basics import changedlocale, sort_strings, ConfigError, LineReader
 
 
 class UndeclinableAdjectives:
@@ -168,34 +76,9 @@ class NoIndexWords:
         NoIndexWords.SET.add((stem, NoIndexWords._CAT))
 
 
-# Magic stuff to change locale context temporarily
-
-
-@contextmanager
-def changedlocale(new_locale=None, category="LC_COLLATE"):
-    """ Change locale temporarily within a context (with-statement) """
-    # The new locale parameter should be a tuple, e.g. ('is_IS', 'UTF-8')
-    # The category should be a string such as 'LC_TIME', 'LC_NUMERIC' etc.
-    cat = getattr(locale, category)
-    old_locale = locale.getlocale(cat)
-    try:
-        locale.setlocale(cat, new_locale or _DEFAULT_LOCALE)
-        yield locale.strxfrm  # Function to transform string for sorting
-    finally:
-        locale.setlocale(cat, old_locale)
-
-
-def sort_strings(strings, loc=None):
-    """ Sort a list of strings using the specified locale's collation order """
-    # Change locale temporarily for the sort
-    with changedlocale(loc) as strxfrm:
-        return sorted(strings, key=strxfrm)
-
-
-# Global settings
-
-
 class Settings:
+
+    """ Global settings """
 
     _lock = threading.Lock()
     loaded = False
@@ -280,29 +163,30 @@ class Settings:
     except ValueError:
         raise ConfigError(
             "Invalid environment variable value: NN_TRANSLATION_PORT = {0}".format(
-                NN_TRANSLATION_PORT
+                NN_TRANSLATION_PORT_STR
             )
         )
 
     # Configuration settings from the Greynir.conf file
 
     @staticmethod
-    def _handle_settings(s):
+    def _handle_settings(s: str) -> None:
         """ Handle config parameters in the settings section """
         a = s.lower().split("=", maxsplit=1)
         par = a[0].strip().lower()
-        val = a[1].strip()
-        if val.lower() == "none":
+        sval = a[1].strip()
+        val: Union[None, str, bool] = sval
+        if sval.lower() == "none":
             val = None
-        elif val.lower() == "true":
+        elif sval.lower() == "true":
             val = True
-        elif val.lower() == "false":
+        elif sval.lower() == "false":
             val = False
         try:
             if par == "db_hostname":
-                Settings.DB_HOSTNAME = val
+                Settings.DB_HOSTNAME = str(val)
             elif par == "db_port":
-                Settings.DB_PORT = int(val)
+                Settings.DB_PORT = int(val or 0)
             elif par == "bin_db_hostname":
                 # This is no longer required and has been deprecated
                 pass
@@ -310,13 +194,13 @@ class Settings:
                 # This is no longer required and has been deprecated
                 pass
             elif par == "host":
-                Settings.HOST = val
+                Settings.HOST = str(val)
             elif par == "port":
-                Settings.PORT = int(val)
+                Settings.PORT = int(val or 0)
             elif par == "simserver_host":
-                Settings.SIMSERVER_HOST = val
+                Settings.SIMSERVER_HOST = str(val)
             elif par == "simserver_port":
-                Settings.SIMSERVER_PORT = int(val)
+                Settings.SIMSERVER_PORT = int(val or 0)
             elif par == "debug":
                 Settings.DEBUG = bool(val)
             else:
@@ -325,7 +209,7 @@ class Settings:
             raise ConfigError("Invalid parameter value: {0}={1}".format(par, val))
 
     @staticmethod
-    def _handle_undeclinable_adjectives(s):
+    def _handle_undeclinable_adjectives(s: str) -> None:
         """ Handle list of undeclinable adjectives """
         s = s.lower().strip()
         if not s.isalpha():
@@ -335,7 +219,7 @@ class Settings:
         UndeclinableAdjectives.add(s)
 
     @staticmethod
-    def _handle_noindex_words(s):
+    def _handle_noindex_words(s: str) -> None:
         """ Handle no index instructions in the settings section """
         # Format: category = [cat] followed by word stem list
         a = s.lower().split("=", maxsplit=1)
@@ -351,7 +235,7 @@ class Settings:
         NoIndexWords.add(par)
 
     @staticmethod
-    def read(fname):
+    def read(fname: str) -> None:
         """ Read configuration file """
 
         with Settings._lock:

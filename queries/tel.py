@@ -4,7 +4,7 @@
 
     Telephony query response module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -30,10 +30,10 @@
 
 """
 
-
 import re
 import random
 
+from query import Query
 
 _TELEPHONE_QTYPE = "Telephone"
 
@@ -41,11 +41,11 @@ _TELEPHONE_QTYPE = "Telephone"
 TOPIC_LEMMAS = ["hringja", "símanúmer", "sími"]
 
 
-def help_text(lemma):
+def help_text(lemma: str) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég get hringt ef þú segir til dæmis: {0}".format(
-        random.choice(("Hringdu í 18 18",))
+        random.choice(("Hringdu í 18 18", "Hringdu í 18 19"))
     )
 
 
@@ -143,7 +143,7 @@ _PHONECALL_REGEXES = frozenset(
 )
 
 
-def handle_plain_text(q):
+def handle_plain_text(q: Query) -> bool:
     """ Handle a plain text query requesting a call to a telephone number. """
     ql = q.query_lower.rstrip("?")
 

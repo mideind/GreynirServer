@@ -3,7 +3,7 @@
 
     Neural Network Parsing Utilities
 
-    Copyright (C) 2020 Miðeind ehf
+    Copyright (C) 2021 Miðeind ehf
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -23,15 +23,14 @@
 
 """
 
-from typing import List
+from typing import List, cast
 
 from enum import IntEnum
 import logging
 import inspect
 
-import tokenizer
-from reynir import bintokenizer
-from reynir import simpletree
+from reynir import bintokenizer, simpletree
+from reynir.simpletree import CanonicalTokenDict
 from settings import Settings
 
 
@@ -111,13 +110,13 @@ class Node:
     def has_children(self):
         return bool(self.children)
 
-    def to_dict(self):
+    def to_dict(self) -> CanonicalTokenDict:
         if not self.children:
             json_node = _json_terminal_node(self.name, self.data)
         else:
             json_node = _json_nonterminal_node(self.name)
             json_node[KEY.children] = [c.to_dict() for c in self.children]
-        return json_node
+        return cast(CanonicalTokenDict, json_node)
 
     def to_simple_tree(self):
         return simpletree.SimpleTree([[self.to_dict()]])

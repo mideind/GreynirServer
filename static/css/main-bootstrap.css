@@ -4,7 +4,7 @@
 
    CSS file for Greynir web interface
 
-   Copyright (C) 2020 Miðeind ehf.
+   Copyright (C) 2021 Miðeind ehf.
 
       This program is free software: you can redistribute it and/or modify
       it under the terms of the GNU General Public License as published by
@@ -705,7 +705,11 @@ tr.article td.heading img {
 }
 
 td.timestamp {
-   width: 4.5em;
+   width: 4.5em; /* Normal HH:MM time */
+}
+
+td.timestamp.wide {
+   width: 7em; /* Full time and date */
 }
 
 td.ratio {

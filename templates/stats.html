@@ -134,6 +134,7 @@
    <canvas id="parsed_chart_canvas" style="padding: 25px;"></canvas>
 </div>
 
+<!--
 <div class="panel panel-default">
    <div class="panel-heading">
       Fyrirspurnir
@@ -141,6 +142,7 @@
    </div>
    <canvas id="queries_chart_canvas" style="padding: 25px;"></canvas>
 </div>
+-->
 
 {% endblock %}
 
@@ -224,7 +226,7 @@
       });
 
       // Queries chart
-      var queriesCtx =  $('#queries_chart_canvas').get(0).getContext('2d');
+      /*var queriesCtx =  $('#queries_chart_canvas').get(0).getContext('2d');
       
       queriesChartData.datasets[0].backgroundColor = '#eb3732';
       // parseChartData.datasets[0].fill = true;
@@ -247,7 +249,7 @@
                }],
                yAxes: [{
                   ticks: {
-                     stepSize: 50,
+                     stepSize: 500,
                      min: 0,
                      callback: function(tick) {
                         return tick.toString();
@@ -257,7 +259,7 @@
                }]
             }
          }
-      });
+      });*/
       
    }
 

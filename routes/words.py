@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 
 """
 
-from typing import List, Union, Tuple, Dict, Any
+from typing import List, Union, Tuple, Dict, Any, cast
 
 import logging
 
@@ -32,13 +32,12 @@ from flask import request, render_template
 
 from settings import changedlocale
 
-from tokenizer import TOK
+from tokenizer import TOK, Tok
 
-from reynir.bindb import BIN_Db
 from reynir.bintokenizer import tokenize
 
 from db import SessionContext, desc
-from db.models import Article, Word, Root
+from db.models import Article, Word, Root, Column
 from db.queries import WordFrequencyQuery
 
 
@@ -131,7 +130,7 @@ def _desc4word(wc):
 @cache.cached(timeout=60 * 60 * 4, key_prefix="wordfreq", query_string=True)
 def wordfreq():
     """ Return word frequency chart data for a given time period. """
-    resp = dict(err=True)  # type: Dict[str, Any]
+    resp: Dict[str, Any] = dict(err=True)
     # Create datetime objects from query string args
     try:
         date_fmt = "%Y-%m-%d"
@@ -148,10 +147,10 @@ def wordfreq():
         return better_jsonify(**resp)
 
     # Create word/cat pair from token
-    def cat4token(t):
+    def cat4token(t: Tok) -> Tuple[str, str]:
         assert t.kind in (TOK.WORD, TOK.PERSON, TOK.ENTITY)
         # TODO: Use GreynirPackage lemma lookup function for this
-        w = t.txt
+        w, cat = t.txt, ""
         if t.kind == TOK.WORD:
             val = list(filter(lambda m: m.stofn == m.ordmynd, t.val)) or t.val
             cat = val[0].ordfl if len(val) else CAT_UNKNOWN
@@ -256,7 +255,7 @@ def wordfreq():
             )
             # Generate data and config for chart
             label = "{0} ({1})".format(wd, CAT_DESC.get(cat))
-            ds = dict(label=label, fill=False, lineTension=0)
+            ds: Dict[str, Any] = dict(label=label, fill=False, lineTension=0)
             ds["borderColor"] = ds["backgroundColor"] = colors.pop(0)
             ds["data"] = [r[1] for r in res]
             ds["word"] = "{0}:{1}".format(wd, cat)
@@ -308,7 +307,7 @@ def wordfreq_details():
                 .filter(Word.stem == wd)
                 .filter(Word.cat == cat)
                 .join(Root)
-                .order_by(desc(Article.timestamp))
+                .order_by(desc(cast(Column, Article.timestamp)))
             )
             articles = [
                 {"id": a[0], "heading": a[1], "domain": a[2], "cnt": a[3]}

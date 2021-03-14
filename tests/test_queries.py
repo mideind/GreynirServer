@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -22,16 +22,23 @@
 """
 
 import re
-import os
+import os, sys
 import pytest
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
+
+# Shenanigans to enable Pytest to discover modules in the
+# main workspace directory (the parent of /tests)
+basepath, _ = os.path.split(os.path.realpath(__file__))
+mainpath = os.path.join(basepath, "..")
+if mainpath not in sys.path:
+    sys.path.insert(0, mainpath)
 
 from main import app
 
 from settings import changedlocale
 from db import SessionContext
-from db.models import Query
+from db.models import Query, QueryData, QueryLog
 
 
 @pytest.fixture
@@ -104,9 +111,19 @@ def test_query_api(client):
         "hvað er fimm sinnum tólf": "60",
         "hvað er 12 sinnum 12?": "144",
         "hvað er nítján plús 3": "22",
+        "hvað er nítján plús þrír": "22",
+        "hvað er nítján + 3": "22",
+        "hvað er 19 + 3": "22",
+        "hvað er 19 + þrír": "22",
         "hvað er hundrað mínus sautján": "83",
+        "hvað er hundrað - sautján": "83",
+        "hvað er 100 - sautján": "83",
+        "hvað er 100 - 17": "83",
         "hvað er 17 deilt með fjórum": "4,25",
+        "hvað er 17 / 4": "4,25",
         "hvað er 18 deilt með þrem": "6",
+        "hvað er 18 / þrem": "6",
+        "hvað er 18 / 3": "6",
         "hver er kvaðratrótin af 256": "16",
         "hvað er 12 í þriðja veldi": "1728",
         "hvað eru tveir í tíunda veldi": "1024",
@@ -116,11 +133,15 @@ def test_query_api(client):
         "hvað er fjórðungur af 28": "7",
         "hvað er einn tuttugasti af 192": "9,6",
         "reiknaðu 7 sinnum 7": "49",
+        "reiknaðu 7 x 7": "49",
+        "reiknaðu sjö x 7": "49",
+        "reiknaðu sjö x sjö": "49",
         "geturðu reiknað kvaðratrótina af 9": "3",
         "hvað er 8900 með vaski": "11.036",
         "hvað eru 7500 krónur með virðisaukaskatti": "9.300",
         "hvað er 9300 án vask": "7.500",
         "hvað er pí deilt með pí": "1",
+        "hvað er pí / pí": "1",
         "hvað er pí í öðru veldi": "9,87",
         "hvað er tíu deilt með pí": "3,18",
     }
@@ -184,7 +205,7 @@ def test_query_api(client):
     assert len(json["voice"]) < 100
 
     # Currency module
-    json = qmcall(c, {"q": "Hvert er gengi dönsku krónunnar?"}, "Currency")
+    json = qmcall(c, {"q": "hvert er gengi dönsku krónunnar?"}, "Currency")
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
     json = qmcall(c, {"q": "hvað kostar evran"}, "Currency")
@@ -195,6 +216,11 @@ def test_query_api(client):
 
     json = qmcall(
         c, {"q": "Hvert er gengi krónunnar gagnvart dollara í dag?"}, "Currency"
+    )
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
+    json = qmcall(
+        c, {"q": "hvert er gengi krónunnar á móti dollara í dag"}, "Currency"
     )
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
@@ -230,7 +256,7 @@ def test_query_api(client):
         qstr = "hvenær er " + d
         json = qmcall(c, {"q": qstr}, "Date")
 
-    json = qmcall(c, {"q": "Hver er dagsetningin?"}, "Date")
+    json = qmcall(c, {"q": "hver er dagsetningin?"}, "Date")
     assert json["answer"].endswith(datetime.now().strftime("%Y"))
 
     json = qmcall(c, {"q": "Hvað eru margir dagar til jóla?", "voice": True}, "Date")
@@ -263,7 +289,7 @@ def test_query_api(client):
     assert str(now.year) in json["answer"]
 
     json = qmcall(c, {"q": "er 2020 hlaupár?"}, "Date")
-    assert "er hlaupár" in json["answer"]
+    assert "var hlaupár" in json["answer"]
 
     json = qmcall(c, {"q": "var árið 1999 hlaupár?"}, "Date")
     assert "ekki hlaupár" in json["answer"]
@@ -289,7 +315,7 @@ def test_query_api(client):
     # NB: No Google API key on test server
     if google_key:
         json = qmcall(
-            c, {"q": "Hvað er ég langt frá Perlunni", "voice": True}, "Distance"
+            c, {"q": "hvað er ég langt frá perlunni", "voice": True}, "Distance"
         )
         assert json["answer"].startswith("3,5 km")
         assert json["voice"].startswith("Perlan er ")
@@ -307,7 +333,7 @@ def test_query_api(client):
         assert json["voice"].startswith("Að ganga")
 
         json = qmcall(
-            c, {"q": "hvað tekur langan tíma að keyra til Akureyrar"}, "Distance"
+            c, {"q": "hvað tekur langan tíma að keyra til akureyrar"}, "Distance"
         )
         assert json["key"] == "Akureyri"
         assert "klukkustundir" in json["answer"] and " km" in json["answer"]
@@ -317,50 +343,41 @@ def test_query_api(client):
     # TODO: Implement me!
 
     # Geography module
-    json = qmcall(c, {"q": "Hver er höfuðborg Spánar?"}, "Geography")
+    json = qmcall(c, {"q": "hver er höfuðborg spánar", "voice": True}, "Geography")
     assert json["answer"] == "Madríd"
+    assert "Spánar" in json["voice"]  # not 'Spáns', which was a bug
 
-    json = qmcall(c, {"q": "Hver er höfuðborg taiwan?"}, "Geography")
+    json = qmcall(c, {"q": "Hver er höfuðborg taiwan"}, "Geography")
     assert json["answer"] == "Taípei"
 
-    json = qmcall(c, {"q": "hver er höfuðborg norður-makedóníu?"}, "Geography")
+    json = qmcall(c, {"q": "hver er höfuðborg norður-makedóníu"}, "Geography")
     assert json["answer"] == "Skopje"
 
-    json = qmcall(c, {"q": "hver er höfuðborg norður kóreu?"}, "Geography")
+    json = qmcall(c, {"q": "hver er höfuðborg norður kóreu"}, "Geography")
     assert json["answer"] == "Pjongjang"
 
-    json = qmcall(
-        c, {"q": "hver er höfuðborg sameinuðu arabísku furstadæmanna"}, "Geography"
-    )
-    assert json["answer"] == "Abú Dabí"
+    # json = qmcall(
+    #     c, {"q": "hver er höfuðborg sameinuðu arabísku furstadæmanna"}, "Geography"
+    # )
+    # assert json["answer"] == "Abú Dabí"
 
-    json = qmcall(c, {"q": "Hvað er höfuðborgin í Bretlandi"}, "Geography")
+    json = qmcall(c, {"q": "hvað er höfuðborgin í bretlandi"}, "Geography")
     assert json["answer"] == "Lundúnir"
 
-    json = qmcall(c, {"q": "Í hvaða landi er Jóhannesarborg?"}, "Geography")
+    json = qmcall(c, {"q": "í hvaða landi er jóhannesarborg"}, "Geography")
     assert json["answer"].endswith("Suður-Afríku")
 
-    json = qmcall(c, {"q": "Í hvaða landi er Kalifornía?"}, "Geography")
+    json = qmcall(c, {"q": "í hvaða landi er kalifornía"}, "Geography")
     assert "Bandaríkjunum" in json["answer"] and json["key"] == "Kalifornía"
 
-    json = qmcall(c, {"q": "Í hvaða heimsálfu er míkrónesía?"}, "Geography")
+    json = qmcall(c, {"q": "í hvaða heimsálfu er míkrónesía"}, "Geography")
     assert json["answer"].startswith("Eyjaálfu")
 
-    json = qmcall(c, {"q": "Hvar í heiminum er máritanía?"}, "Geography")
+    json = qmcall(c, {"q": "hvar í heiminum er máritanía"}, "Geography")
     assert "Afríku" in json["answer"]
 
-    json = qmcall(c, {"q": "Hvar er Kaupmannahöfn?"}, "Geography")
+    json = qmcall(c, {"q": "hvar er Kaupmannahöfn"}, "Geography")
     assert "Danmörku" in json["answer"]
-
-    # Intro module
-    json = qmcall(c, {"q": "ég heiti Gunna"}, "Introduction")
-    assert json["answer"].startswith("Sæl og blessuð")
-
-    json = qmcall(c, {"q": "ég heiti Gunnar"}, "Introduction")
-    assert json["answer"].startswith("Sæll og blessaður")
-
-    json = qmcall(c, {"q": "ég heiti Boutros Boutros-Ghali"}, "Introduction")
-    assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
 
     # News module
     json = qmcall(c, {"q": "Hvað er í fréttum", "voice": True}, "News")
@@ -416,9 +433,9 @@ def test_query_api(client):
     assert "fiskur" in a or "skjaldarmerki" in a
 
     # Repeat module
-    json = qmcall(c, {"q": "segðu setninguna simmi er bjálfi"}, "Parrot")
-    assert json["answer"] == "Simmi er bjálfi"
-    assert json["q"] == "Segðu setninguna „Simmi er bjálfi.“"
+    # json = qmcall(c, {"q": "segðu setninguna simmi er bjálfi"}, "Parrot")
+    # assert json["answer"] == "Simmi er bjálfi"
+    # assert json["q"] == "Segðu setninguna „Simmi er bjálfi.“"
 
     json = qmcall(c, {"q": "segðu eitthvað skemmtilegt"})
     assert json["qtype"] != "Parrot"
@@ -503,6 +520,44 @@ def test_query_api(client):
     json = qmcall(c, {"q": "hvað eru margar mínútur í einu ári"}, "Unit")
     assert json["answer"].startswith("526.000 mínútur")
 
+    # User info module
+    json = qmcall(
+        c, {"q": "ég heiti Gunna Jónsdóttir", "client_id": DUMMY_CLIENT_ID}, "UserInfo",
+    )
+    assert json["answer"].startswith("Sæl og blessuð") and "Gunna" in json["answer"]
+
+    json = qmcall(c, {"q": "hvað heiti ég", "client_id": DUMMY_CLIENT_ID})
+    assert "Gunna Jónsdóttir" in json["answer"]
+
+    json = qmcall(
+        c, {"q": "Nafn mitt er Gunnar", "client_id": DUMMY_CLIENT_ID}, "UserInfo"
+    )
+    assert json["answer"].startswith("Sæll og blessaður") and "Gunnar" in json["answer"]
+
+    json = qmcall(
+        c, {"q": "veistu hvað ég heiti", "client_id": DUMMY_CLIENT_ID}, "UserInfo"
+    )
+    assert json["answer"].startswith("Þú heitir Gunnar")
+
+    json = qmcall(c, {"q": "ég heiti Boutros Boutros-Ghali"}, "UserInfo")
+    assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
+
+    # json = qmcall(
+    #     c,
+    #     {"q": "ég á heima á öldugötu 4 í reykjavík", "client_id": DUMMY_CLIENT_ID},
+    #     "UserInfo",
+    # )
+    # assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
+
+    # json = qmcall(c, {"q": "hvar á ég heima"}, "UserInfo")
+    # assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
+
+    # json = qmcall(c, {"q": "ég á heima á Fiskislóð 31"}, "UserInfo")
+    # assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
+
+    # json = qmcall(c, {"q": "hvar bý ég eiginlega"}, "UserInfo")
+    # assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
+
     # User location module
     # NB: No Google API key on test server
     if google_key:
@@ -515,10 +570,10 @@ def test_query_api(client):
 
     # Weather module
     json = qmcall(c, {"q": "hvernig er veðrið í Reykjavík?"}, "Weather")
-    assert re.search(r"^\-?\d+°", json["answer"]) is not None
+    assert re.search(r"^\-?\d+ °C", json["answer"]) is not None
 
     json = qmcall(c, {"q": "Hversu hlýtt er úti?"}, "Weather")
-    assert re.search(r"^\-?\d+°", json["answer"]) is not None
+    assert re.search(r"^\-?\d+ °C", json["answer"]) is not None
 
     json = qmcall(c, {"q": "hver er veðurspáin fyrir morgundaginn"}, "Weather")
     assert len(json["answer"]) > 20 and "." in json["answer"]
@@ -569,11 +624,16 @@ def test_query_api(client):
     # Yule lads module
     # TODO: Implement me!
 
-    # Delete any queries logged as result of these tests
+    # Delete any queries or query data logged as result of these tests
     with SessionContext(commit=True) as session:
         session.execute(
             Query.table().delete().where(Query.client_id == DUMMY_CLIENT_ID)
         )
+        session.execute(
+            QueryData.table().delete().where(QueryData.client_id == DUMMY_CLIENT_ID)
+        )
+        # Note: there is no client_id in the querylog table
+        # so we cannot delete the logged queries there by this criterion.
 
 
 def test_query_utility_functions():

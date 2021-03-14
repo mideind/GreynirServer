@@ -4,7 +4,7 @@
 
     News query response module
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -25,11 +25,15 @@
 """
 
 # TODO: Fyrirsagnir, og að styðja "Segðu mér meira um X"
+# TODO: Hvað er helst í fréttum í dag? Fréttir dagsins?
+
+from typing import List, Optional, Dict
 
 import logging
-import cachetools
+import cachetools  # type: ignore
 import random
 
+from query import Query
 from queries import gen_answer, query_json_api
 
 
@@ -39,13 +43,15 @@ _NEWS_QTYPE = "News"
 TOPIC_LEMMAS = ["fréttir", "fregnir", "frétta"]
 
 
-def help_text(lemma):
+def help_text(lemma) -> str:
     """ Help text to return when query.py is unable to parse a query but
         one of the above lemmas is found in it """
     return "Ég skil þig ef þú spyrð til dæmis: {0}?".format(
         random.choice(("Hvað er í fréttum", "Hvað er að frétta"))
     )
 
+
+QUERY_NONTERMINALS = { "QNewsQuery" }
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -73,7 +79,7 @@ QNewsTellMe →
     "segðu" "mér" | "geturðu" "sagt" "mér"
 
 QNewsNow →
-    "núna" | "þessa" "stundina"
+    "núna" | "þessa_stundina" | "í" "dag"
 
 QNewsQualifiers →
     "helst" | "eiginlega" | "núna" | "nýjast"
@@ -106,7 +112,7 @@ _NEWS_CACHE_TTL = 300  # seconds, ttl = 5 mins
 
 
 @cachetools.cached(cachetools.TTLCache(1, _NEWS_CACHE_TTL))
-def _get_news_data(max_items=8):
+def _get_news_data(max_items: int = 8) -> Optional[List[Dict]]:
     """ Fetch news headline data from RÚV, preprocess it. """
     res = query_json_api(_NEWS_API)
     if not res or "nodes" not in res or not len(res["nodes"]):
@@ -119,7 +125,7 @@ def _get_news_data(max_items=8):
     return items[:max_items]
 
 
-def _clean_text(txt):
+def _clean_text(txt: str) -> str:
     txt = txt.replace("\r", " ").replace("\n", " ").replace("  ", " ")
     return txt.strip()
 
@@ -147,20 +153,19 @@ def top_news_answer():
 
 def sentence(state, result):
     """ Called when sentence processing is complete """
-    q = state["query"]
+    q: Query = state["query"]
     if "qtype" in result:
-        # Successfully matched a query type
-        q.set_qtype(result.qtype)
-        q.set_key("LatestNews")
-
         try:
             res = top_news_answer()
             if res:
+                # We've successfully answered a query
+                q.set_qtype(result.qtype)
+                q.set_key("LatestNews")
                 q.set_answer(*res)
             else:
                 errmsg = "Ekki tókst að sækja fréttir"
-                q.set_answer(gen_answer(errmsg))
-                q.set_source("RÚV")
+                q.set_answer(*gen_answer(errmsg))
+            q.set_source("RÚV")
         except Exception as e:
             logging.warning("Exception answering news query '{0}': {1}".format(q, e))
             q.set_error("E_EXCEPTION: {0}".format(e))

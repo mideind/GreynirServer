@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-
+# type: ignore
 """
     Greynir: Natural language processing for Icelandic
 
     Neural Network Query Client
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ class ApiClient:
     https = True
 
     _url = None  # type: Optional[str]
-    _data = None  # type: Dict[str, Any]
+    _data = None  # type: Optional[Dict[str, Any]]
 
     required_fields = []  # type: List[str]
     default_field_values = {}  # type: Dict[str, Any]

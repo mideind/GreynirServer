@@ -4,7 +4,7 @@
 
     High-level wrappers for checking grammar and spelling
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -24,8 +24,10 @@
 
 """
 
-import reynir_correct
+from typing import Iterator, List, cast
+from reynir.reynir import ProgressFunc, Tok
 import nertokenizer
+import reynir_correct
 
 
 class RecognitionPipeline(reynir_correct.CorrectionPipeline):
@@ -33,10 +35,10 @@ class RecognitionPipeline(reynir_correct.CorrectionPipeline):
     """ Derived class that adds a named entity recognition pass
         to the GreynirCorrect tokenization pipeline """
 
-    def __init__(self, text):
+    def __init__(self, text: str) -> None:
         super().__init__(text)
 
-    def recognize_entities(self, stream):
+    def recognize_entities(self, stream: Iterator[Tok]) -> Iterator[Tok]:
         """ Recognize named entities using the nertokenizer module,
             but construct tokens using the Correct_TOK class from
             reynir_correct """
@@ -50,7 +52,7 @@ class NERCorrect(reynir_correct.GreynirCorrect):
     """ Derived class to override the default tokenization of
         GreynirCorrect to perform named entity recognition """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def tokenize(self, text):
@@ -60,7 +62,7 @@ class NERCorrect(reynir_correct.GreynirCorrect):
         return pipeline.tokenize()
 
 
-def check_grammar(text, *, progress_func=None):
+def check_grammar(text: str, *, progress_func: ProgressFunc = None):
     """ Check the grammar and spelling of the given text and return
         a list of annotated paragraphs, containing sentences, containing
         tokens. The progress_func, if given, will be called periodically
@@ -74,7 +76,7 @@ def check_grammar(text, *, progress_func=None):
         progress_func=progress_func,
     )
 
-    def encode_sentence(sent):
+    def encode_sentence(sent: reynir_correct.AnnotatedSentence):
         """ Map a reynir._Sentence object to a raw sentence dictionary
             expected by the web UI """
         if sent.tree is None:
@@ -104,7 +106,10 @@ def check_grammar(text, *, progress_func=None):
             ],
         )
 
-    pgs = [[encode_sentence(sent) for sent in pg] for pg in result["paragraphs"]]
+    paragraphs = cast(
+        List[List[reynir_correct.AnnotatedSentence]], result["paragraphs"]
+    )
+    pgs = [[encode_sentence(sent) for sent in pg] for pg in paragraphs]
 
     stats = dict(
         num_tokens=result["num_tokens"],

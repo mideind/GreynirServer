@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2020 Miðeind ehf.
+    Copyright (C) 2021 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -24,15 +24,14 @@
 
 """
 
-from typing import Dict
+from typing import Dict, Callable, Optional
 
 import threading
 import time
 import uuid
-import io
 import json
 from functools import wraps
-from datetime import datetime, timedelta
+from datetime import timedelta, datetime
 
 from flask import (
     Blueprint,
@@ -40,33 +39,39 @@ from flask import (
     make_response,
     current_app,
     Response,
+    Request,
     abort,
     request,
     url_for,
-    _request_ctx_stack,
 )
+from flask import _request_ctx_stack  # type: ignore
 from flask.ctx import RequestContext
+from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import HTTPException, InternalServerError
+import flask_caching  # type: ignore
 
+
+utcnow = datetime.utcnow  # Funny hack to satisfy Pylance/Pyright
+ProgressFunc = Callable[[float], None]
 
 # Maximum length of incoming GET/POST parameters
-_MAX_TEXT_LENGTH = 16384
-_MAX_TEXT_LENGTH_VIA_URL = 512
+MAX_TEXT_LENGTH = 16384
+MAX_TEXT_LENGTH_VIA_URL = 512
 
-_MAX_URL_LENGTH = 512
-_MAX_UUID_LENGTH = 36
+MAX_URL_LENGTH = 512
+MAX_UUID_LENGTH = 36
 
 _TRUTHY = frozenset(("true", "1", "yes"))
 
-cache = current_app.config["CACHE"]
-routes = Blueprint("routes", __name__)
+cache: flask_caching.Cache = current_app.config["CACHE"]
+routes: Blueprint = Blueprint("routes", __name__)
 
 
-def max_age(seconds):
+def max_age(seconds: int) -> Callable[[Callable], Callable]:
     """ Caching decorator for Flask - augments response
         with a max-age cache header """
 
-    def decorator(f):
+    def decorator(f: Callable):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             resp = f(*args, **kwargs)
@@ -80,7 +85,7 @@ def max_age(seconds):
     return decorator
 
 
-def restricted(f):
+def restricted(f: Callable) -> Callable:
     """ Decorator to return 403 Forbidden if not running in debug mode """
 
     @wraps(f)
@@ -92,7 +97,7 @@ def restricted(f):
     return decorated_function
 
 
-def bool_from_request(rq, name, default=False):
+def bool_from_request(rq: Request, name: str, default: bool = False) -> bool:
     """ Get a boolean from JSON encoded in a request form """
     b = rq.form.get(name)
     if b is None:
@@ -106,18 +111,20 @@ def bool_from_request(rq, name, default=False):
 _NATLANG_PERIODS = {"day": 1, "week": 7, "month": 30}
 
 
-def days_from_period_arg(arg, default=1):
+def days_from_period_arg(arg: str, default: int = 1) -> int:
     return _NATLANG_PERIODS.get(arg, default)
 
 
-def better_jsonify(**kwargs):
+def better_jsonify(**kwargs) -> Response:
     """ Ensure that the Content-Type header includes 'charset=utf-8' """
     resp = jsonify(**kwargs)
     resp.headers["Content-Type"] = "application/json; charset=utf-8"
     return resp
 
 
-def text_from_request(rq, *, post_field=None, get_field=None):
+def text_from_request(
+    rq: Request, *, post_field: Optional[str] = None, get_field: Optional[str] = None
+) -> str:
     """ Return text passed in a HTTP request, either using GET or POST.
         When using GET, the default parameter name is 't'. This can
         be overridden using the get_field parameter.
@@ -136,9 +143,9 @@ def text_from_request(rq, *, post_field=None, get_field=None):
             # curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." \
             #     https://greynir.is/postag.api
             text = rq.form.get(post_field or "text", "")
-        text = text[0:_MAX_TEXT_LENGTH]
+        text = text[0:MAX_TEXT_LENGTH]
     elif rq.method == "GET":
-        text = rq.args.get(get_field or "t", "")[0:_MAX_TEXT_LENGTH_VIA_URL]
+        text = rq.args.get(get_field or "t", "")[0:MAX_TEXT_LENGTH_VIA_URL]
     else:
         # Unknown/unsupported method
         text = ""
@@ -150,11 +157,11 @@ def text_from_request(rq, *, post_field=None, get_field=None):
 # PyCon 2016 "Flask at Scale" tutorial: https://github.com/miguelgrinberg/flack
 
 # A dictionary of currently living tasks
-_tasks = dict()  # type: Dict[str, Dict]
+_tasks: Dict[str, Dict] = dict()
 _tasks_lock = threading.Lock()
 
 
-def fancy_url_for(*args, **kwargs):
+def fancy_url_for(*args, **kwargs) -> str:
     """ url_for() replacement that works even when there is no request context """
     if "_external" not in kwargs:
         kwargs["_external"] = False
@@ -170,16 +177,16 @@ def fancy_url_for(*args, **kwargs):
 
 
 @routes.before_app_first_request
-def before_first_request():
+def before_first_request() -> None:
     """ Start a background thread that cleans up old tasks """
 
-    def clean_old_tasks():
+    def clean_old_tasks() -> None:
         """ This function cleans up old tasks from an in-memory data structure """
         global _tasks
         while True:
             # Only keep tasks that are running or
             # that finished less than 5 minutes ago
-            five_min_ago = datetime.utcnow() - timedelta(minutes=5)
+            five_min_ago = utcnow() - timedelta(minutes=5)
             with _tasks_lock:
                 _tasks = {
                     task_id: task
@@ -199,7 +206,7 @@ class _FileProxy:
     """ A hack that implements an in-memory proxy object for a Werkzeug FileStorage
         instance, enabling it to be passed between threads """
 
-    def __init__(self, fs):
+    def __init__(self, fs: FileStorage) -> None:
         # Initialize the file proxy object from a Werkzeug FileStorage instance,
         # cf. https://werkzeug.palletsprojects.com/en/1.0.x/datastructures/#werkzeug.datastructures.FileStorage
         self._mimetype = fs.mimetype
@@ -211,18 +218,18 @@ class _FileProxy:
         self._bytes = fs.read()
 
     @property
-    def mimetype(self):
+    def mimetype(self) -> str:
         return self._mimetype
 
     @property
-    def mimetype_params(self):
+    def mimetype_params(self) -> Dict[str, str]:
         return self._mimetype_params
 
     @property
-    def content_type(self):
+    def content_type(self) -> Optional[str]:
         return self._content_type
 
-    def read(self):
+    def read(self) -> bytes:
         return self._bytes
 
 
@@ -232,14 +239,14 @@ class _RequestProxy:
         that can be passed safely between threads, while retaining
         the ability to read uploaded files and form data """
 
-    def __init__(self, rq):
+    def __init__(self, rq: Request) -> None:
         """ Create an instance that walks and quacks sufficiently similarly
             to the Flask Request object in rq """
         self.method = rq.method
         self.headers = {k: v for k, v in rq.headers}
         self.environ = rq.environ
         self.blueprint = rq.blueprint
-        self.progress_func = None
+        self.progress_func: Optional[ProgressFunc] = None
         if rq.method == "POST":
             # Copy POSTed data between requests
             if rq.headers.get("Content-Type") == "text/plain":
@@ -261,12 +268,12 @@ class _RequestProxy:
         # request has been completed and temporary files deleted)
         self.files = {k: _FileProxy(v) for k, v in rq.files.items()}
 
-    def set_progress_func(self, progress_func):
+    def set_progress_func(self, progress_func: ProgressFunc) -> None:
         """ Set a function to call during processing of asynchronous requests """
         self.progress_func = progress_func
 
 
-def async_task(f):
+def async_task(f: Callable) -> Callable:
     """ This decorator transforms a sync route into an asynchronous one
         by running it in a background thread """
 
@@ -276,12 +283,12 @@ def async_task(f):
         # Assign a unique id to each asynchronous task
         task_id = uuid.uuid4().hex
 
-        def progress(ratio):
+        def progress(ratio: float) -> None:
             """ Function to call from the worker task to indicate progress. """
             # ratio is a float from 0.0 (just started) to 1.0 (finished)
             _tasks[task_id]["progress"] = ratio
 
-        def task(app, rq):
+        def task(app: Any, rq: _RequestProxy) -> None:
             """ Run the decorated route function in a new thread """
             this_task = _tasks[task_id]
             # Pretty ugly hack, but no better solution is apparent:
@@ -304,7 +311,7 @@ def async_task(f):
                 finally:
                     # We record the time of the response, to help in garbage
                     # collecting old tasks
-                    this_task["t"] = datetime.utcnow()
+                    this_task["t"] = utcnow()
 
         # Record the task, and then launch it
         with _tasks_lock:
@@ -335,22 +342,23 @@ def async_task(f):
 
 
 @routes.route("/status/<task>", methods=["GET"])
-def get_status(task):
+def get_status(task: str):
     """ Return the status of an asynchronous task. If this request returns a
         202 ACCEPTED status code, it means that task hasn't finished yet.
         Else, the response from the task is returned (normally with a
         200 OK status). """
     task_id = task
     with _tasks_lock:
-        task = _tasks.get(task_id)
-        if task is None:
+        assert _tasks is not None
+        t = _tasks.get(task_id)
+        if t is None:
             abort(404)
-        if "rv" in task:
+        if "rv" in t:
             # Task completed
-            return task["rv"]
+            return t["rv"]
         # Not completed: report progress
         return (
-            json.dumps(dict(progress=task["progress"])),
+            json.dumps(dict(progress=t["progress"])),
             202,  # ACCEPTED
             {
                 "Location": fancy_url_for("routes.get_status", task=task_id),
