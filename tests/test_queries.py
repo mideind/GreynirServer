@@ -53,8 +53,8 @@ API_CONTENT_TYPE = "application/json"
 
 
 def qmcall(c, qdict, qtype=None):
-    """ Use passed client object to call query API with
-        query string key value pairs provided in dict arg. """
+    """Use passed client object to call query API with
+    query string key value pairs provided in dict arg."""
 
     # test=1 ensures that we bypass the cache and have a (fixed) location
     if "test" not in qdict:
@@ -105,6 +105,17 @@ def test_query_api(client):
     c = client
 
     google_key = has_google_api_key()
+
+    # First, make sure nonsensical queries are not answered
+    qstr = {"q": "blergh smergh vlurgh"}
+    r = c.get("/query.api?" + urlencode(qstr))
+    assert r.content_type.startswith(API_CONTENT_TYPE)
+    assert r.is_json
+    json = r.get_json()
+    assert "valid" in json
+    assert json["valid"]
+    assert "error" in json
+    assert "answer" not in json
 
     # Arithmetic module
     ARITHM_QUERIES = {
@@ -219,9 +230,7 @@ def test_query_api(client):
     )
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
-    json = qmcall(
-        c, {"q": "hvert er gengi krónunnar á móti dollara í dag"}, "Currency"
-    )
+    json = qmcall(c, {"q": "hvert er gengi krónunnar á móti dollara í dag"}, "Currency")
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
     json = qmcall(c, {"q": "hvað eru tíu þúsund krónur margir dalir"}, "Currency")
@@ -312,7 +321,9 @@ def test_query_api(client):
     assert re.search(r"25", json["answer"]) is not None
 
     # Dictionary module
-    json = qmcall(c, {"q": "hvernig skilgreinir orðabókin orðið kettlingur"}, "Dictionary")
+    json = qmcall(
+        c, {"q": "hvernig skilgreinir orðabókin orðið kettlingur"}, "Dictionary"
+    )
     assert re.search(r"25", json["answer"]) is not None
 
     json = qmcall(c, {"q": "komdu með orðabókarskilgreiningu á tækni"}, "Dictionary")
@@ -529,7 +540,9 @@ def test_query_api(client):
 
     # User info module
     json = qmcall(
-        c, {"q": "ég heiti Gunna Jónsdóttir", "client_id": DUMMY_CLIENT_ID}, "UserInfo",
+        c,
+        {"q": "ég heiti Gunna Jónsdóttir", "client_id": DUMMY_CLIENT_ID},
+        "UserInfo",
     )
     assert json["answer"].startswith("Sæl og blessuð") and "Gunna" in json["answer"]
 
