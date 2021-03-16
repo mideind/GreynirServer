@@ -243,7 +243,7 @@ class Article:
                     for t in sent:
                         if t.get("k") == TOK.PERSON:
                             # The full name of the person is in the v field
-                            yield cast(str, t["v"])
+                            yield cast(str, t.get("v", ""))
 
     def entity_names(self) -> Iterator[str]:
         """ A generator for entity names from an article token stream """
@@ -256,7 +256,7 @@ class Article:
                     for t in sent:
                         if t.get("k") == TOK.ENTITY:
                             # The entity name
-                            yield cast(str, t["x"])
+                            yield cast(str, t.get("x", ""))
 
     def create_register(
         self, session: Session, all_names: bool = False

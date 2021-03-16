@@ -117,7 +117,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     # Successfully matched a query type
     q.set_qtype(result.qtype)
     q.set_key(result.qkey)
-    session = state["session"]
+    # session = state.get("session")
     # Select a query function and exceute it
     answer: str = result.qtype + ": " + result.qkey
     voice_answer: str = answer

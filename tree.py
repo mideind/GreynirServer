@@ -74,6 +74,7 @@ class TreeStateDict(TypedDict, total=False):
     _visit: Optional["VisitFunction"]
     _default: Optional["NonterminalFunction"]
 
+
 TreeToken = NamedTuple(
     "TreeToken",
     [
@@ -908,16 +909,15 @@ class TerminalNode(Node):
                 else:
                     # Lookup the same word (identified by 'utg') but a different declination
                     parts = x.ordmynd.split("-")
-                    stofn = x.stofn.split("-")[-1] if len(parts) > 1 else x.stofn
+                    stofn = x.stofn.rsplit("-", maxsplit=1)[-1]
                     prefix = "".join(parts[0:-1]) if len(parts) > 1 else ""
                     # Go through all nominative forms of this word form until we
                     # find one that matches the meaning ('beyging') that we're
                     # looking for. It also must be the same word category and
                     # the same stem and identifier ('utg'). In fact the 'utg' check
                     # alone should be sufficient, but better safe than sorry.
-                    n = bin_db.lookup_raw_nominative(
-                        parts[-1]
-                    )  # Note: this call is cached
+                    # Note: this call is cached
+                    n = bin_db.lookup_raw_nominative(parts[-1])
                     r = [
                         nm
                         for nm in n
@@ -1059,7 +1059,8 @@ class TerminalNode(Node):
         """ Calculate the root form (stem) of this node's text """
         if self.root_cache is None:
             # Not already cached: look up in database
-            bin_db = state["bin_db"]
+            bin_db = state.get("bin_db")
+            assert bin_db is not None
             self.root_cache = self._root(bin_db)
         return self.root_cache
 
@@ -1067,7 +1068,8 @@ class TerminalNode(Node):
         """ Calculate the nominative form of this node's text """
         if self.nominative_cache is None:
             # Not already cached: look up in database
-            bin_db = state["bin_db"]
+            bin_db = state.get("bin_db")
+            assert bin_db is not None
             self.nominative_cache = self._nominative(bin_db)
         return self.nominative_cache
 
@@ -1075,7 +1077,8 @@ class TerminalNode(Node):
         """ Calculate the nominative, indefinite form of this node's text """
         if self.indefinite_cache is None:
             # Not already cached: look up in database
-            bin_db = state["bin_db"]
+            bin_db = state.get("bin_db")
+            assert bin_db is not None
             self.indefinite_cache = self._indefinite(bin_db)
         return self.indefinite_cache
 
@@ -1083,7 +1086,8 @@ class TerminalNode(Node):
         """ Calculate the singular, nominative, indefinite form of this node's text """
         if self.canonical_cache is None:
             # Not already cached: look up in database
-            bin_db = state["bin_db"]
+            bin_db = state.get("bin_db")
+            assert bin_db is not None
             self.canonical_cache = self._canonical(bin_db)
         return self.canonical_cache
 
@@ -1295,10 +1299,10 @@ class NonterminalNode(Node):
         if params and not self.is_repeated and self.nt_base != "Query":
             # Don't invoke if this is an epsilon nonterminal (i.e. has no children),
             # or if this is a repetition parent (X?, X* or X+)
-            processor = state["processor"]
+            processor = state.get("processor")
             func = cast(
                 Optional[NonterminalFunction],
-                getattr(processor, self.nt_base, state["_default"])
+                getattr(processor, self.nt_base, state.get("_default"))
                 if processor
                 else None,
             )
@@ -1527,7 +1531,7 @@ class Tree(TreeBase):
     def visit_children(self, state: TreeStateDict, node: Node) -> Optional[Result]:
         """ Visit the children of node, obtain results from them and pass them to the node """
         # First check whether the processor has a visit() method
-        visit = state["_visit"]
+        visit = state.get("_visit")
         if visit is not None and not visit(state, node):
             # Call the visit() method and if it returns False, we do not visit this node
             # or its children
@@ -1542,7 +1546,7 @@ class Tree(TreeBase):
         # Sentence processing completed:
         # Invoke a function called 'sentence(state, result)',
         # if present in the processor
-        sentence = state["_sentence"]
+        sentence = state.get("_sentence")
         if sentence is not None:
             sentence(state, result)
 
