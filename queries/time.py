@@ -36,11 +36,16 @@ from datetime import datetime
 from typing import cast
 from pytz import country_timezones, timezone
 
-from reynir.bindb import BIN_Db
-from geo import isocode_for_country_name, lookup_city_info, capitalize_placename
+from reynir import NounPhrase
+from geo import (
+    isocode_for_country_name,
+    lookup_city_info,
+    capitalize_placename,
+    iceprep_for_cc,
+    iceprep_for_placename,
+)
 from query import Query
-from queries import timezone4loc
-
+from queries import timezone4loc, gen_answer
 
 _TIME_QTYPE = "Time"
 
@@ -102,12 +107,18 @@ _TIME_IN_LOC_QUERIES = frozenset(
     (
         "klukkan í",
         "klukkan á",
+        "tíminn í",
+        "tíminn á",
+        "hvað klukkan í",
+        "hvað klukkan á",
         "hvað er klukkan í",
         "hvað er klukkan á",
         "hver er klukkan í",
         "hver er klukkan á",
         "hvað er tíminn í",
+        "hvað er tíminn á",
         "hver er tíminn í",
+        "hver er tíminn á",
     )
 )
 
@@ -130,51 +141,55 @@ def handle_plain_text(q: Query) -> bool:
         # Use location to determine time zone
         tz = timezone4loc(q.location, fallback="IS")
     else:
-        # TODO: Replace with regex, and handle "Hvað klukkan á X", "Hvað klukkan", etc.
         locq = [x for x in _TIME_IN_LOC_QUERIES if ql.startswith(x.lower())]
         if not locq:
             return False  # Not matching any time queries
-        # This is a auery about the time in a particular location, i.e. country or city
-        # TODO: Fix, hacky.
-        loc = ql[len(locq):].strip()  # Cut away question prefix, leaving only placename
+        # This is a query about the time in a particular location, i.e. country or city
+        # Cut away question prefix, leaving only loc name
+        loc = ql[len(locq[0]) :].strip()
         if not loc:
             return False  # No location string
         # Intelligently capitalize country/city/location name
         loc = capitalize_placename(loc)
+
         # Look up nominative
-        # This only works for single-word city/country names found
-        # in BÍN and could be improved (e.g. fails for "Nýju Jórvík")
-        bin_res = BIN_Db().lookup_nominative(loc)
-        words = [m.stofn for m in bin_res]
-        words.append(loc)  # In case it's not in BÍN (e.g. "New York", "San José")
+        loc_nom = NounPhrase(loc).nominative or loc
+        prep = "í"
 
-        # Check if any word is a recognised country or city name
-        for w in words:
-            cc = isocode_for_country_name(w)
-            if cc and cc in country_timezones:
-                # Look up country timezone
-                # Use the first timezone although some countries have more than one
-                # The timezone list returned by pytz is ordered by "dominance"
-                tz = country_timezones[cc][0]
-            else:
-                # It's not a country name, look up in city database
-                info = lookup_city_info(w)
-                if info:
-                    top = info[0]
-                    location = (
-                        cast(float, top.get("lat_wgs84")),
-                        cast(float, top.get("long_wgs84")),
-                    )
-                    tz = timezone4loc(location)
-            if tz:
-                # We have a timezone
-                break
+        # Check if loc is a recognised country or city name
+        cc = isocode_for_country_name(loc_nom)
+        if cc and cc in country_timezones:
+            # Look up country timezone
+            # Use the first timezone although some countries have more than one
+            # The timezone list returned by pytz is ordered by "dominance"
+            tz = country_timezones[cc][0]
+            prep = iceprep_for_cc(cc)
+        else:
+            # It's not a country name, look up in city database
+            info = lookup_city_info(loc_nom)
+            if info:
+                top = info[0]
+                location = (
+                    cast(float, top.get("lat_wgs84")),
+                    cast(float, top.get("long_wgs84")),
+                )
+                tz = timezone4loc(location)
+                prep = iceprep_for_placename(loc_nom)
 
-        # "Klukkan í Lundúnum er" - Used for voice answer
-        specific_desc = "{0} er".format(ql[8:]).strip()
-
-        # Beautify query by capitalizing the country/city name
-        q.set_beautified_query("{0}{1}?".format(q.beautified_query[:18], loc))
+        if tz:
+            # "Klukkan í Lundúnum er" - Used for voice answer
+            dat = NounPhrase(loc_nom).dative or loc
+            specific_desc = "Klukkan {0} {1} er".format(prep, dat)
+        else:
+            # Unable to find the specified location
+            q.set_qtype(_TIME_QTYPE)
+            q.set_key(loc)
+            q.set_answer(
+                *gen_answer(
+                    "Ekki tókst að fletta upp staðsetningunni '{0}'".format(loc)
+                )
+            )
+            return True
 
     # We have a timezone. Return formatted answer.
     if tz:
