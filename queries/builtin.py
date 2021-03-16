@@ -1027,7 +1027,7 @@ def launch_search(query: Query, session: Session, qkey: str) -> AnswerTuple:
         for sent in pg:
             for t in sent:
                 # Obtain search stems for the tokens.
-                d = dict(x=t["x"], w=0.0)
+                d = dict(x=t.get("x", ""), w=0.0)
                 tweights.append(d)
                 # The terms are represented as (stem, category) tuples.
                 stems = stems_of_token(t)

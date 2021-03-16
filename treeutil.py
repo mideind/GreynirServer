@@ -305,7 +305,7 @@ class TreeUtility:
             # We have already cut away paragraph and sentence markers
             # (P_BEGIN/P_END/S_BEGIN/S_END)
             terminal, meaning = tmap.get(ix, (None, None))
-            d = describe_token(ix, token, terminal, meaning)
+            d: TokenDict = describe_token(ix, token, terminal, meaning)
             if words is not None:
                 wt = TreeUtility._word_tuple(token, terminal, meaning)
                 if wt is not None:
@@ -314,11 +314,15 @@ class TreeUtility:
             if ix == error_index:
                 # Mark the error token, if present
                 d["err"] = 1
-            if meaning is not None and "x" in d:
-                # Also return the augmented terminal name
-                d["a"] = augment_terminal(
-                    terminal.name, d["x"].lower(), meaning.beyging
-                )
+            # The following code is a bit convoluted, in order to
+            # work around a bug in Pylance
+            if meaning is not None:
+                txt = d.get("x", "").lower()
+                if txt:
+                    # Also return the augmented terminal name
+                    d["a"] = augment_terminal(
+                        terminal.name, txt, meaning.beyging
+                    )
             dump.append(d)
         return dump
 
@@ -509,22 +513,22 @@ class TreeUtility:
                 if node is None:
                     return
                 nonlocal result
-                if node["k"] == "NONTERMINAL":
+                if node.get("k") == "NONTERMINAL":
                     node = cast(SimpleTreeNode, node)
-                    result.append("(" + node["i"])
+                    result.append("(" + node.get("i", ""))
                     # Recursively add the children of this nonterminal
-                    for child in node["p"]:
+                    for child in node.get("p", []):
                         result.append(" ")
                         push(child)
                     result.append(")")
-                elif node["k"] == "PUNCTUATION":
+                elif node.get("k") == "PUNCTUATION":
                     pass
                     # Include punctuation?
                     # If so, do something like:
                     # result.push("(PUNCT |" + node["x"] + "|)")
                 else:
                     # Terminal: append the text
-                    result.append(node["x"].replace(" ", "_"))
+                    result.append(node.get("x", "").replace(" ", "_"))
 
             # This uses a custom simplification scheme
             simple_tree = TreeUtility._simplify_tree(

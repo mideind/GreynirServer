@@ -247,7 +247,7 @@ class NgramTagger:
                         ct = canonicalize_token(t)
                         tag = str(IFD_Tagset(ct))
                         if tag:
-                            self.lemma_cnt[ct["x"]][tag] += 1
+                            self.lemma_cnt[ct.get("x", "")][tag] += 1
                     if tag:
                         yield tag
                 for _ in range(n - 1):
