@@ -1099,9 +1099,6 @@ def sentence(state, result) -> None:
     if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
-    # Successfully matched a query type
-    q.set_qtype(result.qtype)
-    q.set_key(result.qkey)
     if q.is_voice and result.qtype in _Q_NO_VOICE:
         # We don't do topic searches or word relationship
         # queries via voice; that would be pretty meaningless
@@ -1111,6 +1108,11 @@ def sentence(state, result) -> None:
         # We don't allow repeat requests in non-voice queries
         q.set_error("E_ONLY_VOICE_SUPPORTED")
         return
+
+    # Successfully matched a query type
+    q.set_qtype(result.qtype)
+    q.set_key(result.qkey)
+
     if result.qtype == "Search":
         # For searches, don't add a question mark at the end
         if q.beautified_query.endswith("?") and not q.query.endswith("?"):
