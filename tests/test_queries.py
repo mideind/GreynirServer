@@ -324,10 +324,11 @@ def test_query_api(client):
     json = qmcall(
         c, {"q": "hvernig skilgreinir orðabókin orðið kettlingur"}, "Dictionary"
     )
-    assert re.search(r"25", json["answer"]) is not None
+    assert "kettlingur" in json["answer"].lower()
 
-    json = qmcall(c, {"q": "komdu með orðabókarskilgreiningu á tækni"}, "Dictionary")
-    assert re.search(r"25", json["answer"]) is not None
+    json = qmcall(c, {"q": "flettu upp orðinu skíthæll í orðabók"}, "Dictionary")
+    assert "skíthæll" in json["answer"].lower()
+    assert json["source"] == "Íslensk nútímamálsorðabók"
 
     # Distance module
     # NB: No Google API key on test server

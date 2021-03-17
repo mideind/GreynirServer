@@ -26,8 +26,6 @@
 import logging
 from pprint import pprint
 
-from reynir import NounPhrase
-
 from query import Query
 
 from . import query_json_api, gen_answer, cap_first, icequote
@@ -35,6 +33,9 @@ from . import query_json_api, gen_answer, cap_first, icequote
 
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
+
+# The grammar nonterminals this module wants to handle
+QUERY_NONTERMINALS = {"QDictQuery"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -46,15 +47,15 @@ QDictQuery →
     QDictWordQuery
 
 QDictWordQuery →
-    "hvað" "segir" QDictDict "um" "orðið"? QDictSubjectNom
-    | "hvað" "stendur" QDictInDictionary "um" "orðið"? QDictSubjectNom
+    "hvað" "segir" QDictDict "um" "orðið" QDictSubjectNom
+    | "hvað" "stendur" QDictInDictionary "um" "orðið" QDictSubjectNom
     | QDictWhatWhich "er" QDictDefinition "á" "orðinu"? QDictSubjectNom QDictInDictionary?
     | "flettu" "upp" "orðinu"? QDictSubjectNom QDictInDictionary?
     | QDictCanYou "flett" "upp" "orðinu"? QDictSubjectNom QDictInDictionary?
-    | "hvernig" "skilgreinir" QDictDict "orðið"? QDictSubjectNom
-    | "hvernig" "er" "orðið"? QDictSubjectNom "skilgreint" QDictInDictionary?
+    | "hvernig" "skilgreinir" QDictDict "orðið" QDictSubjectNom
+    | "hvernig" "er" "orðið" QDictSubjectNom "skilgreint" QDictInDictionary?
     | QDictDefinition "á" "orðinu"? QDictSubjectNom
-    | "skilgreindu" "orðið"? QDictSubjectNom
+    | "skilgreindu" "orðið" QDictSubjectNom
     | "komdu" "með" "skilgreininguna" "á" "orðinu"? QDictSubjectNom
     | "komdu" "með" "skilgreiningu" "á" "orðinu"? QDictSubjectNom
     | "komdu" "með" "orðabókarskilgreiningu" "á" "orðinu"? QDictSubjectNom
@@ -84,15 +85,13 @@ QDictDefinition →
 QDictSubjectNom →
     Nl
 
-$score(+135) QDictQuery
+$score(+35) QDictQuery
 
 """
 
 
 def QDictSubjectNom(node, params, result):
-    n = result._text
-    nom = NounPhrase(n).nominative or n
-    result.qkey = nom
+    result.qkey = result._text
 
 
 def QDictWordQuery(node, params, result):
@@ -117,7 +116,14 @@ _ENUM_WORDS = [
     "áttunda",
     "níunda",
     "tíunda",
+    "ellefta",
+    "tólfta",
 ]
+
+
+def _clean4voice(s: str) -> str:
+    s = s.replace("osfrv.", "og svo framvegis")
+    return s
 
 
 def _answer_dictionary_query(q: Query, result):
@@ -131,52 +137,72 @@ def _answer_dictionary_query(q: Query, result):
     # Search for word via islenskordabok REST API
     res = query_json_api(url)
 
+    def not_found():
+        """ Set answer for cases when word lookup fails. """
+        nf = "Ekki tókst að fletta upp orðinu {0}".format(icequote(word))
+        q.set_answer(*gen_answer(nf))
+        return None
+
     # Nothing found
     if not res or "results" not in res or not len(res["results"]):
-        return None
+        return not_found()
 
-    # We have at least one result. Does it match?
-    first = res["results"][0]
-    if first.get("fletta") != word or "flid" not in first:
-        return None
+    # We're only interested in results where fletta string is equal to word being asked about
+    results = [n for n in res["results"] if n.get("fletta") == word and "flid" in n]
+    if not results:
+        return not_found()
 
+    # OK, we have at least one result.
     # For now, we just naively use the first result
+    first = results[0]
+
     # Look it up by ID via the REST API
     url = _WORD_LOOKUP_URL.format(first["flid"])
     r = query_json_api(url)
     if not r:
-        return None
+        return not_found()
+    # pprint(r)
 
     items = r.get("items")
     if not items:
-        return None
+        return not_found()
 
-    # Get all definitions ("skýringar")
-    expl = [i["texti"] for i in items if i.get("teg") == "SKÝRING"]
+    # Results from the islenskordabok.arnastofnun.is API are either
+    # enumerated definitions or a list of explications. We use the
+    # former if available, else the latter
+
+    # Get all enumerated explication IDs ("LIÐUR")
+    expl = [i["itid"] for i in items if i.get("teg") == "LIÐUR"]
+    if expl:
+        sk = [i for i in items if i.get("paritem") in expl and i.get("teg") == "SKÝRING"]
+        df = [i["texti"] for i in sk]
+    else:
+        # Get all definitions ("skýringar")
+        df = [i["texti"] for i in items if i.get("teg") == "SKÝRING"]
+        # df = sorted(df, key=len)
 
     # If only one definition found, things are simple
-    if len(expl) == 1:
-        answ = "{0} er {1}".format(icequote(cap_first(word)), icequote(expl[0]))
+    if len(df) == 1:
+        answ = "{0} er {1}".format(icequote(cap_first(word)), icequote(df[0]))
         voice = answ
     else:
         # Otherwise, do some nice formatting + spell things out nicely for voice synthesis
         voice = "Orðið {0} getur þýtt: ".format(icequote(word))
         answ = ""
-        for i, x in enumerate(expl):
+        for i, x in enumerate(df[: len(_ENUM_WORDS)]):
             answ += "{0}. {1}\n".format(i + 1, x)
             enum = "í {0} lagi,".format(_ENUM_WORDS[i])
             voice += "{0} {1}, ".format(enum, x)
-        answ = answ.rstrip(", ") + "."
-        voice = voice.rstrip(", ") + "."
+        answ = answ.rstrip(",.\n").strip() + "."
+        voice = voice.rstrip(",.\n").strip() + "."
+        voice = _clean4voice(voice)
+
+    q.set_answer(dict(answer=answ), answ, voice)
 
     # Beautify query by placing word being asked about within parentheses
-    bq = q.beautified_query.replace(wnat, icequote(cap_first(word)))
+    bq = q.beautified_query.replace(wnat, icequote(word))
     q.set_beautified_query(bq)
-
-    # Note source
     q.set_source(_DICT_SOURCE)
-
-    return dict(answer=answ), answ, voice
 
 
 def sentence(state, result):
@@ -188,11 +214,7 @@ def sentence(state, result):
         q.set_key(result.qkey)
 
         try:
-            r = _answer_dictionary_query(q, result)
-            if not r:
-                r = gen_answer("Ekki tókst að fletta upp viðkomandi orði.")
-            q.set_answer(*r)
-            # q.set_expires(datetime.utcnow() + timedelta(hours=24))
+            _answer_dictionary_query(q, result)
         except Exception as e:
             logging.warning(
                 "Exception while processing dictionary query: {0}".format(e)
