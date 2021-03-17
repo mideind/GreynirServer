@@ -57,8 +57,8 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
             (
@@ -77,7 +77,7 @@ def help_text(lemma: str) -> str:
 HANDLE_TREE = True
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = { "QSchedule" }
+QUERY_NONTERMINALS = {"QSchedule"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 # Uses "QSch" as prefix for grammar namespace
@@ -258,8 +258,8 @@ def _span(p: Dict) -> Tuple[datetime, datetime]:
 
 
 def _curr_prog(sched: List) -> Optional[Dict]:
-    """ Return current TV program, given a TV schedule
-        i.e. a list of programs in chronological sequence. """
+    """Return current TV program, given a TV schedule
+    i.e. a list of programs in chronological sequence."""
     now = datetime.utcnow()
     for p in sched:
         t1, t2 = _span(p)
@@ -272,8 +272,8 @@ def _curr_prog(sched: List) -> Optional[Dict]:
 
 
 def _evening_prog(sched: List) -> List:
-    """ Return programs on a TV schedule starting from 19:00,
-        or at the current time if later """
+    """Return programs on a TV schedule starting from 19:00,
+    or at the current time if later"""
     start = datetime.utcnow()
     if (start.hour, start.minute) < (19, 0):
         start = datetime(start.year, start.month, start.day, 19, 0, 0)

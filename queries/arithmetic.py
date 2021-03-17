@@ -61,8 +61,8 @@ TOPIC_LEMMAS: Sequence[str] = [
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     if lemma in ("kvaðratrót", "ferningsrót"):
         return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
             random.choice(
@@ -422,8 +422,8 @@ def add_num(num, result: Result):
 
 
 def terminal_num(t):
-    """ Extract numerical value from terminal token's auxiliary info,
-        which is attached as a json-encoded array """
+    """Extract numerical value from terminal token's auxiliary info,
+    which is attached as a json-encoded array"""
     if t and t._node.aux:
         aux = json.loads(t._node.aux)
         if isinstance(aux, int) or isinstance(aux, float):
@@ -466,8 +466,8 @@ def QArMultOperator(node, params, result: Result):
 
 
 def QArLastResult(node, params, result: Result):
-    """ Reference to previous result, usually via the words
-        'það' or 'því' ('Hvað er það sinnum sautján?') """
+    """Reference to previous result, usually via the words
+    'það' or 'því' ('Hvað er það sinnum sautján?')"""
     q = result.state.get("query")
     ctx = None if q is None else q.fetch_context()
     if ctx is None or "result" not in ctx:
@@ -538,8 +538,7 @@ def QArStd(node, params, result: Result):
     # Used later for formatting voice answer string,
     # e.g. "[tveir plús tveir] er [fjórir]"
     result.desc = (
-        result._canonical
-        .replace("+", " plús ")
+        result._canonical.replace("+", " plús ")
         .replace("-", " mínus ")
         .replace("/", " deilt með ")
         .replace(" x ", " sinnum ")

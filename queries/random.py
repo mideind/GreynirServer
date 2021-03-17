@@ -39,8 +39,8 @@ TOPIC_LEMMAS = ["teningur", "skjaldarmerki", "handahóf"]
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég skil þig ef þú segir til dæmis: {0}.".format(
         random.choice(
             (
@@ -59,7 +59,7 @@ def help_text(lemma: str) -> str:
 HANDLE_TREE = True
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = { "QRandom" }
+QUERY_NONTERMINALS = {"QRandom"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """

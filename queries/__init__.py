@@ -148,9 +148,9 @@ _NUMBER_WORDS: Mapping[str, float] = {
 
 
 def parse_num(node: Node, num_str: str) -> float:
-    """ Parse Icelandic number string to float or int.
-        TODO: This needs to be a more capable, generic function. There are
-        several mildly differing implementions in various query modules. """
+    """Parse Icelandic number string to float or int.
+    TODO: This needs to be a more capable, generic function. There are
+    several mildly differing implementions in various query modules."""
 
     # Hack to handle the word "eina" being identified as f. name "Eina"
     if num_str in ("Eina", "Einu"):

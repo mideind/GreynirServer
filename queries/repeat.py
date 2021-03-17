@@ -34,7 +34,7 @@ _REPEAT_QTYPE = "Parrot"  # 'Repeat' is already taken for repeating the last ans
 
 _REPEAT_PREFIXES = tuple(
     (
-        "segðu eftirfarandi orð"
+        "segðu eftirfarandi orð",
         "segðu orðið",
         "segðu orðin",
         "segðu setninguna",

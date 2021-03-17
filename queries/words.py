@@ -175,8 +175,8 @@ _NOT_IN_BIN_MSG = "Nafnorðið „{0}“ fannst ekki í Beygingarlýsingu íslen
 
 
 def declension_answer_for_word(word: str, query: Query) -> AnswerTuple:
-    """ Look up all morphological forms of a given word,
-        construct natural language response. """
+    """Look up all morphological forms of a given word,
+    construct natural language response."""
 
     query.set_qtype("Declension")
     query.set_key(word)

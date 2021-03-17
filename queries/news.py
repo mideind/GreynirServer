@@ -44,15 +44,15 @@ TOPIC_LEMMAS = ["fréttir", "fregnir", "frétta"]
 
 
 def help_text(lemma) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég skil þig ef þú spyrð til dæmis: {0}?".format(
         random.choice(("Hvað er í fréttum", "Hvað er að frétta"))
     )
 
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = { "QNewsQuery" }
+QUERY_NONTERMINALS = {"QNewsQuery"}
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -136,6 +136,7 @@ _BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
 
 
 def top_news_answer():
+    """ Answer query about top news. """
     headlines = _get_news_data()
     if not headlines:
         return None

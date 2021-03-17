@@ -64,7 +64,7 @@ HANDLE_TREE = True
 PRIORITY = -1
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = { "BuiltinQueries" }
+QUERY_NONTERMINALS = {"BuiltinQueries"}
 
 GRAMMAR = """
 
@@ -363,9 +363,9 @@ def append_answers(rd: RegisterType, q, prop_func) -> None:
 
 
 def name_key_to_update(register: RegisterType, name: str) -> str:
-    """ Return the name register dictionary key to update with data about
-        the given person name. This may be an existing key within the
-        dictionary, the given key, or None if no update should happen. """
+    """Return the name register dictionary key to update with data about
+    the given person name. This may be an existing key within the
+    dictionary, the given key, or None if no update should happen."""
 
     if name in register:
         # The exact same name is already there: update it as-is
@@ -405,8 +405,8 @@ def name_key_to_update(register: RegisterType, name: str) -> str:
         # Both have middle names
 
         def has_correspondence(n: str, nlist: List[str]) -> bool:
-            """ Return True if the middle name or abbreviation n can
-                correspond to any middle name or abbreviation in nlist """
+            """Return True if the middle name or abbreviation n can
+            correspond to any middle name or abbreviation in nlist"""
             if n.endswith("."):
                 n = n[:-1]
             for m in nlist:
@@ -443,8 +443,8 @@ def name_key_to_update(register: RegisterType, name: str) -> str:
 
 
 def append_names(rd: RegisterType, q, prop_func) -> None:
-    """ Iterate over query results and add them to the result dictionary rd,
-        assuming that the key is a person name """
+    """Iterate over query results and add them to the result dictionary rd,
+    assuming that the key is a person name"""
     for p in q:
         s = correct_spaces(prop_func(p))
         ai = dict(
@@ -588,9 +588,9 @@ def prepare_response(q, prop_func):
 def add_entity_to_register(
     name: str, register: RegisterType, session, all_names=False
 ) -> None:
-    """ Add the entity name and the 'best' definition to the given
-        name register dictionary. If all_names is True, we add
-        all names that occur even if no title is found. """
+    """Add the entity name and the 'best' definition to the given
+    name register dictionary. If all_names is True, we add
+    all names that occur even if no title is found."""
     if name in register:
         # Already have a definition for this name
         return
@@ -625,7 +625,7 @@ def add_entity_to_register(
 
 
 def add_name_to_register(
-    name: str, register: RegisterType, session: Session, all_names: bool=False
+    name: str, register: RegisterType, session: Session, all_names: bool = False
 ) -> None:
     """ Add the name and the 'best' title to the given name register dictionary """
     if name in register:
@@ -641,9 +641,11 @@ def add_name_to_register(
             register[name_key] = dict(kind="name", title=None)
 
 
-def create_name_register(tokens: Iterable[Tok], session: Session, all_names: bool=False) -> RegisterType:
-    """ Assemble a dictionary of person and entity names
-        occurring in the token list """
+def create_name_register(
+    tokens: Iterable[Tok], session: Session, all_names: bool = False
+) -> RegisterType:
+    """Assemble a dictionary of person and entity names
+    occurring in the token list"""
     register: RegisterType = {}
     for t in tokens:
         if t.kind == TOK.PERSON:
@@ -708,8 +710,8 @@ def _query_person_titles(session: Session, name: str):
 
 
 def _query_article_list(session, name: str):
-    """ Return a list of dicts with information about articles
-        where the given name appears """
+    """Return a list of dicts with information about articles
+    where the given name appears"""
     articles = ArticleListQuery.articles(
         name, limit=_MAXLEN_ANSWER, enclosing_session=session
     )
@@ -814,8 +816,8 @@ def query_person_title(session, name: str) -> Tuple[str, Optional[str]]:
     """ Return the most likely title for a person """
 
     def we_dont_like(answer: str) -> bool:
-        """ Return False if we don't like this title and
-            would prefer another one """
+        """Return False if we don't like this title and
+        would prefer another one"""
         # Skip titles that simply say that somebody is the husband or
         # wife of somebody else
         return answer.startswith(_DONT_LIKE_TITLE)
@@ -965,7 +967,9 @@ def query_entity_def(session, name: str) -> str:
     return correct_spaces(rl[0]["answer"]) if rl else ""
 
 
-def query_company(query: Query, session: Session, name: str) -> Tuple[List[Dict[str, Any]], str, str]:
+def query_company(
+    query: Query, session: Session, name: str
+) -> Tuple[List[Dict[str, Any]], str, str]:
     """ A query for an company in the entities table """
     # Create a query name by cutting off periods at the end
     # (hf. -> hf) and adding a percent pattern match at the end
@@ -1006,12 +1010,18 @@ def query_word(query: Query, session: Session, stem: str) -> AnswerTuple:
     rlist = RelatedWordsQuery.rel(stem, enclosing_session=session) if acnt else []
     # Convert to an easily serializable dict
     # Exclude the original search stem from the result
-    return dict(
-        count=acnt,
-        answers=[
-            dict(stem=rstem, cat=rcat) for rstem, rcat, rcnt in rlist if rstem != stem
-        ],
-    ), "", None
+    return (
+        dict(
+            count=acnt,
+            answers=[
+                dict(stem=rstem, cat=rcat)
+                for rstem, rcat, rcnt in rlist
+                if rstem != stem
+            ],
+        ),
+        "",
+        None,
+    )
 
 
 def launch_search(query: Query, session: Session, qkey: str) -> AnswerTuple:
@@ -1207,14 +1217,14 @@ def Mannsnafn(node, params, result) -> None:
 
 
 def EfLiður(node, params, result) -> None:
-    """ Eignarfallsliðir haldast óbreyttir,
-        þ.e. þeim á ekki að breyta í nefnifall """
+    """Eignarfallsliðir haldast óbreyttir,
+    þ.e. þeim á ekki að breyta í nefnifall"""
     result._nominative = result._text
 
 
 def FsMeðFallstjórn(node, params, result) -> None:
-    """ Forsetningarliðir haldast óbreyttir,
-        þ.e. þeim á ekki að breyta í nefnifall """
+    """Forsetningarliðir haldast óbreyttir,
+    þ.e. þeim á ekki að breyta í nefnifall"""
     result._nominative = result._text
 
 

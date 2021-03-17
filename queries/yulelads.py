@@ -32,8 +32,8 @@ from query import Query
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
             (
@@ -127,14 +127,18 @@ _DATE_TO_ORDINAL_GEN[22] = "tuttugasta og annars"
 _TWENTY_PART = {"fyrsta": 1, "annan": 2, "þriðja": 3, "fjórða": 4}
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
-TOPIC_LEMMAS = ["jólasveinn"] + list(_YULE_LADS_BY_NAME.keys()) + [lad.lower() for lad in _YULE_LADS_BY_NAME.keys()]
+TOPIC_LEMMAS = (
+    ["jólasveinn"]
+    + list(_YULE_LADS_BY_NAME.keys())
+    + [lad.lower() for lad in _YULE_LADS_BY_NAME.keys()]
+)
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = { "QYuleQuery" }
+QUERY_NONTERMINALS = {"QYuleQuery"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """

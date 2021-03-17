@@ -60,8 +60,8 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
             (
@@ -129,7 +129,7 @@ _NUMBER_WORDS = {
 HANDLE_TREE = True
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = { "QCurrency" }
+QUERY_NONTERMINALS = {"QCurrency"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -377,8 +377,8 @@ def QCurNumberWord(node, params, result):
 
 
 def QCurUnit(node, params, result):
-    # Obtain the ISO currency code from the last three
-    # letters in the child nonterminal name
+    """Obtain the ISO currency code from the last three
+    letters in the child nonterminal name."""
     currency = node.child.nt_base[-3:]
     add_currency(currency, result)
 

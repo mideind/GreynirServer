@@ -24,7 +24,6 @@
 # TODO: Properly handle verbs, such as "að veiða"
 
 import logging
-from pprint import pprint
 
 from query import Query
 
@@ -161,7 +160,7 @@ def _answer_dictionary_query(q: Query, result):
     r = query_json_api(url)
     if not r:
         return not_found()
-    # pprint(r)
+    # print(r)
 
     items = r.get("items")
     if not items:
@@ -174,7 +173,9 @@ def _answer_dictionary_query(q: Query, result):
     # Get all enumerated explication IDs ("LIÐUR")
     expl = [i["itid"] for i in items if i.get("teg") == "LIÐUR"]
     if expl:
-        sk = [i for i in items if i.get("paritem") in expl and i.get("teg") == "SKÝRING"]
+        sk = [
+            i for i in items if i.get("paritem") in expl and i.get("teg") == "SKÝRING"
+        ]
         df = [i["texti"] for i in sk]
     else:
         # Get all definitions ("skýringar")
