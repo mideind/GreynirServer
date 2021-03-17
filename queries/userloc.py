@@ -46,6 +46,7 @@ _LOC_QTYPE = "UserLocation"
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
 
+# The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = { "QUserLocation" }
 
 # The context-free grammar for the queries recognized by this plug-in module

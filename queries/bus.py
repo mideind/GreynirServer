@@ -123,6 +123,7 @@ def help_text(lemma: str) -> str:
     )
 
 
+# The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = {
     "QBusArrivalTime",
     "QBusAnyArrivalTime",

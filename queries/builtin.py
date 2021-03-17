@@ -63,6 +63,7 @@ HANDLE_TREE = True
 # (unless they have even lower priority)
 PRIORITY = -1
 
+# The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = { "BuiltinQueries" }
 
 GRAMMAR = """

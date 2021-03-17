@@ -90,6 +90,7 @@ def help_text(lemma: str) -> str:
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
+# The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = { "QWiki" }
 
 # The context-free grammar for the queries recognized by this plug-in module

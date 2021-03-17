@@ -216,6 +216,7 @@ _ORDINAL_WORDS_DATIVE: Mapping[str, float] = {
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
+# The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = {"QArithmetic", "QArPi"}
 
 # The context-free grammar for the queries recognized by this plug-in module
