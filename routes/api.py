@@ -318,6 +318,9 @@ def reparse_api(version=1):
     register = {}
     stats = {}
 
+    if not uuid:
+        return better_jsonify(valid=True, error=True, errmsg="Missing ID param")
+
     with SessionContext(commit=True) as session:
         # Load the article
         a = ArticleProxy.load_from_uuid(uuid, session)
