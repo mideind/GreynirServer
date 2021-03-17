@@ -27,7 +27,7 @@ from typing import Any, Callable, Optional, Type, cast
 
 from sqlalchemy import create_engine, desc, func as dbfunc
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.engine.result import ResultProxy
+from sqlalchemy.engine import CursorResult
 
 from sqlalchemy.exc import SQLAlchemyError as DatabaseError
 from sqlalchemy.exc import IntegrityError
@@ -65,7 +65,7 @@ class Scraper_DB:
         """ Create all missing tables in the database """
         Base.metadata.create_all(self._engine)  # type: ignore
 
-    def execute(self, sql: str, **kwargs: Any) -> ResultProxy:
+    def execute(self, sql: str, **kwargs: Any) -> CursorResult:
         """ Execute raw SQL directly on the engine """
         return self._engine.execute(sql, **kwargs)  # type: ignore
 
