@@ -23,6 +23,8 @@
 
 # TODO: Properly handle verbs, such as "að veiða"
 
+from typing import List
+
 import logging
 
 from query import Query
@@ -59,7 +61,8 @@ QDictWordQuery →
     | "komdu" "með" "skilgreiningu" "á" "orðinu"? QDictSubjectNom
     | "komdu" "með" "orðabókarskilgreiningu" "á" "orðinu"? QDictSubjectNom
     | "komdu" "með" "orðabókarskilgreininguna" "á" "orðinu"? QDictSubjectNom
-    | QDictCanYou "skilgreint" "orðið"? QDictSubjectNom
+    | QDictKnowHowTo "að" "skilgreina" "orðið" QDictSubjectNom
+    | QDictCanYou "skilgreint" "orðið" QDictSubjectNom
 
 QDictInDictionary →
     "í" "orðabók" | "í" "orðabókinni"
@@ -73,6 +76,9 @@ QDictWhatWhich →
 
 QDictCanYou →
     "getur" "þú" | "geturðu"
+
+QDictKnowHowTo →
+    "kannt" "þú" | "kanntu"
 
 QDictDefinition →
     "skilgreining" | "skilgreiningin"
@@ -170,15 +176,18 @@ def _answer_dictionary_query(q: Query, result):
     # enumerated definitions or a list of explications. We use the
     # former if available, else the latter
 
-    # Get all enumerated explication IDs ("LIÐUR")
-    expl = [i["itid"] for i in items if i.get("teg") == "LIÐUR"]
+    # Get all enumerated definition IDs ("LIÐUR")
+    expl: List[int] = [i["itid"] for i in items if i.get("teg") == "LIÐUR"]
     if expl:
+        # Get corresponding "SKÝRING" for each definition ID
         sk = [
-            i for i in items if i.get("paritem") in expl and i.get("teg") == "SKÝRING"
+            i
+            for i in items
+            if (i.get("paritem") in expl) and (i.get("teg") == "SKÝRING")
         ]
         df = [i["texti"] for i in sk]
     else:
-        # Get all definitions ("skýringar")
+        # Get all definitions ("SKÝRING")
         df = [i["texti"] for i in items if i.get("teg") == "SKÝRING"]
         # df = sorted(df, key=len)
 
@@ -187,9 +196,10 @@ def _answer_dictionary_query(q: Query, result):
         answ = "{0} er {1}".format(icequote(cap_first(word)), icequote(df[0]))
         voice = answ
     else:
-        # Otherwise, do some nice formatting + spell things out nicely for voice synthesis
+        # Otherwise, do some formatting + spell things out nicely for voice synthesis
         voice = "Orðið {0} getur þýtt: ".format(icequote(word))
         answ = ""
+        # Generate list of the form "í fyrsta lagi a, í öðru lagi b, ..."
         for i, x in enumerate(df[: len(_ENUM_WORDS)]):
             answ += "{0}. {1}\n".format(i + 1, x)
             enum = "í {0} lagi,".format(_ENUM_WORDS[i])
