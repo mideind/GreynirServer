@@ -61,7 +61,7 @@ jobs:
         pip install --upgrade git+https://github.com/mideind/GreynirPackage#egg=reynir
         pip install --upgrade git+https://github.com/mideind/GreynirCorrect#egg=reynir-correct
         pip install -r requirements.txt
-        npm i -g jshint
+        sudo npm i -g jshint
     - name: Populate database
       env:
         POSTGRES_HOST: localhost
