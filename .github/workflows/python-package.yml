@@ -61,6 +61,7 @@ jobs:
         pip install --upgrade git+https://github.com/mideind/GreynirPackage#egg=reynir
         pip install --upgrade git+https://github.com/mideind/GreynirCorrect#egg=reynir-correct
         pip install -r requirements.txt
+        npm i -g jshint
     - name: Populate database
       env:
         POSTGRES_HOST: localhost
@@ -88,6 +89,9 @@ jobs:
     - name: Test with pytest
       run: |
         python -m pytest
+    - name: Run jshint
+      run: |
+        jshint static/js/common.js
     - name: Slack notification
       uses: 8398a7/action-slack@v2
       with:
