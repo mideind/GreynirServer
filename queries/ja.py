@@ -31,6 +31,7 @@ from reynir import NounPhrase
 
 from . import query_json_api, gen_answer
 from query import Query
+from geo import iceprep_for_street
 from util import read_api_key
 
 
@@ -39,6 +40,9 @@ PRIORITY = 5
 
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
+
+# The grammar nonterminals this module wants to handle
+QUERY_NONTERMINALS = {"QJaQuery"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -52,30 +56,30 @@ QJaQuery →
 QJaPhoneNumQuery →
     QJaName4PhoneNumQuery | QJaPhoneNum4NameQuery
 
-QJaName4PhoneNumQuery →
-    QJaWhatWhich "er" QJaTheNumber "hjá" QJaSubject
-    | "hvaða" QJaTheNumber "er" QJaSubject "með"
-    | "flettu" "upp" "símanúmerinu" "hjá" QJaSubject
-
 QJaPhoneNum4NameQuery →
-    "hver" "er" "með" QJaTheNumber QJaPhoneNum
-    | "hver" "er" "með" "símann" QJaPhoneNum
-    | "flettu" "upp" "símanúmerinu" QJaPhoneNum
-    | "flettu" "upp" "númerinu" QJaPhoneNum
+    QJaWhatWhich "er" QJaTheNumber_nf "hjá" QJaSubject
+    | "hvaða" QJaTheNumber_þf "er" QJaSubject "með"
+    | "flettu" "upp" QJaTheNumber_þgf "hjá" QJaSubject
+
+QJaName4PhoneNumQuery →
+    "hver" "er" "með" QJaTheNumber_þf QJaPhoneNum
+    | "flettu" "upp" QJaTheNumber_þgf QJaPhoneNum
 
 QJaPhoneNum →
     Nl
 
 QJaSubject →
-    Nl_þgf
+    Nl
 
-QJaTheNumber →
-    "númerið" | "símanúmerið" | "númer" | "símanúmer"
+QJaTheNumber/fall →
+    'númer:hk'/fall
+    | 'símanúmer:hk'/fall
+    | 'sími:kk'/fall
 
 QJaWhatWhich →
-    "hvert" | "hvað"
+    "hvert" | "hvað" | "hver"
 
-$score(+135) QJaQuery
+$score(+35) QJaQuery
 
 """
 
@@ -93,6 +97,8 @@ def QJaName4PhoneNumQuery(node, params, result):
 def QJaPhoneNum4NameQuery(node, params, result):
     result.qtype = "PhoneNum4Name"
 
+
+_JA_SOURCE = "ja.is"
 
 _JA_API_URL = "https://api.ja.is/search/v6/?{0}"
 
@@ -116,9 +122,36 @@ def query_ja_api(q: str) -> Optional[Dict]:
     return res
 
 
-def _answer_name4phonenum_query(q: Query, result):
+_MOBILE_FIRST_NUM = "678"
+
+
+def _best_number(item: Dict) -> str:
+    """ Return best phone number, given a result item from ja.is API. """
+    phone_num = item.get("phone")
+    add_nums = item.get("additional_phones")
+    if not phone_num and not add_nums:
+        return None
+
+    # First, see if the canonical phone number is a mobile phone number
+    # Those should be preferred
+    if phone_num and "number" in phone_num:
+        if phone_num.get("mobile") == True:
+            return phone_num["number"]
+
+    # Otherwise, try the first mobile number we find in add. phone numbers
+    if add_nums:
+        for pn in add_nums:
+            print(pn)
+            if pn and "number" in pn and pn.get("mobile") == True:
+                return pn["number"]
+
+    # OK, didn't find any mobile numbers. Just return canoncial number.
+    return phone_num.get("number")
+
+
+def _answer_phonenum4name_query(q: Query, result):
     """ Answer query of the form "hvað er síminn hjá [íslenskt mannsnafn]?" """
-    res = query_ja_api(q.key())
+    res = query_ja_api(result.qkey)
     from pprint import pprint
 
     pprint(res)
@@ -127,17 +160,34 @@ def _answer_name4phonenum_query(q: Query, result):
     if not res.get("people") or not res["people"].get("items"):
         return None
 
-    first_person = res["people"]["items"][0]
-    phone_info = first_person.get("phone")
-    if not phone_info or "number" not in phone_info:
+    # Check for only one result. If multiple, respond by asking user to disambiguate.
+    single = len(res["people"]["items"]) == 1
+    first = res["people"]["items"][0]
+    if not single:
+        street_nf = first["address_nominative"].split()[0]
+        street_þgf = first["address"].split()[0]
+        example = "{0} {1} {2}".format(
+            first["name"], iceprep_for_street(street_nf), street_þgf
+        )
+        return gen_answer(
+            "Það fundust margir með það nafn. Vinsamlegast "
+            "spurðu aftur og tilgreindu heimilisfang, t.d. {0}".format(example)
+        )
+
+    phone_number = _best_number(first)
+    if not phone_number:
         return None
 
-    pnum = " ".join(list(phone_info["number"]))
+    phone_number = phone_number.replace("-", "").replace(" ", "")
+    answ = phone_number
+    voice = " ".join(list(phone_number))
 
-    return gen_answer(pnum)
+    q.set_source(_JA_SOURCE)
+
+    return dict(answer=answ), answ, voice
 
 
-def _answer_phonenum4name_query(q: Query, result):
+def _answer_name4phonenum_query(q: Query, result):
     """ Answer query of the form "hver er með símanúmerið [númer]?"""
     pass
 
