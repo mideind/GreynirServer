@@ -21,6 +21,11 @@
 
 """
 
+# TODO: Handle context queries
+# TODO: Handle "hver er *heima*síminn hjá X"
+# TODO: Reverse phone num lookup
+# TODO: Smarter disambiguation interaction
+
 from typing import Dict, Optional
 
 import logging
@@ -54,7 +59,7 @@ QJaQuery →
     QJaPhoneNumQuery
 
 QJaPhoneNumQuery →
-    QJaName4PhoneNumQuery | QJaPhoneNum4NameQuery
+    QJaName4PhoneNumQuery | QJaPhoneNum4NameQuery | QJaCallThem
 
 QJaPhoneNum4NameQuery →
     QJaWhatWhich "er" QJaTheNumber_nf "hjá" QJaSubject
@@ -64,6 +69,13 @@ QJaPhoneNum4NameQuery →
 QJaName4PhoneNumQuery →
     "hver" "er" "með" QJaTheNumber_þf QJaPhoneNum
     | "flettu" "upp" QJaTheNumber_þgf QJaPhoneNum
+
+QJaCallThem →
+    "hringdu" "í" QJaThemÞgf
+    | "geturðu" "hringt" "í" QJaThemÞgf
+
+QJaThemÞgf →
+    "hann" | "hana" | "þau" | "þá" | "þær" | "það" "númer"? | "þetta" "númer"?
 
 QJaPhoneNum →
     Nl
@@ -156,31 +168,42 @@ def _answer_phonenum4name_query(q: Query, result):
 
     pprint(res)
 
+    nþgf = NounPhrase(result.qkey).dative or result.qkey
+
     # Verify that we have a sane response with at least 1 result
     if not res.get("people") or not res["people"].get("items"):
-        return None
+        return gen_answer("Ekki tókst að fletta upp {0}.".format(nþgf))
 
     # Check for only one result. If multiple, respond by asking user to disambiguate.
     single = len(res["people"]["items"]) == 1
-    first = res["people"]["items"][0]
+    allp = res["people"]["items"]
+    first = allp[0]
+    fname = first["name"]
     if not single:
-        street_nf = first["address_nominative"].split()[0]
-        street_þgf = first["address"].split()[0]
-        example = "{0} {1} {2}".format(
-            first["name"], iceprep_for_street(street_nf), street_þgf
-        )
-        return gen_answer(
-            "Það fundust margir með það nafn. Vinsamlegast "
-            "spurðu aftur og tilgreindu heimilisfang, t.d. {0}".format(example)
-        )
+        msg = "Það fundust margir með það nafn. Prufaðu að spyrja aftur og tilgreina heimilisfang"
+        for i in allp:
+            print("Trying " + i["name"])
+            try:
+                street_nf = i["address_nominative"].split()[0]
+                street_þgf = i["address"].split()[0]
+                msg = msg + " t.d. {0} {1} {2}".format(
+                    fname, iceprep_for_street(street_nf), street_þgf
+                )
+                break
+            except Exception as e:
+                print("Exception " + str(e))
+                continue
+        return gen_answer(msg)
 
     phone_number = _best_number(first)
     if not phone_number:
-        return None
+        a = "Ekki tókst að fletta upp símanúmeri hjá {0}".format(nþgf)
+        return gen_answer(a)
 
     phone_number = phone_number.replace("-", "").replace(" ", "")
     answ = phone_number
-    voice = " ".join(list(phone_number))
+    fn = NounPhrase(fname).dative or fname
+    voice = "Síminn hjá {0} er {1}".format(fn, " ".join(list(phone_number)))
 
     q.set_source(_JA_SOURCE)
 
@@ -203,7 +226,6 @@ def sentence(state, result):
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type
-
         try:
             r = _QTYPE2HANDLER[result.qtype](q, result)
             q.set_qtype(result.qtype)
