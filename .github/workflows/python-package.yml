@@ -61,6 +61,7 @@ jobs:
         pip install --upgrade git+https://github.com/mideind/GreynirCorrect#egg=reynir-correct
         pip install -r requirements.txt
         sudo npm i -g jshint
+        sudo apt-get install shellcheck
     - name: Populate database
       env:
         POSTGRES_HOST: localhost
@@ -95,6 +96,9 @@ jobs:
     - name: Run jshint
       run: |
         jshint static/js/common.js
+    - name: Run shellcheck
+      run: |
+        shellcheck -x scripts/*.sh
     - name: Slack notification
       uses: 8398a7/action-slack@v2
       with:
