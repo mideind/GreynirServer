@@ -23,7 +23,6 @@
 
 # TODO: Handle context queries
 # TODO: Handle "hver er *heima*síminn hjá X"
-# TODO: Reverse phone num lookup
 # TODO: Smarter disambiguation interaction
 
 from typing import Dict, Optional
@@ -31,8 +30,7 @@ from typing import Dict, Optional
 import re
 import logging
 from urllib.parse import urlencode
-
-# from datetime import datetime, timedelta
+from datetime import datetime, timedelta
 
 from reynir import NounPhrase
 
@@ -73,6 +71,7 @@ QJaName4PhoneNumQuery →
     | "hverjir" "eru" "með" QJaTheNumber_þf QJaPhoneNum QJaInPhonebook?
     | "flettu" "upp" QJaTheNumber_þgf QJaPhoneNum QJaInPhonebook?
     | "flettu" "upp" QJaPhoneNum QJaInPhonebook
+    | "hver" "er" "í" "síma" QJaPhoneNum
 
 QJaThemÞgf →
     "hann" | "hana" | "þau" | "þá" | "þær" | "það" "númer"? | "þetta" "númer"?
@@ -228,6 +227,9 @@ def _answer_name4phonenum_query(q: Query, result):
     num = result.phone_number
     clean_num = re.sub(r"[^0-9]", "", num).strip()
 
+    # This answer can be safely cached
+    q.set_expires(datetime.utcnow() + timedelta(hours=24))
+
     if not clean_num or len(clean_num) < 3:
         return gen_answer("{0} er ekki gilt símanúmer")
 
@@ -245,15 +247,24 @@ def _answer_name4phonenum_query(q: Query, result):
     name = p["name"]
     occup = p.get("occupation")
     addr = p.get("address")
+    pstation = p.get("postal_station")  # e.g. "101, Reykjavík"
 
-    # E.g. "Sveinbjörn Þórðarson, fræðimaður, Öldugötu 4"
+    full_addr = "{0}{1}".format(
+        addr if addr else "", ", " + pstation if pstation else ""
+    )
+
+    # E.g. "Sveinbjörn Þórðarson, fræðimaður, Öldugötu 4, 101 Reykjavík"
     answ = "{0}{1}{2}".format(
-        name, ", " + occup + " " if occup else "", ", " + addr if addr else ""
+        name, ", " + occup + " " if occup else "", ", " + full_addr if full_addr else ""
     )
     voice = numbers_to_neutral(answ)
 
-    full_addr = "{0}, {1}".format(addr, p.get("postal_station"))
+    # Set phone number, name and address as context
     q.set_context(dict(phone_number=clean_num, name=name, address=full_addr))
+
+    # Beautify query by showing clean phone number
+    bq = q.beautified_query.replace(num, clean_num)
+    q.set_beautified_query(bq)
 
     return dict(answer=answ), answ, voice
 
@@ -276,7 +287,6 @@ def sentence(state, result):
             q.set_answer(*r)
             q.set_qtype(result.qtype)
             q.set_key(result.qkey)
-            # q.set_expires(datetime.utcnow() + timedelta(hours=24))
         except Exception as e:
             logging.warning("Exception while processing ja.is query: {0}".format(e))
             q.set_error("E_EXCEPTION: {0}".format(e))
