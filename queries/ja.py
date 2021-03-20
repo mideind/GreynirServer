@@ -30,7 +30,8 @@ from typing import Dict, Optional
 
 import logging
 from urllib.parse import urlencode
-from datetime import datetime, timedelta
+
+# from datetime import datetime, timedelta
 
 from reynir import NounPhrase
 
@@ -180,9 +181,11 @@ def _answer_phonenum4name_query(q: Query, result):
     first = allp[0]
     fname = first["name"]
     if not single:
-        msg = "Það fundust margir með það nafn. Prufaðu að spyrja aftur og tilgreina heimilisfang"
+        one_name_only = len(result.qkey.split()) == 1
+        msg = "Það fundust margir með það nafn. Prufaðu að spyrja aftur og tilgreina {0}heimilisfang".format(
+            "fullt nafn og " if one_name_only else ""
+        )
         for i in allp:
-            print("Trying " + i["name"])
             try:
                 street_nf = i["address_nominative"].split()[0]
                 street_þgf = i["address"].split()[0]
@@ -205,6 +208,7 @@ def _answer_phonenum4name_query(q: Query, result):
     fn = NounPhrase(fname).dative or fname
     voice = "Síminn hjá {0} er {1}".format(fn, " ".join(list(phone_number)))
 
+    q.set_context(dict(phone_number=phone_number, name=fname))
     q.set_source(_JA_SOURCE)
 
     return dict(answer=answ), answ, voice
