@@ -50,17 +50,17 @@ QDictQuery →
 QDictWordQuery →
     "hvað" "segir" QDictDict "um" "orðið" QDictSubjectNom
     | "hvað" "stendur" QDictInDictionary "um" "orðið" QDictSubjectNom
-    | QDictWhatWhich "er" QDictDefinition "á" "orðinu"? QDictSubjectNom QDictInDictionary?
+    | QDictWhatWhich "er" QDictDefinition "á" "orðinu" QDictSubjectNom QDictInDictionary?
     | "flettu" "upp" "orðinu" QDictSubjectNom QDictInDictionary?
-    | QDictCanYou "flett" "upp" "orðinu"? QDictSubjectNom QDictInDictionary?
+    | QDictCanYou "flett" "upp" "orðinu" QDictSubjectNom QDictInDictionary?
     | "hvernig" "skilgreinir" QDictDict "orðið" QDictSubjectNom
     | "hvernig" "er" "orðið" QDictSubjectNom "skilgreint" QDictInDictionary?
-    | QDictDefinition "á" "orðinu"? QDictSubjectNom
+    | QDictDefinition "á" "orðinu" QDictSubjectNom
     | "skilgreindu" "orðið" QDictSubjectNom
-    | "komdu" "með" "skilgreininguna" "á" "orðinu"? QDictSubjectNom
-    | "komdu" "með" "skilgreiningu" "á" "orðinu"? QDictSubjectNom
-    | "komdu" "með" "orðabókarskilgreiningu" "á" "orðinu"? QDictSubjectNom
-    | "komdu" "með" "orðabókarskilgreininguna" "á" "orðinu"? QDictSubjectNom
+    | "komdu" "með" "skilgreininguna" "á" "orðinu" QDictSubjectNom
+    | "komdu" "með" "skilgreiningu" "á" "orðinu" QDictSubjectNom
+    | "komdu" "með" "orðabókarskilgreiningu" "á" QDictSubjectNom
+    | "komdu" "með" "orðabókarskilgreininguna" "á" QDictSubjectNom
     | QDictKnowHowTo "að" "skilgreina" "orðið" QDictSubjectNom
     | QDictCanYou "skilgreint" "orðið" QDictSubjectNom
 
@@ -106,9 +106,8 @@ def QDictWordQuery(node, params, result):
 _DICT_SOURCE = "Íslensk nútímamálsorðabók"
 
 _WORD_SEARCH_URL = "https://islenskordabok.arnastofnun.is/django/api/es/flettur/?fletta={0}*&simple=true"
-_WORD_LOOKUP_URL = (
-    "https://islenskordabok.arnastofnun.is/django/api/es/fletta/{0}/?lang=IS"
-)
+_WORD_LOOKUP_URL = "https://islenskordabok.arnastofnun.is/django/api/es/fletta/{0}/?lang=IS"
+
 
 _ENUM_WORDS = [
     "fyrsta",
@@ -210,7 +209,7 @@ def _answer_dictionary_query(q: Query, result):
 
     q.set_answer(dict(answer=answ), answ, voice)
 
-    # Beautify query by placing word being asked about within parentheses
+    # Beautify query by placing word being asked about within quote marks
     bq = q.beautified_query.replace(wnat, icequote(word))
     q.set_beautified_query(bq)
     q.set_source(_DICT_SOURCE)
@@ -221,11 +220,10 @@ def sentence(state, result):
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type
-        q.set_qtype(result.qtype)
-        q.set_key(result.qkey)
-
         try:
             _answer_dictionary_query(q, result)
+            q.set_qtype(result.qtype)
+            q.set_key(result.qkey)
         except Exception as e:
             logging.warning(
                 "Exception while processing dictionary query: {0}".format(e)

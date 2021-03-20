@@ -61,7 +61,7 @@ def in_ci_environment() -> bool:
         is a dummy value (set in .travis.yml). """
     global DUMMY_API_KEY
     try:
-        read_api_key("GreynirServerKey") == DUMMY_API_KEY
+        return read_api_key("GreynirServerKey") == DUMMY_API_KEY
     except Exception:
         return False
 
@@ -171,7 +171,6 @@ def test_api_key_restriction(client):
     # This only runs in the CI testing environment, which creates the dummy key
     global DUMMY_API_KEY
     if IN_CI_TESTING_ENV:
-        return  # Disabled for now
         for path in _KEY_RESTRICTED_ROUTES:
             resp = client.post(f"{path}?key={DUMMY_API_KEY}")
             assert resp.status_code == 200

@@ -211,22 +211,23 @@ def handle_plain_text(q: Query) -> bool:
             q.set_url("tel:{0}".format(ctx["phone_number"]))
             answer = "Skal gert"
             a = (dict(answer=answer), answer, "")
+    # Only number digits
     else:
-        # Sanitize by removing all non-numeric characters.
         clean_num = re.sub(r"[^0-9]", "", telsubj).strip()
-        # The specified telephone subject is not a phone number
-        if len(clean_num) == 0:
-            subj_þgf = NounPhrase(telsubj.title()).dative or telsubj
-            a = gen_answer("Ég veit ekki símanúmerið hjá {0}".format(subj_þgf))
-        elif len(clean_num) < 3:
+        if len(clean_num) < 3:
+            # The number is clearly not a valid phone number
             a = gen_answer("{0} er ekki gilt símanúmer.".format(number))
-        else:
+        elif re.search(r"^[\d|\s]+$", clean_num):
             # At this point we have what looks like a legitimate phone number.
             # Send tel: url to trigger phone call in client
             q.set_url("tel:{0}".format(clean_num))
             answer = "Skal gert"
             a = (dict(answer=answer), answer, "")
             q.set_beautified_query("{0}{1}".format(pfx, clean_num))
+        else:
+            # This is a named subject
+            subj_þgf = NounPhrase(telsubj.title()).dative or telsubj
+            a = gen_answer("Ég veit ekki símanúmerið hjá {0}".format(subj_þgf))
 
     q.set_answer(*a)
     q.set_qtype(_TELEPHONE_QTYPE)

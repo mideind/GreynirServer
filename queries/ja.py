@@ -60,7 +60,7 @@ QJaQuery →
     QJaPhoneNumQuery
 
 QJaPhoneNumQuery →
-    QJaName4PhoneNumQuery | QJaPhoneNum4NameQuery
+    QJaName4PhoneNumQuery # | QJaPhoneNum4NameQuery
 
 QJaPhoneNum4NameQuery →
     QJaWhatWhich "er" QJaTheNumber_nf "hjá" QJaSubject
@@ -128,12 +128,11 @@ def query_ja_api(q: str) -> Optional[Dict]:
         logging.warning("No API key for ja.is")
         return None
 
-    qd = {"q": q}
+    qdict = {"q": q}
     headers = {"Authorization": key}
 
     # Send API request, get back parsed JSON
-    url = _JA_API_URL.format(urlencode(qd))
-    print(url)
+    url = _JA_API_URL.format(urlencode(qdict))
     res = query_json_api(url, headers=headers)
 
     return res
@@ -158,7 +157,6 @@ def _best_number(item: Dict) -> str:
     # Otherwise, try the first mobile number we find in add. phone numbers
     if add_nums:
         for pn in add_nums:
-            print(pn)
             if pn and "number" in pn and pn.get("mobile") == True:
                 return pn["number"]
 
