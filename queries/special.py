@@ -443,6 +443,8 @@ _WINE_PREFS = {"answer": "Ég drekk ekki vín."}
 
 _MY_PHILOSOPHY = {"answer": "Það er minn tilgangur að þjóna þér og mannkyninu öllu."}
 
+_SORRY_TO_HEAR = {"answer": "Það þykir mér leitt að heyra."}
+
 ###################################
 
 _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
@@ -531,7 +533,37 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
         "answer": "Það veit ég ekki, kæri notandi, en þú ert ung í anda."
     },
     "hvernig lít ég út": {"answer": "Þú ert undurfagur, kæri notandi."},
-    "mér líður illa": {"answer": "Það er nú ekki gott að heyra, kæri notandi."},
+    "mér leiðist": {
+        "answer": "Þá er um að gera að finna sér eitthvað skemmtilegt að gera."
+    },
+    "mér líður vel": {"answer": "Frábært að heyra, kæri notandi."},
+    "ég er hamingjusamur": {"answer": "Frábært að heyra, kæri notandi."},
+    "ég er hamingjusöm": {"answer": "Frábært að heyra, kæri notandi."},
+    "mér líður illa": _SORRY_TO_HEAR,
+    "mér líður ekki vel": _SORRY_TO_HEAR,
+    "ég er óhamingusamur": _SORRY_TO_HEAR,
+    "ég er óhamingusöm": _SORRY_TO_HEAR,
+    "ég er ekki ángæður": _SORRY_TO_HEAR,
+    "ég er ekki ángæð": _SORRY_TO_HEAR,
+    "ég er ekki glaður": _SORRY_TO_HEAR,
+    "ég er ekki glöð": _SORRY_TO_HEAR,
+    "ég er leiður": _SORRY_TO_HEAR,
+    "ég er leið": _SORRY_TO_HEAR,
+    "ég er reiður": _SORRY_TO_HEAR,
+    "ég er reið": _SORRY_TO_HEAR,
+    "ég er mjög reiður": _SORRY_TO_HEAR,
+    "ég er mjög reið": _SORRY_TO_HEAR,
+    "ég er bitur": _SORRY_TO_HEAR,
+    "ég er pirraður": _SORRY_TO_HEAR,
+    "ég er pirruð": _SORRY_TO_HEAR,
+    "ég er svekktur": _SORRY_TO_HEAR,
+    "ég er svekkt": _SORRY_TO_HEAR,
+    "ég er fúll": _SORRY_TO_HEAR,
+    "ég er fúl": _SORRY_TO_HEAR,
+    "ég er brjálaður": _SORRY_TO_HEAR,
+    "ég er brjáluð": _SORRY_TO_HEAR,
+    "ég er alveg brjálaður": _SORRY_TO_HEAR,
+    "ég er alveg brjáluð": _SORRY_TO_HEAR,
     # Singing
     "syngdu": _SINGING,
     "syngdu lag": _SINGING,
@@ -1789,6 +1821,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað segir þú þá": _ALL_GOOD,
     "hvað segirðu núna": _ALL_GOOD,
     "hvað segir þú núna": _ALL_GOOD,
+    "leiðist þér": {"answer": "Nei. Það er svo gaman hjá mér í vinnunni."},
     "hvernig líður þér": {"answer": "Mér líður bara prýðilega. Takk fyrir að spyrja."},
     "Hvernig líður þér í dag": {
         "answer": "Mér líður bara prýðilega. Takk fyrir að spyrja."

@@ -244,6 +244,8 @@ def _answer_name4phonenum_query(q: Query, result):
         return gen_answer("Enginn með það númer fannst í símaskrá")
 
     p = items[0]  # Always use first result
+    # TODO: Make sure the match is in phone number field!
+
     name = p["name"]
     occup = p.get("occupation")
     addr = p.get("address")
@@ -255,8 +257,8 @@ def _answer_name4phonenum_query(q: Query, result):
 
     # E.g. "Sveinbjörn Þórðarson, fræðimaður, Öldugötu 4, 101 Reykjavík"
     answ = "{0}{1}{2}".format(
-        name, ", " + occup + " " if occup else "", ", " + full_addr if full_addr else ""
-    )
+        name, " " + occup if occup else "", ", " + full_addr if full_addr else ""
+    ).strip()
     voice = numbers_to_neutral(answ)
 
     # Set phone number, name and address as context
