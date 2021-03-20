@@ -60,7 +60,7 @@ QJaQuery →
     QJaPhoneNumQuery
 
 QJaPhoneNumQuery →
-    QJaName4PhoneNumQuery | QJaPhoneNum4NameQuery | QJaCallThem
+    QJaName4PhoneNumQuery | QJaPhoneNum4NameQuery
 
 QJaPhoneNum4NameQuery →
     QJaWhatWhich "er" QJaTheNumber_nf "hjá" QJaSubject
@@ -68,15 +68,15 @@ QJaPhoneNum4NameQuery →
     | "flettu" "upp" QJaTheNumber_þgf "hjá" QJaSubject
 
 QJaName4PhoneNumQuery →
-    "hver" "er" "með" QJaTheNumber_þf QJaPhoneNum
-    | "flettu" "upp" QJaTheNumber_þgf QJaPhoneNum
-
-QJaCallThem →
-    "hringdu" "í" QJaThemÞgf
-    | "geturðu" "hringt" "í" QJaThemÞgf
+    "hver" "er" "með" QJaTheNumber_þf QJaPhoneNum QJaInPhonebook?
+    | "hverjir" "eru" "með" QJaTheNumber_þf QJaPhoneNum QJaInPhonebook?
+    | "flettu" "upp" QJaTheNumber_þgf QJaPhoneNum QJaInPhonebook?
 
 QJaThemÞgf →
     "hann" | "hana" | "þau" | "þá" | "þær" | "það" "númer"? | "þetta" "númer"?
+
+QJaInPhonebook →
+    "í" "símaskránni" | "á" "já" "punktur" "is"
 
 QJaPhoneNum →
     Nl
@@ -103,6 +103,10 @@ def QJaSubject(node, params, result):
     result.qkey = nom
 
 
+def QJaPhoneNum(node, params, result):
+    result.phone_number = result._text
+
+
 def QJaName4PhoneNumQuery(node, params, result):
     result.qtype = "Name4PhoneNum"
 
@@ -117,7 +121,7 @@ _JA_API_URL = "https://api.ja.is/search/v6/?{0}"
 
 
 def query_ja_api(q: str) -> Optional[Dict]:
-    """ Send query to ja.is API. """
+    """ Send query to ja.is API """
     key = read_api_key("JaServerKey")
     if not key:
         # No key, can't query the API
@@ -139,7 +143,7 @@ _MOBILE_FIRST_NUM = "678"
 
 
 def _best_number(item: Dict) -> str:
-    """ Return best phone number, given a result item from ja.is API. """
+    """ Return best phone number, given a result item from ja.is API """
     phone_num = item.get("phone")
     add_nums = item.get("additional_phones")
     if not phone_num and not add_nums:
@@ -158,7 +162,7 @@ def _best_number(item: Dict) -> str:
             if pn and "number" in pn and pn.get("mobile") == True:
                 return pn["number"]
 
-    # OK, didn't find any mobile numbers. Just return canoncial number.
+    # OK, didn't find any mobile numbers. Just return canoncial number
     return phone_num.get("number")
 
 
@@ -175,16 +179,18 @@ def _answer_phonenum4name_query(q: Query, result):
     if not res.get("people") or not res["people"].get("items"):
         return gen_answer("Ekki tókst að fletta upp {0}.".format(nþgf))
 
-    # Check for only one result. If multiple, respond by asking user to disambiguate.
+    # Check if we have a single canonical match from API
     single = len(res["people"]["items"]) == 1
     allp = res["people"]["items"]
     first = allp[0]
     fname = first["name"]
     if not single:
+        # Many found with that name, generate smart message asking for disambiguation
         one_name_only = len(result.qkey.split()) == 1
-        msg = "Það fundust margir með það nafn. Prufaðu að spyrja aftur og tilgreina {0}heimilisfang".format(
+        msg = "Það fundust margir með það nafn. Prufaðu að tilgreina {0}heimilisfang".format(
             "fullt nafn og " if one_name_only else ""
         )
+        # Try to generate example, e.g. "Jón Jónssón á Smáragötu"
         for i in allp:
             try:
                 street_nf = i["address_nominative"].split()[0]
@@ -198,11 +204,13 @@ def _answer_phonenum4name_query(q: Query, result):
                 continue
         return gen_answer(msg)
 
+    # Scan API call result, try to find the best phone nuber to provide
     phone_number = _best_number(first)
     if not phone_number:
         a = "Ekki tókst að fletta upp símanúmeri hjá {0}".format(nþgf)
         return gen_answer(a)
 
+    # Sanitize number and generate answer
     phone_number = phone_number.replace("-", "").replace(" ", "")
     answ = phone_number
     fn = NounPhrase(fname).dative or fname
@@ -232,11 +240,11 @@ def sentence(state, result):
         # Successfully matched a query type
         try:
             r = _QTYPE2HANDLER[result.qtype](q, result)
-            q.set_qtype(result.qtype)
-            q.set_key(result.qkey)
             if not r:
                 r = gen_answer("Ekki tókst að fletta upp viðkomandi.")
             q.set_answer(*r)
+            q.set_qtype(result.qtype)
+            q.set_key(result.qkey)
             # q.set_expires(datetime.utcnow() + timedelta(hours=24))
         except Exception as e:
             logging.warning("Exception while processing ja.is query: {0}".format(e))

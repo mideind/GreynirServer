@@ -105,6 +105,8 @@ _CONTEXT_SUBJ = frozenset(
     )
 )
 
+_CONTEXT_RX = "|".join(_CONTEXT_SUBJ)
+
 # TODO: This should be moved over to grammar at some point, too many manually defined,
 # almost identical commands. But at the moment, the grammar has poor support for phone
 # numbers, especially  when the numbers are coming out of a speech recognition engine
@@ -112,8 +114,25 @@ _CONTEXT_SUBJ = frozenset(
 _PHONECALL_REGEXES = frozenset(
     (
         # Context-based
-        r"^(hringdu í )({0})$".format("|".join(_CONTEXT_SUBJ)),
+        r"^(hringdu í )({0})$".format(_CONTEXT_RX),
+        r"^(hringdu fyrir mig í )({0})$".format(_CONTEXT_RX),
+        r"^(værirðu til í að hringja í síma )({0})$".format(_CONTEXT_RX),
+        r"^(værir þú til í að hringja í síma )({0})$".format(_CONTEXT_RX),
+        r"^(geturðu hringt í )({0})$".format(_CONTEXT_RX),
+        r"^(getur þú hringt í )({0})$".format(_CONTEXT_RX),
+        r"^(nennirðu að hringja í )({0})$".format(_CONTEXT_RX),
+        r"^(nennir þú að hringja í )({0})$".format(_CONTEXT_RX),
+        r"^(vinsamlegast hringdu í )({0})$".format(_CONTEXT_RX),
+        # Named subject
         r"^(hringdu í )([\w|\s]+)",
+        r"^(hringdu fyrir mig í )([\w|\s]+)$",
+        r"^(værirðu til í að hringja í síma )([\w|\s]+)$",
+        r"^(værir þú til í að hringja í síma )([\w|\s]+)$",
+        r"^(geturðu hringt í )([\w|\s]+)$",
+        r"^(getur þú hringt í )([\w|\s]+)$",
+        r"^(nennirðu að hringja í )([\w|\s]+)$",
+        r"^(nennir þú að hringja í )([\w|\s]+)$",
+        r"^(vinsamlegast hringdu í )([\w|\s]+)$",
         # Tel no specified
         r"^(hringdu í )([\d|\-|\s]+)$",
         r"^(hringdu í síma )([\d|\-|\s]+)$",
