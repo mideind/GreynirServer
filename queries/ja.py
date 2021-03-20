@@ -28,6 +28,7 @@
 
 from typing import Dict, Optional
 
+import re
 import logging
 from urllib.parse import urlencode
 
@@ -60,7 +61,7 @@ QJaQuery →
     QJaPhoneNumQuery
 
 QJaPhoneNumQuery →
-    QJaName4PhoneNumQuery # | QJaPhoneNum4NameQuery
+    QJaName4PhoneNumQuery | QJaPhoneNum4NameQuery
 
 QJaPhoneNum4NameQuery →
     QJaWhatWhich "er" QJaTheNumber_nf "hjá" QJaSubject
@@ -71,6 +72,7 @@ QJaName4PhoneNumQuery →
     "hver" "er" "með" QJaTheNumber_þf QJaPhoneNum QJaInPhonebook?
     | "hverjir" "eru" "með" QJaTheNumber_þf QJaPhoneNum QJaInPhonebook?
     | "flettu" "upp" QJaTheNumber_þgf QJaPhoneNum QJaInPhonebook?
+    | "flettu" "upp" QJaPhoneNum QJaInPhonebook
 
 QJaThemÞgf →
     "hann" | "hana" | "þau" | "þá" | "þær" | "það" "númer"? | "þetta" "númer"?
@@ -105,6 +107,7 @@ def QJaSubject(node, params, result):
 
 def QJaPhoneNum(node, params, result):
     result.phone_number = result._text
+    result.qkey = result._text
 
 
 def QJaName4PhoneNumQuery(node, params, result):
@@ -222,7 +225,30 @@ def _answer_phonenum4name_query(q: Query, result):
 
 def _answer_name4phonenum_query(q: Query, result):
     """ Answer query of the form "hver er með símanúmerið [númer]?"""
-    pass
+    num = result.phone_number
+    clean_num = re.sub(r"[^0-9]", "", num).strip()
+
+    if not clean_num or len(clean_num) < 3:
+        return gen_answer("{0} er ekki gilt símanúmer")
+
+    res = query_ja_api(clean_num)
+
+    # TODO: Look up in businesses as well as people
+
+    items = res["people"]["items"]
+    if len(items) == 0:
+        return gen_answer("Enginn með það númer fannst í símaskrá")
+
+    first = res["people"]["items"][0]
+    name = first["name"]
+    occup = first.get("occupation")
+    addr = first.get("address")
+
+    answ = "{0}{1}{2}".format(
+        name, ", " + occup + " " if occup else "", ", " + addr if addr else ""
+    )
+
+    return gen_answer(answ)
 
 
 _QTYPE2HANDLER = {

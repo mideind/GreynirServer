@@ -502,6 +502,9 @@ def test_query_api(client):
     assert json["open_url"] == "tel:9217422"
     assert json["q"].endswith("9217422")
 
+    json = qmcall(c, {"q": "hringdu í 26"}, "Telephone")
+    assert "ekki gilt símanúmer" in json["answer"]
+
     # Time module
     json = qmcall(c, {"q": "hvað er klukkan í Kaupmannahöfn?", "voice": True}, "Time")
     assert json["key"] == "Europe/Copenhagen"
