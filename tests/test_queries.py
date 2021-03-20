@@ -341,7 +341,7 @@ def test_query_api(client):
         assert json["source"] == "Google Maps"
 
         json = qmcall(c, {"q": "hvað er langt í melabúðina", "voice": True}, "Distance")
-        assert json["answer"].startswith("1,5 km")
+        assert json["answer"].startswith("1,") and "km" in json["answer"]
         assert json["voice"].startswith("Melabúðin er ")
 
         json = qmcall(
