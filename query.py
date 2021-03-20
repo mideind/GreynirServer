@@ -156,9 +156,9 @@ def beautify_query(query: str) -> str:
 
 class QueryGrammar(BIN_Grammar):
 
-    """ A subclass of BIN_Grammar that reads its input from
-        strings obtained from query handler plug-ins in the
-        queries subdirectory, prefixed by a preamble """
+    """A subclass of BIN_Grammar that reads its input from
+    strings obtained from query handler plug-ins in the
+    queries subdirectory, prefixed by a preamble"""
 
     def __init__(self) -> None:
         super().__init__()
@@ -167,23 +167,23 @@ class QueryGrammar(BIN_Grammar):
 
     @classmethod
     def is_grammar_modified(cls) -> bool:
-        """ Override inherited function to specify that query grammars
-            should always be reparsed, since the set of plug-in query
-            handlers may have changed, as well as their grammar fragments. """
+        """Override inherited function to specify that query grammars
+        should always be reparsed, since the set of plug-in query
+        handlers may have changed, as well as their grammar fragments."""
         return True
 
     def read(
         self, fname: str, verbose: bool = False, binary_fname: Optional[str] = None
     ) -> None:
-        """ Overrides the inherited read() function to supply grammar
-            text from a file as well as additional grammar fragments
-            from query processor modules. """
+        """Overrides the inherited read() function to supply grammar
+        text from a file as well as additional grammar fragments
+        from query processor modules."""
 
         def grammar_generator() -> Iterator[str]:
-            """ A generator that yields a grammar file, line-by-line,
-                followed by grammar additions coming from a string
-                that has been coalesced from grammar fragments in query
-                processor modules. """
+            """A generator that yields a grammar file, line-by-line,
+            followed by grammar additions coming from a string
+            that has been coalesced from grammar fragments in query
+            processor modules."""
             with open(fname, "r", encoding="utf-8") as inp:
                 # Read grammar file line-by-line
                 for line in inp:
@@ -251,8 +251,8 @@ class QueryParser(Fast_Parser):
 
 class QueryTree(Tree):
 
-    """ Extend the tree.Tree class to collect all child families of the
-        Query nonterminal from a query parse forest """
+    """Extend the tree.Tree class to collect all child families of the
+    Query nonterminal from a query parse forest"""
 
     def __init__(self):
         super().__init__()
@@ -312,10 +312,10 @@ class QueryTree(Tree):
 
 class Query:
 
-    """ A Query is initialized by parsing a query string using QueryRoot as the
-        grammar root nonterminal. The Query can then be executed by processing
-        the best parse tree using the nonterminal handlers given above, returning a
-        result object if successful. """
+    """A Query is initialized by parsing a query string using QueryRoot as the
+    grammar root nonterminal. The Query can then be executed by processing
+    the best parse tree using the nonterminal handlers given above, returning a
+    result object if successful."""
 
     # Processors that handle parse trees
     _tree_processors: List[ModuleType] = []
@@ -335,6 +335,7 @@ class Query:
         location: Optional[LocationType],
         client_id: Optional[str],
         client_type: Optional[str],
+        client_version: Optional[str],
     ) -> None:
 
         self._query = q = self._preprocess_query_string(query)
@@ -372,6 +373,8 @@ class Query:
         self._client_id = client_id
         # Client type, if known
         self._client_type = client_type
+        # Client version, if known
+        self._client_version = client_version
         # Source of answer to query
         self._source: Optional[str] = None
         # Query context, which is None until fetched via self.fetch_context()
@@ -394,8 +397,8 @@ class Query:
 
     @classmethod
     def init_class(cls) -> None:
-        """ Initialize singleton data, i.e. the list of query
-            processor modules and the query parser instance """
+        """Initialize singleton data, i.e. the list of query
+        processor modules and the query parser instance"""
         all_procs: List[ModuleType] = []
         tree_procs: List[Tuple[int, ModuleType]] = []
         text_procs: List[Tuple[int, Callable[["Query"], bool]]] = []
@@ -606,8 +609,8 @@ class Query:
         )
 
     def execute_from_tree(self) -> bool:
-        """ Execute the query or queries contained in the previously parsed tree;
-            return True if successful """
+        """Execute the query or queries contained in the previously parsed tree;
+        return True if successful"""
         if self._tree is None:
             self.set_error("E_QUERY_NOT_PARSED")
             return False
@@ -639,8 +642,8 @@ class Query:
         return bool(self._answer) and self._error is None
 
     def last_answer(self, *, within_minutes: int = 5) -> Optional[Tuple[str, str]]:
-        """ Return the last answer given to this client, by default
-            within the last 5 minutes (0=forever) """
+        """Return the last answer given to this client, by default
+        within the last 5 minutes (0=forever)"""
         if not self._client_id:
             # Can't find the last answer if no client_id given
             return None
@@ -660,8 +663,8 @@ class Query:
         return None if last is None else (last[0], last[1])
 
     def fetch_context(self, *, within_minutes: int = 10) -> Optional[ContextDict]:
-        """ Return the context from the last answer given to this client,
-            by default within the last 10 minutes (0=forever) """
+        """Return the context from the last answer given to this client,
+        by default within the last 10 minutes (0=forever)"""
         if not self._client_id:
             # Can't find the last answer if no client_id given
             return None
@@ -708,9 +711,9 @@ class Query:
         )
 
     def lowercase_beautified_query(self) -> None:
-        """ If we know that no uppercase words occur in the query,
-            except the initial capital, this function can be called
-            to adjust the beautified query string accordingly. """
+        """If we know that no uppercase words occur in the query,
+        except the initial capital, this function can be called
+        to adjust the beautified query string accordingly."""
         self.set_beautified_query(self._beautified_query.capitalize())
 
     def query_is_command(self) -> None:
@@ -808,6 +811,11 @@ class Query:
         """ Return client type string, e.g. "ios", "android", "www", etc. """
         return self._client_type
 
+    @property
+    def client_version(self) -> Optional[str]:
+        """ Return client version string, e.g. "1.0.3" """
+        return self._client_version
+
     def response(self) -> Optional[ResponseType]:
         """ Return the detailed query answer """
         return self._response
@@ -839,8 +847,8 @@ class Query:
         return self._context
 
     def set_context(self, ctx: ContextDict) -> None:
-        """ Set a query context that will be stored and made available
-            to the next query from the same client """
+        """Set a query context that will be stored and made available
+        to the next query from the same client"""
         self._context = ctx
 
     def client_data(self, key: str) -> Optional[ClientDataDict]:
@@ -909,8 +917,8 @@ class Query:
 
     @classmethod
     def try_to_help(cls, query: str, result: ResponseDict) -> None:
-        """ Attempt to help the user in the case of a failed query,
-            based on lemmas in the query string """
+        """Attempt to help the user in the case of a failed query,
+        based on lemmas in the query string"""
         # Collect a set of lemmas that occur in the query string
         lemmas = set()
         with BIN_Db.get_db() as db:
@@ -940,9 +948,9 @@ class Query:
             result["valid"] = True
 
     def execute(self) -> ResponseDict:
-        """ Check whether the parse tree is describes a query, and if so,
-            execute the query, store the query answer in the result dictionary
-            and return True """
+        """Check whether the parse tree is describes a query, and if so,
+        execute the query, store the query answer in the result dictionary
+        and return True"""
         if Query._parser is None:
             Query.init_class()
         # By default, the result object contains the 'raw' query
@@ -1129,15 +1137,15 @@ def process_query(
     private: bool = False,
 ) -> ResponseDict:
 
-    """ Process an incoming natural language query.
-        If voice is True, return a voice-friendly string to
-        be spoken to the user. If auto_uppercase is True,
-        the string probably came from voice input and we
-        need to intelligently guess which words in the query
-        should be upper case (to the extent that it matters).
-        The q parameter can either be a single query string
-        or an iterable of strings that will be processed in
-        order until a successful one is found. """
+    """Process an incoming natural language query.
+    If voice is True, return a voice-friendly string to
+    be spoken to the user. If auto_uppercase is True,
+    the string probably came from voice input and we
+    need to intelligently guess which words in the query
+    should be upper case (to the extent that it matters).
+    The q parameter can either be a single query string
+    or an iterable of strings that will be processed in
+    order until a successful one is found."""
 
     now = datetime.utcnow()
     result: ResponseDict = dict()
@@ -1208,7 +1216,14 @@ def process_query(
 
             # The answer is not found in the cache: Handle the query
             query = Query(
-                session, qtext, voice, auto_uppercase, location, client_id, client_type
+                session,
+                qtext,
+                voice,
+                auto_uppercase,
+                location,
+                client_id,
+                client_type,
+                client_version,
             )
             result = query.execute()
             if result["valid"] and "error" not in result:
@@ -1234,7 +1249,9 @@ def process_query(
                             # Client identifier
                             client_id=client_id[:256] if client_id else None,
                             client_type=client_type[:80] if client_type else None,
-                            client_version=client_version[:10] if client_version else None,
+                            client_version=client_version[:10]
+                            if client_version
+                            else None,
                             # IP address
                             remote_addr=remote_addr or None,
                             # Context dict, stored as JSON, if present
