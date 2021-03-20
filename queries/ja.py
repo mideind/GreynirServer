@@ -36,7 +36,7 @@ from urllib.parse import urlencode
 
 from reynir import NounPhrase
 
-from . import query_json_api, gen_answer
+from . import query_json_api, gen_answer, numbers_to_neutral
 from query import Query
 from geo import iceprep_for_street
 from util import read_api_key
@@ -233,22 +233,29 @@ def _answer_name4phonenum_query(q: Query, result):
 
     res = query_ja_api(clean_num)
 
-    # TODO: Look up in businesses as well as people
+    persons = res["people"]["items"]
+    businesses = res["businesses"]["items"]
 
-    items = res["people"]["items"]
+    # It's either a person or a business
+    items = persons if len(persons) else businesses
     if len(items) == 0:
         return gen_answer("Enginn með það númer fannst í símaskrá")
 
-    first = res["people"]["items"][0]
-    name = first["name"]
-    occup = first.get("occupation")
-    addr = first.get("address")
+    p = items[0]  # Always use first result
+    name = p["name"]
+    occup = p.get("occupation")
+    addr = p.get("address")
 
+    # E.g. "Sveinbjörn Þórðarson, fræðimaður, Öldugötu 4"
     answ = "{0}{1}{2}".format(
         name, ", " + occup + " " if occup else "", ", " + addr if addr else ""
     )
+    voice = numbers_to_neutral(answ)
 
-    return gen_answer(answ)
+    full_addr = "{0}, {1}".format(addr, p.get("postal_station"))
+    q.set_context(dict(phone_number=clean_num, name=name, address=full_addr))
+
+    return dict(answer=answ), answ, voice
 
 
 _QTYPE2HANDLER = {
