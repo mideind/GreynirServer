@@ -40,7 +40,7 @@ from reynir.binparser import TokenDict, canonicalize_token
 from article import Article as ArticleProxy
 from query import process_query
 from query import Query as QueryObject
-from doc import SUPPORTED_DOC_MIMETYPES, doc_class_for_mime_type
+from doc import SUPPORTED_DOC_MIMETYPES, Document
 from speech import get_synthesized_text_url
 from util import read_api_key
 
@@ -110,10 +110,9 @@ def correct_api(version=1):
 
         # Create document object from file and extract text
         try:
-            # Instantiate appropriate class for mime type from file data
             # filename = werkzeug.secure_filename(file.filename)
-            doc_class = doc_class_for_mime_type(mimetype)
-            doc = doc_class(file.read())
+            # Instantiate an appropriate class for the MIME type of the file
+            doc = Document.for_mimetype(mimetype)(file.read())
             text = doc.extract_text()
         except Exception as e:
             logging.warning("Exception in correct_api(): {0}".format(e))
@@ -155,8 +154,7 @@ def correct_task(version=1):
         # Create document object from an uploaded file and extract its text
         try:
             # Instantiate an appropriate class for the MIME type of the file
-            doc_class = doc_class_for_mime_type(mimetype)
-            doc = doc_class(file.read())
+            doc = Document.for_mimetype(mimetype)(file.read())
             text = doc.extract_text()
         except Exception as e:
             logging.warning("Exception in correct_task(): {0}".format(e))

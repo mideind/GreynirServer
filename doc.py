@@ -23,12 +23,15 @@
 
 from typing import Union, Dict, Type
 
+import re
 import abc
 from io import BytesIO, StringIO
-import re
 from zipfile import ZipFile
+
 from html2text import HTML2Text
+
 from striprtf.striprtf import rtf_to_text  # type: ignore
+
 from odf import teletype
 from odf import text as odf_text
 from odf.opendocument import load as load_odf
@@ -63,6 +66,14 @@ class Document(abc.ABC):
         else:
             # It's a byte stream
             self.data = path_or_bytes
+
+    @staticmethod
+    def for_mimetype(mime_type: str) -> Type:
+        return doc_class_for_mime_type(mime_type)
+
+    @staticmethod
+    def for_suffix(suffix: str) -> Type:
+        return doc_class_for_suffix(suffix)
 
     @abc.abstractmethod
     def extract_text(self) -> str:
@@ -214,3 +225,20 @@ SUPPORTED_DOC_MIMETYPES = frozenset(MIMETYPE_TO_DOC_CLASS.keys())
 def doc_class_for_mime_type(mime_type: str) -> Type[Document]:
     assert mime_type in SUPPORTED_DOC_MIMETYPES
     return MIMETYPE_TO_DOC_CLASS[mime_type]
+
+
+SUFFIX_TO_DOC_CLASS: Dict[str, Type[Document]] = {
+    "txt": PlainTextDocument,
+    "html": HTMLDocument,
+    "rtf": RTFDocument,
+    "pdf": PDFDocument,
+    "odt": ODTDocument,
+    "docx": DocxDocument,
+}
+
+SUPPORTED_DOC_SUFFIXES = frozenset(SUFFIX_TO_DOC_CLASS.keys())
+
+
+def doc_class_for_suffix(suffix: str) -> Type[Document]:
+    assert suffix in SUPPORTED_DOC_SUFFIXES
+    return SUFFIX_TO_DOC_CLASS[suffix]
