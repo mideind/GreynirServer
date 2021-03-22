@@ -566,6 +566,21 @@ def test_query_api(client):
     json = qmcall(c, {"q": "ég heiti Boutros Boutros-Ghali"}, "UserInfo")
     assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
 
+    json = qmcall(
+        c,
+        {
+            "q": "hvaða útgáfu er ég að keyra",
+            "client_type": "ios",
+            "client_version": "1.0.3",
+            "voice": True
+        },
+    )
+    assert "iOS" in json["answer"] and "1.0.3" in json["answer"]
+    assert "komma" in json["voice"]
+
+    json = qmcall(c, { "q": "á hvaða tæki ertu að keyra?", "client_type": "ios"})
+    assert "iOS" in json["answer"]
+
     # json = qmcall(
     #     c,
     #     {"q": "ég á heima á öldugötu 4 í reykjavík", "client_id": DUMMY_CLIENT_ID},
