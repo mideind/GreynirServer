@@ -430,7 +430,7 @@ def _client_version_handler(q: Query, ql: str) -> bool:
         q.set_answer(*gen_answer(_DUNNO_CLIENT_VERSION))
         return True
 
-    platform = _DEVICE_TYPE_TO_APPENDED_DESC.get(q.client_type, "")
+    platform = _DEVICE_TYPE_TO_APPENDED_DESC.get(q.client_type, "") if q.client_type else ""
 
     answ = "Emblu {0} {1}".format(q.client_version, platform)
     vers4voice = q.client_version.replace(".", " komma ")

@@ -143,7 +143,7 @@ def query_ja_api(q: str) -> Optional[Dict]:
 _MOBILE_FIRST_NUM = "678"
 
 
-def _best_number(item: Dict) -> str:
+def _best_number(item: Dict) -> Optional[str]:
     """ Return best phone number, given a result item from ja.is API """
     phone_num = item.get("phone")
     add_nums = item.get("additional_phones")
@@ -163,20 +163,17 @@ def _best_number(item: Dict) -> str:
                 return pn["number"]
 
     # OK, didn't find any mobile numbers. Just return canoncial number
-    return phone_num.get("number")
+    return phone_num.get("number") if phone_num else None
 
 
 def _answer_phonenum4name_query(q: Query, result):
     """ Answer query of the form "hvað er síminn hjá [íslenskt mannsnafn]?" """
     res = query_ja_api(result.qkey)
-    from pprint import pprint
-
-    pprint(res)
 
     nþgf = NounPhrase(result.qkey).dative or result.qkey
 
     # Verify that we have a sane response with at least 1 result
-    if not res.get("people") or not res["people"].get("items"):
+    if not res or not res.get("people") or not res["people"].get("items"):
         return gen_answer("Ekki tókst að fletta upp {0}.".format(nþgf))
 
     # Check if we have a single canonical match from API
@@ -234,6 +231,10 @@ def _answer_name4phonenum_query(q: Query, result):
         return gen_answer("{0} er ekki gilt símanúmer")
 
     res = query_ja_api(clean_num)
+
+    # Make sure API response is sane
+    if not res or "people" not in res or "businesses" not in res:
+        return gen_answer("Ekki tókst að fletta upp símanúmeri")
 
     persons = res["people"]["items"]
     businesses = res["businesses"]["items"]
