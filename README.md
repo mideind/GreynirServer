@@ -180,7 +180,7 @@ in `queries/examples`.
 
 ## Running Greynir
 
-Once you have followed the setup and installation instructions above, change to the 
+Once you have followed the installation and setup instructions above, change to the
 Greynir repository and activate the virtual environment:
 
 ```
