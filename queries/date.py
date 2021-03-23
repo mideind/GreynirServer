@@ -58,7 +58,6 @@
 # TODO: "Hvenær byrjar þorrinn"
 # TODO: "Hvaða frídagar/helgidagar/etc eru í febrúar"
 # TODO: "hvenær eru páskar 2035"
-# TODO: "hvenær er páskasunnudagur"
 # TODO: "Hvað eru margir dagar eftir af árinu?"
 
 import re
@@ -306,6 +305,7 @@ QDateEaster/fall →
 
 QDateEasterSunday/fall →
     'páskadagur:kk'_et/fall
+    | "páskasunnudagur"
 
 QDateMaundyThursday/fall →
     'skírdagur:kk'_et/fall

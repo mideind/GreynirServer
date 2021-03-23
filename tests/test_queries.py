@@ -21,11 +21,16 @@
 
 """
 
+from typing import Dict, Optional, Any
+
 import re
-import os, sys
+import os
+import sys
 import pytest
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
+
+from flask.testing import FlaskClient
 
 # Shenanigans to enable Pytest to discover modules in the
 # main workspace directory (the parent of /tests)
@@ -39,10 +44,11 @@ from main import app
 from settings import changedlocale
 from db import SessionContext
 from db.models import Query, QueryData, QueryLog
+from util import read_api_key
 
 
 @pytest.fixture
-def client():
+def client() -> FlaskClient:
     """ Instantiate Flask's modified Werkzeug client to use in tests """
     app.config["TESTING"] = True
     app.config["DEBUG"] = True
@@ -52,7 +58,7 @@ def client():
 API_CONTENT_TYPE = "application/json"
 
 
-def qmcall(c, qdict, qtype=None):
+def qmcall(c: FlaskClient, qdict: Dict[str, Any], qtype: Optional[str] = None) -> Dict:
     """Use passed client object to call query API with
     query string key value pairs provided in dict arg."""
 
@@ -90,10 +96,8 @@ def qmcall(c, qdict, qtype=None):
     return json
 
 
-def has_google_api_key():
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    keypath = os.path.join(basepath, "..", "resources", "GoogleServerKey.txt")
-    return os.path.isfile(keypath)
+def has_google_api_key() -> bool:
+    return read_api_key("GoogleServerKey") != ""
 
 
 DUMMY_CLIENT_ID = "QueryTesting123"
@@ -572,13 +576,13 @@ def test_query_api(client):
             "q": "hvaða útgáfu er ég að keyra",
             "client_type": "ios",
             "client_version": "1.0.3",
-            "voice": True
+            "voice": True,
         },
     )
     assert "iOS" in json["answer"] and "1.0.3" in json["answer"]
     assert "komma" in json["voice"]
 
-    json = qmcall(c, { "q": "á hvaða tæki ertu að keyra?", "client_type": "ios"})
+    json = qmcall(c, {"q": "á hvaða tæki ertu að keyra?", "client_type": "ios"})
     assert "iOS" in json["answer"]
 
     # json = qmcall(
