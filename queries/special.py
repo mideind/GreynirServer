@@ -431,19 +431,25 @@ _SPEAKING_TO_ME: AnswerType = {"answer": "Þú ert að tala við mig, Emblu."}
 _YES: AnswerType = {"answer": "Já."}
 _NO: AnswerType = {"answer": "Nei."}
 
-_VOICE_SPEED = {"answer": "Það er hægt að velja talhraða í stillingum."}
+_VOICE_SPEED: AnswerType = {
+    "answer": "Það er hægt að stilla talhraða minn í stillingum."
+}
 
-_YOU_BEAUTIFUL = {"answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."}
+_YOU_BEAUTIFUL: AnswerType = {
+    "answer": "Þú, kæri notandi, ert að sjálfsögðu fallegastur af öllum."
+}
 
-_BEER_PREFS = {
+_BEER_PREFS: AnswerType = {
     "answer": "Ég drekk reyndar ekki en einn skapari minn er hrifinn af Pilsner Urquell frá Tékklandi."
 }
 
-_WINE_PREFS = {"answer": "Ég drekk ekki vín."}
+_WINE_PREFS: AnswerType = {"answer": "Ég drekk ekki vín."}
 
-_MY_PHILOSOPHY = {"answer": "Það er minn tilgangur að þjóna þér og mannkyninu öllu."}
+_MY_PHILOSOPHY: AnswerType = {
+    "answer": "Það er minn tilgangur að þjóna þér og mannkyninu öllu."
+}
 
-_SORRY_TO_HEAR = {"answer": "Það þykir mér leitt að heyra."}
+_SORRY_TO_HEAR: AnswerType = {"answer": "Það þykir mér leitt að heyra."}
 
 ###################################
 
@@ -1898,14 +1904,20 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ert þú hin íslenska alexa": {"answer": "Nei. Alexa er hin bandaríska Embla!"},
     "þekkirðu alexu": {"answer": "Já, en ég skil hana ekki. Hún talar ekki íslensku."},
     "þekkirðu sirrý": {"answer": "Já, en ég skil hana ekki. Hún talar ekki íslensku."},
+    # Voice speed
+    "geturðu talað hægar": _VOICE_SPEED,
+    "geturðu talað hraðar": _VOICE_SPEED,
+    "geturðu talað aðeins hægar": _VOICE_SPEED,
+    "geturðu talað aðeins hraðar": _VOICE_SPEED,
+    "getur þú talað hægar": _VOICE_SPEED,
+    "getur þú talað hraðar": _VOICE_SPEED,
+    "getur þú talað aðeins hægar": _VOICE_SPEED,
+    "getur þú talað aðeins hraðar": _VOICE_SPEED,
     # Cheating, I know. But I'm never in the news and it just doesn't
     # sit right with me that I should remain incognito :) - Sveinbjörn 04/10/2019
     "hver er sveinbjörn þórðarson": {
         "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig."
     },
-    # Voice speed
-    # "geturðu talað hægar": _VOICE_SPEED,
-    # "geturðu talað hraðar": _VOICE_SPEED,
 }
 
 

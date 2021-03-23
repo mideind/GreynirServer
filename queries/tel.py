@@ -34,7 +34,7 @@ import re
 import random
 
 from query import Query
-from queries import gen_answer, cap_first
+from queries import gen_answer
 
 from reynir import NounPhrase
 
