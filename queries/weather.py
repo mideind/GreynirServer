@@ -100,8 +100,8 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
             (
@@ -117,7 +117,8 @@ def help_text(lemma: str) -> str:
     )
 
 
-QUERY_NONTERMINALS = { "QWeather" }
+# The grammar nonterminals this module wants to handle
+QUERY_NONTERMINALS = {"QWeather"}
 
 # The context-free grammar for the queries recognized by this module
 GRAMMAR = """
@@ -319,8 +320,8 @@ def _get_OWM_API_key() -> str:
 
 
 def _postprocess_owm_data(d):
-    """ Restructure data from OWM API so it matches that provided by
-        the iceweather module. """
+    """Restructure data from OWM API so it matches that provided by
+    the iceweather module."""
     if not d:
         return d
 
@@ -383,9 +384,9 @@ _BFT_ICEDESC = {
 
 
 def _wind_descr(wind_ms: float) -> Optional[str]:
-    """ Icelandic-language description of wind conditions given metres
-        per second. Uses Beaufort scale lookup.
-        See https://www.vedur.is/vedur/frodleikur/greinar/nr/1098
+    """Icelandic-language description of wind conditions given metres
+    per second. Uses Beaufort scale lookup.
+    See https://www.vedur.is/vedur/frodleikur/greinar/nr/1098
     """
     return _BFT_ICEDESC.get(_wind_bft(wind_ms))
 
@@ -409,14 +410,18 @@ _RVK_STATION_ID = 1
 
 
 def _curr_observations(query: Query, result):
-    """ Fetch latest weather observation data from weather station closest
-        to the location associated with the query (i.e. either user location
-        coordinates or a specific placename) """
+    """Fetch latest weather observation data from weather station closest
+    to the location associated with the query (i.e. either user location
+    coordinates or a specific placename)"""
     loc = query.location
 
     # User asked about a specific location
     # Try to find a matching Icelandic placename
-    if "location" in result and result.location != "Ísland" and result.location != "general":
+    if (
+        "location" in result
+        and result.location != "Ísland"
+        and result.location != "general"
+    ):
         if result.location == "capital":
             loc = _RVK_COORDS
             result.subject = "Í Reykjavík"
@@ -524,8 +529,8 @@ _DESCR_ABBR = {
 
 
 def _descr4voice(descr: str) -> str:
-    """ Prepare natural language weather description for speech synthesizer
-        by rewriting/expanding abbreviations, etc. """
+    """Prepare natural language weather description for speech synthesizer
+    by rewriting/expanding abbreviations, etc."""
 
     # E.g. "8-13" becomes "8 til 13"
     d = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", descr)
@@ -579,8 +584,8 @@ def get_forecast_answer(query: Query, result):
 
 
 def get_umbrella_answer(query: Query, result):
-    """ Handle a query concerning whether an umbrella is needed
-        for current weather conditions. """
+    """Handle a query concerning whether an umbrella is needed
+    for current weather conditions."""
 
     # if rain and high wind: no, not gonna work buddy
     # if no rain: no, it's not raining or likely to rain
@@ -602,8 +607,8 @@ def QWeatherCountry(node, params, result):
 
 
 def QWeatherOpenLoc(node, params, result):
-    """ Store preposition and placename to use in voice
-        description, e.g. "Á Raufarhöfn" """
+    """Store preposition and placename to use in voice
+    description, e.g. "Á Raufarhöfn" """
     result["subject"] = result._node.contained_text().title()
 
 

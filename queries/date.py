@@ -67,6 +67,7 @@ from datetime import datetime, timedelta
 from pytz import timezone
 from calendar import monthrange, isleap
 
+from tree import Result
 from query import Query
 from queries import timezone4loc, gen_answer, is_plural, cap_first
 from settings import changedlocale
@@ -111,8 +112,8 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
             (
@@ -130,7 +131,8 @@ def help_text(lemma: str) -> str:
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
-QUERY_NONTERMINALS = { "QDate" }
+# The grammar nonterminals this module wants to handle
+QUERY_NONTERMINALS = {"QDate"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -302,8 +304,14 @@ QDateWorkersDay/fall →
 QDateEaster/fall →
     'páskar:kk'/fall
 
+QDateEasterSundayWord_nf -> "páskasunnudagur"
+QDateEasterSundayWord_þf -> "páskasunnudag"
+QDateEasterSundayWord_þgf -> "páskasunnudegi"
+QDateEasterSundayWord_ef -> "páskasunnudags"
+
 QDateEasterSunday/fall →
     'páskadagur:kk'_et/fall
+    | QDateEasterSundayWord/fall
 
 QDateMaundyThursday/fall →
     'skírdagur:kk'_et/fall
@@ -706,8 +714,8 @@ _DAY_INDEX_DAT[22] = "tuttugasta og öðrum"
 
 
 def next_weekday(d: datetime, weekday: int) -> datetime:
-    """ Get the date of the next weekday after a given date.
-        0 = Monday, 1 = Tuesday, 2 = Wednesday, etc. """
+    """Get the date of the next weekday after a given date.
+    0 = Monday, 1 = Tuesday, 2 = Wednesday, etc."""
     days_ahead = weekday - d.weekday()
     if days_ahead <= 0:  # Target day is today, or already happened this week
         days_ahead += 7
@@ -715,8 +723,8 @@ def next_weekday(d: datetime, weekday: int) -> datetime:
 
 
 def this_or_next_weekday(d: datetime, weekday: int) -> datetime:
-    """ Get the date of the next weekday after or including a given date.
-        0 = Monday, 1 = Tuesday, 2 = Wednesday, etc. """
+    """Get the date of the next weekday after or including a given date.
+    0 = Monday, 1 = Tuesday, 2 = Wednesday, etc."""
     days_ahead = weekday - d.weekday()
     if days_ahead < 0:  # Target day already happened this week
         days_ahead += 7
@@ -740,10 +748,10 @@ def next_easter() -> datetime:
 
 
 def calc_easter(year: int) -> datetime:
-    """ An implementation of Butcher's Algorithm for determining the date of
-        Easter for the Western church. Works for any date in the Gregorian
-        calendar (1583 and onward). Returns a datetime object.
-        http://code.activestate.com/recipes/576517-calculate-easter-western-given-a-year/ """
+    """An implementation of Butcher's Algorithm for determining the date of
+    Easter for the Western church. Works for any date in the Gregorian
+    calendar (1583 and onward). Returns a datetime object.
+    http://code.activestate.com/recipes/576517-calculate-easter-western-given-a-year/"""
     a = year % 19
     b = year // 100
     c = year % 100

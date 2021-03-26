@@ -807,6 +807,7 @@ class VisirScraper(ScrapeHelper):
             heading = heading[:-10]
         if heading.endswith(" - Vísir"):
             heading = heading[:-8]
+        heading = heading.rstrip("|")
 
         # Timestamp
         timestamp = None
@@ -1691,7 +1692,7 @@ class BBScraper(ScrapeHelper):
                     minute=int(ts[14:16]),
                     second=int(ts[17:19]),
                 )
-        except:
+        except Exception:
             pass
 
         metadata.heading = heading
@@ -1756,7 +1757,7 @@ class LemurinnScraper(ScrapeHelper):
                     minute=int(ts[14:16]),
                     second=int(ts[17:19]),
                 )
-        except:
+        except Exception:
             pass
 
         metadata.heading = heading
@@ -1769,6 +1770,74 @@ class LemurinnScraper(ScrapeHelper):
         """ Find the article content (main text) in the soup """
         content = ScrapeHelper.div_class(soup_body, "post-content")
 
+        return content
+
+
+class MannlifScraper(ScrapeHelper):
+    """ Scraping helper for man.is """
+
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["https://www.man.is/feed/"]
+
+    def skip_url(self, url):
+        """ Return True if this URL should not be scraped """
+        s = urlparse.urlsplit(url)
+        p = s.path
+        # Only scrape urls with the right path prefix
+        if p and p.startswith("/studio-birtingur/"):
+            return True  # Don't skip
+        return False
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = heading.rstrip("|")
+
+        # Author
+        author = "Ritstjórn Mannlífs"
+        auth_tag = ScrapeHelper.div_class(soup, "tdb-author-name")
+        if auth_tag:
+            author = auth_tag.get_text()
+
+        timestamp = None
+        try:
+            # Extract date (no timestamp available) from pubdate tag
+            time_tag = soup.find("time", {"class": "entry-date"})
+            ts = None
+            if time_tag:
+                ts = time_tag["datetime"]
+            if ts:
+                timestamp = datetime(
+                    year=int(ts[0:4]),
+                    month=int(ts[5:7]),
+                    day=int(ts[8:10]),
+                    hour=int(ts[11:13]),
+                    minute=int(ts[14:16]),
+                    second=int(ts[17:19]),
+                )
+        except Exception as e:
+            logging.warning(
+                "Exception when obtaining date of man.is article: {0}".format(e)
+            )
+
+        if not timestamp:
+            timestamp = datetime.utcnow()
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        content = ScrapeHelper.div_class(soup_body, "tdb_single_content")
+        ScrapeHelper.del_div_class(content, "td-a-ad")
+        ScrapeHelper.del_tag(content, "figure")
         return content
 
 

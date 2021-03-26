@@ -93,20 +93,20 @@ def test_entities():
        Villeneuve-Loubet er franskt þorp.
 
        Það er hægt að fá bragðgóðan ís í ísbúðinni Valdísi úti á Granda.
-       
+
        Í miðbæ Reykjavíkur er herrafataverslunin Geysir.
 
        Mér er sagt að Geysir sé hættur að gjósa.
-       
+
        Geysir er hættur að gjósa.
-       
+
        Geysir er gamall goshver.
-       
+
        Fyrirtækið Apple-búðin selur Apple Mac tölvur.
        Fyrirtækið Origo selur IBM tölvur.
-       
+
        Íslendingar stofnuðu skipafélagið Eimskipafélag Íslands.
-       
+
     """
 
     def make_tree(text: str) -> Tree:

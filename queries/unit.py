@@ -73,8 +73,8 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
             (
@@ -209,7 +209,8 @@ _CONVERT_UNITS = {
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
-QUERY_NONTERMINALS = { "QUnitQuery" }
+# The grammar nonterminals this module wants to handle
+QUERY_NONTERMINALS = {"QUnitQuery"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -429,8 +430,8 @@ def QUnitFrom(node, params, result):
 
 
 def QUnitFromPounds(node, params, result):
-    """ Special hack for the case of '150 pund' which is
-        tokenized as an amount token """
+    """Special hack for the case of '150 pund' which is
+    tokenized as an amount token"""
     amount = node.first_child(lambda n: n.has_t_base("amount"))
     assert amount is not None
     # Extract quantity from the amount token associated with the amount terminal
@@ -442,8 +443,8 @@ def QUnitFromPounds(node, params, result):
 
 
 def _convert(quantity: float, unit_from: str, unit_to: str) -> Tuple:
-    """ Converts a quantity from unit_from to unit_to, returning a tuple of:
-        valid, result, si_unit, si_quantity """
+    """Converts a quantity from unit_from to unit_to, returning a tuple of:
+    valid, result, si_unit, si_quantity"""
     u_from, factor_from = _UNITS[unit_from]
     u_to, factor_to = _UNITS[unit_to]
     if u_from != u_to:

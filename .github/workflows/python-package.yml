@@ -55,12 +55,13 @@ jobs:
         sudo update-locale
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip wheel
-        python -m pip install pytest
+        pip install --upgrade pip wheel pytest curlylint
         pip install --upgrade git+https://github.com/mideind/Tokenizer#egg=tokenizer
         pip install --upgrade git+https://github.com/mideind/GreynirPackage#egg=reynir
         pip install --upgrade git+https://github.com/mideind/GreynirCorrect#egg=reynir-correct
         pip install -r requirements.txt
+        sudo npm i -g jshint
+        sudo apt-get install shellcheck
     - name: Populate database
       env:
         POSTGRES_HOST: localhost
@@ -85,9 +86,20 @@ jobs:
     - name: Create dummy API key
       run: |
         cat "tests/test_files/dummy_greynir_api_key.txt" > "resources/GreynirServerKey.txt"
+        cat "resources/GreynirServerKey.txt"
     - name: Test with pytest
       run: |
         python -m pytest
+    - name: Run curlylint on templates
+      run: |
+        curlylint templates/*
+        curlylint templates/*/*
+    - name: Run jshint
+      run: |
+        jshint static/js/common.js
+    - name: Run shellcheck
+      run: |
+        shellcheck -x scripts/*.sh
     - name: Slack notification
       uses: 8398a7/action-slack@v2
       with:

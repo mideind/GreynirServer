@@ -107,8 +107,8 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
             (
@@ -123,6 +123,7 @@ def help_text(lemma: str) -> str:
     )
 
 
+# The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = {
     "QBusArrivalTime",
     "QBusAnyArrivalTime",
@@ -547,8 +548,8 @@ _BUS_WORDS = {
 
 
 def QBusWord(node, params, result):
-    """ Handle buses specified in single words,
-        such as 'tvisturinn' or 'fimman' """
+    """Handle buses specified in single words,
+    such as 'tvisturinn' or 'fimman'"""
     # Retrieve the contained text (in nominative case)
     # and set the bus_name and bus_number attributes,
     # which are then percolated automatically upwards in the tree.
@@ -562,8 +563,8 @@ def QBusWord(node, params, result):
 
 
 def QBusNumber(node, params, result):
-    """ Reflect back the phrase used to specify the bus,
-        but in nominative case. """
+    """Reflect back the phrase used to specify the bus,
+    but in nominative case."""
     # 'vagni númer 17' -> 'vagn númer 17'
     # 'leið fimm' -> 'leið fimm'
     result.bus_name = result._nominative
@@ -591,8 +592,8 @@ def QBusNumberWord(node, params, result):
 
 
 def _meaning_filter_func(mm):
-    """ Filter word meanings when casting bus stop names
-        to cases other than nominative """
+    """Filter word meanings when casting bus stop names
+    to cases other than nominative"""
     # Handle secondary and ternary forms (ÞFFT2, ÞGFET3...)
     # This is a bit hacky, but necessary for optimal results.
     # For place names, ÞGFET2 seems often to be a better choice
@@ -621,8 +622,8 @@ def to_dative(np: str) -> str:
 
 
 def voice_distance(d):
-    """ Convert a distance, given as a float in units of kilometers, to a string
-        that can be read aloud in Icelandic """
+    """Convert a distance, given as a float in units of kilometers, to a string
+    that can be read aloud in Icelandic"""
     # Convert to 100 meter integer units
     km1dec = int(d * 100 + 5) // 10
     if km1dec >= 10:

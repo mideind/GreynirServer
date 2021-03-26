@@ -97,14 +97,14 @@ def QWhatIsEntity(node: Node, params: ParamList, result: Result) -> None:
 
 
 def EfLiður(node: Node, params: ParamList, result: Result) -> None:
-    """ Eignarfallsliðir haldast óbreyttir,
-        þ.e. þeim á ekki að breyta í nefnifall """
+    """Eignarfallsliðir haldast óbreyttir,
+    þ.e. þeim á ekki að breyta í nefnifall"""
     result._nominative = result._text
 
 
 def FsMeðFallstjórn(node: Node, params: ParamList, result: Result) -> None:
-    """ Forsetningarliðir haldast óbreyttir,
-        þ.e. þeim á ekki að breyta í nefnifall """
+    """Forsetningarliðir haldast óbreyttir,
+    þ.e. þeim á ekki að breyta í nefnifall"""
     result._nominative = result._text
 
 

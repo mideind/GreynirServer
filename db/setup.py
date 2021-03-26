@@ -188,6 +188,15 @@ ROOTS = [
         "LemurinnScraper",
         True,
     ),
+    (
+        "https://man.is/",
+        "man.is",
+        "Mannlíf",
+        0.4,
+        "scrapers.default",
+        "MannlifScraper",
+        True,
+    ),
     # (
     #     "https://visindavefur.is/",
     #     "visindavefur.is",

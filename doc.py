@@ -21,20 +21,36 @@
 
 """
 
-from typing import Union, Dict, Type
+from typing import Union, Dict, Type, Mapping
 
-import abc
-from io import BytesIO
 import re
+import abc
+from io import BytesIO, StringIO
 from zipfile import ZipFile
+
 from html2text import HTML2Text
+
 from striprtf.striprtf import rtf_to_text  # type: ignore
+
+from odf import teletype
+from odf import text as odf_text
+from odf.opendocument import load as load_odf
+
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfdocument import PDFDocument as PDFMinerDocument
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.pdfpage import PDFPage
+from pdfminer.pdfparser import PDFParser
 
 # Use defusedxml module to prevent parsing of malicious XML
 from defusedxml import ElementTree  # type: ignore
 
 
 DEFAULT_TEXT_ENCODING = "UTF-8"
+
+
+DocumentType = Type["Document"]
 
 
 class MalformedDocumentError(Exception):
@@ -53,6 +69,14 @@ class Document(abc.ABC):
         else:
             # It's a byte stream
             self.data = path_or_bytes
+
+    @staticmethod
+    def for_mimetype(mime_type: str) -> DocumentType:
+        return doc_class_for_mime_type(mime_type)
+
+    @staticmethod
+    def for_suffix(suffix: str) -> DocumentType:
+        return doc_class_for_suffix(suffix)
 
     @abc.abstractmethod
     def extract_text(self) -> str:
@@ -76,8 +100,8 @@ class HTMLDocument(Document):
 
     @staticmethod
     def _remove_header_prefixes(text: str) -> str:
-        """ Removes '#' in all lines starting with '#'. Annoyingly,
-            html2text adds markdown-style headers for <h*> tags. """
+        """Removes '#' in all lines starting with '#'. Annoyingly,
+        html2text adds markdown-style headers for <h*> tags."""
         lines = text.split("\n")
         for i, line in enumerate(lines):
             if line.startswith("#"):
@@ -97,9 +121,9 @@ class HTMLDocument(Document):
         h.decode_errors = "ignore"  # type: ignore
         h.body_width = 0
 
-        text = h.handle(html)
+        txt = h.handle(html)
 
-        return self._remove_header_prefixes(text)
+        return self._remove_header_prefixes(txt)
 
 
 class RTFDocument(Document):
@@ -118,7 +142,21 @@ class PDFDocument(Document):
     """ Adobe PDF document """
 
     def extract_text(self) -> str:
-        raise NotImplementedError
+        output_string = StringIO()
+
+        parser = PDFParser(BytesIO(self.data))
+        doc = PDFMinerDocument(parser)
+        rsrcmgr = PDFResourceManager()
+        device = TextConverter(rsrcmgr, output_string, laparams=LAParams())
+        interpreter = PDFPageInterpreter(rsrcmgr, device)
+
+        for page in PDFPage.create_pages(doc):
+            interpreter.process_page(page)
+
+        # Postprocessing
+        txt = output_string.getvalue()
+        txt = txt.replace("\n", " ")
+        return txt
 
 
 class DocxDocument(Document):
@@ -161,16 +199,49 @@ class DocxDocument(Document):
         return "\n\n".join(paragraphs)
 
 
+class ODTDocument(Document):
+    """ OpenDocument format. """
+
+    def extract_text(self) -> str:
+        textdoc = load_odf(BytesIO(self.data))
+        paragraphs = textdoc.getElementsByType(odf_text.P)  # Find all paragraphs
+        ptexts = [teletype.extractText(p) for p in paragraphs]
+        return "\n\n".join(ptexts)
+
+
 # Map file mime type to document class
-MIMETYPE_TO_DOC_CLASS: Dict[str, Type[Document]] = {
+MIMETYPE_TO_DOC_CLASS: Dict[str, DocumentType] = {
     "text/plain": PlainTextDocument,
     "text/html": HTMLDocument,
     "text/rtf": RTFDocument,
+    "application/pdf": PDFDocument,
+    "application/x-pdf": PDFDocument,
     "application/rtf": RTFDocument,
-    # "application/pdf": PDFDocument,
-    # "application/x-pdf": PDFDocument,
+    "application/vnd.oasis.opendocument.text": ODTDocument,
     # Yes, really!
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": DocxDocument,
 }
 
 SUPPORTED_DOC_MIMETYPES = frozenset(MIMETYPE_TO_DOC_CLASS.keys())
+
+
+def doc_class_for_mime_type(mime_type: str) -> Type[Document]:
+    assert mime_type in SUPPORTED_DOC_MIMETYPES
+    return MIMETYPE_TO_DOC_CLASS[mime_type]
+
+
+SUFFIX_TO_DOC_CLASS: Mapping[str, DocumentType] = {
+    "txt": PlainTextDocument,
+    "html": HTMLDocument,
+    "rtf": RTFDocument,
+    "pdf": PDFDocument,
+    "odt": ODTDocument,
+    "docx": DocxDocument,
+}
+
+SUPPORTED_DOC_SUFFIXES = frozenset(SUFFIX_TO_DOC_CLASS.keys())
+
+
+def doc_class_for_suffix(suffix: str) -> Type[Document]:
+    assert suffix in SUPPORTED_DOC_SUFFIXES
+    return SUFFIX_TO_DOC_CLASS[suffix]

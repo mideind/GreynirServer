@@ -22,6 +22,8 @@
 
 """
 
+# TODO: "Heinsaðu fyrirspurnasögu [mína]", "Hreinsaðu öll gögn um mig", etc. commands
+
 from typing import Dict, Match, Optional, cast
 
 import re
@@ -114,6 +116,7 @@ _MY_NAME_IS_REGEXES = frozenset(
         r"^ég ber heitið (.+)$",
         r"^ég ber nafnið (.+)$",
         r"^ég er kallaður (.+)$",
+        r"^ég kallast (.+)$",
     )
 )
 
@@ -132,12 +135,12 @@ def _mynameis_handler(q: Query, ql: str) -> bool:
         if m:
             break
     if m:
-        name = m.group(1).strip()
-        if not name:
+        fname = m.group(1).strip()
+        if not fname:
             return False
 
         # Clean up name string
-        name = name.split(" og ")[0]  # "ég heiti X og blablabla"
+        name = fname.split(" og ")[0]  # "ég heiti X og blablabla"
         name = name.split(" hvað ")[0]  # "ég heiti X hvað heitir þú"
 
         # Handle "ég heiti ekki X"
@@ -157,10 +160,15 @@ def _mynameis_handler(q: Query, ql: str) -> bool:
             qdata: ClientDataDict = dict(full=name.title(), first=fn, gender=gender)
             q.set_client_data("name", qdata)
 
+        # Beautify query by capitalizing the name provided
+        bq = q.beautified_query
+        q.set_beautified_query(bq.replace(name, name.title()))
+
         # Generate answer
         voice = answ.replace(",", "")
         q.set_answer(dict(answer=answ), answ, voice)
         q.query_is_command()
+
         return True
 
     return False
@@ -224,6 +232,11 @@ def _whatsmyaddr_handler(q: Query, ql: str) -> bool:
 _MY_ADDRESS_REGEXES = (
     r"ég á heima á (.+)$",
     r"ég á heima í (.+)$",
+    r"ég bý á (.+)$",
+    r"ég bý í (.+)$",
+    r"heimili mitt er á (.+)$",
+    r"heimili mitt er í (.+)$",
+    r"heimili mitt er (.+)$",
     r"heimilisfang mitt er á (.+)$",
     r"heimilisfang mitt er í (.+)$",
     r"heimilisfang mitt er (.+)$",
@@ -233,8 +246,8 @@ _ADDR_LOOKUP_FAIL = "Ég fann ekki þetta heimilisfang."
 
 
 def _myaddris_handler(q: Query, ql: str) -> bool:
-    """ Handle queries of the form "Ég á heima á [heimilisfang]".
-        Store this info as query data. """
+    """Handle queries of the form "Ég á heima á [heimilisfang]".
+    Store this info as query data."""
     m: Optional[Match[str]] = None
     for rx in _MY_ADDRESS_REGEXES:
         m = re.search(rx, ql)
@@ -286,7 +299,11 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
         answ = "Heimilisfang þitt hefur verið skráð sem {0}".format(_addr2str(d))
         q.set_answer(*gen_answer(answ))
     else:
-        q.set_answer(*gen_answer("Ekki tókst að vista heimilisfang. Auðkenni tækis vantar."))
+        q.set_answer(
+            *gen_answer(
+                "Ég gat ekki vistað heimilisfangið af því að ég hef ekki auðkenni tækisins sem þú notar."
+            )
+        )
 
     return True
 
@@ -348,11 +365,12 @@ _DEVICE_TYPE_QUERIES = frozenset(
 _DUNNO_DEVICE_TYPE = "Ég veit ekki á hvaða tæki ég er að keyra."
 
 _DEVICE_TYPE_TO_DESC = {
-    "www": "Ég er að keyra í vafra. Meira veit ég ekki.",
-    "ios": "Ég er að keyra á iOS stýrikerfinu frá Apple. Meira veit ég ekki.",
-    "ios_flutter": "Ég er að keyra á iOS stýrikerfinu frá Apple. Meira veit ég ekki.",
-    "android": "Ég er að keyra á Android stýrikerfinu frá Google. Meira veit ég ekki.",
-    "android_flutter": "Ég er að keyra á Android stýrikerfinu frá Google. Meira veit ég ekki.",
+    "www": "Ég er að keyra í vafra.",
+    "ios": "Ég er að keyra á iOS stýrikerfinu frá Apple.",
+    "ios_flutter": "Ég er að keyra á iOS stýrikerfinu frá Apple.",
+    "android": "Ég er að keyra á Android stýrikerfinu frá Google.",
+    "android_flutter": "Ég er að keyra á Android stýrikerfinu frá Google.",
+    "python_linux": "Ég er að keyra á Linux stýrikerfinu.",
 }
 
 
@@ -361,19 +379,69 @@ def _device_type_handler(q: Query, ql: str) -> bool:
     if ql not in _DEVICE_TYPE_QUERIES:
         return False
 
-    if not q.client_type:
-        q.set_key("DeviceInfo")
-        q.set_answer(*gen_answer(_DUNNO_DEVICE_TYPE))
+    if q.client_type:
+        for prefix in _DEVICE_TYPE_TO_DESC.keys():
+            if q.client_type.startswith(prefix):
+                answ = _DEVICE_TYPE_TO_DESC[prefix] + " Meira veit ég ekki."
+                q.set_answer(*gen_answer(answ))
+                q.set_key("DeviceInfo")
+                return True
+
+    q.set_key("DeviceInfo")
+    q.set_answer(*gen_answer(_DUNNO_DEVICE_TYPE))
+    return True
+
+
+_CLIENT_VERSION_QUERIES = frozenset(
+    (
+        "hvaða útgáfu er ég með",
+        "hvaða útgáfu er ég að keyra",
+        "hvaða útgáfu er verið að keyra",
+        "hvaða útgáfu af emblu er ég að keyra",
+        "hvaða útgáfu af emblu er ég með",
+        "hvaða útgáfa af emblu er að keyra",
+        "hvaða útgáfa er keyrandi",
+        "hvaða útgáfa er í gangi",
+        "hvaða útgáfa ertu",
+        "hvaða útgáfa ert þú",
+        "hvaða útgáfa af emblu ertu",
+        "hvaða útgáfa af emblu ert þú",
+    )
+)
+
+_DUNNO_CLIENT_VERSION = "Ég veit ekki hvaða útgáfa er að keyra."
+
+_DEVICE_TYPE_TO_APPENDED_DESC = {
+    "www": "í vafra",
+    "ios": "fyrir iOS",
+    "ios_flutter": "fyrir iOS",
+    "android": "fyrir Android",
+    "android_flutter": "fyrir Android",
+    "python_linux": "fyrir Linux",
+}
+
+
+def _client_version_handler(q: Query, ql: str) -> bool:
+    """ Handle queries about client version. """
+    if ql not in _CLIENT_VERSION_QUERIES:
+        return False
+
+    q.set_key("ClientVersion")
+
+    if not q.client_version:
+        q.set_answer(*gen_answer(_DUNNO_CLIENT_VERSION))
         return True
 
-    for prefix in _DEVICE_TYPE_TO_DESC.keys():
-        if q.client_type.startswith(prefix):
-            answ = _DEVICE_TYPE_TO_DESC[prefix]
-            q.set_answer(*gen_answer(answ))
-            q.set_key("DeviceInfo")
-            return True
+    platform = (
+        _DEVICE_TYPE_TO_APPENDED_DESC.get(q.client_type, "") if q.client_type else ""
+    )
 
-    return False
+    answ = "Emblu {0} {1}".format(q.client_version, platform)
+    vers4voice = q.client_version.replace(".", " komma ")
+    voice = "Þú ert að keyra Emblu {0} {1}".format(vers4voice, platform).strip()
+    q.set_answer(dict(answer=answ), answ, voice)
+
+    return True
 
 
 # Handler functions for all query types supported by this module.
@@ -387,6 +455,7 @@ _HANDLERS = tuple(
         # _whatsmynum_handler,
         # _mynumis_handler,
         _device_type_handler,
+        _client_version_handler,
     ]
 )
 

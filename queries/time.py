@@ -36,32 +36,18 @@ from datetime import datetime
 from typing import cast
 from pytz import country_timezones, timezone
 
-from reynir.bindb import BIN_Db
-from geo import isocode_for_country_name, lookup_city_info, capitalize_placename
+from reynir import NounPhrase
+from geo import (
+    isocode_for_country_name,
+    lookup_city_info,
+    capitalize_placename,
+    iceprep_for_cc,
+    iceprep_for_placename,
+)
 from query import Query
-from queries import timezone4loc
-
+from queries import timezone4loc, gen_answer, icequote
 
 _TIME_QTYPE = "Time"
-
-
-_TIME_QUERIES = frozenset(
-    (
-        "klukkan",
-        "hvað er klukkan",
-        "hvað er klukkan eiginlega",
-        "hvað er klukkan nákvæmlega",
-        "hvað er klukkan eins og stendur",
-        "hvað er klukkan núna",
-        "hvað er klukkan hér",
-        "hver er klukkan",
-        "hver er klukkan núna",
-        "hvað er tíminn",
-        "hvað er tíminn núna",
-        "hvað líður tímanum",
-        "veistu hvað klukkan er",
-    )
-)
 
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
@@ -69,8 +55,8 @@ TOPIC_LEMMAS = ["klukka", "tími"]
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
             (
@@ -83,13 +69,67 @@ def help_text(lemma: str) -> str:
     )
 
 
+_TIME_QUERIES = frozenset(
+    (
+        "klukkan",
+        "tíminn",
+        "hvað klukkan",
+        "hver klukkan",
+        "hvað tíminn",
+        "hver tíminn",
+        "hvað er klukkan",
+        "hvað er klukkan eiginlega",
+        "hvað er klukkan nákvæmlega",
+        "hvað er klukkan eins og stendur",
+        "hvað er klukkan núna",
+        "hvað er klukkan hér",
+        "hver er klukkan",
+        "hver er klukkan núna",
+        "hver er klukkan nákvæmlega",
+        "hver er klukkan eins og stendur",
+        "hvað er tíminn",
+        "hvað er tíminn núna",
+        "hvað er tíminn nákvæmlega",
+        "hvað er tíminn eins og stendur",
+        "hver er tíminn",
+        "hver er tíminn núna",
+        "hver er tíminn nákvæmlega",
+        "hver er tíminn eins og stendur",
+        "hvað líður tímanum",
+        "veistu hvað klukkan er",
+        "veist þú hvað klukkan er",
+        "veistu hvað klukkan er núna",
+        "veist þú hvað klukkan er núna",
+    )
+)
+
+_TIME_IN_LOC_QUERIES = frozenset(
+    (
+        "klukkan í",
+        "klukkan á",
+        "tíminn í",
+        "tíminn á",
+        "hvað klukkan í",
+        "hvað klukkan á",
+        "hvað er klukkan í",
+        "hvað er klukkan á",
+        "hver er klukkan í",
+        "hver er klukkan á",
+        "hvað er tíminn í",
+        "hvað er tíminn á",
+        "hver er tíminn í",
+        "hver er tíminn á",
+    )
+)
+
+
 def handle_plain_text(q: Query) -> bool:
-    """ Handle a plain text query, contained in the q parameter
-        which is an instance of the query.Query class.
-        Returns True if the query was handled, and in that case
-        the appropriate properties on the Query instance have
-        been set, such as the answer and the query type (qtype).
-        If the query is not recognized, returns False. """
+    """Handle a plain text query, contained in the q parameter
+    which is an instance of the query.Query class.
+    Returns True if the query was handled, and in that case
+    the appropriate properties on the Query instance have
+    been set, such as the answer and the query type (qtype).
+    If the query is not recognized, returns False."""
     ql = q.query_lower.rstrip("?")
 
     # Timezone being asked about
@@ -100,46 +140,56 @@ def handle_plain_text(q: Query) -> bool:
     if ql in _TIME_QUERIES:
         # Use location to determine time zone
         tz = timezone4loc(q.location, fallback="IS")
-    # TODO: Replace with regex, and handle "Hvað klukkan á X", "Hvað klukkan", etc.
-    elif ql.startswith("hvað er klukkan á ") or ql.startswith("hvað er klukkan í "):
-        # Query about the time in a particular location, i.e. country or city
-        loc = ql[18:]  # Cut away question prefix, leaving only placename
-        # Capitalize each word in country/city name
+    else:
+        locq = [x for x in _TIME_IN_LOC_QUERIES if ql.startswith(x.lower())]
+        if not locq:
+            return False  # Not matching any time queries
+        # This is a query about the time in a particular location, i.e. country or city
+        # Cut away question prefix, leaving only loc name
+        loc = ql[len(locq[0]) :].strip()
+        if not loc:
+            return False  # No location string
+        # Intelligently capitalize country/city/location name
         loc = capitalize_placename(loc)
+
         # Look up nominative
-        # This only works for single-word city/country names found
-        # in BÍN and could be improved (e.g. fails for "Nýju Jórvík")
-        bin_res = BIN_Db().lookup_nominative(loc)
-        words = [m.stofn for m in bin_res]
-        words.append(loc)  # In case it's not in BÍN (e.g. "New York", "San José")
+        loc_nom = NounPhrase(loc).nominative or loc
+        prep = "í"
 
-        # Check if any word is a recognised country or city name
-        for w in words:
-            cc = isocode_for_country_name(w)
-            if cc and cc in country_timezones:
-                # Look up country timezone
-                # Use the first timezone although some countries have more than one
-                # The timezone list returned by pytz is ordered by "dominance"
-                tz = country_timezones[cc][0]
-            else:
-                # It's not a country name, look up in city database
-                info = lookup_city_info(w)
-                if info:
-                    top = info[0]
-                    location = (
-                        cast(float, top.get("lat_wgs84")),
-                        cast(float, top.get("long_wgs84")),
-                    )
-                    tz = timezone4loc(location)
-            if tz:
-                # We have a timezone
-                break
+        # Check if loc is a recognised country or city name
+        cc = isocode_for_country_name(loc_nom)
+        if cc and cc in country_timezones:
+            # Look up country timezone
+            # Use the first timezone although some countries have more than one
+            # The timezone list returned by pytz is ordered by "dominance"
+            tz = country_timezones[cc][0]
+            prep = iceprep_for_cc(cc)
+        else:
+            # It's not a country name, look up in city database
+            info = lookup_city_info(loc_nom)
+            if info:
+                top = info[0]
+                location = (
+                    cast(float, top.get("lat_wgs84")),
+                    cast(float, top.get("long_wgs84")),
+                )
+                tz = timezone4loc(location)
+                prep = iceprep_for_placename(loc_nom)
 
-        # "Klukkan í Lundúnum er" - Used for voice answer
-        specific_desc = "{0} er".format(ql[8:])
-
-        # Beautify query by capitalizing the country/city name
-        q.set_beautified_query("{0}{1}?".format(q.beautified_query[:18], loc))
+        if tz:
+            # "Klukkan í Lundúnum er" - Used for voice answer
+            dat = NounPhrase(loc_nom).dative or loc
+            specific_desc = "Klukkan {0} {1} er".format(prep, dat)
+        else:
+            # Unable to find the specified location
+            q.set_qtype(_TIME_QTYPE)
+            q.set_key(loc)
+            q.set_answer(
+                *gen_answer(
+                    "Ég gat ekki flett upp staðsetningunni {0}".format(icequote(loc))
+                )
+            )
+            return True
 
     # We have a timezone. Return formatted answer.
     if tz:

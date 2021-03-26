@@ -53,8 +53,8 @@ TOPIC_LEMMAS = ["höfuðborg", "heimsálfa", "borg", "landafræði"]
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
             (
@@ -71,7 +71,8 @@ def help_text(lemma: str) -> str:
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
 
-QUERY_NONTERMINALS = { "QGeo" }
+# The grammar nonterminals this module wants to handle
+QUERY_NONTERMINALS = {"QGeo"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -203,8 +204,8 @@ _PLACENAME_FIXES = [
 
 
 def _preprocess(name: str) -> str:
-    """ Change country/city names mangled by speech recognition to
-        the canonical spelling so lookup works. """
+    """Change country/city names mangled by speech recognition to
+    the canonical spelling so lookup works."""
     fixed = name
     for k, v in _PLACENAME_FIXES:
         fixed = re.sub(k, v, fixed, flags=re.IGNORECASE)
@@ -248,8 +249,8 @@ def _capital_query(country: str, q: Query):
 
 
 def _which_country_query(subject: str, q: Query):
-    """ Generate answer to question concerning the country in which
-        a given placename is located. """
+    """Generate answer to question concerning the country in which
+    a given placename is located."""
     info = location_info(subject, "placename")
     if not info:
         return False
@@ -276,8 +277,8 @@ def _which_country_query(subject: str, q: Query):
 
 
 def _which_continent_query(subject: str, q: Query):
-    """ Generate answer to question concerning the continent on which
-        a given country name or placename is located. """
+    """Generate answer to question concerning the continent on which
+    a given country name or placename is located."""
 
     # Get country code
     cc = isocode_for_country_name(subject)
@@ -322,8 +323,8 @@ def _which_continent_query(subject: str, q: Query):
 
 
 def _loc_desc_query(subject: str, q: Query):
-    """ Generate answer to a question about where a
-        country or placename is located. """
+    """Generate answer to a question about where a
+    country or placename is located."""
 
     # Get country code
     cc = isocode_for_country_name(subject)

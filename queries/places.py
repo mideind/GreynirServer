@@ -27,7 +27,7 @@
 # TODO: Handle opening hours with intervals, e.g. 10:00-14:00 and 18:00-22:00
 # TODO: "Hvenær er X opið?"
 
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Optional
 
 import logging
 import re
@@ -55,11 +55,14 @@ TOPIC_LEMMAS = ["opnunartími", "opna", "loka", "lokunartími"]
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
-            ("Hvað er opið lengi á Forréttabarnum", "Hvenær lokar Bónus á Fiskislóð",)
+            (
+                "Hvað er opið lengi á Forréttabarnum",
+                "Hvenær lokar Bónus á Fiskislóð",
+            )
         )
     )
 
@@ -68,7 +71,8 @@ def help_text(lemma: str) -> str:
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
-QUERY_NONTERMINALS = { "QPlaces" }
+# The grammar nonterminals this module wants to handle
+QUERY_NONTERMINALS = {"QPlaces"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -202,8 +206,8 @@ _NOT_IN_ICELAND_ERRMSG = "Enginn staður með þetta heiti fannst á Íslandi"
 
 
 def _parse_coords(place: Dict) -> Optional[LatLonTuple]:
-    """ Return tuple of coordinates given a place info data structure
-        from Google's Places API. """
+    """Return tuple of coordinates given a place info data structure
+    from Google's Places API."""
     try:
         lat = float(place["geometry"]["location"]["lat"])
         lng = float(place["geometry"]["location"]["lng"])
@@ -274,7 +278,12 @@ def answ_openhours(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
         userloc=loc,
         fields="opening_hours,place_id,formatted_address,geometry",
     )
-    if res is None or res["status"] != "OK" or "candidates" not in res or not res["candidates"]:
+    if (
+        res is None
+        or res["status"] != "OK"
+        or "candidates" not in res
+        or not res["candidates"]
+    ):
         return gen_answer(_PLACES_API_ERRMSG)
 
     # Use top result

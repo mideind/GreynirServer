@@ -42,6 +42,7 @@ from typing import (
     Callable,
     Iterator,
     NamedTuple,
+    Type,
     cast,
 )
 
@@ -94,7 +95,7 @@ VisitFunction = Callable[[TreeStateDict, "Node"], bool]
 ParamList = List[Optional["Result"]]
 NonterminalFunction = Callable[["Node", ParamList, "Result"], None]
 ChildTuple = Tuple["Node", Optional["Result"]]
-
+ResultType = Type["Result"]
 
 BIN_ORDFL: Mapping[str, Set[str]] = {
     "no": {"kk", "kvk", "hk"},

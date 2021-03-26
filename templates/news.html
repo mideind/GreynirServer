@@ -56,7 +56,7 @@
       <button class="btn btn-default dropdown-toggle"
          type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
          {% if selected_root and selected_root in roots %}
-            <img src="/static/sources/{{ selected_root }}.png" width="16" height="16" 
+            <img src="/static/img/sources/{{ selected_root }}.png" width="16" height="16" 
             style="margin-top: -2px; margin-right: 4px;" alt="{{ selected_root }}"> 
             {{ roots[selected_root] }}
          {% else %}
@@ -69,7 +69,7 @@
          <li role="separator" class="divider"></li>
 {% for domain, name in roots.items() %}
          <li><a href="{{ url_for('routes.news', root=domain) | safe }}">
-            <img src="/static/sources/{{ domain }}.png" width="16" height="16" alt="{{ name }}">
+            <img src="/static/img/sources/{{ domain }}.png" width="16" height="16" alt="{{ name }}">
             {{ name }}
          </a></li>
 {% endfor %}

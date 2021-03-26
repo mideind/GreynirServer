@@ -40,9 +40,9 @@ from reynir.binparser import TokenDict, canonicalize_token
 from article import Article as ArticleProxy
 from query import process_query
 from query import Query as QueryObject
-from doc import SUPPORTED_DOC_MIMETYPES, MIMETYPE_TO_DOC_CLASS
+from doc import SUPPORTED_DOC_MIMETYPES, Document
 from speech import get_synthesized_text_url
-from util import greynir_api_key
+from util import read_api_key
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH
@@ -103,7 +103,6 @@ def correct_api(version=1):
 
     file = request.files.get("file")
     if file is not None:
-
         # file is a Werkzeug FileStorage object
         mimetype = file.content_type
         if mimetype not in SUPPORTED_DOC_MIMETYPES:
@@ -111,10 +110,9 @@ def correct_api(version=1):
 
         # Create document object from file and extract text
         try:
-            # Instantiate appropriate class for mime type from file data
             # filename = werkzeug.secure_filename(file.filename)
-            doc_class = MIMETYPE_TO_DOC_CLASS[mimetype]
-            doc = doc_class(file.read())
+            # Instantiate an appropriate class for the MIME type of the file
+            doc = Document.for_mimetype(mimetype)(file.read())
             text = doc.extract_text()
         except Exception as e:
             logging.warning("Exception in correct_api(): {0}".format(e))
@@ -147,7 +145,6 @@ def correct_task(version=1):
 
     file = request.files.get("file")
     if file is not None:
-
         # Handle uploaded file
         # file is a proxy object that emulates a Werkzeug FileStorage object
         mimetype = file.mimetype
@@ -157,8 +154,7 @@ def correct_task(version=1):
         # Create document object from an uploaded file and extract its text
         try:
             # Instantiate an appropriate class for the MIME type of the file
-            doc_class = MIMETYPE_TO_DOC_CLASS[mimetype]
-            doc = doc_class(file.read())
+            doc = Document.for_mimetype(mimetype)(file.read())
             text = doc.extract_text()
         except Exception as e:
             logging.warning("Exception in correct_task(): {0}".format(e))
@@ -320,6 +316,9 @@ def reparse_api(version=1):
     register = {}
     stats = {}
 
+    if not uuid:
+        return better_jsonify(valid=True, error=True, errmsg="Missing ID param")
+
     with SessionContext(commit=True) as session:
         # Load the article
         a = ArticleProxy.load_from_uuid(uuid, session)
@@ -474,7 +473,7 @@ def query_history_api(version=1):
     # Calling this endpoint requires the Greynir API key
     # TODO: Enable when clients (iOS, Android) have been updated
     # key = request.values.get("api_key")
-    # gak = greynir_api_key()
+    # gak = read_api_key("GreynirServerKey")
     # if not gak or not key or key != gak:
     #     resp["errmsg"] = "Invalid or missing API key."
     #     return better_jsonify(**resp)
@@ -519,7 +518,7 @@ def speech_api(version=1):
 
     # Calling this endpoint requires the Greynir API key
     key = request.values.get("api_key")
-    gak = greynir_api_key()
+    gak = read_api_key("GreynirServerKey")
     if not gak or not key or key != gak:
         reply["errmsg"] = "Invalid or missing API key."
         return better_jsonify(**reply)
@@ -630,7 +629,7 @@ def register_query_data_api(version=1):
 
     # Calling this endpoint requires the Greynir API key
     key = qdata.get("api_key")
-    gak = greynir_api_key()
+    gak = read_api_key("GreynirServerKey")
     if not gak or not key or key != gak:
         return better_jsonify(valid=False, errmsg="Invalid or missing API key.")
 
