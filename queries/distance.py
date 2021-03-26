@@ -239,10 +239,10 @@ def dist_answer_for_loc(matches, query: Query):
         ad = query.client_data("address")
         if not ad:
             return gen_answer(
-                "Ég veit ekki hvar þú átt heima, en þú getur sagt mér það"
+                "Ég veit ekki hvar þú átt heima, en þú getur sagt mér það."
             )
         elif "lat" not in ad or "lon" not in ad:
-            return gen_answer("Ég veit ekki hvar heimili þitt er")
+            return gen_answer("Ég veit ekki hvar heimili þitt er.")
         else:
             is_home = True
             loc = (cast(float, ad["lat"]), cast(float, ad["lon"]))
@@ -352,7 +352,7 @@ def traveltime_answer_for_loc(matches, query: Query):
 
 
 _UNKNOWN_LOC_RESP = (
-    "Ég veit ekki hvar þú ert, og get þar af leiðandi ekki reiknað út vegalengdir."
+    "Ég veit ekki hvar þú ert, og get því ekki reiknað út vegalengdir."
 )
 
 

@@ -300,7 +300,9 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
         q.set_answer(*gen_answer(answ))
     else:
         q.set_answer(
-            *gen_answer("Ekki tókst að vista heimilisfang. Auðkenni tækis vantar.")
+            *gen_answer(
+                "Ég gat ekki vistað heimilisfangið af því að ég hef ekki auðkenni tækisins sem þú notar."
+            )
         )
 
     return True
@@ -430,7 +432,9 @@ def _client_version_handler(q: Query, ql: str) -> bool:
         q.set_answer(*gen_answer(_DUNNO_CLIENT_VERSION))
         return True
 
-    platform = _DEVICE_TYPE_TO_APPENDED_DESC.get(q.client_type, "") if q.client_type else ""
+    platform = (
+        _DEVICE_TYPE_TO_APPENDED_DESC.get(q.client_type, "") if q.client_type else ""
+    )
 
     answ = "Emblu {0} {1}".format(q.client_version, platform)
     vers4voice = q.client_version.replace(".", " komma ")

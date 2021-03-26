@@ -21,7 +21,7 @@
 
 """
 
-from typing import Union, Dict, Type
+from typing import Union, Dict, Type, Mapping
 
 import re
 import abc
@@ -50,6 +50,9 @@ from defusedxml import ElementTree  # type: ignore
 DEFAULT_TEXT_ENCODING = "UTF-8"
 
 
+DocumentType = Type["Document"]
+
+
 class MalformedDocumentError(Exception):
     pass
 
@@ -68,11 +71,11 @@ class Document(abc.ABC):
             self.data = path_or_bytes
 
     @staticmethod
-    def for_mimetype(mime_type: str) -> Type:
+    def for_mimetype(mime_type: str) -> DocumentType:
         return doc_class_for_mime_type(mime_type)
 
     @staticmethod
-    def for_suffix(suffix: str) -> Type:
+    def for_suffix(suffix: str) -> DocumentType:
         return doc_class_for_suffix(suffix)
 
     @abc.abstractmethod
@@ -207,7 +210,7 @@ class ODTDocument(Document):
 
 
 # Map file mime type to document class
-MIMETYPE_TO_DOC_CLASS: Dict[str, Type[Document]] = {
+MIMETYPE_TO_DOC_CLASS: Dict[str, DocumentType] = {
     "text/plain": PlainTextDocument,
     "text/html": HTMLDocument,
     "text/rtf": RTFDocument,
@@ -227,7 +230,7 @@ def doc_class_for_mime_type(mime_type: str) -> Type[Document]:
     return MIMETYPE_TO_DOC_CLASS[mime_type]
 
 
-SUFFIX_TO_DOC_CLASS: Dict[str, Type[Document]] = {
+SUFFIX_TO_DOC_CLASS: Mapping[str, DocumentType] = {
     "txt": PlainTextDocument,
     "html": HTMLDocument,
     "rtf": RTFDocument,

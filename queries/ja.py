@@ -25,7 +25,7 @@
 # TODO: Handle "hver er *heima*síminn hjá X"
 # TODO: Smarter disambiguation interaction
 
-from typing import Dict, Optional
+from typing import Dict, Optional, Any, Callable
 
 import re
 import logging
@@ -33,9 +33,11 @@ from urllib.parse import urlencode
 from datetime import datetime, timedelta
 
 from reynir import NounPhrase
+from reynir.bindb import BIN_Db
 
-from . import query_json_api, gen_answer, numbers_to_neutral
-from query import Query
+from . import query_json_api, gen_answer, numbers_to_neutral, icequote
+from query import Query, ContextDict
+from tree import ResultType
 from geo import iceprep_for_street
 from util import read_api_key
 
@@ -95,18 +97,19 @@ QJaWhatWhich →
 
 $score(+35) QJaQuery
 
+$tag(keep) QJaPhoneNum
+$tag(keep) QJaSubject
+
 """
 
 
 def QJaSubject(node, params, result):
-    n = result._text
-    nom = NounPhrase(n).nominative or n
-    result.qkey = nom
+    result.qkey = result._nominative
 
 
 def QJaPhoneNum(node, params, result):
-    result.phone_number = result._text
-    result.qkey = result._text
+    result.phone_number = result._nominative
+    result.qkey = result.phone_number
 
 
 def QJaName4PhoneNumQuery(node, params, result):
@@ -122,7 +125,7 @@ _JA_SOURCE = "ja.is"
 _JA_API_URL = "https://api.ja.is/search/v6/?{0}"
 
 
-def query_ja_api(q: str) -> Optional[Dict]:
+def query_ja_api(q: str) -> Optional[Dict[str, Any]]:
     """ Send query to ja.is API """
     key = read_api_key("JaServerKey")
     if not key:
@@ -140,10 +143,7 @@ def query_ja_api(q: str) -> Optional[Dict]:
     return res
 
 
-_MOBILE_FIRST_NUM = "678"
-
-
-def _best_number(item: Dict) -> Optional[str]:
+def _best_number(item: Dict[str, Any]) -> Optional[str]:
     """ Return best phone number, given a result item from ja.is API """
     phone_num = item.get("phone")
     add_nums = item.get("additional_phones")
@@ -162,11 +162,11 @@ def _best_number(item: Dict) -> Optional[str]:
             if pn and "number" in pn and pn.get("mobile") == True:
                 return pn["number"]
 
-    # OK, didn't find any mobile numbers. Just return canoncial number
+    # OK, didn't find any mobile numbers. Just return canonical number
     return phone_num.get("number") if phone_num else None
 
 
-def _answer_phonenum4name_query(q: Query, result):
+def _answer_phonenum4name_query(q: Query, result: ResultType):
     """ Answer query of the form "hvað er síminn hjá [íslenskt mannsnafn]?" """
     res = query_ja_api(result.qkey)
 
@@ -177,15 +177,22 @@ def _answer_phonenum4name_query(q: Query, result):
         return gen_answer("Ekki tókst að fletta upp {0}.".format(nþgf))
 
     # Check if we have a single canonical match from API
-    single = len(res["people"]["items"]) == 1
     allp = res["people"]["items"]
+    single = len(allp) == 1
     first = allp[0]
     fname = first["name"]
     if not single:
         # Many found with that name, generate smart message asking for disambiguation
-        one_name_only = len(result.qkey.split()) == 1
-        msg = "Það fundust margir með það nafn. Prufaðu að tilgreina {0}heimilisfang".format(
-            "fullt nafn og " if one_name_only else ""
+        name_components = result.qkey.split()
+        one_name_only = len(name_components) == 1
+        with BIN_Db.get_db() as bdb:
+            fn = name_components[0].title()
+            gender = bdb.lookup_name_gender(fn)
+        msg = (
+            "Það fundust {0} með það nafn. Prófaðu að tilgreina {1}heimilisfang".format(
+                "margar" if gender == "kvk" else "margir",
+                "fullt nafn og " if one_name_only else "",
+            )
         )
         # Try to generate example, e.g. "Jón Jónssón á Smáragötu"
         for i in allp:
@@ -196,16 +203,15 @@ def _answer_phonenum4name_query(q: Query, result):
                     fname, iceprep_for_street(street_nf), street_þgf
                 )
                 break
-            except Exception as e:
-                print("Exception " + str(e))
+            except (KeyError, ValueError) as e:
+                logging.warning("Exception: " + str(e))
                 continue
         return gen_answer(msg)
 
     # Scan API call result, try to find the best phone nuber to provide
     phone_number = _best_number(first)
     if not phone_number:
-        a = "Ekki tókst að fletta upp símanúmeri hjá {0}".format(nþgf)
-        return gen_answer(a)
+        return gen_answer("Ég finn ekki símanúmerið hjá {0}".format(nþgf))
 
     # Sanitize number and generate answer
     phone_number = phone_number.replace("-", "").replace(" ", "")
@@ -219,7 +225,7 @@ def _answer_phonenum4name_query(q: Query, result):
     return dict(answer=answ), answ, voice
 
 
-def _answer_name4phonenum_query(q: Query, result):
+def _answer_name4phonenum_query(q: Query, result: ResultType):
     """ Answer query of the form "hver er með símanúmerið [númer]?"""
     num = result.phone_number
     clean_num = re.sub(r"[^0-9]", "", num).strip()
@@ -234,27 +240,25 @@ def _answer_name4phonenum_query(q: Query, result):
 
     # Make sure API response is sane
     if not res or "people" not in res or "businesses" not in res:
-        return gen_answer("Ekki tókst að fletta upp símanúmeri")
+        return gen_answer("Ég fann ekki símanúmerið.")
 
     persons = res["people"]["items"]
     businesses = res["businesses"]["items"]
 
     # It's either a person or a business
-    items = persons if len(persons) else businesses
+    items = persons or businesses
     if len(items) == 0:
-        return gen_answer("Enginn með það númer fannst í símaskrá")
+        return gen_answer("Ég fann engan með það númer í símaskránni.")
 
     p = items[0]  # Always use first result
     # TODO: Make sure the match is in phone number field!
 
     name = p["name"]
-    occup = p.get("occupation")
-    addr = p.get("address")
-    pstation = p.get("postal_station")  # e.g. "101, Reykjavík"
+    occup = p.get("occupation", "")
+    addr = p.get("address", "")
+    pstation = p.get("postal_station", "")  # e.g. "101, Reykjavík"
 
-    full_addr = "{0}{1}".format(
-        addr if addr else "", ", " + pstation if pstation else ""
-    )
+    full_addr = "{0}{1}".format(addr, ", " + pstation if pstation else "")
 
     # E.g. "Sveinbjörn Þórðarson, fræðimaður, Öldugötu 4, 101 Reykjavík"
     answ = "{0}{1}{2}".format(
@@ -272,13 +276,13 @@ def _answer_name4phonenum_query(q: Query, result):
     return dict(answer=answ), answ, voice
 
 
-_QTYPE2HANDLER = {
+_QTYPE2HANDLER: Dict[str, Callable] = {
     "Name4PhoneNum": _answer_name4phonenum_query,
     "PhoneNum4Name": _answer_phonenum4name_query,
 }
 
 
-def sentence(state, result):
+def sentence(state: ContextDict, result: ResultType):
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
@@ -286,7 +290,7 @@ def sentence(state, result):
         try:
             r = _QTYPE2HANDLER[result.qtype](q, result)
             if not r:
-                r = gen_answer("Ekki tókst að fletta upp viðkomandi.")
+                r = gen_answer("Ég fann ekki {0}.".format(icequote(result.qkey)))
             q.set_answer(*r)
             q.set_qtype(result.qtype)
             q.set_key(result.qkey)

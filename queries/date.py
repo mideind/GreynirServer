@@ -67,6 +67,7 @@ from datetime import datetime, timedelta
 from pytz import timezone
 from calendar import monthrange, isleap
 
+from tree import Result
 from query import Query
 from queries import timezone4loc, gen_answer, is_plural, cap_first
 from settings import changedlocale
@@ -303,9 +304,14 @@ QDateWorkersDay/fall →
 QDateEaster/fall →
     'páskar:kk'/fall
 
+QDateEasterSundayWord_nf -> "páskasunnudagur"
+QDateEasterSundayWord_þf -> "páskasunnudag"
+QDateEasterSundayWord_þgf -> "páskasunnudegi"
+QDateEasterSundayWord_ef -> "páskasunnudags"
+
 QDateEasterSunday/fall →
     'páskadagur:kk'_et/fall
-    | "páskasunnudagur"
+    | QDateEasterSundayWord/fall
 
 QDateMaundyThursday/fall →
     'skírdagur:kk'_et/fall

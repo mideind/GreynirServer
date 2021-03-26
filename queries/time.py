@@ -45,7 +45,7 @@ from geo import (
     iceprep_for_placename,
 )
 from query import Query
-from queries import timezone4loc, gen_answer
+from queries import timezone4loc, gen_answer, icequote
 
 _TIME_QTYPE = "Time"
 
@@ -186,7 +186,7 @@ def handle_plain_text(q: Query) -> bool:
             q.set_key(loc)
             q.set_answer(
                 *gen_answer(
-                    "Ekki tókst að fletta upp staðsetningunni '{0}'".format(loc)
+                    "Ég gat ekki flett upp staðsetningunni {0}".format(icequote(loc))
                 )
             )
             return True
