@@ -42,10 +42,12 @@ _STATS_QTYPE = "Stats"
 
 _NUM_PEOPLE_QUERIES = frozenset(
     (
+        "hvað þekkirðu marga",
         "hvað þekkirðu margar manneskjur",
         "hvað þekkir þú margar manneskjur",
         "hvað þekkirðu marga einstaklinga",
         "hvað þekkir þú marga einstaklinga",
+        "þekkirðu marga",
         "þekkirðu margar manneskjur",
         "þekkir þú margar manneskjur",
         "þekkirðu marga einstaklinga",
