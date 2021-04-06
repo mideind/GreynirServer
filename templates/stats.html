@@ -24,7 +24,7 @@
 {% for r in result %}
 {% if r.sent %}
       <tr class="topitem" data-domain="{{ r.domain }}">
-         <td class="domain"><img src="{{ url_for('static', filename = 'sources/' + r.domain + '.png') }}"
+         <td class="domain"><img src="{{ url_for('static', filename = 'img/sources/' + r.domain + '.png') }}"
             width="16" height="16">&nbsp;&nbsp;{{ r.domain }}
          </td>
          <td class="count">{{ r.art | format_is }}</td>
@@ -69,7 +69,7 @@
 {% for r in gresult %}
 {% if r.total %}
       <tr class="topitem" data-domain="{{ r.domain }}">
-         <td class="domain"><img src="{{ url_for('static', filename = 'sources/' + r.domain + '.png') }}"
+         <td class="domain"><img src="{{ url_for('static', filename = 'img/sources/' + r.domain + '.png') }}"
             width="16" height="16">&nbsp;&nbsp;{{ r.domain }}</td>
          <td class="count female">{{ r.kvk | format_is }}</td>
          <td class="count female">{{ (r.kvk / (r.kvk + r.kk) * 100) | format_is(1) }}%</td>
