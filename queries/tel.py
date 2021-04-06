@@ -116,8 +116,8 @@ _PHONECALL_REGEXES = frozenset(
         # Context-based
         r"^(hringdu í )({0})$".format(_CONTEXT_RX),
         r"^(hringdu fyrir mig í )({0})$".format(_CONTEXT_RX),
-        r"^(værirðu til í að hringja í síma )({0})$".format(_CONTEXT_RX),
-        r"^(værir þú til í að hringja í síma )({0})$".format(_CONTEXT_RX),
+        r"^(værirðu til í að hringja í )({0})$".format(_CONTEXT_RX),
+        r"^(værir þú til í að hringja í )({0})$".format(_CONTEXT_RX),
         r"^(geturðu hringt í )({0})$".format(_CONTEXT_RX),
         r"^(getur þú hringt í )({0})$".format(_CONTEXT_RX),
         r"^(nennirðu að hringja í )({0})$".format(_CONTEXT_RX),
