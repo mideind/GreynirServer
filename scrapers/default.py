@@ -150,8 +150,8 @@ class ScrapeHelper:
         return soup.html.body
 
     def get_content(self, soup):
-        """ Find the actual article content within an HTML soup
-            and return its parent node """
+        """Find the actual article content within an HTML soup
+        and return its parent node"""
         if not soup or not soup.html or not soup.html.body:
             # No body in HTML: something is wrong, return None
             logging.warning("get_content returning None")
@@ -211,11 +211,11 @@ class ScrapeHelper:
 
     @staticmethod
     def general_filter(tag, name, attr, attr_val) -> bool:
-        """ General filter function to use with BeautifulSoup.find().
-            Looks for tag['attr'] == attr_val or attr_val in tag['attr'].
-            attr_val can also be iterable, in which case all the given
-            attribute values must be present on the tag for the match to
-            be made. """
+        """General filter function to use with BeautifulSoup.find().
+        Looks for tag['attr'] == attr_val or attr_val in tag['attr'].
+        attr_val can also be iterable, in which case all the given
+        attribute values must be present on the tag for the match to
+        be made."""
         if tag.name != name or not tag.has_attr(attr):
             return False
         a = tag[attr]
@@ -281,9 +281,9 @@ class ScrapeHelper:
 
     @staticmethod
     def div_class(soup, *argv):
-        """ Find a div with a particular class/set of classes within the
-            HTML soup, recursively within its parent if more than one
-            div spec is given """
+        """Find a div with a particular class/set of classes within the
+        HTML soup, recursively within its parent if more than one
+        div spec is given"""
         for cls in argv:
             if not soup:
                 return None
@@ -310,8 +310,8 @@ class ScrapeHelper:
 
     @staticmethod
     def del_tag_prop_val(soup, tag, prop, val):
-        """ Delete all occurrences of the tag that have
-            a property with the given value """
+        """Delete all occurrences of the tag that have
+        a property with the given value"""
         if soup is None:
             return
         while True:
@@ -881,8 +881,8 @@ class VisirScraper(ScrapeHelper):
 
     @staticmethod
     def _get_body(soup):
-        """ Hack to fix bug in visir.is HTML: must search entire
-            document, not just the html body """
+        """Hack to fix bug in visir.is HTML: must search entire
+        document, not just the html body"""
         return soup
 
     def _get_content(self, soup_body):
@@ -1778,16 +1778,7 @@ class MannlifScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
-        self._feeds = ["https://www.man.is/feed/"]
-
-    def skip_url(self, url):
-        """ Return True if this URL should not be scraped """
-        s = urlparse.urlsplit(url)
-        p = s.path
-        # Only scrape urls with the right path prefix
-        if p and p.startswith("/studio-birtingur/"):
-            return True  # Don't skip
-        return False
+        self._feeds = ["https://www.mannlif.is/feed/"]
 
     def get_metadata(self, soup):
         """ Analyze the article soup and return metadata """
@@ -1947,7 +1938,7 @@ class SedlabankinnScraper(ScrapeHelper):
                 tstr = media["data-last-modified"]
                 timestamp = datetime.strptime(tstr, "%Y-%m-%d %H:%M:%S")
         except Exception as e:
-            pass
+            logging.warning(f"Unable to parse date for Sedlabankinn article: {e}")
 
         metadata.heading = heading
         metadata.author = author
