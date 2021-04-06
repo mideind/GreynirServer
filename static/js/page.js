@@ -162,6 +162,65 @@ function showEntity(ev) {
    }
 }
 
+function getLocationInfo(name, kind, successFunc) {
+   // Look up information about location via JSON request and cache it
+   var ckey = kind + '_' + name;
+   var cache = getLocationInfo.cache;
+   if (cache === undefined) {
+      cache = {};
+      getLocationInfo.cache = cache;
+   }
+   // Retrieve from cache
+   if (cache[ckey] !== undefined) {
+      if (cache[ckey]) {
+         successFunc(cache[ckey]);
+      }
+      return;
+   }
+   // Abort any ongoing request
+   if (getLocationInfo.request) {
+      getLocationInfo.request.abort();
+   }
+   // Ask server for location info
+   var data = { name: name, kind: kind };
+   getLocationInfo.request = $.getJSON("/locinfo", data, function(r) {
+      cache[ckey] = null;
+      if (r['found']) {
+         cache[ckey] = r;
+         successFunc(r);
+      }
+   });
+}
+
+function getPersonImage(name, successFunc) {
+   // Look up image for person via JSON request and cache it
+   var cache = getPersonImage.imageCache;
+   if (cache === undefined) {
+      cache = {};
+      getPersonImage.imageCache = cache;
+   }
+   // Retrieve from cache
+   if (cache[name] !== undefined) {
+      if (cache[name]) {
+         successFunc(cache[name]);
+      }
+      return;
+   }
+   // Abort any ongoing image request
+   if (getPersonImage.request) {
+      getPersonImage.request.abort();
+   }
+   // Ask server for thumbnail image
+   var enc = encodeURIComponent(name);
+   getPersonImage.request = $.getJSON("/image?thumb=1&name=" + enc, function(r) {
+      cache[name] = null;
+      if (r['found']) {
+         cache[name] = r['image'];
+         successFunc(r['image']);
+      }
+   });
+}
+
 function hoverIn() {
    // Hovering over a token
    var wId = $(this).attr("id");
@@ -267,63 +326,6 @@ function hoverIn() {
       .css("top", "" + offset.top + "px")
       .css("left", "" + offset.left + "px")
       .css("visibility", "visible");
-}
-
-function getLocationInfo(name, kind, successFunc) {
-   var ckey = kind + '_' + name;
-   var cache = getLocationInfo.cache;
-   if (cache === undefined) {
-      cache = {};
-      getLocationInfo.cache = cache;
-   }
-   // Retrieve from cache
-   if (cache[ckey] !== undefined) {
-      if (cache[ckey]) {
-         successFunc(cache[ckey]);
-      }
-      return;
-   }
-   // Abort any ongoing request
-   if (getLocationInfo.request) {
-      getLocationInfo.request.abort();
-   }
-   // Ask server for location info
-   var data = { name: name, kind: kind };
-   getLocationInfo.request = $.getJSON("/locinfo", data, function(r) {
-      cache[ckey] = null;
-      if (r['found']) {
-         cache[ckey] = r;
-         successFunc(r);
-      }
-   });
-}
-
-function getPersonImage(name, successFunc) {
-   var cache = getPersonImage.imageCache;
-   if (cache === undefined) {
-      cache = {};
-      getPersonImage.imageCache = cache;
-   }
-   // Retrieve from cache
-   if (cache[name] !== undefined) {
-      if (cache[name]) {
-         successFunc(cache[name]);
-      }
-      return;
-   }
-   // Abort any ongoing image request
-   if (getPersonImage.request) {
-      getPersonImage.request.abort();
-   }
-   // Ask server for thumbnail image
-   var enc = encodeURIComponent(name);
-   getPersonImage.request = $.getJSON("/image?thumb=1&name=" + enc, function(r) {
-      cache[name] = null;
-      if (r['found']) {
-         cache[name] = r['image'];
-         successFunc(r['image']);
-      }
-   });
 }
 
 function hoverOut() {

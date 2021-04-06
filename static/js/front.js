@@ -107,7 +107,7 @@ function initializeSpeech() {
                if (j === 0) {
                   first = event.results[i][j].transcript;
                }
-               txt += event.results[i][j].transcript + "|"
+               txt += event.results[i][j].transcript + "|";
             }
          }
          else {
