@@ -61,6 +61,7 @@ _SOURCE_ROOT_COLORS = {
     "Fréttablaðið": "#002a61",
     "Hagstofa Íslands": "#818285",
     "DV": "#ed1c24",
+    "Mannlíf": "#ffcc00",  # Gula pressan ;)
 }
 
 
@@ -158,7 +159,9 @@ def stats():
     """ Render a page containing various statistics from the Greynir database. """
     days = _DEFAULT_STATS_PERIOD
     try:
-        days = min(_MAX_STATS_PERIOD, int(request.args.get("days", _DEFAULT_STATS_PERIOD)))
+        days = min(
+            _MAX_STATS_PERIOD, int(request.args.get("days", _DEFAULT_STATS_PERIOD))
+        )
     except Exception:
         pass
 

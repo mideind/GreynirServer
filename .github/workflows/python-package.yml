@@ -97,6 +97,7 @@ jobs:
     - name: Run jshint
       run: |
         jshint static/js/common.js
+        jshint --prereq static/js/common.js static/js/page.js
     - name: Run shellcheck
       run: |
         shellcheck -x scripts/*.sh

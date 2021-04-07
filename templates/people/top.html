@@ -103,7 +103,7 @@
                   </div>
                   <div class="rank-article-items">
                      {% for a in person.articles %}
-                     <span class="art-link"><a href="{{ url_for('routes.page', id=a.id) | safe }}" onclick="event.stopPropagation();"  data-toggle="tooltip" data-placement="bottom" title="{{ a.heading }}"><img src="{{ url_for('static', filename = 'sources/' + a.domain + '.png') }}" width="16" height="16" alt="{{ a.heading }}"/></a></span>
+                     <span class="art-link"><a href="{{ url_for('routes.page', id=a.id) | safe }}" onclick="event.stopPropagation();"  data-toggle="tooltip" data-placement="bottom" title="{{ a.heading }}"><img src="{{ url_for('static', filename = 'img/sources/' + a.domain + '.png') }}" width="16" height="16" alt="{{ a.heading }}"/></a></span>
                      {% endfor %}
                   </div>
                </td>

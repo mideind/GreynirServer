@@ -46,7 +46,8 @@
     "moz"           : false,     // true: Allow Mozilla specific syntax (extends and overrides esnext features)
                                  // (ex: `for each`, multiple try/catch, function expression…)
     "evil"          : false,     // true: Tolerate use of `eval` and `new Function()`
-    "expr"          : false,     // true: Tolerate `ExpressionStatement` as Programs
+    // We allow the following due to "use strict" backwards compatibility
+    "expr"          : true,      // true: Tolerate `ExpressionStatement` as Programs
     "funcscope"     : false,     // true: Tolerate defining variables inside control statements
     "globalstrict"  : true,      // true: Allow global "use strict" (also enables 'strict')
     "iterator"      : false,     // true: Tolerate using the `__iterator__` property
