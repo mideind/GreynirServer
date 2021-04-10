@@ -66,7 +66,7 @@ def help_text(lemma: str) -> str:
         random.choice(
             (
                 "Hvert er gengi dollarans",
-                "Hvert er gengu evru gagnvart dollara",
+                "Hvert er gengi evru gagnvart dollara",
                 "Hvað eru tíu þúsund krónur margar evrur",
                 "Hvað er einn dollari margar krónur",
                 "Hvað eru sextán hundruð krónur mikið í evrum",
