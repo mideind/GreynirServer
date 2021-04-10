@@ -177,8 +177,24 @@ ROOTS = [
         "HagstofanScraper",
         True,
     ),
-    ("https://www.dv.is/", "dv.is", "DV", 0.4, "scrapers.default", "DVScraper", True,),
-    ("http://www.bb.is/", "bb.is", "BB", 0.4, "scrapers.default", "BBScraper", True,),
+    (
+        "https://www.dv.is/",
+        "dv.is",
+        "DV",
+        0.4,
+        "scrapers.default",
+        "DVScraper",
+        True,
+    ),
+    (
+        "http://www.bb.is/",
+        "bb.is",
+        "BB",
+        0.4,
+        "scrapers.default",
+        "BBScraper",
+        True,
+    ),
     (
         "https://lemurinn.is/",
         "lemurinn.is",
@@ -186,6 +202,15 @@ ROOTS = [
         0.4,
         "scrapers.default",
         "LemurinnScraper",
+        True,
+    ),
+    (
+        "https://mannlif.is/",
+        "mannlif.is",
+        "Mannlíf",
+        0.4,
+        "scrapers.default",
+        "MannlifScraper",
         True,
     ),
     # (
@@ -210,11 +235,11 @@ ROOTS = [
 
 
 def init_roots(wait=False):
-    """ Create tables and initialize the scraping roots, if not already present.
-        If wait = True, repeated attempts are made to connect to the database
-        before returning an error code. This is useful for instance in a Docker
-        environment where the container may need to wait for a linked database
-        container to start serving. """
+    """Create tables and initialize the scraping roots, if not already present.
+    If wait = True, repeated attempts are made to connect to the database
+    before returning an error code. This is useful for instance in a Docker
+    environment where the container may need to wait for a linked database
+    container to start serving."""
 
     # Do no more than 36 retries (~3 minutes) before giving up and returning an error code
     retries = 36

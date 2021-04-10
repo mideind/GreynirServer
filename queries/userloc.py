@@ -34,7 +34,7 @@ from queries import (
     country_desc,
     nom2dat,
     numbers_to_neutral,
-    cap_first
+    cap_first,
 )
 from iceaddr import iceaddr_lookup, postcodes  # type: ignore
 from geo import iceprep_for_placename, iceprep_for_street
@@ -46,7 +46,8 @@ _LOC_QTYPE = "UserLocation"
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
 
-QUERY_NONTERMINALS = { "QUserLocation" }
+# The grammar nonterminals this module wants to handle
+QUERY_NONTERMINALS = {"QUserLocation"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -164,8 +165,8 @@ def _addrinfo_from_api_result(result) -> Tuple:
 
 
 def street_desc(street_nom: str, street_num: int, locality_nom: str) -> str:
-    """ Generate description of being on a particular (Icelandic) street with
-        correct preposition and case + locality e.g. 'á Fiskislóð 31 í Reykjavík'. """
+    """Generate description of being on a particular (Icelandic) street with
+    correct preposition and case + locality e.g. 'á Fiskislóð 31 í Reykjavík'."""
     street_dat = None
     locality_dat = None
 

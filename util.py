@@ -21,43 +21,17 @@
 
 """
 
-from typing import Optional
-
 import os
-
-# Greynir API key, used to control client access to certain API endpoints
-_GREYNIR_API_KEY: Optional[str] = None
-_GREYNIR_API_KEY_PATH = os.path.join(
-    os.path.dirname(__file__), "resources", "GreynirServerKey.txt"
-)
+from functools import lru_cache
 
 
-def greynir_api_key() -> str:
-    """ Lazy-load Greynir API key from file. """
-    global _GREYNIR_API_KEY
-    if _GREYNIR_API_KEY is None:
-        try:
-            with open(_GREYNIR_API_KEY_PATH) as f:
-                _GREYNIR_API_KEY = f.read().strip()
-        except FileNotFoundError:
-            _GREYNIR_API_KEY = ""
-    return _GREYNIR_API_KEY
-
-
-# Google API key (third parties must obtain own key)
-_GOOGLE_API_KEY: Optional[str] = None
-_GOOGLE_API_KEY_PATH = os.path.join(
-    os.path.dirname(__file__), "resources", "GoogleServerKey.txt"
-)
-
-
-def google_api_key() -> str:
-    """ Lazy-load Google API key from file """
-    global _GOOGLE_API_KEY
-    if not _GOOGLE_API_KEY:
-        try:
-            with open(_GOOGLE_API_KEY_PATH) as f:
-                _GOOGLE_API_KEY = f.read().rstrip()
-        except FileNotFoundError:
-            _GOOGLE_API_KEY = ""
-    return _GOOGLE_API_KEY
+@lru_cache(maxsize=32)
+def read_api_key(key_name: str) -> str:
+    """ Read the given key from a text file in resources directory. Cached. """
+    path = os.path.join(os.path.dirname(__file__), "resources", key_name + ".txt")
+    try:
+        with open(path) as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        pass
+    return ""

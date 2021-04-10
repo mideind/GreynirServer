@@ -37,7 +37,8 @@ _OPINION_QTYPE = "Opinion"
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
-QUERY_NONTERMINALS = { "QOpinion" }
+# The grammar nonterminals this module wants to handle
+QUERY_NONTERMINALS = {"QOpinion"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """

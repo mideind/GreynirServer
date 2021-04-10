@@ -150,8 +150,8 @@ class ScrapeHelper:
         return soup.html.body
 
     def get_content(self, soup):
-        """ Find the actual article content within an HTML soup
-            and return its parent node """
+        """Find the actual article content within an HTML soup
+        and return its parent node"""
         if not soup or not soup.html or not soup.html.body:
             # No body in HTML: something is wrong, return None
             logging.warning("get_content returning None")
@@ -211,11 +211,11 @@ class ScrapeHelper:
 
     @staticmethod
     def general_filter(tag, name, attr, attr_val) -> bool:
-        """ General filter function to use with BeautifulSoup.find().
-            Looks for tag['attr'] == attr_val or attr_val in tag['attr'].
-            attr_val can also be iterable, in which case all the given
-            attribute values must be present on the tag for the match to
-            be made. """
+        """General filter function to use with BeautifulSoup.find().
+        Looks for tag['attr'] == attr_val or attr_val in tag['attr'].
+        attr_val can also be iterable, in which case all the given
+        attribute values must be present on the tag for the match to
+        be made."""
         if tag.name != name or not tag.has_attr(attr):
             return False
         a = tag[attr]
@@ -281,9 +281,9 @@ class ScrapeHelper:
 
     @staticmethod
     def div_class(soup, *argv):
-        """ Find a div with a particular class/set of classes within the
-            HTML soup, recursively within its parent if more than one
-            div spec is given """
+        """Find a div with a particular class/set of classes within the
+        HTML soup, recursively within its parent if more than one
+        div spec is given"""
         for cls in argv:
             if not soup:
                 return None
@@ -310,8 +310,8 @@ class ScrapeHelper:
 
     @staticmethod
     def del_tag_prop_val(soup, tag, prop, val):
-        """ Delete all occurrences of the tag that have
-            a property with the given value """
+        """Delete all occurrences of the tag that have
+        a property with the given value"""
         if soup is None:
             return
         while True:
@@ -807,6 +807,7 @@ class VisirScraper(ScrapeHelper):
             heading = heading[:-10]
         if heading.endswith(" - Vísir"):
             heading = heading[:-8]
+        heading = heading.rstrip("|")
 
         # Timestamp
         timestamp = None
@@ -880,8 +881,8 @@ class VisirScraper(ScrapeHelper):
 
     @staticmethod
     def _get_body(soup):
-        """ Hack to fix bug in visir.is HTML: must search entire
-            document, not just the html body """
+        """Hack to fix bug in visir.is HTML: must search entire
+        document, not just the html body"""
         return soup
 
     def _get_content(self, soup_body):
@@ -1691,7 +1692,7 @@ class BBScraper(ScrapeHelper):
                     minute=int(ts[14:16]),
                     second=int(ts[17:19]),
                 )
-        except:
+        except Exception:
             pass
 
         metadata.heading = heading
@@ -1756,7 +1757,7 @@ class LemurinnScraper(ScrapeHelper):
                     minute=int(ts[14:16]),
                     second=int(ts[17:19]),
                 )
-        except:
+        except Exception:
             pass
 
         metadata.heading = heading
@@ -1769,6 +1770,65 @@ class LemurinnScraper(ScrapeHelper):
         """ Find the article content (main text) in the soup """
         content = ScrapeHelper.div_class(soup_body, "post-content")
 
+        return content
+
+
+class MannlifScraper(ScrapeHelper):
+    """ Scraping helper for man.is """
+
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["https://www.mannlif.is/feed/"]
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = heading.rstrip("|")
+
+        # Author
+        author = "Ritstjórn Mannlífs"
+        auth_tag = ScrapeHelper.div_class(soup, "tdb-author-name")
+        if auth_tag:
+            author = auth_tag.get_text()
+
+        timestamp = None
+        try:
+            # Extract date (no timestamp available) from pubdate tag
+            time_tag = soup.find("time", {"class": "entry-date"})
+            ts = None
+            if time_tag:
+                ts = time_tag["datetime"]
+            if ts:
+                timestamp = datetime(
+                    year=int(ts[0:4]),
+                    month=int(ts[5:7]),
+                    day=int(ts[8:10]),
+                    hour=int(ts[11:13]),
+                    minute=int(ts[14:16]),
+                    second=int(ts[17:19]),
+                )
+        except Exception as e:
+            logging.warning(
+                "Exception when obtaining date of man.is article: {0}".format(e)
+            )
+
+        if not timestamp:
+            timestamp = datetime.utcnow()
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        content = ScrapeHelper.div_class(soup_body, "tdb_single_content")
+        ScrapeHelper.del_div_class(content, "td-a-ad")
+        ScrapeHelper.del_tag(content, "figure")
         return content
 
 
@@ -1878,7 +1938,7 @@ class SedlabankinnScraper(ScrapeHelper):
                 tstr = media["data-last-modified"]
                 timestamp = datetime.strptime(tstr, "%Y-%m-%d %H:%M:%S")
         except Exception as e:
-            pass
+            logging.warning(f"Unable to parse date for Sedlabankinn article: {e}")
 
         metadata.heading = heading
         metadata.author = author

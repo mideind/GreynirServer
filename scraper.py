@@ -473,7 +473,9 @@ class Scraper:
 
         logging.info(
             "Num_sentences is {0}, num_sent_parsed is {1}, ratio is {2:.1f}%".format(
-                num_sentences, num_sent_parsed, 100.0 * num_sent_parsed / num_sentences
+                num_sentences,
+                num_sent_parsed,
+                (100.0 * (num_sent_parsed / num_sentences)) if num_sentences else 0
             )
         )
 

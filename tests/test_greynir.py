@@ -27,6 +27,8 @@ import json
 from urllib.parse import urlencode
 import sys
 
+from flask.testing import FlaskClient
+
 # Shenanigans to enable Pytest to discover modules in the
 # main workspace directory (the parent of /tests)
 basepath, _ = os.path.split(os.path.realpath(__file__))
@@ -37,14 +39,14 @@ if mainpath not in sys.path:
 from main import app
 from db import SessionContext
 from db.models import Query, QueryData
-from util import greynir_api_key
+from util import read_api_key
 
 # pylint: disable=unused-wildcard-import
 from geo import *
 
 
 @pytest.fixture
-def client():
+def client() -> FlaskClient:
     """ Instantiate Flask's modified Werkzeug client to use in tests """
     app.config["TESTING"] = True
     app.config["DEBUG"] = True
@@ -61,8 +63,8 @@ def in_ci_environment() -> bool:
         is a dummy value (set in .travis.yml). """
     global DUMMY_API_KEY
     try:
-        return greynir_api_key() == DUMMY_API_KEY
-    except:
+        return read_api_key("GreynirServerKey") == DUMMY_API_KEY
+    except Exception:
         return False
 
 
@@ -87,7 +89,7 @@ SKIP_ROUTES = frozenset(
 REQ_METHODS = frozenset(["GET", "POST"])
 
 
-def test_routes(client):
+def test_routes(client: FlaskClient):
     """ Test all non-argument routes in Flask app by requesting
         them without passing any query or post parameters """
     for rule in app.url_map.iter_rules():
@@ -113,7 +115,7 @@ API_ROUTES = [
 ]
 
 
-def test_api(client):
+def test_api(client: FlaskClient):
     """ Call API routes and validate response. """
     # TODO: Route-specific validation of JSON responses
     for r in API_ROUTES:
@@ -123,7 +125,7 @@ def test_api(client):
         assert resp.content_type.startswith(API_CONTENT_TYPE)
 
 
-def test_postag_api(client):
+def test_postag_api(client: FlaskClient):
     resp = client.get(r"/postag.api?t=Hér%20er%20ást%20og%20friður")
     assert resp.status_code == 200
     assert resp.content_type == "application/json; charset=utf-8"
@@ -132,7 +134,7 @@ def test_postag_api(client):
     assert len(resp.json["result"][0]) == 5
 
 
-def test_ifdtag_api(client):
+def test_ifdtag_api(client: FlaskClient):
     resp = client.get(r"/ifdtag.api?t=Hér%20er%20ást%20og%20friður")
     assert resp.status_code == 200
     assert resp.content_type == "application/json; charset=utf-8"
@@ -155,7 +157,7 @@ _KEY_RESTRICTED_ROUTES = frozenset(
 )
 
 
-def test_api_key_restriction(client):
+def test_api_key_restriction(client: FlaskClient):
     """ Make calls to routes that are API key restricted, make sure they complain if no
         API key is provided as a parameter and accept when correct API key is provided. """
 
@@ -170,8 +172,7 @@ def test_api_key_restriction(client):
     # Try routes w. correct API key, expect no complaints about missing API key
     # This only runs in the CI testing environment, which creates the dummy key
     global DUMMY_API_KEY
-    if IN_CI_TESTING_ENV:
-        return  # Disabled for now
+    if False and IN_CI_TESTING_ENV:
         for path in _KEY_RESTRICTED_ROUTES:
             resp = client.post(f"{path}?key={DUMMY_API_KEY}")
             assert resp.status_code == 200
@@ -190,7 +191,7 @@ def test_api_key_restriction(client):
     assert "errmsg" in resp.json and "missing API key" in resp.json["errmsg"]
 
 
-def test_query_history_api(client):
+def test_query_history_api(client: FlaskClient):
     """ Test query history and query data deletion API. """
 
     # We don't run these tests except during the CI testing process, for fear of

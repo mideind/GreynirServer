@@ -42,10 +42,12 @@ _STATS_QTYPE = "Stats"
 
 _NUM_PEOPLE_QUERIES = frozenset(
     (
+        "hvað þekkirðu marga",
         "hvað þekkirðu margar manneskjur",
         "hvað þekkir þú margar manneskjur",
         "hvað þekkirðu marga einstaklinga",
         "hvað þekkir þú marga einstaklinga",
+        "þekkirðu marga",
         "þekkirðu margar manneskjur",
         "þekkir þú margar manneskjur",
         "þekkirðu marga einstaklinga",
@@ -269,15 +271,14 @@ def _gen_num_queries_answer(q: Query) -> bool:
         qr = (
             session.query(QueryModel.id)
             .filter(
-                QueryModel.timestamp >= datetime.utcnow() - timedelta(days=_QUERIES_PERIOD)
+                QueryModel.timestamp
+                >= datetime.utcnow() - timedelta(days=_QUERIES_PERIOD)
             )
             .count()
         )
 
         fs = sing_or_plur(qr, "fyrirspurn", "fyrirspurnum")
-        answer = "Á síðustu {0} dögum hef ég svarað {1}.".format(
-            _QUERIES_PERIOD, fs
-        )
+        answer = "Á síðustu {0} dögum hef ég svarað {1}.".format(_QUERIES_PERIOD, fs)
         voice = answer
         response = dict(answer=answer)
 

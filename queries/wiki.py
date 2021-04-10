@@ -73,8 +73,8 @@ TOPIC_LEMMAS = _WIKI_VARIATIONS
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
             (
@@ -90,7 +90,8 @@ def help_text(lemma: str) -> str:
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
-QUERY_NONTERMINALS = { "QWiki" }
+# The grammar nonterminals this module wants to handle
+QUERY_NONTERMINALS = {"QWiki"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
@@ -192,8 +193,8 @@ QWikiSubjectNlÞf = QWikiSubjectNlÞgf = QWikiSubjectNlNf
 
 
 def QWikiPrevSubjectNf(node, params, result):
-    """ Reference to previous result, usually via personal
-        pronouns ('Hvað segir Wikipedía um hann/hana/það?'). """
+    """Reference to previous result, usually via personal
+    pronouns ('Hvað segir Wikipedía um hann/hana/það?')."""
     q: Query = result.state.get("query")
     ctx = None if q is None else q.fetch_context()
     ctx_keys = ["person_name", "entity_name", "subject"]

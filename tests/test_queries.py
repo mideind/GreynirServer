@@ -21,11 +21,16 @@
 
 """
 
+from typing import Dict, Optional, Any
+
 import re
-import os, sys
+import os
+import sys
 import pytest
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
+
+from flask.testing import FlaskClient
 
 # Shenanigans to enable Pytest to discover modules in the
 # main workspace directory (the parent of /tests)
@@ -39,10 +44,11 @@ from main import app
 from settings import changedlocale
 from db import SessionContext
 from db.models import Query, QueryData, QueryLog
+from util import read_api_key
 
 
 @pytest.fixture
-def client():
+def client() -> FlaskClient:
     """ Instantiate Flask's modified Werkzeug client to use in tests """
     app.config["TESTING"] = True
     app.config["DEBUG"] = True
@@ -52,9 +58,9 @@ def client():
 API_CONTENT_TYPE = "application/json"
 
 
-def qmcall(c, qdict, qtype=None):
-    """ Use passed client object to call query API with
-        query string key value pairs provided in dict arg. """
+def qmcall(c: FlaskClient, qdict: Dict[str, Any], qtype: Optional[str] = None) -> Dict:
+    """Use passed client object to call query API with
+    query string key value pairs provided in dict arg."""
 
     # test=1 ensures that we bypass the cache and have a (fixed) location
     if "test" not in qdict:
@@ -90,10 +96,8 @@ def qmcall(c, qdict, qtype=None):
     return json
 
 
-def has_google_api_key():
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    keypath = os.path.join(basepath, "..", "resources", "GoogleServerKey.txt")
-    return os.path.isfile(keypath)
+def has_google_api_key() -> bool:
+    return read_api_key("GoogleServerKey") != ""
 
 
 DUMMY_CLIENT_ID = "QueryTesting123"
@@ -105,6 +109,17 @@ def test_query_api(client):
     c = client
 
     google_key = has_google_api_key()
+
+    # First, make sure nonsensical queries are not answered
+    qstr = {"q": "blergh smergh vlurgh"}
+    r = c.get("/query.api?" + urlencode(qstr))
+    assert r.content_type.startswith(API_CONTENT_TYPE)
+    assert r.is_json
+    json = r.get_json()
+    assert "valid" in json
+    assert json["valid"]
+    assert "error" in json
+    assert "answer" not in json
 
     # Arithmetic module
     ARITHM_QUERIES = {
@@ -219,9 +234,7 @@ def test_query_api(client):
     )
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
-    json = qmcall(
-        c, {"q": "hvert er gengi krónunnar á móti dollara í dag"}, "Currency"
-    )
+    json = qmcall(c, {"q": "hvert er gengi krónunnar á móti dollara í dag"}, "Currency")
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
     json = qmcall(c, {"q": "hvað eru tíu þúsund krónur margir dalir"}, "Currency")
@@ -311,6 +324,16 @@ def test_query_api(client):
     json = qmcall(c, {"q": "hvenær eru jólin"}, "Date")
     assert re.search(r"25", json["answer"]) is not None
 
+    # Dictionary module
+    json = qmcall(
+        c, {"q": "hvernig skilgreinir orðabókin orðið kettlingur"}, "Dictionary"
+    )
+    assert "kettlingur" in json["answer"].lower()
+
+    json = qmcall(c, {"q": "flettu upp orðinu skíthæll í orðabók"}, "Dictionary")
+    assert "skíthæll" in json["answer"].lower()
+    assert json["source"] == "Íslensk nútímamálsorðabók"
+
     # Distance module
     # NB: No Google API key on test server
     if google_key:
@@ -322,7 +345,7 @@ def test_query_api(client):
         assert json["source"] == "Google Maps"
 
         json = qmcall(c, {"q": "hvað er langt í melabúðina", "voice": True}, "Distance")
-        assert json["answer"].startswith("1,5 km")
+        assert json["answer"].startswith("1,") and "km" in json["answer"]
         assert json["voice"].startswith("Melabúðin er ")
 
         json = qmcall(
@@ -483,6 +506,9 @@ def test_query_api(client):
     assert json["open_url"] == "tel:9217422"
     assert json["q"].endswith("9217422")
 
+    json = qmcall(c, {"q": "hringdu í 26"}, "Telephone")
+    assert "ekki gilt símanúmer" in json["answer"]
+
     # Time module
     json = qmcall(c, {"q": "hvað er klukkan í Kaupmannahöfn?", "voice": True}, "Time")
     assert json["key"] == "Europe/Copenhagen"
@@ -522,7 +548,9 @@ def test_query_api(client):
 
     # User info module
     json = qmcall(
-        c, {"q": "ég heiti Gunna Jónsdóttir", "client_id": DUMMY_CLIENT_ID}, "UserInfo",
+        c,
+        {"q": "ég heiti Gunna Jónsdóttir", "client_id": DUMMY_CLIENT_ID},
+        "UserInfo",
     )
     assert json["answer"].startswith("Sæl og blessuð") and "Gunna" in json["answer"]
 
@@ -541,6 +569,21 @@ def test_query_api(client):
 
     json = qmcall(c, {"q": "ég heiti Boutros Boutros-Ghali"}, "UserInfo")
     assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
+
+    json = qmcall(
+        c,
+        {
+            "q": "hvaða útgáfu er ég að keyra",
+            "client_type": "ios",
+            "client_version": "1.0.3",
+            "voice": True,
+        },
+    )
+    assert "iOS" in json["answer"] and "1.0.3" in json["answer"]
+    assert "komma" in json["voice"]
+
+    json = qmcall(c, {"q": "á hvaða tæki ertu að keyra?", "client_type": "ios"})
+    assert "iOS" in json["answer"]
 
     # json = qmcall(
     #     c,

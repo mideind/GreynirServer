@@ -37,6 +37,7 @@ cd $DEST || exit 1
 
 # echo "Upgrading dependencies according to requirements.txt"
 
+# shellcheck disable=SC1091
 source "venv/bin/activate"
 pip install --upgrade -r requirements.txt
 deactivate

@@ -34,16 +34,20 @@ import re
 import random
 
 from query import Query
+from queries import gen_answer
+
+from reynir import NounPhrase
+
 
 _TELEPHONE_QTYPE = "Telephone"
 
 
-TOPIC_LEMMAS = ["hringja", "símanúmer", "sími"]
+TOPIC_LEMMAS = ["hringja"]
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég get hringt ef þú segir til dæmis: {0}".format(
         random.choice(("Hringdu í 18 18", "Hringdu í 18 19"))
     )
@@ -85,67 +89,106 @@ def help_text(lemma: str) -> str:
 
 # """
 
+
+_CONTEXT_SUBJ = frozenset(
+    (
+        "hann",
+        "hana",
+        "hán",
+        "það",
+        "það númer",
+        "þetta",
+        "þetta númer",
+        "þá",
+        "þær",
+        "þau",
+    )
+)
+
+_CONTEXT_RX = "|".join(_CONTEXT_SUBJ)
+
 # TODO: This should be moved over to grammar at some point, too many manually defined,
 # almost identical commands. But at the moment, the grammar has poor support for phone
 # numbers, especially  when the numbers are coming out of a speech recognition engine
 # This module should also be able to handle natural language number words.
 _PHONECALL_REGEXES = frozenset(
     (
-        r"(hringdu í )([\d|\-|\s]+)$",
-        r"(hringdu í síma )([\d|\-|\s]+)$",
-        r"(hringdu í símanúmer )([\d|\-|\s]+)$",
-        r"(hringdu í símanúmerið )([\d|\-|\s]+)$",
-        r"(hringdu í númer )([\d|\-|\s]+)$",
-        r"(hringdu í númerið )([\d|\-|\s]+)$",
-        r"(hringdu fyrir mig í )([\d|\-|\s]+)$",
-        r"(hringdu fyrir mig í síma )([\d|\-|\s]+)$",
-        r"(hringdu fyrir mig í símanúmer )([\d|\-|\s]+)$",
-        r"(hringdu fyrir mig í símanúmerið )([\d|\-|\s]+)$",
-        r"(hringdu fyrir mig í númer )([\d|\-|\s]+)$",
-        r"(hringdu fyrir mig í númerið )([\d|\-|\s]+)$",
-        r"(værirðu til í að hringja í síma )([\d|\-|\s]+)$",
-        r"(værirðu til í að hringja í símanúmer )([\d|\-|\s]+)$",
-        r"(værirðu til í að hringja í símanúmerið )([\d|\-|\s]+)$",
-        r"(værirðu til í að hringja í númer )([\d|\-|\s]+)$",
-        r"(værirðu til í að hringja í númerið )([\d|\-|\s]+)$",
-        r"(værir þú til í að hringja í síma )([\d|\-|\s]+)$",
-        r"(værir þú til í að hringja í símanúmer )([\d|\-|\s]+)$",
-        r"(værir þú til í að hringja í símanúmerið )([\d|\-|\s]+)$",
-        r"(værir þú til í að hringja í númer )([\d|\-|\s]+)$",
-        r"(værir þú til í að hringja í númerið )([\d|\-|\s]+)$",
-        r"(geturðu hringt í )([\d|\-|\s]+)$",
-        r"(geturðu hringt í síma )([\d|\-|\s]+)$",
-        r"(geturðu hringt í símanúmer )([\d|\-|\s]+)$",
-        r"(geturðu hringt í símanúmerið )([\d|\-|\s]+)$",
-        r"(geturðu hringt í númerið )([\d|\-|\s]+)$",
-        r"(geturðu hringt í númer )([\d|\-|\s]+)$",
-        r"(getur þú hringt í )([\d|\-|\s]+)$",
-        r"(getur þú hringt í síma )([\d|\-|\s]+)$",
-        r"(getur þú hringt í símanúmer )([\d|\-|\s]+)$",
-        r"(getur þú hringt í símanúmerið )([\d|\-|\s]+)$",
-        r"(getur þú hringt í númerið )([\d|\-|\s]+)$",
-        r"(getur þú hringt í númer )([\d|\-|\s]+)$",
-        r"(nennirðu að hringja í )([\d|\-|\s]+)$",
-        r"(nennirðu að hringja í síma )([\d|\-|\s]+)$",
-        r"(nennirðu að hringja í símanúmer )([\d|\-|\s]+)$",
-        r"(nennirðu að hringja í símanúmerið )([\d|\-|\s]+)$",
-        r"(nennirðu að hringja í númerið )([\d|\-|\s]+)$",
-        r"(nennirðu að hringja í númer )([\d|\-|\s]+)$",
-        r"(nennir þú að hringja í )([\d|\-|\s]+)$",
-        r"(nennir þú að hringja í síma )([\d|\-|\s]+)$",
-        r"(nennir þú að hringja í símanúmer )([\d|\-|\s]+)$",
-        r"(nennir þú að hringja í símanúmerið )([\d|\-|\s]+)$",
-        r"(nennir þú að hringja í númerið )([\d|\-|\s]+)$",
-        r"(nennir þú að hringja í númer )([\d|\-|\s]+)$",
-        r"(vinsamlegast hringdu í )([\d|\-|\s]+)$",
-        r"(vinsamlegast hringdu í síma )([\d|\-|\s]+)$",
+        # Context-based
+        r"^(hringdu í )({0})$".format(_CONTEXT_RX),
+        r"^(hringdu fyrir mig í )({0})$".format(_CONTEXT_RX),
+        r"^(værirðu til í að hringja í )({0})$".format(_CONTEXT_RX),
+        r"^(værir þú til í að hringja í )({0})$".format(_CONTEXT_RX),
+        r"^(geturðu hringt í )({0})$".format(_CONTEXT_RX),
+        r"^(getur þú hringt í )({0})$".format(_CONTEXT_RX),
+        r"^(nennirðu að hringja í )({0})$".format(_CONTEXT_RX),
+        r"^(nennir þú að hringja í )({0})$".format(_CONTEXT_RX),
+        r"^(vinsamlegast hringdu í )({0})$".format(_CONTEXT_RX),
+        # Named subject
+        r"^(hringdu í )([\w|\s]+)",
+        r"^(hringdu fyrir mig í )([\w|\s]+)$",
+        r"^(værirðu til í að hringja í síma )([\w|\s]+)$",
+        r"^(værir þú til í að hringja í síma )([\w|\s]+)$",
+        r"^(geturðu hringt í )([\w|\s]+)$",
+        r"^(getur þú hringt í )([\w|\s]+)$",
+        r"^(nennirðu að hringja í )([\w|\s]+)$",
+        r"^(nennir þú að hringja í )([\w|\s]+)$",
+        r"^(vinsamlegast hringdu í )([\w|\s]+)$",
+        # Tel no specified
+        r"^(hringdu í )([\d|\-|\s]+)$",
+        r"^(hringdu í síma )([\d|\-|\s]+)$",
+        r"^(hringdu í símanúmer )([\d|\-|\s]+)$",
+        r"^(hringdu í símanúmerið )([\d|\-|\s]+)$",
+        r"^(hringdu í númer )([\d|\-|\s]+)$",
+        r"^(hringdu í númerið )([\d|\-|\s]+)$",
+        r"^(hringdu fyrir mig í )([\d|\-|\s]+)$",
+        r"^(hringdu fyrir mig í síma )([\d|\-|\s]+)$",
+        r"^(hringdu fyrir mig í símanúmer )([\d|\-|\s]+)$",
+        r"^(hringdu fyrir mig í símanúmerið )([\d|\-|\s]+)$",
+        r"^(hringdu fyrir mig í númer )([\d|\-|\s]+)$",
+        r"^(hringdu fyrir mig í númerið )([\d|\-|\s]+)$",
+        r"^(værirðu til í að hringja í síma )([\d|\-|\s]+)$",
+        r"^(værirðu til í að hringja í símanúmer )([\d|\-|\s]+)$",
+        r"^(værirðu til í að hringja í símanúmerið )([\d|\-|\s]+)$",
+        r"^(værirðu til í að hringja í númer )([\d|\-|\s]+)$",
+        r"^(værirðu til í að hringja í númerið )([\d|\-|\s]+)$",
+        r"^(værir þú til í að hringja í síma )([\d|\-|\s]+)$",
+        r"^(værir þú til í að hringja í símanúmer )([\d|\-|\s]+)$",
+        r"^(værir þú til í að hringja í símanúmerið )([\d|\-|\s]+)$",
+        r"^(værir þú til í að hringja í númer )([\d|\-|\s]+)$",
+        r"^(værir þú til í að hringja í númerið )([\d|\-|\s]+)$",
+        r"^(geturðu hringt í )([\d|\-|\s]+)$",
+        r"^(geturðu hringt í síma )([\d|\-|\s]+)$",
+        r"^(geturðu hringt í símanúmer )([\d|\-|\s]+)$",
+        r"^(geturðu hringt í símanúmerið )([\d|\-|\s]+)$",
+        r"^(geturðu hringt í númerið )([\d|\-|\s]+)$",
+        r"^(geturðu hringt í númer )([\d|\-|\s]+)$",
+        r"^(getur þú hringt í )([\d|\-|\s]+)$",
+        r"^(getur þú hringt í síma )([\d|\-|\s]+)$",
+        r"^(getur þú hringt í símanúmer )([\d|\-|\s]+)$",
+        r"^(getur þú hringt í símanúmerið )([\d|\-|\s]+)$",
+        r"^(getur þú hringt í númerið )([\d|\-|\s]+)$",
+        r"^(getur þú hringt í númer )([\d|\-|\s]+)$",
+        r"^(nennirðu að hringja í )([\d|\-|\s]+)$",
+        r"^(nennirðu að hringja í síma )([\d|\-|\s]+)$",
+        r"^(nennirðu að hringja í símanúmer )([\d|\-|\s]+)$",
+        r"^(nennirðu að hringja í símanúmerið )([\d|\-|\s]+)$",
+        r"^(nennirðu að hringja í númerið )([\d|\-|\s]+)$",
+        r"^(nennirðu að hringja í númer )([\d|\-|\s]+)$",
+        r"^(nennir þú að hringja í )([\d|\-|\s]+)$",
+        r"^(nennir þú að hringja í síma )([\d|\-|\s]+)$",
+        r"^(nennir þú að hringja í símanúmer )([\d|\-|\s]+)$",
+        r"^(nennir þú að hringja í símanúmerið )([\d|\-|\s]+)$",
+        r"^(nennir þú að hringja í númerið )([\d|\-|\s]+)$",
+        r"^(nennir þú að hringja í númer )([\d|\-|\s]+)$",
+        r"^(vinsamlegast hringdu í )([\d|\-|\s]+)$",
+        r"^(vinsamlegast hringdu í síma )([\d|\-|\s]+)$",
     )
 )
 
 
 def handle_plain_text(q: Query) -> bool:
     """ Handle a plain text query requesting a call to a telephone number. """
-    ql = q.query_lower.rstrip("?")
+    ql = q.query_lower.strip().rstrip("?")
 
     pfx = None
     number = None
@@ -154,23 +197,40 @@ def handle_plain_text(q: Query) -> bool:
         m = re.search(rx, ql)
         if m:
             pfx = m.group(1)
-            number = m.group(2)
+            telsubj = m.group(2).strip()
             break
     else:
         return False
 
-    # At this point we have a phone number.
-    # Sanitize by removing all non-numeric characters.
-    number = re.sub(r"[^0-9]", "", number)
-    tel_url = "tel:{0}".format(number)
+    # Special handling if context
+    if telsubj in _CONTEXT_SUBJ:
+        ctx = q.fetch_context()
+        if ctx is None or "phone_number" not in ctx:
+            a = gen_answer("Ég veit ekki við hvern þú átt")
+        else:
+            q.set_url("tel:{0}".format(ctx["phone_number"]))
+            answer = "Skal gert"
+            a = (dict(answer=answer), answer, "")
+    # Only number digits
+    else:
+        clean_num = re.sub(r"[^0-9]", "", telsubj).strip()
+        if len(clean_num) < 3:
+            # The number is clearly not a valid phone number
+            a = gen_answer("{0} er ekki gilt símanúmer.".format(number))
+        elif re.search(r"^[\d|\s]+$", clean_num):
+            # At this point we have what looks like a legitimate phone number.
+            # Send tel: url to trigger phone call in client
+            q.set_url("tel:{0}".format(clean_num))
+            answer = "Skal gert"
+            a = (dict(answer=answer), answer, "")
+            q.set_beautified_query("{0}{1}".format(pfx, clean_num))
+        else:
+            # This is a named subject
+            subj_þgf = NounPhrase(telsubj.title()).dative or telsubj
+            a = gen_answer("Ég veit ekki símanúmerið hjá {0}".format(subj_þgf))
 
-    voice = ""
-    answer = "Skal gert"
-    response = dict(answer=answer)
-
-    q.set_beautified_query("{0}{1}".format(pfx, number))
-    q.set_answer(response, answer, voice)
+    q.set_answer(*a)
     q.set_qtype(_TELEPHONE_QTYPE)
-    q.set_url(tel_url)
+    q.query_is_command()
 
     return True
