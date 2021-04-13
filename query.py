@@ -89,7 +89,7 @@ ResponseType = Union[ResponseDict, List[ResponseDict]]
 ContextDict = Dict[str, Any]
 
 # Client data
-ClientDataDict = Dict[str, Union[str, int, float, bool]]
+ClientDataDict = Dict[str, Union[str, int, float, bool, Dict[str, str]]]
 
 # Answer tuple (corresponds to parameter list of Query.set_answer())
 AnswerTuple = Tuple[ResponseType, str, Optional[str]]

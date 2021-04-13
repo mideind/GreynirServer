@@ -24,6 +24,9 @@
 
 """
 
+from typing import Dict, Mapping, Optional, cast
+from typing_extensions import TypedDict
+
 import logging
 import re
 import json
@@ -32,6 +35,18 @@ import flask
 from query import QueryStateDict
 from queries import gen_answer, read_jsfile
 from tree import Result
+
+
+# Type declarations
+
+
+class SmartLights(TypedDict):
+    selected_light: str
+    philips_hue: Dict[str, str]
+
+
+class DeviceData(TypedDict):
+    smartlights: SmartLights
 
 
 # This module wants to handle parse trees for queries
@@ -58,18 +73,18 @@ QConnectQuery →
 
 # 'Lightswitch grammar'
 QLightOnQuery →
-    "kveiktu" "á"? QLightQuery QHomeInOrOnQuery QLightOnPhenonmenon
+    "kveiktu" "á"? QLightQuery QHomeInOrOnQuery QLightOnPhenomenon
     | "kveiktu" QHomeInOrOnQuery QHomeDeviceQuery_þgf
 
 QLightOffQuery →
-    "slökktu" "á"? QLightQuery QHomeInOrOnQuery QLightOffPhenonmenon
+    "slökktu" "á"? QLightQuery QHomeInOrOnQuery QLightOffPhenomenon
     | "slökktu" QHomeInOrOnQuery QHomeDeviceQuery_þgf
 
-QLightOnPhenonmenon → Nl
+QLightOnPhenomenon → Nl
 
 # $tag(keep) QLightOnPhenomenon
 
-QLightOffPhenonmenon → Nl
+QLightOffPhenomenon → Nl
 
 # 'Dimmer switch grammar'
 QLightDimQuery →
@@ -86,7 +101,7 @@ QHomeWhereDeviceQuery → FsLiður
 
 # 'Color change query'
 QLightColorQuery →
-    "settu"? QColorName_nf "ljós" "í" QLightOnPhenonmenon
+    "settu"? QColorName_nf "ljós" "í" QLightOnPhenomenon
 
 QColorName/fall →
     Lo/fall/tala/kyn
@@ -119,7 +134,7 @@ QLightOrGroup →
 QLightQuery →
     "ljós" | "ljósið" | "ljósin" | "ljósunum"
 
-QLightNamePhenonmenon → Nl
+QLightNamePhenomenon → Nl
 
 QHomeInOrOnQuery →
     "í" | "á"
@@ -134,7 +149,7 @@ def QConnectQuery(node, params, result):
     result.qtype = "ConnectSmartDevice"
 
 
-def QLightOnPhenonmenon(node, params, result):
+def QLightOnPhenomenon(node, params, result):
     result.subject = node.contained_text()
 
 
@@ -146,11 +161,11 @@ def QLightOffQuery(node, params, result):
     result.qtype = "LightOff"
 
 
-def QLightOffPhenonmenon(node, params, result):
+def QLightOffPhenomenon(node, params, result):
     result.subject = node.contained_text()
 
 
-def QLightNamePhenonmenon(node, params, result):
+def QLightNamePhenomenon(node, params, result):
     result.subject = node.contained_text()
 
 
@@ -192,9 +207,9 @@ def QHomeLightSaturationQuery(node, params, result):
 
 # Fix common stofn errors when stofn from a company or entity is used instead
 # of the correct stofn
-_FIX_MAP = {"Skrifstofan": "skrifstofa", "Húsið": "hús"}
+_FIX_MAP: Mapping[str, str] = {"Skrifstofan": "skrifstofa", "Húsið": "hús"}
 
-_NUMBER_WORDS = {
+_NUMBER_WORDS: Mapping[str, float] = {
     "núll": 0,
     "einn": 1,
     "einu": 1,
@@ -235,7 +250,7 @@ _NUMBER_WORDS = {
 }
 
 # Convert color name into hue
-_COLOR_NAME_TO_CIE = {
+_COLOR_NAME_TO_CIE: Mapping[str, float] = {
     "gulur": 60 * 65535 / 360,
     "grænn": 120 * 65535 / 360,
     "ljósblár": 180 * 65535 / 360,
@@ -245,7 +260,7 @@ _COLOR_NAME_TO_CIE = {
 }
 
 
-def parse_num(num_str):
+def parse_num(num_str: str) -> Optional[float]:
     """ Parse Icelandic number string to float or int """
     num = None
     try:
@@ -298,21 +313,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
-    # TODO hardcoded while only one device type is supported
-    smartdevice_type = "smartlights"
-
-    # Fetch relevant data from the device_data table to perform an action on the lights
-    device_data = q.client_data(smartdevice_type)
-
-    selected_light = None
-    hue_credentials = None
-
-    if device_data is not None:
-        selected_light = device_data["smartlights"].get("selected_light")
-        hue_credentials = device_data["smartlights"].get("philips_hue")
-
     # Connect smartdevice action
-    if "qtype" in result and result.qtype == "ConnectSmartDevice":
+    if result.qtype == "ConnectSmartDevice":
 
         answer = "Skal gert"
         host = flask.request.host
@@ -325,26 +327,41 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
         q.set_command(js)
         q.set_answer(*gen_answer(answer))
+        return
 
-    elif not device_data:
-        answer = "Ekkert snjalltæki fannst"
+    # TODO hardcoded while only one device type is supported
+    smartdevice_type = "smartlights"
 
+    # Fetch relevant data from the device_data table to perform an action on the lights
+    device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
+
+    selected_light: Optional[str] = None
+    hue_credentials: Optional[Dict[str, str]] = None
+
+    if device_data is not None and smartdevice_type in device_data:
+        dev = device_data[smartdevice_type]
+        assert dev is not None
+        selected_light = dev.get("selected_light")
+        hue_credentials = dev.get("philips_hue")
+
+    if not device_data:
+        answer = "Snjalltæki hafa ekki verið sett upp"
         q.set_answer(*gen_answer(answer))
+        return
 
     # Light on or off action
-    elif (
-        "qtype" in result
-        and (result.qtype == "LightOn" or result.qtype == "LightOff")
-        and device_data["smartlights"]["selected_light"] == "philips_hue"
-    ):
+    if (
+        result.qtype == "LightOn" or result.qtype == "LightOff"
+    ) and selected_light == "philips_hue":
 
         onOrOff = "true" if result.qtype == "LightOn" else "false"
 
-        stofn = None
+        stofn: Optional[str] = None
 
-        for i, token in enumerate(q.token_list):
-            if token.txt == result.subject:
-                stofn = token[2][0].stofn
+        for token in q.token_list or []:
+            if token.txt == result.subject and token.has_meanings:
+                stofn = token.meanings[0].stofn
+                assert stofn is not None
                 stofn = _FIX_MAP.get(stofn, stofn)
 
         js = read_jsfile("lightService.js")
@@ -357,13 +374,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
         q.set_answer(*gen_answer(answer))
         q.set_command(js)
+        return
 
     # Alter light dimmer action
-    elif (
-        "qtype" in result
-        and result.qtype == "LightDim"
-        and device_data["smartlights"]["selected_light"] == "philips_hue"
-    ):
+    if result.qtype == "LightDim" and selected_light == "philips_hue":
 
         number = result.numbers[0]
 
@@ -382,26 +396,22 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         answer = stofn
         q.set_answer(*gen_answer(answer))
         q.set_command(js)
+        return
 
     # Alter light color action
-    elif (
-        "qtype" in result
-        and result.qtype == "LightColor"
-        and device_data["smartlights"]["selected_light"] == "philips_hue"
-    ):
+    if result.qtype == "LightColor" and selected_light == "philips_hue":
         stofn_name = None
         stofn_color = None
 
-        for i, token in enumerate(q.token_list):
-            if token.txt == result.subject:
-                stofn_name = token[2][0].stofn
+        for token in q.token_list or []:
+            if token.txt == result.subject and token.has_meanings:
+                stofn_name = token.meanings[0].stofn
                 stofn_name = _FIX_MAP.get(stofn_name) or stofn_name
             if token.txt == result.color:
-                options = token[2]
-                for word_variation in options:
+                for word_variation in token.meanings:
                     if (
                         word_variation.ordfl == "lo"
-                        and word_variation.stofn in _COLOR_NAME_TO_CIE.keys()
+                        and word_variation.stofn in _COLOR_NAME_TO_CIE
                     ):
                         stofn_color = word_variation.stofn
                         break
@@ -417,32 +427,26 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         answer = "{0} {1}".format(stofn_color, stofn_name)
         q.set_answer(*gen_answer(answer))
         q.set_command(js)
+        return
 
     # Connected lights info action
-    elif (
-        "qtype" in result
-        and result.qtype == "HubInfo"
-        and device_data["smartlights"]["selected_light"] == "philips_hue"
-    ):
+    if result.qtype == "HubInfo" and "selected_light" == "philips_hue":
         answer = "Skal gert"
 
         js = read_jsfile("lightInfo.js")
 
-        q.set_command(js)
         q.set_answer(*gen_answer(answer))
+        q.set_command(js)
+        return
 
     # Alter saturation action
-    elif (
-        "qtype" in result
-        and result.qtype == "LightSaturation"
-        and device_data["smartlights"]["selected_light"] == "philips_hue"
-    ):
+    if result.qtype == "LightSaturation" and selected_light == "philips_hue":
         number = result.numbers[0]
         stofn = None
 
-        for i, token in enumerate(q.token_list):
-            if token.txt == result.subject:
-                stofn = token[2][0].stofn
+        for token in q.token_list or []:
+            if token.txt == result.subject and token.has_meanings:
+                stofn = token.meanings[0].stofn
                 stofn = _FIX_MAP.get(stofn, stofn)
 
         js = read_jsfile("lightService.js")
@@ -454,6 +458,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
         q.set_answer(*gen_answer(answer))
         q.set_command(js)
+        return
 
-    else:
-        q.set_error("E_QUERY_NOT_UNDERSTOOD")
+    # No command was applicable: give up
+    q.set_error("E_QUERY_NOT_UNDERSTOOD")
