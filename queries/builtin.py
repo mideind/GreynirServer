@@ -649,8 +649,7 @@ def create_name_register(
     register: RegisterType = {}
     for t in tokens:
         if t.kind == TOK.PERSON:
-            gn = t.val
-            for pn in gn:
+            for pn in t.person_names:
                 add_name_to_register(pn.name, register, session, all_names=all_names)
         elif t.kind == TOK.ENTITY:
             add_entity_to_register(t.txt, register, session, all_names=all_names)

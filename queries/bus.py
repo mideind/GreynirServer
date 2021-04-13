@@ -45,7 +45,7 @@ from datetime import datetime
 import random
 
 import query
-from query import AnswerTuple, Query, ResponseType, Session
+from query import AnswerTuple, Query, QueryStateDict, ResponseType, Session
 from tree import Result
 from queries import natlang_seq, numbers_to_neutral, cap_first, gen_answer
 from settings import Settings
@@ -1007,7 +1007,7 @@ _QFUNC = {
 # tree for a query sentence that is handled in this module
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result:

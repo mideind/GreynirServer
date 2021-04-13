@@ -50,8 +50,9 @@ import logging
 import random
 from datetime import timedelta, datetime
 
-from query import Query
+from query import Query, QueryStateDict
 from queries import gen_answer, query_json_api, cap_first, sing_or_plur
+from tree import Result
 from geo import distance, in_iceland, ICE_PLACENAME_BLACKLIST
 from iceaddr import placename_lookup  # type: ignore
 from iceweather import observation_for_closest, observation_for_station, forecast_text  # type: ignore
@@ -654,7 +655,7 @@ _HANDLERS = {
 }
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
@@ -664,7 +665,8 @@ def sentence(state, result):
 
         # Asking for a location outside Iceland
         if q.location and not in_iceland(q.location):
-            return gen_answer("Ég þekki ekki til veðurs utan Íslands")
+            q.set_answer(*gen_answer("Ég þekki ekki til veðurs utan Íslands"))
+            return
 
         handler_func = _HANDLERS[result.qkey]
 

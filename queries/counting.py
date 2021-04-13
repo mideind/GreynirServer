@@ -28,7 +28,8 @@ import random
 from datetime import datetime, timedelta
 
 from queries import parse_num, gen_answer
-from query import Query
+from query import Query, QueryStateDict
+from tree import Result
 
 
 _COUNTING_QTYPE = "Counting"
@@ -155,7 +156,7 @@ def _gen_count(q: Query, result):
     return response, answ, voice
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:

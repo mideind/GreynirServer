@@ -39,7 +39,7 @@ from db import SessionContext, desc
 from db.models import Person, Article, Root, Word, Column
 
 from reynir import correct_spaces
-from reynir.bindb import BIN_Db
+from reynir.bindb import GreynirBin
 
 
 # Default number of persons to show in /people
@@ -78,7 +78,7 @@ def recent_persons(limit=_RECENT_PERSONS_LENGTH):
             # Otherwise, longer is better
             return len_new > len_old
 
-        with BIN_Db.get_db() as bindb:
+        with GreynirBin.get_db() as bindb:
             for p in q:
                 # Insert the name into the list if it's not already there,
                 # or if the new title is longer than the previous one

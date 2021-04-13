@@ -34,7 +34,7 @@ from datetime import datetime, timedelta
 
 from cityloc import capital_for_cc  # type: ignore
 
-from query import Query
+from query import Query, QueryStateDict
 from queries import country_desc, nom2dat, cap_first
 from reynir import NounPhrase
 from geo import (
@@ -46,6 +46,8 @@ from geo import (
     location_info,
     capitalize_placename,
 )
+from tree import Result
+
 
 _GEO_QTYPE = "Geography"
 
@@ -360,7 +362,7 @@ _HANDLERS = {
 }
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
 

@@ -27,7 +27,7 @@
 from settings import Settings, ConfigError
 from db import SessionContext
 from db.models import Person
-from bindb import BIN_Db
+from bindb import GreynirBin
 
 try:
     # Read configuration file
@@ -36,7 +36,7 @@ except ConfigError as e:
     print("Configuration error: {0}".format(e))
     quit()
 
-with SessionContext(commit = True) as session, BIN_Db.get_db() as bdb:
+with SessionContext(commit = True) as session, GreynirBin.get_db() as bdb:
 
     # Iterate through the persons
     q = session.query(Person) \

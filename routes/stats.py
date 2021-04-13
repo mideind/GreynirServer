@@ -40,7 +40,7 @@ from db.queries import (
     BestAuthorsQuery,
     QueriesQuery,
 )
-from reynir.bindb import BIN_Db
+from reynir.bindb import GreynirBin
 
 
 # Days
@@ -140,7 +140,7 @@ def top_authors(days=_TOP_AUTHORS_PERIOD, session=None):
     )[:20]
 
     authresult = list()
-    with BIN_Db.get_db() as bindb:
+    with GreynirBin.get_db() as bindb:
         for a in authors:
             name = a[0]
             gender = bindb.lookup_name_gender(name)

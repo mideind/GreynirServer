@@ -34,9 +34,9 @@ from typing import Tuple
 import random
 from math import floor, log10
 
-import query
-from query import Query
+from query import Query, QueryStateDict, to_dative, to_accusative
 from queries import iceformat_float, parse_num
+from tree import Result
 
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
@@ -468,7 +468,7 @@ def _convert(quantity: float, unit_from: str, unit_to: str) -> Tuple:
     )
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result and result.qtype == "Unit":
@@ -483,7 +483,7 @@ def sentence(state, result):
         )
         if not valid:
             answer = voice_answer = "Það er ekki hægt að umbreyta {0} í {1}.".format(
-                query.to_dative(result.unit_from), query.to_accusative(result.unit_to)
+                to_dative(result.unit_from), to_accusative(result.unit_to)
             )
             response = dict(answer=answer)
         else:

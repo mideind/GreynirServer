@@ -43,7 +43,7 @@ else:
 
 from settings import Settings, ConfigError
 from tokenizer import correct_spaces
-from reynir.bindb import BIN_Db
+from reynir.bindb import GreynirBin
 from db import SessionContext, DatabaseError
 from db.models import Article, Trigram
 from tree import TreeTokenList, TerminalDescriptor
@@ -60,7 +60,7 @@ def dump_tokens(limit):
         of tokens and their matched terminals """
 
     dtd = dict()
-    with BIN_Db.get_db() as db, SessionContext(commit=True) as session:
+    with GreynirBin.get_db() as db, SessionContext(commit=True) as session:
         # Iterate through the articles
         q = (
             session.query(Article)

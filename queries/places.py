@@ -34,8 +34,10 @@ import re
 import random
 from datetime import datetime
 
+from reynir import NounPhrase
+
 from geo import in_iceland, iceprep_for_street
-from query import Query
+from query import Query, QueryStateDict
 from queries import (
     gen_answer,
     query_places_api,
@@ -43,7 +45,7 @@ from queries import (
     icequote,
     numbers_to_neutral,
 )
-from reynir import NounPhrase
+from tree import Result
 
 from . import LatLonTuple, AnswerTuple
 
@@ -378,7 +380,7 @@ _HANDLER_MAP = {
 }
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result and "subject_nom" in result:

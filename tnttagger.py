@@ -61,8 +61,8 @@ from math import log
 from collections import defaultdict
 from contextlib import contextmanager
 
-from reynir.bindb import BIN_Db
-from reynir.bintokenizer import raw_tokenize, parse_tokens, paragraphs, TOK
+from reynir.bindb import GreynirBin
+from reynir.bintokenizer import tokenize, parse_tokens, paragraphs, TOK
 from postagger import NgramTagger
 
 
@@ -144,8 +144,8 @@ class UnknownWordTagger:
         w = word[0]
         if token.kind == TOK.WORD and token.val is None:
             try:
-                with BIN_Db.get_db() as db:
-                    w, m = db.lookup_word(token.txt, at_sentence_start)
+                with GreynirBin.get_db() as db:
+                    w, m = db.lookup_g(token.txt, at_sentence_start)
             except Exception:
                 w, m = token.txt, []
             token = TOK.Word(w, m)
@@ -519,7 +519,7 @@ def ifd_tag(text):
         if _TAGGER is None:
             return []  # No tagger model - unable to tag
 
-    token_stream = raw_tokenize(text)
+    token_stream = tokenize(text)
     result = []
 
     def xlt(txt):

@@ -152,7 +152,7 @@ def wordfreq():
         # TODO: Use GreynirPackage lemma lookup function for this
         w, cat = t.txt, ""
         if t.kind == TOK.WORD:
-            val = list(filter(lambda m: m.stofn == m.ordmynd, t.val)) or t.val
+            val = list(filter(lambda m: m.stofn == m.ordmynd, t.meanings)) or t.meanings
             cat = val[0].ordfl if len(val) else CAT_UNKNOWN
             w = val[0].stofn if len(val) else t.txt
             # Hack to fix combined word, remove hyphens added by combinator
@@ -165,7 +165,7 @@ def wordfreq():
                     san += char
                 w = san
         elif t.kind == TOK.PERSON:
-            cat = "person_" + t.val[0].gender
+            cat = "person_" + (t.person_names[0].gender or "hk")
         elif t.kind == TOK.ENTITY:
             cat = "entity"
         return (w, cat)

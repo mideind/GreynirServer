@@ -35,7 +35,7 @@ from collections import defaultdict
 import logging
 
 from reynir import Abbreviations, TOK, Tok
-from reynir.bindb import BIN_Db
+from reynir.bindb import GreynirBin
 
 from db import SessionContext, OperationalError, Session
 from db.models import Entity
@@ -66,7 +66,7 @@ def recognize_entities(
     # Last name to full name mapping ('Clinton' -> 'Hillary Clinton')
     lastnames: Dict[str, Tok] = dict()
 
-    with BIN_Db.get_db() as db, SessionContext(
+    with GreynirBin.get_db() as db, SessionContext(
         session=enclosing_session, commit=True, read_only=True
     ) as session:
 
@@ -131,7 +131,7 @@ def recognize_entities(
                 # displaying or processing the article)
                 return token_ctor.Entity(token.txt)
             # Return the full name meanings
-            return token_ctor.Person(token.txt, tfull.val)
+            return token_ctor.Person(token.txt, tfull.person_names)
 
         try:
 
@@ -214,7 +214,7 @@ def recognize_entities(
                         # Clinton -> Hillary [Rodham] Clinton
                         if lastname[0].isupper():
                             # Look for Icelandic patronyms/matronyms
-                            _, m = db.lookup_word(lastname, False)
+                            _, m = db.lookup_g(lastname, False)
                             if m and any(mm.fl in {"föð", "móð"} for mm in m):
                                 # We don't store Icelandic patronyms/matronyms
                                 # as surnames
@@ -227,7 +227,7 @@ def recognize_entities(
                             # w may be a person name with more than one embedded word
                             # parts is assigned in the if statement above
                             cnt = len(parts)
-                        elif not token.val or ("-" in token.val[0].stofn):
+                        elif not token.has_meanings or ("-" in token.meanings[0].stofn):
                             # No BÍN meaning for this token, or the meanings
                             # were constructed by concatenation (indicated by a hyphen
                             # in the stem)

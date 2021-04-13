@@ -29,7 +29,10 @@ import re
 import json
 import flask
 
+from query import QueryStateDict
 from queries import gen_answer, read_jsfile
+from tree import Result
+
 
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
@@ -287,7 +290,7 @@ def terminal_num(t):
         return aux[0]
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q = state["query"]
 
@@ -368,7 +371,7 @@ def sentence(state, result):
 
         for token in q.token_list:
             if token.txt == result.subject:
-                stofn = token[2][0].stofn
+                stofn = token.meanings[0].stofn
                 stofn = _FIX_MAP.get(stofn, stofn)
 
         js = read_jsfile("lightService.js")

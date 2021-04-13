@@ -28,6 +28,10 @@
 
 import random
 
+from query import QueryStateDict
+from tree import Result
+
+
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
@@ -79,7 +83,7 @@ def QGrammarExampleNotTest(node, params, result):
     result.qkey = "NotTest"
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q = state["query"]
     if "qtype" in result and "qkey" in result and result.qtype == "GrammarTest":

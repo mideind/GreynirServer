@@ -10,7 +10,7 @@
 import sys
 import sqlite3
 
-from reynir.bindb import BIN_Db
+from reynir.bindb import GreynirBin
 
 if __name__ == "__main__":
     """ Invocation via command line. """
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     num_comb = 0
     num_fail = 0
 
-    with BIN_Db.get_db() as db:
+    with GreynirBin.get_db() as db:
         for m in matches:
             w = m.strip()
             if " " in w or "-" in w or "-" in w:
@@ -45,7 +45,7 @@ if __name__ == "__main__":
                 continue
 
             # Lookup using BÍN and combinator
-            _, meanings = db.lookup_word(w, auto_uppercase=True)
+            _, meanings = db.lookup_g(w, auto_uppercase=True)
             if meanings:
                 num_comb += 1
                 continue

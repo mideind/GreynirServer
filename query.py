@@ -70,7 +70,7 @@ from reynir.fastparser import (
 )
 from reynir.binparser import BIN_Grammar, BIN_Token, GrammarError
 from reynir.reducer import Reducer
-from reynir.bindb import BIN_Db, BIN_Meaning, MeaningFilterFunc
+from reynir.bindb import GreynirBin, BIN_Tuple, MeaningFilterFunc
 
 # from nertokenizer import recognize_entities
 from images import get_image_url
@@ -86,7 +86,7 @@ ResponseMapping = Mapping[str, Any]
 ResponseType = Union[ResponseDict, List[ResponseDict]]
 
 # Query context
-ContextDict = Dict[str, Union[str, int, float, bool, LocationType, Mapping[str, Any]]]
+ContextDict = Dict[str, Any]
 
 # Client data
 ClientDataDict = Dict[str, Union[str, int, float, bool]]
@@ -94,13 +94,14 @@ ClientDataDict = Dict[str, Union[str, int, float, bool]]
 # Answer tuple (corresponds to parameter list of Query.set_answer())
 AnswerTuple = Tuple[ResponseType, str, Optional[str]]
 
-LookupFunc = Callable[[str], Tuple[str, List[BIN_Meaning]]]
+LookupFunc = Callable[[str], Tuple[str, List[BIN_Tuple]]]
 
 HelpFunc = Callable[[str], str]
 
 
 class QueryStateDict(TreeStateDict):
     query: "Query"
+    names: Dict[str, str]
 
 
 class CastFunc(Protocol):
@@ -286,7 +287,7 @@ class QueryTree(Tree):
         self, query: "Query", session: Session, processor: ModuleType
     ) -> bool:
         """ Process all query trees that the given processor is interested in """
-        processor_query_types: FrozenSet[str] = getattr(
+        processor_query_types: Set[str] = getattr(
             processor, "QUERY_NONTERMINALS", set()
         )
         # Every tree processor must be interested in at least one query type
@@ -921,7 +922,7 @@ class Query:
         based on lemmas in the query string"""
         # Collect a set of lemmas that occur in the query string
         lemmas = set()
-        with BIN_Db.get_db() as db:
+        with GreynirBin.get_db() as db:
             for token in query.lower().split():
                 if token.isalpha():
                     m = db.meanings(token)
@@ -1088,10 +1089,10 @@ def to_accusative(
     np: str, *, meaning_filter_func: Optional[MeaningFilterFunc] = None
 ) -> str:
     """ Return the noun phrase after casting it from nominative to accusative case """
-    with BIN_Db.get_db() as db:
+    with GreynirBin.get_db() as db:
         return _to_case(
             np,
-            db.lookup_word,
+            db.lookup_g,
             db.cast_to_accusative,
             meaning_filter_func=meaning_filter_func,
         )
@@ -1101,12 +1102,9 @@ def to_dative(
     np: str, *, meaning_filter_func: Optional[MeaningFilterFunc] = None
 ) -> str:
     """ Return the noun phrase after casting it from nominative to dative case """
-    with BIN_Db.get_db() as db:
+    with GreynirBin.get_db() as db:
         return _to_case(
-            np,
-            db.lookup_word,
-            db.cast_to_dative,
-            meaning_filter_func=meaning_filter_func,
+            np, db.lookup_g, db.cast_to_dative, meaning_filter_func=meaning_filter_func,
         )
 
 
@@ -1114,10 +1112,10 @@ def to_genitive(
     np: str, *, meaning_filter_func: Optional[MeaningFilterFunc] = None
 ) -> str:
     """ Return the noun phrase after casting it from nominative to genitive case """
-    with BIN_Db.get_db() as db:
+    with GreynirBin.get_db() as db:
         return _to_case(
             np,
-            db.lookup_word,
+            db.lookup_g,
             db.cast_to_genitive,
             meaning_filter_func=meaning_filter_func,
         )

@@ -35,7 +35,8 @@ import random
 from datetime import datetime, timedelta
 
 from queries import query_json_api, gen_answer, cap_first
-from query import Query, ContextDict
+from query import Query, QueryStateDict, ContextDict
+from tree import Result
 
 
 _WIKI_QTYPE = "Wikipedia"
@@ -300,7 +301,7 @@ def get_wiki_summary(subject_nom: str) -> str:
     return _clean_answer(text)
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" not in result:

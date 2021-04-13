@@ -25,7 +25,7 @@
 # TODO: Handle "hver er *heima*síminn hjá X"
 # TODO: Smarter disambiguation interaction
 
-from typing import Dict, Optional, Any, Callable
+from typing import Dict, Mapping, Optional, Any, Callable
 
 import re
 import logging
@@ -33,11 +33,12 @@ from urllib.parse import urlencode
 from datetime import datetime, timedelta
 
 from reynir import NounPhrase
-from reynir.bindb import BIN_Db
+from reynir.bindb import GreynirBin
 
 from . import query_json_api, gen_answer, numbers_to_neutral, icequote
-from query import Query, ContextDict
-from tree import ResultType
+
+from query import AnswerTuple, Query, QueryStateDict
+from tree import Result
 from geo import iceprep_for_street
 from util import read_api_key
 
@@ -166,7 +167,7 @@ def _best_number(item: Dict[str, Any]) -> Optional[str]:
     return phone_num.get("number") if phone_num else None
 
 
-def _answer_phonenum4name_query(q: Query, result: ResultType):
+def _answer_phonenum4name_query(q: Query, result: Result) -> AnswerTuple:
     """ Answer query of the form "hvað er síminn hjá [íslenskt mannsnafn]?" """
     res = query_ja_api(result.qkey)
 
@@ -185,7 +186,7 @@ def _answer_phonenum4name_query(q: Query, result: ResultType):
         # Many found with that name, generate smart message asking for disambiguation
         name_components = result.qkey.split()
         one_name_only = len(name_components) == 1
-        with BIN_Db.get_db() as bdb:
+        with GreynirBin.get_db() as bdb:
             fn = name_components[0].title()
             gender = bdb.lookup_name_gender(fn)
         msg = (
@@ -225,7 +226,7 @@ def _answer_phonenum4name_query(q: Query, result: ResultType):
     return dict(answer=answ), answ, voice
 
 
-def _answer_name4phonenum_query(q: Query, result: ResultType):
+def _answer_name4phonenum_query(q: Query, result: Result) -> AnswerTuple:
     """ Answer query of the form "hver er með símanúmerið [númer]?"""
     num = result.phone_number
     clean_num = re.sub(r"[^0-9]", "", num).strip()
@@ -276,13 +277,13 @@ def _answer_name4phonenum_query(q: Query, result: ResultType):
     return dict(answer=answ), answ, voice
 
 
-_QTYPE2HANDLER: Dict[str, Callable] = {
+_QTYPE2HANDLER: Mapping[str, Callable[[Query, Result], AnswerTuple]] = {
     "Name4PhoneNum": _answer_name4phonenum_query,
     "PhoneNum4Name": _answer_phonenum4name_query,
 }
 
 
-def sentence(state: ContextDict, result: ResultType):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:

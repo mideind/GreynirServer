@@ -65,8 +65,8 @@ if basepath.endswith(_TOOLS):
 from settings import Settings, LineReader, ConfigError
 
 
-BIN_Meaning = namedtuple(
-    "BIN_Meaning", ["stofn", "utg", "ordfl", "fl", "ordmynd", "beyging"]
+BIN_Tuple = namedtuple(
+    "BIN_Tuple", ["stofn", "utg", "ordfl", "fl", "ordmynd", "beyging"]
 )
 
 
@@ -170,10 +170,10 @@ class Meanings:
         try:
             c.execute(Meanings._DB_Q_FORMS, [w])
             # Map the returned data from fetchall() to a list of instances
-            # of the BIN_Meaning namedtuple
+            # of the BIN_Tuple namedtuple
             g = c.fetchall()
             if g is not None:
-                m = list(map(BIN_Meaning._make, g))
+                m = list(map(BIN_Tuple._make, g))
         except (psycopg2.DataError, psycopg2.ProgrammingError) as e:
             print("Word '{0}' caused DB exception {1}".format(w, e))
             m = None
