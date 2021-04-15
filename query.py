@@ -60,7 +60,6 @@ from db import SessionContext, Session, desc
 from db.models import Query as QueryRow
 from db.models import QueryData, QueryLog
 
-from tree import Tree, TreeStateDict, Node
 from reynir import TOK, Tok, tokenize, correct_spaces
 from reynir.fastparser import (
     Fast_Parser,
@@ -70,7 +69,10 @@ from reynir.fastparser import (
 )
 from reynir.binparser import BIN_Grammar, BIN_Token, GrammarError
 from reynir.reducer import Reducer
-from reynir.bindb import GreynirBin, BIN_Tuple, MeaningFilterFunc
+from reynir.bindb import GreynirBin, BIN_Tuple
+from islenska.bindb import MeaningFilterFunc
+
+from tree import Tree, TreeStateDict, Node
 
 # from nertokenizer import recognize_entities
 from images import get_image_url
