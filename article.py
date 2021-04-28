@@ -170,7 +170,7 @@ class Article:
         return a
 
     @classmethod
-    def _init_from_scrape(cls, url, enclosing_session=None):
+    def _init_from_scrape(cls, url: Optional[str], enclosing_session: Optional[Session]=None):
         """ Scrape an article from its URL """
         if url is None:
             return None
@@ -441,13 +441,10 @@ class Article:
                 return True
 
             # Update an already existing row by UUID
-            ar = cast(
-                Optional[ArticleRow],
-                (
-                    session.query(ArticleRow)
-                    .filter(ArticleRow.id == self._uuid)
-                    .one_or_none()
-                ),
+            ar: Optional[ArticleRow] = (
+                session.query(ArticleRow)
+                .filter(ArticleRow.id == self._uuid)
+                .one_or_none()
             )
             if ar is None:
                 # UUID not found: something is wrong here...
@@ -482,7 +479,8 @@ class Article:
             self._store_words(session)
             # Offload the new data from Python to PostgreSQL
             session.flush()
-            return True
+
+        return True
 
     def prepare(
         self,
@@ -597,14 +595,11 @@ class Article:
             each sentence, None is yielded. """
         with SessionContext(commit=True, read_only=True) as session:
 
-            q = cast(
-                SqlQuery[ArticleRow],
-                (
-                    session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
-                    .filter(ArticleRow.tokens != None)
-                    .order_by(desc(cast(Column, ArticleRow.parsed)))
-                    .yield_per(200)
-                ),
+            q: SqlQuery[ArticleRow] = (
+                session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
+                .filter(ArticleRow.tokens != None)
+                .order_by(desc(cast(Column, ArticleRow.parsed)))
+                .yield_per(200)
             )
 
             count = 0
@@ -640,14 +635,11 @@ class Article:
             Each sentence is a list of token dicts. """
         with SessionContext(commit=True, read_only=True) as session:
 
-            q = cast(
-                SqlQuery[ArticleRow],
-                (
-                    session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
-                    .filter(ArticleRow.tokens != None)
-                    .order_by(desc(cast(Column, ArticleRow.parsed)))
-                    .yield_per(200)
-                ),
+            q: SqlQuery[ArticleRow] = (
+                session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
+                .filter(ArticleRow.tokens != None)
+                .order_by(desc(cast(Column, ArticleRow.parsed)))
+                .yield_per(200)
             )
 
             count = 0

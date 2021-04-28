@@ -12,12 +12,14 @@ if basepath.endswith(_UTILS):
 
 from settings import Settings
 from db import SessionContext
-from treeutil import TreeUtility as tu
+from treeutil import PgsList, TreeUtility as tu
 
 Settings.read(os.path.join(basepath, "config", "Greynir.conf"))
 Settings.DEBUG = False
 
 TEXT = "Ég bý í Baugatanga 6. Hér er prófun á þáttun texta."
+
+pgs: PgsList = []
 
 with SessionContext(read_only=True) as session:
     pgs, stats = tu.parse_text_to_bracket_form(session, TEXT)

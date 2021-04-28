@@ -54,7 +54,7 @@ import re
 from collections import OrderedDict
 import abc
 from contextlib import contextmanager
-from islenska.basics import BinMeaning, make_bin_meaning
+from islenska.basics import BinMeaning, make_bin_entry
 
 from sqlalchemy.orm import Session
 
@@ -909,7 +909,7 @@ class TerminalNode(Node):
                 if beyging is x.beyging:
                     # No replacement made: word form is identical in the nominative case
                     result.append(
-                        make_bin_meaning(
+                        make_bin_entry(
                             x.stofn, x.utg, x.ordfl, x.fl, x.ordmynd, x.beyging
                         )
                     )
@@ -936,7 +936,7 @@ class TerminalNode(Node):
                     if prefix:
                         # Add the word prefix again in front, if any
                         result += bin_db._prefix_meanings(
-                            r, prefix, make_bin_meaning, insert_hyphen=False
+                            r, prefix, make_bin_entry, insert_hyphen=False
                         )
                     else:
                         result += r

@@ -23,8 +23,9 @@
 
 """
 
-from datetime import datetime
 from typing import Optional, cast
+
+from datetime import datetime
 from sqlalchemy import text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
@@ -45,6 +46,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, INET
 from sqlalchemy.dialects.postgresql import UUID as psql_UUID
 from sqlalchemy.ext.hybrid import Comparator, hybrid_property
+from sqlalchemy.orm.relationships import RelationshipProperty
 
 
 class CaseInsensitiveComparator(Comparator):
@@ -54,7 +56,7 @@ class CaseInsensitiveComparator(Comparator):
 
     # See https://docs.sqlalchemy.org/en/13/orm/extensions/hybrid.html
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return func.lower(self.__clause_element__()) == func.lower(other)
 
 
@@ -126,11 +128,14 @@ class Article(Base):
     )
 
     # Foreign key to a root
-    root_id = cast(Optional[int], Column(
-        Integer,
-        # We don't delete associated articles if the root is deleted
-        ForeignKey("roots.id", onupdate="CASCADE", ondelete="SET NULL"),
-    ))
+    root_id = cast(
+        Optional[int],
+        Column(
+            Integer,
+            # We don't delete associated articles if the root is deleted
+            ForeignKey("roots.id", onupdate="CASCADE", ondelete="SET NULL"),
+        ),
+    )
 
     # Article heading, if known
     heading = cast(str, Column(String))
@@ -172,7 +177,7 @@ class Article(Base):
     topic_vector = cast(Optional[str], Column(String))
 
     # The back-reference to the Root parent of this Article
-    root = relationship(
+    root: RelationshipProperty = relationship(
         "Root",
         foreign_keys="Article.root_id",
         backref=backref("articles", order_by=url),
@@ -220,7 +225,9 @@ class Person(Base):
     timestamp = Column(DateTime)
 
     # The back-reference to the Article parent of this Person
-    article = relationship("Article", backref=backref("persons", order_by=name))
+    article: RelationshipProperty = relationship(
+        "Article", backref=backref("persons", order_by=name)
+    )
 
     def __repr__(self):
         return "Person(id='{0}', name='{1}', title={2})".format(

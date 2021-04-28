@@ -264,6 +264,7 @@ class Scraper:
     def go(self, reparse=False, limit=0, urls=None, uuid=None, numprocs=None):
         """ Run a scraping pass from all roots in the scraping database """
         version = Article.parser_version()
+        cnt = 0
 
         with SessionContext(commit=True) as session:
 
@@ -390,7 +391,6 @@ class Scraper:
                 limit = 0
             else:
                 g = iter_unparsed_articles(reparse, limit)
-            cnt = 0
             while True:
                 adlist = []
                 lcnt = 0
@@ -420,8 +420,9 @@ class Scraper:
                     )
                 if lcnt < CHUNK_SIZE:
                     break
-            # Return the total number of articles parsed
-            return cnt
+
+        # Return the total number of articles parsed
+        return cnt
 
     @staticmethod
     def stats():
@@ -516,7 +517,7 @@ def scrape_articles(reparse=False, limit=0, urls=None, uuid=None, numprocs=None)
 
     t1 = time.time()
     logging.info("{1} articles parsed in {0:.1f} minutes".format((t1 - t0) / 60, count))
-    if count > 0:
+    if count:
         logging.info("Average: {0:.2f} seconds per article".format((t1 - t0) / count))
 
     logging.info("------ Scrape completed -------")

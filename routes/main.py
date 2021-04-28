@@ -21,7 +21,7 @@
 
 """
 
-from typing import Dict, Any, List, Tuple, Union, cast
+from typing import Dict, Any, List, Optional, Sequence, Tuple, Union, cast
 
 import platform
 import sys
@@ -50,7 +50,7 @@ from . import MAX_URL_LENGTH, MAX_UUID_LENGTH, MAX_TEXT_LENGTH_VIA_URL
 
 
 # Default text shown in the URL/text box
-_DEFAULT_TEXTS = [
+_DEFAULT_TEXTS: Sequence[str] = [
     "Hver gegnir starfi seðlabankastjóra?",
     "Hvað er HeForShe?",
     "Hver er Valgerður Bjarnadóttir?",
@@ -156,6 +156,8 @@ def page():
         # !!! TODO: Separate error page
         return redirect(url_for("routes.main"))
 
+    a: Optional[ArticleProxy] = None
+
     with SessionContext(commit=True) as session:
 
         if uuid:
@@ -163,8 +165,6 @@ def page():
         elif url.startswith("http:") or url.startswith("https:"):
             # Forces a new scrape
             a = ArticleProxy.scrape_from_url(url, session)
-        else:
-            a = None
 
         if a is None:
             # !!! TODO: Separate error page
@@ -180,9 +180,9 @@ def page():
         )
         topics = [dict(name=t.topic.name, id=t.topic.identifier) for t in topics]
 
-        return render_template(
-            "page.html", title=a.heading, article=a, register=register, topics=topics
-        )
+    return render_template(
+        "page.html", title=a.heading, article=a, register=register, topics=topics
+    )
 
 
 @routes.route("/treegrid", methods=["GET"])

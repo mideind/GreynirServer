@@ -70,7 +70,7 @@ from reynir.fastparser import (
 from reynir.binparser import BIN_Grammar, BIN_Token, GrammarError
 from reynir.reducer import Reducer
 from reynir.bindb import GreynirBin, BIN_Tuple
-from islenska.bindb import MeaningFilterFunc
+from islenska.bindb import EntryFilterFunc
 
 from tree import Tree, TreeStateDict, Node
 
@@ -108,7 +108,7 @@ class QueryStateDict(TreeStateDict):
 
 class CastFunc(Protocol):
     def __call__(
-        self, w: str, *, meaning_filter_func: Optional[MeaningFilterFunc] = None
+        self, w: str, *, filter_func: Optional[EntryFilterFunc] = None
     ) -> str:
         ...
 
@@ -1051,7 +1051,7 @@ def _to_case(
     np: str,
     lookup_func: LookupFunc,
     cast_func: CastFunc,
-    meaning_filter_func: Optional[MeaningFilterFunc],
+    filter_func: Optional[EntryFilterFunc],
 ) -> str:
     """ Return the noun phrase after casting it from nominative to accusative case """
     # Split the phrase into words and punctuation, respectively
@@ -1082,13 +1082,13 @@ def _to_case(
                 seen_preposition = True
                 continue
             # Cast the word to the case we want
-            a[ix] = cast_func(w, meaning_filter_func=meaning_filter_func)
+            a[ix] = cast_func(w, filter_func=filter_func)
     # Reassemble the list of words and punctuation
     return "".join(a)
 
 
 def to_accusative(
-    np: str, *, meaning_filter_func: Optional[MeaningFilterFunc] = None
+    np: str, *, filter_func: Optional[EntryFilterFunc] = None
 ) -> str:
     """ Return the noun phrase after casting it from nominative to accusative case """
     with GreynirBin.get_db() as db:
@@ -1096,22 +1096,22 @@ def to_accusative(
             np,
             db.lookup_g,
             db.cast_to_accusative,
-            meaning_filter_func=meaning_filter_func,
+            filter_func=filter_func,
         )
 
 
 def to_dative(
-    np: str, *, meaning_filter_func: Optional[MeaningFilterFunc] = None
+    np: str, *, filter_func: Optional[EntryFilterFunc] = None
 ) -> str:
     """ Return the noun phrase after casting it from nominative to dative case """
     with GreynirBin.get_db() as db:
         return _to_case(
-            np, db.lookup_g, db.cast_to_dative, meaning_filter_func=meaning_filter_func,
+            np, db.lookup_g, db.cast_to_dative, filter_func=filter_func,
         )
 
 
 def to_genitive(
-    np: str, *, meaning_filter_func: Optional[MeaningFilterFunc] = None
+    np: str, *, filter_func: Optional[EntryFilterFunc] = None
 ) -> str:
     """ Return the noun phrase after casting it from nominative to genitive case """
     with GreynirBin.get_db() as db:
@@ -1119,7 +1119,7 @@ def to_genitive(
             np,
             db.lookup_g,
             db.cast_to_genitive,
-            meaning_filter_func=meaning_filter_func,
+            filter_func=filter_func,
         )
 
 
@@ -1302,4 +1302,4 @@ def process_query(
             # Also log anonymised query
             session.add(QueryLog.from_Query(qrow))
 
-        return result
+    return result

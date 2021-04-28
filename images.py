@@ -247,6 +247,7 @@ def _blacklisted_urls_for_key(
             .all()
         )
         return [r for (r,) in q]
+    return []  # Satisfy Pylance
 
 
 def _get_cached_entry(

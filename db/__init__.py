@@ -33,6 +33,7 @@ from sqlalchemy.exc import SQLAlchemyError as DatabaseError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import DataError
 from sqlalchemy.exc import OperationalError
+from typing_extensions import Literal
 
 from settings import Settings, ConfigError
 
@@ -113,7 +114,7 @@ class SessionContext:
             # (if commit == True) and closed upon exit from the context
             # pylint: disable=no-member
             # Creates a new Scraper_DB instance if needed
-            self._session = self.db.session
+            self._session = cast(Session, self.db.session)
             self._new_session = True
             if read_only:
                 # Set the transaction as read only, which can save resources
@@ -126,13 +127,15 @@ class SessionContext:
             self._session = session
             self._commit = False
 
-    def __enter__(self):
+    def __enter__(self) -> Session:
         """ Python context manager protocol """
         # Return the wrapped database session
         return self._session
 
     # noinspection PyUnusedLocal
-    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any):
+    def __exit__(
+        self, exc_type: Type[BaseException], exc_value: BaseException, traceback: Any
+    ) -> Literal[False]:
         """ Python context manager protocol """
         if self._new_session:
             if self._commit:

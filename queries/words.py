@@ -39,7 +39,7 @@ import logging
 from datetime import datetime, timedelta
 
 from tokenizer.definitions import BIN_Tuple
-from islenska.bindb import BinMeaningIterable, BinMeaningList
+from islenska.bindb import BinEntryIterable, BinEntryList
 from reynir.bindb import GreynirBin
 
 from query import Query, AnswerTuple
@@ -157,9 +157,9 @@ def lookup_best_word(word: str) -> Optional[Tuple[str, str, str, str]]:
 
         wid = m.utg
 
-        # TODO: If more than one declesion form possible (e.g. gen. björns vs. bjarnar)
+        # TODO: If more than one declension form possible (e.g. gen. björns vs. bjarnar)
         # we should also list such variations
-        def sort_by_preference(m_list: BinMeaningIterable) -> BinMeaningList:
+        def sort_by_preference(m_list: BinEntryIterable) -> BinEntryList:
             # Filter out words that don't have the same "utg" i.e. word ID as
             # the one we successfully looked up in BÍN
             mns = list(filter(lambda w: w.bin_id == wid, m_list))
@@ -168,9 +168,9 @@ def lookup_best_word(word: str) -> Optional[Tuple[str, str, str, str]]:
 
         # Look up all cases of the word in BÍN
         nom = m.stofn
-        acc = db.cast_to_accusative(nom, meaning_filter_func=sort_by_preference)
-        dat = db.cast_to_dative(nom, meaning_filter_func=sort_by_preference)
-        gen = db.cast_to_genitive(nom, meaning_filter_func=sort_by_preference)
+        acc = db.cast_to_accusative(nom, filter_func=sort_by_preference)
+        dat = db.cast_to_dative(nom, filter_func=sort_by_preference)
+        gen = db.cast_to_genitive(nom, filter_func=sort_by_preference)
         return nom, acc, dat, gen
 
 
