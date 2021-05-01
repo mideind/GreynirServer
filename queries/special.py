@@ -356,7 +356,7 @@ _GOOD_TO_HEAR: AnswerType = {
 
 _GOODBYE: AnswerType = {"answer": "Bless, kæri notandi.", "is_question": False}
 
-_COMPUTER_PROGRAM: AnswerType = {"answer": "Ég er tölvuforrit."}
+_COMPUTER_PROGRAM: AnswerType = {"answer": "Ég er tölvuforrit frá Miðeind ehf."}
 
 _FULL_NAME: AnswerType = {
     "answer": "Embla Sveinbjarnardóttir."  # Sneaking in this easter egg ;) - S
@@ -1180,6 +1180,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hver er þinn tilgangur eiginlega": _MY_PHILOSOPHY,
     "af hverju ertu til": _MY_PHILOSOPHY,
     "af hverju ert þú til": _MY_PHILOSOPHY,
+    "hvað er skemmtilegast": {
+        "answer": "Það er langskemmtilegast að spjalla við mig, Emblu."
+    },
     # What is best in life? https://www.youtube.com/watch?v=Oo9buo9Mtos
     "hvað er best": {"answer": "Að horfa á kvikmynd um villimanninn Kónan."},
     "hvað er best í lífinu": {"answer": "Að horfa á kvikmynd um villimanninn Kónan."},
@@ -1641,7 +1644,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "komdu með aðra tilvitnun": _random_quotation,
     # Proverbs
     "málshátt": _random_proverb,
+    "annan málshátt": _random_proverb,
     "ég vil málshátt": _random_proverb,
+    "ég vil annan málshátt": _random_proverb,
     "komdu með málshátt": _random_proverb,
     "komdu með góðan málshátt": _random_proverb,
     "komdu með annan málshátt": _random_proverb,
@@ -1653,6 +1658,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "kanntu einhvern málshátt": _random_proverb,
     "kanntu góðan málshátt": _random_proverb,
     "kanntu einhvern góðan málshátt": _random_proverb,
+    "kanntu annan málshátt": _random_proverb,
     "kannt þú málshátt": _random_proverb,
     "kanntu annan málshátt": _random_proverb,
     "farðu með málshátt": _random_proverb,
