@@ -41,19 +41,19 @@ class ApiClient:
         a tensorflow model server (using plaintext) """
 
     # Class defaults that can be overridden in constructor
-    port = None  # type: Optional[Union[int, str]]
-    host = None  # type: Optional[str]
-    action = None  # type: Optional[str]
+    port: Optional[Union[int, str]] = None
+    host: Optional[str] = None
+    action: Optional[str] = None
     https = True
 
-    _url = None  # type: Optional[str]
-    _data = None  # type: Optional[Dict[str, Any]]
+    _url: Optional[str] = None
+    _data: Optional[Dict[str, Any]] = None
 
-    required_fields = []  # type: List[str]
-    default_field_values = {}  # type: Dict[str, Any]
+    required_fields: List[str] = []
+    default_field_values: Dict[str, Any] = {}
     headers = {"Content-Type": "application/json; charset=utf-8"}
 
-    def __init__(self, port=None, host=None, https=None, action=None):
+    def __init__(self, port=None, host=None, https=None, action=None) -> None:
         if port is not None:
             self.port = port
         if host is not None:
@@ -64,7 +64,7 @@ class ApiClient:
             self.action = action
         self._set_url()
 
-    def _set_url(self):
+    def _set_url(self) -> None:
         """ Format url for remote service based on instance attributes """
         self._url = "http{https_char}://{host}:{port}/{action}".format(
             https_char="s" if self.https else "",

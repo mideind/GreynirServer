@@ -41,7 +41,7 @@ class Search:
         via the similarity client. """
 
     # Similarity query client
-    similarity_client = None  # type: Optional[SimilarityClient]
+    similarity_client: Optional[SimilarityClient] = None
 
     def __init__(self) -> None:
         """ This class is normally not instantiated """
@@ -92,7 +92,7 @@ class Search:
     @classmethod
     def list_articles(cls, session, result, n):
         """ Convert similarity result tuples into article descriptors """
-        similar = []  # type: List[Dict[str, Any]]
+        similar: List[Dict[str, Any]] = []
         for sid, similarity in result:
             if similarity > 0.9999:
                 # The original article (or at least a verbatim copy of it)

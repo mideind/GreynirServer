@@ -545,20 +545,20 @@ class TerminalDescriptor:
         self.bin_cat = BIN_ORDFL.get(self.inferred_cat, None)
 
         # clean_terminal property cache
-        self._clean_terminal = None  # type: Optional[str]
+        self._clean_terminal: Optional[str] = None
 
         # clean_cat property cache
-        self._clean_cat = None  # type: Optional[str]
+        self._clean_cat: Optional[str] = None
 
         # Gender of terminal
-        self.gender = None  # type: Optional[str]
+        self.gender: Optional[str] = None
         gender = self.variants & self._GENDERS
         assert 0 <= len(gender) <= 1
         if gender:
             self.gender = next(iter(gender))
 
         # Case of terminal
-        self.case = None  # type: Optional[str]
+        self.case: Optional[str] = None
         if self.inferred_cat not in {"so", "fs"}:
             # We do not check cases for verbs, except so_lhþt ones
             case = self.variants & self._CASES
@@ -569,14 +569,14 @@ class TerminalDescriptor:
         self.case_nf = self.case == "nf"
 
         # Person of terminal
-        self.person = None  # type: Optional[str]
+        self.person: Optional[str] = None
         person = self.variants & self._PERSONS
         assert 0 <= len(person) <= 1
         if person:
             self.person = next(iter(person))
 
         # Number of terminal
-        self.number = None  # type: Optional[str]
+        self.number: Optional[str] = None
         number = self.variants & self._NUMBERS
         assert 0 <= len(number) <= 1
         if number:
@@ -788,7 +788,7 @@ class TerminalNode(Node):
             # Not found in cache: make a new one
             td = TerminalDescriptor(terminal)
             self._TD[terminal] = td
-        self.td = td  # type: TerminalDescriptor
+        self.td: TerminalDescriptor = td
         self.token = token
         self._text = token[1:-1]  # Cut off quotes
         self._at_start = at_start
@@ -802,7 +802,7 @@ class TerminalNode(Node):
         # Auxiliary information, originally from token.t2 (JSON string)
         self.aux = aux
         # Cached auxiliary information, as a Python object decoded from JSON
-        self._aux = None  # type: Optional[List[Any]]
+        self._aux: Optional[List[Any]] = None
         # Cache the root form of this word so that it is only looked up
         # once, even if multiple processors scan this tree
         self.root_cache: Optional[str] = None

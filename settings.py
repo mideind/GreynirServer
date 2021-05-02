@@ -44,7 +44,7 @@ class UndeclinableAdjectives:
     """ Wrapper around list of undeclinable adjectives """
 
     # Set of adjectives
-    ADJECTIVES = set()  # type: Set[str]
+    ADJECTIVES: Set[str] = set()
 
     @classmethod
     def add(cls, wrd):
@@ -57,7 +57,7 @@ class NoIndexWords:
     """ Wrapper around set of word stems and categories that should
         not be indexed """
 
-    SET = set()  # type: Set[Tuple[str, str]]
+    SET: Set[Tuple[str, str]] = set()
     _CAT = "so"  # Default category
 
     # The word categories that are indexed in the words table

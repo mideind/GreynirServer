@@ -244,7 +244,7 @@ ZOOM_FOR_LOC_KIND = {"street": 11, "address": 12, "placename": 5, "country": 2}
 @cache.cached(timeout=60 * 60 * 24, key_prefix="locinfo", query_string=True)
 def locinfo():
     """ Return info about a location as JSON. """
-    resp = dict(found=False)  # type: Dict[str, Any]
+    resp: Dict[str, Any] = dict(found=False)
 
     name = request.args.get("name")
     kind = request.args.get("kind")

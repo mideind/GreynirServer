@@ -502,7 +502,7 @@ class TnT:
 
 
 # Global tagger singleton instance
-_TAGGER = None  # type: Optional[TnT]
+_TAGGER: Optional[TnT] = None
 
 # Translation dictionary
 _XLT = {"—": "-", "–": "-"}

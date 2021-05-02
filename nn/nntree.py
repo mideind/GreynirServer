@@ -213,7 +213,7 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
         raise ValueError("Invalid parse tokens.")
 
     root = Node(name="ROOT", is_terminal=False)  # Pseudo root
-    stack = []  # type: List[Node]
+    stack: List[Node] = []
     parent = root
     txt_count = 0
 

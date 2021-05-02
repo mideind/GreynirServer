@@ -155,7 +155,7 @@ class Processor:
 
     """ The worker class that processes parsed articles """
 
-    _db = None  # type: Optional[Scraper_DB]
+    _db: Optional[Scraper_DB] = None
 
     @classmethod
     def _init_class(cls) -> None:
@@ -176,7 +176,7 @@ class Processor:
         self.num_workers = num_workers
 
         self.processors = []
-        self.pmodules = None  # type: Optional[List[ModuleType]]
+        self.pmodules: Optional[List[ModuleType]] = None
 
         # Find .py files in the processor directory
         modnames = modules_in_dir(processor_directory)
@@ -263,7 +263,7 @@ class Processor:
                                 )
 
                     # Mark the article as being processed
-                    article.processed = datetime.utcnow()  # type: ignore
+                    article.processed = datetime.utcnow()
 
                 # So far, so good: commit to the database
                 session.commit()

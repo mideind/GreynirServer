@@ -365,7 +365,7 @@ def _gen_most_mentioned_answer(q) -> bool:
         q.set_answer(*gen_answer("Engar manneskjur fundust í gagnagrunni"))
         return True
 
-    answer = natlang_seq([t.get("name") for t in top])
+    answer = natlang_seq([t["name"] for t in top if "name" in t])
     response = dict(answer=answer)
     voice = "Umtöluðustu einstaklingar síðustu daga eru {0}.".format(answer)
 
