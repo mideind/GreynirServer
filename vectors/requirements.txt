@@ -3,3 +3,4 @@ gensim==3.8.2
 psycopg2cffi==2.8.1
 pycparser==2.20
 SQLAlchemy==1.4.0
+typing_extensions>=3.10.0
