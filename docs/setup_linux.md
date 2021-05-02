@@ -59,7 +59,16 @@ tar --strip-components=1 -xvf pypy3.6-v7.3.1-linux64.tar.bz2
 
 The PyPy binary should now be installed in `~/pypy/bin/pypy3`.
 
-Check out the Greynir repo:
+Speaking of PyPy, if you try to run Greynir and get an error message saying that
+the library `libgeos_c.so` cannot be loaded, you may need a symlink from your
+`pypy/lib` directory to the `libgeos_c.so` file. Something like this:
+
+```bash
+cd ~/pypy/lib
+ln -s /usr/lib/x86_64-linux-gnu/libgeos_c.so .
+```
+
+Now, check out the Greynir repo:
 
 ```
 cd ~
