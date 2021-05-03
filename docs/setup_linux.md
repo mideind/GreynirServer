@@ -26,11 +26,7 @@ NB: If PostgreSQL is already running on your machine, it needs to be restarted:
 sudo systemctl restart postgresql
 ```
 
-If you don't already have them, you need to install the PostgreSQL client libraries:
-
-```
-sudo apt-get install postgresql-client postgresql-contrib
-```
+See below for instructions on installing PostgreSQL client libraries.
 
 ## Set up Python virtualenv
 
