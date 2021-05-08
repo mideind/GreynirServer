@@ -2,7 +2,7 @@ beautifulsoup4>=4.9.3
 Flask==1.1.2
 flask-caching>=1.4.0
 greenlet>=0.4.17
-eventlet==0.28.0
+eventlet==0.31.0
 psycopg2cffi==2.9.0
 requests==2.25.1
 reynir>=3.0.1
