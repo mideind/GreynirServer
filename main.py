@@ -47,7 +47,7 @@ from flask_cors import CORS  # type: ignore
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 import reynir
-from reynir.bindb import BIN_Db
+from reynir.bindb import GreynirBin
 from reynir.fastparser import Fast_Parser
 
 import reynir_correct
@@ -248,7 +248,7 @@ if not RUNNING_AS_SERVER:
     ]
 
     # Hack to satisfy the Mypy type checker, which sometimes confuses str and AnyStr
-    _dirname = lambda s: os.path.dirname(s)  # type: Callable[[str], str]
+    _dirname: Callable[[str], str] = lambda s: os.path.dirname(s)
 
     dirs = list(map(_dirname, [__file__, reynir.__file__, reynir_correct.__file__]))
     for i, fname in enumerate(extra_files):
@@ -300,7 +300,7 @@ if not RUNNING_AS_SERVER:
             raise
     finally:
         ArticleProxy.cleanup()
-        BIN_Db.cleanup()
+        GreynirBin.cleanup()
 
 else:
     app.config["PRODUCTION"] = True

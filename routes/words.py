@@ -152,7 +152,7 @@ def wordfreq():
         # TODO: Use GreynirPackage lemma lookup function for this
         w, cat = t.txt, ""
         if t.kind == TOK.WORD:
-            val = list(filter(lambda m: m.stofn == m.ordmynd, t.val)) or t.val
+            val = list(filter(lambda m: m.stofn == m.ordmynd, t.meanings)) or t.meanings
             cat = val[0].ordfl if len(val) else CAT_UNKNOWN
             w = val[0].stofn if len(val) else t.txt
             # Hack to fix combined word, remove hyphens added by combinator
@@ -165,7 +165,7 @@ def wordfreq():
                     san += char
                 w = san
         elif t.kind == TOK.PERSON:
-            cat = "person_" + t.val[0].gender
+            cat = "person_" + (t.person_names[0].gender or "hk")
         elif t.kind == TOK.ENTITY:
             cat = "entity"
         return (w, cat)
@@ -193,7 +193,7 @@ def wordfreq():
     delta = date_to - date_from
     with changedlocale(category="LC_TIME"):
         # Group by week if period longer than 3 months
-        label_date_strings = []  # type: List[Union[str, Tuple[str, str]]]
+        label_date_strings: List[Union[str, Tuple[str, str]]] = []
         if delta.days >= _SHOW_WEEKS_CUTOFF:
             timeunit = "week"
             label_dates = [
@@ -237,11 +237,11 @@ def wordfreq():
             label_date_strings = [d.strftime("%Y-%m-%d") for d in label_days]
 
     # Create datasets for front-end chart
+    colors = list(_LINE_COLORS)
+    data: Dict[str, Any] = dict(
+        labels=labels, labelDates=label_date_strings, datasets=[]
+    )
     with SessionContext(commit=False) as session:
-        colors = list(_LINE_COLORS)
-        data = dict(
-            labels=labels, labelDates=label_date_strings, datasets=[]
-        )  # type: Dict[str, Any]
         for w in words:
             # Look up frequency of word for the given period
             (wd, cat) = w
@@ -272,7 +272,7 @@ def wordfreq():
 @routes.route("/wordfreq_details", methods=["GET", "POST"])
 def wordfreq_details():
     """ Return list of articles containing certain words over a given period. """
-    resp = dict(err=True)  # type: Dict[str, Any]
+    resp: Dict[str, Any] = dict(err=True)
 
     words = _str2words(request.args.get("words"))
     if not words:

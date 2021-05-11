@@ -54,10 +54,11 @@ import re
 from collections import OrderedDict
 import abc
 from contextlib import contextmanager
+from islenska.basics import BinMeaning, make_bin_entry
 
 from sqlalchemy.orm import Session
 
-from reynir.bindb import BIN_Db, BIN_Meaning
+from reynir.bindb import GreynirBin, BIN_Tuple
 from reynir.binparser import BIN_Token
 from reynir.simpletree import SimpleTree, SimpleTreeBuilder
 from reynir.cache import LRU_Cache
@@ -67,7 +68,7 @@ from typing_extensions import TypedDict
 class TreeStateDict(TypedDict, total=False):
     session: Session
     processor: ModuleType
-    bin_db: BIN_Db
+    bin_db: GreynirBin
     url: str
     authority: float
     index: int
@@ -95,7 +96,6 @@ VisitFunction = Callable[[TreeStateDict, "Node"], bool]
 ParamList = List[Optional["Result"]]
 NonterminalFunction = Callable[["Node", ParamList, "Result"], None]
 ChildTuple = Tuple["Node", Optional["Result"]]
-ResultType = Type["Result"]
 
 BIN_ORDFL: Mapping[str, Set[str]] = {
     "no": {"kk", "kvk", "hk"},
@@ -545,20 +545,20 @@ class TerminalDescriptor:
         self.bin_cat = BIN_ORDFL.get(self.inferred_cat, None)
 
         # clean_terminal property cache
-        self._clean_terminal = None  # type: Optional[str]
+        self._clean_terminal: Optional[str] = None
 
         # clean_cat property cache
-        self._clean_cat = None  # type: Optional[str]
+        self._clean_cat: Optional[str] = None
 
         # Gender of terminal
-        self.gender = None  # type: Optional[str]
+        self.gender: Optional[str] = None
         gender = self.variants & self._GENDERS
         assert 0 <= len(gender) <= 1
         if gender:
             self.gender = next(iter(gender))
 
         # Case of terminal
-        self.case = None  # type: Optional[str]
+        self.case: Optional[str] = None
         if self.inferred_cat not in {"so", "fs"}:
             # We do not check cases for verbs, except so_lhþt ones
             case = self.variants & self._CASES
@@ -569,14 +569,14 @@ class TerminalDescriptor:
         self.case_nf = self.case == "nf"
 
         # Person of terminal
-        self.person = None  # type: Optional[str]
+        self.person: Optional[str] = None
         person = self.variants & self._PERSONS
         assert 0 <= len(person) <= 1
         if person:
             self.person = next(iter(person))
 
         # Number of terminal
-        self.number = None  # type: Optional[str]
+        self.number: Optional[str] = None
         number = self.variants & self._NUMBERS
         assert 0 <= len(number) <= 1
         if number:
@@ -628,7 +628,7 @@ class TerminalDescriptor:
         """ Does the node have the given variant? """
         return s in self.variants
 
-    def _bin_filter(self, m: BIN_Meaning, case_override: Optional[str] = None) -> bool:
+    def _bin_filter(self, m: BIN_Tuple, case_override: Optional[str] = None) -> bool:
         """ Return True if the BIN meaning in m matches the variants for this terminal """
         if self.bin_cat is not None and m.ordfl not in self.bin_cat:
             return False
@@ -720,7 +720,7 @@ class TerminalDescriptor:
 
         return True
 
-    def stem(self, bindb: BIN_Db, word: str, at_start: bool = False) -> str:
+    def stem(self, bindb: GreynirBin, word: str, at_start: bool = False) -> str:
         """ Returns the stem of a word matching this terminal """
         if self.is_literal or self.is_stem:
             # A literal or stem terminal only matches a word if it has the given stem
@@ -729,7 +729,7 @@ class TerminalDescriptor:
         if " " in word:
             # Multi-word phrase: we return it unchanged
             return word
-        _, meanings = bindb.lookup_word(word, at_start)
+        _, meanings = bindb.lookup_g(word, at_start)
         if meanings:
             for m in meanings:
                 if self._bin_filter(m):
@@ -741,9 +741,9 @@ class TerminalDescriptor:
 
 def _root_lookup(text: str, at_start: bool, terminal: str) -> str:
     """ Look up the root of a word that isn't found in the cache """
-    mm: Optional[BIN_Meaning] = None
-    with BIN_Db.get_db() as bin_db:
-        w, m = bin_db.lookup_word(text, at_start)
+    mm: Optional[BIN_Tuple] = None
+    with GreynirBin.get_db() as bin_db:
+        w, m = bin_db.lookup_g(text, at_start)
     if m:
         # Find the meaning that matches the terminal
         td = TerminalNode._TD[terminal]
@@ -788,7 +788,7 @@ class TerminalNode(Node):
             # Not found in cache: make a new one
             td = TerminalDescriptor(terminal)
             self._TD[terminal] = td
-        self.td = td  # type: TerminalDescriptor
+        self.td: TerminalDescriptor = td
         self.token = token
         self._text = token[1:-1]  # Cut off quotes
         self._at_start = at_start
@@ -802,7 +802,7 @@ class TerminalNode(Node):
         # Auxiliary information, originally from token.t2 (JSON string)
         self.aux = aux
         # Cached auxiliary information, as a Python object decoded from JSON
-        self._aux = None  # type: Optional[List[Any]]
+        self._aux: Optional[List[Any]] = None
         # Cache the root form of this word so that it is only looked up
         # once, even if multiple processors scan this tree
         self.root_cache: Optional[str] = None
@@ -875,7 +875,7 @@ class TerminalNode(Node):
             self._aux = json.loads(self.aux)
         return cast(int, self._aux)
 
-    def _root(self, bin_db: BIN_Db) -> str:
+    def _root(self, bin_db: GreynirBin) -> str:
         """ Look up the root of the word associated with this terminal """
         # Lookup the token in the BIN database
         if (not self.is_word) or self.is_literal:
@@ -889,16 +889,18 @@ class TerminalNode(Node):
             return self.text
         return self._root_cache, (self.text, self._at_start, self.td.terminal)
 
-    def lookup_alternative(self, bin_db: BIN_Db, replace_func, sort_func=None) -> str:
+    def lookup_alternative(
+        self, bin_db: GreynirBin, replace_func, sort_func=None
+    ) -> str:
         """ Return a different (but always nominative case) word form, if available,
             by altering the beyging spec via the given replace_func function """
-        w, m = bin_db.lookup_word(self.text, self._at_start)
+        w, m = bin_db.lookup_g(self.text, self._at_start)
         if m:
             # Narrow the meanings down to those that are compatible with the terminal
             m = [x for x in m if self.td._bin_filter(x)]
         if m:
             # Look up the distinct roots of the word
-            result = []
+            result: List[BinMeaning] = []
             for x in m:
 
                 # Calculate a new 'beyging' string with the nominative case
@@ -906,7 +908,11 @@ class TerminalNode(Node):
 
                 if beyging is x.beyging:
                     # No replacement made: word form is identical in the nominative case
-                    result.append(x)
+                    result.append(
+                        make_bin_entry(
+                            x.stofn, x.utg, x.ordfl, x.fl, x.ordmynd, x.beyging
+                        )
+                    )
                 else:
                     # Lookup the same word (identified by 'utg') but a different declination
                     parts = x.ordmynd.split("-")
@@ -915,21 +921,23 @@ class TerminalNode(Node):
                     # Go through all nominative forms of this word form until we
                     # find one that matches the meaning ('beyging') that we're
                     # looking for. It also must be the same word category and
-                    # the same stem and identifier ('utg'). In fact the 'utg' check
-                    # alone should be sufficient, but better safe than sorry.
+                    # have the same lemma. Additionally, if this is not a composite
+                    # word, the identifier ('utg') should match.
                     # Note: this call is cached
                     n = bin_db.lookup_raw_nominative(parts[-1])
                     r = [
                         nm
                         for nm in n
-                        if nm.stofn == stofn
-                        and nm.ordfl == x.ordfl
-                        and nm.utg == x.utg
-                        and nm.beyging == beyging
+                        if nm.ord == stofn
+                        and nm.ofl == x.ordfl
+                        and (prefix != "" or nm.bin_id == x.utg)
+                        and nm.mark == beyging
                     ]
                     if prefix:
                         # Add the word prefix again in front, if any
-                        result += bin_db.prefix_meanings(r, prefix)
+                        result += bin_db._prefix_meanings(
+                            r, prefix, make_bin_entry, insert_hyphen=False
+                        )
                     else:
                         result += r
             if result:
@@ -938,10 +946,10 @@ class TerminalNode(Node):
                     result.sort(key=sort_func)
                 # There can be more than one word form that matches our spec.
                 # We can't choose between them so we simply return the first one.
-                w = result[0].ordmynd
-        return w.replace("-", "")
+                w = result[0].bmynd
+        return w
 
-    def _nominative(self, bin_db: BIN_Db) -> str:
+    def _nominative(self, bin_db: GreynirBin) -> str:
         """ Look up the nominative form of the word associated with this terminal """
         # Lookup the token in the BIN database
         if (not self.is_word) or self.td.case_nf or not self.is_declinable:
@@ -957,9 +965,9 @@ class TerminalNode(Node):
                     return b.replace(case, by_case)
             return b
 
-        def sort_by_gr(m: BIN_Meaning) -> int:
+        def sort_by_gr(m: BinMeaning) -> int:
             """ Sort meanings having a definite article (greinir) after those that do not """
-            return 1 if "gr" in m.beyging else 0
+            return 1 if "gr" in m.mark else 0
 
         # If this terminal doesn't have a 'gr' variant, prefer meanings in nominative
         # case that do not include 'gr'
@@ -976,7 +984,7 @@ class TerminalNode(Node):
             w = w[0].upper() + w[1:]
         return w
 
-    def _indefinite(self, bin_db: BIN_Db) -> str:
+    def _indefinite(self, bin_db: GreynirBin) -> str:
         """ Look up the indefinite nominative form of a noun
             or adjective associated with this terminal """
         # Lookup the token in the BIN database
@@ -1013,7 +1021,7 @@ class TerminalNode(Node):
         w = self.lookup_alternative(bin_db, replace_beyging)
         return w
 
-    def _canonical(self, bin_db: BIN_Db) -> str:
+    def _canonical(self, bin_db: GreynirBin) -> str:
         """ Look up the singular indefinite nominative form of a noun
             or adjective associated with this terminal """
         # Lookup the token in the BIN database
@@ -1155,7 +1163,7 @@ class PersonNode(TerminalNode):
             if (gender is None or g == gender) and (case is None or c == case)
         ]
 
-    def _root(self, bin_db: BIN_Db) -> str:
+    def _root(self, bin_db: GreynirBin) -> str:
         """ Calculate the root (canonical) form of this person name """
         # If we already have a full name coming from the tokenizer, use it
         # (full name meaning that it includes the patronym/matronym even
@@ -1174,7 +1182,7 @@ class PersonNode(TerminalNode):
         at_start = self._at_start
         name = []
         for part in self.text.split(" "):
-            w, m = bin_db.lookup_word(part, at_start)
+            w, m = bin_db.lookup_g(part, at_start)
             at_start = False
             if m:
                 m = [
@@ -1193,15 +1201,15 @@ class PersonNode(TerminalNode):
             name.append(w.replace("-", ""))
         return " ".join(name)
 
-    def _nominative(self, bin_db: BIN_Db) -> str:
+    def _nominative(self, bin_db: GreynirBin) -> str:
         """ The nominative is identical to the root """
         return self._root(bin_db)
 
-    def _indefinite(self, bin_db: BIN_Db) -> str:
+    def _indefinite(self, bin_db: GreynirBin) -> str:
         """ The indefinite is identical to the nominative """
         return self._nominative(bin_db)
 
-    def _canonical(self, bin_db: BIN_Db) -> str:
+    def _canonical(self, bin_db: GreynirBin) -> str:
         """ The canonical is identical to the nominative """
         return self._nominative(bin_db)
 
@@ -1361,7 +1369,7 @@ class TreeBase:
     ) -> Iterator[Tuple[int, SimpleTree]]:
         """ Generate simple trees out of the sentences in this tree """
         # Hack to allow nodes to access the BIN database
-        with BIN_Db.get_db() as bin_db:
+        with GreynirBin.get_db() as bin_db:
             state = dict(bin_db=bin_db)
             for ix, sent in self.s.items():
                 if sent is not None:
@@ -1585,7 +1593,7 @@ class Tree(TreeBase):
             getattr(processor, "default", None) if processor else None,
         )
 
-        with BIN_Db.get_db() as bin_db:
+        with GreynirBin.get_db() as bin_db:
 
             state: TreeStateDict = {
                 "session": session,

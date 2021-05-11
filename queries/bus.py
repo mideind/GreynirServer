@@ -45,7 +45,7 @@ from datetime import datetime
 import random
 
 import query
-from query import AnswerTuple, Query, ResponseType, Session
+from query import AnswerTuple, Query, QueryStateDict, ResponseType, Session
 from tree import Result
 from queries import natlang_seq, numbers_to_neutral, cap_first, gen_answer
 from settings import Settings
@@ -591,7 +591,7 @@ def QBusNumberWord(node, params, result):
 # End of grammar nonterminal handlers
 
 
-def _meaning_filter_func(mm):
+def _filter_func(mm):
     """Filter word meanings when casting bus stop names
     to cases other than nominative"""
     # Handle secondary and ternary forms (ÞFFT2, ÞGFET3...)
@@ -611,14 +611,14 @@ def _meaning_filter_func(mm):
 def to_accusative(np: str) -> str:
     """ Return the noun phrase after casting it from nominative to accusative case """
     np = straeto.BusStop.voice(np)
-    return query.to_accusative(np, meaning_filter_func=_meaning_filter_func)
+    return query.to_accusative(np, filter_func=_filter_func)
 
 
 @lru_cache(maxsize=None)
 def to_dative(np: str) -> str:
     """ Return the noun phrase after casting it from nominative to dative case """
     np = straeto.BusStop.voice(np)
-    return query.to_dative(np, meaning_filter_func=_meaning_filter_func)
+    return query.to_dative(np, filter_func=_filter_func)
 
 
 def voice_distance(d):
@@ -1007,7 +1007,7 @@ _QFUNC = {
 # tree for a query sentence that is handled in this module
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result:

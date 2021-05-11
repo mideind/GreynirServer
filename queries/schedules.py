@@ -35,8 +35,9 @@ import logging
 import random
 from datetime import datetime, timedelta
 
-from query import Query
+from query import Query, QueryStateDict
 from queries import query_json_api, query_xml_api, gen_answer
+from tree import Result
 
 
 _SCHEDULES_QTYPE = "Schedule"
@@ -334,7 +335,7 @@ _HANDLER_MAP = {
 }
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     handler_keys = _HANDLER_MAP.keys()

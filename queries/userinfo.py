@@ -29,7 +29,7 @@ from typing import Dict, Match, Optional, cast
 import re
 
 from reynir import NounPhrase
-from reynir.bindb import BIN_Db
+from reynir.bindb import GreynirBin
 
 from geo import icelandic_addr_info, iceprep_for_placename, iceprep_for_street
 from query import ClientDataDict, Query
@@ -152,7 +152,7 @@ def _mynameis_handler(q: Query, ql: str) -> bool:
             return True
 
         # Get first name, look up gender for a gender-tailored response
-        with BIN_Db.get_db() as bdb:
+        with GreynirBin.get_db() as bdb:
             fn = components[0].title()
             gender = bdb.lookup_name_gender(fn) or "hk"
             resp = _MY_NAME_IS_RESPONSES[gender]

@@ -80,6 +80,9 @@ from datetime import datetime
 
 from db.models import Person
 
+from query import QueryStateDict
+from tree import Result
+
 
 MODULE_NAME = __name__
 PROCESSOR_TYPE = "tree"
@@ -195,7 +198,7 @@ def article_end(state):
     pass
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called at the end of sentence processing """
 
     session = state["session"]  # Database session

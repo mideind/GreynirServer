@@ -45,6 +45,9 @@
 
 from datetime import datetime
 
+from query import QueryStateDict
+from tree import Result
+
 # from scraperdb import Attribute
 
 
@@ -59,6 +62,7 @@ def article_begin(state):
     # url = state["url"] # URL of the article being processed
     # Delete all existing attributes for this article
     # session.execute(Attribute.table().delete().where(Attribute.article_url == url))
+    pass
 
 
 def article_end(state):
@@ -66,17 +70,17 @@ def article_end(state):
     pass
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called at the end of sentence processing """
 
     session = state["session"]  # Database session
     url = state["url"]  # URL of the article being processed
 
+    _ = """
     if "attribs" in result:
-        # Attributes where found
+        # Attributes were found
         for a in result.attribs:
             # print("Attribute: '{0}'".format(attrib))
-            _ = """
             attrib = Attribute(
                 article_url = url,
                 obj = a.obj,
@@ -88,7 +92,7 @@ def sentence(state, result):
                 timestamp = datetime.utcnow()
             )
             session.add(attrib)
-            """
+    """
 
 
 # Below are functions that have names corresponding to grammar nonterminals.

@@ -259,7 +259,7 @@ def _gen_num_people_answer(q) -> bool:
         q.set_key("NumPeople")
         q.set_qtype(_STATS_QTYPE)
 
-        return True
+    return True
 
 
 _QUERIES_PERIOD = 30  # days
@@ -286,7 +286,7 @@ def _gen_num_queries_answer(q: Query) -> bool:
         q.set_answer(response, answer, voice)
         q.set_qtype(_STATS_QTYPE)
 
-        return True
+    return True
 
 
 _QTYPE_TO_DESC = {
@@ -346,7 +346,7 @@ def _gen_most_freq_queries_answer(q: Query) -> bool:
         q.set_qtype(_STATS_QTYPE)
         q.set_key("FreqQuery")
 
-        return True
+    return True
 
 
 _MOST_MENTIONED_COUNT = 3  # Individuals
@@ -365,7 +365,7 @@ def _gen_most_mentioned_answer(q) -> bool:
         q.set_answer(*gen_answer("Engar manneskjur fundust í gagnagrunni"))
         return True
 
-    answer = natlang_seq([t.get("name") for t in top])
+    answer = natlang_seq([t["name"] for t in top if "name" in t])
     response = dict(answer=answer)
     voice = "Umtöluðustu einstaklingar síðustu daga eru {0}.".format(answer)
 

@@ -38,9 +38,12 @@ import re
 import logging
 from datetime import datetime, timedelta
 
+from tokenizer.definitions import BIN_Tuple
+from islenska.bindb import BinEntryIterable, BinEntryList
+from reynir.bindb import GreynirBin
+
 from query import Query, AnswerTuple
 from queries import gen_answer, icequote
-from reynir.bindb import BIN_Db
 
 
 # Spell out how character names are pronounced in Icelandic
@@ -132,16 +135,16 @@ _DECLENSION_RX = (
 
 def lookup_best_word(word: str) -> Optional[Tuple[str, str, str, str]]:
     """ Look up word in BÍN, pick right one acc. to a criterion. """
-    with BIN_Db().get_db() as db:
+    with GreynirBin().get_db() as db:
 
-        def nouns_only(bin_meaning):
+        def nouns_only(bin_meaning: BIN_Tuple) -> bool:
             return bin_meaning.ordfl in ("kk", "kvk", "hk")
 
-        res = list(filter(nouns_only, db.lookup_nominative(word)))
+        res = list(filter(nouns_only, db.lookup_nominative_g(word)))
         if not res:
             # Try with uppercase first char
             capw = word.capitalize()
-            res = list(filter(nouns_only, db.lookup_nominative(capw)))
+            res = list(filter(nouns_only, db.lookup_nominative_g(capw)))
             if not res:
                 return None
 
@@ -154,20 +157,20 @@ def lookup_best_word(word: str) -> Optional[Tuple[str, str, str, str]]:
 
         wid = m.utg
 
-        # TODO: If more than one declesion form possible (e.g. gen. björns vs. bjarnar)
+        # TODO: If more than one declension form possible (e.g. gen. björns vs. bjarnar)
         # we should also list such variations
-        def sort_by_preference(m_list):
+        def sort_by_preference(m_list: BinEntryIterable) -> BinEntryList:
             # Filter out words that don't have the same "utg" i.e. word ID as
             # the one we successfully looked up in BÍN
-            mns = list(filter(lambda w: w.utg == wid, m_list))
+            mns = list(filter(lambda w: w.bin_id == wid, m_list))
             # Discourage rarer declension forms, i.e. ÞGF2 and ÞGF3
-            return sorted(mns, key=lambda m: "2" in m.beyging or "3" in m.beyging)
+            return sorted(mns, key=lambda m: "2" in m.mark or "3" in m.mark)
 
         # Look up all cases of the word in BÍN
         nom = m.stofn
-        acc = db.cast_to_accusative(nom, meaning_filter_func=sort_by_preference)
-        dat = db.cast_to_dative(nom, meaning_filter_func=sort_by_preference)
-        gen = db.cast_to_genitive(nom, meaning_filter_func=sort_by_preference)
+        acc = db.cast_to_accusative(nom, filter_func=sort_by_preference)
+        dat = db.cast_to_dative(nom, filter_func=sort_by_preference)
+        gen = db.cast_to_genitive(nom, filter_func=sort_by_preference)
         return nom, acc, dat, gen
 
 

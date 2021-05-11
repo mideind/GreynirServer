@@ -27,10 +27,10 @@ from typing import List
 
 import logging
 
-from reynir.bindb import BIN_Db
+from reynir.bindb import GreynirBin
 
-from query import Query, ContextDict
-from tree import ResultType
+from query import Query, ContextDict, QueryStateDict
+from tree import Result
 
 from . import query_json_api, gen_answer, cap_first, icequote
 
@@ -133,12 +133,12 @@ def _clean4voice(s: str) -> str:
     return s
 
 
-def _answer_dictionary_query(q: Query, result: ResultType):
+def _answer_dictionary_query(q: Query, result: Result):
     """ Answer query of the form "hver er orðabókaskilgreiningin á X?" """
     # TODO: Note, here we are taking only the first word of a potential noun phrase
     # containing multiple words. This will have to do for now but can be improved.
-    word = result.qkey.split()[0].lower()
     wnat = result.qkey
+    word = wnat.split()[0].lower()
     url = _WORD_SEARCH_URL.format(word)
 
     # Search for word via islenskordabok REST API
@@ -217,7 +217,7 @@ def _answer_dictionary_query(q: Query, result: ResultType):
     q.set_source(_DICT_SOURCE)
 
 
-def sentence(state: ContextDict, result: ResultType):
+def sentence(state: QueryStateDict, result: Result):
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:

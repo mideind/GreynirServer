@@ -26,8 +26,9 @@
 
 from datetime import datetime, timedelta
 
-from query import Query
+from query import Query, QueryStateDict
 from queries import gen_answer
+from tree import Result
 
 
 _OPINION_QTYPE = "Opinion"
@@ -87,7 +88,7 @@ def QOpinionSubject(node, params, result):
     result["subject_nom"] = result._nominative
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
 
@@ -96,7 +97,7 @@ def sentence(state, result):
         return
 
     # OK, we've successfully matched a query type
-    subj = result["subject_nom"]
+    subj: str = result["subject_nom"]
     answer = "Ég hef enga sérstaka skoðun í þeim efnum."
     q.set_answer(*gen_answer(answer))
     q.set_qtype(_OPINION_QTYPE)

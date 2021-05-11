@@ -27,7 +27,7 @@ from typing import Any, Tuple, Optional, cast
 import re
 import logging
 
-from query import Query
+from query import Query, QueryStateDict
 from queries import (
     gen_answer,
     query_geocode_api_coords,
@@ -36,6 +36,7 @@ from queries import (
     numbers_to_neutral,
     cap_first,
 )
+from tree import Result
 from iceaddr import iceaddr_lookup, postcodes  # type: ignore
 from geo import iceprep_for_placename, iceprep_for_street
 
@@ -307,7 +308,7 @@ def answer_for_postcode(loc: Tuple):
         return gen_answer("Ég veit ekki í hvaða póstnúmeri þú ert.")
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:

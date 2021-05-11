@@ -33,8 +33,9 @@ import logging
 import cachetools  # type: ignore
 import random
 
-from query import Query
+from query import Query, QueryStateDict
 from queries import gen_answer, query_json_api
+from tree import Result
 
 
 _NEWS_QTYPE = "News"
@@ -153,7 +154,7 @@ def top_news_answer():
     return response, answer, voice
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result:

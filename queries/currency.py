@@ -33,9 +33,10 @@ import cachetools  # type: ignore
 import random
 import logging
 
-from query import Query
+from query import Query, QueryStateDict
 from queries import query_json_api, iceformat_float, is_plural
 from settings import Settings
+from tree import Result
 
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
@@ -66,7 +67,7 @@ def help_text(lemma: str) -> str:
         random.choice(
             (
                 "Hvert er gengi dollarans",
-                "Hvert er gengu evru gagnvart dollara",
+                "Hvert er gengi evru gagnvart dollara",
                 "Hvað eru tíu þúsund krónur margar evrur",
                 "Hvað er einn dollari margar krónur",
                 "Hvað eru sextán hundruð krónur mikið í evrum",
@@ -480,7 +481,7 @@ def _query_exchange_rate(curr1: str, curr2: str) -> Optional[float]:
     return None
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result and "op" in result:

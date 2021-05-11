@@ -67,9 +67,9 @@ from datetime import datetime, timedelta
 from pytz import timezone
 from calendar import monthrange, isleap
 
-from tree import Result
-from query import Query
+from query import Query, QueryStateDict
 from queries import timezone4loc, gen_answer, is_plural, cap_first
+from tree import Result
 from settings import changedlocale
 
 
@@ -908,7 +908,7 @@ _Q2FN_MAP = [
 ]
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" not in result:

@@ -606,7 +606,7 @@ class NgramTagger:
                     # For tokens except words, entities and punctuation, include the val field
                     if t.kind == TOK.PERSON:
                         d["v"], d["g"] = TreeUtility.choose_full_name(
-                            t.val, case=None, gender=None
+                            t.person_names, case=None, gender=None
                         )
                     else:
                         d["v"] = t.val

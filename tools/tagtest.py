@@ -38,7 +38,7 @@ if basepath.endswith(_TOOLS):
     basepath = basepath[0:-len(_TOOLS)]
     sys.path.append(basepath)
 
-from bindb import BIN_Db
+from bindb import GreynirBin
 from settings import Settings, ConfigError
 from tokenizer import tokenize, TOK
 from db import SessionContext, desc
@@ -247,4 +247,4 @@ if __name__ == "__main__":
         with timeit("test_tagger()"):
             test_tagger()
     finally:
-        BIN_Db.cleanup()
+        GreynirBin.cleanup()

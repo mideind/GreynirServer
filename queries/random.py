@@ -28,9 +28,10 @@
 import logging
 import random
 
-from query import Query
+from query import Query, QueryStateDict
 from queries import gen_answer
 from queries.arithmetic import add_num, terminal_num
+from tree import Result
 
 
 _RANDOM_QTYPE = "Random"
@@ -179,7 +180,7 @@ def heads_or_tails(q: Query, result):
     return gen_answer(random.choice(("Skjaldarmerki", "Fiskur")))
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" not in result:

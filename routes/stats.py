@@ -21,7 +21,7 @@
 
 """
 
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from . import routes, max_age, cache
 
@@ -40,7 +40,7 @@ from db.queries import (
     BestAuthorsQuery,
     QueriesQuery,
 )
-from reynir.bindb import BIN_Db
+from reynir.bindb import GreynirBin
 
 
 # Days
@@ -65,11 +65,11 @@ _SOURCE_ROOT_COLORS = {
 }
 
 
-def chart_stats(session=None, num_days=7):
+def chart_stats(session=None, num_days: int=7) -> Dict[str, Any]:
     """ Return scraping and parsing stats for charts """
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     labels = []
-    sources = {}  # type: Dict[str, List[int]]
+    sources: Dict[str, List[int]] = {}
     parsed_data = []
     query_data = []
 
@@ -140,7 +140,7 @@ def top_authors(days=_TOP_AUTHORS_PERIOD, session=None):
     )[:20]
 
     authresult = list()
-    with BIN_Db.get_db() as bindb:
+    with GreynirBin.get_db() as bindb:
         for a in authors:
             name = a[0]
             gender = bindb.lookup_name_gender(name)
@@ -164,6 +164,8 @@ def stats():
         )
     except Exception:
         pass
+
+    chart_data: Dict[str, Any] = dict()
 
     with SessionContext(read_only=True) as session:
 

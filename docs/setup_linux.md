@@ -20,18 +20,21 @@ sudo locale-gen is_IS.UTF-8
 sudo update-locale
 ```
 
-NB: If PostgreSQL is already running, it needs to be restarted:
+NB: If PostgreSQL is already running on your machine, it needs to be restarted:
 
 ```
 sudo systemctl restart postgresql
 ```
+
+See below for instructions on installing PostgreSQL client libraries.
 
 ## Set up Python virtualenv
 
 Install Python 3 and other packages required by Greynir:
 
 ```
-sudo apt-get install python3 libgeos-dev
+sudo apt-get install python3
+sudo apt-get install libgeos-dev libpq-dev
 ```
 
 Make sure you have the latest version of `pip` and `virtualenv`.
@@ -59,7 +62,16 @@ tar --strip-components=1 -xvf pypy3.6-v7.3.1-linux64.tar.bz2
 
 The PyPy binary should now be installed in `~/pypy/bin/pypy3`.
 
-Check out the Greynir repo:
+Speaking of PyPy, if you try to run Greynir and get an error message saying that
+the library `libgeos_c.so` cannot be loaded, you may need a symlink from your
+`pypy/lib` directory to the `libgeos_c.so` file. Something like this:
+
+```bash
+cd ~/pypy/lib
+ln -s /usr/lib/x86_64-linux-gnu/libgeos_c.so .
+```
+
+Now, check out the Greynir repo:
 
 ```
 cd ~

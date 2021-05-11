@@ -43,6 +43,7 @@ import time
 from collections import namedtuple
 
 from sqlalchemy.orm.session import Session
+from tokenizer.definitions import PersonNameList, PersonNameTuple
 
 from nertokenizer import recognize_entities
 
@@ -50,7 +51,7 @@ from reynir import TOK, Tok, mark_paragraphs, tokenize
 from reynir.binparser import (
     BIN_Parser,
     BIN_Terminal,
-    BIN_Meaning,
+    BIN_Tuple,
     CanonicalTokenDict,
     augment_terminal,
     describe_token,
@@ -190,12 +191,12 @@ class TreeUtility:
 
     @staticmethod
     def choose_full_name(
-        val: Sequence[Tuple[str, str, str]], case: Optional[str], gender: Optional[str]
+        val: PersonNameList, case: Optional[str], gender: Optional[str]
     ) -> Tuple[str, str]:
         """ From a list of name possibilities in val, and given a case and a gender
             (which may be None), return the best matching full name and gender """
         fn_list = [
-            (fn, g, c)
+            PersonNameTuple(fn, g, c)
             for fn, g, c in val
             if (gender is None or g == gender) and (case is None or c == case)
         ]
@@ -204,7 +205,7 @@ class TreeUtility:
             # Try nominative if it wasn't already tried
             if case is not None and case != "nf":
                 fn_list = [
-                    (fn, g, c)
+                    PersonNameTuple(fn, g, c)
                     for fn, g, c in val
                     if (gender is None or g == gender) and (case == "nf")
                 ]
@@ -218,11 +219,11 @@ class TreeUtility:
         # If there are many choices, select the nominative case,
         # or the first element as a last resort
         ft = next((fn for fn in fn_list if fn[2] == "nf"), fn_list[0])
-        return ft[0], ft[1] if gender is None else gender
+        return ft[0], (ft[1] if gender is None else gender) or "hk"
 
     @staticmethod
     def _word_tuple(
-        t: Tok, terminal: Optional[BIN_Terminal], meaning: Optional[BIN_Meaning]
+        t: Tok, terminal: Optional[BIN_Terminal], meaning: Optional[BIN_Tuple]
     ) -> Optional[WordTuple]:
         """ Return a WordTuple describing the token t, matching the
             given terminal with the given meaning  """
@@ -254,7 +255,7 @@ class TreeUtility:
                     gender = None
                 if terminal.num_variants >= 2:
                     case = terminal.variant(-2)
-            name, gender = TreeUtility.choose_full_name(t.val, case, gender)
+            name, gender = TreeUtility.choose_full_name(t.person_names, case, gender)
             # In any case, add a separate gender indicator field for convenience
             wt = WordTuple(stem=name, cat="person_" + gender)
         return wt

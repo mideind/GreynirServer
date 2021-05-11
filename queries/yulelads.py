@@ -28,7 +28,8 @@
 import random
 from datetime import datetime
 
-from query import Query
+from query import Query, QueryStateDict
+from tree import Result
 
 
 def help_text(lemma: str) -> str:
@@ -451,7 +452,7 @@ def QYuleDateRel(node, params, result):
         result.invalid_date = True
 
 
-def sentence(state, result):
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" not in result:

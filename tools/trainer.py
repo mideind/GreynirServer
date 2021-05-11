@@ -39,7 +39,7 @@ if basepath.endswith(_TOOLS):
     basepath = basepath[0:-len(_TOOLS)]
     sys.path.append(basepath)
 
-from bindb import BIN_Db
+from bindb import GreynirBin
 from settings import Settings, ConfigError
 from article import Article
 from postagger import IFD_Corpus, IFD_Tagset
@@ -100,4 +100,4 @@ if __name__ == "__main__":
         with timeit("Training session"):
             train_tagger()
     finally:
-        BIN_Db.cleanup()
+        GreynirBin.cleanup()

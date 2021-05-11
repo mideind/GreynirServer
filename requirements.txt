@@ -6,7 +6,7 @@ greenlet>=0.4.17
 eventlet==0.31.0
 psycopg2cffi==2.9.0
 requests==2.25.1
-reynir>=3.0.0
+reynir>=3.0.1
 reynir-correct>=3.0.1
 SQLAlchemy==1.4.15
 iceaddr>=0.5.1

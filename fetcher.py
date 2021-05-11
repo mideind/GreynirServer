@@ -23,7 +23,7 @@
 
 """
 
-from typing import Any, Dict, Iterator, Optional, cast
+from typing import Any, Dict, Iterator, Optional, Tuple, cast
 from types import ModuleType
 
 import re
@@ -367,6 +367,7 @@ class Fetcher:
         cls, url: str, enclosing_session: Optional[Session] = None
     ) -> Optional[ArticleRow]:
         """ Return a scraped article object, if found, else None """
+        article = None
         with SessionContext(enclosing_session, commit=True) as session:
             article = (
                 session.query(ArticleRow)
@@ -442,9 +443,11 @@ class Fetcher:
             return (metadata, content)
 
     @classmethod
-    def fetch_url_html(cls, url, enclosing_session=None):
+    def fetch_url_html(cls, url: str, enclosing_session: Optional[Session]=None) -> Tuple[Optional[str], Any, Any]:
         """ Fetch a URL using the scraping mechanism, returning
             a tuple (html, metadata, helper) or None if error """
+
+        html_doc, metadata, helper = None, None, None
 
         with SessionContext(enclosing_session) as session:
 
@@ -468,4 +471,5 @@ class Fetcher:
 
             # Obtain the metadata from the resulting soup
             metadata = cast(Any, helper).get_metadata(soup) if helper else None
-            return (html_doc, metadata, helper)
+
+        return (html_doc, metadata, helper)

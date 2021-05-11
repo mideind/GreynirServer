@@ -21,7 +21,7 @@
 
 """
 
-from typing import Dict, Tuple, cast, Counter as CounterType
+from typing import Any, Dict, List, Tuple, cast, Counter as CounterType
 
 from . import routes, max_age, cache, restricted, days_from_period_arg
 
@@ -39,7 +39,7 @@ from db import SessionContext, desc
 from db.models import Person, Article, Root, Word, Column
 
 from reynir import correct_spaces
-from reynir.bindb import BIN_Db
+from reynir.bindb import GreynirBin
 
 
 # Default number of persons to show in /people
@@ -53,7 +53,7 @@ _TOP_PERSONS_PERIOD = 1  # in days
 
 def recent_persons(limit=_RECENT_PERSONS_LENGTH):
     """ Return a list of names and titles appearing recently in the news """
-    toplist = dict()  # type: Dict[str, Tuple[str, str, str, str]]
+    toplist: Dict[str, Tuple[str, str, str, str]] = dict()
 
     with SessionContext(read_only=True) as session:
 
@@ -78,7 +78,7 @@ def recent_persons(limit=_RECENT_PERSONS_LENGTH):
             # Otherwise, longer is better
             return len_new > len_old
 
-        with BIN_Db.get_db() as bindb:
+        with GreynirBin.get_db() as bindb:
             for p in q:
                 # Insert the name into the list if it's not already there,
                 # or if the new title is longer than the previous one
@@ -106,8 +106,12 @@ def recent_persons(limit=_RECENT_PERSONS_LENGTH):
         )
 
 
-def top_persons(limit=_TOP_PERSONS_LENGTH, days=_TOP_PERSONS_PERIOD):
+def top_persons(
+    limit: int = _TOP_PERSONS_LENGTH, days: int = _TOP_PERSONS_PERIOD
+) -> List[Dict[str, Any]]:
     """ Return a list of person names appearing most frequently in recent articles. """
+    personlist: List[Dict[str, Any]] = []
+
     with SessionContext(read_only=True) as session:
         q = (
             session.query(
@@ -139,7 +143,6 @@ def top_persons(limit=_TOP_PERSONS_LENGTH, days=_TOP_PERSONS_PERIOD):
             k = (r.stem, gender)
             persons[k].append(article)
 
-        personlist = []
         for k, v in persons.items():
             (name, gender) = k  # Unpack tuple key
             personlist.append({"name": name, "gender": gender, "articles": v})
@@ -165,7 +168,7 @@ def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
         res = q.all()
 
         # Count number of occurrences of each name
-        cnt = Counter()  # type: CounterType[str]
+        cnt: CounterType[str] = Counter()
         for name, _, _ in res:
             cnt[name] += 1
 
@@ -179,7 +182,7 @@ def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
                 articles[art_id].add(name)
 
         # Find all links
-        nlinks = defaultdict(int)  # type: Dict[Tuple[int, int], int]
+        nlinks: Dict[Tuple[int, int], int] = defaultdict(int)
         for _, persons in articles.items():
             if len(persons) < 2:
                 # We need at least two names to establish link
