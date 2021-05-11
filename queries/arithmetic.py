@@ -23,6 +23,8 @@
 
 """
 
+# TODO: Hvað er X með Y aukastöfum?
+
 from typing import Dict, Any, Mapping, Optional, Sequence, cast
 
 import math
