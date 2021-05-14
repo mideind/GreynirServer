@@ -227,7 +227,8 @@ See [Contributing to Greynir](CONTRIBUTING.md).
 Greynir is Copyright (C) 2021 [Miðeind ehf.](https://mideind.is)
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
-<img src="static/img/GPLv3.png" align="right" style="margin-left:20px;">
+<a href="https://mideind.is"><img src="static/img/mideind-horizontal-small.png" alt="Miðeind ehf." 
+    width="214" height="66" align="right" style="margin-left:20px; margin-bottom: 20px;"></a>
 
 This set of programs is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free
@@ -237,6 +238,8 @@ version.
 This set of programs is distributed in the hope that it will be useful, but WITHOUT
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+<img src="static/img/GPLv3.png" align="right" style="margin-left:20px;">
 
 The full text of the GNU General Public License v3 is
 [included here](https://github.com/mideind/Greynir/blob/master/LICENSE.txt)
@@ -258,3 +261,7 @@ BÍN is licensed under CC-BY-4.0, and credit is hereby given as follows:
 
 *Beygingarlýsing íslensks nútímamáls. Stofnun Árna Magnússonar í íslenskum fræðum. Höfundur og ritstjóri Kristín Bjarnadóttir.*
 
+----
+
+The Greynir web interface uses map data from [OpenStreetMap](https://www.openstreetmap.org),
+[Google](https://maps.google.com) and [Wikipedia](https://is.wikipedia.org).
