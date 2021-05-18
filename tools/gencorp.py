@@ -53,9 +53,10 @@ from tree import Tree
 from annotald.reynir_utils import simpleTree2NLTK
 from annotald.annotree import AnnoTree
 
+from tokenizer import definitions
 
 # Min num tokens in sentence
-MIN_SENT_LENGTH = 3
+MIN_SENT_LENGTH = 5
 
 # Num sentences to batch and shuffle
 # Controls memory usage i.e. how many sentences
@@ -97,9 +98,9 @@ ENGLISH_WORDS = frozenset(
     ]
 )
 
-
 def gen_simple_trees(criteria):
     """ Generate simplified parse trees from articles matching the criteria """
+    bigset = set()
     for a in Article.articles(criteria):
         # Skip articles from certain websites
         if (
@@ -131,7 +132,67 @@ def gen_simple_trees(criteria):
             if wordset & ENGLISH_WORDS:
                 continue
 
+            # Skip sentences that don't contain enough Icelandic words
+            if unicelandic(stree):
+                continue
+
+            # Skip uncapitalized sentences
+            if text[0].islower():
+                continue
+
+            # Skip sentences containing less than 3 word, entity or person tokens combined
+            if len(list([x for x in stree.leaves() if x.kind in [TOK.WORD, TOK.ENTITY, TOK.PERSON]])) < 3:
+                continue
+
+            # Skip sentences with only a single NP -- S0→NP
+            if stree.match("S0 > [NP $]"):
+                continue
+
+            # Skip sentences not containing a VP 
+            if not stree.match("S0 >> VP"):
+                continue
+
+            # Skip sentences not ending in sentence ending punctuation
+            if not text[-1] not in definitions.END_OF_SENTENCE:
+                continue
+
+            # Skip sentence if we have seen an equivalent sentence before
+            hashnorm = hash(normalize(text))
+            if hashnorm in bigset:
+                continue
+            else:
+                bigset.add(hashnorm)
+
             yield stree, tree.score(ix), tree.length(ix), a.uuid, a.url, ix
+
+def unicelandic(sent):
+    # Code mostly copied from annotate() in checker.py in GreynirCorrect
+    words_in_bin = 0
+    words_not_in_bin = 0
+    for ix, t in enumerate(sent.tokens):
+        if t.kind == TOK.WORD:
+            if t.val:
+                words_in_bin += 1
+            else:
+                words_not_in_bin += 1
+        elif t.kind == TOK.PERSON:
+            words_in_bin += 1
+        elif t.kind == TOK.ENTITY:
+            words_not_in_bin += t.txt.count(" ") + 1
+    num_words = words_in_bin + words_not_in_bin
+    if num_words > 2 and words_in_bin / num_words < ICELANDIC_RATIO:
+        return False
+    return True
+
+
+def normalize(text):
+    # Generalize information in sentence to ensure unique sentences in set
+    text = text.lower()
+    for item in definitions.PUNCTUATION:
+        text = text.replace(item, "")
+    for num in "0123456789":
+        text = text.replace(num, "0")
+    text = text.replace(" ", "")
 
 
 def main(num_sent, parse_date_gt, outfile, count):
@@ -167,9 +228,9 @@ def main(num_sent, parse_date_gt, outfile, count):
             "META",
             [
                 AnnoTree("ID-CORPUS", [id_str]),
-                # AnnoTree("ID-LOCAL", [outfile]),
+                AnnoTree("ID-LOCAL", [outfile]),
                 AnnoTree("URL", [aurl]),
-                # AnnoTree("COMMENT", [""]),
+                AnnoTree("COMMENT", [""]),
             ],
         )
         nltk_tree = simpleTree2NLTK(tree)
@@ -215,8 +276,8 @@ if __name__ == "__main__":
         "--num",
         dest="NUM_SENT",
         type=int,
-        help="Number of sentences in corpus (default 7,000,000)",
-        default=7_000_000,
+        help="Number of sentences in corpus (default 1,000,000)",
+        default=1_000_000,
     )
     parser.add_argument(
         "--parse_date_gt",
