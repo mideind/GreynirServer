@@ -117,9 +117,31 @@ def test_query_api(client):
     assert r.is_json
     json = r.get_json()
     assert "valid" in json
-    assert json["valid"]
+    assert json["valid"] == True
     assert "error" in json
     assert "answer" not in json
+
+    # Person and entity title queries are tested using a dummy database
+    # populated with data from SQL file
+
+    # Builtin module: title
+    json = qmcall(c, {"q": "hver er viðar þorsteinsson", "voice": True}, "Person")
+    assert json["voice"].startswith("Viðar Þorsteinsson er ")
+    assert json["voice"].endswith(".")
+
+    # Builtin module: title
+    json = qmcall(c, {"q": "hver er björn þorsteinsson", "voice": True}, "Person")
+    assert json["voice"].startswith("Björn Þorsteinsson er ")
+    assert json["voice"].endswith(".")
+
+    # Builtin module: person
+    json = qmcall(c, {"q": "hver er forsætisráðherra", "voice": True}, "Title")
+    assert json["voice"].startswith("Forsætisráðherra er ")
+    assert json["voice"].endswith(".")
+
+    # Builtin module: person w. title w. uppercase name
+    # json = qmcall(c, {"q": "hver er forstjóri sjóvá", "voice": True}, "Title")
+    # assert json["voice"].startswith("Forstjóri")
 
     # Arithmetic module
     ARITHM_QUERIES = {
@@ -175,24 +197,6 @@ def test_query_api(client):
         c, {"q": "hvað er það sinnum tveir", "client_id": DUMMY_CLIENT_ID}, "Arithmetic"
     )
     assert json["answer"].startswith("6,")
-
-    # Person and entity title queries are tested using a dummy database
-    # populated with data from CSV files stored in tests/test_files/testdb_*.csv
-
-    # Builtin module: title
-    json = qmcall(c, {"q": "hver er viðar þorsteinsson", "voice": True}, "Person")
-    assert json["voice"].startswith("Viðar Þorsteinsson er ")
-    assert json["voice"].endswith(".")
-
-    # Builtin module: title
-    json = qmcall(c, {"q": "hver er björn þorsteinsson", "voice": True}, "Person")
-    assert json["voice"].startswith("Björn Þorsteinsson er ")
-    assert json["voice"].endswith(".")
-
-    # Builtin module: person
-    json = qmcall(c, {"q": "hver er forsætisráðherra", "voice": True}, "Title")
-    assert json["voice"].startswith("Forsætisráðherra er ")
-    assert json["voice"].endswith(".")
 
     # Bus module
     json = qmcall(
