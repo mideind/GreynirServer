@@ -447,7 +447,7 @@ def test_doc():
     os.chdir(dname)
 
     txt = "Þetta er prufa.\n\nLína 1.\n\nLína 2."
-    doc = DocxDocument("test_files/test.docx")
+    doc = DocxDocument("files/test.docx")
     assert doc.extract_text() == txt
 
     # Change back to previous directory
