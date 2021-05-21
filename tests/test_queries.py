@@ -68,7 +68,7 @@ def qmcall(c: FlaskClient, qdict: Dict[str, Any], qtype: Optional[str] = None) -
 
     # private=1 makes sure the query isn't logged. This prevents the tests from
     # populating the local database query logging table. Some tests may rely
-    # on query history, in which case private=0 should be explicitly specified.
+    # on query history, in which case private=False should be explicitly specified.
     if "private" not in qdict:
         qdict["private"] = True
 
@@ -122,7 +122,7 @@ def test_query_api(client):
     assert "answer" not in json
 
     # Person and entity title queries are tested using a dummy database
-    # populated with data from SQL file
+    # populated with data from SQL file in tests/files/
 
     # Builtin module: title
     json = qmcall(c, {"q": "hver er viðar þorsteinsson", "voice": True}, "Person")
@@ -140,8 +140,8 @@ def test_query_api(client):
     assert json["voice"].endswith(".")
 
     # Builtin module: person w. title w. uppercase name
-    # json = qmcall(c, {"q": "hver er forstjóri sjóvá", "voice": True}, "Title")
-    # assert json["voice"].startswith("Forstjóri")
+    json = qmcall(c, {"q": "hver er forstjóri sjóvá", "voice": True}, "Title")
+    assert json["voice"].startswith("Forstjóri") and "Jón Jónsson" in json["voice"]
 
     # Arithmetic module
     ARITHM_QUERIES = {
@@ -172,7 +172,7 @@ def test_query_api(client):
         "reiknaðu 7 sinnum 7": "49",
         "reiknaðu 7 x 7": "49",
         "reiknaðu sjö x 7": "49",
-        "reiknaðu sjö x sjö": "49",
+        "reiknaðu nítján x sjö": "133",
         "geturðu reiknað kvaðratrótina af 9": "3",
         "hvað er 8900 með vaski": "11.036",
         "hvað eru 7500 krónur með virðisaukaskatti": "9.300",
