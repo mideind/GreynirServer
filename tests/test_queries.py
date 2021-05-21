@@ -39,12 +39,12 @@ mainpath = os.path.join(basepath, "..")
 if mainpath not in sys.path:
     sys.path.insert(0, mainpath)
 
-from main import app
+from main import app  # noqa
 
-from settings import changedlocale
-from db import SessionContext
-from db.models import Query, QueryData, QueryLog
-from util import read_api_key
+from settings import changedlocale  # noqa
+from db import SessionContext  # noqa
+from db.models import Query, QueryData  # noqa
+from util import read_api_key  # noqa
 
 
 @pytest.fixture
