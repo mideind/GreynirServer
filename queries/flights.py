@@ -23,7 +23,7 @@
 
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, TypedDict, Dict, Any, Optional
 
 import re
 import random
@@ -250,7 +250,24 @@ _FLIGHT_CACHE: cachetools.TTLCache = cachetools.TTLCache(
 )
 
 # For type checking
-FlightType = Dict[str, Any]
+class FlightType(TypedDict, total=False):
+    No: str
+    Departure: bool
+    HomeAirportIATA: str
+    HomeAirport: str
+    OriginDestIATA: str
+    OriginDest: str
+    DisplayName: str
+    Scheduled: str
+    Estimated: Optional[str]
+    Status: Optional[str]
+    Additional: Optional[str]
+    AltDisplayName: Optional[str]
+    # We add these
+    api_airport: str
+    flight_time: datetime
+
+
 FlightList = List[FlightType]
 
 
@@ -287,8 +304,8 @@ def _attribute_airport_match(flight: FlightType, attribute: str, airport: str) -
     either starts or ends with airport string.
     """
     return isinstance(flight.get(attribute), str) and (
-        flight[attribute].lower().startswith(airport)
-        or flight[attribute].lower().endswith(airport)
+        flight[attribute].lower().startswith(airport)  # type: ignore[misc]
+        or flight[attribute].lower().endswith(airport)  # type: ignore[misc]
     )
 
 
@@ -319,7 +336,7 @@ def _filter_flight_data(
         ):
             # Use estimated time instead of scheduled if available
             if flight.get("Estimated") is not None:
-                flight_time = datetime.fromisoformat(flight["Estimated"])
+                flight_time = datetime.fromisoformat(flight["Estimated"])  # type: ignore[arg-type]
             elif flight.get("Scheduled") is not None:
                 flight_time = datetime.fromisoformat(flight["Scheduled"])
             else:
@@ -331,7 +348,7 @@ def _filter_flight_data(
                 # Create copy of dictionary and
                 # add flight_time and api_airport attributes
                 flight_copy: FlightType = {
-                    **flight,
+                    **flight,  # type: ignore[misc]
                     "flight_time": flight_time,
                     "api_airport": api_airport,
                 }
@@ -366,6 +383,10 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
     voice_lines: List[str] = []
 
     for flight in flights:
+        assert isinstance(flight.get("No"), str)
+        assert isinstance(flight.get("api_airport"), str)
+        assert isinstance(flight.get("flight_time"), datetime)
+
         airport = icelandic_city_name(capitalize_placename(flight["DisplayName"]))
         api_airport = icelandic_city_name(capitalize_placename(flight["api_airport"]))
 
@@ -378,7 +399,10 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
             api_airport = NounPhrase(api_airport).dative or api_airport
 
             # Catch cancelled flights
-            if flight["Status"] and "aflýst" in flight["Status"].lower():
+            if (
+                isinstance(flight.get("Status"), str)
+                and "aflýst" in flight["Status"].lower()  # type: ignore[union-attr]
+            ):
                 line = (
                     f"Flugi {flight['No']} frá {api_airport} til {airport} er aflýst."
                 )
@@ -393,7 +417,10 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
             prep = iceprep_for_placename(api_airport)
             api_airport = NounPhrase(api_airport).dative or api_airport
 
-            if flight["Status"] and "aflýst" in flight["Status"].lower():
+            if (
+                isinstance(flight.get("Status"), str)
+                and "aflýst" in flight["Status"].lower()  # type: ignore[union-attr]
+            ):
                 line = (
                     f"Flugi {flight['No']} frá {airport} til {api_airport} er aflýst."
                 )
