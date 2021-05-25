@@ -301,16 +301,28 @@ def _filter_flight_data(
 
         if (
             airport == "*"
-            or airport in flight["DisplayName"].lower()
             or (
-                flight["AltDisplayName"] and airport in flight["AltDisplayName"].lower()
+                flight.get("DisplayName")
+                and (
+                    flight["DisplayName"].lower().startswith(airport)
+                    or flight["DisplayName"].lower().endswith(airport)
+                )
+            )
+            or (
+                flight.get("AltDisplayName")
+                and (
+                    flight["AltDisplayName"].lower().startswith(airport)
+                    or flight["AltDisplayName"].lower().endswith(airport)
+                )
             )
         ):
             # Use estimated time instead of scheduled if available
-            if flight["Estimated"]:
+            if flight.get("Estimated"):
                 flight_time = datetime.fromisoformat(flight["Estimated"])
-            else:
+            elif flight.get("Scheduled"):
                 flight_time = datetime.fromisoformat(flight["Scheduled"])
+            else:
+                continue  # Failed, no time found
 
             # Make sure flight isn't in the past
             if flight_time and flight_time >= now:
@@ -444,14 +456,18 @@ def _process_result(result: Result) -> Dict[str, str]:
 
     flight_data: FlightList
     # Check first if function result in cache, else fetch data from API
-    flight_data = _FLIGHT_CACHE.get(
-        departing, _fetch_flight_data(from_date, to_date, iata_code, departing)
-    )
+    if departing in _FLIGHT_CACHE:
+        flight_data = _FLIGHT_CACHE[departing]
+    else:
+        flight_data = _fetch_flight_data(from_date, to_date, iata_code, departing)
+
     flight_data = _filter_flight_data(flight_data, airport, api_airport, flight_count)
 
     answ: Dict[str, str] = dict()
     if len(flight_data) > 0:
-        answ = _format_flight_answer(flight_data)
+        # (Format month names in Icelandic)
+        with changedlocale(category="LC_TIME"):
+            answ = _format_flight_answer(flight_data)
     else:
         to_airp: str
         from_airp: str
@@ -491,11 +507,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         and "departure" in result
     ):
         try:
-            with changedlocale(category="LC_TIME"):
-                answ: Dict[str, str] = _process_result(result)
-                q.set_qtype(_FLIGHTS_QTYPE)
-                q.set_answer(answ, answ["answer"], answ["voice"])
-                return
+            answ: Dict[str, str] = _process_result(result)
+            q.set_qtype(_FLIGHTS_QTYPE)
+            q.set_answer(answ, answ["answer"], answ["voice"])
+            return
         except Exception as e:
             logging.warning(
                 "Exception generating answer from flight data: {0}".format(e)
