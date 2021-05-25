@@ -176,22 +176,7 @@ _IATA_TO_AIRPORT_MAP = {
     "vpn": "vopnafjörður",
 }
 
-_AIRPORT_TO_IATA_MAP = {
-    "akureyri": "aey",
-    "bíldudalur": "biu",
-    "egilsstaðir": "egs",
-    "gjögur": "gjr",
-    "grímsey": "gry",
-    "hornafjörður": "hfn",
-    "húsavík": "hzk",
-    "ísafjörður": "ifj",
-    "keflavík": "kef",
-    "reykjavík": "rkv",
-    "sauðárkrókur": "sak",
-    "þórshöfn": "tho",
-    "vestmannaeyjar": "vey",
-    "vopnafjörður": "vpn",
-}
+_AIRPORT_TO_IATA_MAP = {val: key for key, val in _IATA_TO_AIRPORT_MAP.items()}
 
 # Day indices in accusative case
 _DAY_INDEX_ACC = {
@@ -258,12 +243,18 @@ _ISAVIA_FLIGHTS_URL = (
 _FLIGHTS_CACHE_TTL = 600  # seconds, ttl = 10 mins
 
 # Cache for flights either departing or arriving
-_FLIGHT_CACHE = cachetools.TTLCache(maxsize=2, ttl=_FLIGHTS_CACHE_TTL)
+_FLIGHT_CACHE: cachetools.TTLCache = cachetools.TTLCache(
+    maxsize=2, ttl=_FLIGHTS_CACHE_TTL
+)
+
+# For type checking
+FlightType = Dict[str, Any]
+FlightList = List[FlightType]
 
 
 def _fetch_flight_data(
     from_date: datetime, to_date: datetime, iata_code: str, departing: bool
-) -> List[Dict[str, Any]]:
+) -> FlightList:
     """
     Fetch data on flights to/from an Icelandic airport (given with its IATA code)
     between from_date and to_date from Isavia's JSON API.
@@ -289,21 +280,21 @@ def _fetch_flight_data(
 
 
 def _filter_flight_data(
-    flights: List[Dict[str, Any]],
+    flights: FlightList,
     airport: str,
     api_airport: str,
     n: int = 1,
-) -> List[Dict[str, Any]]:
+) -> FlightList:
     """
     Narrows down list of flight data dicts for first n flights to/from the specified airport.
     Adds flight_time and api_airport attributes to matching flights.
     Returns the matching flights in a list.
     """
     flight_time: datetime
-    flight: Dict[str, Any]
+    flight: FlightType
     now: datetime = datetime.now(timezone.utc)  # Timezone aware datetime
 
-    flight_info: List[Dict[str, Any]] = []
+    matching_flights: FlightList = []
     for flight in flights:
         if n <= 0:
             break
@@ -323,20 +314,26 @@ def _filter_flight_data(
 
             # Make sure flight isn't in the past
             if flight_time and flight_time >= now:
-                flight["flight_time"] = flight_time
-                flight["api_airport"] = api_airport
 
-                flight_info.append(flight)
+                # Create copy of dictionary and
+                # add flight_time and api_airport attributes
+                flight_copy: FlightType = {
+                    **flight,
+                    "flight_time": flight_time,
+                    "api_airport": api_airport,
+                }
+
+                matching_flights.append(flight_copy)
                 n -= 1
 
-    return flight_info
+    return matching_flights
 
 
 _BREAK_LENGTH = 0.5  # Seconds
 _BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
 
 
-def _format_flight_answer(flight_info: List[Dict[str, Any]]) -> Dict[str, str]:
+def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
     """
     Takes in a list of flights and returns a dict
     containing a formatted answer and text for a voice line.
@@ -355,7 +352,7 @@ def _format_flight_answer(flight_info: List[Dict[str, Any]]) -> Dict[str, str]:
     answers: List[str] = []
     voice_lines: List[str] = []
 
-    for flight in flight_info:
+    for flight in flights:
         airport = icelandic_city_name(capitalize_placename(flight["DisplayName"]))
         api_airport = icelandic_city_name(capitalize_placename(flight["api_airport"]))
 
@@ -445,7 +442,7 @@ def _process_result(result: Result) -> Dict[str, str]:
     # modifications to the grammar could allow fetching of more flights at once
     flight_count: int = result.get("flight_count", 1)
 
-    flight_data: List[Dict[str, Any]]
+    flight_data: FlightList
     # Check first if function result in cache, else fetch data from API
     flight_data = _FLIGHT_CACHE.get(
         departing, _fetch_flight_data(from_date, to_date, iata_code, departing)
