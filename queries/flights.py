@@ -385,8 +385,10 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
 
     for flight in flights:
         assert isinstance(flight.get("No"), str)
+        assert isinstance(flight.get("DisplayName"), str)
         assert isinstance(flight.get("api_airport"), str)
         assert isinstance(flight.get("flight_time"), datetime)
+        assert isinstance(flight.get("Departure"), bool)
 
         airport = icelandic_city_name(capitalize_placename(flight["DisplayName"]))
         api_airport = icelandic_city_name(capitalize_placename(flight["api_airport"]))
@@ -395,7 +397,7 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
         flight_date_str = flight_dt.strftime("%-d. %B")
         flight_time_str = flight_dt.strftime("%H:%M")
 
-        if flight["Departure"]:
+        if flight.get("Departure"):
             airport = NounPhrase(airport).genitive or airport
             api_airport = NounPhrase(api_airport).dative or api_airport
 
@@ -533,7 +535,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     if (
         "qtype" in result
         and result["qtype"] == _FLIGHTS_QTYPE
-        and "departure" in result
+        and isinstance(result.get("departure"), bool)
     ):
         try:
             answ: Dict[str, str] = _process_result(result)
