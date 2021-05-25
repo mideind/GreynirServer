@@ -73,7 +73,7 @@ jobs:
         PGPASSWORD=postgres psql -h localhost -U postgres -c "create database scraper with encoding 'UTF8' TEMPLATE=template0;"
         PGPASSWORD=postgres psql -h localhost -U postgres -d scraper -c "create extension if not exists \"uuid-ossp\";"
         python scraper.py --init
-        psql -f tests/files/dbtest_populate.sql postgresql://postgres:postgres@localhost:5432/scraper
+        psql -f tests/files/populate_testdb.sql postgresql://postgres:postgres@localhost:5432/scraper
     - name: Create dummy API key
       run: |
         cat "tests/files/dummy_greynir_api_key.txt" > "resources/GreynirServerKey.txt"
