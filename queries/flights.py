@@ -384,12 +384,6 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
     voice_lines: List[str] = []
 
     for flight in flights:
-        assert isinstance(flight.get("No"), str)
-        assert isinstance(flight.get("DisplayName"), str)
-        assert isinstance(flight.get("api_airport"), str)
-        assert isinstance(flight.get("flight_time"), datetime)
-        assert isinstance(flight.get("Departure"), bool)
-
         airport = icelandic_city_name(capitalize_placename(flight["DisplayName"]))
         api_airport = icelandic_city_name(capitalize_placename(flight["api_airport"]))
 
