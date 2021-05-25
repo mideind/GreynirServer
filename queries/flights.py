@@ -281,6 +281,17 @@ def _fetch_flight_data(
     return res["Items"]
 
 
+def _attribute_airport_match(flight: FlightType, attribute: str, airport: str) -> bool:
+    """
+    Safely checks whether the string flight[attribute] in lowercase
+    either starts or ends with airport string.
+    """
+    return isinstance(flight.get(attribute), str) and (
+        flight[attribute].lower().startswith(airport)
+        or flight[attribute].lower().endswith(airport)
+    )
+
+
 def _filter_flight_data(
     flights: FlightList,
     airport: str,
@@ -303,20 +314,8 @@ def _filter_flight_data(
 
         if (
             airport == "*"
-            or (
-                flight.get("DisplayName") is not None
-                and (
-                    flight["DisplayName"].lower().startswith(airport)
-                    or flight["DisplayName"].lower().endswith(airport)
-                )
-            )
-            or (
-                flight.get("AltDisplayName") is not None
-                and (
-                    flight["AltDisplayName"].lower().startswith(airport)
-                    or flight["AltDisplayName"].lower().endswith(airport)
-                )
-            )
+            or _attribute_airport_match(flight, "DisplayName", airport)
+            or _attribute_airport_match(flight, "AltDisplayName", airport)
         ):
             # Use estimated time instead of scheduled if available
             if flight.get("Estimated") is not None:
