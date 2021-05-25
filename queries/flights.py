@@ -62,6 +62,8 @@ def help_text(lemma: str) -> str:
             (
                 "Hvenær lendir næsta vél frá Kaupmannahöfn",
                 "Hvenær fer næsta flug til Lundúna",
+                "Hvenær lendir næsta flugvél á Akureyri frá Egilsstöðum",
+                "Hvenær flýgur næsta vél frá Keflavík til Stokkhólms",
             )
         )
     )
@@ -86,6 +88,9 @@ QFlightsQuery →
     | QFlightsDepartureQuery
 
 QFlightsArrivalQuery →
+    # Arrivals at Icelandic airports, e.g.
+    # Hver er lendingartími næstu vélar í Reykjavík
+    # Hvenær kemur næsta flug til Keflavíkur frá Kaupmannahöfn
     QFlightsWhenArr QFlightsNextPlane QFlightsPathDesc
 
 QFlightsWhenArr →
@@ -96,12 +101,16 @@ QFlightsWhenArr →
     | "hver" "er" "lendingartíminn" "fyrir"
 
 QFlightsDepartureQuery →
+    # Departures from Icelandic airports, e.g.
+    # Hver er brottfarartími næstu vélar til London
+    # Hvenær flýgur næsta vél af stað frá Keflavík til Köben
     QFlightsWhenDepNextPlane QFlightsPathDesc
 
+QFlightsAfStað → "af" "stað"
+
 QFlightsWhenDepNextPlane →
-    QFlightsWhen "leggur" QFlightsNextPlane "af" "stað"
-    > QFlightsWhenDep QFlightsNextPlane "af" "stað"
-    > QFlightsWhenDep QFlightsNextPlane
+    QFlightsWhen "leggur" QFlightsNextPlane QFlightsAfStað
+    | QFlightsWhenDep QFlightsNextPlane QFlightsAfStað?
 
 QFlightsNextPlane →
     "næsta" QFlightsPlane
@@ -113,21 +122,18 @@ QFlightsWhenDep →
     | "hver" "er" "brottfarartími"
     | "hver" "er" "brottfarartíminn" "fyrir"
 
-$score(+35) QFlightsWhenDep
-
 QFlightsWhen →
     "hvenær" | "klukkan" "hvað"
-
-$score(-35) QFlightsWhen
 
 QFlightsPlane →
     "flug" | "flugvél" | "flugvélar" | "vél" | "vélar" | "flugs"
 
-$score(+100) QFlightsPlane
-
 QFlightsPathDesc →
-    # Specify at least one endpoint
-    QFlightsPrepLoc QFlightsPrepLoc > QFlightsPrepLoc
+    # At least one endpoint of the flight (in any order), e.g.
+    # frá Keflavík til Reykjavíkur
+    # til Akureyrar
+    QFlightsPrepLoc QFlightsPrepLoc
+    > QFlightsPrepLoc
 
 QFlightsPrepLoc →
     "til" QFlightsArrLoc_ef
@@ -144,7 +150,6 @@ QFlightsDepLoc/fall →
 
 $tag(keep) QFlightsArrLoc/fall
 $tag(keep) QFlightsDepLoc/fall
-$score(+40) QFlights
 
 """
 
