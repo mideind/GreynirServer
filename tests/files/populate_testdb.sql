@@ -11,6 +11,9 @@ INSERT INTO persons ("id", "article_url", "name", "title", "title_lc", "gender",
 (3, 'https://greynir.is/', 'Katrín Jakobsdóttir', 'forsætisráðherra', 'forsætisráðherra', 'kvk', 1, '2019-02-11 13:44:41.994941'),
 (4, 'https://greynir.is/', 'Jón Jónsson', 'forstjóri Sjóvá', 'forstjóri sjóvá', 'kk', 1, '2019-02-11 13:44:41.994941');
 
+INSERT INTO entities ("id", "article_url", "name", "verb", "definition", "authority", "timestamp") VALUES
+(4319412, 'https://greynir.is/', 'Nox Medical', 'er', 'nýsköpunarfyrirtæki', 0.8, '2018-08-26 07:07:50.688911');
+
 INSERT INTO queries ("id", "timestamp", "interpretations", "question", "bquestion", "answer", "voice", "error", "expires", "qtype", "key", "client_type", "client_version", "client_id", "latitude", "longitude", "remote_addr", "context") VALUES
 ('c619a8ec-72c2-11ea-99c0-820d5d3a9700', '2020-03-30 20:12:25.985256', '["hver er forsætisráðherra"]', 'hver er forsætisráðherra', 'Hver er forsætisráðherra?', 'Katrín Jakobsdóttir', 'Forsætisráðherra er Katrín Jakobsdóttir.', NULL, NULL, 'Title', 'forsætisráðherra', NULL, NULL, '123', NULL, NULL, '127.0.0.1', '{"person_name": "Katrín Jakobsdóttir"}'),
 ('c9c84304-72c2-11ea-99c0-820d5d3a9700', '2020-03-30 20:12:31.749396', '["hvað segir wikipedia um hana"]', 'hvað segir wikipedia um hana', 'Hvað segir Wikipedía um Hana?', 'Katrín Jakobsdóttir er formaður Vinstrihreyfingarinnar - græns framboðs og forsætisráðherra Íslands.', 'Katrín Jakobsdóttir er formaður Vinstrihreyfingarinnar - græns framboðs og forsætisráðherra Íslands.', NULL, '2020-03-31 20:12:32.274453', 'Wikipedia', 'Katrín Jakobsdóttir', NULL, NULL, '123', NULL, NULL, '127.0.0.1', '{"subject": "Katrín Jakobsdóttir"}'),
