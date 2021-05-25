@@ -113,8 +113,8 @@ QFlightsWhenDepNextPlane →
     | QFlightsWhenDep QFlightsNextPlane QFlightsAfStað?
 
 QFlightsNextPlane →
-    "næsta" QFlightsPlane
-    | "næstu" QFlightsPlane
+    "næsta" QFlightsPlane/fall
+    | "næstu" QFlightsPlane/fall
 
 QFlightsWhenDep →
     QFlightsWhen "fer"
@@ -125,8 +125,10 @@ QFlightsWhenDep →
 QFlightsWhen →
     "hvenær" | "klukkan" "hvað"
 
-QFlightsPlane →
-    "flug" | "flugvél" | "flugvélar" | "vél" | "vélar" | "flugs"
+QFlightsPlane/fall ->
+    'flug:hk'_et/fall
+    | 'flugvél:kvk'_et/fall
+    | 'vél:kvk'_et/fall
 
 QFlightsPathDesc →
     # At least one endpoint of the flight (in any order), e.g.
@@ -302,14 +304,14 @@ def _filter_flight_data(
         if (
             airport == "*"
             or (
-                flight.get("DisplayName")
+                flight.get("DisplayName") is not None
                 and (
                     flight["DisplayName"].lower().startswith(airport)
                     or flight["DisplayName"].lower().endswith(airport)
                 )
             )
             or (
-                flight.get("AltDisplayName")
+                flight.get("AltDisplayName") is not None
                 and (
                     flight["AltDisplayName"].lower().startswith(airport)
                     or flight["AltDisplayName"].lower().endswith(airport)
@@ -317,9 +319,9 @@ def _filter_flight_data(
             )
         ):
             # Use estimated time instead of scheduled if available
-            if flight.get("Estimated"):
+            if flight.get("Estimated") is not None:
                 flight_time = datetime.fromisoformat(flight["Estimated"])
-            elif flight.get("Scheduled"):
+            elif flight.get("Scheduled") is not None:
                 flight_time = datetime.fromisoformat(flight["Scheduled"])
             else:
                 continue  # Failed, no time found
