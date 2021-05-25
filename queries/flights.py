@@ -23,12 +23,13 @@
 
 """
 
+from typing import List, Dict, Any, Optional
+
 import re
 import random
 import logging
 import cachetools
 from html import escape
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta, timezone
 
 from query import Query, QueryStateDict
