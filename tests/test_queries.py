@@ -372,11 +372,11 @@ def test_query_api(client):
     no_matching_flight_pattern = r"Ekkert flug fannst (frá .*? )?(til .*? )?næstu \d+ daga."
 
     json = qmcall(
-        c, {"q": "hvenær fer næsta flug frá keflavík", "voice": True}, "Flights"
+        c, {"q": "hvenær fer næsta flug til jfk frá keflavík", "voice": True}, "Flights"
     )
     assert re.search(departure_pattern, json["answer"])
     json = qmcall(
-        c, {"q": "hvenær flýgur næsta flug frá keflavík", "voice": True}, "Flights"
+        c, {"q": "hvenær flýgur næsta flug til new york frá keflavík", "voice": True}, "Flights"
     )
     assert re.search(departure_pattern, json["answer"])
     json = qmcall(
