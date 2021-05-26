@@ -305,8 +305,8 @@ def _attribute_airport_match(flight: FlightType, attribute: str, airport: str) -
     either starts or ends with airport string.
     """
     return isinstance(flight.get(attribute), str) and (
-        flight[attribute].lower().startswith(airport)  # type: ignore[misc]
-        or flight[attribute].lower().endswith(airport)  # type: ignore[misc]
+        str(flight.get(attribute, "")).lower().startswith(airport)
+        or str(flight.get(attribute, "")).lower().endswith(airport)
     )
 
 
@@ -337,7 +337,7 @@ def _filter_flight_data(
         ):
             # Use estimated time instead of scheduled if available
             if flight.get("Estimated") is not None:
-                flight_time = datetime.fromisoformat(flight["Estimated"])  # type: ignore[arg-type]
+                flight_time = datetime.fromisoformat(str(flight["Estimated"]))
             elif flight.get("Scheduled") is not None:
                 flight_time = datetime.fromisoformat(flight["Scheduled"])
             else:
@@ -379,13 +379,13 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
     """
     airport: str
     api_airport: str
-    flight_dt: datetime
+    flight_dt: Optional[datetime]
     answers: List[str] = []
     voice_lines: List[str] = []
 
     for flight in flights:
-        airport = icelandic_city_name(capitalize_placename(flight.get("DisplayName")))
-        api_airport = icelandic_city_name(capitalize_placename(flight.get("api_airport")))
+        airport = icelandic_city_name(capitalize_placename(flight.get("DisplayName", "")))
+        api_airport = icelandic_city_name(capitalize_placename(flight.get("api_airport", "")))
 
         flight_dt = flight.get("flight_time")
         if flight_dt is None or airport == "" or api_airport == "":
@@ -400,7 +400,7 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
             # Catch cancelled flights
             if (
                 isinstance(flight.get("Status"), str)
-                and "aflýst" in flight["Status"].lower()  # type: ignore[union-attr]
+                and "aflýst" in str(flight["Status"]).lower()
             ):
                 line = f"Flugi {flight.get('No')} frá {api_airport} til {airport} er aflýst."
             else:
@@ -416,7 +416,7 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
 
             if (
                 isinstance(flight.get("Status"), str)
-                and "aflýst" in flight["Status"].lower()  # type: ignore[union-attr]
+                and "aflýst" in str(flight["Status"]).lower()
             ):
                 line = f"Flugi {flight.get('No')} frá {airport} til {api_airport} er aflýst."
             else:
