@@ -384,10 +384,12 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
     voice_lines: List[str] = []
 
     for flight in flights:
-        airport = icelandic_city_name(capitalize_placename(flight["DisplayName"]))
-        api_airport = icelandic_city_name(capitalize_placename(flight["api_airport"]))
+        airport = icelandic_city_name(capitalize_placename(flight.get("DisplayName")))
+        api_airport = icelandic_city_name(capitalize_placename(flight.get("api_airport")))
 
-        flight_dt = flight["flight_time"]
+        flight_dt = flight.get("flight_time")
+        if flight_dt is None or airport == "" or api_airport == "":
+            continue
         flight_date_str = flight_dt.strftime("%-d. %B")
         flight_time_str = flight_dt.strftime("%H:%M")
 
@@ -400,12 +402,10 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
                 isinstance(flight.get("Status"), str)
                 and "aflýst" in flight["Status"].lower()  # type: ignore[union-attr]
             ):
-                line = (
-                    f"Flugi {flight['No']} frá {api_airport} til {airport} er aflýst."
-                )
+                line = f"Flugi {flight.get('No')} frá {api_airport} til {airport} er aflýst."
             else:
                 line = (
-                    f"Flug {flight['No']} til {airport} "
+                    f"Flug {flight.get('No')} til {airport} "
                     f"flýgur frá {api_airport} {flight_date_str} "
                     f"klukkan {flight_time_str} að staðartíma."
                 )
@@ -418,12 +418,10 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
                 isinstance(flight.get("Status"), str)
                 and "aflýst" in flight["Status"].lower()  # type: ignore[union-attr]
             ):
-                line = (
-                    f"Flugi {flight['No']} frá {airport} til {api_airport} er aflýst."
-                )
+                line = f"Flugi {flight.get('No')} frá {airport} til {api_airport} er aflýst."
             else:
                 line = (
-                    f"Flug {flight['No']} frá {airport} "
+                    f"Flug {flight.get('No')} frá {airport} "
                     f"lendir {prep} {api_airport} {flight_date_str} "
                     f"klukkan {flight_time_str} að staðartíma."
                 )
