@@ -393,7 +393,7 @@ function populateQueryResult(r) {
          // We have a single text answer
          answer = $("<p class='query-empty'></p>")
             .html("<span class='green glyphicon glyphicon-play'></span>&nbsp;")
-            .append(rlist.answer);
+            .append(escapeHtml(rlist.answer));
       }
       else
       if (!rlist || !rlist.length) {
