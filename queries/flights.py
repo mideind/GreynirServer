@@ -30,7 +30,6 @@ import re
 import random
 import logging
 import cachetools
-from html import escape
 from datetime import datetime, timedelta, timezone
 
 from query import Query, QueryStateDict
@@ -506,14 +505,14 @@ def _process_result(result: Result) -> Dict[str, str]:
         to_airp = NounPhrase(to_airp).genitive or to_airp
 
         if from_airp == "*":
-            answ["answer"] = f"Ekkert flug fannst til {escape(to_airp)} næstu {days} daga."
+            answ["answer"] = f"Ekkert flug fannst til {to_airp} næstu {days} daga."
         elif to_airp == "*":
-            answ["answer"] = f"Ekkert flug fannst frá {escape(from_airp)} næstu {days} daga."
+            answ["answer"] = f"Ekkert flug fannst frá {from_airp} næstu {days} daga."
         else:
             answ["answer"] = (
                 f"Ekkert flug fannst "
-                f"frá {escape(from_airp)} "
-                f"til {escape(to_airp)} "
+                f"frá {from_airp} "
+                f"til {to_airp} "
                 f"næstu {days} daga."
             )
         answ["voice"] = answ["answer"]
