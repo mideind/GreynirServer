@@ -532,6 +532,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         try:
             answ: Dict[str, str] = _process_result(result)
             q.set_qtype(_FLIGHTS_QTYPE)
+            q.set_source("Isavia")
             q.set_answer(answ, answ["answer"], answ["voice"])
             return
         except Exception as e:
