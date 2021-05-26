@@ -52,6 +52,7 @@ from datetime import datetime, timedelta
 import json
 import re
 import random
+from html import escape
 from collections import defaultdict
 
 from settings import Settings
@@ -784,6 +785,8 @@ class Query:
         self, response: ResponseType, answer: str, voice_answer: Optional[str] = None
     ) -> None:
         """ Set the answer to the query """
+        if isinstance(response, dict) and isinstance(response.get("answer"), str):
+            response["answer"] = escape(response["answer"]) # Sanitize answer
         # Detailed response (this is usually a dict)
         self._response = response
         # Single best answer, as a displayable string
