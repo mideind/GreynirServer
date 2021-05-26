@@ -303,10 +303,11 @@ def _attribute_airport_match(flight: FlightType, attribute: str, airport: str) -
     Safely checks whether the string flight[attribute] in lowercase
     either starts or ends with airport string.
     """
-    return isinstance(flight.get(attribute), str) and (
-        str(flight.get(attribute, "")).lower().startswith(airport)
-        or str(flight.get(attribute, "")).lower().endswith(airport)
-    )
+    a = flight.get(attribute)
+    if not isinstance(a, str):
+        return False
+    a = a.lower()
+    return a.startswith(airport) or a.endswith(airport)
 
 
 def _filter_flight_data(
