@@ -44,19 +44,19 @@ if basepath.endswith(_TOOLS):
     basepath = basepath[0 : -len(_TOOLS)]
     sys.path.append(basepath)
 
-from settings import Settings
-from article import Article
-from tree import Tree
+from settings import Settings, ConfigError  # noqa
+from article import Article  # noqa
+from tree import Tree  # noqa
 
 # To make this work, clone Miðeind's Annotald repo, enter the Greynir
 # virtualenv and run "python setup.py develop" from the Annotald repo root
 # https://github.com/mideind/Annotald
-from annotald.reynir_utils import simpleTree2NLTK
-from annotald.annotree import AnnoTree
+from annotald.reynir_utils import simpleTree2NLTK  # noqa
+from annotald.annotree import AnnoTree  # noqa
 
-from reynir import ICELANDIC_RATIO
+from reynir import ICELANDIC_RATIO  # noqa
 
-from tokenizer import definitions, TOK, Tok
+from tokenizer import definitions, TOK, Tok  # noqa
 
 # Min num tokens in sentence
 MIN_SENT_LENGTH = 5
@@ -106,6 +106,7 @@ ENGLISH_WORDS = frozenset(
 )
 BIGSET = set()
 
+
 def sieve(ix, stree):
     """ Judge which sentences make sense for each subcorpora """
     text = stree.text
@@ -131,7 +132,7 @@ def sieve(ix, stree):
 
         # Skip sentences that don't contain enough Icelandic words
         if unicelandic(stree):
-        #    print("\t4 - copper")
+            #    print("\t4 - copper")
             code = "copper"
             break
 
@@ -154,7 +155,7 @@ def sieve(ix, stree):
             code = "copper"
             break
 
-        # Skip sentences not containing a VP 
+        # Skip sentences not containing a VP
         if not stree.match("S0 >> VP"):
             print("\t8 - heading")
             code = "heading"
@@ -167,15 +168,16 @@ def sieve(ix, stree):
             break
 
         # Skip sentence if we have seen an equivalent sentence before
-        #hashnorm = hash(normalize(text))
-        #if hashnorm in BIGSET:
+        # hashnorm = hash(normalize(text))
+        # if hashnorm in BIGSET:
         #    print("\t10 - copper")
         #    code = "copper"
         #    break
-        #else:
+        # else:
         #    BIGSET.add(hashnorm)
     print(code)
     return code
+
 
 def unicelandic(sent):
     # Code mostly copied from annotate() in checker.py in GreynirCorrect
@@ -199,6 +201,7 @@ def unicelandic(sent):
         return False
     return True
 
+
 def normalize(text):
     # Generalize information in sentence to ensure unique sentences in set
     text = text.lower()
@@ -207,6 +210,7 @@ def normalize(text):
     for num in "0123456789":
         text = text.replace(num, "0")
     text = text.replace(" ", "")
+
 
 def leavescheck(stree):
     # Check if old info
@@ -226,6 +230,7 @@ def leavescheck(stree):
         return "copper"
     return "silver"
 
+
 def phrasecheck(stree):
     p = True
     for term in stree.nonterminals:
@@ -235,6 +240,7 @@ def phrasecheck(stree):
                 p = False
             BUCKDICT["i"] += 1
     return p
+
 
 def main(num_sent, parse_date_gt, outfile, count, rand):
 
@@ -262,27 +268,29 @@ def main(num_sent, parse_date_gt, outfile, count, rand):
         # Skip articles from certain websites
         aid = art.uuid
         aurl = art.url
-        if arts%100 == 0:
+        if arts % 100 == 0:
             print("{} articles done".format(arts))
-        arts+=1
+        arts += 1
         if (
             not art.root_domain
             or "raduneyti" in art.root_domain
             or "lemurinn" in art.root_domain
         ):
-            #print("\t1")
+            # print("\t1")
             continue
         trees = None
         try:
             tree = Tree(url=art.url, authority=art.authority)
             tree.load(art.tree)
 
-        except Exception as e:
+        except Exception:
             continue
+
         try:
             trees = tree.simple_trees()
-        except Exception as e:
+        except Exception:
             continue
+
         for ix, stree in trees:
             score = tree.score(ix)
             ln = tree.length(ix)
@@ -329,14 +337,15 @@ def main(num_sent, parse_date_gt, outfile, count, rand):
                 fh.close()
                 gc.collect()  # Trigger manual garbage collection
 
-                #print("Dumping sentence trees: %d\r" % total, end="")
+                # print("Dumping sentence trees: %d\r" % total, end="")
 
             if final_batch:
                 break
 
             # print("Skipped {0}".format(skipped))
-            #fsize = os.path.getsize(outfile) / pow(1024.0, 2)
-            #print("\nDumped {0} trees to file '{1}' ({2:.1f} MB)".format(total, outfile, fsize))
+            # fsize = os.path.getsize(outfile) / pow(1024.0, 2)
+            # print("\nDumped {0} trees to file '{1}' ({2:.1f} MB)".format(total, outfile, fsize))
+
 
 if __name__ == "__main__":
 
@@ -357,9 +366,7 @@ if __name__ == "__main__":
         help="Cutoff date for parsed field, format YYYY-MM-DD.",
         default="1970-01-01",
     )
-    parser.add_argument(
-        "--outfile", dest="OUTFILE", type=str, help="Output filename"
-    )
+    parser.add_argument("--outfile", dest="OUTFILE", type=str, help="Output filename")
     parser.add_argument(
         "--count",
         dest="COUNT",
@@ -368,8 +375,8 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-r", dest="RANDOM", action="store_true", help="Only collect random")
-
+        "-r", dest="RANDOM", action="store_true", help="Only collect random"
+    )
 
     args = parser.parse_args()
 
