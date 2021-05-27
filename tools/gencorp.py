@@ -249,7 +249,7 @@ def main(num_sent, parse_date_gt, outfile, count, rand):
         Settings.read(os.path.join(basepath, "config", "GreynirSimple.conf"))
     except ConfigError as e:
         print("Configuration error: {0}".format(e))
-        quit()
+        sys.exit(os.EX_CONFIG)
 
     # Generate parse trees from visible roots only,
     # in descending order by time of parse
@@ -273,7 +273,6 @@ def main(num_sent, parse_date_gt, outfile, count, rand):
         arts += 1
         if (
             not art.root_domain
-            or "raduneyti" in art.root_domain
             or "lemurinn" in art.root_domain
         ):
             # print("\t1")

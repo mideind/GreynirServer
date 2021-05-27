@@ -43,6 +43,7 @@ from collections import OrderedDict, defaultdict
 
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.orm.query import Query as SqlQuery
+from sqlalchemy.sql.expression import func
 
 from reynir import TOK, Tok
 from reynir.binparser import TokenDict
@@ -714,6 +715,8 @@ class Article:
             if criteria and criteria.get("order_by_parse"):
                 # Order with newest parses first
                 q = q.order_by(desc(cast(Column, ArticleRow.parsed)))
+            elif criteria and criteria.get("random"):
+                q = q.order_by(func.random())
 
             parsed_after = criteria.get("parse_date_gt")
             if parsed_after is not None:
