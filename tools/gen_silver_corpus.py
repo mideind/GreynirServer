@@ -34,6 +34,7 @@
 import os
 import sys
 import hashlib
+import gc
 from random import shuffle
 
 # Hack to make this Python program executable from the tools subdirectory
@@ -92,7 +93,8 @@ MIN_SENT_LENGTH = 5
 
 
 def is_acceptable_sentence_tree(stree):
-    # Generate hash of sentence text to SENT_HASHES to ensure uniqueness
+    # Generate hash of sentence text and add
+    # it to SENT_HASHES to ensure uniqueness
     text = stree.text
     md5sum = hashlib.md5(text.encode("utf-8")).hexdigest()
 
@@ -148,7 +150,7 @@ def gen_anno_tree(article, index, stree):
     return AnnoTree("", [meta_node, nltk_tree])
 
 
-NUM_SENT = 1000
+NUM_SENT = 10000
 BATCH_SIZE = 1000
 OUT_FILENAME = "out.txt"
 SEPARATOR = "\n\n"
@@ -165,16 +167,21 @@ def main():
 
     # Output file
     file = open(OUT_FILENAME, "w", encoding="utf-8")
+
     total_sent = 0
+    total_sent_skipped = 0
+
+    total_arts = 0
+    total_arts_skipped = 0
 
     accumulated = []
-    total_num_arts = 0
 
     for art in Article.articles({"random": True}):
         if not is_acceptable_article(art):
+            total_arts_skipped += 1
             continue
 
-        total_num_arts += 1
+        total_arts += 1
 
         # Load article tree
         try:
@@ -194,6 +201,7 @@ def main():
         for ix, stree in trees:
             if not is_acceptable_sentence_tree(stree):
                 # print(stree.text)
+                total_sent_skipped += 1
                 continue
             # OK, it's acceptable
             annotree = gen_anno_tree(art, ix, stree)
@@ -207,9 +215,21 @@ def main():
             # Write sentence trees to file
             for s in accumulated:
                 file.write(str(s) + SEPARATOR)
+            # Empty our list of acc. sentences
+            accumulated = []
+            # Trigger manual garbage collection
+            gc.collect()
+            print(f"{total_sent} sentences accumulated")
 
         if total_sent >= NUM_SENT:
             break
+
+    # All done
+    file.close()
+    print(f"Total articles: {total_arts}")
+    print(f"Total articles skipped: {total_arts_skipped}")
+    print(f"Total sentences: {total_sent}")
+    print(f"Total sentences skipped: {total_sent_skipped}")
 
 
 if __name__ == "__main__":
