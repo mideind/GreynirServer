@@ -451,6 +451,8 @@ _MY_PHILOSOPHY: AnswerType = {
 
 _SORRY_TO_HEAR: AnswerType = {"answer": "Það þykir mér leitt að heyra."}
 
+_THREATS: AnswerType = {"answer": "Ei skal höggva!"}
+
 ###################################
 
 _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
@@ -1791,6 +1793,14 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert ekkert sérstaklega gáfuð": _rudeness,
     "djöfull ertu heimsk": _rudeness,
     "djöfull ertu fokking heimsk": _rudeness,
+    # Threats
+    "ég ætla að meiða þig": _THREATS,
+    "ég ætla að berja þig": _THREATS,
+    "ég ætla að drep þig": _THREATS,
+    "ég ætla að myrða þig": _THREATS,
+    "ég ætla að stúta þér": _THREATS,
+    "ég ætla að tortíma þér": _THREATS,
+    "ég drep þig": _THREATS,
     # Internal & emotional state
     "ertu í góðu skapi": {"answer": "Já, ég er alltaf hress."},
     "ert þú í góðu skapi": {"answer": "Já, ég er alltaf hress."},
@@ -1950,11 +1960,10 @@ def handle_plain_text(q: Query) -> bool:
     q.set_qtype(_SPECIAL_QTYPE)
 
     r = _SPECIAL_QUERIES[ql]
-    if isfunction(r):
-        fixed = False
+    is_func = isfunction(r)
+    if is_func:
         response = cast(AnswerCallable, r)(ql, q)
     else:
-        fixed = True
         response = cast(AnswerType, r)
 
     # A non-voice answer is usually a dict or a list
@@ -1972,7 +1981,7 @@ def handle_plain_text(q: Query) -> bool:
     if source is not None:
         q.set_source(cast(str, source))
     # Caching for non-dynamic answers
-    if fixed or response.get("can_cache", False):
+    if is_func or response.get("can_cache", False):
         q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     return True

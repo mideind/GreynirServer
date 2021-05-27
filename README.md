@@ -212,6 +212,14 @@ This can be fixed by setting the following environment variable in your shell:
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 ```
 
+### Processors
+
+```
+python processor.py
+```
+
+This will run all processors in `processors` directory on unprocessed articles.
+
 ### Interactive shell
 
 You can launch an [IPython](https://ipython.org) REPL shell with a database session (`s`), the Greynir 
