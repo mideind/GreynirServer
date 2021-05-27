@@ -253,6 +253,192 @@ def numbers_to_neutral(s: str) -> str:
     return re.sub(r"(\d+)", convert, s)
 
 
+_SUB_20_NEUTRAL = {
+    1: "eitt",
+    2: "tvö",
+    3: "þrjú",
+    4: "fjögur",
+    5: "fimm",
+    6: "sex",
+    7: "sjö",
+    8: "átta",
+    9: "níu",
+    10: "tíu",
+    11: "ellefu",
+    12: "tólf",
+    13: "þrettán",
+    14: "fjórtán",
+    15: "fimmtán",
+    16: "sextán",
+    17: "sautján",
+    18: "átján",
+    19: "nítján",
+}
+
+_TENS_NEUTRAL = {
+    20: "tuttugu",
+    30: "þrjátíu",
+    40: "fjörutíu",
+    50: "fimmtíu",
+    60: "sextíu",
+    70: "sjötíu",
+    80: "áttatíu",
+    90: "níutíu",
+}
+
+_NUM_NEUT_TO_KK = {
+    "eitt": "einn",
+    "tvö": "tveir",
+    "þrjú": "þrír",
+    "fjögur": "fjórir",
+}
+
+_NUM_NEUT_TO_KVK = {
+    "eitt": "ein",
+    "tvö": "tvær",
+    "þrjú": "þrjár",
+    "fjögur": "fjórar",
+}
+
+
+def number_to_neutral(n: int) -> str:
+    """
+    Write integer out as text in Icelandic.
+    Example:
+        1337 -> eitt þúsund þrjú hundruð þrjátíu og sjö
+    """
+    text: List[str] = []
+    if n == 0:
+        text.append("núll")
+        return " ".join(text)
+    if n < 0:
+        text.append("mínus")
+        n = -n
+
+    BILLION = 1000000000
+    MILLION = 1000000
+    THOUSAND = 1000
+
+    if BILLION <= n:
+        billions, n = divmod(n, BILLION)
+
+        if billions > 1:
+            text.extend(number_to_neutral(billions).split())
+            # Fix "eitt" -> "einn", "tvö" -> "tveir", so on ("milljarður" is kk)
+            text[-1] = _NUM_NEUT_TO_KK.get(text[-1], text[-1])
+            # If last number ends in "einn", have "milljarðar" singular
+            if text[-1] == "einn":
+                text.append("milljarður")
+            else:
+                text.append("milljarðar")
+
+        elif billions == 1:
+            text.append("einn")
+            text.append("milljarður")
+
+    if MILLION <= n < BILLION:
+        millions, n = divmod(n, MILLION)
+
+        if millions > 1:
+            text.extend(number_to_neutral(millions).split())
+            # Fix "eitt" -> "ein", "tvö" -> "tvær", so on ("milljón" is kvk)
+            text[-1] = _NUM_NEUT_TO_KVK.get(text[-1], text[-1])
+            # If last number ends in "ein", have "milljónir" singular
+            if text[-1] == "ein":
+                text.append("milljón")
+            else:
+                text.append("milljónir")
+        elif millions == 1:
+            text.append("ein")
+            text.append("milljón")
+
+    if THOUSAND <= n < MILLION:
+        thousands, n = divmod(n, THOUSAND)
+
+        if thousands > 1:
+            text.append(number_to_neutral(thousands))
+        elif thousands == 1:
+            text.append("eitt")
+        # Singular/Plural form of "þúsund" is the same
+        text.append("þúsund")
+
+    if 100 <= n < THOUSAND:
+        hundreds, n = divmod(n, 100)
+
+        if hundreds > 1:
+            text.append(number_to_neutral(hundreds))
+            # Note: don't need to fix singular here as e.g.
+            # 2100 gets interpreted as "tvö þúsund og eitt hundrað"
+            # instead of "tuttugu og eitt hundrað"
+            text.append("hundruð")
+        elif hundreds == 1:
+            text.append("eitt")
+            text.append("hundrað")
+
+    if 20 <= n < 100:
+        tens, digit = divmod(n, 10)
+        tens *= 10
+
+        text.append(_TENS_NEUTRAL[tens])
+        if digit != 0:
+            text.append("og")
+            text.append(_SUB_20_NEUTRAL[digit])
+        n = 0
+
+    if 0 < n < 20:
+        text.append(_SUB_20_NEUTRAL[n])
+        n = 0
+
+    if len(text) > 2 and text[-2] != "og":
+        # Fix sentences with missing "og"
+        if (
+            text[-1] in _SUB_20_NEUTRAL.values()
+            or text[-1] in _TENS_NEUTRAL.values()
+        ):
+            # "fimm þúsund tuttugu" -> "fimm þúsund og tuttugu"
+            # "eitt hundrað fjögur" -> "eitt hundrað og fjögur"
+            text.insert(-1, "og")
+        else:
+            # "fimm þúsund tvö hundruð" -> "fimm þúsund og tvö hundruð"
+            # "sextíu milljónir fjögur hundruð" -> "sextíu milljónir og fjögur hundruð"
+            text.insert(-2, "og")
+
+    return " ".join(text)
+
+
+def year_to_text(year: int, after_christ: bool = False) -> str:
+    """
+    Write year as text in Icelandic.
+    Negative years automatically append "fyrir Krist" to the text.
+    If after_christ is True, add "eftir Krist" after the year.
+    """
+    suffix: str = ""
+    text: List[str] = []
+
+    if year < 0:
+        suffix = " fyrir Krist"
+        year = -year
+
+    elif year > 0 and after_christ:
+        suffix = " eftir Krist"
+
+    # People say e.g. "nítján hundruð þrjátíu og tvö"
+    # instead of "eitt þúsund níu hundruð þrjátíu og tvö"
+    # for years between 1100-2000
+    if 1100 <= year < 2000:
+        hundreds, digits = divmod(year, 100)
+
+        text.append(_SUB_20_NEUTRAL[hundreds])
+        text.append("hundruð")
+        text.append(number_to_neutral(digits))
+
+    # Other years are spoken like regular numbers
+    else:
+        text.append(number_to_neutral(year))
+
+    return " ".join(text) + suffix
+
+
 def country_desc(cc: str) -> str:
     """Generate Icelandic description of being in a particular country
     with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi'."""
