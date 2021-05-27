@@ -47,6 +47,9 @@ from settings import Settings, ConfigError  # noqa
 from article import Article  # noqa
 from tree import Tree  # noqa
 
+from reynir import ICELANDIC_RATIO  # noqa
+from tokenizer import definitions  # noqa
+
 # To make this work, clone Miðeind's Annotald repo, enter the Greynir
 # virtualenv and run "python setup.py develop" from the Annotald repo root
 # https://github.com/mideind/Annotald
@@ -57,21 +60,76 @@ from annotald.annotree import AnnoTree  # noqa
 SENT_HASHES = set()
 
 
+def is_icelandic(sent):
+    # Code mostly copied from annotate() in checker.py in GreynirCorrect
+    words_in_bin = 0
+    words_not_in_bin = 0
+    for t in sent.leaves:
+        if "k" in t:
+            if t["k"] == "WORD":
+                if "a" in t:
+                    words_in_bin += 1
+                else:
+                    words_not_in_bin += 1
+            elif t["k"] == "PERSON":
+                words_in_bin += 1
+            elif t["k"] == "ENTITY":
+                words_not_in_bin += t["x"].count(" ") + 1
+    num_words = words_in_bin + words_not_in_bin
+    if num_words > 2 and words_in_bin / num_words < ICELANDIC_RATIO:
+        return False
+    return True
+
+
 def is_acceptable_article(art):
     if not art.root_domain or "lemurinn" in art.root_domain:
         return False
     return True
 
 
+# Min num tokens in sentence
+MIN_SENT_LENGTH = 5
+
+
 def is_acceptable_sentence_tree(stree):
     # Generate hash of sentence text to SENT_HASHES to ensure uniqueness
-    txt = stree.text
-    md5sum = hashlib.md5(txt.encode("utf-8")).hexdigest()
+    text = stree.text
+    md5sum = hashlib.md5(text.encode("utf-8")).hexdigest()
+
+    # Skip already processed identical sentence
     if md5sum in SENT_HASHES:
-        return False  # Already processed identical sentence
+        return False
 
+    # Skip sentences that don't contain enough Icelandic words
+    if not is_icelandic(stree):
+        return False
+
+    # Skip uncapitalized sentences
+    if text[0].islower():
+        return False
+
+    tokens = text.split()
+
+    # Skip sentences with very few words
+    if not len(tokens) >= MIN_SENT_LENGTH:
+        return False
+
+    # Skip sentences with only a single NP -- S0→NP
+    if stree.match("S0 > [NP $]"):
+        return False
+
+    # Skip sentences not containing a VP
+    if not stree.match("S0 >> VP"):
+        return False
+
+    # Skip sentences not ending in sentence-ending punctuation
+    if text[-1] not in definitions.END_OF_SENTENCE:
+        return False
+
+    # OK, it has passed our criteria
+    # Add sentence to hash set
     SENT_HASHES.add(md5sum)
-
+    # print(text)
     return True
 
 
