@@ -300,58 +300,67 @@ _NUM_NEUT_TO_KVK = {
     "fjögur": "fjórar",
 }
 
+_LARGE_NUMBERS = (
+    (int(1e21) * int(1e21) * int(1e6), "oktilljón"),  # 10^48
+    (int(1e21) * int(1e21), "septilljón"),  # 10^42
+    (int(1e21) * int(1e15), "sextilljón"),  # 10^36
+    (int(1e21) * int(1e9), "kvintilljón"),  # 10^30
+    (int(1e21) * int(1e6), "kvaðrilljarð"),  # 10^27
+    (int(1e21) * int(1e3), "kvaðrilljón"),  # 10^24
+    (int(1e21), "trilljarð"),  # 10^21
+    (int(1e18), "trilljón"),  # 10^18
+    (int(1e15), "billjarð"),  # 10^15
+    (int(1e12), "billjón"),  # 10^12
+    (int(1e9), "milljarð"),  # 10^9
+    (int(1e6), "milljón"),  # 10^6
+)
 
-def number_to_neutral(n: int) -> str:
+
+def number_to_neutral(n: int = 0) -> str:
     """
     Write integer out as text in Icelandic.
     Example:
         1337 -> eitt þúsund þrjú hundruð þrjátíu og sjö
     """
-    text: List[str] = []
+    try:
+        n = int(n)
+    except ValueError:
+        return ""
+
     if n == 0:
-        text.append("núll")
-        return " ".join(text)
+        return "núll"
+
+    text: List[str] = []
     if n < 0:
         text.append("mínus")
         n = -n
 
-    BILLION = 1000000000
     MILLION = 1000000
     THOUSAND = 1000
 
-    if BILLION <= n:
-        billions, n = divmod(n, BILLION)
+    # Very large numbers
+    while n >= MILLION:
+        for large_num, isl_num in _LARGE_NUMBERS:
+            if large_num <= n:
+                break
 
-        if billions > 1:
-            text.extend(number_to_neutral(billions).split())
-            # Fix "eitt" -> "einn", "tvö" -> "tveir", so on ("milljarður" is kk)
+        large_count, n = divmod(n, large_num)
+
+        text.extend(number_to_neutral(large_count).split())
+
+        if isl_num.endswith("jarð"):  # kk
             text[-1] = _NUM_NEUT_TO_KK.get(text[-1], text[-1])
-            # If last number ends in "einn", have "milljarðar" singular
             if text[-1] == "einn":
-                text.append("milljarður")
+                text.append(isl_num + "ur")
             else:
-                text.append("milljarðar")
+                text.append(isl_num + "ar")
 
-        elif billions == 1:
-            text.append("einn")
-            text.append("milljarður")
-
-    if MILLION <= n < BILLION:
-        millions, n = divmod(n, MILLION)
-
-        if millions > 1:
-            text.extend(number_to_neutral(millions).split())
-            # Fix "eitt" -> "ein", "tvö" -> "tvær", so on ("milljón" is kvk)
+        elif isl_num.endswith("jón"):  # kvk
             text[-1] = _NUM_NEUT_TO_KVK.get(text[-1], text[-1])
-            # If last number ends in "ein", have "milljónir" singular
             if text[-1] == "ein":
-                text.append("milljón")
+                text.append(isl_num)
             else:
-                text.append("milljónir")
-
-        elif millions == 1:
-            text.append("ein")
-            text.append("milljón")
+                text.append(isl_num + "ir")
 
     if THOUSAND <= n < MILLION:
         thousands, n = divmod(n, THOUSAND)
@@ -397,13 +406,19 @@ def number_to_neutral(n: int) -> str:
             # "fimm þúsund tuttugu" -> "fimm þúsund og tuttugu"
             # "eitt hundrað fjögur" -> "eitt hundrað og fjögur"
             text.insert(-1, "og")
-        elif not text[-1].startswith("milljarð"):
-            # FIXME: startswith check is a hack to prevent sentences like "eitt og hundrað milljarðar"
-
+        elif not re.search(r"(hundr|þúsund|jarð|jón)", text[-2]):
+            # If-statement catches errors like "eitt og hundrað milljónir",
+            # but fixes numbers such as:
             # "fimm þúsund tvö hundruð" -> "fimm þúsund og tvö hundruð"
             # "sextíu milljónir fjögur hundruð" -> "sextíu milljónir og fjögur hundruð"
             text.insert(-2, "og")
-    return " ".join(text)
+
+    # Fix e.g. "milljónir milljarðar" -> "milljónir milljarða"
+    number_string: str = re.sub(
+        r"(\S*(jónir|jarð[au]r?)) (\S*(jarð|jón))[ia]r", r"\1 \3a", " ".join(text)
+    )
+
+    return number_string
 
 
 def year_to_text(year: int, after_christ: bool = False) -> str:

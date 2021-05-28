@@ -833,7 +833,14 @@ def test_query_utility_functions():
 
 def test_numbers():
     """ Test number handling functionality in queries """
-    from queries import numbers_to_neutral
+    from queries import numbers_to_neutral, number_to_neutral
+
+    assert number_to_neutral(2) == "tvö"
+    assert number_to_neutral(-42178249) == "mínus fjörutíu og tvær milljónir eitt hundrað sjötíu og átta þúsund tvö hundruð fjörutíu og níu"
+    assert number_to_neutral(241000000000) == "tvö hundruð fjörutíu og einn milljarður"
+    assert number_to_neutral(100000000) == "eitt hundrað milljónir"
+    assert number_to_neutral(200000000000) == "tvö hundruð milljarðar"
+    assert number_to_neutral(10000000000000000000000000000000000000000000000000000000) == "tíu milljónir oktilljóna"
 
     assert numbers_to_neutral("Baugatangi 1, Reykjavík") == "Baugatangi eitt, Reykjavík"
     assert numbers_to_neutral("Baugatangi 2, Reykjavík") == "Baugatangi tvö, Reykjavík"
