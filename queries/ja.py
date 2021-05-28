@@ -235,7 +235,7 @@ def _answer_name4phonenum_query(q: Query, result: Result) -> AnswerTuple:
     q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     if not clean_num or len(clean_num) < 3:
-        return gen_answer("{0} er ekki gilt símanúmer")
+        return gen_answer("{0} er ekki gilt símanúmer".format(num))
 
     res = query_ja_api(clean_num)
 
