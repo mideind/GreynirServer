@@ -378,7 +378,94 @@ def test_query_api(client):
         assert json["answer"].endswith("(389 km).")
 
     # Flights module
-    # TODO: Implement me!
+    departure_pattern = r"^Flug \w*? til .*? flýgur frá \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
+    arrival_pattern = r"^Flug \w*? frá .*? lendir [í|á] \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
+    no_matching_flight_pattern = r"Ekkert flug fannst (frá .*? )?(til .*? )?næstu \d+ daga."
+
+    json = qmcall(
+        c, {"q": "hvenær fer næsta flug til jfk frá keflavík", "voice": True}, "Flights"
+    )
+    assert re.search(departure_pattern, json["answer"])
+    json = qmcall(
+        c, {"q": "hvenær flýgur næsta flug til new york frá keflavík", "voice": True}, "Flights"
+    )
+    assert re.search(departure_pattern, json["answer"])
+    json = qmcall(
+        c,
+        {"q": "hvenær flýgur næsta flug af stað frá keflavík", "voice": True},
+        "Flights",
+    )
+    assert re.search(departure_pattern, json["answer"])
+    json = qmcall(
+        c,
+        {"q": "hver er brottfarartími næsta flugs frá keflavík", "voice": True},
+        "Flights",
+    )
+    assert re.search(departure_pattern, json["answer"])
+    json = qmcall(
+        c,
+        {"q": "hver er brottfarartíminn fyrir næsta flug frá keflavík", "voice": True},
+        "Flights",
+    )
+    assert re.search(departure_pattern, json["answer"])
+
+    json = qmcall(
+        c, {"q": "hvenær lendir næsta flug í keflavík", "voice": True}, "Flights"
+    )
+    assert re.search(arrival_pattern, json["answer"])
+    json = qmcall(
+        c, {"q": "hvenær kemur næsta vél á akureyri", "voice": True}, "Flights"
+    )
+    assert re.search(arrival_pattern, json["answer"]) or re.search(
+        no_matching_flight_pattern, json["answer"]
+    )  # In case no flights to Akureyri
+    json = qmcall(
+        c, {"q": "hvenær mætir næsta vél á vopnafjörð", "voice": True}, "Flights"
+    )
+    assert re.search(arrival_pattern, json["answer"]) or re.search(
+        no_matching_flight_pattern, json["answer"]
+    )  # In case no flights to Vopnafjörður
+    json = qmcall(
+        c, {"q": "hvenær mætir næsta vél til vopnafjarðar", "voice": True}, "Flights"
+    )
+    assert re.search(arrival_pattern, json["answer"]) or re.search(
+        no_matching_flight_pattern, json["answer"]
+    )  # In case no flights to Vopnafjörður
+    json = qmcall(
+        c,
+        {
+            "q": "hver er lendingartími næstu vélar frá reykjavík til vopnafjarðar",
+            "voice": True,
+        },
+        "Flights",
+    )
+    assert re.search(arrival_pattern, json["answer"]) or re.search(
+        no_matching_flight_pattern, json["answer"]
+    )
+    json = qmcall(
+        c,
+        {
+            "q": "hver er lendingartíminn fyrir næsta flug til reykjavíkur frá akureyri",
+            "voice": True,
+        },
+        "Flights",
+    )
+    assert re.search(arrival_pattern, json["answer"]) or re.search(
+        no_matching_flight_pattern, json["answer"]
+    )
+
+    json = qmcall(
+        c,
+        {"q": "hvenær fer næsta flug til blabla frá ekkitil", "voice": True},
+        "Flights",
+    )
+    assert re.search(no_matching_flight_pattern, json["answer"])
+    json = qmcall(
+        c,
+        {"q": "hvenær fer næsta flug frá ekkitil til blablab", "voice": True},
+        "Flights",
+    )
+    assert re.search(no_matching_flight_pattern, json["answer"])
 
     # Geography module
     json = qmcall(c, {"q": "hver er höfuðborg spánar", "voice": True}, "Geography")
