@@ -406,7 +406,13 @@ def number_to_neutral(n: int = 0) -> str:
             # "fimm þúsund tuttugu" -> "fimm þúsund og tuttugu"
             # "eitt hundrað fjögur" -> "eitt hundrað og fjögur"
             text.insert(-1, "og")
-        elif not re.search(r"(hundr|þúsund|jarð|jón)", text[-2]):
+        elif (
+            len(text) >= 3
+            and not re.search(r"(hundr|þúsund|jarð|jón)", text[-2])
+            and text[-3] != "og"
+        ):
+            # TODO: This if statement can probably be improved
+
             # If-statement catches errors like "eitt og hundrað milljónir",
             # but fixes numbers such as:
             # "fimm þúsund tvö hundruð" -> "fimm þúsund og tvö hundruð"
@@ -622,23 +628,27 @@ def _num_to_ordinal(
         else:
             word = "hundrað" + _LARGE_ORDINAL_SUFFIX[gender][decl]
 
-    elif word.startswith("þúsund"):
+    elif word == "þúsund":
         if number == "ft" or (gender == "kvk" and decl != "nf"):
             word = "þúsundustu"
         else:
             word = "þúsund" + _LARGE_ORDINAL_SUFFIX[gender][decl]
 
-    elif word.startswith("milljón"):
+    elif "jón" in word:
         if number == "ft":
-            word = "milljónustu"
+            word = re.sub(r"(\S*jón)\S*", r"\1ustu", word)
         else:
-            word = "milljón" + _LARGE_ORDINAL_SUFFIX[gender][decl]
+            word = re.sub(
+                r"(\S*jón)\S*", r"\1" + _LARGE_ORDINAL_SUFFIX[gender][decl], word
+            )
 
-    elif word.startswith("milljarð"):
+    elif "jarð" in word:
         if number == "ft" or (gender == "kvk" and decl != "nf"):
-            word = "milljörðustu"
+            word = re.sub(r"(\S*)jarð\S*", r"\1jörðustu", word)
         else:
-            word = "milljarð" + _LARGE_ORDINAL_SUFFIX[gender][decl]
+            word = re.sub(
+                r"(\S*jarð)\S*", r"\1" + _LARGE_ORDINAL_SUFFIX[gender][decl], word
+            )
 
     return word
 
@@ -651,14 +661,12 @@ def neutral_text_to_ordinal(
     and returns it as an ordinal in specified declension (nf, þf, þgf, ef),
     gender (kk, kvk, hk) and number (et, ft).
     """
+    if len(s) <= 0:
+        return s
+
     ordinal: List[str] = s.split()
-    if len(ordinal) <= 0:
-        return ""
 
-    ends_in_two: bool = False
-    if ordinal[-1] == "tvö":
-        ends_in_two = True
-
+    # Change last word to ordinal
     ordinal[-1] = _num_to_ordinal(ordinal[-1], decl, gender, number)
 
     if len(ordinal) > 1:
@@ -669,11 +677,14 @@ def neutral_text_to_ordinal(
             if not re.search(r"[au]st[iau]$", ordinal[-1]):
                 ordinal[-3] = _num_to_ordinal(ordinal[-3], decl, gender, number)
 
-        # Change e.g. "eitt hundraðasti" -> "hundraðasti"
-        if len(ordinal) == 2 and ordinal[0].startswith("ei"):
-            ordinal = ordinal[1:]
+    ordinal_str: str = " ".join(ordinal)
 
-    return " ".join(ordinal)
+    # Change e.g.
+    # "eitt hundraðasti" -> "hundraðasti"
+    # "ein milljónasta og fyrsta" -> "milljónasta og fyrsta"
+    ordinal_str = re.sub(r"^(einn?|eitt) ((\S*)([au]st[iau]))", r"\2", ordinal_str)
+
+    return ordinal_str
 
 
 def number_to_ordinal(

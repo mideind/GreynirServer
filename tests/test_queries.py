@@ -923,11 +923,18 @@ def test_numbers():
     from queries import numbers_to_neutral, number_to_neutral
 
     assert number_to_neutral(2) == "tvö"
-    assert number_to_neutral(-42178249) == "mínus fjörutíu og tvær milljónir eitt hundrað sjötíu og átta þúsund tvö hundruð fjörutíu og níu"
+    assert number_to_neutral(1100) == "eitt þúsund og eitt hundrað"
+    assert (
+        number_to_neutral(-42178249)
+        == "mínus fjörutíu og tvær milljónir eitt hundrað sjötíu og átta þúsund tvö hundruð fjörutíu og níu"
+    )
     assert number_to_neutral(241000000000) == "tvö hundruð fjörutíu og einn milljarður"
     assert number_to_neutral(100000000) == "eitt hundrað milljónir"
     assert number_to_neutral(200000000000) == "tvö hundruð milljarðar"
-    assert number_to_neutral(10000000000000000000000000000000000000000000000000000000) == "tíu milljónir oktilljóna"
+    assert (
+        number_to_neutral(10000000000000000000000000000000000000000000000000000000)
+        == "tíu milljónir oktilljóna"
+    )
 
     assert numbers_to_neutral("Baugatangi 1, Reykjavík") == "Baugatangi eitt, Reykjavík"
     assert numbers_to_neutral("Baugatangi 2, Reykjavík") == "Baugatangi tvö, Reykjavík"
@@ -1087,3 +1094,31 @@ def test_numbers():
         numbers_to_neutral("Baugatangi 1-17, Reykjavík")
         == "Baugatangi eitt-17, Reykjavík"
     )
+
+
+def test_years():
+    """Test number to written year conversion."""
+    from queries import year_to_text
+
+    assert year_to_text(1999) == "nítján hundruð níutíu og níu"
+    assert year_to_text(2004) == "tvö þúsund og fjögur"
+    assert year_to_text(-501) == "fimm hundruð og eitt fyrir Krist"
+    assert year_to_text(1001, True) == "eitt þúsund og eitt eftir Krist"
+    assert year_to_text(57, True) == "fimmtíu og sjö eftir Krist"
+    assert year_to_text(2401) == "tvö þúsund fjögur hundruð og eitt"
+
+
+def test_ordinals():
+    """Test number to written ordinal conversion."""
+    from queries import number_to_ordinal
+
+    assert number_to_ordinal(0) == "núllti"
+    assert number_to_ordinal(22, "þgf", "kvk") == "tuttugustu og annarri"
+    assert number_to_ordinal(302, gender="kvk") == "þrjú hundraðasta og önnur"
+    assert number_to_ordinal(302, "þgf", "hk") == "þrjú hundraðasta og öðru"
+    assert (
+        number_to_ordinal(10202, "þgf", "hk", "ft")
+        == "tíu þúsund tvö hundruðustu og öðrum"
+    )
+    assert number_to_ordinal(1000000, "þf", "kvk", "et") == "milljónustu"
+    assert number_to_ordinal(1000000002, "þf", "kvk", "et") == "milljörðustu og aðra"
