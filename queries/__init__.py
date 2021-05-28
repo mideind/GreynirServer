@@ -348,6 +348,7 @@ def number_to_neutral(n: int) -> str:
                 text.append("milljón")
             else:
                 text.append("milljónir")
+
         elif millions == 1:
             text.append("ein")
             text.append("milljón")
@@ -371,6 +372,7 @@ def number_to_neutral(n: int) -> str:
             # 2100 gets interpreted as "tvö þúsund og eitt hundrað"
             # instead of "tuttugu og eitt hundrað"
             text.append("hundruð")
+
         elif hundreds == 1:
             text.append("eitt")
             text.append("hundrað")
@@ -391,18 +393,16 @@ def number_to_neutral(n: int) -> str:
 
     if len(text) > 2 and text[-2] != "og":
         # Fix sentences with missing "og"
-        if (
-            text[-1] in _SUB_20_NEUTRAL.values()
-            or text[-1] in _TENS_NEUTRAL.values()
-        ):
+        if text[-1] in _SUB_20_NEUTRAL.values() or text[-1] in _TENS_NEUTRAL.values():
             # "fimm þúsund tuttugu" -> "fimm þúsund og tuttugu"
             # "eitt hundrað fjögur" -> "eitt hundrað og fjögur"
             text.insert(-1, "og")
-        else:
+        elif not text[-1].startswith("milljarð"):
+            # FIXME: startswith check is a hack to prevent sentences like "eitt og hundrað milljarðar"
+
             # "fimm þúsund tvö hundruð" -> "fimm þúsund og tvö hundruð"
             # "sextíu milljónir fjögur hundruð" -> "sextíu milljónir og fjögur hundruð"
             text.insert(-2, "og")
-
     return " ".join(text)
 
 
@@ -437,6 +437,239 @@ def year_to_text(year: int, after_christ: bool = False) -> str:
         text.append(number_to_neutral(year))
 
     return " ".join(text) + suffix
+
+
+FYRSTUR_STRONG_DECL = {
+    "et": {
+        "kk": {"nf": "fyrstur", "þf": "fyrstan", "þgf": "fyrstum", "ef": "fyrsts"},
+        "kvk": {"nf": "fyrst", "þf": "fyrsta", "þgf": "fyrstri", "ef": "fyrstrar"},
+        "hk": {"nf": "fyrst", "þf": "fyrst", "þgf": "fyrstu", "ef": "fyrsts"},
+    },
+    "ft": {
+        "kk": {"nf": "fyrstir", "þf": "fyrsta", "þgf": "fyrstum", "ef": "fyrstra"},
+        "kvk": {"nf": "fyrstrar", "þf": "fyrstar", "þgf": "fyrstum", "ef": "fyrstra"},
+        "hk": {"nf": "fyrst", "þf": "fyrst", "þgf": "fyrstum", "ef": "fyrstra"},
+    },
+}
+
+_SUB_20_NEUT_TO_ORDINAL = {
+    "eitt": "fyrst",
+    # 2 is a special case
+    "þrjú": "þriðj",
+    "fjögur": "fjórð",
+    "fimm": "fimmt",
+    "sex": "sjött",
+    "sjö": "sjöund",
+    "átta": "áttund",
+    "níu": "níund",
+    "tíu": "tíund",
+    "ellefu": "elleft",
+    "tólf": "tólft",
+    "þrettán": "þrettánd",
+    "fjórtán": "fjórtánd",
+    "fimmtán": "fimmtánd",
+    "sextán": "sextánd",
+    "sautján": "sautjánd",
+    "átján": "átjánd",
+    "nítján": "nítjánd",
+}
+
+_ANNAR_TABLE = {
+    "et": {
+        "kk": {
+            "nf": "annar",
+            "þf": "annan",
+            "þgf": "öðrum",
+            "ef": "annars",
+        },
+        "kvk": {
+            "nf": "önnur",
+            "þf": "aðra",
+            "þgf": "annarri",
+            "ef": "annarrar",
+        },
+        "hk": {
+            "nf": "annað",
+            "þf": "annað",
+            "þgf": "öðru",
+            "ef": "annars",
+        },
+    },
+    "ft": {
+        "kk": {
+            "nf": "aðrir",
+            "þf": "aðra",
+            "þgf": "öðrum",
+            "ef": "annarra",
+        },
+        "kvk": {
+            "nf": "aðrar",
+            "þf": "aðrar",
+            "þgf": "öðrum",
+            "ef": "annarra",
+        },
+        "hk": {
+            "nf": "önnur",
+            "þf": "önnur",
+            "þgf": "öðrum",
+            "ef": "annarra",
+        },
+    },
+}
+
+_SUB_20_ORDINAL_SUFFIX = {
+    "kk": {
+        "nf": "i",
+        "þf": "a",
+        "þgf": "a",
+        "ef": "a",
+    },
+    "kvk": {
+        "nf": "a",
+        "þf": "u",
+        "þgf": "u",
+        "ef": "u",
+    },
+    "hk": {
+        "nf": "a",
+        "þf": "a",
+        "þgf": "a",
+        "ef": "a",
+    },
+}
+
+_TENS_NEUT_TO_ORDINAL = {
+    "tuttugu": "tuttug",
+    "þrjátíu": "þrítug",
+    "fjörutíu": "fertug",
+    "fimmtíu": "fimmtug",
+    "sextíu": "sextug",
+    "sjötíu": "sjötug",
+    "áttatíu": "átttug",
+    "níutíu": "nítug",
+}
+
+_LARGE_ORDINAL_SUFFIX = {
+    "kk": {
+        "nf": "asti",
+        "þf": "asta",
+        "þgf": "asta",
+        "ef": "asta",
+    },
+    "kvk": {
+        "nf": "asta",
+        "þf": "ustu",
+        "þgf": "ustu",
+        "ef": "ustu",
+    },
+    "hk": {
+        "nf": "asta",
+        "þf": "asta",
+        "þgf": "asta",
+        "ef": "asta",
+    },
+}
+
+
+def _num_to_ordinal(
+    word: str, decl: str = "nf", gender: str = "kk", number: str = "et"
+) -> str:
+    """
+    Helper function. Changes one part of a number (in written form) to ordinal form
+    in correct declension, gender and number.
+    Example:
+        "hundruð" -> "hundraðasti" (default args)
+        "tvö" -> "aðrar" (þf, kvk, ft)
+    """
+    if word == "núll":
+        word = "núllt" + _SUB_20_ORDINAL_SUFFIX[gender][decl]
+
+    elif word == "tvö":
+        word = _ANNAR_TABLE[number][gender][decl]
+
+    elif word in _SUB_20_NEUT_TO_ORDINAL:
+        word = _SUB_20_NEUT_TO_ORDINAL.get(word, word)
+        if number == "ft":
+            word += "u"
+        else:
+            word += _SUB_20_ORDINAL_SUFFIX[gender][decl]
+
+    elif word in _TENS_NEUT_TO_ORDINAL:
+        word = _TENS_NEUT_TO_ORDINAL.get(word, word)
+        if number == "ft":
+            word += "ustu"
+        else:
+            word += _LARGE_ORDINAL_SUFFIX[gender][decl]
+
+    elif word.startswith("hundr"):
+        if number == "ft" or (gender == "kvk" and decl != "nf"):
+            word = "hundruðustu"
+        else:
+            word = "hundrað" + _LARGE_ORDINAL_SUFFIX[gender][decl]
+
+    elif word.startswith("þúsund"):
+        if number == "ft" or (gender == "kvk" and decl != "nf"):
+            word = "þúsundustu"
+        else:
+            word = "þúsund" + _LARGE_ORDINAL_SUFFIX[gender][decl]
+
+    elif word.startswith("milljón"):
+        if number == "ft":
+            word = "milljónustu"
+        else:
+            word = "milljón" + _LARGE_ORDINAL_SUFFIX[gender][decl]
+
+    elif word.startswith("milljarð"):
+        if number == "ft" or (gender == "kvk" and decl != "nf"):
+            word = "milljörðustu"
+        else:
+            word = "milljarð" + _LARGE_ORDINAL_SUFFIX[gender][decl]
+
+    return word
+
+
+def neutral_text_to_ordinal(
+    s: str, decl: str = "nf", gender: str = "kk", number: str = "et"
+) -> str:
+    """
+    Takes Icelandic text representation of number
+    and returns it as an ordinal in specified declension (nf, þf, þgf, ef),
+    gender (kk, kvk, hk) and number (et, ft).
+    """
+    ordinal: List[str] = s.split()
+    if len(ordinal) <= 0:
+        return ""
+
+    ends_in_two: bool = False
+    if ordinal[-1] == "tvö":
+        ends_in_two = True
+
+    ordinal[-1] = _num_to_ordinal(ordinal[-1], decl, gender, number)
+
+    if len(ordinal) > 1:
+        # Change e.g. "tvö þúsund og fyrsti" -> "tvö þúsundasti og fyrsti"
+        if ordinal[-2] == "og" and len(ordinal) >= 3:
+            # Check that last number in text isn't a large ordinal
+            # e.g. "sextugustu", "hundraðasti" or "þúsundasta"
+            if not re.search(r"[au]st[iau]$", ordinal[-1]):
+                ordinal[-3] = _num_to_ordinal(ordinal[-3], decl, gender, number)
+
+        # Change e.g. "eitt hundraðasti" -> "hundraðasti"
+        if len(ordinal) == 2 and ordinal[0].startswith("ei"):
+            ordinal = ordinal[1:]
+
+    return " ".join(ordinal)
+
+
+def number_to_ordinal(
+    n: int, decl: str = "nf", gender: str = "kk", number: str = "et"
+) -> str:
+    """
+    Takes number and returns it as an ordinal
+    in specified declension (nf, þf, þgf, ef),
+    gender (kk, kvk, hk) and number (et, ft).
+    """
+    return neutral_text_to_ordinal(number_to_neutral(n), decl, gender, number)
 
 
 def country_desc(cc: str) -> str:
