@@ -21,9 +21,12 @@
 
 """
 
-from collections import OrderedDict
-import os, sys
 from typing import cast
+
+import os
+import sys
+
+from collections import OrderedDict
 
 # Shenanigans to enable Pytest to discover modules in the
 # main workspace directory (the parent of /tests)
@@ -60,8 +63,8 @@ class SessionShim:
         self.defs.add((row.name, row.verb, row.definition))
 
     def check(self, t):
-        """ Check whether the tuple t is in the defs set, and
-            removes it if it is, or raises an exception otherwise """
+        """Check whether the tuple t is in the defs set, and
+        removes it if it is, or raises an exception otherwise"""
         self.defs.remove(t)
 
     def is_empty(self):
@@ -72,8 +75,8 @@ class SessionShim:
 
 
 def make_tree(text: str) -> Tree:
-    """ Tokenize and parse text, create tree representation string
-    from all the parse trees, return as Tree object. """
+    """Tokenize and parse text, create tree representation string
+    from all the parse trees, return as Tree object."""
     toklist = tokenize(text)
     fp = Fast_Parser(verbose=False)
     ip = IncrementalParser(fp, toklist, verbose=False)
@@ -192,10 +195,12 @@ def test_persons():
     text = """
 
     Katrín Jakobsdóttir forsætisráðherra ávarpaði Alþingi í dag ásamt Helga Hrafni
-    þingmanni.
+    þingmanni og Jóni Jónssyni, sérstökum álitsgjafa Sameinuðu þjóðanna.
 
     Joe Biden (forseti Bandaríkjanna) segir að Albert Bourla, forstjóri
     Pfizer, vilji afhenda um tvo milljarða skammta á næstu 18 mánuðum.
+
+    Nikulás Tesla (1856-1943) var serbneskur uppfinningamaður og eðlisfræðingur.
 
     """
 
@@ -213,7 +218,7 @@ def test_locations():
 
     Hvannadalshnjúkur í Öræfajökli er hæsti tindur landsins þótt ekki allir viðurkenni
     það, eða sjálfstæði Palestínu. Húsið stóð á sléttunni. Mark Hollendingsins útkljáði
-    viðureignina.
+    viðureignina í Svarfaðardal. "Við munum ávallt hafa París," sagði Bogart eitt sinn.
 
     """
 
