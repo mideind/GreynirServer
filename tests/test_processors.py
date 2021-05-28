@@ -32,14 +32,15 @@ mainpath = os.path.join(basepath, "..")
 if mainpath not in sys.path:
     sys.path.insert(0, mainpath)
 
-from reynir import tokenize
-from reynir.incparser import IncrementalParser
-from reynir.fastparser import Fast_Parser, ParseForestDumper
-from tree import Tree, Session
-from treeutil import TreeUtility
+from reynir import tokenize  # noqa
+from reynir.incparser import IncrementalParser  # noqa
+from reynir.fastparser import Fast_Parser, ParseForestDumper  # noqa
+from tree import Tree, Session  # noqa
+from treeutil import TreeUtility  # noqa
 
-
-import processors.entities as entities
+import processors.entities as entities  # noqa
+import processors.persons as persons  # noqa
+import processors.locations as locations  # noqa
 
 
 class SessionShim:
@@ -68,6 +69,41 @@ class SessionShim:
 
     def __contains__(self, t):
         return t in self.defs
+
+
+def make_tree(text: str) -> Tree:
+    """ Tokenize and parse text, create tree representation string
+    from all the parse trees, return as Tree object. """
+    toklist = tokenize(text)
+    fp = Fast_Parser(verbose=False)
+    ip = IncrementalParser(fp, toklist, verbose=False)
+    # Dict of parse trees in string dump format,
+    # stored by sentence index (1-based)
+    trees = OrderedDict()
+    num_sent = 0
+    for p in ip.paragraphs():
+        for sent in p.sentences():
+            num_sent += 1
+            num_tokens = len(sent)
+            assert sent.parse(), "Sentence does not parse: " + sent.text
+            # Obtain a text representation of the parse tree
+            token_dicts = TreeUtility.dump_tokens(sent.tokens, sent.tree)
+            # Create a verbose text representation of
+            # the highest scoring parse tree
+            assert sent.tree is not None
+            tree = ParseForestDumper.dump_forest(sent.tree, token_dicts=token_dicts)
+            # Add information about the sentence tree's score
+            # and the number of tokens
+            trees[num_sent] = "\n".join(
+                ["C{0}".format(sent.score), "L{0}".format(num_tokens), tree]
+            )
+    # Create a tree representation string out of
+    # all the accumulated parse trees
+    tree_string = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
+
+    tree = Tree()
+    tree.load(tree_string)
+    return tree
 
 
 def test_entities():
@@ -108,38 +144,6 @@ def test_entities():
        Íslendingar stofnuðu skipafélagið Eimskipafélag Íslands.
 
     """
-
-    def make_tree(text: str) -> Tree:
-        toklist = tokenize(text)
-        fp = Fast_Parser(verbose=False)
-        ip = IncrementalParser(fp, toklist, verbose=False)
-        # Dict of parse trees in string dump format,
-        # stored by sentence index (1-based)
-        trees = OrderedDict()
-        num_sent = 0
-        for p in ip.paragraphs():
-            for sent in p.sentences():
-                num_sent += 1
-                num_tokens = len(sent)
-                assert sent.parse(), "Sentence does not parse: " + sent.text
-                # Obtain a text representation of the parse tree
-                token_dicts = TreeUtility.dump_tokens(sent.tokens, sent.tree)
-                # Create a verbose text representation of
-                # the highest scoring parse tree
-                assert sent.tree is not None
-                tree = ParseForestDumper.dump_forest(sent.tree, token_dicts=token_dicts)
-                # Add information about the sentence tree's score
-                # and the number of tokens
-                trees[num_sent] = "\n".join(
-                    ["C{0}".format(sent.score), "L{0}".format(num_tokens), tree]
-                )
-        # Create a tree representation string out of
-        # all the accumulated parse trees
-        tree_string = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
-
-        tree = Tree()
-        tree.load(tree_string)
-        return tree
 
     tree = make_tree(text)
     session = SessionShim()
@@ -184,5 +188,41 @@ def test_entities():
     assert session.is_empty()
 
 
+def test_persons():
+    text = """
+
+    Katrín Jakobsdóttir forsætisráðherra ávarpaði Alþingi í dag ásamt Helga Hrafni
+    þingmanni.
+
+    Joe Biden (forseti Bandaríkjanna) segir að Albert Bourla, forstjóri
+    Pfizer, vilji afhenda um tvo milljarða skammta á næstu 18 mánuðum.
+
+    """
+
+    # tree = make_tree(text)
+    # session = SessionShim()
+    # tree.process(cast(Session, session), persons)
+
+
+def test_locations():
+    text = """
+
+    Hans starfaði á Fiskislóð 31. Fiskislóð er úti á Granda í Reykjavík, sem er að
+    sjálfsögðu höfuðborg Íslands.   Rússland og Norður-Kórea keppa í glímu á föstudag.
+    Liverpool og Manchester eru borgir í Englandi sem stækkuðu á tímum iðnbyltingar.
+
+    Hvannadalshnjúkur í Öræfajökli er hæsti tindur landsins þótt ekki allir viðurkenni
+    það, eða sjálfstæði Palestínu. Húsið stóð á sléttunni. Mark Hollendingsins útkljáði
+    viðureignina.
+
+    """
+
+    # tree = make_tree(text)
+    # session = SessionShim()
+    # tree.process(cast(Session, session), locations)
+
+
 if __name__ == "__main__":
     test_entities()
+    test_persons()
+    test_locations()

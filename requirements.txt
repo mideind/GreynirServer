@@ -1,5 +1,5 @@
 beautifulsoup4>=4.9.3
-Flask==1.1.2
+Flask==2.0.1
 flask-caching>=1.4.0
 Flask-Cors>=3.0.9
 greenlet>=0.4.17
