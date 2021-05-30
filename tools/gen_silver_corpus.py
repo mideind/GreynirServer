@@ -36,6 +36,8 @@ import sys
 import hashlib
 import gc
 from random import shuffle
+from collections import defaultdict
+
 
 # Hack to make this Python program executable from the tools subdirectory
 basepath, _ = os.path.split(os.path.realpath(__file__))
@@ -60,37 +62,37 @@ from annotald.annotree import AnnoTree  # noqa
 
 SENT_HASHES = set()
 
+NONTERMDICT = defaultdict(int)  # non-terminal, [freq]
+TERMDICT = defaultdict(int)  # terminal,     [freq]
+
 
 def is_icelandic(sent):
     # Code mostly copied from annotate() in checker.py in GreynirCorrect
     words_in_bin = 0
     words_not_in_bin = 0
     for t in sent.leaves:
-        if "k" in t:
-            if t["k"] == "WORD":
-                if "a" in t:
-                    words_in_bin += 1
-                else:
-                    words_not_in_bin += 1
-            elif t["k"] == "PERSON":
+        kind = t._head.get("k")
+        if kind == "WORD":
+            if t._head.get("a"):
                 words_in_bin += 1
-            elif t["k"] == "ENTITY":
-                words_not_in_bin += t["x"].count(" ") + 1
+            else:
+                words_not_in_bin += 1
+        elif kind == "PERSON":
+            words_in_bin += 1
+        elif kind == "ENTITY":
+            words_not_in_bin += t._head.get("x").count(" ") + 1
     num_words = words_in_bin + words_not_in_bin
     if num_words > 2 and words_in_bin / num_words < ICELANDIC_RATIO:
         return False
     return True
-
 
 def is_acceptable_article(art):
     if not art.root_domain or "lemurinn" in art.root_domain:
         return False
     return True
 
-
 # Min num tokens in sentence
 MIN_SENT_LENGTH = 5
-
 
 def is_acceptable_sentence_tree(stree):
     # Generate hash of sentence text and add
@@ -100,40 +102,44 @@ def is_acceptable_sentence_tree(stree):
 
     # Skip already processed identical sentence
     if md5sum in SENT_HASHES:
+        print("\tA")
         return False
 
     # Skip sentences that don't contain enough Icelandic words
     if not is_icelandic(stree):
+        print("\tB")
         return False
 
     # Skip uncapitalized sentences
     if text[0].islower():
+        print("\tC")
         return False
 
     tokens = text.split()
 
     # Skip sentences with very few words
     if not len(tokens) >= MIN_SENT_LENGTH:
+        print("\tD")
         return False
 
     # Skip sentences with only a single NP -- S0→NP
     if stree.match("S0 > [NP $]"):
-        return False
-
-    # Skip sentences not containing a VP
-    if not stree.match("S0 >> VP"):
-        return False
-
-    # Skip sentences not ending in sentence-ending punctuation
-    if text[-1] not in definitions.END_OF_SENTENCE:
+        print("\tE")
         return False
 
     # OK, it has passed our criteria
     # Add sentence to hash set
     SENT_HASHES.add(md5sum)
     # print(text)
+    print("\tF  fann rétt!")
     return True
 
+def is_heading_sentence_tree(stree):
+    if not stree.match("S0 >> VP"):
+        return True
+    if text[-1] not in definitions.END_OF_SENTENCE:
+        return True
+    return False
 
 def gen_anno_tree(article, index, stree):
     # Create Annotald tree for sentence
@@ -149,8 +155,35 @@ def gen_anno_tree(article, index, stree):
     nltk_tree = simpleTree2NLTK(stree)
     return AnnoTree("", [meta_node, nltk_tree])
 
+def old_info(stree):
+    p = True
+    for nonterm in stree.nonterminals:
+        phrase = nonterm._head.get("i")
+        if NONTERMDICT[phrase] < 100:
+            # We want to add it!
+            p = False
+        NONTERMDICT[phrase] += 1
 
-NUM_SENT = 10000
+    for leaf in stree.leaves:
+        cat = leaf._head.get("c")
+        if TERMDICT[cat] < 1000:
+            p = False
+        TERMDICT[cat] += 1
+
+    return p
+
+def full_buckets(stree):
+    for nonterm in NONTERMDICT:
+        if NONTERMDICT[nonterm] < 100:
+            return False
+    for term in TERMDICT:
+        if TERMDICT[term] < 1000:
+            return False
+    return True
+
+
+NUM_SENT = 500000
+LIMIT = 2000000     # Absolute limit of corpus size
 BATCH_SIZE = 1000
 OUT_FILENAME = "out.txt"
 SEPARATOR = "\n\n"
@@ -200,9 +233,18 @@ def main():
         # Iterate over each sentence tree, process
         for ix, stree in trees:
             if not is_acceptable_sentence_tree(stree):
-                # print(stree.text)
                 total_sent_skipped += 1
                 continue
+            elif is_heading_sentence_tree(stree):
+                atree = gen_anno_tree(art, ix, stree)
+                with open("heading.txt", "a", encoding="utf-8") as headingfile:
+                    headingfile.write(str(atree) + SEPARATOR)
+                continue
+            # Both check if we find something new and add to buckets
+            if old_info(stree):
+                total_sent_skipped += 1
+                continue
+
             # OK, it's acceptable
             annotree = gen_anno_tree(art, ix, stree)
             # print(annotree)
@@ -222,7 +264,14 @@ def main():
             print(f"{total_sent} sentences accumulated")
 
         if total_sent >= NUM_SENT:
-            break
+            # Time to check for missing info
+            if not full_buckets():
+                # Stop if we haven't stopped by 2M sents
+                if total_sent >= LIMIT:
+                    break
+                continue
+            else:
+                break
 
     # All done
     file.close()
