@@ -33,10 +33,11 @@ from typing import List, Dict, Optional, Tuple, Any
 
 import logging
 import random
+import cachetools
 from datetime import datetime, timedelta
 
-from query import Query, QueryStateDict
-from queries import query_json_api, query_xml_api, gen_answer
+from query import AnswerTuple, Query, QueryStateDict
+from queries import query_json_api, gen_answer
 from tree import Result
 
 
@@ -49,11 +50,14 @@ _RADIO_QKEY = "RadioSchedule"
 TOPIC_LEMMAS = [
     "sjónvarp",
     "sjónvarpsdagskrá",
+    "útvarpsdagskrá",
     "dagskrá",
     "rúv",
     "ríkissjónvarp",
     "útvarp",
     "ríkisútvarp",
+    "rás",
+    "þáttur",
 ]
 
 
@@ -91,7 +95,7 @@ QSchedule →
     QScheduleQuery '?'?
 
 QScheduleQuery →
-    QScheduleTV # | QScheduleRadio
+    QScheduleTV | QScheduleRadio
 
 QScheduleTV →
     QSchTelevisionQuery
@@ -113,7 +117,8 @@ QScheduleRadio →
     QSchRadioStationNowQuery
 
 QSchRadioStationNowQuery →
-    QSchWhatIsNom QSchEiginlega? "á" QRadioStation
+    QSchWhatIsNom QSchEiginlega? QSchGoingOn? QSchOnRadioStation QSchNow?
+    | QSchWhatIsDative QSchEiginlega? "verið" "að" "spila" QSchOnRadioStation QSchNow?
 
 QSchWhatIsNom →
     "hvað" "er" | "hvaða" "þáttur" "er" | "hvaða" "dagskrárliður" "er" | "hvaða" "efni" "er"
@@ -131,18 +136,19 @@ QSchOnRUV →
 QSchOnStod2 →
     "á" "stöð" "tvö" | "á" "stöð" "2"
 
-QSchOnRadio →
-    "í" "útvarpinu" | "í" "ríkisútvarpinu" | "á" "ríkisútvarpinu"
-
 # Supported radio stations
-QRadioStation →
-    QSchRas1 | QSchRas2
+QSchOnRadioStation →
+   QSchOnRas1 | QSchOnRas2
 
-QSchRas2 →
-    "rás" "tvö" | "rás" "2"
+QSchOnRas1 →
+    "á" "rás" "eitt"
+    | "á" "rás" "1"
+    | "í" "útvarpinu"
+    | "í" "ríkisútvarpinu"
+    | "á" "ríkisútvarpinu"
 
-QSchRas1 →
-    "rás" "eitt" | "rás" "1"
+QSchOnRas2 →
+    "á" "rás" "tvö" | "á" "rás" "2"
 
 QSchNow →
     "nákvæmlega"? "núna" | "eins" "og" "stendur" | "í" "augnablikinu"
@@ -175,6 +181,16 @@ $score(+55) QSchedule
 """
 
 
+def QSchOnRas1(node, params, result):
+    result["radio_channel"] = "ras1"
+    result["radio_channel_pretty"] = "Rás 1"
+
+
+def QSchOnRas2(node, params, result):
+    result["radio_channel"] = "ras2"
+    result["radio_channel_pretty"] = "Rás 2"
+
+
 def QSchTelevisionQuery(node, params, result):
     result.qtype = _SCHEDULES_QTYPE
     result.qkey = _TELEVISION_QKEY
@@ -191,7 +207,7 @@ def QSchRadioStationNowQuery(node, params, result):
 
 
 def _clean_desc(d: str) -> str:
-    """ Return first sentence in multi-sentence string. """
+    """Return first sentence in multi-sentence string."""
     return d.replace("Dr.", "Doktor").replace("?", ".").split(".")[0]
 
 
@@ -202,7 +218,7 @@ _TV_LAST_FETCHED: Optional[datetime] = None
 
 
 def _query_tv_schedule_api() -> Optional[List]:
-    """ Fetch current television schedule from API, or return cached copy. """
+    """Fetch current television schedule from API, or return cached copy."""
     global _CACHED_TV_SCHEDULE
     global _TV_LAST_FETCHED
     if (
@@ -219,51 +235,55 @@ def _query_tv_schedule_api() -> Optional[List]:
     return _CACHED_TV_SCHEDULE
 
 
-_RUV_RADIO_SCHEDULE_API_ENDPOINT = "https://muninn.ruv.is/files/xml/{0}/{1}/"
+_RUV_RADIO_SCHEDULE_API_ENDPOINT = "https://muninn.ruv.is/files/json/{0}/{1}/"
 _RADIO_API_ERRMSG = "Ekki tókst að sækja útvarpsdagskrá."
-_RADIO_SCHED_CACHE: Dict[str, Any] = {}
-_RADIO_LAST_FETCHED: Dict[str, datetime] = {}
+_RADIO_CACHE_TTL = 180  # 3 minutes
+_RADIO_SCHED_CACHE = cachetools.TTLCache(maxsize=2, ttl=_RADIO_CACHE_TTL)
 
 
 def _query_radio_schedule_api(channel: str) -> List:
-    """ Fetch current radio schedule from API, or return cached copy. """
-    assert channel in ("ras1", "ras2")
-    global _RADIO_SCHED_CACHE
-    global _RADIO_LAST_FETCHED
-
-    if (
-        not _RADIO_SCHED_CACHE.get(channel)
-        or not _RADIO_LAST_FETCHED.get(channel)
-        or _RADIO_LAST_FETCHED[channel].date() != datetime.today().date()
-    ):
+    """Fetch current radio schedule from RÚV API, or return cached copy."""
+    if not _RADIO_SCHED_CACHE.get(channel):
         # Not cached. Fetch data.
         date_str = datetime.today().strftime("%Y-%m-%d")
-        print(date_str)
+
         url = _RUV_RADIO_SCHEDULE_API_ENDPOINT.format(channel, date_str)
-        print(url)
-        xmldoc = query_xml_api(url)
-        # TODO: Validate XML format
-        if xmldoc:
-            _RADIO_LAST_FETCHED[channel] = datetime.utcnow()
-            _RADIO_SCHED_CACHE[channel] = xmldoc
+        response = query_json_api(url)
 
-    return _RADIO_SCHED_CACHE[channel]
+        if (
+            not response
+            or not response.get("schedule")
+            or not response["schedule"].get("services")
+            or len(response["schedule"]["services"]) == 0
+        ):
+            return []
+
+        _RADIO_SCHED_CACHE[channel] = response["schedule"]["services"][0].get(
+            "events", []
+        )
+
+    return _RADIO_SCHED_CACHE.get(channel, [])
 
 
-def _span(p: Dict) -> Tuple[datetime, datetime]:
-    """ Return the time span of a program """
-    start = datetime.strptime(p["startTime"], "%Y-%m-%d %H:%M:%S")
+def _span(p: Dict, tv: bool = True) -> Tuple[datetime, datetime]:
+    """Return the time span of a program."""
+    if tv:
+        start = datetime.strptime(p["startTime"], "%Y-%m-%d %H:%M:%S")
+    else:
+        start = datetime.strptime(p["start-time"], "%Y-%m-%d %H:%M:%S")
     h, m, _ = p["duration"].split(":")
     dur = timedelta(hours=int(h), minutes=int(m))
     return start, start + dur
 
 
-def _curr_prog(sched: List) -> Optional[Dict]:
-    """Return current TV program, given a TV schedule
-    i.e. a list of programs in chronological sequence."""
+def _curr_prog(sched: List, tv: bool = True) -> Optional[Dict]:
+    """
+    Return current TV/radio program (based on tv boolean), given a schedule
+    i.e. a list of programs in chronological sequence.
+    """
     now = datetime.utcnow()
     for p in sched:
-        t1, t2 = _span(p)
+        t1, t2 = _span(p, tv)
         if t1 <= now < t2:
             return p
         if t1 > now:
@@ -273,8 +293,10 @@ def _curr_prog(sched: List) -> Optional[Dict]:
 
 
 def _evening_prog(sched: List) -> List:
-    """Return programs on a TV schedule starting from 19:00,
-    or at the current time if later"""
+    """
+    Return programs on a TV schedule starting from 19:00,
+    or at the current time if later.
+    """
     start = datetime.utcnow()
     if (start.hour, start.minute) < (19, 0):
         start = datetime(start.year, start.month, start.day, 19, 0, 0)
@@ -287,8 +309,8 @@ def _evening_prog(sched: List) -> List:
     return result
 
 
-def _gen_curr_tv_program_answer(q: Query):
-    """ Generate answer to query about current TV program """
+def _gen_curr_tv_program_answer(q: Query, result: Result) -> AnswerTuple:
+    """Generate answer to query about current TV program."""
     sched = _query_tv_schedule_api()
     if not sched:
         return gen_answer(_TV_API_ERRMSG)
@@ -305,8 +327,8 @@ def _gen_curr_tv_program_answer(q: Query):
     return gen_answer(answ)
 
 
-def _gen_evening_tv_program_answer(q: Query) -> Tuple:
-    """ Generate answer to query about the evening's TV programs """
+def _gen_evening_tv_program_answer(q: Query, result: Result) -> AnswerTuple:
+    """Generate answer to query about the evening's TV programs"""
     sched = _query_tv_schedule_api()
     if not sched:
         return gen_answer(_TV_API_ERRMSG)
@@ -323,9 +345,25 @@ def _gen_evening_tv_program_answer(q: Query) -> Tuple:
     return dict(answer=answer), answer, voice_answer
 
 
-def _gen_curr_radio_program_answer(q: Query):
-    xmldoc = _query_radio_schedule_api("ras1")
-    return xmldoc
+def _gen_curr_radio_program_answer(q: Query, result: Result) -> AnswerTuple:
+    """Generate answer to query about current radio program."""
+    sched = _query_radio_schedule_api(result.get("radio_channel", "ras1"))
+    if len(sched) == 0:
+        return gen_answer(_RADIO_API_ERRMSG)
+
+    prog = _curr_prog(sched, False)
+    if not prog:
+        ans = f"Það er engin dagskrá á {result.get('radio_channel_pretty')} núna."
+        return dict(answer=ans), ans, ans.replace("1", "eitt").replace("2", "tvö")
+
+    title = prog["title"]
+    desc = prog["description"]
+    answ = f"Á {result.get('radio_channel_pretty')} er verið að spila {title}. {_clean_desc(desc)}"
+    return (
+        dict(answer=answ),
+        answ,
+        answ.replace("Rás 1", "Rás eitt").replace("Rás 2", "Rás tvö"),
+    )
 
 
 _HANDLER_MAP = {
@@ -336,7 +374,7 @@ _HANDLER_MAP = {
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     handler_keys = _HANDLER_MAP.keys()
     if "qtype" in result and "qkey" in result and result["qkey"] in handler_keys:
@@ -345,7 +383,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_key(result.qkey)
 
         try:
-            r = _HANDLER_MAP[result.qkey](q)
+            r: AnswerTuple = _HANDLER_MAP[result.qkey](q, result)
             q.set_answer(*r)
             q.set_beautified_query(q._beautified_query.replace("rúv", "RÚV"))
             # TODO: Set intelligent expiry time
