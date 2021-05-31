@@ -33,7 +33,6 @@ from typing import List, Dict, Optional, Tuple, Any
 
 import logging
 import random
-import cachetools
 from datetime import datetime, timedelta
 
 from query import AnswerTuple, Query, QueryStateDict
@@ -238,17 +237,26 @@ def _query_tv_schedule_api() -> Optional[List]:
 
 _RUV_RADIO_SCHEDULE_API_ENDPOINT = "https://muninn.ruv.is/files/json/{0}/{1}/"
 _RADIO_API_ERRMSG = "Ekki tókst að sækja útvarpsdagskrá."
-_RADIO_CACHE_TTL = 180  # 3 minutes
-_RADIO_SCHED_CACHE = cachetools.TTLCache(maxsize=2, ttl=_RADIO_CACHE_TTL)
+_RADIO_SCHED_CACHE: Dict[str, List] = {}
+_RADIO_LAST_FETCHED: Dict[str, datetime] = {}
 
 
 def _query_radio_schedule_api(channel: str) -> List:
     """Fetch current radio schedule from RÚV API, or return cached copy."""
-    if not _RADIO_SCHED_CACHE.get(channel):
-        # Not cached. Fetch data.
-        date_str = datetime.today().strftime("%Y-%m-%d")
+    global _RADIO_SCHED_CACHE
+    global _RADIO_LAST_FETCHED
 
-        url = _RUV_RADIO_SCHEDULE_API_ENDPOINT.format(channel, date_str)
+    if (
+        not _RADIO_SCHED_CACHE.get(channel)
+        or not _RADIO_LAST_FETCHED.get(channel)
+        or _RADIO_LAST_FETCHED[channel].date() != datetime.today().date()
+    ):
+        # Not cached. Fetch data.
+        today = datetime.today()
+
+        url = _RUV_RADIO_SCHEDULE_API_ENDPOINT.format(
+            channel, today.strftime("%Y-%m-%d")
+        )
         response = query_json_api(url)
 
         if (
@@ -262,6 +270,7 @@ def _query_radio_schedule_api(channel: str) -> List:
         _RADIO_SCHED_CACHE[channel] = response["schedule"]["services"][0].get(
             "events", []
         )
+        _RADIO_LAST_FETCHED[channel] = today
 
     return _RADIO_SCHED_CACHE.get(channel, [])
 
