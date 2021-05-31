@@ -102,39 +102,34 @@ def is_acceptable_sentence_tree(stree):
 
     # Skip already processed identical sentence
     if md5sum in SENT_HASHES:
-        print("\tA")
         return False
 
     # Skip sentences that don't contain enough Icelandic words
     if not is_icelandic(stree):
-        print("\tB")
         return False
 
     # Skip uncapitalized sentences
     if text[0].islower():
-        print("\tC")
         return False
 
     tokens = text.split()
 
     # Skip sentences with very few words
     if not len(tokens) >= MIN_SENT_LENGTH:
-        print("\tD")
         return False
 
     # Skip sentences with only a single NP -- S0→NP
     if stree.match("S0 > [NP $]"):
-        print("\tE")
         return False
 
     # OK, it has passed our criteria
     # Add sentence to hash set
     SENT_HASHES.add(md5sum)
     # print(text)
-    print("\tF  fann rétt!")
     return True
 
 def is_heading_sentence_tree(stree):
+    text = stree.text
     if not stree.match("S0 >> VP"):
         return True
     if text[-1] not in definitions.END_OF_SENTENCE:
@@ -206,6 +201,8 @@ def main():
 
     total_arts = 0
     total_arts_skipped = 0
+
+    total_silver = 0
 
     accumulated = []
 
