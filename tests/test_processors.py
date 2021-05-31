@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 
     Greynir: Natural language processing for Icelandic
@@ -25,6 +26,8 @@ from typing import cast
 
 import os
 import sys
+import json
+import importlib
 
 from collections import OrderedDict
 
@@ -41,13 +44,15 @@ from reynir.fastparser import Fast_Parser, ParseForestDumper  # noqa
 from tree import Tree, Session  # noqa
 from treeutil import TreeUtility  # noqa
 
+
+from processor import TokenContainer  # noqa
+
 import processors.entities as entities  # noqa
 import processors.persons as persons  # noqa
 import processors.locations as locations  # noqa
 
 
-class SessionShim:
-
+class EntitiesSessionShim:
     """ Shim (wrapper) that fakes an SQLAlchemy session class """
 
     def __init__(self):
@@ -74,17 +79,30 @@ class SessionShim:
         return t in self.defs
 
 
+class PersonsSessionShim(EntitiesSessionShim):
+    def add(self, row):
+        self.defs.add((row.name, row.title, row.gender))
+
+
+class LocationsSessionShim(EntitiesSessionShim):
+    def add(self, row):
+        self.defs.add((row.name, row.kind))
+
+
 def make_tree(text: str) -> Tree:
     """Tokenize and parse text, create tree representation string
     from all the parse trees, return as Tree object."""
     toklist = tokenize(text)
     fp = Fast_Parser(verbose=False)
     ip = IncrementalParser(fp, toklist, verbose=False)
+
+    pgs = []
     # Dict of parse trees in string dump format,
     # stored by sentence index (1-based)
     trees = OrderedDict()
     num_sent = 0
     for p in ip.paragraphs():
+        pgs.append([])
         for sent in p.sentences():
             num_sent += 1
             num_tokens = len(sent)
@@ -100,13 +118,15 @@ def make_tree(text: str) -> Tree:
             trees[num_sent] = "\n".join(
                 ["C{0}".format(sent.score), "L{0}".format(num_tokens), tree]
             )
+            pgs[-1].append(token_dicts)
     # Create a tree representation string out of
     # all the accumulated parse trees
     tree_string = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
+    tokens_json = json.dumps(pgs, separators=(",", ":"), ensure_ascii=False)
 
     tree = Tree()
     tree.load(tree_string)
-    return tree
+    return tree, tokens_json
 
 
 def test_entities():
@@ -148,8 +168,8 @@ def test_entities():
 
     """
 
-    tree = make_tree(text)
-    session = SessionShim()
+    tree, _ = make_tree(text)
+    session = EntitiesSessionShim()
     tree.process(cast(Session, session), entities)
 
     session.check(("Bygma", "er", "dönsk byggingavörukeðja"))
@@ -179,8 +199,8 @@ def test_entities():
     samtals 681 félagslega íbúð í lok árs 2016.
     """
 
-    tree = make_tree(text)
-    session = SessionShim()
+    tree, _ = make_tree(text)
+    session = EntitiesSessionShim()
     tree.process(cast(Session, session), entities)
 
     session.check(("Kópavogur", "er", "vinalegur staður"))
@@ -194,37 +214,65 @@ def test_entities():
 def test_persons():
     text = """
 
-    Katrín Jakobsdóttir forsætisráðherra ávarpaði Alþingi í dag ásamt Helga Hrafni
+    Katrín Jakobsdóttir, forsætisráðherra, var á Alþingi í dag ásamt Helga Hrafni
     þingmanni og Jóni Jónssyni, sérstökum álitsgjafa Sameinuðu þjóðanna.
 
-    Joe Biden (forseti Bandaríkjanna) segir að Albert Bourla, forstjóri
+    Jói Biden bandaríkjaforseti segir að Albert Bourla, forstjóri
     Pfizer, vilji afhenda um tvo milljarða skammta á næstu 18 mánuðum.
 
-    Nikulás Tesla (1856-1943) var serbneskur uppfinningamaður og eðlisfræðingur.
+    Nikulás Tesla, serbneskur uppfinningamaður, lagði grunninn að riðstraumskerfum.
 
     """
 
-    # tree = make_tree(text)
-    # session = SessionShim()
-    # tree.process(cast(Session, session), persons)
+    tree, _ = make_tree(text)
+    session = PersonsSessionShim()
+    tree.process(cast(Session, session), persons)
+
+    session.check(("Katrín Jakobsdóttir", "forsætisráðherra", "kvk"))
+    session.check(("Helgi Hrafn", "þingmaður", "kk"))
+    session.check(("Jón Jónsson", "sérstakur álitsgjafi Sameinuðu þjóðanna", "kk"))
+    session.check(("Jói Biden", "bandaríkjaforseti", "kk"))
+    session.check(("Albert Bourla", "forstjóri Pfizer", "kk"))
+    session.check(("Nikulás Tesla", "serbneskur uppfinningamaður", "kk"))
+
+    assert session.is_empty()
 
 
 def test_locations():
     text = """
 
-    Hans starfaði á Fiskislóð 31. Fiskislóð er úti á Granda í Reykjavík, sem er að
-    sjálfsögðu höfuðborg Íslands.   Rússland og Norður-Kórea keppa í glímu á föstudag.
+    Hans starfaði á Fiskislóð 31 í höfuðborg Íslands.   Rússland og Norður-Kórea
+    keppa í glímu á föstudag.
     Liverpool og Manchester eru borgir í Englandi sem stækkuðu á tímum iðnbyltingar.
 
     Hvannadalshnjúkur í Öræfajökli er hæsti tindur landsins þótt ekki allir viðurkenni
     það, eða sjálfstæði Palestínu. Húsið stóð á sléttunni. Mark Hollendingsins útkljáði
-    viðureignina í Svarfaðardal. "Við munum ávallt hafa París," sagði Bogart eitt sinn.
+    viðureignina í Svarfaðardal.
 
     """
+    _, tokens_json = make_tree(text)
 
-    # tree = make_tree(text)
-    # session = SessionShim()
-    # tree.process(cast(Session, session), locations)
+    session = LocationsSessionShim()
+
+    # Import locations processor module
+    pmod = importlib.import_module("processors.locations")
+
+    tc = TokenContainer(tokens_json, "", 1.0)
+    tc.process(session, pmod)
+
+    session.check(("Fiskislóð 31", "address"))
+    session.check(("Ísland", "country"))
+    session.check(("Rússland", "country"))
+    session.check(("Norður-Kórea", "country"))
+    session.check(("Liverpool", "placename"))
+    session.check(("Manchester", "placename"))
+    session.check(("England", "country"))
+    session.check(("Hvannadalshnjúkur", "placename"))
+    session.check(("Öræfajökull", "placename"))
+    session.check(("Palestína", "country"))
+    session.check(("Svarfaðardalur", "placename"))
+
+    assert session.is_empty()
 
 
 if __name__ == "__main__":
