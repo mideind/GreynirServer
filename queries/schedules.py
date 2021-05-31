@@ -118,6 +118,7 @@ QScheduleRadio →
 
 QSchRadioStationNowQuery →
     QSchWhatIsNom QSchEiginlega? QSchGoingOn? QSchOnRadioStation QSchNow?
+    | QSchWhatIsNom QSchEiginlega? QSchOnSchedule? QSchOnRadioStation QSchNow?
     | QSchWhatIsDative QSchEiginlega? "verið" "að" "spila" QSchOnRadioStation QSchNow?
 
 QSchWhatIsNom →
