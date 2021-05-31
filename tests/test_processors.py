@@ -52,7 +52,7 @@ import processors.persons as persons  # noqa
 import processors.locations as locations  # noqa
 
 
-class EntitiesSessionShim:
+class SessionShim:
     """ Shim (wrapper) that fakes an SQLAlchemy session class """
 
     def __init__(self):
@@ -65,7 +65,7 @@ class EntitiesSessionShim:
 
     def add(self, row):
         """ Shim out SQLAlchemy add() calls """
-        self.defs.add((row.name, row.verb, row.definition))
+        raise NotImplementedError
 
     def check(self, t):
         """Check whether the tuple t is in the defs set, and
@@ -79,19 +79,24 @@ class EntitiesSessionShim:
         return t in self.defs
 
 
-class PersonsSessionShim(EntitiesSessionShim):
+class EntitiesSessionShim(SessionShim):
+    def add(self, row):
+        self.defs.add((row.name, row.verb, row.definition))
+
+
+class PersonsSessionShim(SessionShim):
     def add(self, row):
         self.defs.add((row.name, row.title, row.gender))
 
 
-class LocationsSessionShim(EntitiesSessionShim):
+class LocationsSessionShim(SessionShim):
     def add(self, row):
         self.defs.add((row.name, row.kind))
 
 
-def make_tree(text: str) -> Tree:
+def _make_tree(text: str) -> Tree:
     """Tokenize and parse text, create tree representation string
-    from all the parse trees, return as Tree object."""
+    from all the parse trees, return Tree object and token JSON."""
     toklist = tokenize(text)
     fp = Fast_Parser(verbose=False)
     ip = IncrementalParser(fp, toklist, verbose=False)
@@ -168,7 +173,7 @@ def test_entities():
 
     """
 
-    tree, _ = make_tree(text)
+    tree, _ = _make_tree(text)
     session = EntitiesSessionShim()
     tree.process(cast(Session, session), entities)
 
@@ -192,14 +197,17 @@ def test_entities():
     assert session.is_empty()
 
     text = """
+
     Ég segi að Kópavogur (vinalegur staður) og Hafnarfjörður (einstakur bær)
     séu efst á vinsældalistanum.
+
     Til samanburðar áttu þau nágrannasveitafélög höfuðborgarinnar sem koma þar næst,
     Kópavogur (436 félagslegar íbúðir) og Hafnarfjörður (245 félagslegar íbúðir)
     samtals 681 félagslega íbúð í lok árs 2016.
+
     """
 
-    tree, _ = make_tree(text)
+    tree, _ = _make_tree(text)
     session = EntitiesSessionShim()
     tree.process(cast(Session, session), entities)
 
@@ -224,7 +232,7 @@ def test_persons():
 
     """
 
-    tree, _ = make_tree(text)
+    tree, _ = _make_tree(text)
     session = PersonsSessionShim()
     tree.process(cast(Session, session), persons)
 
@@ -241,16 +249,17 @@ def test_persons():
 def test_locations():
     text = """
 
-    Hans starfaði á Fiskislóð 31 í höfuðborg Íslands.   Rússland og Norður-Kórea
-    keppa í glímu á föstudag.
-    Liverpool og Manchester eru borgir í Englandi sem stækkuðu á tímum iðnbyltingar.
+    Hans starfaði á Fiskislóð 31b en bjó á Öldugötu 4 í miðbæ höfuðborgar Íslands.   
+    Rússland og Norður-Kórea keppa í glímu á föstudaginn.
+    Liverpool og Manchester eru borgir í Englandi sem stækkuðu báðar mikið
+    á tímum iðnbyltingar.
 
     Hvannadalshnjúkur í Öræfajökli er hæsti tindur landsins þótt ekki allir viðurkenni
     það, eða sjálfstæði Palestínu. Húsið stóð á sléttunni. Mark Hollendingsins útkljáði
     viðureignina í Svarfaðardal.
 
     """
-    _, tokens_json = make_tree(text)
+    _, tokens_json = _make_tree(text)
 
     session = LocationsSessionShim()
 
@@ -260,7 +269,8 @@ def test_locations():
     tc = TokenContainer(tokens_json, "", 1.0)
     tc.process(session, pmod)
 
-    session.check(("Fiskislóð 31", "address"))
+    session.check(("Fiskislóð 31b", "address"))
+    session.check(("Öldugata 4", "address"))
     session.check(("Ísland", "country"))
     session.check(("Rússland", "country"))
     session.check(("Norður-Kórea", "country"))
@@ -276,6 +286,7 @@ def test_locations():
 
 
 if __name__ == "__main__":
+    """ Run tests via command line invocation. """
     test_entities()
     test_persons()
     test_locations()
