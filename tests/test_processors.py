@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 
     Greynir: Natural language processing for Icelandic
@@ -21,9 +22,14 @@
 
 """
 
-from collections import OrderedDict
-import os, sys
 from typing import cast
+
+import os
+import sys
+import json
+import importlib
+
+from collections import OrderedDict
 
 # Shenanigans to enable Pytest to discover modules in the
 # main workspace directory (the parent of /tests)
@@ -32,18 +38,21 @@ mainpath = os.path.join(basepath, "..")
 if mainpath not in sys.path:
     sys.path.insert(0, mainpath)
 
-from reynir import tokenize
-from reynir.incparser import IncrementalParser
-from reynir.fastparser import Fast_Parser, ParseForestDumper
-from tree import Tree, Session
-from treeutil import TreeUtility
+from reynir import tokenize  # noqa
+from reynir.incparser import IncrementalParser  # noqa
+from reynir.fastparser import Fast_Parser, ParseForestDumper  # noqa
+from tree import Tree, Session  # noqa
+from treeutil import TreeUtility  # noqa
 
 
-import processors.entities as entities
+from processor import TokenContainer  # noqa
+
+import processors.entities as entities  # noqa
+import processors.persons as persons  # noqa
+import processors.locations as locations  # noqa
 
 
 class SessionShim:
-
     """ Shim (wrapper) that fakes an SQLAlchemy session class """
 
     def __init__(self):
@@ -56,11 +65,11 @@ class SessionShim:
 
     def add(self, row):
         """ Shim out SQLAlchemy add() calls """
-        self.defs.add((row.name, row.verb, row.definition))
+        raise NotImplementedError
 
     def check(self, t):
-        """ Check whether the tuple t is in the defs set, and
-            removes it if it is, or raises an exception otherwise """
+        """Check whether the tuple t is in the defs set, and
+        removes it if it is, or raises an exception otherwise"""
         self.defs.remove(t)
 
     def is_empty(self):
@@ -68,6 +77,61 @@ class SessionShim:
 
     def __contains__(self, t):
         return t in self.defs
+
+
+class EntitiesSessionShim(SessionShim):
+    def add(self, row):
+        self.defs.add((row.name, row.verb, row.definition))
+
+
+class PersonsSessionShim(SessionShim):
+    def add(self, row):
+        self.defs.add((row.name, row.title, row.gender))
+
+
+class LocationsSessionShim(SessionShim):
+    def add(self, row):
+        self.defs.add((row.name, row.kind))
+
+
+def _make_tree(text: str) -> Tree:
+    """Tokenize and parse text, create tree representation string
+    from all the parse trees, return Tree object and token JSON."""
+    toklist = tokenize(text)
+    fp = Fast_Parser(verbose=False)
+    ip = IncrementalParser(fp, toklist, verbose=False)
+
+    pgs = []
+    # Dict of parse trees in string dump format,
+    # stored by sentence index (1-based)
+    trees = OrderedDict()
+    num_sent = 0
+    for p in ip.paragraphs():
+        pgs.append([])
+        for sent in p.sentences():
+            num_sent += 1
+            num_tokens = len(sent)
+            assert sent.parse(), "Sentence does not parse: " + sent.text
+            # Obtain a text representation of the parse tree
+            token_dicts = TreeUtility.dump_tokens(sent.tokens, sent.tree)
+            # Create a verbose text representation of
+            # the highest scoring parse tree
+            assert sent.tree is not None
+            tree = ParseForestDumper.dump_forest(sent.tree, token_dicts=token_dicts)
+            # Add information about the sentence tree's score
+            # and the number of tokens
+            trees[num_sent] = "\n".join(
+                ["C{0}".format(sent.score), "L{0}".format(num_tokens), tree]
+            )
+            pgs[-1].append(token_dicts)
+    # Create a tree representation string out of
+    # all the accumulated parse trees
+    tree_string = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
+    tokens_json = json.dumps(pgs, separators=(",", ":"), ensure_ascii=False)
+
+    tree = Tree()
+    tree.load(tree_string)
+    return tree, tokens_json
 
 
 def test_entities():
@@ -109,40 +173,8 @@ def test_entities():
 
     """
 
-    def make_tree(text: str) -> Tree:
-        toklist = tokenize(text)
-        fp = Fast_Parser(verbose=False)
-        ip = IncrementalParser(fp, toklist, verbose=False)
-        # Dict of parse trees in string dump format,
-        # stored by sentence index (1-based)
-        trees = OrderedDict()
-        num_sent = 0
-        for p in ip.paragraphs():
-            for sent in p.sentences():
-                num_sent += 1
-                num_tokens = len(sent)
-                assert sent.parse(), "Sentence does not parse: " + sent.text
-                # Obtain a text representation of the parse tree
-                token_dicts = TreeUtility.dump_tokens(sent.tokens, sent.tree)
-                # Create a verbose text representation of
-                # the highest scoring parse tree
-                assert sent.tree is not None
-                tree = ParseForestDumper.dump_forest(sent.tree, token_dicts=token_dicts)
-                # Add information about the sentence tree's score
-                # and the number of tokens
-                trees[num_sent] = "\n".join(
-                    ["C{0}".format(sent.score), "L{0}".format(num_tokens), tree]
-                )
-        # Create a tree representation string out of
-        # all the accumulated parse trees
-        tree_string = "".join("S{0}\n{1}\n".format(key, val) for key, val in trees.items())
-
-        tree = Tree()
-        tree.load(tree_string)
-        return tree
-
-    tree = make_tree(text)
-    session = SessionShim()
+    tree, _ = _make_tree(text)
+    session = EntitiesSessionShim()
     tree.process(cast(Session, session), entities)
 
     session.check(("Bygma", "er", "dönsk byggingavörukeðja"))
@@ -165,15 +197,18 @@ def test_entities():
     assert session.is_empty()
 
     text = """
+
     Ég segi að Kópavogur (vinalegur staður) og Hafnarfjörður (einstakur bær)
     séu efst á vinsældalistanum.
+
     Til samanburðar áttu þau nágrannasveitafélög höfuðborgarinnar sem koma þar næst,
     Kópavogur (436 félagslegar íbúðir) og Hafnarfjörður (245 félagslegar íbúðir)
     samtals 681 félagslega íbúð í lok árs 2016.
+
     """
 
-    tree = make_tree(text)
-    session = SessionShim()
+    tree, _ = _make_tree(text)
+    session = EntitiesSessionShim()
     tree.process(cast(Session, session), entities)
 
     session.check(("Kópavogur", "er", "vinalegur staður"))
@@ -184,5 +219,74 @@ def test_entities():
     assert session.is_empty()
 
 
+def test_persons():
+    text = """
+
+    Katrín Jakobsdóttir, forsætisráðherra, var á Alþingi í dag ásamt Helga Hrafni
+    þingmanni og Jóni Jónssyni, sérstökum álitsgjafa Sameinuðu þjóðanna.
+
+    Jói Biden bandaríkjaforseti segir að Albert Bourla, forstjóri
+    Pfizer, vilji afhenda um tvo milljarða skammta á næstu 18 mánuðum.
+
+    Nikulás Tesla, serbneskur uppfinningamaður, lagði grunninn að riðstraumskerfum.
+
+    """
+
+    tree, _ = _make_tree(text)
+    session = PersonsSessionShim()
+    tree.process(cast(Session, session), persons)
+
+    session.check(("Katrín Jakobsdóttir", "forsætisráðherra", "kvk"))
+    session.check(("Helgi Hrafn", "þingmaður", "kk"))
+    session.check(("Jón Jónsson", "sérstakur álitsgjafi Sameinuðu þjóðanna", "kk"))
+    session.check(("Jói Biden", "bandaríkjaforseti", "kk"))
+    session.check(("Albert Bourla", "forstjóri Pfizer", "kk"))
+    session.check(("Nikulás Tesla", "serbneskur uppfinningamaður", "kk"))
+
+    assert session.is_empty()
+
+
+def test_locations():
+    text = """
+
+    Hans starfaði á Fiskislóð 31b en bjó á Öldugötu 4 í miðbæ höfuðborgar Íslands.   
+    Rússland og Norður-Kórea keppa í glímu á föstudaginn.
+    Liverpool og Manchester eru borgir í Englandi sem stækkuðu báðar mikið
+    á tímum iðnbyltingar.
+
+    Hvannadalshnjúkur í Öræfajökli er hæsti tindur landsins þótt ekki allir viðurkenni
+    það, eða sjálfstæði Palestínu. Húsið stóð á sléttunni. Mark Hollendingsins útkljáði
+    viðureignina í Svarfaðardal.
+
+    """
+    _, tokens_json = _make_tree(text)
+
+    session = LocationsSessionShim()
+
+    # Import locations processor module
+    pmod = importlib.import_module("processors.locations")
+
+    tc = TokenContainer(tokens_json, "", 1.0)
+    tc.process(session, pmod)
+
+    session.check(("Fiskislóð 31b", "address"))
+    session.check(("Öldugata 4", "address"))
+    session.check(("Ísland", "country"))
+    session.check(("Rússland", "country"))
+    session.check(("Norður-Kórea", "country"))
+    session.check(("Liverpool", "placename"))
+    session.check(("Manchester", "placename"))
+    session.check(("England", "country"))
+    session.check(("Hvannadalshnjúkur", "placename"))
+    session.check(("Öræfajökull", "placename"))
+    session.check(("Palestína", "country"))
+    session.check(("Svarfaðardalur", "placename"))
+
+    assert session.is_empty()
+
+
 if __name__ == "__main__":
+    """ Run tests via command line invocation. """
     test_entities()
+    test_persons()
+    test_locations()
