@@ -595,9 +595,15 @@ def test_query_api(client):
     assert json["key"] == "TelevisionEvening"
     json = qmcall(c, {"q": "hvað er í útvarpinu núna?"}, "Schedule")
     assert json["key"] == "RadioSchedule"
-    json = qmcall(c, {"q": "hvað er eiginlega í gangi á rás eitt?"}, "Schedule")
+    json = qmcall(c, {"q": "hvað er eiginlega í gangi á Rás eitt?"}, "Schedule")
     assert json["key"] == "RadioSchedule"
     json = qmcall(c, {"q": "hvað er á dagskrá á rás tvö?"}, "Schedule")
+    assert json["key"] == "RadioSchedule"
+    json = qmcall(c, {"q": "hvað er á Rás 1?"}, "Schedule")
+    assert json["key"] == "RadioSchedule"
+    json = qmcall(c, {"q": "hvað er á Rás 2?"}, "Schedule")
+    assert json["key"] == "RadioSchedule"
+    json = qmcall(c, {"q": "hvaða þáttur er í gangi á rás tvö núna?"}, "Schedule")
     assert json["key"] == "RadioSchedule"
 
     # Special module

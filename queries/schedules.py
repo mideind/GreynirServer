@@ -25,6 +25,7 @@
 """
 
 # TODO: Support TV schedule queries for other stations than RÚV
+#       (the endpoints currently seem to be broken on apis.is)
 # TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str
 # TODO: "Hvað er á dagskrá á rúv annað kvöld?"
 # TODO: "Hvaða þættir eru á rúv?"
@@ -37,7 +38,7 @@ from datetime import datetime, timedelta
 
 from query import AnswerTuple, Query, QueryStateDict
 from queries import query_json_api, gen_answer
-from tree import Result
+from tree import Node, ParamList, Result
 
 
 _SCHEDULES_QTYPE = "Schedule"
@@ -69,9 +70,9 @@ def help_text(lemma: str) -> str:
                 "Hvað er í sjónvarpinu í kvöld",
                 "Hvað er á RÚV í augnablikinu",
                 "Hvaða efni er verið að sýna í sjónvarpinu",
-                # "Hvaða efni er verið að spila í útvarpinu",
-                # "Hvað er í útvarpinu",
-                # "Hvað er á Rás 1 í augnablikinu",
+                "Hvað er í útvarpinu",
+                "Hvaða efni er verið að spila í útvarpinu",
+                "Hvað er á Rás 1 í augnablikinu",
             )
         )
     )
@@ -116,6 +117,9 @@ QScheduleRadio →
     QSchRadioStationNowQuery
 
 QSchRadioStationNowQuery →
+    # Hvað er í gangi á Rás eitt núna?
+    # Hvaða þáttur er á dagskrá á Rás 1?
+    # Hvaða þátt er verið að spila á Rás tvö?
     QSchWhatIsNom QSchEiginlega? QSchGoingOn? QSchOnRadioStation QSchNow?
     | QSchWhatIsNom QSchEiginlega? QSchOnSchedule? QSchOnRadioStation QSchNow?
     | QSchWhatIsDative QSchEiginlega? "verið" "að" "spila" QSchOnRadioStation QSchNow?
@@ -138,7 +142,11 @@ QSchOnStod2 →
 
 # Supported radio stations
 QSchOnRadioStation →
-   QSchOnRas1 | QSchOnRas2
+    QSchOnRas1 | QSchOnRas2 | QSchOnSernafn
+
+QSchOnSernafn →
+    # Catch when Rás 1/2 is typed with uppercase R
+    "á" Sérnafn
 
 QSchOnRas1 →
     "á" "rás" "eitt"
@@ -181,27 +189,41 @@ $score(+55) QSchedule
 """
 
 
-def QSchOnRas1(node, params, result):
+def QSchOnSernafn(node: Node, params: ParamList, result: Result) -> None:
+    if result._nominative == "á Rás 1":
+        result["radio_channel"] = "ras1"
+        result["radio_channel_pretty"] = "Rás 1"
+    elif result._nominative == "á Rás 2":
+        result["radio_channel"] = "ras2"
+        result["radio_channel_pretty"] = "Rás 2"
+    else:
+        result["no_match_radio"] = True
+        result._state["query"].set_error(
+            "E_QUERY_NOT_UNDERSTOOD"
+        )  # FIXME Is this correct?
+
+
+def QSchOnRas1(node: Node, params: ParamList, result: Result) -> None:
     result["radio_channel"] = "ras1"
     result["radio_channel_pretty"] = "Rás 1"
 
 
-def QSchOnRas2(node, params, result):
+def QSchOnRas2(node: Node, params: ParamList, result: Result) -> None:
     result["radio_channel"] = "ras2"
     result["radio_channel_pretty"] = "Rás 2"
 
 
-def QSchTelevisionQuery(node, params, result):
+def QSchTelevisionQuery(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = _SCHEDULES_QTYPE
     result.qkey = _TELEVISION_QKEY
 
 
-def QSchTelevisionEveningQuery(node, params, result):
+def QSchTelevisionEveningQuery(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = _SCHEDULES_QTYPE
     result.qkey = _TELEVISION_EVENING_QKEY
 
 
-def QSchRadioStationNowQuery(node, params, result):
+def QSchRadioStationNowQuery(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = _SCHEDULES_QTYPE
     result.qkey = _RADIO_QKEY
 
@@ -211,31 +233,31 @@ def _clean_desc(d: str) -> str:
     return d.replace("Dr.", "Doktor").replace("?", ".").split(".")[0]
 
 
-_RUV_TV_SCHEDULE_API_ENDPOINT = "https://apis.is/tv/ruv/"
+_TV_SCHEDULE_API_ENDPOINT = "https://apis.is/tv/{0}/"
 _TV_API_ERRMSG = "Ekki tókst að sækja sjónvarpsdagskrá."
-_CACHED_TV_SCHEDULE: Optional[List] = None
+_TV_SCHED_CACHE: Optional[List] = None
 _TV_LAST_FETCHED: Optional[datetime] = None
 
 
-def _query_tv_schedule_api() -> Optional[List]:
+def _query_tv_schedule_api(channel: str = "ruv") -> Optional[List]:
     """Fetch current television schedule from API, or return cached copy."""
-    global _CACHED_TV_SCHEDULE
+    global _TV_SCHED_CACHE
     global _TV_LAST_FETCHED
     if (
-        not _CACHED_TV_SCHEDULE
+        not _TV_SCHED_CACHE
         or not _TV_LAST_FETCHED
         or _TV_LAST_FETCHED.date() != datetime.today().date()
     ):
         # Not cached. Fetch data.
-        _CACHED_TV_SCHEDULE = None
-        sched = query_json_api(_RUV_TV_SCHEDULE_API_ENDPOINT)
+        _TV_SCHED_CACHE = None
+        sched = query_json_api(_TV_SCHEDULE_API_ENDPOINT.format(channel))
         if sched and "results" in sched and len(sched["results"]):
             _TV_LAST_FETCHED = datetime.utcnow()
-            _CACHED_TV_SCHEDULE = sched["results"]
-    return _CACHED_TV_SCHEDULE
+            _TV_SCHED_CACHE = sched["results"]
+    return _TV_SCHED_CACHE
 
 
-_RUV_RADIO_SCHEDULE_API_ENDPOINT = "https://muninn.ruv.is/files/json/{0}/{1}/"
+_RADIO_SCHEDULE_API_ENDPOINT = "https://muninn.ruv.is/files/json/{0}/{1}/"
 _RADIO_API_ERRMSG = "Ekki tókst að sækja útvarpsdagskrá."
 _RADIO_SCHED_CACHE: Dict[str, List] = {}
 _RADIO_LAST_FETCHED: Dict[str, datetime] = {}
@@ -254,9 +276,7 @@ def _query_radio_schedule_api(channel: str) -> List:
         # Not cached. Fetch data.
         today = datetime.today()
 
-        url = _RUV_RADIO_SCHEDULE_API_ENDPOINT.format(
-            channel, today.strftime("%Y-%m-%d")
-        )
+        url = _RADIO_SCHEDULE_API_ENDPOINT.format(channel, today.strftime("%Y-%m-%d"))
         response = query_json_api(url)
 
         if (
@@ -366,7 +386,7 @@ def _gen_curr_radio_program_answer(q: Query, result: Result) -> AnswerTuple:
 
     title = prog["title"]
     desc = prog["description"]
-    answ = f"Á {result.get('radio_channel_pretty')} er verið að spila {title}. {_clean_desc(desc)}"
+    answ = f"Á {result.get('radio_channel_pretty')} er verið að spila {title}. {_clean_desc(desc)}."
     return (
         dict(answer=answ),
         answ,
@@ -385,7 +405,12 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
     handler_keys = _HANDLER_MAP.keys()
-    if "qtype" in result and "qkey" in result and result["qkey"] in handler_keys:
+    if (
+        "qtype" in result
+        and "qkey" in result
+        and result["qkey"] in handler_keys
+        and not result.get("no_match_radio")  # FIXME Not necessary?
+    ):
         # Successfully matched a query type
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
@@ -397,9 +422,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             # TODO: Set intelligent expiry time
             q.set_expires(datetime.utcnow() + timedelta(minutes=3))
         except Exception as e:
-            logging.warning(
-                f"Exception while processing TV schedule query: {e}"
-            )
+            logging.warning(f"Exception while processing TV schedule query: {e}")
             q.set_error(f"E_EXCEPTION: {e}")
 
     else:
