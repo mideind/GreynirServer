@@ -331,9 +331,7 @@ def _gen_curr_tv_program_answer(q: Query, result: Result) -> AnswerTuple:
 
     title = prog["title"]
     ep = "" if "fréttir" in title.lower() else ""
-    answ = "RÚV er að sýna {0}{1}. {2}.".format(
-        ep, title, _clean_desc(prog["description"])
-    )
+    answ = f"RÚV er að sýna {ep}{title}. {_clean_desc(prog['description'])}."
     return gen_answer(answ)
 
 
@@ -349,7 +347,7 @@ def _gen_evening_tv_program_answer(q: Query, result: Result) -> AnswerTuple:
 
     answ = ["Klukkan"]
     for p in prog:
-        answ.append("{0} : {1}.\n".format(p["startTime"][11:16], p["title"]))
+        answ.append(f"{p['startTime'][11:16]} : {p['title']}.\n")
     voice_answer = "".join(answ)
     answer = "".join(answ[1:]).replace(" : ", " ")
     return dict(answer=answer), answer, voice_answer
@@ -400,9 +398,9 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             q.set_expires(datetime.utcnow() + timedelta(minutes=3))
         except Exception as e:
             logging.warning(
-                "Exception while processing TV schedule query: {0}".format(e)
+                f"Exception while processing TV schedule query: {e}"
             )
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            q.set_error(f"E_EXCEPTION: {e}")
 
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
