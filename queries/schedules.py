@@ -134,8 +134,14 @@ QSchOnTV →
     QSchOnRUV # | QSchOnStod2
 
 QSchOnRUV →
-    "í" "sjónvarpinu" | "á" "rúv" | "í" "ríkissjónvarpinu"
-    | "á" "stöð" "eitt" | "hjá"? "rúv" | "sjónvarpsins" | "sjónvarps"
+    "í" "sjónvarpinu"
+    | "á" "rúv"
+    | "í" "ríkissjónvarpinu"
+    | "á" "stöð" "eitt"
+    | "hjá" "stöð" "eitt"
+    | "hjá"? "rúv"
+    | "sjónvarpsins"
+    | "sjónvarps"
 
 QSchOnStod2 →
     "á" "stöð" "tvö" | "á" "stöð" "2"
@@ -146,17 +152,22 @@ QSchOnRadioStation →
 
 QSchOnSernafn →
     # Catch when Rás 1/2 is typed with uppercase R
-    "á" Sérnafn
+    "á" Sérnafn | "hjá" Sérnafn
 
 QSchOnRas1 →
     "á" "rás" "eitt"
     | "á" "rás" "1"
+    | "hjá" "rás" "eitt"
+    | "hjá" "rás" "1"
     | "í" "útvarpinu"
     | "í" "ríkisútvarpinu"
     | "á" "ríkisútvarpinu"
 
 QSchOnRas2 →
-    "á" "rás" "tvö" | "á" "rás" "2"
+    "á" "rás" "tvö"
+    | "á" "rás" "2"
+    | "hjá" "rás" "tvö"
+    | "hjá" "rás" "2"
 
 QSchNow →
     "nákvæmlega"? "núna" | "eins" "og" "stendur" | "í" "augnablikinu"
@@ -190,10 +201,10 @@ $score(+55) QSchedule
 
 
 def QSchOnSernafn(node: Node, params: ParamList, result: Result) -> None:
-    if result._nominative == "á Rás 1":
+    if result._nominative == "á Rás 1" or result._nominative == "hjá Rás 1":
         result["radio_channel"] = "ras1"
         result["radio_channel_pretty"] = "Rás 1"
-    elif result._nominative == "á Rás 2":
+    elif result._nominative == "á Rás 2" or result._nominative == "hjá Rás 2":
         result["radio_channel"] = "ras2"
         result["radio_channel_pretty"] = "Rás 2"
     else:
