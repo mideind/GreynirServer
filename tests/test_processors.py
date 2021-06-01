@@ -45,11 +45,16 @@ from tree import Tree, Session  # noqa
 from treeutil import TreeUtility  # noqa
 
 
-from processor import TokenContainer  # noqa
+from processor import Processor, TokenContainer  # noqa
 
 import processors.entities as entities  # noqa
 import processors.persons as persons  # noqa
 import processors.locations as locations  # noqa
+
+
+def test_processors():
+    """ Try to import all tree/token processors by instantiating Processor object """
+    _ = Processor(processor_directory="processors")
 
 
 class SessionShim:
