@@ -1177,7 +1177,10 @@ class PersonNode(TerminalNode):
             return self.fullnames[0]
         gender = self.td.gender
         #assert self.td.case is not None
-        case = self.td.case.upper()
+        if self.td.case is None:
+            case = "NF"
+        else:
+            case = self.td.case.upper()
         # Lookup the token in the BIN database
         # Look up each part of the name
         at_start = self._at_start

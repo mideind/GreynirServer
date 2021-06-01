@@ -65,6 +65,128 @@ SENT_HASHES = set()
 NONTERMDICT = defaultdict(int)  # non-terminal, [freq]
 TERMDICT = defaultdict(int)  # terminal,     [freq]
 
+KNOWNTERMINALS = [
+    "abfn",
+    "amount",
+    "ao",
+    "dagsafs",
+    "dagsfast",
+    "entity",
+    "eo",
+    "exp",
+    "fn",
+    "fs",
+    "fyrirtæki",
+    "gr",
+    "grm",
+    "kennitala",
+    "lo",
+    "lén",
+    "myllumerki",
+    "mælieining",
+    "nhm",
+    "no",
+    "notandanafn",
+    "person",
+    "pfn",
+    "prósenta",
+    "raðnr",
+    "sameind",
+    "so",
+    "st",
+    "stt",
+    "sérnafn",
+    "símanúmer",
+    "tala",
+    "talameðbókstaf",
+    "to",
+    "tímapunkturafs",
+    "tímapunkturfast",
+    "tími",
+    "töl",
+    "tölvupóstfang",
+    "uh",
+    "vefslóð",
+    "vörunúmer",
+    "ártal",
+]
+
+
+KNOWNNONTERMINALS = [
+    "S0",
+    "S-MAIN",
+    "S-QUOTE",
+    "S-HEADING",
+    "S-PREFIX",
+    "S-EXPLAIN",
+    "S-QUE",
+    "CP-THT",
+    "CP-THT-SUBJ",
+    "CP-THT-OBJ",
+    "CP-THT-IOBJ",
+    "CP-THT-PRD",
+    "CP-QUE",
+    "CP-QUE-SUBJ",
+    "CP-QUE-OBJ",
+    "CP-QUE-IOBJ",
+    "CP-QUE-PRD",
+    "CP-REL",
+    "CP-ADV-ACK",
+    "CP-ADV-CAUSE",
+    "CP-ADV-CMP",
+    "CP-ADV-COND",
+    "CP-ADV-CONS",
+    "CP-ADV-PURP",
+    "CP-ADV-TEMP",
+    "CP-QUOTE",
+    "CP-SOURCE",
+    "CP-EXPLAIN",
+    "IP",
+    "IP-INF",
+    "IP-INF-SUBJ",
+    "IP-INF-OBJ",
+    "IP-INF-IOBJ",
+    "IP-INF-PRD",
+    "VP",
+    "VP-AUX",
+    "NP-SUBJ",
+    "NP-ES",
+    "NP-OBJ",
+    "NP-IOBJ",
+    "NP-PRD",
+    "NP-EXPLAIN",
+    "NP-POSS",
+    "NP-DAT",
+    "NP-ADP",
+    "NP-AGE",
+    "NP-TITLE",
+    "NP-PREFIX",
+    "NP-AGE",
+    "NP-MEASURE",
+    "NP-EXCEPT",
+    "ADJP",
+    "ADVP",
+    "ADVP-DIR",
+    "ADVP-LOC",
+    "ADVP-DATE-ABS",
+    "ADVP-DATE-REL",
+    "ADVP-TIMESTAMP-ABS",
+    "ADVP-TIMESTAMP-REL",
+    "ADVP-TMP-SET",
+    "ADVP-DUR-ABS",
+    "ADVP-DUR-REL",
+    "ADVP-DUR-TIME",
+    "ADVP-PCL",
+    "PP",
+    "PP-LOC",
+    "PP-DIR",
+    "P",
+    "TO",
+    "C",
+    "URL",
+]
+
+
 
 def is_icelandic(sent):
     # Code mostly copied from annotate() in checker.py in GreynirCorrect
@@ -151,6 +273,18 @@ def gen_anno_tree(article, index, stree):
     return AnnoTree("", [meta_node, nltk_tree])
 
 def old_info(stree):
+
+    # TODO halda utan um þær fötur sem eru ekki fullar
+    # Þá er hægt að safna í fötur hér
+    # Svo er mjög lítið fall sem tékkar á listanum yfir ófullar fötur
+    # og ákvarðar hvort þetta sé old_info / full_buckets
+    # Hefur í för með sér að hættir að safna þegar fötur eru fullar,
+    # endurspeglar ekki sanntíðni
+    # Má geyma þær fötur sem eru ekki fullar í set()
+    # Þá er fljótt hægt að tékka if bucketset, and set(stree.nonterminal)&bucketset
+    # Þarf bara að pæla hvernig tek ákveðið stak úr menginu þegar sú fata fyllist.
+    # Byrja svo ekki að tékka á fötunum fyrr en eftir 500þ setningar, 
+    # ætti ekki að vera mikið um ófullar fötur.
     p = True
     for nonterm in stree.nonterminals:
         phrase = nonterm._head.get("i")
@@ -167,7 +301,7 @@ def old_info(stree):
 
     return p
 
-def full_buckets(stree):
+def full_buckets():
     for nonterm in NONTERMDICT:
         if NONTERMDICT[nonterm] < 100:
             return False
@@ -176,11 +310,28 @@ def full_buckets(stree):
             return False
     return True
 
+def initialize_buckets():
+    """ Assign values to known phrases and leaves """
+    for every in KNOWNNONTERMINALS:
+        NONTERMDICT[every] = 0
+
+    for each in KNOWNTERMINALS:
+        TERMDICT[each] = 0
+
+def first_threshold(total_sent):
+    if total_sent >= NUM_SENT:
+        return True
+    return False
+
+def last_threshold(total_sent):
+    if total_sent >= LIMIT:
+        return True
+    return False
 
 NUM_SENT = 500000
 LIMIT = 2000000     # Absolute limit of corpus size
 BATCH_SIZE = 1000
-OUT_FILENAME = "out.txt"
+OUT_FILENAME = "silver.txt"
 SEPARATOR = "\n\n"
 
 
@@ -192,6 +343,8 @@ def main():
     except ConfigError as e:
         print("Configuration error: {0}".format(e))
         sys.exit(os.EX_CONFIG)
+
+    initialize_buckets()
 
     # Output file
     file = open(OUT_FILENAME, "w", encoding="utf-8")
@@ -238,7 +391,7 @@ def main():
                     headingfile.write(str(atree) + SEPARATOR)
                 continue
             # Both check if we find something new and add to buckets
-            if old_info(stree):
+            if old_info(stree) and first_threshold(total_sent):
                 total_sent_skipped += 1
                 continue
 
@@ -259,16 +412,13 @@ def main():
             # Trigger manual garbage collection
             gc.collect()
             print(f"{total_sent} sentences accumulated")
+            print(f"\t{total_sent_skipped} sentences skipped")
 
-        if total_sent >= NUM_SENT:
-            # Time to check for missing info
-            if not full_buckets():
-                # Stop if we haven't stopped by 2M sents
-                if total_sent >= LIMIT:
-                    break
-                continue
-            else:
-                break
+        if last_threshold(total_sent):
+            # Stop if we've reached 2M
+            break
+        elif first_threshold(total_sent) and full_buckets():
+            break
 
     # All done
     file.close()
@@ -276,7 +426,11 @@ def main():
     print(f"Total articles skipped: {total_arts_skipped}")
     print(f"Total sentences: {total_sent}")
     print(f"Total sentences skipped: {total_sent_skipped}")
+    for each in NONTERMDICT:
+        print(f"{each}:  {NONTERMDICT[each]}")
 
+    for each in TERMDICT:
+        print(f"{each}:  {TERMDICT[each]}")
 
 if __name__ == "__main__":
     main()
