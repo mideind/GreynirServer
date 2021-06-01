@@ -235,8 +235,8 @@ def _clean_desc(d: str) -> str:
 
 _TV_SCHEDULE_API_ENDPOINT = "https://apis.is/tv/{0}/"
 _TV_API_ERRMSG = "Ekki tókst að sækja sjónvarpsdagskrá."
-_TV_SCHED_CACHE: Optional[List] = None
-_TV_LAST_FETCHED: Optional[datetime] = None
+_TV_SCHED_CACHE: Dict[str, List] = {}
+_TV_LAST_FETCHED: Dict[str, List] = {}
 
 
 def _query_tv_schedule_api(channel: str = "ruv") -> Optional[List]:
@@ -244,17 +244,16 @@ def _query_tv_schedule_api(channel: str = "ruv") -> Optional[List]:
     global _TV_SCHED_CACHE
     global _TV_LAST_FETCHED
     if (
-        not _TV_SCHED_CACHE
-        or not _TV_LAST_FETCHED
-        or _TV_LAST_FETCHED.date() != datetime.today().date()
+        not _TV_SCHED_CACHE.get(channel)
+        or not _TV_LAST_FETCHED.get(channel)
+        or _TV_LAST_FETCHED[channel].date() != datetime.today().date()
     ):
         # Not cached. Fetch data.
-        _TV_SCHED_CACHE = None
         sched = query_json_api(_TV_SCHEDULE_API_ENDPOINT.format(channel))
         if sched and "results" in sched and len(sched["results"]):
-            _TV_LAST_FETCHED = datetime.utcnow()
-            _TV_SCHED_CACHE = sched["results"]
-    return _TV_SCHED_CACHE
+            _TV_LAST_FETCHED[channel] = datetime.utcnow()
+            _TV_SCHED_CACHE[channel] = sched["results"]
+    return _TV_SCHED_CACHE.get(channel)
 
 
 _RADIO_SCHEDULE_API_ENDPOINT = "https://muninn.ruv.is/files/json/{0}/{1}/"
