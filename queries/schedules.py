@@ -25,7 +25,7 @@
 """
 
 # TODO: Support TV schedule queries for other stations than RÚV
-#       (the endpoints currently seem to be broken on apis.is)
+#       (the endpoints currently seem to be broken on apis.is, as of June 1st 2021)
 # TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str
 # TODO: "Hvað er á dagskrá á rúv annað kvöld?"
 # TODO: "Hvaða þættir eru á rúv?"
@@ -198,9 +198,8 @@ def QSchOnSernafn(node: Node, params: ParamList, result: Result) -> None:
         result["radio_channel_pretty"] = "Rás 2"
     else:
         result["no_match_radio"] = True
-        result._state["query"].set_error(
-            "E_QUERY_NOT_UNDERSTOOD"
-        )  # FIXME Is this correct?
+        result._state["query"].set_error("E_QUERY_NOT_UNDERSTOOD")
+        # FIXME Is this correct?
 
 
 def QSchOnRas1(node: Node, params: ParamList, result: Result) -> None:
@@ -248,11 +247,12 @@ def _query_tv_schedule_api(channel: str = "ruv") -> Optional[List]:
         or not _TV_LAST_FETCHED.get(channel)
         or _TV_LAST_FETCHED[channel].date() != datetime.today().date()
     ):
-        # Not cached. Fetch data.
+        # TV channel not cached, fetch data
         sched = query_json_api(_TV_SCHEDULE_API_ENDPOINT.format(channel))
-        if sched and "results" in sched and len(sched["results"]):
-            _TV_LAST_FETCHED[channel] = datetime.utcnow()
+        if sched and sched.get("results") and len(sched["results"]):
             _TV_SCHED_CACHE[channel] = sched["results"]
+            _TV_LAST_FETCHED[channel] = datetime.utcnow()
+
     return _TV_SCHED_CACHE.get(channel)
 
 
@@ -262,7 +262,7 @@ _RADIO_SCHED_CACHE: Dict[str, List] = {}
 _RADIO_LAST_FETCHED: Dict[str, datetime] = {}
 
 
-def _query_radio_schedule_api(channel: str) -> List:
+def _query_radio_schedule_api(channel: str = "ras1") -> Optional[List]:
     """Fetch current radio schedule from RÚV API, or return cached copy."""
     global _RADIO_SCHED_CACHE
     global _RADIO_LAST_FETCHED
@@ -272,26 +272,24 @@ def _query_radio_schedule_api(channel: str) -> List:
         or not _RADIO_LAST_FETCHED.get(channel)
         or _RADIO_LAST_FETCHED[channel].date() != datetime.today().date()
     ):
-        # Not cached. Fetch data.
+        # Radio channel not cached, fetch data
         today = datetime.today()
 
         url = _RADIO_SCHEDULE_API_ENDPOINT.format(channel, today.strftime("%Y-%m-%d"))
         response = query_json_api(url)
 
         if (
-            not response
-            or not response.get("schedule")
-            or not response["schedule"].get("services")
-            or len(response["schedule"]["services"]) == 0
+            response
+            and response.get("schedule")
+            and response["schedule"].get("services")
+            and len(response["schedule"]["services"])
         ):
-            return []
+            _RADIO_SCHED_CACHE[channel] = response["schedule"]["services"][0].get(
+                "events"
+            )
+            _RADIO_LAST_FETCHED[channel] = today
 
-        _RADIO_SCHED_CACHE[channel] = response["schedule"]["services"][0].get(
-            "events", []
-        )
-        _RADIO_LAST_FETCHED[channel] = today
-
-    return _RADIO_SCHED_CACHE.get(channel, [])
+    return _RADIO_SCHED_CACHE.get(channel)
 
 
 def _span(p: Dict, tv: bool = True) -> Tuple[datetime, datetime]:
@@ -375,7 +373,7 @@ def _gen_evening_tv_program_answer(q: Query, result: Result) -> AnswerTuple:
 def _gen_curr_radio_program_answer(q: Query, result: Result) -> AnswerTuple:
     """Generate answer to query about current radio program."""
     sched = _query_radio_schedule_api(result.get("radio_channel", "ras1"))
-    if len(sched) == 0:
+    if not sched:
         return gen_answer(_RADIO_API_ERRMSG)
 
     prog = _curr_prog(sched, False)
