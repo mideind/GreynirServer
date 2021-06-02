@@ -264,7 +264,7 @@ GNU GPLv3 or other compatible licenses.
 Greynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](https://bin.arnastofnun.is))
 lexicon and database of Icelandic word forms to identify words and find their
 potential meanings and lemmas. The database is included in
-[GreynirPackage](https://github.com/mideind/GreynirPackage) in compressed form.
+[BinPackage](https://github.com/mideind/BinPackage) in compressed form.
 BÍN is licensed under CC-BY-4.0, and credit is hereby given as follows:
 
 *Beygingarlýsing íslensks nútímamáls. Stofnun Árna Magnússonar í íslenskum fræðum. Höfundur og ritstjóri Kristín Bjarnadóttir.*
