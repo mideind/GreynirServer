@@ -57,7 +57,9 @@ TOPIC_LEMMAS = [
     "útvarp",
     "ríkisútvarp",
     "rás",
+    "útvarpsrás",
     "þáttur",
+    "útvarpsþáttur",
 ]
 
 
@@ -125,10 +127,16 @@ QSchRadioStationNowQuery →
     | QSchWhatIsDative QSchEiginlega? "verið" "að" "spila" QSchOnRadioStation QSchNow?
 
 QSchWhatIsNom →
-    "hvað" "er" | "hvaða" "þáttur" "er" | "hvaða" "dagskrárliður" "er" | "hvaða" "efni" "er"
+    "hvað" "er"
+    | "hvaða" "þáttur" "er"
+    | "hvaða" "dagskrárliður" "er"
+    | "hvaða" "efni" "er"
 
 QSchWhatIsDative →
-    "hvað" "er" | "hvaða" "þátt" "er" | "hvaða" "dagskrárlið" "er" | "hvaða" "efni" "er"
+    "hvað" "er"
+    | "hvaða" "þátt" "er"
+    | "hvaða" "dagskrárlið" "er"
+    | "hvaða" "efni" "er"
 
 QSchOnTV →
     QSchOnRUV # | QSchOnStod2
