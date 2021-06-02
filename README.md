@@ -79,7 +79,7 @@ Greynir is written in [Python 3](https://www.python.org/) except for its core
 Earley-based parser module which is written in C++ and called
 via [CFFI](https://cffi.readthedocs.org/en/latest/index.html).
 Greynir requires Python 3.6 or later, and runs on CPython and
-[PyPy](http://pypy.org/) with the latter being recommended for performance reasons.
+[PyPy](http://pypy.org/), with the latter being recommended for performance reasons.
 
 Greynir works in stages, roughly as follows:
 
@@ -140,13 +140,13 @@ Scraper modules for new websites are plugged in by adding Python code to the
 range of popular Icelandic news sites.
 
 Processor modules can be plugged into Greynir by adding Python code to the
-`processors/` directory. The demo in `processors/default.py` extracts person
-names and titles from parse trees for storage in a database table.
+`processors/` directory. The module `processors/persons.py`, for example, extracts
+person names and titles from parse trees for storage in a database table.
 
 Query (question answering) modules can be plugged into Greynir
 by adding Python code to the `queries/` directory. Reference implementations for
 several query types can be found in that directory, for instance `queries/builtin.py`
-which supports questions about people and titles. Example query modules can be viewed
+which supports questions about persons and titles. Example query modules can be viewed
 in `queries/examples`.
 
 ## File details
@@ -156,7 +156,7 @@ in `queries/examples`.
 * `query.py`: Natural language query processor
 * `queries/*.py`: Question answering modules
 * `db/*.py`: Database models and functions via SQLAlchemy
-* `scraper.py`: Web scraper, collecting articles from a set of pre-selected websites (roots)
+* `scraper.py`: Web scraper, collecting articles from a set of pre-selected websites
 * `scrapers/*.py`: Scraper code for various websites
 * `settings.py`: Management of global settings and configuration data
 * `config/Greynir.conf`: Editable configuration file
@@ -170,7 +170,7 @@ in `queries/examples`.
 * `geo.py`: Geography and location-related utility functions
 * `speech.py`: Speech synthesis-related utility functions
 * `tools/*.py`: Various command line tools
-* `util.py`: Various utility functions
+* `util.py`: Various utility functions used throughout the codebase
 
 ## Installation and setup
 
