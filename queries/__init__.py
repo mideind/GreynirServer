@@ -25,7 +25,7 @@
 """
 
 from tree import Node
-from typing import Mapping, Optional, List, Dict, Tuple, Union, cast
+from typing import Mapping, Optional, List, Dict, Tuple, Union, cast, Iterable
 
 import logging
 import requests
@@ -426,6 +426,7 @@ def number_to_neutral(n: int = 0) -> str:
 
     return number_string
 
+
 def float_to_neutral(f: float = 0.0) -> str:
     out_str: str = ""
     # To prevent edge cases like -0.2 being translated to
@@ -444,6 +445,7 @@ def float_to_neutral(f: float = 0.0) -> str:
     # Number after decimal point
     out_str += number_to_neutral(second)
     return out_str
+
 
 def year_to_text(year: int, after_christ: bool = False) -> str:
     """
@@ -714,6 +716,33 @@ def number_to_ordinal(
     gender (kk, kvk, hk) and number (et, ft).
     """
     return neutral_text_to_ordinal(number_to_neutral(n), decl, gender, number)
+
+
+_DIGITS_TO_KK = {
+    "1": "einn",
+    "2": "tveir",
+    "3": "þrír",
+    "4": "fjórir",
+    "5": "fimm",
+    "6": "sex",
+    "7": "sjö",
+    "8": "átta",
+    "9": "níu",
+}
+
+
+def phone_number_to_text(phone_number: Iterable[str]) -> str:
+    """
+    Takes in a numeric string (or list of numbers as strings)
+    and returns spoken text.
+    Examples:
+        "5885522" -> "fimm átta átta fimm fimm tveir tveir"
+        ["234","1","9"] -> "tveir þrír fjórir einn níu"
+    """
+    return " ".join(
+        _DIGITS_TO_KK.get(digit, "") if len(digit) <= 1 else phone_number_to_text(digit)
+        for digit in phone_number
+    ).strip()
 
 
 def country_desc(cc: str) -> str:
