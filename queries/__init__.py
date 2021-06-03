@@ -426,6 +426,24 @@ def number_to_neutral(n: int = 0) -> str:
 
     return number_string
 
+def float_to_neutral(f: float = 0.0) -> str:
+    out_str: str = ""
+    # To prevent edge cases like -0.2 being translated to
+    # "núll komma tvö" instead of "mínus núll komma tvö"
+    if f < 0:
+        out_str = "mínus "
+
+    first, second = str(f).split(".")
+    first = abs(int(first))
+    # Number before decimal point
+    out_str += number_to_neutral(first)
+    out_str += " komma "
+    # Leading zeroes after decimal point
+    for _ in range(len(second.lstrip("0")), len(second)):
+        out_str += "núll "
+    # Number after decimal point
+    out_str += number_to_neutral(second)
+    return out_str
 
 def year_to_text(year: int, after_christ: bool = False) -> str:
     """
