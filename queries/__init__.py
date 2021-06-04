@@ -318,9 +318,9 @@ _LARGE_NUMBERS = (
 
 def number_to_neutral(n: int = 0) -> str:
     """
-    Write integer out as text in Icelandic.
+    Write integer out as neutral gender text in Icelandic.
     Example:
-        1337 -> eitt þúsund þrjú hundruð þrjátíu og sjö
+        1337 -> "eitt þúsund þrjú hundruð þrjátíu og sjö"
     """
     try:
         n = int(n)
@@ -777,7 +777,7 @@ def digits_to_text(digit_list: Iterable[Union[str,int]]) -> str:
     Useful for phone numbers, social security numbers and such.
     Examples:
         "5885522" -> "fimm átta átta fimm fimm tveir tveir"
-        ["234","1","9"] -> "tveir þrír fjórir einn níu"
+        ["234",1,"9"] -> "tveir þrír fjórir einn níu"
     """
     digit_text: List[str] = []
 
