@@ -435,16 +435,19 @@ def float_to_neutral(f: float = 0.0) -> str:
         out_str = "mínus "
 
     first, second = str(f).split(".")
-    first = abs(int(first))
+
     # Number before decimal point
-    out_str += number_to_neutral(first)
+    out_str += number_to_neutral(abs(int(first)))
     out_str += " komma "
-    # Leading zeroes after decimal point
-    for _ in range(len(second.lstrip("0")), len(second)):
-        out_str += "núll "
-    # Number after decimal point
-    out_str += number_to_neutral(second)
-    return out_str
+
+    # Numbers after decimal point
+    for digit in second:
+        if digit == "0":
+            out_str += "núll "
+        else:
+            out_str += _SUB_20_NEUTRAL.get(int(digit), "") + " "
+
+    return out_str.strip()
 
 
 def year_to_text(year: int, after_christ: bool = False) -> str:
@@ -719,6 +722,7 @@ def number_to_ordinal(
 
 
 _DIGITS_TO_KK = {
+    "0": "núll",
     "1": "einn",
     "2": "tveir",
     "3": "þrír",
@@ -733,16 +737,22 @@ _DIGITS_TO_KK = {
 
 def phone_number_to_text(phone_number: Iterable[str]) -> str:
     """
-    Takes in a numeric string (or list of numbers as strings)
-    and returns spoken text.
+    Takes in a phone number as a string (or list of strings)
+    and returns as spoken text in Icelandic.
     Examples:
         "5885522" -> "fimm átta átta fimm fimm tveir tveir"
         ["234","1","9"] -> "tveir þrír fjórir einn níu"
     """
-    return " ".join(
-        _DIGITS_TO_KK.get(digit, "") if len(digit) <= 1 else phone_number_to_text(digit)
-        for digit in phone_number
-    ).strip()
+    phone_digits: List[str] = []
+
+    for digit in phone_number:
+        digit = str(digit).strip()
+        if len(digit) == 1 and digit in _DIGITS_TO_KK:
+            phone_digits.append(_DIGITS_TO_KK[digit])
+        elif len(digit) > 1:
+            phone_digits.append(phone_number_to_text(digit))
+
+    return " ".join(phone_digits)
 
 
 def country_desc(cc: str) -> str:
