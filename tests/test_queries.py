@@ -920,7 +920,7 @@ def test_query_utility_functions():
 
 def test_numbers():
     """ Test number handling functionality in queries """
-    from queries import numbers_to_neutral, number_to_neutral
+    from queries import numbers_to_neutral, number_to_neutral, number_to_text
 
     assert number_to_neutral(2) == "tvö"
     assert number_to_neutral(1100) == "eitt þúsund og eitt hundrað"
@@ -935,6 +935,13 @@ def test_numbers():
         number_to_neutral(10000000000000000000000000000000000000000000000000000000)
         == "tíu milljónir oktilljóna"
     )
+
+    assert number_to_text(101, "kk") == "eitt hundrað og einn"
+    assert number_to_text(-102, "kvk") == "mínus eitt hundrað og tvær"
+    assert number_to_text(5, "kk") == "fimm"
+    assert number_to_text(10001, "kvk") == "tíu þúsund og ein"
+    assert number_to_text(400567, "hk") == number_to_neutral(400567)
+    assert number_to_text(-11220024,"kvk") == 'mínus ellefu milljónir tvö hundruð og tuttugu þúsund tuttugu og fjórar'
 
     assert numbers_to_neutral("Baugatangi 1, Reykjavík") == "Baugatangi eitt, Reykjavík"
     assert numbers_to_neutral("Baugatangi 2, Reykjavík") == "Baugatangi tvö, Reykjavík"
@@ -1122,3 +1129,21 @@ def test_ordinals():
     )
     assert number_to_ordinal(1000000, "þf", "kvk", "et") == "milljónustu"
     assert number_to_ordinal(1000000002, "þf", "kvk", "et") == "milljörðustu og aðra"
+
+
+def test_floats():
+    """Test float to written text conversion."""
+    from queries import float_to_text
+    assert float_to_text(-0.12) == "mínus núll komma eitt tvö"
+    assert float_to_text(-21.12, "kk") == "mínus tuttugu og einn komma einn tveir"
+    assert float_to_text(1.03, "kvk") == "ein komma núll þrjár"
+
+
+def test_phone_numbers():
+    """Test phone number to written text conversion."""
+    from queries import phone_number_to_text
+    assert phone_number_to_text("5885522") == "fimm átta átta fimm fimm tveir tveir"
+    assert phone_number_to_text("112") == "einn einn tveir"
+    assert phone_number_to_text("123-0679") == "einn tveir þrír núll sex sjö níu"
+    assert phone_number_to_text(["12","","342"]) == "einn tveir þrír fjórir tveir"
+    assert phone_number_to_text("581 2345") == "fimm átta einn tveir þrír fjórir fimm"

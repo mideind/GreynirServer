@@ -427,7 +427,35 @@ def number_to_neutral(n: int = 0) -> str:
     return number_string
 
 
-def float_to_neutral(f: float = 0.0) -> str:
+def number_to_text(n: int, gender="hk") -> str:
+    """
+    Convert an integer into written Icelandic text in given gender (hk, kk, kvk).
+    Example:
+        302 -> "þrjú hundruð og tvær" (gender="kvk")
+        501 -> "fimm hundruð og einn" (gender="kk")
+    """
+    num_str = number_to_neutral(n)
+
+    if gender =="hk":
+        return num_str
+
+    nums = num_str.split()
+
+    if gender=="kk" and nums[-1] in _NUM_NEUT_TO_KK:
+        nums[-1] = _NUM_NEUT_TO_KK[nums[-1]]
+
+    elif gender=="kvk" and nums[-1] in _NUM_NEUT_TO_KVK:
+        nums[-1] = _NUM_NEUT_TO_KVK[nums[-1]]
+
+    return " ".join(nums)
+
+
+def float_to_text(f: float = 0.0, gender="hk") -> str:
+    """
+    Convert a float into written Icelandic text in given gender (hk, kk, kvk).
+    Example:
+        -0.02 -> "mínus núll komma núll tveir" (gender="kk")
+    """
     out_str: str = ""
     # To prevent edge cases like -0.2 being translated to
     # "núll komma tvö" instead of "mínus núll komma tvö"
@@ -437,7 +465,7 @@ def float_to_neutral(f: float = 0.0) -> str:
     first, second = str(f).split(".")
 
     # Number before decimal point
-    out_str += number_to_neutral(abs(int(first)))
+    out_str += number_to_text(abs(int(first)), gender)
     out_str += " komma "
 
     # Numbers after decimal point
@@ -445,7 +473,14 @@ def float_to_neutral(f: float = 0.0) -> str:
         if digit == "0":
             out_str += "núll "
         else:
-            out_str += _SUB_20_NEUTRAL.get(int(digit), "") + " "
+            digit_str = _SUB_20_NEUTRAL.get(int(digit), "")
+            if gender == "kk" and digit_str in _NUM_NEUT_TO_KK:
+                out_str+= _NUM_NEUT_TO_KK[digit_str]
+            elif gender == "kvk" and digit_str in _NUM_NEUT_TO_KVK:
+                out_str+= _NUM_NEUT_TO_KVK[digit_str]
+            else:
+                out_str += digit_str
+            out_str += " "
 
     return out_str.strip()
 
