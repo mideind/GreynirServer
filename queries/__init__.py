@@ -770,24 +770,27 @@ _DIGITS_TO_KK = {
 }
 
 
-def phone_number_to_text(phone_number: Iterable[str]) -> str:
+def digits_to_text(digit_list: Iterable[Union[str,int]]) -> str:
     """
-    Takes in a phone number as a string (or list of strings)
+    Takes in a string of digits (or list of strings/ints)
     and returns as spoken text in Icelandic.
+    Useful for phone numbers, social security numbers and such.
     Examples:
         "5885522" -> "fimm átta átta fimm fimm tveir tveir"
         ["234","1","9"] -> "tveir þrír fjórir einn níu"
     """
-    phone_digits: List[str] = []
+    digit_text: List[str] = []
 
-    for digit in phone_number:
-        digit = str(digit).strip()
-        if len(digit) == 1 and digit in _DIGITS_TO_KK:
-            phone_digits.append(_DIGITS_TO_KK[digit])
-        elif len(digit) > 1:
-            phone_digits.append(phone_number_to_text(digit))
+    for d in digit_list:
+        d = str(d).strip()
+        if len(d) == 1 and d in _DIGITS_TO_KK:
+            digit_text.append(_DIGITS_TO_KK[d])
+        elif len(d) > 1:
+            digit_str = digits_to_text(d)
+            if len(digit_str):
+                digit_text.append(digit_str)
 
-    return " ".join(phone_digits)
+    return " ".join(digit_text)
 
 
 def country_desc(cc: str) -> str:
