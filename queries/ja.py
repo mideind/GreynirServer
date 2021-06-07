@@ -25,7 +25,7 @@
 # TODO: Handle "hver er *heima*síminn hjá X"
 # TODO: Smarter disambiguation interaction
 
-from typing import Dict, Mapping, Optional, Any, Callable
+from typing import Dict, Mapping, Optional, Any, Callable, List
 
 import re
 import logging
@@ -65,9 +65,14 @@ QJaPhoneNumQuery →
     QJaName4PhoneNumQuery | QJaPhoneNum4NameQuery
 
 QJaPhoneNum4NameQuery →
+    # "Hver er síminn hjá Jóni Jónssyni?"
     QJaWhatWhich "er" QJaTheNumber_nf "hjá" QJaSubject
+    # "Hvaða síma er Jón Jónsson með?"
     | "hvaða" QJaTheNumber_þf "er" QJaSubject "með"
+    # Flettu upp númerinu hjá Jóni Jónssyni?
     | "flettu" "upp" QJaTheNumber_þgf "hjá" QJaSubject
+    # Hver er sími Jóns Jónssonar?
+    | QJaWhatWhich "er" QJaTheNumber_nf QJaSubject
 
 QJaName4PhoneNumQuery →
     "hver" "er" "með" QJaTheNumber_þf QJaPhoneNum QJaInPhonebook?
@@ -141,6 +146,9 @@ def query_ja_api(q: str) -> Optional[Dict[str, Any]]:
     url = _JA_API_URL.format(urlencode(qdict))
     res = query_json_api(url, headers=headers)
 
+    # from pprint import pprint
+    # pprint(res)
+
     return res
 
 
@@ -167,18 +175,26 @@ def _best_number(item: Dict[str, Any]) -> Optional[str]:
     return phone_num.get("number") if phone_num else None
 
 
-def _answer_phonenum4name_query(q: Query, result: Result) -> AnswerTuple:
-    """ Answer query of the form "hvað er síminn hjá [íslenskt mannsnafn]?" """
-    res = query_ja_api(result.qkey)
-
-    nþgf = NounPhrase(result.qkey).dative or result.qkey
-
+def phonenums4name(name: str) -> Optional[Dict[str, Any]]:
+    """ Receives name string in nominative case. Returns list of candidates found. """
+    res = query_ja_api(name)
     # Verify that we have a sane response with at least 1 result
     if not res or not res.get("people") or not res["people"].get("items"):
+        return None
+
+    return res["people"]["items"]
+
+
+def _answer_phonenum4name_query(q: Query, result: Result) -> AnswerTuple:
+    """ Answer query of the form "hvað er síminn hjá [íslenskt mannsnafn]?" """
+    nþgf = NounPhrase(result.qkey).dative or result.qkey
+
+    res = phonenums4name(result.qkey)
+    if not res:
         return gen_answer("Ekki tókst að fletta upp {0}.".format(nþgf))
 
     # Check if we have a single canonical match from API
-    allp = res["people"]["items"]
+    allp = res
     single = len(allp) == 1
     first = allp[0]
     fname = first["name"]
@@ -209,7 +225,7 @@ def _answer_phonenum4name_query(q: Query, result: Result) -> AnswerTuple:
                 continue
         return gen_answer(msg)
 
-    # Scan API call result, try to find the best phone nuber to provide
+    # Scan API call result, try to find the best phone number
     phone_number = _best_number(first)
     if not phone_number:
         return gen_answer("Ég finn ekki símanúmerið hjá {0}".format(nþgf))
