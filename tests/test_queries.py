@@ -100,10 +100,14 @@ def has_google_api_key() -> bool:
     return read_api_key("GoogleServerKey") != ""
 
 
+def has_ja_api_key() -> bool:
+    return read_api_key("JaServerKey") != ""
+
+
 DUMMY_CLIENT_ID = "QueryTesting123"
 
 
-def test_query_api(client):
+def test_query_api(client: FlaskClient):
     """ Make various query API calls and validate response. """
 
     c = client
@@ -380,14 +384,18 @@ def test_query_api(client):
     # Flights module
     departure_pattern = r"^Flug \w*? til .*? flýgur frá \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
     arrival_pattern = r"^Flug \w*? frá .*? lendir [í|á] \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
-    no_matching_flight_pattern = r"Ekkert flug fannst (frá .*? )?(til .*? )?næstu \d+ daga."
+    no_matching_flight_pattern = (
+        r"Ekkert flug fannst (frá .*? )?(til .*? )?næstu \d+ daga."
+    )
 
     json = qmcall(
         c, {"q": "hvenær fer næsta flug til jfk frá keflavík", "voice": True}, "Flights"
     )
     assert re.search(departure_pattern, json["answer"])
     json = qmcall(
-        c, {"q": "hvenær flýgur næsta flug til new york frá keflavík", "voice": True}, "Flights"
+        c,
+        {"q": "hvenær flýgur næsta flug til new york frá keflavík", "voice": True},
+        "Flights",
     )
     assert re.search(departure_pattern, json["answer"])
     json = qmcall(
@@ -481,6 +489,7 @@ def test_query_api(client):
     json = qmcall(c, {"q": "hver er höfuðborg norður kóreu"}, "Geography")
     assert json["answer"] == "Pjongjang"
 
+    # TODO: Fix me
     # json = qmcall(
     #     c, {"q": "hver er höfuðborg sameinuðu arabísku furstadæmanna"}, "Geography"
     # )
@@ -506,6 +515,36 @@ def test_query_api(client):
 
     json = qmcall(c, {"q": "hvar er borgin tókýó"}, "Geography")
     assert "Japan" in json["answer"]
+
+    # Ja.is module
+    if has_ja_api_key():
+        json = qmcall(
+            c, {"q": "hver er síminn hjá Sveinbirni Þórðarsyni?"}, "PhoneNum4Name"
+        )
+        assert "6992422" in json["answer"]
+        assert "sex níu níu" in json["voice"]
+
+        json = qmcall(
+            c,
+            {"q": "hvert er símanúmerið hjá Sveinbirni Þórðarsyni á Öldugötu?"},
+            "PhoneNum4Name",
+        )
+        assert "6992422" in json["answer"]
+        assert "sex níu níu" in json["voice"]
+
+        json = qmcall(
+            c,
+            {"q": "hvað er númerið hjá Vilhjálmi Þorsteinssyni?"},  # There are many of 'em
+            "PhoneNum4Name",
+        )
+        assert "heimilisfang" in json["voice"]
+
+        json = qmcall(
+            c,
+            {"q": "hver er síminn hjá Vilhjálmi Þorsteinssyni hugbúnaðarhönnuði"},
+            "PhoneNum4Name",
+        )
+        assert "8201020" in json["answer"]
 
     # News module
     json = qmcall(c, {"q": "Hvað er í fréttum", "voice": True}, "News")

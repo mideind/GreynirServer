@@ -25,7 +25,7 @@
 # TODO: Handle "hver er *heima*síminn hjá X"
 # TODO: Smarter disambiguation interaction
 
-from typing import Dict, Mapping, Optional, Any, Callable, List
+from typing import Dict, Mapping, Optional, Any, Callable
 
 import re
 import logging
