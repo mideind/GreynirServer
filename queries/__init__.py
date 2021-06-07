@@ -785,9 +785,11 @@ def digits_to_text(digit_list: Iterable[Union[str, int]]) -> str:
 
     for d in digit_list:
         d = str(d).strip()
-        if len(d) == 1 and d in _DIGITS_TO_KK:
+        if not d:
+            continue
+        elif d in _DIGITS_TO_KK:
             digit_text.append(_DIGITS_TO_KK[d])
-        elif len(d) > 1:
+        else:
             digit_str = digits_to_text(d)
             if len(digit_str):
                 digit_text.append(digit_str)
