@@ -485,7 +485,7 @@ def float_to_text(f: float = 0.0, gender="hk") -> str:
     return out_str.strip()
 
 
-def year_to_text(year: int, after_christ: bool = False) -> str:
+def year_to_text(year: int, *, after_christ: bool = False) -> str:
     """
     Write year as text in Icelandic.
     Negative years automatically append "fyrir Krist" to the text.
