@@ -24,8 +24,8 @@
 
 """
 
-from tree import Node
 from typing import Mapping, Optional, List, Dict, Tuple, Union, cast, Iterable
+from tree import Node
 
 import logging
 import requests
@@ -64,7 +64,7 @@ def natlang_seq(words: List[str], oxford_comma: bool = False) -> str:
 
 
 def nom2dat(w: str) -> str:
-    """ Look up the dative of an Icelandic noun given its nominative form. """
+    """Look up the dative of an Icelandic noun given its nominative form."""
     try:
         d = NounPhrase(w).dative
         return d or w
@@ -253,7 +253,7 @@ def numbers_to_neutral(s: str) -> str:
     return re.sub(r"(\d+)", convert, s)
 
 
-_SUB_20_NEUTRAL = {
+_SUB_20_NEUTRAL: Mapping[int, str] = {
     1: "eitt",
     2: "tvö",
     3: "þrjú",
@@ -275,7 +275,7 @@ _SUB_20_NEUTRAL = {
     19: "nítján",
 }
 
-_TENS_NEUTRAL = {
+_TENS_NEUTRAL: Mapping[int, str] = {
     20: "tuttugu",
     30: "þrjátíu",
     40: "fjörutíu",
@@ -286,21 +286,21 @@ _TENS_NEUTRAL = {
     90: "níutíu",
 }
 
-_NUM_NEUT_TO_KK = {
+_NUM_NEUT_TO_KK: Mapping[str, str] = {
     "eitt": "einn",
     "tvö": "tveir",
     "þrjú": "þrír",
     "fjögur": "fjórir",
 }
 
-_NUM_NEUT_TO_KVK = {
+_NUM_NEUT_TO_KVK: Mapping[str, str] = {
     "eitt": "ein",
     "tvö": "tvær",
     "þrjú": "þrjár",
     "fjögur": "fjórar",
 }
 
-_LARGE_NUMBERS = (
+_LARGE_NUMBERS: Tuple[Tuple[int, str], ...] = (
     (int(1e21) * int(1e21) * int(1e6), "oktilljón"),  # 10^48
     (int(1e21) * int(1e21), "septilljón"),  # 10^42
     (int(1e21) * int(1e15), "sextilljón"),  # 10^36
@@ -436,15 +436,15 @@ def number_to_text(n: int, gender="hk") -> str:
     """
     num_str = number_to_neutral(n)
 
-    if gender =="hk":
+    if gender == "hk":
         return num_str
 
     nums = num_str.split()
 
-    if gender=="kk" and nums[-1] in _NUM_NEUT_TO_KK:
+    if gender == "kk" and nums[-1] in _NUM_NEUT_TO_KK:
         nums[-1] = _NUM_NEUT_TO_KK[nums[-1]]
 
-    elif gender=="kvk" and nums[-1] in _NUM_NEUT_TO_KVK:
+    elif gender == "kvk" and nums[-1] in _NUM_NEUT_TO_KVK:
         nums[-1] = _NUM_NEUT_TO_KVK[nums[-1]]
 
     return " ".join(nums)
@@ -475,9 +475,9 @@ def float_to_text(f: float = 0.0, gender="hk") -> str:
         else:
             digit_str = _SUB_20_NEUTRAL.get(int(digit), "")
             if gender == "kk" and digit_str in _NUM_NEUT_TO_KK:
-                out_str+= _NUM_NEUT_TO_KK[digit_str]
+                out_str += _NUM_NEUT_TO_KK[digit_str]
             elif gender == "kvk" and digit_str in _NUM_NEUT_TO_KVK:
-                out_str+= _NUM_NEUT_TO_KVK[digit_str]
+                out_str += _NUM_NEUT_TO_KVK[digit_str]
             else:
                 out_str += digit_str
             out_str += " "
@@ -518,7 +518,8 @@ def year_to_text(year: int, after_christ: bool = False) -> str:
     return " ".join(text) + suffix
 
 
-FYRSTUR_STRONG_DECL = {
+DeclensionMapping = Mapping[str, Mapping[str, Mapping[str, str]]]
+_FYRSTUR_STRONG_DECL: DeclensionMapping = {
     "et": {
         "kk": {"nf": "fyrstur", "þf": "fyrstan", "þgf": "fyrstum", "ef": "fyrsts"},
         "kvk": {"nf": "fyrst", "þf": "fyrsta", "þgf": "fyrstri", "ef": "fyrstrar"},
@@ -531,7 +532,7 @@ FYRSTUR_STRONG_DECL = {
     },
 }
 
-_SUB_20_NEUT_TO_ORDINAL = {
+_SUB_20_NEUT_TO_ORDINAL: Mapping[str, str] = {
     "eitt": "fyrst",
     # 2 is a special case
     "þrjú": "þriðj",
@@ -553,7 +554,7 @@ _SUB_20_NEUT_TO_ORDINAL = {
     "nítján": "nítjánd",
 }
 
-_ANNAR_TABLE = {
+_ANNAR_TABLE: DeclensionMapping = {
     "et": {
         "kk": {
             "nf": "annar",
@@ -596,7 +597,8 @@ _ANNAR_TABLE = {
     },
 }
 
-_SUB_20_ORDINAL_SUFFIX = {
+SuffixMapping = Mapping[str, Mapping[str, str]]
+_SUB_20_ORDINAL_SUFFIX: SuffixMapping = {
     "kk": {
         "nf": "i",
         "þf": "a",
@@ -617,7 +619,7 @@ _SUB_20_ORDINAL_SUFFIX = {
     },
 }
 
-_TENS_NEUT_TO_ORDINAL = {
+_TENS_NEUT_TO_ORDINAL: Mapping[str, str] = {
     "tuttugu": "tuttug",
     "þrjátíu": "þrítug",
     "fjörutíu": "fertug",
@@ -628,7 +630,7 @@ _TENS_NEUT_TO_ORDINAL = {
     "níutíu": "nítug",
 }
 
-_LARGE_ORDINAL_SUFFIX = {
+_LARGE_ORDINAL_SUFFIX: SuffixMapping = {
     "kk": {
         "nf": "asti",
         "þf": "asta",
@@ -651,72 +653,72 @@ _LARGE_ORDINAL_SUFFIX = {
 
 
 def _num_to_ordinal(
-    word: str, decl: str = "nf", gender: str = "kk", number: str = "et"
+    word: str, case: str = "nf", gender: str = "kk", number: str = "et"
 ) -> str:
     """
     Helper function. Changes one part of a number (in written form) to ordinal form
-    in correct declension, gender and number.
+    in correct case, gender and number.
     Example:
         "hundruð" -> "hundraðasti" (default args)
         "tvö" -> "aðrar" (þf, kvk, ft)
     """
     if word == "núll":
-        word = "núllt" + _SUB_20_ORDINAL_SUFFIX[gender][decl]
+        word = "núllt" + _SUB_20_ORDINAL_SUFFIX[gender][case]
 
     elif word == "tvö":
-        word = _ANNAR_TABLE[number][gender][decl]
+        word = _ANNAR_TABLE[number][gender][case]
 
     elif word in _SUB_20_NEUT_TO_ORDINAL:
         word = _SUB_20_NEUT_TO_ORDINAL.get(word, word)
         if number == "ft":
             word += "u"
         else:
-            word += _SUB_20_ORDINAL_SUFFIX[gender][decl]
+            word += _SUB_20_ORDINAL_SUFFIX[gender][case]
 
     elif word in _TENS_NEUT_TO_ORDINAL:
         word = _TENS_NEUT_TO_ORDINAL.get(word, word)
         if number == "ft":
             word += "ustu"
         else:
-            word += _LARGE_ORDINAL_SUFFIX[gender][decl]
+            word += _LARGE_ORDINAL_SUFFIX[gender][case]
 
     elif word.startswith("hundr"):
-        if number == "ft" or (gender == "kvk" and decl != "nf"):
+        if number == "ft" or (gender == "kvk" and case != "nf"):
             word = "hundruðustu"
         else:
-            word = "hundrað" + _LARGE_ORDINAL_SUFFIX[gender][decl]
+            word = "hundrað" + _LARGE_ORDINAL_SUFFIX[gender][case]
 
     elif word == "þúsund":
-        if number == "ft" or (gender == "kvk" and decl != "nf"):
+        if number == "ft" or (gender == "kvk" and case != "nf"):
             word = "þúsundustu"
         else:
-            word = "þúsund" + _LARGE_ORDINAL_SUFFIX[gender][decl]
+            word = "þúsund" + _LARGE_ORDINAL_SUFFIX[gender][case]
 
     elif "jón" in word:
         if number == "ft":
             word = re.sub(r"(\S*jón)\S*", r"\1ustu", word)
         else:
             word = re.sub(
-                r"(\S*jón)\S*", r"\1" + _LARGE_ORDINAL_SUFFIX[gender][decl], word
+                r"(\S*jón)\S*", r"\1" + _LARGE_ORDINAL_SUFFIX[gender][case], word
             )
 
     elif "jarð" in word:
-        if number == "ft" or (gender == "kvk" and decl != "nf"):
+        if number == "ft" or (gender == "kvk" and case != "nf"):
             word = re.sub(r"(\S*)jarð\S*", r"\1jörðustu", word)
         else:
             word = re.sub(
-                r"(\S*jarð)\S*", r"\1" + _LARGE_ORDINAL_SUFFIX[gender][decl], word
+                r"(\S*jarð)\S*", r"\1" + _LARGE_ORDINAL_SUFFIX[gender][case], word
             )
 
     return word
 
 
 def neutral_text_to_ordinal(
-    s: str, decl: str = "nf", gender: str = "kk", number: str = "et"
+    s: str, case: str = "nf", gender: str = "kk", number: str = "et"
 ) -> str:
     """
     Takes Icelandic text representation of number
-    and returns it as an ordinal in specified declension (nf, þf, þgf, ef),
+    and returns it as an ordinal in specified case (nf, þf, þgf, ef),
     gender (kk, kvk, hk) and number (et, ft).
     """
     if len(s) <= 0:
@@ -725,7 +727,7 @@ def neutral_text_to_ordinal(
     ordinal: List[str] = s.split()
 
     # Change last word to ordinal
-    ordinal[-1] = _num_to_ordinal(ordinal[-1], decl, gender, number)
+    ordinal[-1] = _num_to_ordinal(ordinal[-1], case, gender, number)
 
     if len(ordinal) > 1:
         # Change e.g. "tvö þúsund og fyrsti" -> "tvö þúsundasti og fyrsti"
@@ -733,7 +735,7 @@ def neutral_text_to_ordinal(
             # Check that last number in text isn't a large ordinal
             # e.g. "sextugustu", "hundraðasti" or "þúsundasta"
             if not re.search(r"[au]st[iau]$", ordinal[-1]):
-                ordinal[-3] = _num_to_ordinal(ordinal[-3], decl, gender, number)
+                ordinal[-3] = _num_to_ordinal(ordinal[-3], case, gender, number)
 
     ordinal_str: str = " ".join(ordinal)
 
@@ -746,17 +748,17 @@ def neutral_text_to_ordinal(
 
 
 def number_to_ordinal(
-    n: int, decl: str = "nf", gender: str = "kk", number: str = "et"
+    n: int, case: str = "nf", gender: str = "kk", number: str = "et"
 ) -> str:
     """
     Takes number and returns it as an ordinal
-    in specified declension (nf, þf, þgf, ef),
+    in specified case (nf, þf, þgf, ef),
     gender (kk, kvk, hk) and number (et, ft).
     """
-    return neutral_text_to_ordinal(number_to_neutral(n), decl, gender, number)
+    return neutral_text_to_ordinal(number_to_neutral(n), case, gender, number)
 
 
-_DIGITS_TO_KK = {
+_DIGITS_TO_KK: Mapping[str, str] = {
     "0": "núll",
     "1": "einn",
     "2": "tveir",
@@ -770,7 +772,7 @@ _DIGITS_TO_KK = {
 }
 
 
-def digits_to_text(digit_list: Iterable[Union[str,int]]) -> str:
+def digits_to_text(digit_list: Iterable[Union[str, int]]) -> str:
     """
     Takes in a string of digits (or list of strings/ints)
     and returns as spoken text in Icelandic.
@@ -804,7 +806,7 @@ def country_desc(cc: str) -> str:
 
 
 def cap_first(s: str) -> str:
-    """ Capitalize first character in a string. """
+    """Capitalize first character in a string."""
     return s[0].upper() + s[1:] if s else s
 
 
@@ -920,7 +922,7 @@ def strip_trailing_zeros(num_str: str) -> str:
 def iceformat_float(
     fp_num: float, decimal_places: int = 2, strip_zeros: bool = True
 ) -> str:
-    """ Convert number to Icelandic decimal format string. """
+    """Convert number to Icelandic decimal format string."""
     with changedlocale(category="LC_NUMERIC"):
         fmt = "%.{0}f".format(decimal_places)
         res = locale.format_string(fmt, float(fp_num), grouping=True).replace(" ", ".")
@@ -928,12 +930,12 @@ def iceformat_float(
 
 
 def icequote(s: str) -> str:
-    """ Return string surrounded by Icelandic-style quotation marks. """
+    """Return string surrounded by Icelandic-style quotation marks."""
     return "„{0}“".format(s.strip())
 
 
 def gen_answer(a: str) -> AnswerTuple:
-    """ Convenience function for query modules: response, answer, voice answer """
+    """Convenience function for query modules: response, answer, voice answer"""
     return dict(answer=a), a, a
 
 
@@ -995,7 +997,7 @@ _MAPS_API_COORDS_URL = (
 
 
 def query_geocode_api_coords(lat: float, lon: float) -> Optional[Dict]:
-    """ Look up coordinates in Google's geocode API. """
+    """Look up coordinates in Google's geocode API."""
     # Load API key
     key = read_api_key("GoogleServerKey")
     if not key:
@@ -1016,7 +1018,7 @@ _MAPS_API_ADDR_URL = (
 
 
 def query_geocode_api_addr(addr: str) -> Optional[Dict]:
-    """ Look up address in Google's geocode API. """
+    """Look up address in Google's geocode API."""
     # Load API key
     key = read_api_key("GoogleServerKey")
     if not key:
@@ -1153,7 +1155,7 @@ _TZW: Optional[tzwhere.tzwhere] = None
 
 
 def _tzwhere_singleton() -> tzwhere.tzwhere:
-    """ Lazy-load location/timezone database. """
+    """Lazy-load location/timezone database."""
     global _TZW
     if not _TZW:
         _TZW = tzwhere.tzwhere(forceTZ=True)
@@ -1174,7 +1176,7 @@ def timezone4loc(
 
 @lru_cache(maxsize=32)
 def read_jsfile(filename: str) -> str:
-    """ Read and return a minified JavaScript (.js) file """
+    """Read and return a minified JavaScript (.js) file"""
     # The file is read from the directory 'js' within the directory
     # containing this __init__.py file
     from rjsmin import jsmin  # type: ignore
