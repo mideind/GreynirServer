@@ -1110,8 +1110,8 @@ def test_years():
     assert year_to_text(1999) == "nítján hundruð níutíu og níu"
     assert year_to_text(2004) == "tvö þúsund og fjögur"
     assert year_to_text(-501) == "fimm hundruð og eitt fyrir Krist"
-    assert year_to_text(1001, True) == "eitt þúsund og eitt eftir Krist"
-    assert year_to_text(57, True) == "fimmtíu og sjö eftir Krist"
+    assert year_to_text(1001, after_christ=True) == "eitt þúsund og eitt eftir Krist"
+    assert year_to_text(57, after_christ=True) == "fimmtíu og sjö eftir Krist"
     assert year_to_text(2401) == "tvö þúsund fjögur hundruð og eitt"
 
 
