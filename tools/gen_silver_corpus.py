@@ -217,10 +217,11 @@ def is_acceptable_article(art):
 MIN_SENT_LENGTH = 5
 
 def is_acceptable_sentence_tree(stree):
-    # Generate hash of sentence text and add
+    # Generate hash of normalized sentence text and add
     # it to SENT_HASHES to ensure uniqueness
-    text = stree.text
-    md5sum = hashlib.md5(text.encode("utf-8")).hexdigest()
+    norm = normalize(stree.text)
+
+    md5sum = hashlib.md5(norm.encode("utf-8")).hexdigest()
 
     # Skip already processed identical sentence
     if md5sum in SENT_HASHES:
@@ -327,6 +328,16 @@ def last_threshold(total_sent):
     if total_sent >= LIMIT:
         return True
     return False
+
+def normalize(text):
+    # Generalize information in sentence to ensure unique sentences in set
+    text = text.lower()
+    for item in definitions.PUNCTUATION:
+        text = text.replace(item, "")
+    for num in "0123456789":
+        text = text.replace(num, "0")
+    text = text.replace(" ", "")
+
 
 NUM_SENT = 500000
 LIMIT = 2000000     # Absolute limit of corpus size
