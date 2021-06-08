@@ -72,7 +72,7 @@ QJaPhoneNum4NameQuery →
     # Flettu upp númerinu hjá Jóni Jónssyni?
     | "flettu" "upp" QJaTheNumber_þgf "hjá" QJaSubject
     # Hver er sími Jóns Jónssonar?
-    | QJaWhatWhich "er" QJaTheNumber_nf QJaSubject
+    # | QJaWhatWhich "er" QJaTheNumber_nf QJaSubject
 
 QJaName4PhoneNumQuery →
     "hver" "er" "með" QJaTheNumber_þf QJaPhoneNum QJaInPhonebook?

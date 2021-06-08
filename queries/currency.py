@@ -440,7 +440,7 @@ def QCurAmountConversion(node, params, result):
     result.op = "convert"
 
 
-_CURR_API_URL = "https://apis.is/currency/lb"
+_CURR_API_URL = "https://apis.is/currency/arion"
 _CURR_CACHE_TTL = 3600  # seconds
 
 
