@@ -920,7 +920,8 @@ def test_query_utility_functions():
 
 def test_numbers():
     """ Test number handling functionality in queries """
-    from queries import numbers_to_neutral, number_to_neutral, number_to_text
+    from queries import numbers_to_neutral
+    from queries.num import number_to_neutral, number_to_text
 
     assert number_to_neutral(2) == "tvö"
     assert number_to_neutral(1100) == "eitt þúsund og eitt hundrað"
@@ -1105,7 +1106,7 @@ def test_numbers():
 
 def test_years():
     """Test number to written year conversion."""
-    from queries import year_to_text
+    from queries.num import year_to_text
 
     assert year_to_text(1999) == "nítján hundruð níutíu og níu"
     assert year_to_text(2004) == "tvö þúsund og fjögur"
@@ -1117,7 +1118,7 @@ def test_years():
 
 def test_ordinals():
     """Test number to written ordinal conversion."""
-    from queries import number_to_ordinal
+    from queries.num import number_to_ordinal
 
     assert number_to_ordinal(0) == "núllti"
     assert number_to_ordinal(22, "þgf", "kvk") == "tuttugustu og annarri"
@@ -1133,7 +1134,7 @@ def test_ordinals():
 
 def test_floats():
     """Test float to written text conversion."""
-    from queries import float_to_text
+    from queries.num import float_to_text
     assert float_to_text(-0.12) == "mínus núll komma eitt tvö"
     assert float_to_text(-21.12, "kk") == "mínus tuttugu og einn komma einn tveir"
     assert float_to_text(1.03, "kvk") == "ein komma núll þrjár"
@@ -1141,7 +1142,7 @@ def test_floats():
 
 def test_digits():
     """Test digit string to written text conversion."""
-    from queries import digits_to_text
+    from queries.num import digits_to_text
     assert digits_to_text("5885522") == "fimm átta átta fimm fimm tveir tveir"
     assert digits_to_text("112") == "einn einn tveir"
     assert digits_to_text("123-0679") == "einn tveir þrír núll sex sjö níu"
