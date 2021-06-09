@@ -818,7 +818,6 @@ def test_query_utility_functions():
     from queries import (
         natlang_seq,
         nom2dat,
-        numbers_to_neutral,
         is_plural,
         sing_or_plur,
         country_desc,
@@ -832,6 +831,7 @@ def test_query_utility_functions():
         timezone4loc,
         # parse_num,
     )
+    from queries.num import numbers_to_neutral
 
     assert natlang_seq(["Jón", "Gunna"]) == "Jón og Gunna"
     assert natlang_seq(["Jón", "Gunna", "Siggi"]) == "Jón, Gunna og Siggi"
@@ -920,8 +920,7 @@ def test_query_utility_functions():
 
 def test_numbers():
     """ Test number handling functionality in queries """
-    from queries import numbers_to_neutral
-    from queries.num import number_to_neutral, number_to_text
+    from queries.num import number_to_neutral, number_to_text, numbers_to_neutral
 
     assert number_to_neutral(2) == "tvö"
     assert number_to_neutral(1100) == "eitt þúsund og eitt hundrað"
