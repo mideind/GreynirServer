@@ -433,7 +433,7 @@ def test_distance(client: FlaskClient):
     assert json["answer"].endswith("(389 km).")
 
 
-def test_flights(client: FlaskClient):
+def _test_flights(client: FlaskClient):
     """ Flights module """
     departure_pattern = r"^Flug \w*? til .*? flýgur frá \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
     arrival_pattern = r"^Flug \w*? frá .*? lendir [í|á] \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
