@@ -33,9 +33,9 @@ from queries import (
     query_geocode_api_coords,
     country_desc,
     nom2dat,
-    numbers_to_neutral,
     cap_first,
 )
+from queries.num import numbers_to_neutral
 from tree import Result
 from iceaddr import iceaddr_lookup, postcodes  # type: ignore
 from geo import iceprep_for_placename, iceprep_for_street

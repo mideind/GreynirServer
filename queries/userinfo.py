@@ -33,7 +33,8 @@ from reynir.bindb import GreynirBin
 
 from geo import icelandic_addr_info, iceprep_for_placename, iceprep_for_street
 from query import ClientDataDict, Query
-from . import gen_answer, numbers_to_neutral
+from . import gen_answer
+from queries.num import numbers_to_neutral
 
 
 _USERINFO_QTYPE = "UserInfo"
