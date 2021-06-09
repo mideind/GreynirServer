@@ -47,7 +47,8 @@ import random
 import query
 from query import AnswerTuple, Query, QueryStateDict, ResponseType, Session
 from tree import Result
-from queries import natlang_seq, numbers_to_neutral, cap_first, gen_answer
+from queries import natlang_seq, cap_first, gen_answer
+from queries.num import numbers_to_neutral
 from settings import Settings
 from reynir import correct_spaces
 from geo import in_iceland

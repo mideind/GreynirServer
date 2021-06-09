@@ -35,7 +35,8 @@ from datetime import datetime, timedelta
 from reynir import NounPhrase
 from reynir.bindb import GreynirBin
 
-from . import query_json_api, gen_answer, numbers_to_neutral, icequote
+from . import query_json_api, gen_answer, icequote
+from queries.num import numbers_to_neutral
 
 from query import AnswerTuple, Query, QueryStateDict
 from tree import Result
