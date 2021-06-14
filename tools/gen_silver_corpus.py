@@ -111,7 +111,6 @@ KNOWNTERMINALS = [
     "ártal",
 ]
 
-
 KNOWNNONTERMINALS = [
     "S0",
     "S-MAIN",
@@ -186,8 +185,6 @@ KNOWNNONTERMINALS = [
     "URL",
 ]
 
-
-
 def is_icelandic(sent):
     # Code mostly copied from annotate() in checker.py in GreynirCorrect
     words_in_bin = 0
@@ -220,6 +217,8 @@ def is_acceptable_sentence_tree(stree):
     # Generate hash of normalized sentence text and add
     # it to SENT_HASHES to ensure uniqueness
     norm = normalize(stree.text)
+    if not norm:
+        return False
 
     md5sum = hashlib.md5(norm.encode("utf-8")).hexdigest()
 
@@ -393,6 +392,9 @@ def main():
 
         # Iterate over each sentence tree, process
         for ix, stree in trees:
+            if not stree:
+                total_sent_skipped += 1
+                continue
             if not is_acceptable_sentence_tree(stree):
                 total_sent_skipped += 1
                 continue
