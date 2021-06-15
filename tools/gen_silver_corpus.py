@@ -366,8 +366,6 @@ def main():
     total_arts = 0
     total_arts_skipped = 0
 
-    total_silver = 0
-
     accumulated = []
 
     for art in Article.articles({"random": True}):
@@ -432,7 +430,7 @@ def main():
             print(f"\t{total_sent_skipped} sentences skipped")
 
         if last_threshold(total_sent) or total_sent+total_sent_skipped > 12000000:
-            # Stop if we've reached 2M
+            # Stop if we've checked 12M total sentences
             break
         elif first_threshold(total_sent) and full_buckets():
             break

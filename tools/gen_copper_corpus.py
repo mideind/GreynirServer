@@ -144,11 +144,16 @@ def main():
         print("Configuration error: {0}".format(e))
         sys.exit(os.EX_CONFIG)
 
+    # Output file
+    file = open(OUT_FILENAME, "w", encoding="utf-8")
+
     total_sent = 0
     total_sent_skipped = 0
 
     total_arts = 0
     total_arts_skipped = 0
+
+    accumulated = []
 
     def gen():
         yield from Article.articles({"random": True})
@@ -183,20 +188,32 @@ def main():
                     shortfile.write(str(atree) + SEPARATOR)
                 continue
             # OK, it's acceptable
-            total_sent += 1
             annotree = gen_anno_tree(art, ix, stree)
-            with open(OUT_FILENAME, "a", encoding="utf-8") as copperfile:
-                copperfile.write(str(annotree) + SEPARATOR)
+            accumulated.append(annotree)
+        num_acc = len(accumulated)
+        if num_acc >= BATCH_SIZE:
+            total_sent += num_acc
+            shuffle(accumulated)
+            # Write sentence trees to file
+            for s in accumulated:
+                file.write(str(s) + SEPARATOR)
+            # Empty our list of acc. sentences
+            accumulated = []
+            # Trigger manual garbage collection
             gc.collect()
-            if total_sent % 10000 == 0:
-                print(f"{total_sent} ({total_sent_skipped}) sentences")
-                print(f"\t{total_arts} ({total_arts_skipped}) articles")
+            print(f"{total_sent} sentences accumulated")
+            print(f"\t{total_sent_skipped} sentences skipped")
+        if total_sent+total_sent_skipped > 14000000:
+            break
+
+
     # All done
     file.close()
-    print(f"Total articles: {total_arts}")
-    print(f"Total articles skipped: {total_arts_skipped}")
-    print(f"Total sentences: {total_sent}")
-    print(f"Total sentences skipped: {total_sent_skipped}")
+    with open("stats_copper.txt", "a") as stats:
+        stats.write(f"Total articles: {total_arts}\n")
+        stats.write(f"Total articles skipped: {total_arts_skipped}\n")
+        stats.write(f"Total sentences: {total_sent}\n")
+        stats.write(f"Total sentences skipped: {total_sent_skipped}\n")
 
 if __name__ == "__main__":
     main()
