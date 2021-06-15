@@ -216,9 +216,10 @@ MIN_SENT_LENGTH = 5
 def is_acceptable_sentence_tree(stree):
     # Generate hash of normalized sentence text and add
     # it to SENT_HASHES to ensure uniqueness
-    norm = normalize(stree.text)
+    text = stree.text
+    norm = normalize(text)
     if not norm:
-        return False
+       return False
 
     md5sum = hashlib.md5(norm.encode("utf-8")).hexdigest()
 
@@ -288,14 +289,14 @@ def old_info(stree):
     p = True
     for nonterm in stree.nonterminals:
         phrase = nonterm._head.get("i")
-        if NONTERMDICT[phrase] < 100:
+        if NONTERMDICT[phrase] < 1000:
             # We want to add it!
             p = False
         NONTERMDICT[phrase] += 1
 
     for leaf in stree.leaves:
         cat = leaf._head.get("c")
-        if TERMDICT[cat] < 1000:
+        if TERMDICT[cat] < 10000:
             p = False
         TERMDICT[cat] += 1
 
@@ -336,11 +337,11 @@ def normalize(text):
     for num in "0123456789":
         text = text.replace(num, "0")
     text = text.replace(" ", "")
+    return text
 
-
-NUM_SENT = 500000
-LIMIT = 2000000     # Absolute limit of corpus size
-BATCH_SIZE = 1000
+NUM_SENT = 500000 #500000
+LIMIT = 2000000 #2000000     # Absolute limit of corpus size
+BATCH_SIZE = 1000 #1000
 OUT_FILENAME = "silver.txt"
 SEPARATOR = "\n\n"
 
@@ -370,6 +371,8 @@ def main():
     accumulated = []
 
     for art in Article.articles({"random": True}):
+        #if total_sent % 1001 == 1:
+        #    print(total_sent)
         if not is_acceptable_article(art):
             total_arts_skipped += 1
             continue
@@ -381,6 +384,7 @@ def main():
             tree = Tree(url=art.url, authority=art.authority)
             tree.load(art.tree)
         except Exception:
+            total_arts_skipped += 1
             continue
 
         # Load simple sentence trees for all sentences in article
@@ -388,6 +392,7 @@ def main():
         try:
             trees = tree.simple_trees()
         except Exception:
+            total_arts_skipped += 1
             continue
 
         # Iterate over each sentence tree, process
@@ -410,7 +415,6 @@ def main():
 
             # OK, it's acceptable
             annotree = gen_anno_tree(art, ix, stree)
-            # print(annotree)
             accumulated.append(annotree)
 
         num_acc = len(accumulated)
@@ -427,7 +431,7 @@ def main():
             print(f"{total_sent} sentences accumulated")
             print(f"\t{total_sent_skipped} sentences skipped")
 
-        if last_threshold(total_sent):
+        if last_threshold(total_sent) or total_sent+total_sent_skipped > 12000000:
             # Stop if we've reached 2M
             break
         elif first_threshold(total_sent) and full_buckets():
@@ -435,15 +439,16 @@ def main():
 
     # All done
     file.close()
-    print(f"Total articles: {total_arts}")
-    print(f"Total articles skipped: {total_arts_skipped}")
-    print(f"Total sentences: {total_sent}")
-    print(f"Total sentences skipped: {total_sent_skipped}")
-    for each in NONTERMDICT:
-        print(f"{each}:  {NONTERMDICT[each]}")
+    with open("stats_silver.txt", "a") as stats:
+        stats.write(f"Total articles: {total_arts}\n")
+        stats.write(f"Total articles skipped: {total_arts_skipped}\n")
+        stats.write(f"Total sentences: {total_sent}\n")
+        stats.write(f"Total sentences skipped: {total_sent_skipped}\n")
+        for each in NONTERMDICT:
+            stats.write(f"{each}:  {NONTERMDICT[each]}\n")
 
-    for each in TERMDICT:
-        print(f"{each}:  {TERMDICT[each]}")
+        for each in TERMDICT:
+            stats.write(f"{each}:  {TERMDICT[each]}\n")
 
 if __name__ == "__main__":
     main()
