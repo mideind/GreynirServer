@@ -216,7 +216,7 @@ def handle_plain_text(q: Query) -> bool:
         clean_num = re.sub(r"[^0-9]", "", telsubj).strip()
         if len(clean_num) < 3:
             # The number is clearly not a valid phone number
-            a = gen_answer("{0} er ekki gilt símanúmer.".format(number))
+            a = gen_answer("{0} er ekki gilt símanúmer.".format(telsubj))
         elif re.search(r"^[\d|\s]+$", clean_num):
             # At this point we have what looks like a legitimate phone number.
             # Send tel: url to trigger phone call in client

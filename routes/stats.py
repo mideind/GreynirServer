@@ -63,6 +63,7 @@ _SOURCE_ROOT_COLORS = {
     "Fréttablaðið": "#002a61",
     "Hagstofa Íslands": "#818285",
     "DV": "#ed1c24",
+    "BB": "#ffb6c1",
     "Mannlíf": "#ffcc00",  # Gula pressan ;)
 }
 

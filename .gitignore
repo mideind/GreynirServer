@@ -127,9 +127,9 @@ venv*
 p3*/
 p7*/
 pypy/
+pypy*
 cpython*/
 venv
-
 
 # Installer logs
 pip-log.txt

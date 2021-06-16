@@ -33,7 +33,8 @@ from reynir.bindb import GreynirBin
 
 from geo import icelandic_addr_info, iceprep_for_placename, iceprep_for_street
 from query import ClientDataDict, Query
-from . import gen_answer, numbers_to_neutral
+from . import gen_answer
+from queries.num import numbers_to_neutral
 
 
 _USERINFO_QTYPE = "UserInfo"
@@ -101,6 +102,8 @@ def _whatsmyname_handler(q: Query, ql: str) -> bool:
         answ = f"Þú heitir {nd['full']}"
     elif nd and "first" in nd:
         answ = f"Þú heitir {nd['first']}"
+        if nd["first"] == "Embla":
+            answ += " alveg eins og ég!"
     else:
         answ = _DUNNO_NAME
     q.set_answer(*gen_answer(answ))
@@ -153,7 +156,10 @@ def _mynameis_handler(q: Query, ql: str) -> bool:
         with GreynirBin.get_db() as bdb:
             fn = components[0].title()
             gender = bdb.lookup_name_gender(fn) or "hk"
-            answ = _MY_NAME_IS_RESPONSES[gender].format(fn)
+            resp = _MY_NAME_IS_RESPONSES[gender]
+            answ = resp.format(fn)
+            if fn == "Embla":
+                answ = "Sæl og blessuð. Ég heiti líka Embla!"
 
         # Save this info about user to query data table
         if q.client_id:

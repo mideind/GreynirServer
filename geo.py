@@ -31,7 +31,6 @@ import re
 import sys
 import os
 import math
-from functools import lru_cache
 
 from iceaddr import iceaddr_lookup, placename_lookup  # type: ignore
 from cityloc import city_lookup  # type: ignore
@@ -436,7 +435,6 @@ def coords_for_us_state_code(code: str) -> Optional[LatLonTuple]:
     return state_coords.get(code.upper())
 
 
-@lru_cache(maxsize=32)
 def icelandic_city_name(name: str) -> str:
     """ Look up the Icelandic name of a city, given its
         English/international name. """

@@ -21,14 +21,14 @@ jobs:
       # Label used to access the service container
       postgres:
         # Docker Hub image
-        image: postgres
+        image: postgres:latest
         # Provide the password for postgres
         env:
           POSTGRES_DB: postgres
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          DB_HOST: localhost
           POSTGRES_HOST: localhost
+          PGPASSWORD: postgres
         ports:
           - 5432:5432
         # Set health checks to wait until postgres has started
@@ -40,7 +40,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: [3.6, 3.7, 3.9, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -50,9 +50,8 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Set up Icelandic locale
       run: |
-        sudo apt-get install language-pack-is
-        sudo locale-gen is_IS.UTF-8
-        sudo update-locale
+          sudo locale-gen is_IS.UTF-8
+          sudo update-locale
     - name: Install dependencies
       run: |
         pip install --upgrade pip wheel pytest curlylint
@@ -64,28 +63,20 @@ jobs:
         sudo apt-get install shellcheck
     - name: Populate database
       env:
-        POSTGRES_HOST: localhost
         POSTGRES_USER: postgres
         POSTGRES_PASSWORD: postgres
         POSTGRES_PORT: 5432
+        POSTGRES_HOST: localhost
         PGPASSWORD: postgres
       run: |
-        sudo service postgresql restart
-        export PGPASSWORD=postgres; sudo -u postgres psql -U postgres -c "create database scraper with encoding 'UTF8' LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' TEMPLATE=template0;"
-        export PGPASSWORD=postgres; sudo -u postgres psql -U postgres -d scraper -c "create extension if not exists \"uuid-ossp\";"
-        export PGPASSWORD=postgres; sudo -u postgres psql -U postgres -c "create user reynir with password 'reynir';"
+        PGPASSWORD=postgres psql -h localhost -U postgres -c "create user reynir with password 'reynir';"
+        PGPASSWORD=postgres psql -h localhost -U postgres -c "create database scraper with encoding 'UTF8' TEMPLATE=template0;"
+        PGPASSWORD=postgres psql -h localhost -U postgres -d scraper -c "create extension if not exists \"uuid-ossp\";"
         python scraper.py --init
-        cp tests/test_files/testdb_articles.csv /tmp/
-        export PGPASSWORD=postgres; sudo -u postgres psql -U postgres -d scraper -c "copy articles from '/tmp/testdb_articles.csv' delimiter ',' csv;"
-        cp tests/test_files/testdb_persons.csv /tmp/
-        export PGPASSWORD=postgres; sudo -u postgres psql -U postgres -d scraper -c "copy persons from '/tmp/testdb_persons.csv' delimiter ',' csv;"
-        cp tests/test_files/testdb_queries.csv /tmp/
-        export PGPASSWORD=postgres; sudo -u postgres psql -U postgres -d scraper -c "copy queries from '/tmp/testdb_queries.csv' delimiter ',' csv;"
-        cp tests/test_files/testdb_querydata.csv /tmp/
-        export PGPASSWORD=postgres; sudo -u postgres psql -U postgres -d scraper -c "copy querydata from '/tmp/testdb_querydata.csv' delimiter ',' csv;"
+        psql -f tests/files/populate_testdb.sql postgresql://postgres:postgres@localhost:5432/scraper
     - name: Create dummy API key
       run: |
-        cat "tests/test_files/dummy_greynir_api_key.txt" > "resources/GreynirServerKey.txt"
+        cat "tests/files/dummy_greynir_api_key.txt" > "resources/GreynirServerKey.txt"
         cat "resources/GreynirServerKey.txt"
     - name: Test with pytest
       run: |

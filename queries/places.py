@@ -43,8 +43,8 @@ from queries import (
     query_places_api,
     query_place_details,
     icequote,
-    numbers_to_neutral,
 )
+from queries.num import numbers_to_neutral
 from tree import Result
 
 from . import LatLonTuple, AnswerTuple

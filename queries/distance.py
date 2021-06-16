@@ -45,8 +45,8 @@ from queries import (
     distance_desc,
     query_geocode_api_addr,
     query_traveltime_api,
-    numbers_to_neutral,
 )
+from queries.num import numbers_to_neutral
 from geo import distance, capitalize_placename
 
 

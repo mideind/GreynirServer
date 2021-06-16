@@ -20,18 +20,21 @@ sudo locale-gen is_IS.UTF-8
 sudo update-locale
 ```
 
-NB: If PostgreSQL is already running, it needs to be restarted:
+NB: If PostgreSQL is already running on your machine, it needs to be restarted:
 
 ```
 sudo systemctl restart postgresql
 ```
+
+See below for instructions on installing PostgreSQL client libraries.
 
 ## Set up Python virtualenv
 
 Install Python 3 and other packages required by Greynir:
 
 ```
-sudo apt-get install python3 libgeos-dev
+sudo apt-get install python3
+sudo apt-get install libgeos-dev libpq-dev
 ```
 
 Make sure you have the latest version of `pip` and `virtualenv`.

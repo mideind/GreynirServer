@@ -26,7 +26,7 @@
 # TODO: "Hver er ódýrasta bensínstöðin innan X kílómetra? Innan X kílómetra radíus?" etc.
 # TODO: Laga krónutölur og fjarlægðartölur f. talgervil
 
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Optional
 
 import logging
 import cachetools  # type: ignore

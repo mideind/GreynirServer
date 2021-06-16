@@ -422,7 +422,7 @@ def query_api(version=1):
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
     auto_uppercase = bool_from_request(request, "autouppercase", True)
     if Settings.DEBUG:
-        auto_uppercase = True # !!! DEBUG - to emulate mobile client behavior
+        auto_uppercase = True  # !!! DEBUG - to emulate mobile client behavior
 
     # Send the query to the query processor
     result = process_query(
@@ -538,7 +538,7 @@ def speech_api(version=1):
     if fmt not in ["text", "ssml"]:
         fmt = "ssml"
     voice_id = request.values.get("voice_id", "Dora")
-    speed = request.values.get("speed", 1.0)
+    speed = request.values.get("voice_speed", 1.0)
     if not isinstance(speed, float):
         try:
             speed = float(speed)
