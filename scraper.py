@@ -158,7 +158,7 @@ class Scraper:
 
         t1 = time.time()
 
-        logging.info("Root scrape completed in {0:.2f} seconds".format(t1 - t0))
+        logging.info("Root scrape of {0} completed in {1:.2f} seconds".format(str(root), (t1 - t0))
 
     def scrape_article(self, url, helper):
         """ Scrape a single article, retrieving its HTML and metadata """
