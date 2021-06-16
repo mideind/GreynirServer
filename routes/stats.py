@@ -21,7 +21,9 @@
 
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
+
+from werkzeug.wrappers import Response
 
 from . import routes, max_age, cache
 
@@ -155,7 +157,7 @@ def top_authors(days=_TOP_AUTHORS_PERIOD, session=None):
 @routes.route("/stats", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
 @max_age(seconds=30 * 60)
-def stats():
+def stats() -> Union[Response, str]:
     """ Render a page containing various statistics from the Greynir database. """
     days = _DEFAULT_STATS_PERIOD
     try:
@@ -195,18 +197,20 @@ def stats():
         # Chart stats
         chart_data = chart_stats(session=session, num_days=days)
 
-    return render_template(
-        "stats.html",
-        title="Tölfræði",
-        result=result,
-        total=total,
-        gresult=gresult,
-        gtotal=gtotal,
-        authresult=authresult,
-        scraped_chart_data=json.dumps(chart_data["scraped"]),
-        parsed_chart_data=json.dumps(chart_data["parsed"]),
-        queries_chart_data=json.dumps(chart_data["queries"]),
-        scraped_avg=int(round(chart_data["scraped"]["avg"])),
-        parsed_avg=round(chart_data["parsed"]["avg"], 1),
-        queries_avg=round(chart_data["queries"]["avg"], 1),
-    )
+        return render_template(
+            "stats.html",
+            title="Tölfræði",
+            result=result,
+            total=total,
+            gresult=gresult,
+            gtotal=gtotal,
+            authresult=authresult,
+            scraped_chart_data=json.dumps(chart_data["scraped"]),
+            parsed_chart_data=json.dumps(chart_data["parsed"]),
+            queries_chart_data=json.dumps(chart_data["queries"]),
+            scraped_avg=int(round(chart_data["scraped"]["avg"])),
+            parsed_avg=round(chart_data["parsed"]["avg"], 1),
+            queries_avg=round(chart_data["queries"]["avg"], 1),
+        )
+
+    return Response("Error", status=403)

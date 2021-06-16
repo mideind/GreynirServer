@@ -1148,7 +1148,15 @@ class PersonNode(TerminalNode):
 
     """ Specialized TerminalNode for person terminals """
 
-    def __init__(self, terminal, augmented_terminal, token, tokentype, aux, at_start):
+    def __init__(
+        self,
+        terminal: str,
+        augmented_terminal: str,
+        token: str,
+        tokentype: str,
+        aux: str,
+        at_start: bool,
+    ):
         super().__init__(terminal, augmented_terminal, token, tokentype, aux, at_start)
         # Load the full names from the auxiliary JSON information
         gender = self.td.gender or None
@@ -1174,13 +1182,16 @@ class PersonNode(TerminalNode):
             # We may have more than one matching full name, but we have no means
             # of knowing which one is correct, so we simply return the first one
             return self.fullnames[0]
+        if self.td.case is None:
+            # We don't have any case information, so we assume that the
+            # name is not inflectable
+            return self.text
         gender = self.td.gender
-        assert self.td.case is not None
         case = self.td.case.upper()
         # Lookup the token in the BIN database
         # Look up each part of the name
         at_start = self._at_start
-        name = []
+        name: List[str] = []
         for part in self.text.split(" "):
             w, m = bin_db.lookup_g(part, at_start)
             at_start = False

@@ -169,7 +169,7 @@ QCurAnyPrefix → QCurGenericPrefix | QCurSpecificPrefix
 QCurCostPrefix → "hvað" "kostar" | "hversu" "mikið" "kostar" | "hve" "mikið" "kostar"
 QCurInKronas → "í" "krónum"
 
-QCurNow → "núna" | "nú" | "í" "augnablikinu" | "eins" "og" "stendur" | "í" "dag"
+QCurNow → "núna" | "nú" | "í" "augnablikinu" | "eins" "og" "stendur" | "í" "dag" # | 'í_dag'
 
 # Supported currencies
 # Note: All child productions of QCurUnit must have valid

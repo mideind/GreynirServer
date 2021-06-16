@@ -164,7 +164,7 @@ QPlNow →
     "núna" | "í" "augnablikinu" | "eins" "og" "stendur" | "nú"
 
 QPlToday →
-    "núna"? "í" "dag" | "núna"? "í_kvöld"
+    "núna"? "í" "dag" | "núna"? "í_kvöld" # | "núna"? 'í_dag'
 
 $score(+35) QPlacesQuery
 
