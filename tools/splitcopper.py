@@ -12,11 +12,12 @@ with open('copper.txt', 'r') as copper:
     
     for line in copper:
         if not line: # Empty line between trees
-        accumulated += line
-        if filecnt >= limit:
             outfile = f + affix + suff
             with open(outfile, 'w') as chunk:
                 chunk.write(accumulated)
-            limit += 1000000
             accumulated = ""
-            affix +=1
+            if filecnt >= limit:
+                limit += 1000000
+                affix +=1
+
+        accumulated += line
