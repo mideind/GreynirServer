@@ -21,7 +21,7 @@
 
 """
 
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 from werkzeug.wrappers import Response
 
@@ -34,7 +34,7 @@ from decimal import Decimal
 from flask import request, render_template
 
 from settings import changedlocale
-from db import SessionContext
+from db import SessionContext, Session
 from db.queries import (
     StatsQuery,
     ChartsQuery,
@@ -103,7 +103,7 @@ def chart_stats(session=None, num_days: int=7) -> Dict[str, Any]:
             parsed_data.append(percent)
 
             # Get query count for day
-            q = QueriesQuery.period(start, end, enclosing_session=session)
+            q = list(QueriesQuery.period(start, end, enclosing_session=session))
             query_data.append(q[0][0])
 
     # Create datasets for bar chart
@@ -134,13 +134,13 @@ def chart_stats(session=None, num_days: int=7) -> Dict[str, Any]:
     }
 
 
-def top_authors(days=_TOP_AUTHORS_PERIOD, session=None):
+def top_authors(days: int=_TOP_AUTHORS_PERIOD, session: Optional[Session]=None):
     """ Generate list of top authors w. parse percentage. """
     end = datetime.utcnow()
     start = end - timedelta(days=days)
-    authors = BestAuthorsQuery.period(
+    authors = list(BestAuthorsQuery.period(
         start, end, enclosing_session=session, min_articles=10
-    )[:20]
+    ))[:20]
 
     authresult = list()
     with GreynirBin.get_db() as bindb:

@@ -1006,7 +1006,10 @@ def query_word(query: Query, session: Session, stem: str) -> AnswerTuple:
     """ A query for words related to the given stem """
     # Count the articles where the stem occurs
     acnt = ArticleCountQuery.count(stem, enclosing_session=session)
-    rlist = RelatedWordsQuery.rel(stem, enclosing_session=session) if acnt else []
+    if acnt:
+        rlist = RelatedWordsQuery.rel(stem, enclosing_session=session) or []
+    else:
+        rlist = []
     # Convert to an easily serializable dict
     # Exclude the original search stem from the result
     return (

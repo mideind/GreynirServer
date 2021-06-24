@@ -344,7 +344,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         selected_light = dev.get("selected_light")
         hue_credentials = dev.get("philips_hue")
 
-    if not device_data:
+    if not device_data or not hue_credentials:
         answer = "Snjalltæki hafa ekki verið sett upp"
         q.set_answer(*gen_answer(answer))
         return
@@ -383,10 +383,13 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
         stofn = ""
 
-        for token in q.token_list:
+        for token in q.token_list or []:
             if token.txt == result.subject:
                 stofn = token.meanings[0].stofn
                 stofn = _FIX_MAP.get(stofn, stofn)
+
+        if not stofn:
+            return
 
         js = read_jsfile("lightService.js")
         js += "main('{0}','{1}','{2}', true, {3});".format(
@@ -415,6 +418,9 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                     ):
                         stofn_color = word_variation.stofn
                         break
+
+        if not stofn_color:
+            return
 
         js = read_jsfile("lightService.js")
         js += "main('{0}','{1}','{2}', true, null, {3});".format(

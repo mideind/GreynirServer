@@ -123,6 +123,7 @@ class IFD_Corpus:
                     yield [
                         (word.text.strip(), word.get("type", ""), word.get("lemma", ""))
                         for word in sent
+                        if word.text
                     ]
                     count += 1
                     if limit is not None and count >= limit:

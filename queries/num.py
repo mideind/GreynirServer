@@ -185,6 +185,8 @@ def number_to_neutral(n: int = 0) -> str:
 
     # Very large numbers
     while n >= MILLION:
+
+        large_num, isl_num = 1, ""
         for large_num, isl_num in _LARGE_NUMBERS:
             if large_num <= n:
                 break

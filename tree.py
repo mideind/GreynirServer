@@ -843,6 +843,7 @@ class TerminalNode(Node):
             return None
         if self._aux is None:
             self._aux = json.loads(self.aux)
+        assert self._aux is not None
         return self._aux[0]
 
     @property
@@ -853,6 +854,7 @@ class TerminalNode(Node):
             return None
         if self._aux is None:
             self._aux = json.loads(self.aux)
+        assert self._aux is not None
         return self._aux[0], self._aux[1]
 
     @property
@@ -863,6 +865,7 @@ class TerminalNode(Node):
             return None
         if self._aux is None:
             self._aux = json.loads(self.aux)
+        assert self._aux is not None
         return self._aux[0], self._aux[1], self._aux[2]
 
     @property

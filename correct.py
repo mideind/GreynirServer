@@ -86,6 +86,7 @@ def check_grammar(text: str, *, progress_func: ProgressFunc = None):
             # Successfully parsed: use the text from the terminals (where available)
             # since we have more info there, for instance on em/en dashes.
             # Create a map of token indices to corresponding terminal text
+            assert sent.terminals is not None
             token_map = {t.index: t.text for t in sent.terminals}
             tokens = [
                 dict(k=d.kind, x=token_map.get(ix, d.txt))

@@ -165,9 +165,11 @@ def page() -> Union[Response, str]:
 
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
-        elif url.startswith("http:") or url.startswith("https:"):
-            # Forces a new scrape
-            a = ArticleProxy.scrape_from_url(url, session)
+        else:
+            assert url is not None
+            if url.startswith("http:") or url.startswith("https:"):
+                # Forces a new scrape
+                a = ArticleProxy.scrape_from_url(url, session)
 
         if a is None:
             # !!! TODO: Separate error page

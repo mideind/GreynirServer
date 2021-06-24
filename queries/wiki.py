@@ -266,7 +266,7 @@ def _query_wiki_api(subject: str):
 def get_wiki_summary(subject_nom: str) -> str:
     """ Fetch summary of subject from Icelandic Wikipedia """
 
-    def has_entry(r):
+    def has_entry(r) -> bool:
         return (
             r
             and "query" in r
@@ -289,6 +289,7 @@ def get_wiki_summary(subject_nom: str) -> str:
     if not has_entry(res):
         return not_found
 
+    assert res is not None
     pages = res["query"]["pages"]
     keys = pages.keys()
     if not len(keys) or "-1" in keys:
