@@ -147,9 +147,6 @@ def query_ja_api(q: str) -> Optional[Dict[str, Any]]:
     url = _JA_API_URL.format(urlencode(qdict))
     res = query_json_api(url, headers=headers)
 
-    # from pprint import pprint
-    # pprint(res)
-
     return res
 
 
