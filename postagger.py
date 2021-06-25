@@ -41,7 +41,7 @@
 
 """
 
-from typing import Dict, List, Optional, Tuple, Any, Iterable, Iterator
+from typing import Dict, List, Optional, Tuple, Any, Iterable, Iterator, cast
 
 import math
 import os
@@ -123,6 +123,7 @@ class IFD_Corpus:
                     yield [
                         (word.text.strip(), word.get("type", ""), word.get("lemma", ""))
                         for word in sent
+                        if word.text
                     ]
                     count += 1
                     if limit is not None and count >= limit:
@@ -634,7 +635,7 @@ class NgramTagger:
                 elif t.kind == TOK.PERSON:
                     # Split person tokens into subtokens for each name component
                     xlist = d["x"].split()  # Name as it originally appeared
-                    slist = d["v"].split()  # Stem (nominal) form of name
+                    slist = cast(str, d["v"]).split()  # Stem (nominal) form of name
                     # xlist may be shorter than slist, but that is OK
                     for x, s in zip(xlist, slist):
                         d["x"] = x

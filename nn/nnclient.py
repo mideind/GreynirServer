@@ -25,7 +25,7 @@
 
 """
 
-from typing import Optional
+from typing import List, Optional
 
 import json
 import requests
@@ -213,7 +213,7 @@ class ParsingClient(NnClient):
                     print("Output: {parse_toks}".format(parse_toks=parse_toks))
 
     @classmethod
-    def request_text(cls, text, flat=False):
+    def request_text(cls, text: str, flat: bool=False):
         """ Request neural network output for contiguous text """
         sents = cls._normalize_text(text)
         results = cls._request(sents)
@@ -222,7 +222,7 @@ class ParsingClient(NnClient):
         return results
 
     @classmethod
-    def request_sentence(cls, text, flat=False):
+    def request_sentence(cls, text: str, flat: bool=False):
         """ Request neural network output for a single sentence """
         if "\n" in text:
             single_sentence = text.split("\n")[0]
@@ -239,7 +239,7 @@ class ParsingClient(NnClient):
         return results[0]
 
     @classmethod
-    def _normalize_text(cls, text):
+    def _normalize_text(cls, text: str) -> List[str]:
         """ Preprocess text and normalize for parsing network """
         pgs = text.split("\n")
         normalized_pgs = [
@@ -250,12 +250,12 @@ class ParsingClient(NnClient):
             ]
             for pg in pgs
         ]
-        return [
-            " ".join(tok for tok in npg if tok) for npg in normalized_pgs
-        ]
+        return [" ".join(tok for tok in npg if tok) for npg in normalized_pgs]
 
     @classmethod
-    def _normalize_sentence(cls, single_sentence):
+    def _normalize_sentence(
+        cls, single_sentence: bintokenizer.StringIterable
+    ) -> List[str]:
         """ Preprocess text and normalize for parsing network """
         return [
             tok.txt

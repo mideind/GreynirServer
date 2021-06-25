@@ -1133,9 +1133,9 @@ class KvennabladidScraper(ScrapeHelper):
             timestamp = datetime.utcnow()
         # Extract the author name
         author = ScrapeHelper.div_class(soup, "blog-info-wrapper", "blog-author")
-        try:
+        if author is not None and author.a is not None:
             author = author.a.text
-        except:
+        if not author:
             author = "Ritstjórn Kvennablaðsins"
         metadata.heading = heading
         metadata.author = author
@@ -1308,6 +1308,8 @@ class HringbrautScraper(ScrapeHelper):
 
         # Many hringbraut.is articles end with a "Sjá nánar" paragraph
         # and then a paragraph containing a URL. Remove these.
+        if content is None:
+            return None
         paragraphs = list(content.find_all("p", recursive=False))
         if len(paragraphs) > 2:
             last = paragraphs[-1]
@@ -1704,6 +1706,8 @@ class BBScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         content = ScrapeHelper.div_class(soup_body, "td-post-content")
+        if content is None:
+            return None
 
         ScrapeHelper.del_div_class(content, "td-featured-image-rec")
         ScrapeHelper.del_div_class(content, "td-post-featured-image")
@@ -1949,6 +1953,8 @@ class SedlabankinnScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
         content = ScrapeHelper.div_class(soup_body, "media-body")
+        if content is None:
+            return None
         ScrapeHelper.del_tag(content, "h2")
         ScrapeHelper.del_tag(content, "table")
         ScrapeHelper.del_div_class(content, "muted")
@@ -1956,5 +1962,4 @@ class SedlabankinnScraper(ScrapeHelper):
             a.decompose()
         for span in content.find_all("span", {"class": "news-img"}):
             span.decompose()
-
         return content

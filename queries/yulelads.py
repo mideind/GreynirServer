@@ -260,6 +260,7 @@ QYuleWhichLad →
 
 QYuleToday →
     "í" "dag"
+    # | 'í_dag'
     | "í_kvöld"
     | "í" "nótt"
 

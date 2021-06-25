@@ -166,7 +166,7 @@ QDateCurrent →
     | "hver" "er" "vikudagurinn" QDateNow?
 
 QDateNow →
-    "í" "dag" | "nákvæmlega"? "núna" | "í" "augnablikinu" | "eins" "og" "stendur"
+    "í" "dag" | "nákvæmlega"? "núna" | "í" "augnablikinu" | "eins" "og" "stendur" # | 'í_dag' 
 
 QDateHowLongUntil →
     "hvað" "er" "langt" "í" QDateItem_þf

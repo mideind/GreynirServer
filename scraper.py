@@ -30,6 +30,8 @@
 
 """
 
+from typing import Set, cast
+
 import sys
 import os
 import gc
@@ -79,6 +81,7 @@ class Scraper:
         associated RSS feed URLs, these are used to acquire article URLs.
         Otherwise, the URLs are found by scraping the root website and
         searching for links to subpages."""
+
         fetch_set = set()
         feeds = None if helper is None else helper.feeds
 
@@ -107,7 +110,7 @@ class Scraper:
             html_doc = Fetcher.raw_fetch_url(root.url)
             if not html_doc:
                 logging.warning("Unable to fetch root {0}".format(root.url))
-                return
+                return set()
 
             # Parse the HTML document
             soup = Fetcher.make_soup(html_doc)
@@ -338,7 +341,7 @@ class Scraper:
                 if reparse:
                     # Reparse articles that were originally parsed with an older
                     # grammar and/or parser version
-                    q = q.filter(ArticleRow.parser_version < version).order_by(
+                    q = q.filter(cast(str, ArticleRow.parser_version) < version).order_by(
                         ArticleRow.parsed
                     )
                 else:

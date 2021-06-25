@@ -22,7 +22,9 @@
 """
 
 
-from typing import cast
+from typing import Union, cast
+
+from werkzeug.wrappers import Response
 from . import routes, max_age, better_jsonify
 
 from datetime import datetime, timedelta
@@ -165,7 +167,7 @@ def fetch_articles(
 
 @routes.route("/news")
 @max_age(seconds=60)
-def news():
+def news() -> Union[Response, str]:
     """ Handler for a page with a list of articles + pagination """
     topic = request.args.get("topic")
     root = request.args.get("root")
@@ -210,18 +212,20 @@ def news():
         )
         roots = dict(q.all())
 
-    return render_template(
-        "news.html",
-        title="Fréttir",
-        articles=articles,
-        topics=topics,
-        display_time=display_time,
-        offset=offset,
-        limit=limit,
-        selected_root=root,
-        roots=roots,
-        author=author,
-    )
+        return render_template(
+            "news.html",
+            title="Fréttir",
+            articles=articles,
+            topics=topics,
+            display_time=display_time,
+            offset=offset,
+            limit=limit,
+            selected_root=root,
+            roots=roots,
+            author=author,
+        )
+
+    return Response("Error", status=403)
 
 
 ARTICLES_LIST_MAXITEMS = 50

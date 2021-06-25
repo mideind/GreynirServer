@@ -158,7 +158,9 @@ class Meanings:
 
     @staticmethod
     def close_db():
+        assert Meanings._cursor is not None
         Meanings._cursor.close()
+        assert Meanings._conn is not None
         Meanings._conn.close()
 
     @staticmethod
@@ -333,7 +335,7 @@ class Meanings:
                     # Blank line: ignore
                     continue
                 # Check whether the family name is already in the database
-                mm = Meanings.forms(s)
+                mm = Meanings.forms(s) or []
                 fl_set = set(m.fl for m in mm)
                 if fl_set & {"ism", "föð", "móð", "ætt"}:
                     # Already known as a name: skip it

@@ -23,7 +23,7 @@
 
 """
 
-from typing import Any, Callable, Optional, Type, cast
+from typing import Any, Callable, Generic, Optional, Type, TypeVar, cast
 
 from sqlalchemy import create_engine, desc, func as dbfunc
 from sqlalchemy.orm import sessionmaker, Session
@@ -76,11 +76,16 @@ class Scraper_DB:
         return self._Session()
 
 
-class classproperty:
-    def __init__(self, f: Callable[..., Any]) -> None:
+T = TypeVar("T")
+
+class classproperty(Generic[T]):
+
+    """ A helper that creates read-only class properties """
+
+    def __init__(self, f: Callable[..., T]) -> None:
         self.f = f
 
-    def __get__(self, obj: Any, owner: Any) -> Any:
+    def __get__(self, obj: Any, owner: Any) -> T:
         return self.f(owner)
 
 

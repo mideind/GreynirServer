@@ -22,7 +22,7 @@
 
 """
 
-from typing import cast
+from typing import Tuple, cast
 
 import os
 import sys
@@ -99,7 +99,7 @@ class LocationsSessionShim(SessionShim):
         self.defs.add((row.name, row.kind))
 
 
-def _make_tree(text: str) -> Tree:
+def _make_tree(text: str) -> Tuple[Tree, str]:
     """Tokenize and parse text, create tree representation string
     from all the parse trees, return Tree object and token JSON."""
     toklist = tokenize(text)

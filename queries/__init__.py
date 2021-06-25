@@ -158,7 +158,7 @@ def parse_num(node: Node, num_str: str) -> float:
 
     # If we have a number token as a direct child,
     # return its numeric value directly
-    num = node.child.contained_number
+    num = None if node.child is None else node.child.contained_number
     if num is not None:
         return float(num)
     try:
