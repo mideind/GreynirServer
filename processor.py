@@ -318,7 +318,7 @@ class Processor:
                             q = q.filter(Article.processed == None)
                     if from_date is not None:
                         # Only go through articles parsed since the given date
-                        q = q.filter(Article.parsed >= from_date).order_by(
+                        q = q.filter(cast(datetime, Article.parsed) >= from_date).order_by(
                             Article.parsed
                         )
                 if limit > 0:

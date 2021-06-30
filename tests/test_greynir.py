@@ -36,13 +36,13 @@ mainpath = os.path.join(basepath, "..")
 if mainpath not in sys.path:
     sys.path.insert(0, mainpath)
 
-from main import app
-from db import SessionContext
-from db.models import Query, QueryData
-from util import read_api_key
+from main import app  # noqa
+from db import SessionContext  # noqa
+from db.models import Query, QueryData  # noqa
+from util import read_api_key  # noqa
 
 # pylint: disable=unused-wildcard-import
-from geo import *
+from geo import *  # noqa
 
 
 @pytest.fixture
@@ -53,14 +53,14 @@ def client() -> FlaskClient:
     return app.test_client()
 
 
-# See .travis.yml, this value is dumped to the API key path during CI testing
+# This value is dumped to the API key path during CI testing
 DUMMY_API_KEY = "123456789"
 
 
 def in_ci_environment() -> bool:
     """ This function determines whether the tests are running in the
         continuous integration environment by checking if the API key
-        is a dummy value (set in .travis.yml). """
+        is a dummy value (set in CI config). """
     global DUMMY_API_KEY
     try:
         return read_api_key("GreynirServerKey") == DUMMY_API_KEY
@@ -172,6 +172,7 @@ def test_api_key_restriction(client: FlaskClient):
     # Try routes w. correct API key, expect no complaints about missing API key
     # This only runs in the CI testing environment, which creates the dummy key
     global DUMMY_API_KEY
+    # TODO: Fix me
     if False and IN_CI_TESTING_ENV:
         for path in _KEY_RESTRICTED_ROUTES:
             resp = client.post(f"{path}?key={DUMMY_API_KEY}")
@@ -237,13 +238,6 @@ def test_query_history_api(client: FlaskClient):
         post_numqdata_cnt = session.query(QueryData).count()
 
         assert post_numqdata_cnt == pre_numq - 1
-
-
-def test_processors():
-    """ Try to import all tree/token processors by instantiating Processor object """
-    from processor import Processor
-
-    _ = Processor(processor_directory="processors")
 
 
 def test_nertokenizer():

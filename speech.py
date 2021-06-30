@@ -28,6 +28,7 @@ import sys
 import os
 import json
 import logging
+import html
 from threading import Lock
 
 import cachetools  # type: ignore
@@ -110,15 +111,18 @@ def get_synthesized_text_url(
 
     # Special preprocessing for SSML markup
     if txt_format == "ssml":
+        # Escape entities to prevent characters such as
+        # "&" and "<" from breaking the markup
+        text = html.escape(text)
         # Adjust voice speed as appropriate
         if speed != 1.0:
             # Restrict to 50%-150% speed range
             speed = max(min(1.5, speed), 0.5)
             perc = int(speed * 100)
-            text = '<prosody rate="{0}%">{1}</prosody>'.format(perc, text)
+            text = f'<prosody rate="{perc}%">{text}</prosody>'
         # Wrap text in the required <speak> tag
         if not text.startswith("<speak>"):
-            text = "<speak>{0}</speak>".format(text)
+            text = f"<speak>{text}</speak>"
 
     # Configure query string parameters for AWS request
     params = {

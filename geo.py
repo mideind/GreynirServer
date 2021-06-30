@@ -24,14 +24,13 @@
 # corresponding country code, e.g. "Norður-Ítalía" -> "IT"
 # TODO: Most of this stuff should go into its own module, iceloc or something
 
-from typing import Mapping, Optional, Dict, Union, Tuple, List, Any
+from typing import Mapping, Optional, Dict, Union, Tuple, List, Any, cast
 
 import json
 import re
 import sys
 import os
 import math
-from functools import lru_cache
 
 from iceaddr import iceaddr_lookup, placename_lookup  # type: ignore
 from cityloc import city_lookup  # type: ignore
@@ -289,7 +288,7 @@ def location_info(
     elif name in ALWAYS_STREET_ADDR:
         kind = "street"
 
-    loc: Dict[str, Any] = dict(name=name, kind=kind)
+    loc: Dict[str, Union[None, str, float, Dict]] = dict(name=name, kind=kind)
     coords = None
 
     # Heimilisfang
@@ -354,7 +353,7 @@ def location_info(
 
     # Look up continent code for country
     if "country" in loc:
-        loc["continent"] = continent_for_country(loc["country"])
+        loc["continent"] = continent_for_country(cast(str, loc["country"]))
 
     if coords:
         (loc["latitude"], loc["longitude"]) = coords
@@ -436,7 +435,6 @@ def coords_for_us_state_code(code: str) -> Optional[LatLonTuple]:
     return state_coords.get(code.upper())
 
 
-@lru_cache(maxsize=32)
 def icelandic_city_name(name: str) -> str:
     """ Look up the Icelandic name of a city, given its
         English/international name. """
@@ -571,7 +569,7 @@ def icelandic_addr_info(
         the iceaddr package. We want either a single definite match or nothing. """
     addr = parse_address_string(addr_str)
 
-    def lookup(pn):
+    def lookup(pn: Optional[str]):
         a = iceaddr_lookup(
             addr["street"],
             number=addr.get("number"),

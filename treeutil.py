@@ -319,7 +319,7 @@ class TreeUtility:
             # work around a bug in Pylance
             if meaning is not None:
                 txt = d.get("x", "").lower()
-                if txt:
+                if txt and terminal is not None:
                     # Also return the augmented terminal name
                     d["a"] = augment_terminal(
                         terminal.name, txt, meaning.beyging

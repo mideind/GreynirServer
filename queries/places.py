@@ -43,8 +43,8 @@ from queries import (
     query_places_api,
     query_place_details,
     icequote,
-    numbers_to_neutral,
 )
+from queries.num import numbers_to_neutral
 from tree import Result
 
 from . import LatLonTuple, AnswerTuple
@@ -164,7 +164,7 @@ QPlNow →
     "núna" | "í" "augnablikinu" | "eins" "og" "stendur" | "nú"
 
 QPlToday →
-    "núna"? "í" "dag" | "núna"? "í_kvöld"
+    "núna"? "í" "dag" | "núna"? "í_kvöld" # | "núna"? 'í_dag'
 
 $score(+35) QPlacesQuery
 

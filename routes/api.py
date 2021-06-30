@@ -27,7 +27,7 @@ from typing import Dict, Any, List, Optional, cast
 from datetime import datetime
 import logging
 
-from flask import request, abort
+from flask import request, abort, Response
 
 from settings import Settings
 
@@ -77,7 +77,7 @@ def ifdtag_api(version=1):
 
 @routes.route("/analyze.api", methods=["GET", "POST"])
 @routes.route("/analyze.api/v<int:version>", methods=["GET", "POST"])
-def analyze_api(version=1):
+def analyze_api(version: int=1) -> Response:
     """ Analyze text manually entered by the user, i.e. not coming from an article.
         This is a lower level API used by the Greynir web front-end. """
     if not (1 <= version <= 1):
@@ -88,13 +88,15 @@ def analyze_api(version=1):
     #     return better_jsonify(valid=False, reason="Invalid request")
     with SessionContext(commit=True) as session:
         pgs, stats, register = TreeUtility.tag_text(session, text, all_names=True)
-    # Return the tokens as a JSON structure to the client
-    return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
+        # Return the tokens as a JSON structure to the client
+        return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
+    # Should not get here - this return is mostly to placate Pylance
+    return Response("Error", status=403)
 
 
 @routes.route("/correct.api", methods=["GET", "POST"])
 @routes.route("/correct.api/v<int:version>", methods=["GET", "POST"])
-def correct_api(version=1):
+def correct_api(version: int=1):
     """ Correct text provided by the user, i.e. not coming from an article.
         This can be either an uploaded file or a string.
         This is a lower level API used by the Greynir web front-end. """
@@ -136,7 +138,7 @@ def correct_api(version=1):
 @routes.route("/correct.task", methods=["POST"])
 @routes.route("/correct.task/v<int:version>", methods=["POST"])
 @async_task  # This means that the function is automatically run on a separate thread
-def correct_task(version=1):
+def correct_task(version: int=1) -> Response:
     """ Correct text provided by the user, i.e. not coming from an article.
         This can be either an uploaded file or a string.
         This is a lower level API used by the Greynir web front-end. """
@@ -179,7 +181,7 @@ def correct_task(version=1):
 
 @routes.route("/postag.api", methods=["GET", "POST"])
 @routes.route("/postag.api/v<int:version>", methods=["GET", "POST"])
-def postag_api(version=1):
+def postag_api(version=1) -> Response:
     """ API to parse text and return POS tagged tokens in a verbose JSON format """
     if not (1 <= version <= 1):
         # Unsupported version
@@ -209,13 +211,14 @@ def postag_api(version=1):
             for t in sent:
                 canonicalize_token(t)
 
-    # Return the tokens as a JSON structure to the client
-    return better_jsonify(valid=True, result=pa, stats=stats, register=register)
+        # Return the tokens as a JSON structure to the client
+        return better_jsonify(valid=True, result=pa, stats=stats, register=register)
 
+    return Response("Error", status=403)
 
 @routes.route("/parse.api", methods=["GET", "POST"])
 @routes.route("/parse.api/v<int:version>", methods=["GET", "POST"])
-def parse_api(version=1):
+def parse_api(version=1) -> Response:
     """ API to parse text and return POS tagged tokens in JSON format """
     if not (1 <= version <= 1):
         # Unsupported version
@@ -240,13 +243,15 @@ def parse_api(version=1):
                     pa.extend(pg)
                 pgs = pa
 
-    # Return the tokens as a JSON structure to the client
-    return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
+        # Return the tokens as a JSON structure to the client
+        return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
+
+    return Response("Error", status=403)
 
 
 @routes.route("/article.api", methods=["GET", "POST"])
 @routes.route("/article.api/v<int:version>", methods=["GET", "POST"])
-def article_api(version=1):
+def article_api(version=1) -> Response:
     """ Obtain information about an article, given its URL or id """
 
     if not (1 <= version <= 1):
@@ -289,19 +294,21 @@ def article_api(version=1):
         )
         topics = [dict(name=t.topic.name, id=t.topic.identifier) for t in topics]
 
-    return better_jsonify(
-        valid=True,
-        url=a.url,
-        id=a.uuid,
-        heading=a.heading,
-        author=a.author,
-        ts=a.timestamp.isoformat()[0:19],
-        num_sentences=a.num_sentences,
-        num_parsed=a.num_parsed,
-        ambiguity=a.ambiguity,
-        register=register,
-        topics=topics,
-    )
+        return better_jsonify(
+            valid=True,
+            url=a.url,
+            id=a.uuid,
+            heading=a.heading,
+            author=a.author,
+            ts=a.timestamp.isoformat()[0:19],
+            num_sentences=a.num_sentences,
+            num_parsed=a.num_parsed,
+            ambiguity=a.ambiguity,
+            register=register,
+            topics=topics,
+        )
+
+    return Response("Error", status=403)
 
 
 @routes.route("/reparse.api", methods=["POST"])

@@ -21,7 +21,7 @@
 
 """
 
-from typing import List, Union, Tuple, Dict, Any, cast
+from typing import List, Optional, Union, Tuple, Dict, Any, cast
 
 import logging
 
@@ -99,7 +99,9 @@ _LINE_COLORS = frozenset(
 )
 
 
-def _str2words(wstr, separate_on_whitespace=False):
+def _str2words(
+    wstr: str, separate_on_whitespace: bool = False
+) -> Optional[List[Tuple[str, str]]]:
     """ Parse string of the form 'w1:cat1, w2:cat2, ...' into a list
         of word/category tuples. """
     if not wstr:
@@ -107,11 +109,14 @@ def _str2words(wstr, separate_on_whitespace=False):
     ws = wstr.strip()
     if not ws:
         return None
-    words = [w.strip() for w in ws.split(",") if w.strip()]
+    words: List[str] = [w.strip() for w in ws.split(",") if w.strip()]
     if separate_on_whitespace:
         words = " ".join(words).split()
     return [
-        w.split(":") if len(w.split(":")) == 2 else (w, CAT_UNKNOWN) for w in words
+        cast(Tuple[str, str], tuple(w.split(":")))
+        if len(w.split(":")) == 2
+        else (w, CAT_UNKNOWN)
+        for w in words
     ][:_MAX_NUM_WORDS]
 
 
@@ -175,7 +180,7 @@ def wordfreq():
 
     # Try to tokenize each item that doesn't have a category
     nwds = []
-    for w, c in wds:
+    for w, c in wds or []:
         if c is None or c == CAT_UNKNOWN:
             # Try to tokenize
             tokens = list(filter(lambda x: x.kind in _VALID_TOKENS, tokenize(w)))
@@ -224,10 +229,7 @@ def wordfreq():
         # Group by day
         else:
             timeunit = "day"
-            label_days = [
-                date_from + timedelta(days=i)
-                for i in range(delta.days)
-            ]
+            label_days = [date_from + timedelta(days=i) for i in range(delta.days)]
             labels = [
                 d.strftime("%-d. %b")
                 if d.year == now.year
@@ -252,7 +254,7 @@ def wordfreq():
                 date_to,
                 timeunit=timeunit,
                 enclosing_session=session,
-            )
+            ) or []
             # Generate data and config for chart
             label = "{0} ({1})".format(wd, CAT_DESC.get(cat))
             ds: Dict[str, Any] = dict(label=label, fill=False, lineTension=0)
@@ -274,7 +276,7 @@ def wordfreq_details():
     """ Return list of articles containing certain words over a given period. """
     resp: Dict[str, Any] = dict(err=True)
 
-    words = _str2words(request.args.get("words"))
+    words = _str2words(request.args.get("words") or "")
     if not words:
         return better_jsonify(**resp)
 

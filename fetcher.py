@@ -276,7 +276,7 @@ class Fetcher:
         with SessionContext(enclosing_session) as session:
             helper = cls.helper_for(session, url)
             soup = Fetcher.make_soup(html, helper)
-            if soup is None:
+            if soup is None or soup.html is None:
                 content = None
             elif helper is None:
                 content = soup.html.body
@@ -401,7 +401,7 @@ class Fetcher:
             helper = cls.helper_for(session, url)
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
-            if soup is None:
+            if soup is None or soup.html is None:
                 logging.warning("Fetcher.fetch_article({0}): No soup".format(url))
                 return (None, None, None)
 
@@ -431,7 +431,7 @@ class Fetcher:
 
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
-            if soup is None:
+            if soup is None or soup.html is None:
                 logging.warning(
                     "Fetcher.fetch_url({0}): No soup or no soup.html".format(url)
                 )

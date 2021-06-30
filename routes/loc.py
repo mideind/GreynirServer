@@ -21,7 +21,7 @@
 
 """
 
-from typing import Dict, Any, cast
+from typing import Dict, Any, Union, cast
 
 from . import routes, max_age, better_jsonify, cache, days_from_period_arg
 
@@ -142,7 +142,7 @@ def icemap_markers(days=_TOP_LOC_PERIOD):
         )
         markers = list(set((l.name, l.latitude, l.longitude) for l in q.all()))
 
-    return markers
+        return markers
 
 
 def world_map_data(days=_TOP_LOC_PERIOD):
@@ -244,7 +244,7 @@ ZOOM_FOR_LOC_KIND = {"street": 11, "address": 12, "placename": 5, "country": 2}
 @cache.cached(timeout=60 * 60 * 24, key_prefix="locinfo", query_string=True)
 def locinfo():
     """ Return info about a location as JSON. """
-    resp: Dict[str, Any] = dict(found=False)
+    resp: Dict[str, Union[None, str, bool]] = dict(found=False)
 
     name = request.args.get("name")
     kind = request.args.get("kind")
@@ -276,6 +276,6 @@ def locinfo():
         resp["map"] = "/static/img/maps/regions/" + name + ".png"
     # Continent
     elif resp["country"] is None and resp["continent"] in ISO_TO_CONTINENT:
-        resp["map"] = "/static/img/maps/continents/" + resp["continent"] + ".png"
+        resp["map"] = "/static/img/maps/continents/" + cast(str, resp["continent"]) + ".png"
 
     return better_jsonify(**resp)

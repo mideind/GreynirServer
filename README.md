@@ -79,7 +79,7 @@ Greynir is written in [Python 3](https://www.python.org/) except for its core
 Earley-based parser module which is written in C++ and called
 via [CFFI](https://cffi.readthedocs.org/en/latest/index.html).
 Greynir requires Python 3.6 or later, and runs on CPython and
-[PyPy](http://pypy.org/) with the latter being recommended for performance reasons.
+[PyPy](http://pypy.org/), with the latter being recommended for performance reasons.
 
 Greynir works in stages, roughly as follows:
 
@@ -136,41 +136,41 @@ articles automatically from the web, parse them and store the resulting trees
 in a PostgreSQL database for further processing.
 
 Scraper modules for new websites are plugged in by adding Python code to the
-`scrapers/` directory. Currently, the `scrapers/default.py` module supports a wide
-range of popular Icelandic news sites.
+[`scrapers/`](scrapers/) directory. Currently, the [`scrapers/default.py`](scrapers/default.py)
+module supports a wide range of popular Icelandic news sites.
 
 Processor modules can be plugged into Greynir by adding Python code to the
-`processors/` directory. The demo in `processors/default.py` extracts person
-names and titles from parse trees for storage in a database table.
+[`processors/`](processors/) directory. The module [`processors/persons.py`](processors/persons.py),
+for example, extracts person names and titles from parse trees for storage in a database table.
 
-Query (question answering) modules can be plugged into Greynir
-by adding Python code to the `queries/` directory. Reference implementations for
-several query types can be found in that directory, for instance `queries/builtin.py`
-which supports questions about people and titles. Example query modules can be viewed
-in `queries/examples`.
+Query (question answering) modules can be plugged into Greynir by adding Python code to
+the [`queries/`](queries/) directory. Reference implementations for several query types
+can be found in that directory, for instance [`queries/builtin.py`](queries/builtin.py)
+which supports questions about persons and titles. Query modules examples can be viewed
+in [`queries/examples`](queries/examples).
 
 ## File details
 
-* `main.py`: WSGI web server application and main module for command-line invocation
-* `routes/*.py`: Routes for the web application
-* `query.py`: Natural language query processor
-* `queries/*.py`: Question answering modules
-* `db/*.py`: Database models and functions via SQLAlchemy
-* `scraper.py`: Web scraper, collecting articles from a set of pre-selected websites (roots)
-* `scrapers/*.py`: Scraper code for various websites
-* `settings.py`: Management of global settings and configuration data
-* `config/Greynir.conf`: Editable configuration file
-* `fetcher.py`: Utility classes for fetching articles given their URLs
-* `nertokenizer.py`: A layer on top of the tokenizer for named entity recognition
-* `processor.py`: Information extraction from parse trees and token streams
-* `article.py`: Representation of an article through its life cycle
-* `tree.py`: Representation of parse trees for processing
-* `vectors/builder.py`: Article indexer and LSA topic vector builder
-* `doc.py`: Extract plain text from various document formats
-* `geo.py`: Geography and location-related utility functions
-* `speech.py`: Speech synthesis-related utility functions
-* `tools/*.py`: Various command line tools
-* `util.py`: Various utility functions
+* [`main.py`](main.py): WSGI web server application and main module for command-line invocation
+* [`routes/*.py`](routes/): Routes for the web application
+* [`query.py`](query.py): Natural language query processor
+* [`queries/*.py`](queries/): Query-answering modules
+* [`db/*.py`](db/): Database models and functions via SQLAlchemy
+* [`scraper.py`](scraper.py): Web scraper, collecting articles from a set of pre-selected websites
+* [`scrapers/*.py`](scrapers): Scraper code for various websites
+* [`settings.py`](settings.py): Management of global settings and configuration data
+* [`config/Greynir.conf`](config/Greynir.conf): Editable configuration file
+* [`fetcher.py`](fetcher.py): Utility classes for fetching articles given their URLs
+* [`nertokenizer.py`](nertokenizer.py): A layer on top of the tokenizer for named entity recognition
+* [`processor.py`](processor.py): Information extraction from parse trees and token streams
+* [`article.py`](article.py): Representation of an article through its life cycle
+* [`tree.py`](tree.py): Representation of parse trees for processing
+* [`vectors/builder.py`](vectors/builder.py): Article indexer and LSA topic vector builder
+* [`doc.py`](doc.py): Extract plain text from various document formats
+* [`geo.py`](geo.py): Geography and location-related utility functions
+* [`speech.py`](speech.py): Speech synthesis-related utility functions
+* [`tools/*.py`](tools/): Various command line tools
+* [`util.py`](util.py): Various utility functions used throughout the codebase
 
 ## Installation and setup
 
@@ -264,7 +264,7 @@ GNU GPLv3 or other compatible licenses.
 Greynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](https://bin.arnastofnun.is))
 lexicon and database of Icelandic word forms to identify words and find their
 potential meanings and lemmas. The database is included in
-[GreynirPackage](https://github.com/mideind/GreynirPackage) in compressed form.
+[BinPackage](https://github.com/mideind/BinPackage) in compressed form.
 BÍN is licensed under CC-BY-4.0, and credit is hereby given as follows:
 
 *Beygingarlýsing íslensks nútímamáls. Stofnun Árna Magnússonar í íslenskum fræðum. Höfundur og ritstjóri Kristín Bjarnadóttir.*

@@ -251,6 +251,7 @@ QWeatherForMe →
 QWeatherNow →
     "úti"
     | "úti"? "í" "dag"
+    # | "úti"? 'í_dag'
     | "úti"? "núna"
     | "úti"? "í" "augnablikinu"
     | "úti"? "eins" "og" "stendur"

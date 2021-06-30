@@ -24,8 +24,8 @@
 
 """
 
-from tree import Node
 from typing import Mapping, Optional, List, Dict, Tuple, Union, cast
+from tree import Node
 
 import logging
 import requests
@@ -64,7 +64,7 @@ def natlang_seq(words: List[str], oxford_comma: bool = False) -> str:
 
 
 def nom2dat(w: str) -> str:
-    """ Look up the dative of an Icelandic noun given its nominative form. """
+    """Look up the dative of an Icelandic noun given its nominative form."""
     try:
         d = NounPhrase(w).dative
         return d or w
@@ -158,7 +158,7 @@ def parse_num(node: Node, num_str: str) -> float:
 
     # If we have a number token as a direct child,
     # return its numeric value directly
-    num = node.child.contained_number
+    num = None if node.child is None else node.child.contained_number
     if num is not None:
         return float(num)
     try:
@@ -181,78 +181,6 @@ def parse_num(node: Node, num_str: str) -> float:
     return num or 0.0
 
 
-# Neutral gender form of numbers
-NUMBERS_NEUTRAL = {
-    "1": "eitt",
-    "2": "tvö",
-    "3": "þrjú",
-    "4": "fjögur",
-    "21": "tuttugu og eitt",
-    "22": "tuttugu og tvö",
-    "23": "tuttugu og þrjú",
-    "24": "tuttugu og fjögur",
-    "31": "þrjátíu og eitt",
-    "32": "þrjátíu og tvö",
-    "33": "þrjátíu og þrjú",
-    "34": "þrjátíu og fjögur",
-    "41": "fjörutíu og eitt",
-    "42": "fjörutíu og tvö",
-    "43": "fjörutíu og þrjú",
-    "44": "fjörutíu og fjögur",
-    "51": "fimmtíu og eitt",
-    "52": "fimmtíu og tvö",
-    "53": "fimmtíu og þrjú",
-    "54": "fimmtíu og fjögur",
-    "61": "sextíu og eitt",
-    "62": "sextíu og tvö",
-    "63": "sextíu og þrjú",
-    "64": "sextíu og fjögur",
-    "71": "sjötíu og eitt",
-    "72": "sjötíu og tvö",
-    "73": "sjötíu og þrjú",
-    "74": "sjötíu og fjögur",
-    "81": "áttatíu og eitt",
-    "82": "áttatíu og tvö",
-    "83": "áttatíu og þrjú",
-    "84": "áttatíu og fjögur",
-    "91": "níutíu og eitt",
-    "92": "níutíu og tvö",
-    "93": "níutíu og þrjú",
-    "94": "níutíu og fjögur",
-    "101": "hundrað og eitt",
-    "102": "hundrað og tvö",
-    "103": "hundrað og þrjú",
-    "104": "hundrað og fjögur",
-}
-
-HUNDREDS = ("tvö", "þrjú", "fjögur", "fimm", "sex", "sjö", "átta", "níu")
-
-
-def numbers_to_neutral(s: str) -> str:
-    """Convert integers within the string s to voice
-    representations using neutral gender, i.e.
-    4 -> 'fjögur', 21 -> 'tuttugu og eitt'"""
-
-    def convert(m):
-        match = m.group(0)
-        n = int(match)
-        prefix = ""
-        if 121 <= n <= 999 and 1 <= (n % 10) <= 4 and not 11 <= (n % 100) <= 14:
-            # A number such as 104, 223, 871 (but not 111 or 614)
-            if n // 100 == 1:
-                prefix = "hundrað "
-            else:
-                prefix = HUNDREDS[n // 100 - 2] + " hundruð "
-            n %= 100
-            if n <= 4:
-                # 'tvö hundruð og eitt', 'sjö hundruð og fjögur'
-                prefix += "og "
-            match = str(n)
-        return prefix + NUMBERS_NEUTRAL.get(match, match)
-
-    return re.sub(r"(\d+)", convert, s)
-
-
 def country_desc(cc: str) -> str:
     """Generate Icelandic description of being in a particular country
     with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi'."""
@@ -264,7 +192,7 @@ def country_desc(cc: str) -> str:
 
 
 def cap_first(s: str) -> str:
-    """ Capitalize first character in a string. """
+    """Capitalize first character in a string."""
     return s[0].upper() + s[1:] if s else s
 
 
@@ -380,7 +308,7 @@ def strip_trailing_zeros(num_str: str) -> str:
 def iceformat_float(
     fp_num: float, decimal_places: int = 2, strip_zeros: bool = True
 ) -> str:
-    """ Convert number to Icelandic decimal format string. """
+    """Convert number to Icelandic decimal format string."""
     with changedlocale(category="LC_NUMERIC"):
         fmt = "%.{0}f".format(decimal_places)
         res = locale.format_string(fmt, float(fp_num), grouping=True).replace(" ", ".")
@@ -388,12 +316,12 @@ def iceformat_float(
 
 
 def icequote(s: str) -> str:
-    """ Return string surrounded by Icelandic-style quotation marks. """
+    """Return string surrounded by Icelandic-style quotation marks."""
     return "„{0}“".format(s.strip())
 
 
 def gen_answer(a: str) -> AnswerTuple:
-    """ Convenience function for query modules: response, answer, voice answer """
+    """Convenience function for query modules: response, answer, voice answer"""
     return dict(answer=a), a, a
 
 
@@ -455,7 +383,7 @@ _MAPS_API_COORDS_URL = (
 
 
 def query_geocode_api_coords(lat: float, lon: float) -> Optional[Dict]:
-    """ Look up coordinates in Google's geocode API. """
+    """Look up coordinates in Google's geocode API."""
     # Load API key
     key = read_api_key("GoogleServerKey")
     if not key:
@@ -476,7 +404,7 @@ _MAPS_API_ADDR_URL = (
 
 
 def query_geocode_api_addr(addr: str) -> Optional[Dict]:
-    """ Look up address in Google's geocode API. """
+    """Look up address in Google's geocode API."""
     # Load API key
     key = read_api_key("GoogleServerKey")
     if not key:
@@ -613,7 +541,7 @@ _TZW: Optional[tzwhere.tzwhere] = None
 
 
 def _tzwhere_singleton() -> tzwhere.tzwhere:
-    """ Lazy-load location/timezone database. """
+    """Lazy-load location/timezone database."""
     global _TZW
     if not _TZW:
         _TZW = tzwhere.tzwhere(forceTZ=True)
@@ -634,7 +562,7 @@ def timezone4loc(
 
 @lru_cache(maxsize=32)
 def read_jsfile(filename: str) -> str:
-    """ Read and return a minified JavaScript (.js) file """
+    """Read and return a minified JavaScript (.js) file"""
     # The file is read from the directory 'js' within the directory
     # containing this __init__.py file
     from rjsmin import jsmin  # type: ignore

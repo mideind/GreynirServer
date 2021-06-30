@@ -27,7 +27,6 @@
 
 from typing import (
     DefaultDict,
-    FrozenSet,
     Optional,
     Sequence,
     Set,

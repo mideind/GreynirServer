@@ -378,7 +378,94 @@ def test_query_api(client):
         assert json["answer"].endswith("(389 km).")
 
     # Flights module
-    # TODO: Implement me!
+    departure_pattern = r"^Flug \w*? til .*? flýgur frá \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
+    arrival_pattern = r"^Flug \w*? frá .*? lendir [í|á] \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
+    no_matching_flight_pattern = r"Ekkert flug fannst (frá .*? )?(til .*? )?næstu \d+ daga."
+
+    json = qmcall(
+        c, {"q": "hvenær fer næsta flug til jfk frá keflavík", "voice": True}, "Flights"
+    )
+    assert re.search(departure_pattern, json["answer"])
+    json = qmcall(
+        c, {"q": "hvenær flýgur næsta flug til new york frá keflavík", "voice": True}, "Flights"
+    )
+    assert re.search(departure_pattern, json["answer"])
+    json = qmcall(
+        c,
+        {"q": "hvenær flýgur næsta flug af stað frá keflavík", "voice": True},
+        "Flights",
+    )
+    assert re.search(departure_pattern, json["answer"])
+    json = qmcall(
+        c,
+        {"q": "hver er brottfarartími næsta flugs frá keflavík", "voice": True},
+        "Flights",
+    )
+    assert re.search(departure_pattern, json["answer"])
+    json = qmcall(
+        c,
+        {"q": "hver er brottfarartíminn fyrir næsta flug frá keflavík", "voice": True},
+        "Flights",
+    )
+    assert re.search(departure_pattern, json["answer"])
+
+    json = qmcall(
+        c, {"q": "hvenær lendir næsta flug í keflavík", "voice": True}, "Flights"
+    )
+    assert re.search(arrival_pattern, json["answer"])
+    json = qmcall(
+        c, {"q": "hvenær kemur næsta vél á akureyri", "voice": True}, "Flights"
+    )
+    assert re.search(arrival_pattern, json["answer"]) or re.search(
+        no_matching_flight_pattern, json["answer"]
+    )  # In case no flights to Akureyri
+    json = qmcall(
+        c, {"q": "hvenær mætir næsta vél á vopnafjörð", "voice": True}, "Flights"
+    )
+    assert re.search(arrival_pattern, json["answer"]) or re.search(
+        no_matching_flight_pattern, json["answer"]
+    )  # In case no flights to Vopnafjörður
+    json = qmcall(
+        c, {"q": "hvenær mætir næsta vél til vopnafjarðar", "voice": True}, "Flights"
+    )
+    assert re.search(arrival_pattern, json["answer"]) or re.search(
+        no_matching_flight_pattern, json["answer"]
+    )  # In case no flights to Vopnafjörður
+    json = qmcall(
+        c,
+        {
+            "q": "hver er lendingartími næstu vélar frá reykjavík til vopnafjarðar",
+            "voice": True,
+        },
+        "Flights",
+    )
+    assert re.search(arrival_pattern, json["answer"]) or re.search(
+        no_matching_flight_pattern, json["answer"]
+    )
+    json = qmcall(
+        c,
+        {
+            "q": "hver er lendingartíminn fyrir næsta flug til reykjavíkur frá akureyri",
+            "voice": True,
+        },
+        "Flights",
+    )
+    assert re.search(arrival_pattern, json["answer"]) or re.search(
+        no_matching_flight_pattern, json["answer"]
+    )
+
+    json = qmcall(
+        c,
+        {"q": "hvenær fer næsta flug til blabla frá ekkitil", "voice": True},
+        "Flights",
+    )
+    assert re.search(no_matching_flight_pattern, json["answer"])
+    json = qmcall(
+        c,
+        {"q": "hvenær fer næsta flug frá ekkitil til blablab", "voice": True},
+        "Flights",
+    )
+    assert re.search(no_matching_flight_pattern, json["answer"])
 
     # Geography module
     json = qmcall(c, {"q": "hver er höfuðborg spánar", "voice": True}, "Geography")
@@ -731,7 +818,6 @@ def test_query_utility_functions():
     from queries import (
         natlang_seq,
         nom2dat,
-        numbers_to_neutral,
         is_plural,
         sing_or_plur,
         country_desc,
@@ -745,6 +831,7 @@ def test_query_utility_functions():
         timezone4loc,
         # parse_num,
     )
+    from queries.num import numbers_to_neutral
 
     assert natlang_seq(["Jón", "Gunna"]) == "Jón og Gunna"
     assert natlang_seq(["Jón", "Gunna", "Siggi"]) == "Jón, Gunna og Siggi"
@@ -833,7 +920,28 @@ def test_query_utility_functions():
 
 def test_numbers():
     """ Test number handling functionality in queries """
-    from queries import numbers_to_neutral
+    from queries.num import number_to_neutral, number_to_text, numbers_to_neutral
+
+    assert number_to_neutral(2) == "tvö"
+    assert number_to_neutral(1100) == "eitt þúsund og eitt hundrað"
+    assert (
+        number_to_neutral(-42178249)
+        == "mínus fjörutíu og tvær milljónir eitt hundrað sjötíu og átta þúsund tvö hundruð fjörutíu og níu"
+    )
+    assert number_to_neutral(241000000000) == "tvö hundruð fjörutíu og einn milljarður"
+    assert number_to_neutral(100000000) == "eitt hundrað milljónir"
+    assert number_to_neutral(200000000000) == "tvö hundruð milljarðar"
+    assert (
+        number_to_neutral(10000000000000000000000000000000000000000000000000000000)
+        == "tíu milljónir oktilljóna"
+    )
+
+    assert number_to_text(101, "kk") == "eitt hundrað og einn"
+    assert number_to_text(-102, "kvk") == "mínus eitt hundrað og tvær"
+    assert number_to_text(5, "kk") == "fimm"
+    assert number_to_text(10001, "kvk") == "tíu þúsund og ein"
+    assert number_to_text(400567, "hk") == number_to_neutral(400567)
+    assert number_to_text(-11220024,"kvk") == 'mínus ellefu milljónir tvö hundruð og tuttugu þúsund tuttugu og fjórar'
 
     assert numbers_to_neutral("Baugatangi 1, Reykjavík") == "Baugatangi eitt, Reykjavík"
     assert numbers_to_neutral("Baugatangi 2, Reykjavík") == "Baugatangi tvö, Reykjavík"
@@ -993,3 +1101,51 @@ def test_numbers():
         numbers_to_neutral("Baugatangi 1-17, Reykjavík")
         == "Baugatangi eitt-17, Reykjavík"
     )
+
+
+def test_years():
+    """Test number to written year conversion."""
+    from queries.num import year_to_text
+
+    assert year_to_text(1999) == "nítján hundruð níutíu og níu"
+    assert year_to_text(2004) == "tvö þúsund og fjögur"
+    assert year_to_text(-501) == "fimm hundruð og eitt fyrir Krist"
+    assert year_to_text(1001, after_christ=True) == "eitt þúsund og eitt eftir Krist"
+    assert year_to_text(57, after_christ=True) == "fimmtíu og sjö eftir Krist"
+    assert year_to_text(2401) == "tvö þúsund fjögur hundruð og eitt"
+
+
+def test_ordinals():
+    """Test number to written ordinal conversion."""
+    from queries.num import number_to_ordinal
+
+    assert number_to_ordinal(0) == "núllti"
+    assert number_to_ordinal(22, "þgf", "kvk") == "tuttugustu og annarri"
+    assert number_to_ordinal(302, gender="kvk") == "þrjú hundraðasta og önnur"
+    assert number_to_ordinal(302, "þgf", "hk") == "þrjú hundraðasta og öðru"
+    assert (
+        number_to_ordinal(10202, "þgf", "hk", "ft")
+        == "tíu þúsund tvö hundruðustu og öðrum"
+    )
+    assert number_to_ordinal(1000000, "þf", "kvk", "et") == "milljónustu"
+    assert number_to_ordinal(1000000002, "þf", "kvk", "et") == "milljörðustu og aðra"
+
+
+def test_floats():
+    """Test float to written text conversion."""
+    from queries.num import float_to_text
+    assert float_to_text(-0.12) == "mínus núll komma eitt tvö"
+    assert float_to_text(-21.12, "kk") == "mínus tuttugu og einn komma einn tveir"
+    assert float_to_text(1.03, "kvk") == "ein komma núll þrjár"
+
+
+def test_digits():
+    """Test digit string to written text conversion."""
+    from queries.num import digits_to_text
+    assert digits_to_text("5885522") == "fimm átta átta fimm fimm tveir tveir"
+    assert digits_to_text("112") == "einn einn tveir"
+    assert digits_to_text("123-0679") == "einn tveir þrír núll sex sjö níu"
+    assert digits_to_text(["12","","342"]) == "einn tveir þrír fjórir tveir"
+    assert digits_to_text("581 2345") == "fimm átta einn tveir þrír fjórir fimm"
+    assert digits_to_text([581,'-',2345]) == "fimm átta einn tveir þrír fjórir fimm"
+    assert digits_to_text("010270-2039") == "núll einn núll tveir sjö núll tveir núll þrír níu"

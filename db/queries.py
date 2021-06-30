@@ -23,7 +23,18 @@
 
 """
 
-from . import SessionContext
+from typing import Iterable, List, Optional, Tuple, cast
+
+from datetime import datetime
+
+from . import SessionContext, Session
+
+
+ArticleListItem = Tuple[str, str, datetime, str, str]
+ChartQueryItem = Tuple[str, int, int, int]
+RelatedWordsItem = Tuple[str, str, int]
+BestAuthorsItem = Tuple[str, int, int, int, float]
+QueriesQueryItem = Tuple[int]
 
 
 class _BaseQuery:
@@ -99,9 +110,15 @@ class ChartsQuery(_BaseQuery):
         """
 
     @classmethod
-    def period(cls, start, end, enclosing_session=None):
+    def period(
+        cls, start: datetime, end: datetime, enclosing_session: Optional[Session] = None
+    ) -> Iterable[ChartQueryItem]:
+        r: Iterable[ChartQueryItem] = []
         with SessionContext(session=enclosing_session, commit=False) as session:
-            return cls().execute(session, start=start, end=end)
+            r = cast(
+                Iterable[ChartQueryItem], cls().execute(session, start=start, end=end)
+            )
+        return r
 
 
 class QueriesQuery(_BaseQuery):
@@ -113,9 +130,11 @@ class QueriesQuery(_BaseQuery):
         """
 
     @classmethod
-    def period(cls, start, end, enclosing_session=None):
+    def period(cls, start: datetime, end: datetime, enclosing_session: Optional[Session]=None) -> Iterable[QueriesQueryItem]:
+        r = cast(Iterable[QueriesQueryItem], [])
         with SessionContext(session=enclosing_session, commit=False) as session:
-            return cls().execute(session, start=start, end=end)
+            r = cast(Iterable[QueriesQueryItem], cls().execute(session, start=start, end=end))
+        return r
 
 
 class QueryTypesQuery(_BaseQuery):
@@ -159,12 +178,19 @@ class BestAuthorsQuery(_BaseQuery):
 
     @classmethod
     def period(
-        cls, start, end, min_articles=_MIN_ARTICLE_COUNT, enclosing_session=None
-    ):
+        cls,
+        start: datetime,
+        end: datetime,
+        min_articles: int = _MIN_ARTICLE_COUNT,
+        enclosing_session: Optional[Session] = None,
+    ) -> Iterable[BestAuthorsItem]:
+        r = cast(Iterable[BestAuthorsItem], [])
         with SessionContext(session=enclosing_session, commit=False) as session:
-            return cls().execute(
-                session, start=start, end=end, min_articles=min_articles
+            r = cast(
+                Iterable[BestAuthorsItem],
+                cls().execute(session, start=start, end=end, min_articles=min_articles),
             )
+        return r
 
 
 class RelatedWordsQuery(_BaseQuery):
@@ -185,14 +211,18 @@ class RelatedWordsQuery(_BaseQuery):
         """
 
     @classmethod
-    def rel(cls, stem, limit=21, enclosing_session=None):
+    def rel(
+        cls, stem: str, limit: int = 21, enclosing_session: Optional[Session] = None
+    ) -> Iterable[RelatedWordsItem]:
         """ Return a list of (stem, category, count) tuples describing
             word stems that are related to the given stem, in descending
             order of number of appearances. """
         # The default limit is 21 instead of 20 because the original stem
         # is usually included in the result list
+        r: Iterable[RelatedWordsItem] = []
         with SessionContext(session=enclosing_session, commit=True) as session:
-            return cls().execute(session, root=stem, limit=limit)
+            r = cls().execute(session, root=stem, limit=limit)
+        return r
 
 
 class TermTopicsQuery(_BaseQuery):
@@ -259,16 +289,26 @@ class ArticleListQuery(_BaseQuery):
         """
 
     @classmethod
-    def articles(cls, stem, limit=20, enclosing_session=None):
+    def articles(
+        cls, stem: str, limit: int = 20, enclosing_session: Optional[Session] = None
+    ) -> Iterable[ArticleListItem]:
         """ Return a list of the newest articles containing the given stem. """
+        r: Iterable[ArticleListItem] = []
         with SessionContext(session=enclosing_session, commit=True) as session:
             if stem == stem.lower():
                 # Lower case stem
-                return cls().execute_q(session, cls._Q_lower, stem=stem, limit=limit)
+                r = cast(
+                    Iterable[ArticleListItem],
+                    cls().execute_q(session, cls._Q_lower, stem=stem, limit=limit),
+                )
             # Upper case stem: include the lower case as well
-            return cls().execute_q(
-                session, cls._Q_upper, stem=stem, lstem=stem.lower(), limit=limit
+            r = cast(
+                Iterable[ArticleListItem],
+                cls().execute_q(
+                    session, cls._Q_upper, stem=stem, lstem=stem.lower(), limit=limit
+                ),
             )
+        return r
 
 
 class WordFrequencyQuery(_BaseQuery):

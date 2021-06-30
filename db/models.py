@@ -23,7 +23,8 @@
 
 """
 
-from typing import Optional, cast
+from db import Session
+from typing import Any, Optional, cast
 
 from datetime import datetime
 from sqlalchemy import text
@@ -57,12 +58,12 @@ class CaseInsensitiveComparator(Comparator):
     # See https://docs.sqlalchemy.org/en/13/orm/extensions/hybrid.html
 
     def __eq__(self, other: object) -> bool:
-        return func.lower(self.__clause_element__()) == func.lower(other)
+        return func.lower(self.__clause_element__()) == func.lower(other)  # type: ignore
 
 
 # Create the SQLAlchemy ORM Base class
 # Base: DeclarativeMeta = declarative_base()  # Pylance/Pyright doesn't like this
-Base = declarative_base()
+Base: Any = declarative_base()
 
 # Add a table() function to the Base class, returning the __table__ member.
 # Note that this hack is necessary because SqlAlchemy doesn't readily allow
@@ -177,10 +178,10 @@ class Article(Base):
     topic_vector = cast(Optional[str], Column(String))
 
     # The back-reference to the Root parent of this Article
-    root: RelationshipProperty = relationship(
+    root: RelationshipProperty = relationship(  # type: ignore
         "Root",
         foreign_keys="Article.root_id",
-        backref=backref("articles", order_by=url),
+        backref=backref("articles", order_by=url),  # type: ignore
     )
 
     def __repr__(self):
@@ -225,8 +226,8 @@ class Person(Base):
     timestamp = Column(DateTime)
 
     # The back-reference to the Article parent of this Person
-    article: RelationshipProperty = relationship(
-        "Article", backref=backref("persons", order_by=name)
+    article: RelationshipProperty = relationship(  # type: ignore
+        "Article", backref=backref("persons", order_by=name)  # type: ignore
     )
 
     def __repr__(self):
@@ -260,7 +261,7 @@ class Entity(Base):
     def name_lc(self) -> str:  # type: ignore
         return self.name.lower()
 
-    @name_lc.comparator
+    @name_lc.comparator  # type: ignore
     def name_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.name)
 
@@ -276,7 +277,7 @@ class Entity(Base):
     timestamp = Column(DateTime)
 
     # The back-reference to the Article parent of this Entity
-    article = relationship("Article", backref=backref("entities", order_by=name))
+    article = relationship("Article", backref=backref("entities", order_by=name))  # type: ignore
 
     # Add an index on the entity name in lower case
     name_lc_index = Index("ix_entities_name_lc", func.lower(name))
@@ -335,7 +336,7 @@ class Location(Base):
     timestamp = Column(DateTime)
 
     # The back-reference to the Article parent of this Location
-    article = relationship("Article", backref=backref("locations", order_by=name))
+    article = relationship("Article", backref=backref("locations", order_by=name))  # type: ignore
 
     __table_args__ = (UniqueConstraint("name", "kind", "article_url"),)
 
@@ -370,7 +371,7 @@ class Word(Base):
     cnt = Column(Integer, nullable=False)
 
     # The back-reference to the Article parent of this Word
-    article = relationship("Article", backref=backref("words"))
+    article = relationship("Article", backref=backref("words"))  # type: ignore
 
     __table_args__ = (
         PrimaryKeyConstraint("article_id", "stem", "cat", name="words_pkey"),
@@ -435,9 +436,9 @@ class ArticleTopic(Base):
     )
 
     # The back-reference to the Article parent of this ArticleTopic
-    article = relationship("Article", backref=backref("atopics"))
+    article = relationship("Article", backref=backref("atopics"))  # type: ignore
     # The back-reference to the Topic parent of this ArticleTopic
-    topic = relationship("Topic", backref=backref("atopics"))
+    topic = relationship("Topic", backref=backref("atopics"))  # type: ignore
 
     __table_args__ = (
         PrimaryKeyConstraint("article_id", "topic_id", name="atopics_pkey"),
@@ -478,7 +479,7 @@ class Trigram(Base):
     __table_args__ = (PrimaryKeyConstraint("t1", "t2", "t3", name="trigrams_pkey"),)
 
     @staticmethod
-    def upsert(session, t1, t2, t3):
+    def upsert(session: Session, t1: str, t2: str, t3: str):
         """ Insert a trigram, or increment the frequency count if already present """
         # The following code uses "upsert" functionality (INSERT...ON CONFLICT...DO UPDATE)
         # that was introduced in PostgreSQL 9.5. This means that the upsert runs on the
@@ -491,12 +492,12 @@ class Trigram(Base):
             t2 = t2[0:mwl]
         if len(t3) > mwl:
             t3 = t3[0:mwl]
-        session.execute(Trigram._Q, dict(t1=t1, t2=t2, t3=t3))
+        cast(Any, session).execute(Trigram._Q, dict(t1=t1, t2=t2, t3=t3))
 
     @staticmethod
-    def delete_all(session):
+    def delete_all(session: Session):
         """ Delete all trigrams """
-        session.execute("delete from trigrams;")
+        cast(Any, session).execute("delete from trigrams;")
 
     def __repr__(self):
         return "Trigram(t1='{0}', t2='{1}', t3='{2}')".format(self.t1, self.t2, self.t3)
@@ -584,7 +585,7 @@ class Query(Base):
     def question_lc(self) -> str:  # type: ignore
         return self.question.lower()
 
-    @question_lc.comparator
+    @question_lc.comparator  # type: ignore
     def question_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.question)
 
@@ -598,7 +599,7 @@ class Query(Base):
     def answer_lc(self) -> str:  # type: ignore
         return self.answer.lower()
 
-    @answer_lc.comparator
+    @answer_lc.comparator  # type: ignore
     def answer_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.answer)
 
@@ -609,7 +610,7 @@ class Query(Base):
     def voice_lc(self) -> str:  # type: ignore
         return self.voice.lower()
 
-    @voice_lc.comparator
+    @voice_lc.comparator  # type: ignore
     def voice_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.voice)
 

@@ -30,6 +30,7 @@ import json
 from datetime import datetime
 
 from flask import render_template, request, redirect, url_for
+from werkzeug.wrappers import Response
 
 import tokenizer
 import reynir
@@ -41,7 +42,7 @@ from db.models import Person, Article, ArticleTopic, Entity, Column
 from settings import Settings
 from article import Article as ArticleProxy
 from search import Search
-from treeutil import TreeUtility
+from treeutil import TreeUtility, StatsDict
 from images import Img, get_image_url, update_broken_image_url, blacklist_image_url
 from doc import SUPPORTED_DOC_MIMETYPES
 
@@ -115,7 +116,7 @@ MAX_SIM_ARTICLES = 10  # Display at most 10 similarity matches
 
 
 @routes.route("/similar", methods=["GET", "POST"])
-def similar():
+def similar() -> Response:
     """ Return rendered HTML list of articles similar to a given article, given a UUID """
     resp: Dict[str, Any] = dict(err=True)
 
@@ -133,14 +134,16 @@ def similar():
     with SessionContext(commit=True) as session:
         similar = Search.list_similar_to_article(session, uuid, n=MAX_SIM_ARTICLES)
 
-    resp["payload"] = render_template("similar.html", similar=similar)
-    resp["err"] = False
+        resp["payload"] = render_template("similar.html", similar=similar)
+        resp["err"] = False
 
-    return better_jsonify(**resp)
+        return better_jsonify(**resp)
+
+    return Response("Error", status=403)
 
 
 @routes.route("/page")
-def page():
+def page() -> Union[Response, str]:
     """ Handler for a page displaying the parse of an arbitrary web
         page by URL or an already scraped article by UUID """
     url = request.args.get("url")
@@ -162,9 +165,11 @@ def page():
 
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
-        elif url.startswith("http:") or url.startswith("https:"):
-            # Forces a new scrape
-            a = ArticleProxy.scrape_from_url(url, session)
+        else:
+            assert url is not None
+            if url.startswith("http:") or url.startswith("https:"):
+                # Forces a new scrape
+                a = ArticleProxy.scrape_from_url(url, session)
 
         if a is None:
             # !!! TODO: Separate error page
@@ -180,16 +185,21 @@ def page():
         )
         topics = [dict(name=t.topic.name, id=t.topic.identifier) for t in topics]
 
-    return render_template(
-        "page.html", title=a.heading, article=a, register=register, topics=topics
-    )
+        return render_template(
+            "page.html", title=a.heading, article=a, register=register, topics=topics
+        )
 
+    return Response("Error", status=403)
+    
 
 @routes.route("/treegrid", methods=["GET"])
 def tree_grid():
     """ Show a simplified parse tree for a single sentence """
 
     txt = request.args.get("txt", "")
+    tree = None
+    full_tree = None
+    stats: StatsDict = dict()
     with SessionContext(commit=True) as session:
         # Obtain simplified tree, full tree and stats
         tree, full_tree, stats = TreeUtility.parse_text_with_full_tree(session, txt)
@@ -302,6 +312,7 @@ def parsefail():
     except Exception:
         num = PARSEFAIL_DEFAULT
 
+    sfails = []
     with SessionContext(read_only=True) as session:
         q = (
             session.query(Article.id, Article.timestamp, Article.tokens)
@@ -314,8 +325,6 @@ def parsefail():
             .order_by(desc(cast(Column, Article.timestamp)))
             .limit(num)
         )
-
-        sfails = []
 
         for a in q.all():
             try:

@@ -35,7 +35,8 @@ from datetime import datetime, timedelta
 from reynir import NounPhrase
 from reynir.bindb import GreynirBin
 
-from . import query_json_api, gen_answer, numbers_to_neutral, icequote
+from . import query_json_api, gen_answer, icequote
+from queries.num import numbers_to_neutral
 
 from query import AnswerTuple, Query, QueryStateDict
 from tree import Result
@@ -235,7 +236,7 @@ def _answer_name4phonenum_query(q: Query, result: Result) -> AnswerTuple:
     q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     if not clean_num or len(clean_num) < 3:
-        return gen_answer("{0} er ekki gilt símanúmer")
+        return gen_answer("{0} er ekki gilt símanúmer".format(num))
 
     res = query_ja_api(clean_num)
 
