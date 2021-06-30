@@ -54,6 +54,8 @@ resources/ord.compressed
 #resources/*.tmLanguage
 resources/visir/
 resources/reykjanes/
+resources/Adder.py
+resources/Word_Sieve.py
 queries/resources/
 mim/
 ifd/
