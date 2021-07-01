@@ -51,6 +51,22 @@ AnswerTuple = Tuple[Dict, str, str]
 LatLonTuple = Tuple[float, float]
 
 
+MONTHS_ABBR: Tuple[str] = (
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "maí",
+    "jún",
+    "júl",
+    "ágú",
+    "sep",
+    "okt",
+    "nóv",
+    "des",
+)
+
+
 def natlang_seq(words: List[str], oxford_comma: bool = False) -> str:
     """Generate an Icelandic natural language sequence of words
     e.g. "A og B", "A, B og C", "A, B, C og D"."""
