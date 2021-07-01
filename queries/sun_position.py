@@ -36,7 +36,6 @@ from cachetools import cached, TTLCache
 from settings import changedlocale
 from geo import (
     distance,
-    iceprep_for_placename,
     in_iceland,
     capitalize_placename,
     ICE_PLACENAME_BLACKLIST,
@@ -90,8 +89,12 @@ Query →
     QSunQuery '?'?
 
 QSunQuery →
-    QSunWhen QSunPositions QSunLocation? QSunDate? QSunLocation?
-    | QSunSunheight
+    QSunWhen QSunPositions QSunPlaceAndTime
+    | QSunSunheight QSunPlaceAndTime
+
+QSunPlaceAndTime →
+    QSunLocation? QSunDate?
+    | QSunDate? QSunLocation?
 
 QSunWhen →
     "hvenær" | "klukkan" "hvað"
@@ -101,7 +104,7 @@ QSunIsWillWas →
 
 
 QSunSunheight →
-    "hver" QSunIsWillWas QSunSólarhæð QSunDate?
+    "hver" QSunIsWillWas QSunSólarhæð
 
 QSunSólarhæð →
     'sólarhæð'
@@ -424,6 +427,18 @@ def _find_closest_city(data: _SOLAR_DICT_TYPE, loc: LatLonTuple) -> str:
     return closest_city
 
 
+_SOLAR_ENUM_TO_WORD: Dict[_SOLAR_POS_ENUM, str] = {
+    _SOLAR_POSITIONS.DÖGUN: "Dögun",
+    _SOLAR_POSITIONS.BIRTING: "Birting",
+    _SOLAR_POSITIONS.SÓLRIS: "Sólris",
+    _SOLAR_POSITIONS.HÁDEGI: "Hádegi",
+    _SOLAR_POSITIONS.SÓLARLAG: "Sólarlag",
+    _SOLAR_POSITIONS.MYRKUR: "Myrkur",
+    _SOLAR_POSITIONS.DAGSETUR: "Dagsetur",
+    _SOLAR_POSITIONS.SÓLARHÆÐ: "Sólarhæð",
+}
+
+
 def _answer_closest_solar_data(
     data: _SOLAR_DICT_TYPE, sun_pos: _SOLAR_POS_ENUM, qdate: datetime.date, city: str
 ) -> AnswerTuple:
@@ -452,7 +467,7 @@ def _answer_closest_solar_data(
             in_past = qdate < datetime.date.today()
 
     if sun_pos == _SOLAR_POSITIONS.SÓLARHÆÐ:
-        answer = f"Sólarhæð um hádegi {when} verður um {data[city][closest_date][sun_pos]} gráður."
+        answer = f"Sólarhæð um hádegi {when} var um {data[city][closest_date][sun_pos]} gráður."
         voice = answer
 
     else:
@@ -464,19 +479,11 @@ def _answer_closest_solar_data(
             time_str = time.strftime("%H:%M")
             format_ans = "{0} var um klukkan {1} {2}."
 
-            if sun_pos == _SOLAR_POSITIONS.DÖGUN:
-                voice = answer = format_ans.format("Dögun", time_str, when)
-
-            elif sun_pos == _SOLAR_POSITIONS.BIRTING:
-                voice = answer = format_ans.format("Birting", time_str, when)
-
-            elif sun_pos == _SOLAR_POSITIONS.SÓLRIS:
+            if sun_pos == _SOLAR_POSITIONS.SÓLRIS:
                 if in_past:
                     voice = answer = f"Sólin reis klukkan {time_str} {when}."
                 else:
                     voice = answer = f"Sólin rís klukkan {time_str} {when}."
-            elif sun_pos == _SOLAR_POSITIONS.HÁDEGI:
-                voice = answer = format_ans.format("Hádegi", time_str, when)
 
             elif sun_pos == _SOLAR_POSITIONS.SÓLARLAG:
                 if in_past:
@@ -484,34 +491,17 @@ def _answer_closest_solar_data(
                 else:
                     voice = answer = f"Sólin sest klukkan {time_str} {when}."
 
-            elif sun_pos == _SOLAR_POSITIONS.MYRKUR:
-                voice = answer = format_ans.format("Myrkur", time_str, when)
-
-            elif sun_pos == _SOLAR_POSITIONS.DAGSETUR:
-                voice = answer = format_ans.format("Dagsetur", time_str, when)
+            else:
+                voice = answer = format_ans.format(
+                    _SOLAR_ENUM_TO_WORD[sun_pos], time_str, when
+                )
 
         else:
             format_ans = "Það varð ekki {0} {1}."
-            if sun_pos == _SOLAR_POSITIONS.DÖGUN:
-                voice = answer = format_ans.format("dögun", when)
 
-            elif sun_pos == _SOLAR_POSITIONS.BIRTING:
-                voice = answer = format_ans.format("birting", when)
-
-            elif sun_pos == _SOLAR_POSITIONS.SÓLRIS:
-                voice = answer = format_ans.format("sólris", when)
-
-            elif sun_pos == _SOLAR_POSITIONS.HÁDEGI:
-                voice = answer = format_ans.format("hádegi", when)
-
-            elif sun_pos == _SOLAR_POSITIONS.SÓLARLAG:
-                voice = answer = format_ans.format("sólarlag", when)
-
-            elif sun_pos == _SOLAR_POSITIONS.MYRKUR:
-                voice = answer = format_ans.format("myrkur", when)
-
-            elif sun_pos == _SOLAR_POSITIONS.DAGSETUR:
-                voice = answer = format_ans.format("dagsetur", when)
+            voice = answer = format_ans.format(
+                _SOLAR_ENUM_TO_WORD[sun_pos].lower(), when
+            )
 
     if not in_past:
         voice = answer = answer.replace("varð", "verður").replace("var", "verður")
