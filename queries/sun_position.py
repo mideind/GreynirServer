@@ -22,7 +22,7 @@
     This module handles queries regarding time of sunrise/sunset.
 
 """
-from typing import Dict, List, Tuple, Optional, Union
+from typing import Dict, List, Tuple, Optional, Union, cast
 from tree import Result, Node
 from query import Query, QueryStateDict
 from queries import AnswerTuple, LatLonTuple, MONTHS_ABBR, gen_answer
@@ -31,7 +31,7 @@ import datetime
 import random
 import re
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup  # type: ignore
 from cachetools import cached, TTLCache
 from settings import changedlocale
 from geo import (
@@ -40,7 +40,7 @@ from geo import (
     capitalize_placename,
     ICE_PLACENAME_BLACKLIST,
 )
-from iceaddr import placename_lookup
+from iceaddr import placename_lookup  # type:ignore
 
 
 # Indicate that this module wants to handle parse trees for queries,
@@ -280,7 +280,7 @@ def QSunArbitraryLocation(node: Node, params: QueryStateDict, result: Result) ->
 ###
 
 _ALMANAK_HI_URL: str = "http://www.almanak.hi.is/solgang.html"
-_ALMANAK_HI_COLUMNS: Tuple[_SOLAR_POS_ENUM] = (
+_ALMANAK_HI_COLUMNS: Tuple[_SOLAR_POS_ENUM, ...] = (
     _SOLAR_POSITIONS.DÖGUN,
     _SOLAR_POSITIONS.BIRTING,
     _SOLAR_POSITIONS.SÓLRIS,
@@ -347,9 +347,9 @@ def _parse_almanak_cell(pt_str: str) -> _SOLAR_CELL_TYPE:
     return None
 
 
-_SOLAR_ROW_TYPE = Dict[int, _SOLAR_CELL_TYPE]
+_SOLAR_ROW_TYPE = Dict[_SOLAR_POS_ENUM, _SOLAR_CELL_TYPE]
 _SOLAR_DICT_TYPE = Dict[
-    str, Dict[str, Union[LatLonTuple, Dict[datetime.date, _SOLAR_ROW_TYPE]]]
+    str, Dict[Union[str, datetime.date], Union[LatLonTuple, _SOLAR_ROW_TYPE]]
 ]
 
 
@@ -389,7 +389,10 @@ def _parse_almanak_hi_data(text: List[str]) -> _SOLAR_DICT_TYPE:
                 )
 
                 # Calculate solar midnight from solar noon
-                solar_noon = sun_pos[_SOLAR_POSITIONS.HÁDEGI]
+                # ("Hádegi" (solar noon) is never None)
+                solar_noon: datetime.time = cast(
+                    datetime.time, sun_pos[_SOLAR_POSITIONS.HÁDEGI]
+                )
                 solar_midnight = datetime.time(
                     hour=((solar_noon.hour + 12) % 24), minute=solar_noon.minute
                 )
@@ -397,7 +400,7 @@ def _parse_almanak_hi_data(text: List[str]) -> _SOLAR_DICT_TYPE:
 
                 # Add solar positions for city on a specific date
                 date = datetime.date.today().replace(
-                    month=month, day=int(sun_re.group(2))
+                    month=cast(int, month), day=int(sun_re.group(2))
                 )
                 data[city][date] = sun_pos
 
@@ -418,13 +421,13 @@ def _get_almanak_hi_data() -> _SOLAR_DICT_TYPE:
     return _parse_almanak_hi_data(text)
 
 
-def _find_closest_city(data: _SOLAR_DICT_TYPE, loc: LatLonTuple) -> str:
+def _find_closest_city(data: _SOLAR_DICT_TYPE, loc: LatLonTuple) -> Optional[str]:
     """Find city closest to loc in data."""
     closest_city = None
     closest_distance = None
 
     for city_name, city_dict in data.items():
-        dist = distance(loc, city_dict["pos"])
+        dist = distance(loc, cast(LatLonTuple, city_dict["pos"]))
 
         if closest_distance is None or dist < closest_distance:
             closest_distance = dist
@@ -485,9 +488,14 @@ def _answer_closest_solar_data(
         voice = answer
 
     else:
-        time: Optional[datetime.time] = data[city][closest_date][sun_pos]
-        if in_past is None:
+        time: Optional[datetime.time] = cast(
+            Optional[datetime.time], data[city][closest_date][sun_pos]
+        )
+
+        if in_past is None and time:
             in_past = time <= datetime.datetime.now().time()
+
+            # More specific answer when asking about today (this morning/this evening)
             if when == "í dag":
                 if time <= datetime.time(9, 0):
                     when = "í morgun"
@@ -552,7 +560,8 @@ def _get_answer(q: Query, result: Result) -> AnswerTuple:
                 loc = (city_dict.get("lat_wgs84"), city_dict.get("long_wgs84"))
 
                 city = _find_closest_city(data, loc)
-                return _answer_closest_solar_data(data, sun_pos, qdate, city)
+                if city:
+                    return _answer_closest_solar_data(data, sun_pos, qdate, city)
 
         return gen_answer("Ég þekki ekki til sólargangs þar.")
 
@@ -562,7 +571,9 @@ def _get_answer(q: Query, result: Result) -> AnswerTuple:
 
         if in_iceland(loc):
             city = _find_closest_city(data, loc)
-            return _answer_closest_solar_data(data, sun_pos, qdate, city)
+
+            if city:
+                return _answer_closest_solar_data(data, sun_pos, qdate, city)
 
         return gen_answer("Ég þekki ekki til sólargangs utan Íslands.")
 
