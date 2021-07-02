@@ -89,12 +89,13 @@ Query →
     QSunQuery '?'?
 
 QSunQuery →
-    QSunWhen QSunPositions QSunPlaceAndTime
-    | QSunSunheight QSunPlaceAndTime
+    QSunWhen QSunPositions QSunPlaceAndTime?
+    | QSunSunheight QSunPlaceAndTime?
 
 QSunPlaceAndTime →
-    QSunLocation? QSunDate?
-    | QSunDate? QSunLocation?
+    QSunDate QSunLocation?
+    > QSunLocation QSunDate
+    > QSunLocation
 
 QSunWhen →
     "hvenær" | "klukkan" "hvað"
@@ -141,6 +142,7 @@ QSunHádegi →
 QSunSólarlag →
     "sest" "sólin"
     | "mun" "sólin" "setjast"
+    | 'sólsetur'
     | QSunIsWillWas "sólarlag"
 
 QSunMyrkur →
@@ -157,7 +159,7 @@ QSunDate →
     # TODO: Arbitrary date
 
 QSunToday →
-    "í" "dag"
+    "í" "dag" | "í_kvöld" | "í_morgun"
 
 QSunYesterday →
     "í_gær"
@@ -467,16 +469,29 @@ def _answer_closest_solar_data(
             in_past = qdate < datetime.date.today()
 
     if sun_pos == _SOLAR_POSITIONS.SÓLARHÆÐ:
-        answer = f"Sólarhæð um hádegi {when} var um {data[city][closest_date][sun_pos]} gráður."
+        if in_past is True:
+            is_will_was = "var"
+        elif in_past is False:
+            is_will_was = "var"
+        else:
+            is_will_was = "er"
+
+        degrees = str(data[city][closest_date][sun_pos]).replace(".", ",")
+        answer = f"Sólarhæð um hádegi {when} {is_will_was} um {degrees} gráður."
         voice = answer
 
     else:
         time: Optional[datetime.time] = data[city][closest_date][sun_pos]
         if in_past is None:
             in_past = time <= datetime.datetime.now().time()
+            if when == "í dag":
+                if time <= datetime.time(9, 0):
+                    when = "í morgun"
+                elif time >= datetime.time(20, 0):
+                    when = "í kvöld"
 
         if time:
-            time_str = time.strftime("%H:%M")
+            time_str = time.strftime("%-H:%M")
             format_ans = "{0} var um klukkan {1} {2}."
 
             if sun_pos == _SOLAR_POSITIONS.SÓLRIS:
@@ -543,7 +558,7 @@ def _get_answer(q: Query, result: Result) -> AnswerTuple:
 
         if in_iceland(loc):
             city = _find_closest_city(data, loc)
-            return _answer_closest_solar_data(data, sun_pos, qdate, loc)
+            return _answer_closest_solar_data(data, sun_pos, qdate, city)
 
         return gen_answer("Ég þekki ekki til sólargangs utan Íslands.")
 
