@@ -89,6 +89,8 @@ Query →
     QSunQuery '?'?
 
 QSunQuery →
+    # Hvenær er birting    í Reykjavík á morgun
+    # Klukkan hvað var myrkur á Norðfirði í gær
     QSunWhen QSunPositions QSunPlaceAndTime?
     | QSunSunheight QSunPlaceAndTime?
 
@@ -105,11 +107,13 @@ QSunIsWillWas →
 
 
 QSunSunheight →
+    # TODO: "hver er hæð sólar í dag" isn't interpreted correctly
     "hver" QSunIsWillWas QSunSólarhæð
 
 QSunSólarhæð →
     'sólarhæð'
     | "hæð" 'sól'
+    | "hæð" 'Sól'
 
 QSunPositions →
     QSunMiðnætti
@@ -578,7 +582,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         answer: AnswerTuple = _get_answer(q, result)
 
         q.set_source("Háskóli Íslands")
-        q.set_url(_ALMANAK_HI_URL)
         # Set query answer
         q.set_answer(*answer)
         return
