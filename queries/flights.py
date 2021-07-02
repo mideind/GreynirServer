@@ -338,12 +338,14 @@ def _filter_flight_data(
         ):
             # Use estimated time instead of scheduled if available
             if flight.get("Estimated") is not None:
+                # Change +00:00 UTC offset to +0000 for %z tag
                 flight_time_str = re.sub(
                     r"([-+]\d{2}):(\d{2})(?:(\d{2}))?$",
                     r"\1\2\3",
                     str(flight["Estimated"]),
                 )
                 flight_time = datetime.strptime(flight_time_str, "%Y-%m-%dT%H:%M:%S%z")
+
             elif flight.get("Scheduled") is not None:
                 flight_time_str = re.sub(
                     r"([-+]\d{2}):(\d{2})(?:(\d{2}))?$",
@@ -351,6 +353,7 @@ def _filter_flight_data(
                     str(flight["Scheduled"]),
                 )
                 flight_time = datetime.strptime(flight_time_str, "%Y-%m-%dT%H:%M:%S%z")
+
             else:
                 continue  # Failed, no time found
 
