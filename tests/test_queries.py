@@ -49,7 +49,7 @@ from util import read_api_key  # noqa
 
 @pytest.fixture
 def client() -> FlaskClient:
-    """ Instantiate Flask's modified Werkzeug client to use in tests """
+    """Instantiate Flask's modified Werkzeug client to use in tests"""
     app.config["TESTING"] = True
     app.config["DEBUG"] = True
     return app.test_client()
@@ -104,7 +104,7 @@ DUMMY_CLIENT_ID = "QueryTesting123"
 
 
 def test_query_api(client):
-    """ Make various query API calls and validate response. """
+    """Make various query API calls and validate response."""
 
     c = client
 
@@ -380,14 +380,18 @@ def test_query_api(client):
     # Flights module
     departure_pattern = r"^Flug \w*? til .*? flýgur frá \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
     arrival_pattern = r"^Flug \w*? frá .*? lendir [í|á] \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
-    no_matching_flight_pattern = r"Ekkert flug fannst (frá .*? )?(til .*? )?næstu \d+ daga."
+    no_matching_flight_pattern = (
+        r"Ekkert flug fannst (frá .*? )?(til .*? )?næstu \d+ daga."
+    )
 
     json = qmcall(
         c, {"q": "hvenær fer næsta flug til jfk frá keflavík", "voice": True}, "Flights"
     )
     assert re.search(departure_pattern, json["answer"])
     json = qmcall(
-        c, {"q": "hvenær flýgur næsta flug til new york frá keflavík", "voice": True}, "Flights"
+        c,
+        {"q": "hvenær flýgur næsta flug til new york frá keflavík", "voice": True},
+        "Flights",
     )
     assert re.search(departure_pattern, json["answer"])
     json = qmcall(
@@ -813,7 +817,7 @@ def test_query_api(client):
 
 
 def test_query_utility_functions():
-    """ Tests for various utility functions used by query modules. """
+    """Tests for various utility functions used by query modules."""
 
     from queries import (
         natlang_seq,
@@ -919,7 +923,7 @@ def test_query_utility_functions():
 
 
 def test_numbers():
-    """ Test number handling functionality in queries """
+    """Test number handling functionality in queries"""
     from queries.num import number_to_neutral, number_to_text, numbers_to_neutral
 
     assert number_to_neutral(2) == "tvö"
@@ -941,7 +945,10 @@ def test_numbers():
     assert number_to_text(5, "kk") == "fimm"
     assert number_to_text(10001, "kvk") == "tíu þúsund og ein"
     assert number_to_text(400567, "hk") == number_to_neutral(400567)
-    assert number_to_text(-11220024,"kvk") == 'mínus ellefu milljónir tvö hundruð og tuttugu þúsund tuttugu og fjórar'
+    assert (
+        number_to_text(-11220024, "kvk")
+        == "mínus ellefu milljónir tvö hundruð og tuttugu þúsund tuttugu og fjórar"
+    )
 
     assert numbers_to_neutral("Baugatangi 1, Reykjavík") == "Baugatangi eitt, Reykjavík"
     assert numbers_to_neutral("Baugatangi 2, Reykjavík") == "Baugatangi tvö, Reykjavík"
@@ -1134,6 +1141,7 @@ def test_ordinals():
 def test_floats():
     """Test float to written text conversion."""
     from queries.num import float_to_text
+
     assert float_to_text(-0.12) == "mínus núll komma eitt tvö"
     assert float_to_text(-21.12, "kk") == "mínus tuttugu og einn komma einn tveir"
     assert float_to_text(1.03, "kvk") == "ein komma núll þrjár"
@@ -1142,10 +1150,14 @@ def test_floats():
 def test_digits():
     """Test digit string to written text conversion."""
     from queries.num import digits_to_text
+
     assert digits_to_text("5885522") == "fimm átta átta fimm fimm tveir tveir"
     assert digits_to_text("112") == "einn einn tveir"
     assert digits_to_text("123-0679") == "einn tveir þrír núll sex sjö níu"
-    assert digits_to_text(["12","","342"]) == "einn tveir þrír fjórir tveir"
+    assert digits_to_text(["12", "", "342"]) == "einn tveir þrír fjórir tveir"
     assert digits_to_text("581 2345") == "fimm átta einn tveir þrír fjórir fimm"
-    assert digits_to_text([581,'-',2345]) == "fimm átta einn tveir þrír fjórir fimm"
-    assert digits_to_text("010270-2039") == "núll einn núll tveir sjö núll tveir núll þrír níu"
+    assert digits_to_text([581, "-", 2345]) == "fimm átta einn tveir þrír fjórir fimm"
+    assert (
+        digits_to_text("010270-2039")
+        == "núll einn núll tveir sjö núll tveir núll þrír níu"
+    )
