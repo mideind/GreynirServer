@@ -56,7 +56,6 @@ TOPIC_LEMMAS = [
     "útvarp",
     "útvarpsdagskrá",
     "útvarpsrás",
-    "útvarpsþáttur",
     "þáttur",
 ]
 
@@ -95,13 +94,20 @@ Query →
 QSchedule →
     QScheduleQuery '?'?
 
+# Examples:
+# Hvað er verið að spila á rás eitt?
+# Hvað verður á dagskrá á Stöð 2 klukkan 21:00?
 QScheduleQuery →
-    # Hvað er eiginlega verið að sýna næst á RÚV?
-    # Hvað er næst á dagskrá í sjónvarpinu?
-    # Hvað verður á dagskrá á Stöð 2 klukkan 21:00?
-    QSchWhatIsWillWas QSchEiginlega? QSchNext? QSchBeingShown? QSchWhen? QSchNext? QSchOnScheduleOnStation QSchNext? QSchWhen?
+    QSchWhatIsWillWas QSchEiginlega? QSchBeingShown? QSchOnScheduleOnStation QSchWhen?
+    | QSchWhatIsWillWas QSchEiginlega? QSchBeingShown? QSchWhen? QSchOnScheduleOnStation
     # Dagskrá Stöð 2 klukkan 18:00
     | 'dagskrá:kvk' QSchWhen? QSchOn? QSchStation QSchWhen?
+    | QSchNextShow
+
+# Hvað er eiginlega verið að sýna næst á RÚV?
+# Hvað er næst á dagskrá í sjónvarpinu?
+QSchNextShow →
+    QSchWhatIsWillWas QSchEiginlega? QSchNext? QSchBeingShown? QSchNext? QSchOnScheduleOnStation
 
 QSchBeingShown →
     "verið" "að" "spila"
@@ -118,18 +124,11 @@ QSchWhatIsWillWas →
     | "hvaða" 'efni:hk'/fall QSchIsWillWas
 
 QSchIsWillWas →
-    QSchIsWill
-    | QSchWas
-
-QSchIsWill →
-    'verða:so'
-    | 'vera:so'_nt
-
-QSchWas →
-    'vera:so'_þt
+    'vera:so'
+    | 'verða:so'
 
 QSchOnScheduleOnStation →
-    QSchOn "dagskrá" QSchOn? QSchStation
+    "á" "dagskrá" QSchOn? QSchStation
     | QSchOn? 'sjónvarpsstöð:kvk'/fall? QSchStation
 
 QSchNext →
@@ -145,7 +144,6 @@ QSchOnSchedule →
     "á" 'dagskrá:kvk'_þgf
     | "í" 'dagskrá:kvk'_þgf
     | "í" "gangi"
-    | "í" "boði"
     | "verið" "að" "sýna"
 
 QSchOn →
@@ -228,7 +226,8 @@ QSchRas2 →
 
 QSchWhen →
     QSchNow
-    | "klukkan"? QSchTime? QSchDay?
+    | QSchTime? QSchDay?
+    | QSchDay? QSchTime?
 
 QSchNow →
     "nákvæmlega"? "núna"
@@ -236,7 +235,7 @@ QSchNow →
     | "eins" "og" "stendur"
 
 QSchTime →
-    tími
+    "klukkan"? tími
 
 QSchDay →
     QSchThisMorning
@@ -280,14 +279,14 @@ def QScheduleQuery(node: Node, params: ParamList, result: Result) -> None:
 def QSchSérnafn(node: Node, params: ParamList, result: Result) -> None:
     channel = result._nominative.replace("Stöðvar", "Stöð")
 
-    if channel == "Stöð 2":
-        QSchStod2(node, params, result)
+    if channel == "Stöð 2 Sport 2":
+        QSchStod2Sport2(node, params, result)
     elif channel == "Stöð 2 Sport":
         QSchStod2Sport(node, params, result)
-    elif channel == "Stöð 2 Sport 2":
-        QSchStod2Sport2(node, params, result)
     elif channel == "Stöð 2 Bíó":
         QSchStod2Bio(node, params, result)
+    elif channel == "Stöð 2":
+        QSchStod2(node, params, result)
 
 
 def QSchRUV(node: Node, params: ParamList, result: Result) -> None:
@@ -364,19 +363,7 @@ def QSchTime(node: Node, params: ParamList, result: Result) -> None:
         aux_str = tnode.aux.strip("[]")
         hour, minute, _ = (int(i) for i in aux_str.split(", "))
 
-        qtime = datetime.time(hour, minute)
-
-    result["qtime"] = qtime
-
-
-def QSchIsWill(node: Node, params: ParamList, result: Result) -> None:
-    # 'Hvað "er" ...' eða 'Hvað "verður" ...'
-    result["is_future"] = True
-
-
-def QSchWas(node: Node, params: ParamList, result: Result) -> None:
-    # 'Hvað "var" ...'
-    result["is_future"] = False
+        result["qtime"] = datetime.time(hour, minute)
 
 
 def QSchThisMorning(node: Node, params: ParamList, result: Result) -> None:
@@ -508,13 +495,15 @@ def _programs_after_time(
     end: datetime.datetime
 
     curr_playing: bool = False
-    for i in range(len(sched)):
+    i = 0
+    while i < len(sched):
         start, end = _get_program_start_end(sched[i], station)
 
         if end > qdatetime:  # Program hasn't ended
             if start <= qdatetime:  # Program has started
                 curr_playing = True
             break
+        i += 1
 
     # Programs that haven't finished,
     # and whether a program has started
@@ -628,6 +617,9 @@ def _get_current_and_next_program(
     return curr_playing, next_playing
 
 
+_FRETTIR_FROZENSET = frozenset(("fréttir", "fréttayfirlit"))
+
+
 def _extract_title_and_desc(prog: Dict, station: str) -> Tuple[str, str]:
     """
     Extract title and description of a program on a given station.
@@ -638,7 +630,7 @@ def _extract_title_and_desc(prog: Dict, station: str) -> Tuple[str, str]:
     if station == "ruv":
         title = prog.get("title", "")
 
-        if "fréttir" not in title.lower():
+        if title.lower() not in _FRETTIR_FROZENSET:
             desc = prog.get("description", "")
 
             # Backup description
@@ -728,16 +720,16 @@ def _generate_answer(
 
         day_diff = datetime.date.today() - qdatetime.date()
         if day_diff == datetime.timedelta(0):
-            showtime = qdatetime.strftime("klukkan %H:%M")
+            showtime = f"klukkan {qdatetime.strftime('%H:%M')}"
 
         elif day_diff == datetime.timedelta(days=-1):
-            showtime = qdatetime.strftime("klukkan %H:%M á morgun")
+            showtime = f"klukkan {qdatetime.strftime('%H:%M')} á morgun"
 
         elif day_diff == datetime.timedelta(days=1):
-            showtime = qdatetime.strftime("klukkan %H:%M í gær")
+            showtime = f"klukkan {qdatetime.strftime('%H:%M')} í gær"
 
         else:
-            showtime = qdatetime.strftime("klukkan %H:%M %-d. %B")
+            showtime = f"klukkan {qdatetime.strftime('%H:%M %-d. %B')}"
 
     if curr_prog:
         curr_title, curr_desc = _extract_title_and_desc(curr_prog, station)
@@ -796,22 +788,15 @@ def _get_schedule_answer(result: Result) -> AnswerDict:
 
     now = datetime.datetime.now()
 
-    qdate = result.get("qdate")
-    qtime = result.get("qtime")
+    qdate: datetime.date = result.get("qdate")
+    qtime: datetime.time = result.get("qtime")
 
     if qtime is None:
         qtime = now.time()
     if qdate is None:
         qdate = now.date()
 
-    if result.get("is_future") is False:
-        # Regarding schedule in past
-    else:
-        # If wording implies a query regarding schedule in the future
-        pass
-
-
-    print(qdatetime)
+    qdatetime: datetime.datetime = datetime.datetime.combine(qdate, qtime)
 
     get_next: bool = result.get("get_next", False)
 

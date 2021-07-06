@@ -143,7 +143,7 @@ _IGNORED_QUERY_PREFIXES = (
 )
 _IGNORED_PREFIX_RE = r"^({0})\s*".format("|".join(_IGNORED_QUERY_PREFIXES))
 # Auto-capitalization corrections
-_CAPITALIZATION_REPLACEMENTS = (("í Dag", "í dag"),)
+_CAPITALIZATION_REPLACEMENTS = (("í Dag", "í dag"),("Á dagskrá", "á dagskrá"))
 
 
 def beautify_query(query: str) -> str:
