@@ -25,7 +25,7 @@
 from typing import Dict, List, Tuple, Optional, Union, cast
 from tree import Result, Node
 from query import Query, QueryStateDict
-from queries import AnswerTuple, LatLonTuple, MONTHS_ABBR, gen_answer
+from queries import AnswerTuple, LatLonTuple, MONTH_ABBREV, gen_answer
 
 import datetime
 import random
@@ -383,7 +383,7 @@ def _parse_almanak_hi_data(text: List[str]) -> _SOLAR_DICT_TYPE:
                 if sun_re.group(1) != " - ":
                     # New month started
                     month_str = sun_re.group(1).lower()
-                    month = MONTHS_ABBR.index(month_str) + 1
+                    month = MONTH_ABBREV.index(month_str) + 1
 
                 # Extract times of solar positions
                 sun_pos: _SOLAR_ROW_TYPE = dict(

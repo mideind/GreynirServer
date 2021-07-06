@@ -24,7 +24,7 @@
 
 """
 
-from typing import Mapping, Optional, List, Dict, Tuple, Union, cast
+from typing import Mapping, Optional, List, Dict, Sequence, Tuple, Union, cast
 from tree import Node
 
 import logging
@@ -51,7 +51,7 @@ AnswerTuple = Tuple[Dict, str, str]
 LatLonTuple = Tuple[float, float]
 
 
-MONTHS_ABBR: Tuple[str] = (
+MONTH_ABBREV: Sequence[str] = (
     "jan",
     "feb",
     "mar",
