@@ -197,7 +197,7 @@ python main.py
 ```
 
 Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be 
-changed in `config/Greynir.conf`.
+changed in [`config/Greynir.conf`](config/Greynir.conf).
 
 ### Web scrapers
 
@@ -232,7 +232,7 @@ See [Contributing to Greynir](CONTRIBUTING.md).
 
 ## Copyright and licensing
 
-Greynir is Copyright (C) 2021 [Miðeind ehf.](https://mideind.is)
+Greynir is Copyright &copy; 2021 [Miðeind ehf.](https://mideind.is)
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
 <a href="https://mideind.is"><img src="static/img/mideind-horizontal-small.png" alt="Miðeind ehf." 
@@ -247,7 +247,7 @@ This set of programs is distributed in the hope that it will be useful, but WITH
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-<img src="static/img/GPLv3.png" align="right" style="margin-left:20px;">
+<img src="static/img/GPLv3.png" align="right" style="margin-left:15px;" width="180" height="60">
 
 The full text of the GNU General Public License v3 is
 [included here](https://github.com/mideind/Greynir/blob/master/LICENSE.txt)

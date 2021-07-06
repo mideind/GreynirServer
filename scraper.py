@@ -76,11 +76,12 @@ class Scraper:
 
         logging.info("Initializing scraper instance")
 
-    def urls2fetch(self, root, helper) -> Set[str]:
-        """ Returns a set of URLs to fetch. If the scraper helper class has
-            associated RSS feed URLs, these are used to acquire article URLs.
-            Otherwise, the URLs are found by scraping the root website and
-            searching for links to subpages. """
+    def urls2fetch(self, root, helper):
+        """Returns a set of URLs to fetch. If the scraper helper class has
+        associated RSS feed URLs, these are used to acquire article URLs.
+        Otherwise, the URLs are found by scraping the root website and
+        searching for links to subpages."""
+
         fetch_set = set()
         feeds = None if helper is None else helper.feeds
 
@@ -160,7 +161,9 @@ class Scraper:
 
         t1 = time.time()
 
-        logging.info("Root scrape completed in {0:.2f} seconds".format(t1 - t0))
+        logging.info(
+            "Root scrape of {0} completed in {1:.2f} seconds".format(str(root), t1 - t0)
+        )
 
     def scrape_article(self, url, helper):
         """ Scrape a single article, retrieving its HTML and metadata """
@@ -207,8 +210,8 @@ class Scraper:
         )
 
     def _scrape_single_root(self, r):
-        """ Single root scraper that will be called by a process within a
-            multiprocessing pool """
+        """Single root scraper that will be called by a process within a
+        multiprocessing pool"""
         if r.domain.endswith(".local"):
             # We do not scrape .local roots
             return
@@ -225,8 +228,8 @@ class Scraper:
             )
 
     def _scrape_single_article(self, d):
-        """ Single article scraper that will be called by a process within a
-            multiprocessing pool """
+        """Single article scraper that will be called by a process within a
+        multiprocessing pool"""
         try:
             helper = Fetcher._get_helper(d.root)
             if helper:
@@ -241,8 +244,8 @@ class Scraper:
                 traceback.print_stack()
 
     def _parse_single_article(self, d):
-        """ Single article parser that will be called by a process within a
-            multiprocessing pool """
+        """Single article parser that will be called by a process within a
+        multiprocessing pool"""
         try:
             helper = Fetcher._get_helper(d.root)
             if helper:
@@ -409,7 +412,9 @@ class Scraper:
                     )
                     with Pool(CPU_COUNT) as pool:
                         try:
-                            for _ in pool.imap_unordered(self._parse_single_article, adlist):
+                            for _ in pool.imap_unordered(
+                                self._parse_single_article, adlist
+                            ):
                                 pass
                         except Exception as e:
                             logging.warning("Caught exception: {0}".format(e))
@@ -478,7 +483,7 @@ class Scraper:
             "Num_sentences is {0}, num_sent_parsed is {1}, ratio is {2:.1f}%".format(
                 num_sentences,
                 num_sent_parsed,
-                (100.0 * (num_sent_parsed / num_sentences)) if num_sentences else 0
+                (100.0 * (num_sent_parsed / num_sentences)) if num_sentences else 0,
             )
         )
 
@@ -496,8 +501,9 @@ def scrape_articles(reparse=False, limit=0, urls=None, uuid=None, numprocs=None)
     else:
         ncpus = numprocs or cpu_count()
         logging.info(
-            "Limit: {0}, reparse: {1}, processes/CPU cores: {2}"
-            .format(limit, reparse, ncpus)
+            "Limit: {0}, reparse: {1}, processes/CPU cores: {2}".format(
+                limit, reparse, ncpus
+            )
         )
     t0 = time.time()
     count = 0
@@ -564,7 +570,16 @@ def main(argv=None):
             opts, _ = getopt.getopt(
                 argv[1:],
                 "hirbl:u:d:n:",
-                ["help", "init", "reparse", "debug", "limit=", "urls=", "uuid=", "numprocs="],
+                [
+                    "help",
+                    "init",
+                    "reparse",
+                    "debug",
+                    "limit=",
+                    "urls=",
+                    "uuid=",
+                    "numprocs=",
+                ],
             )
         except getopt.error as msg:
             raise Usage(msg)
