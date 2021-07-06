@@ -163,7 +163,7 @@ QSunDate →
     # TODO: Arbitrary date
 
 QSunToday →
-    "í" "dag" | "í_kvöld" | "í_morgun"
+    "í" "dag" | "í_kvöld" | "í_morgun" | "í" "nótt"
 
 QSunYesterday →
     "í_gær"
@@ -210,6 +210,11 @@ _SOLAR_POS_ENUM = int
 def QSunQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     # Set the query type
     result.qtype = _SUN_QTYPE
+
+
+def QSunIsWillWas(node: Node, params: QueryStateDict, result: Result) -> None:
+    if result._nominative == "verður":
+        result["will_be"] = True
 
 
 ### QSunPositions ###
@@ -437,6 +442,7 @@ def _find_closest_city(data: _SOLAR_DICT_TYPE, loc: LatLonTuple) -> Optional[str
 
 
 _SOLAR_ENUM_TO_WORD: Dict[_SOLAR_POS_ENUM, str] = {
+    _SOLAR_POSITIONS.MIÐNÆTTI: "Miðnætti",
     _SOLAR_POSITIONS.DÖGUN: "Dögun",
     _SOLAR_POSITIONS.BIRTING: "Birting",
     _SOLAR_POSITIONS.SÓLRIS: "Sólris",
@@ -460,6 +466,9 @@ def _answer_closest_solar_data(
         key=lambda d: abs(d - qdate),
     )[0]
 
+    voice: str = ""
+    answer: str = ""
+
     when: str
     in_past: Optional[bool] = None
     if qdate == datetime.date.today():
@@ -476,12 +485,10 @@ def _answer_closest_solar_data(
             in_past = qdate < datetime.date.today()
 
     if sun_pos == _SOLAR_POSITIONS.SÓLARHÆÐ:
-        if in_past is True:
-            is_will_was = "var"
-        elif in_past is False:
-            is_will_was = "var"
-        else:
+        if in_past is None:
             is_will_was = "er"
+        else:
+            is_will_was = "var"
 
         degrees = str(data[city][closest_date][sun_pos]).replace(".", ",")
         answer = f"Sólarhæð um hádegi {when} {is_will_was} um {degrees} gráður."
@@ -492,17 +499,23 @@ def _answer_closest_solar_data(
             Optional[datetime.time], data[city][closest_date][sun_pos]
         )
 
-        if in_past is None and time:
-            in_past = time <= datetime.datetime.now().time()
+        if time:
+            if in_past is None:
+                in_past = time <= datetime.datetime.now().time()
 
-            # More specific answer when asking about today (this morning/this evening)
+            # More specific answer when asking about today
+            # (this morning/this evening/tonight/...)
             if when == "í dag":
-                if time <= datetime.time(9, 0):
+                if time.hour >= 23 or time.hour <= 4:
+                    when = "í nótt"
+                elif 4 < time.hour <= 9:
                     when = "í morgun"
-                elif time >= datetime.time(20, 0):
+                elif 20 <= time.hour < 23:
                     when = "í kvöld"
 
-        if time:
+            elif when == "á morgun" and time.hour <= 4:
+                when = "í nótt"
+
             time_str = time.strftime("%-H:%M")
             format_ans = "{0} var um klukkan {1} {2}."
 
@@ -541,6 +554,15 @@ def _get_answer(q: Query, result: Result) -> AnswerTuple:
 
     qdate: datetime.date = result.get("date", datetime.date.today())
     sun_pos: int = result.get("solar_position")
+
+    if (
+        qdate == datetime.date.today()
+        and result.get("will_be")
+        and sun_pos == _SOLAR_POSITIONS.MIÐNÆTTI
+    ):
+        # Just to fix wording of answer to queries such as "Hvenær verður miðnætti í nótt?".
+        qdate += datetime.timedelta(days=1)
+
     city: Optional[str] = result.get("city")
     loc: Optional[LatLonTuple] = None
 
