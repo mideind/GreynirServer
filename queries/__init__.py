@@ -24,7 +24,17 @@
 
 """
 
-from typing import Mapping, Optional, List, Dict, Sequence, Tuple, Union, cast
+from typing import (
+    Mapping,
+    Optional,
+    FrozenSet,
+    List,
+    Dict,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+)
 from tree import Node
 
 import logging
@@ -51,7 +61,7 @@ AnswerTuple = Tuple[Dict, str, str]
 LatLonTuple = Tuple[float, float]
 
 
-MONTH_ABBREV: Sequence[str] = (
+MONTH_ABBREV_ORDERED: Sequence[str] = (
     "jan",
     "feb",
     "mar",
@@ -65,6 +75,8 @@ MONTH_ABBREV: Sequence[str] = (
     "nóv",
     "des",
 )
+
+MONTH_ABBREV_UNORDERED: FrozenSet[str] = frozenset(MONTH_ABBREV_ORDERED)
 
 
 def natlang_seq(words: List[str], oxford_comma: bool = False) -> str:

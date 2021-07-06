@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Example of a grammar query processor module.
+    Solar position query response module
 
     Copyright (C) 2021 Miðeind ehf.
 
@@ -22,10 +22,11 @@
     This module handles queries regarding time of sunrise/sunset.
 
 """
-from typing import Dict, List, Tuple, Optional, Union, cast
+
+from typing import Dict, List, Iterable, Tuple, Optional, Union, cast
 from tree import Result, Node
 from query import Query, QueryStateDict
-from queries import AnswerTuple, LatLonTuple, MONTH_ABBREV, gen_answer
+from queries import AnswerTuple, LatLonTuple, MONTH_ABBREV_ORDERED, gen_answer
 
 import datetime
 import random
@@ -54,11 +55,14 @@ _SUN_QTYPE = "SunPosition"
 
 TOPIC_LEMMAS = [
     "birting",
+    "birta",
     "dagsetur",
     "dögun",
     "hádegi",
     "miðnætti",
     "myrkur",
+    "rísa",
+    "setjast",
     "sólarhæð",
     "sólarlag",
     "sólarupprás",
@@ -75,6 +79,7 @@ def help_text(lemma: str) -> str:
         random.choice(
             (
                 "Hvenær reis sólin í morgun",
+                "Hvenær sest sólin á morgun",
                 "Hvenær er sólsetur í kvöld",
                 "Hvenær rís sólin á morgun",
             )
@@ -205,6 +210,23 @@ class _SOLAR_POSITIONS:
 
 
 _SOLAR_POS_ENUM = int
+_SOLAR_CELL_TYPE = Union[datetime.time, float, None]
+_SOLAR_ROW_TYPE = Dict[_SOLAR_POS_ENUM, _SOLAR_CELL_TYPE]
+_SOLAR_DICT_TYPE = Dict[
+    str, Dict[Union[str, datetime.date], Union[LatLonTuple, _SOLAR_ROW_TYPE]]
+]
+
+_SOLAR_ENUM_TO_WORD: Dict[_SOLAR_POS_ENUM, str] = {
+    _SOLAR_POSITIONS.MIÐNÆTTI: "Miðnætti",
+    _SOLAR_POSITIONS.DÖGUN: "Dögun",
+    _SOLAR_POSITIONS.BIRTING: "Birting",
+    _SOLAR_POSITIONS.SÓLRIS: "Sólris",
+    _SOLAR_POSITIONS.HÁDEGI: "Hádegi",
+    _SOLAR_POSITIONS.SÓLARLAG: "Sólarlag",
+    _SOLAR_POSITIONS.MYRKUR: "Myrkur",
+    _SOLAR_POSITIONS.DAGSETUR: "Dagsetur",
+    _SOLAR_POSITIONS.SÓLARHÆÐ: "Sólarhæð",
+}
 
 
 def QSunQuery(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -327,9 +349,6 @@ def _convert_dms_lat_lon_to_decimal(lat: str, lon: str) -> LatLonTuple:
     return (dlat, dlon)
 
 
-_SOLAR_CELL_TYPE = Union[datetime.time, float, None]
-
-
 def _parse_almanak_cell(pt_str: str) -> _SOLAR_CELL_TYPE:
     """
     Parse a cell in Almanak HÍ. Returns datetime.time for cells containing
@@ -339,26 +358,22 @@ def _parse_almanak_cell(pt_str: str) -> _SOLAR_CELL_TYPE:
         '34,9'  => 34.9
         '     ' => None
     """
-    if not pt_str.isspace():
-        if " " in pt_str:
-            # Column contains a time value, convert to datetime
-            hour, minute = pt_str.split()
-            return datetime.time(hour=int(hour) % 24, minute=int(minute) % 60)
+    try:
+        if not pt_str.isspace():
+            if " " in pt_str:
+                # Column contains a time value, convert to datetime
+                hour, minute = pt_str.split()
+                return datetime.time(hour=int(hour) % 24, minute=int(minute) % 60)
 
-        if "," in pt_str:
-            # Column contains solar height at solar noon (in degrees)
-            return float(pt_str.replace(",", "."))
-
+            if "," in pt_str:
+                # Column contains solar height at solar noon (in degrees)
+                return float(pt_str.replace(",", "."))
+    except ValueError:
+        pass
     return None
 
 
-_SOLAR_ROW_TYPE = Dict[_SOLAR_POS_ENUM, _SOLAR_CELL_TYPE]
-_SOLAR_DICT_TYPE = Dict[
-    str, Dict[Union[str, datetime.date], Union[LatLonTuple, _SOLAR_ROW_TYPE]]
-]
-
-
-def _parse_almanak_hi_data(text: List[str]) -> _SOLAR_DICT_TYPE:
+def _parse_almanak_hi_data(text: Iterable[str]) -> _SOLAR_DICT_TYPE:
     """
     Parse text received from Almanak HÍ endpoint into usable dict.
     """
@@ -383,7 +398,7 @@ def _parse_almanak_hi_data(text: List[str]) -> _SOLAR_DICT_TYPE:
                 if sun_re.group(1) != " - ":
                     # New month started
                     month_str = sun_re.group(1).lower()
-                    month = MONTH_ABBREV.index(month_str) + 1
+                    month = MONTH_ABBREV_ORDERED.index(month_str) + 1
 
                 # Extract times of solar positions
                 sun_pos: _SOLAR_ROW_TYPE = dict(
@@ -439,19 +454,6 @@ def _find_closest_city(data: _SOLAR_DICT_TYPE, loc: LatLonTuple) -> Optional[str
             closest_city = city_name
 
     return closest_city
-
-
-_SOLAR_ENUM_TO_WORD: Dict[_SOLAR_POS_ENUM, str] = {
-    _SOLAR_POSITIONS.MIÐNÆTTI: "Miðnætti",
-    _SOLAR_POSITIONS.DÖGUN: "Dögun",
-    _SOLAR_POSITIONS.BIRTING: "Birting",
-    _SOLAR_POSITIONS.SÓLRIS: "Sólris",
-    _SOLAR_POSITIONS.HÁDEGI: "Hádegi",
-    _SOLAR_POSITIONS.SÓLARLAG: "Sólarlag",
-    _SOLAR_POSITIONS.MYRKUR: "Myrkur",
-    _SOLAR_POSITIONS.DAGSETUR: "Dagsetur",
-    _SOLAR_POSITIONS.SÓLARHÆÐ: "Sólarhæð",
-}
 
 
 def _answer_closest_solar_data(
