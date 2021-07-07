@@ -128,8 +128,8 @@ QSchIsWillWas →
     | 'verða:so'
 
 QSchOnScheduleOnStation →
-    "á" "dagskrá" QSchOn? QSchStation
-    | QSchOn? 'sjónvarpsstöð:kvk'/fall? QSchStation
+    QSchOnSchedule QSchOn? 'sjónvarpsstöð:kvk'/fall? QSchStation
+    | QSchOn 'sjónvarpsstöð:kvk'/fall? QSchStation
 
 QSchNext →
     'næstur:lo'
