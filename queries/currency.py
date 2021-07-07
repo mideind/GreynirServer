@@ -34,7 +34,7 @@ import random
 import logging
 
 from query import Query, QueryStateDict
-from queries import query_json_api, iceformat_float, is_plural
+from queries import query_json_api, iceformat_float, is_plural, gen_answer
 from settings import Settings
 from tree import Result
 
@@ -440,7 +440,7 @@ def QCurAmountConversion(node, params, result):
     result.op = "convert"
 
 
-_CURR_API_URL = "https://apis.is/currency/lb"
+_CURR_API_URL = "https://apis.is/currency/arion"
 _CURR_CACHE_TTL = 3600  # seconds
 
 
@@ -527,10 +527,14 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             voice_answer = voice_answer.replace("slot í", "slotí")
             voice_answer = voice_answer.replace(" dollars ", " Bandaríkjadals ")
             q.set_answer(response, answer, voice_answer)
-            q.set_key(target_currency)
-            # Store the amount in the query context
-            q.set_context({"amount": {"currency": target_currency, "number": val}})
-            q.set_qtype(_CURRENCY_QTYPE)
+        else:
+            # Ekki tókst að fletta upp gengi
+            q.set_answer(*gen_answer("Ekki tókst að fletta upp gengi gjaldmiðla"))
+
+        q.set_key(target_currency)
+        # Store the amount in the query context
+        q.set_context({"amount": {"currency": target_currency, "number": val}})
+        q.set_qtype(_CURRENCY_QTYPE)
 
         return
 
