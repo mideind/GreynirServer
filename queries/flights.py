@@ -118,6 +118,7 @@ QFlightsNextPlane →
 
 QFlightsWhenDep →
     QFlightsWhen "fer"
+    | QFlightsWhen "er"
     | QFlightsWhen "flýgur"
     | "hver" "er" "brottfarartími"
     | "hver" "er" "brottfarartíminn" "fyrir"
@@ -337,9 +338,22 @@ def _filter_flight_data(
         ):
             # Use estimated time instead of scheduled if available
             if flight.get("Estimated") is not None:
-                flight_time = datetime.fromisoformat(str(flight["Estimated"]))
+                # Change +00:00 UTC offset to +0000 for %z tag
+                flight_time_str = re.sub(
+                    r"([-+]\d{2}):(\d{2})(?:(\d{2}))?$",
+                    r"\1\2\3",
+                    str(flight["Estimated"]),
+                )
+                flight_time = datetime.strptime(flight_time_str, "%Y-%m-%dT%H:%M:%S%z")
+
             elif flight.get("Scheduled") is not None:
-                flight_time = datetime.fromisoformat(flight["Scheduled"])
+                flight_time_str = re.sub(
+                    r"([-+]\d{2}):(\d{2})(?:(\d{2}))?$",
+                    r"\1\2\3",
+                    str(flight["Scheduled"]),
+                )
+                flight_time = datetime.strptime(flight_time_str, "%Y-%m-%dT%H:%M:%S%z")
+
             else:
                 continue  # Failed, no time found
 
@@ -384,8 +398,12 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
     voice_lines: List[str] = []
 
     for flight in flights:
-        airport = icelandic_city_name(capitalize_placename(flight.get("DisplayName", "")))
-        api_airport = icelandic_city_name(capitalize_placename(flight.get("api_airport", "")))
+        airport = icelandic_city_name(
+            capitalize_placename(flight.get("DisplayName", ""))
+        )
+        api_airport = icelandic_city_name(
+            capitalize_placename(flight.get("api_airport", ""))
+        )
 
         flight_dt = flight.get("flight_time")
         if flight_dt is None or airport == "" or api_airport == "":
