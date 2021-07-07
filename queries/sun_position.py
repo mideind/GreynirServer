@@ -24,8 +24,10 @@
 """
 
 from typing import Dict, List, Iterable, Tuple, Optional, Union, cast
+
 from tree import Result, Node
 from query import Query, QueryStateDict
+
 from queries import (
     AnswerTuple,
     LatLonTuple,
@@ -35,11 +37,13 @@ from queries import (
 )
 
 import datetime
+import logging
 import random
 import re
 import requests
+
 from bs4 import BeautifulSoup  # type: ignore
-from cachetools import cached, TTLCache
+from cachetools import TTLCache
 from settings import changedlocale
 from geo import (
     distance,
@@ -47,7 +51,7 @@ from geo import (
     capitalize_placename,
     ICE_PLACENAME_BLACKLIST,
 )
-from iceaddr import placename_lookup  # type:ignore
+from iceaddr import placename_lookup  # type: ignore
 
 
 # Indicate that this module wants to handle parse trees for queries,
@@ -87,7 +91,7 @@ def help_text(lemma: str) -> str:
                 "Hvenær reis sólin í morgun",
                 "Hvenær sest sólin á morgun",
                 "Hvenær er sólsetur í kvöld",
-                "Hvenær rís sólin á morgun",
+                "Klukkan hvað rís sólin á morgun",
             )
         )
     )
@@ -125,6 +129,7 @@ QSunSólarhæð →
     'sólarhæð'
     | "hæð" 'sól'
     | "hæð" 'Sól'
+    | 'Hæð' 'Sól'
 
 QSunPositions →
     QSunMiðnætti
@@ -157,7 +162,7 @@ QSunHádegi →
 QSunSólarlag →
     "sest" "sólin"
     | "mun" "sólin" "setjast"
-    | 'sólsetur'
+    | QSunIsWillWas 'sólsetur'
     | QSunIsWillWas "sólarlag"
 
 QSunMyrkur →
@@ -174,7 +179,7 @@ QSunDate →
     # TODO: Arbitrary date
 
 QSunToday →
-    "í" "dag" | "í_kvöld" | "í_morgun" | "í" "nótt"
+    "í" "dag" | "í_kvöld" | "í_morgun" | "í" "nótt" | 'Í' 'Dag'
 
 QSunYesterday →
     "í_gær"
@@ -433,18 +438,45 @@ def _parse_almanak_hi_data(text: Iterable[str]) -> _SOLAR_DICT_TYPE:
     return data
 
 
-@cached(TTLCache(maxsize=1, ttl=86400))
-def _get_almanak_hi_data() -> _SOLAR_DICT_TYPE:
-    r = requests.get(_ALMANAK_HI_URL)
-    # Use beautiful soup to extract text from HTML response
-    # and split on newlines
-    text: List[str] = (
-        BeautifulSoup(r.text, "html.parser")
-        .get_text()
-        .replace("\r\n", "\n")
-        .split("\n")
-    )
-    return _parse_almanak_hi_data(text)
+_ALMANAK_HI_CACHE: TTLCache = TTLCache(maxsize=1, ttl=86400)
+
+
+def _get_almanak_hi_data() -> Optional[_SOLAR_DICT_TYPE]:
+    """Fetch solar calendar from Univeristy of Iceland."""
+    data: Optional[_SOLAR_DICT_TYPE] = _ALMANAK_HI_CACHE.get("data")
+
+    if data:
+        return data
+
+    try:
+        r = requests.get(_ALMANAK_HI_URL)
+    except Exception as e:
+        logging.warning(str(e))
+        return None
+
+    if r.status_code != 200:
+        logging.warning("Received status {0} from Almanak HÍ".format(r.status_code))
+        return None
+
+    try:
+        # Use beautiful soup to extract text from HTML response
+        # and split on newlines
+        text: List[str] = (
+            BeautifulSoup(r.text, "html.parser")
+            .get_text()
+            .replace("\r\n", "\n")
+            .split("\n")
+        )
+
+        data = _parse_almanak_hi_data(text)
+        # Only cache valid data
+        _ALMANAK_HI_CACHE["data"] = data
+
+        return data
+    except Exception as e:
+        logging.warning("Error parsing Almanak HÍ response: {0}".format(e))
+
+    return None
 
 
 def _find_closest_city(data: _SOLAR_DICT_TYPE, loc: LatLonTuple) -> Optional[str]:
@@ -462,7 +494,7 @@ def _find_closest_city(data: _SOLAR_DICT_TYPE, loc: LatLonTuple) -> Optional[str
     return closest_city
 
 
-def _answer_closest_solar_data(
+def _answer_city_solar_data(
     data: _SOLAR_DICT_TYPE, sun_pos: _SOLAR_POS_ENUM, qdate: datetime.date, city: str
 ) -> AnswerTuple:
     """
@@ -577,12 +609,15 @@ def _get_answer(q: Query, result: Result) -> AnswerTuple:
     loc: Optional[LatLonTuple] = None
 
     # Fetch solar position data from cache or Almanak HÍ
-    data: _SOLAR_DICT_TYPE = _get_almanak_hi_data()
+    data: Optional[_SOLAR_DICT_TYPE] = _get_almanak_hi_data()
+
+    if data is None:
+        return gen_answer("Ekki tókst að sækja upplýsingar um sólargang.")
 
     if city:
         # City specified
         if city in data:
-            return _answer_closest_solar_data(data, sun_pos, qdate, city)
+            return _answer_city_solar_data(data, sun_pos, qdate, city)
 
         if city not in ICE_PLACENAME_BLACKLIST:
             # Search Icelandic cities/places
@@ -593,7 +628,7 @@ def _get_answer(q: Query, result: Result) -> AnswerTuple:
 
                 city = _find_closest_city(data, loc)
                 if city in data:
-                    return _answer_closest_solar_data(data, sun_pos, qdate, city)
+                    return _answer_city_solar_data(data, sun_pos, qdate, city)
 
         return gen_answer("Ég þekki ekki til sólargangs þar.")
 
@@ -605,7 +640,7 @@ def _get_answer(q: Query, result: Result) -> AnswerTuple:
             city = _find_closest_city(data, loc)
 
             if city in data:
-                return _answer_closest_solar_data(data, sun_pos, qdate, city)
+                return _answer_city_solar_data(data, sun_pos, qdate, city)
 
         return gen_answer("Ég þekki ekki til sólargangs utan Íslands.")
 
@@ -616,7 +651,7 @@ def _get_answer(q: Query, result: Result) -> AnswerTuple:
         # Get first key in data
         city = list(data.keys())[0]
 
-    return _answer_closest_solar_data(data, sun_pos, qdate, city)
+    return _answer_city_solar_data(data, sun_pos, qdate, city)
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
