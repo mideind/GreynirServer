@@ -26,7 +26,13 @@
 from typing import Dict, List, Iterable, Tuple, Optional, Union, cast
 from tree import Result, Node
 from query import Query, QueryStateDict
-from queries import AnswerTuple, LatLonTuple, MONTH_ABBREV_ORDERED, gen_answer
+from queries import (
+    AnswerTuple,
+    LatLonTuple,
+    MONTH_ABBREV_ORDERED,
+    is_plural,
+    gen_answer,
+)
 
 import datetime
 import random
@@ -461,6 +467,7 @@ def _answer_closest_solar_data(
 ) -> AnswerTuple:
     """
     Create answer for a sun position in city/place on date qdate.
+    City must be a key in data.
     """
     # Get closest date to qdate in data
     closest_date: datetime.date = sorted(
@@ -471,20 +478,21 @@ def _answer_closest_solar_data(
     voice: str = ""
     answer: str = ""
 
+    today: datetime.date = datetime.date.today()
     when: str
     in_past: Optional[bool] = None
-    if qdate == datetime.date.today():
+    if qdate == today:
         when = "í dag"
-    elif qdate == datetime.date.today() + datetime.timedelta(days=1):
+    elif qdate == today + datetime.timedelta(days=1):
         when = "á morgun"
         in_past = False
-    elif qdate == datetime.date.today() - datetime.timedelta(days=1):
+    elif qdate == today - datetime.timedelta(days=1):
         when = "í gær"
         in_past = True
     else:
         with changedlocale(category="LC_TIME"):
             when = qdate.strftime("%-d. %B")
-            in_past = qdate < datetime.date.today()
+            in_past = qdate < today
 
     if sun_pos == _SOLAR_POSITIONS.SÓLARHÆÐ:
         if in_past is None:
@@ -493,7 +501,7 @@ def _answer_closest_solar_data(
             is_will_was = "var"
 
         degrees = str(data[city][closest_date][sun_pos]).replace(".", ",")
-        answer = f"Sólarhæð um hádegi {when} {is_will_was} um {degrees} gráður."
+        answer = f"Sólarhæð um hádegi {when} {is_will_was} um {degrees} {'gráður' if is_plural(degrees) else 'gráða'}."
         voice = answer
 
     else:
@@ -584,7 +592,7 @@ def _get_answer(q: Query, result: Result) -> AnswerTuple:
                 loc = (city_dict.get("lat_wgs84"), city_dict.get("long_wgs84"))
 
                 city = _find_closest_city(data, loc)
-                if city:
+                if city in data:
                     return _answer_closest_solar_data(data, sun_pos, qdate, city)
 
         return gen_answer("Ég þekki ekki til sólargangs þar.")
@@ -596,14 +604,19 @@ def _get_answer(q: Query, result: Result) -> AnswerTuple:
         if in_iceland(loc):
             city = _find_closest_city(data, loc)
 
-            if city:
+            if city in data:
                 return _answer_closest_solar_data(data, sun_pos, qdate, city)
 
         return gen_answer("Ég þekki ekki til sólargangs utan Íslands.")
 
     # No city specified, user location unavailable
     # Default to Reykjavík
-    return _answer_closest_solar_data(data, sun_pos, qdate, "Reykjavík")
+    city = "Reykjavík"
+    if city not in data:
+        # Get first key in data
+        city = list(data.keys())[0]
+
+    return _answer_closest_solar_data(data, sun_pos, qdate, city)
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
