@@ -117,7 +117,7 @@ _NEWS_CACHE_TTL = 300  # seconds, ttl = 5 mins
 def _get_news_data(max_items: int = 8) -> Optional[List[Dict]]:
     """ Fetch news headline data from RÚV, preprocess it. """
     res = query_json_api(_NEWS_API)
-    if not res or "nodes" not in res or not len(res["nodes"]):
+    if not isinstance(res, dict) or "nodes" not in res or not len(res["nodes"]):
         return None
 
     items = [

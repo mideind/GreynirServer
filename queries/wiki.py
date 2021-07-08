@@ -33,6 +33,7 @@
 import re
 import random
 from datetime import datetime, timedelta
+from typing import Any
 
 from queries import query_json_api, gen_answer, cap_first
 from query import Query, QueryStateDict, ContextDict
@@ -266,9 +267,9 @@ def _query_wiki_api(subject: str):
 def get_wiki_summary(subject_nom: str) -> str:
     """ Fetch summary of subject from Icelandic Wikipedia """
 
-    def has_entry(r) -> bool:
+    def has_entry(r: Any) -> bool:
         return (
-            r
+            isinstance(r, dict)
             and "query" in r
             and "pages" in r["query"]
             and "-1" not in r["query"]["pages"]
@@ -289,7 +290,7 @@ def get_wiki_summary(subject_nom: str) -> str:
     if not has_entry(res):
         return not_found
 
-    assert res is not None
+    assert isinstance(res, dict)
     pages = res["query"]["pages"]
     keys = pages.keys()
     if not len(keys) or "-1" in keys:

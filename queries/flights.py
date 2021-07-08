@@ -291,7 +291,7 @@ def _fetch_flight_data(
     res = query_json_api(url)
 
     # Verify result was successful
-    if not res or "Success" not in res or not res["Success"] or "Items" not in res:
+    if not isinstance(res, dict) or "Success" not in res or not res["Success"] or "Items" not in res:
         return []
 
     # Add result to cache

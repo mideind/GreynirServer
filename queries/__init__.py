@@ -25,6 +25,7 @@
 """
 
 from typing import (
+    Any,
     Mapping,
     Optional,
     FrozenSet,
@@ -353,7 +354,9 @@ def gen_answer(a: str) -> AnswerTuple:
     return dict(answer=a), a, a
 
 
-def query_json_api(url: str, headers: Optional[Dict] = None) -> Optional[Dict]:
+def query_json_api(
+    url: str, headers: Optional[Dict] = None
+) -> Union[None, List[Any], Dict[str, Any]]:
     """Request the URL, expecting a JSON response which is
     parsed and returned as a Python data structure."""
 
@@ -410,7 +413,7 @@ _MAPS_API_COORDS_URL = (
 )
 
 
-def query_geocode_api_coords(lat: float, lon: float) -> Optional[Dict]:
+def query_geocode_api_coords(lat: float, lon: float) -> Optional[Dict[str, Any]]:
     """Look up coordinates in Google's geocode API."""
     # Load API key
     key = read_api_key("GoogleServerKey")
@@ -420,9 +423,10 @@ def query_geocode_api_coords(lat: float, lon: float) -> Optional[Dict]:
         return None
 
     # Send API request
-    res = query_json_api(_MAPS_API_COORDS_URL.format(lat, lon, key))
-
-    return res
+    return cast(
+        Optional[Dict[str, Any]],
+        query_json_api(_MAPS_API_COORDS_URL.format(lat, lon, key)),
+    )
 
 
 _MAPS_API_ADDR_URL = (
@@ -431,7 +435,7 @@ _MAPS_API_ADDR_URL = (
 )
 
 
-def query_geocode_api_addr(addr: str) -> Optional[Dict]:
+def query_geocode_api_addr(addr: str) -> Optional[Dict[str, Any]]:
     """Look up address in Google's geocode API."""
     # Load API key
     key = read_api_key("GoogleServerKey")
@@ -442,9 +446,7 @@ def query_geocode_api_addr(addr: str) -> Optional[Dict]:
 
     # Send API request
     url = _MAPS_API_ADDR_URL.format(addr, key)
-    res = query_json_api(url)
-
-    return res
+    return cast(Optional[Dict[str, Any]], query_json_api(url))
 
 
 _MAPS_API_TRAVELTIME_URL = (
@@ -459,7 +461,7 @@ def query_traveltime_api(
     startloc: Union[str, LatLonTuple],
     endloc: Union[str, LatLonTuple],
     mode: str = "walking",
-) -> Optional[Dict]:
+) -> Optional[Dict[str, Any]]:
     """Look up travel time between two places, given a particular mode
     of transportation, i.e. one of the modes in _TRAVEL_MODES.
     The location arguments can be names, to be resolved by the API, or
@@ -482,9 +484,7 @@ def query_traveltime_api(
 
     # Send API request
     url = _MAPS_API_TRAVELTIME_URL.format(p1, p2, mode, key)
-    res = query_json_api(url)
-
-    return res
+    return cast(Optional[Dict[str, Any]], query_json_api(url))
 
 
 _PLACES_API_URL = (
@@ -531,9 +531,7 @@ def query_places_api(
 
     # Send API request
     url = _PLACES_API_URL.format(qstr)
-    res = query_json_api(url)
-
-    return res
+    return cast(Optional[Dict[str, Any]], query_json_api(url))
 
 
 _PLACEDETAILS_API_URL = "https://maps.googleapis.com/maps/api/place/details/json?{0}"
@@ -560,9 +558,7 @@ def query_place_details(place_id: str, fields: Optional[str] = None) -> Optional
 
     # Send API request
     url = _PLACEDETAILS_API_URL.format(qstr)
-    res = query_json_api(url)
-
-    return res
+    return cast(Optional[Dict[str, Any]], query_json_api(url))
 
 
 _TZW: Optional[tzwhere.tzwhere] = None

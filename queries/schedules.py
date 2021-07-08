@@ -213,7 +213,7 @@ def _query_tv_schedule_api() -> Optional[List]:
         # Not cached. Fetch data.
         _CACHED_TV_SCHEDULE = None
         sched = query_json_api(_RUV_TV_SCHEDULE_API_ENDPOINT)
-        if sched and "results" in sched and len(sched["results"]):
+        if isinstance(sched, dict) and "results" in sched and len(sched["results"]):
             _TV_LAST_FETCHED = datetime.utcnow()
             _CACHED_TV_SCHEDULE = sched["results"]
     return _CACHED_TV_SCHEDULE

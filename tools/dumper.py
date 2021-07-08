@@ -33,6 +33,9 @@ import json
 
 from contextlib import closing
 from datetime import datetime
+from typing import Any, cast
+
+from sqlalchemy.orm.query import Query
 
 from settings import Settings, ConfigError
 from db import Scraper_DB
@@ -160,14 +163,14 @@ class Dumper:
                     pass
 
 
-    def go(self, output, limit):
+    def go(self, output: str, limit: int) -> None:
         """ Process already parsed articles from the database """
 
         db = Scraper_DB()
         with closing(db.session) as session, open(output, "w") as file:
 
             """ Go through parsed articles and process them """
-            q = session.query(Article.tokens).filter(Article.tree != None)
+            q: Query[Article] = cast(Any, session).query(Article.tokens).filter(Article.tree != None)
             if limit > 0:
                 q = q[0:limit]
             else:

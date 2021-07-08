@@ -25,7 +25,7 @@
 # TODO: Handle "hver er *heima*síminn hjá X"
 # TODO: Smarter disambiguation interaction
 
-from typing import Dict, Mapping, Optional, Any, Callable
+from typing import Dict, List, Mapping, Optional, Any, Callable, cast
 
 import re
 import logging
@@ -145,9 +145,7 @@ def query_ja_api(q: str) -> Optional[Dict[str, Any]]:
 
     # Send API request, get back parsed JSON
     url = _JA_API_URL.format(urlencode(qdict))
-    res = query_json_api(url, headers=headers)
-
-    return res
+    return cast(Optional[Dict[str, Any]], query_json_api(url, headers=headers))
 
 
 def _best_number(item: Dict[str, Any]) -> Optional[str]:
@@ -173,13 +171,12 @@ def _best_number(item: Dict[str, Any]) -> Optional[str]:
     return phone_num.get("number") if phone_num else None
 
 
-def phonenums4name(name: str) -> Optional[Dict[str, Any]]:
+def phonenums4name(name: str) -> Optional[List[Dict[str, Any]]]:
     """ Receives name string in nominative case. Returns list of candidates found. """
     res = query_ja_api(name)
     # Verify that we have a sane response with at least 1 result
     if not res or not res.get("people") or not res["people"].get("items"):
         return None
-
     return res["people"]["items"]
 
 

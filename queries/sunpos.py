@@ -398,7 +398,7 @@ def _parse_almanak_hi_data(text: Iterable[str]) -> _SOLAR_DICT_TYPE:
         if city_re:
             # Matched line containing name of city
             city, lat, lon = city_re.groups()
-            city = capitalize_placename(city.lower())
+            city = capitalize_placename((city or "").lower())
 
             # Initialize dict for Icelandic city (place)
             data[city] = {"pos": _convert_dms_lat_lon_to_decimal(lat, lon)}
@@ -625,10 +625,13 @@ def _get_answer(q: Query, result: Result) -> AnswerTuple:
             possible_cities = placename_lookup(city)
             if possible_cities:
                 city_dict = possible_cities[0]
-                loc = (city_dict.get("lat_wgs84"), city_dict.get("long_wgs84"))
+                loc = (
+                    cast(float, city_dict.get("lat_wgs84")),
+                    cast(float, city_dict.get("long_wgs84")),
+                )
 
                 city = _find_closest_city(data, loc)
-                if city in data:
+                if city is not None and city in data:
                     return _answer_city_solar_data(data, sun_pos, qdate, city)
 
         return gen_answer("Ég þekki ekki til sólargangs þar.")
@@ -640,7 +643,7 @@ def _get_answer(q: Query, result: Result) -> AnswerTuple:
         if in_iceland(loc):
             city = _find_closest_city(data, loc)
 
-            if city in data:
+            if city is not None and city in data:
                 return _answer_city_solar_data(data, sun_pos, qdate, city)
 
         return gen_answer("Ég þekki ekki til sólargangs utan Íslands.")

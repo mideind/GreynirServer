@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# type: ignore
+
 SEPARATOR = "\n\n"
 
 accumulated = ""

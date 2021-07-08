@@ -133,7 +133,7 @@ def _clean4voice(s: str) -> str:
     return s
 
 
-def _answer_dictionary_query(q: Query, result: Result):
+def _answer_dictionary_query(q: Query, result: Result) -> None:
     """ Answer query of the form "hver er orðabókaskilgreiningin á X?" """
     # TODO: Note, here we are taking only the first word of a potential noun phrase
     # containing multiple words. This will have to do for now but can be improved.
@@ -151,7 +151,7 @@ def _answer_dictionary_query(q: Query, result: Result):
         return None
 
     # Nothing found
-    if not res or "results" not in res or not len(res["results"]):
+    if not isinstance(res, dict) or "results" not in res or not len(res["results"]):
         return not_found()
 
     # We're only interested in results where fletta string is equal to word being asked about
@@ -166,7 +166,7 @@ def _answer_dictionary_query(q: Query, result: Result):
     # Look it up by ID via the REST API
     url = _WORD_LOOKUP_URL.format(first["flid"])
     r = query_json_api(url)
-    if not r:
+    if not isinstance(r, dict):
         return not_found()
 
     items = r.get("items")

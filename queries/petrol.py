@@ -226,7 +226,7 @@ _PETROL_CACHE_TTL = 3600  # seconds, ttl 1 hour
 def _get_petrol_station_data() -> Optional[List]:
     """ Fetch list of petrol stations w. prices from apis.is (Gasvaktin) """
     pd = query_json_api(_PETROL_API)
-    if not pd or "results" not in pd:
+    if not isinstance(pd, dict) or "results" not in pd:
         return None
 
     # Fix company names
