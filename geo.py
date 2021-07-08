@@ -102,6 +102,7 @@ ICE_PLACENAME_BLACKLIST = frozenset(
         "Stöð",
         "Álaborg",
         "Árósar",
+        "Frakkland",
     )
 )
 
