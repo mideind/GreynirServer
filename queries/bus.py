@@ -763,10 +763,12 @@ def query_arrival_time(query: Query, session: Session, result: Result):
     # Handle the case where no bus number was specified (i.e. is 'Any')
     if result.bus_number == "Any" and stops:
         stop = stops[0]
-        routes = sorted(
-            (straeto.BusRoute.lookup(rid).number for rid in stop.visits.keys()),
-            key=lambda r: int(r),
-        )
+        numbers: List[str] = []
+        for rid in stop.visits.keys():
+            route = straeto.BusRoute.lookup(rid)
+            if route is not None:
+                numbers.append(route.number)
+        routes = sorted(numbers, key=lambda r: int(r))
         if len(routes) != 1:
             # More than one route possible: ask user to clarify
             route_seq = natlang_seq(list(map(str, routes)))
@@ -813,6 +815,7 @@ def query_arrival_time(query: Query, session: Session, result: Result):
             if arrives:
                 break
         arrivals = list(arrivals_dict.items())
+        assert stop is not None
         a = ["Á", to_accusative(stop.name), "í átt að"]
 
     if arrivals:
@@ -911,6 +914,7 @@ def query_arrival_time(query: Query, session: Session, result: Result):
 
     else:
         # The bus stop name is not recognized
+        assert stop_name is not None
         va = a = [stop_name.capitalize(), "er ekki biðstöð"]
 
     if stop is not None:
@@ -967,8 +971,10 @@ def query_which_route(query: Query, session: Session, result: Result):
             straeto.BusStop.sort_by_proximity(stops, query.location)
         stop = stops[0]
         for route_id in stop.visits.keys():
-            number = straeto.BusRoute.lookup(route_id).number
-            routes.add(number)
+            route = straeto.BusRoute.lookup(route_id)
+            if route is not None:
+                number = route.number
+                routes.add(number)
         va = [bus_noun, "númer"]
         a = va[:]
         nroutes = len(routes)
