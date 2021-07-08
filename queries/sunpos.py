@@ -23,6 +23,8 @@
 
 """
 
+# TODO: "Hvenær rís sólin [any date]"
+
 from typing import Dict, List, Iterable, Tuple, Optional, Union, cast
 
 from tree import Result, Node
@@ -51,7 +53,7 @@ from geo import (
     capitalize_placename,
     ICE_PLACENAME_BLACKLIST,
 )
-from iceaddr import placename_lookup  # type: ignore
+from iceaddr import placename_lookup
 
 
 # Indicate that this module wants to handle parse trees for queries,
@@ -68,10 +70,10 @@ TOPIC_LEMMAS = [
     "birta",
     "dagsetur",
     "dögun",
-    "hádegi",
+    # "hádegi",
     "miðnætti",
     "myrkur",
-    "rísa",
+    # "rísa",
     "setjast",
     "sólarhæð",
     "sólarlag",
@@ -176,7 +178,6 @@ QSunDate →
     QSunToday
     | QSunYesterday
     | QSunTomorrow
-    # TODO: Arbitrary date
 
 QSunToday →
     "í" "dag" | "í_kvöld" | "í_morgun" | "í" "nótt" | 'Í' 'Dag'

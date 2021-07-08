@@ -728,7 +728,7 @@ def test_stats(client: FlaskClient):
     qmcall(client, {"q": "hvaða fólk er mest í fréttum"}, "Stats")
 
 
-def test_sunposition(client: FlaskClient):
+def test_sunpos(client: FlaskClient):
     """ Solar position module """
     timings = r"(í morgun|í dag|í kvöld|í nótt)"
 
