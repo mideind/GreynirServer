@@ -49,7 +49,6 @@ from processor import Processor, TokenContainer  # noqa
 
 import processors.entities as entities  # noqa
 import processors.persons as persons  # noqa
-import processors.locations as locations  # noqa
 
 
 def test_processors():
