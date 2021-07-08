@@ -1130,11 +1130,12 @@ class TerminalNode(Node):
             else:
                 d["a"] = t
             if t[0] == '"' or t[0] == "'":
-                assert (
-                    False
-                ), "Wrong terminal: {0}, text is '{1}', token {2}, tokentype {3}".format(
-                    self.td.terminal, self.text, self.token, self.tokentype
-                )
+                pass
+                #assert (
+                #    False
+                #), "Wrong terminal: {0}, text is '{1}', token {2}, tokentype {3}".format(
+                #    self.td.terminal, self.text, self.token, self.tokentype
+                #)
             # Category
             d["c"] = self.cat
             if self.tokentype == "WORD":
@@ -1190,7 +1191,11 @@ class PersonNode(TerminalNode):
             # name is not inflectable
             return self.text
         gender = self.td.gender
-        case = self.td.case.upper()
+        #assert self.td.case is not None
+        if self.td.case is None:
+            case = "NF"
+        else:
+            case = self.td.case.upper()
         # Lookup the token in the BIN database
         # Look up each part of the name
         at_start = self._at_start

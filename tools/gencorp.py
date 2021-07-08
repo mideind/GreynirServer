@@ -35,6 +35,7 @@ import os
 import sys
 import gc
 from random import shuffle
+from collections import defaultdict
 
 # Hack to make this Python program executable from the tools subdirectory
 basepath, _ = os.path.split(os.path.realpath(__file__))
@@ -43,17 +44,19 @@ if basepath.endswith(_TOOLS):
     basepath = basepath[0 : -len(_TOOLS)]
     sys.path.append(basepath)
 
-from settings import Settings
-from article import Article
-from tree import Tree
+from settings import Settings, ConfigError  # noqa
+from article import Article  # noqa
+from tree import Tree  # noqa
 
 # To make this work, clone Miðeind's Annotald repo, enter the Greynir
 # virtualenv and run "python setup.py develop" from the Annotald repo root
 # https://github.com/mideind/Annotald
-from annotald.reynir_utils import simpleTree2NLTK
-from annotald.annotree import AnnoTree
+from annotald.reynir_utils import simpleTree2NLTK  # noqa
+from annotald.annotree import AnnoTree  # noqa
 
-from tokenizer import definitions
+from reynir import ICELANDIC_RATIO  # noqa
+
+from tokenizer import definitions, TOK, Tok  # noqa
 
 # Min num tokens in sentence
 MIN_SENT_LENGTH = 5
@@ -65,6 +68,10 @@ MAX_BATCH = 10000
 
 # Separator for sentence trees in output file
 SEPARATOR = "\n\n"
+
+CUMUDICT = defaultdict(list)  # code, [sents]
+
+BUCKDICT = defaultdict(int)  # terminal/non-terminal, [freq]
 
 # Skip sentences containing these tokens
 ENGLISH_WORDS = frozenset(
@@ -97,90 +104,100 @@ ENGLISH_WORDS = frozenset(
         "please",
     ]
 )
+BIGSET = set()
 
-def gen_simple_trees(criteria):
-    """ Generate simplified parse trees from articles matching the criteria """
-    bigset = set()
-    for a in Article.articles(criteria):
-        # Skip articles from certain websites
-        if (
-            not a.root_domain
-            or "raduneyti" in a.root_domain
-            or "lemurinn" in a.root_domain
-        ):
-            continue
 
-        # Load tree from article
-        try:
-            tree = Tree(url=a.url, authority=a.authority)
-            tree.load(a.tree)
-        except Exception as e:
-            print("Exception loading tree in {0}: {1}".format(a.url, e))
-            # Skip it
-            continue
+def sieve(ix, stree):
+    """ Judge which sentences make sense for each subcorpora """
+    text = stree.text
+    tokens = text.split()
+    code = "silver"  # Default value
+    # Make sure it has enough tokens
+    while True:
 
-        # Yield simple trees for each article sentence
-        for ix, stree in tree.simple_trees():
-            text = stree.text
-            tokens = text.split()
-            # Make sure it has enough tokens
-            if not len(tokens) >= MIN_SENT_LENGTH:
-                continue
+        code = leavescheck(stree)
+        if code == "copper":
+            print("\t1 - copper")
+            break
 
-            # Skip sentences containing something in our bag of English words
-            wordset = set([t.lower() for t in tokens])
-            if wordset & ENGLISH_WORDS:
-                continue
+        code = phrasecheck(stree)
+        if code == "copper":
+            print("\t2 - copper")
+            break
 
-            # Skip sentences that don't contain enough Icelandic words
-            if unicelandic(stree):
-                continue
+        if not len(tokens) >= MIN_SENT_LENGTH:
+            print("\t3 - copper")
+            code = "copper"
+            break
 
-            # Skip uncapitalized sentences
-            if text[0].islower():
-                continue
+        # Skip sentences that don't contain enough Icelandic words
+        if unicelandic(stree):
+            #    print("\t4 - copper")
+            code = "copper"
+            break
 
-            # Skip sentences containing less than 3 word, entity or person tokens combined
-            if len(list([x for x in stree.leaves() if x.kind in [TOK.WORD, TOK.ENTITY, TOK.PERSON]])) < 3:
-                continue
+        # Skip sentences containing something in our bag of English words
+        wordset = set([t.lower() for t in tokens])
+        if wordset & ENGLISH_WORDS:
+            print("\t5 - copper")
+            code = "copper"
+            break
 
-            # Skip sentences with only a single NP -- S0→NP
-            if stree.match("S0 > [NP $]"):
-                continue
+        # Skip uncapitalized sentences
+        if text[0].islower():
+            print("\t6 - copper")
+            code = "copper"
+            break
 
-            # Skip sentences not containing a VP 
-            if not stree.match("S0 >> VP"):
-                continue
+        # Skip sentences with only a single NP -- S0→NP
+        if stree.match("S0 > [NP $]"):
+            print("\t7 - copper")
+            code = "copper"
+            break
 
-            # Skip sentences not ending in sentence ending punctuation
-            if not text[-1] not in definitions.END_OF_SENTENCE:
-                continue
+        # Skip sentences not containing a VP
+        if not stree.match("S0 >> VP"):
+            print("\t8 - heading")
+            code = "heading"
+            break
 
-            # Skip sentence if we have seen an equivalent sentence before
-            hashnorm = hash(normalize(text))
-            if hashnorm in bigset:
-                continue
-            else:
-                bigset.add(hashnorm)
+        # Skip sentences not ending in sentence ending punctuation
+        if text[-1] not in definitions.END_OF_SENTENCE:
+            print("\t9 - heading")
+            code = "heading"
+            break
 
-            yield stree, tree.score(ix), tree.length(ix), a.uuid, a.url, ix
+        # Skip sentence if we have seen an equivalent sentence before
+        # hashnorm = hash(normalize(text))
+        # if hashnorm in BIGSET:
+        #    print("\t10 - copper")
+        #    code = "copper"
+        #    break
+        # else:
+        #    BIGSET.add(hashnorm)
+    print(code)
+    return code
+
 
 def unicelandic(sent):
     # Code mostly copied from annotate() in checker.py in GreynirCorrect
     words_in_bin = 0
     words_not_in_bin = 0
-    for ix, t in enumerate(sent.tokens):
-        if t.kind == TOK.WORD:
-            if t.val:
+    for t in sent.leaves:
+        if "k" in t:
+            if t["k"] == "WORD":
+                if "a" in t:
+                    words_in_bin += 1
+                else:
+                    words_not_in_bin += 1
+            elif t["k"] == "PERSON":
                 words_in_bin += 1
-            else:
-                words_not_in_bin += 1
-        elif t.kind == TOK.PERSON:
-            words_in_bin += 1
-        elif t.kind == TOK.ENTITY:
-            words_not_in_bin += t.txt.count(" ") + 1
+            elif t["k"] == "ENTITY":
+                words_not_in_bin += t["x"].count(" ") + 1
     num_words = words_in_bin + words_not_in_bin
+    print("{}:{}".format(words_in_bin, words_not_in_bin))
     if num_words > 2 and words_in_bin / num_words < ICELANDIC_RATIO:
+        print("Unicelandic: {}:{}".format(words_in_bin, words_not_in_bin))
         return False
     return True
 
@@ -195,14 +212,44 @@ def normalize(text):
     text = text.replace(" ", "")
 
 
-def main(num_sent, parse_date_gt, outfile, count):
+def leavescheck(stree):
+    # Check if old info
+    # Check if at least 3 word, entity or person tokens
+    # Add to BUCKDICT
+    p = True
+    cnt = 0
+    for term in stree.leaves:
+        if "c" in term:
+            print(BUCKDICT[term["c"]])
+            if BUCKDICT[term["c"]] < 1000:
+                p = False
+            BUCKDICT[term["c"]] += 1
+        if "k" in term and term["k"] in ["WORD", "PERSON", "ENTITY"]:
+            cnt += 1
+    if p or cnt < 3:
+        return "copper"
+    return "silver"
+
+
+def phrasecheck(stree):
+    p = True
+    for term in stree.nonterminals:
+        if "i" in term:
+            print(BUCKDICT[term["i"]])
+            if BUCKDICT["i"] < 100:
+                p = False
+            BUCKDICT["i"] += 1
+    return p
+
+
+def main(num_sent, parse_date_gt, outfile, count, rand):
 
     try:
         # Read configuration file
         Settings.read(os.path.join(basepath, "config", "GreynirSimple.conf"))
     except ConfigError as e:
         print("Configuration error: {0}".format(e))
-        quit()
+        sys.exit(os.EX_CONFIG)
 
     # Generate parse trees from visible roots only,
     # in descending order by time of parse
@@ -211,60 +258,92 @@ def main(num_sent, parse_date_gt, outfile, count):
         criteria["parse_date_gt"] = parse_date_gt
 
     # Generator for articles
-    gen = gen_simple_trees(criteria)
+    def gen():
+        yield from Article.articles(criteria)
 
-    accumulated = []
+    silvertotal = 0
     total = 0
-    skipped = 0
+    arts = 0
+    for art in gen():
+        # Skip articles from certain websites
+        aid = art.uuid
+        aurl = art.url
+        if arts % 100 == 0:
+            print("{} articles done".format(arts))
+        arts += 1
+        if (
+            not art.root_domain
+            or "lemurinn" in art.root_domain
+        ):
+            # print("\t1")
+            continue
+        trees = None
+        try:
+            tree = Tree(url=art.url, authority=art.authority)
+            tree.load(art.tree)
 
-    fh = open(outfile, "w", encoding="utf-8")
+        except Exception:
+            continue
 
-    # Consume sentence trees from generator
-    for i, (tree, score, ln, aid, aurl, snum) in enumerate(gen):
+        try:
+            trees = tree.simple_trees()
+        except Exception:
+            continue
 
-        # Create Annotald tree
-        id_str = str(aid) + "." + str(snum)
-        meta_node = AnnoTree(
-            "META",
-            [
-                AnnoTree("ID-CORPUS", [id_str]),
-                AnnoTree("ID-LOCAL", [outfile]),
-                AnnoTree("URL", [aurl]),
-                AnnoTree("COMMENT", [""]),
-            ],
-        )
-        nltk_tree = simpleTree2NLTK(tree)
-        meta_tree = AnnoTree("", [meta_node, nltk_tree])
+        for ix, stree in trees:
+            score = tree.score(ix)
+            ln = tree.length(ix)
+            if rand:
+                code = "random"
+                print(aid)
+                if aid.endswith("9"):
+                    print("Fann grein!")
+                    continue
+            else:
+                code = sieve(ix, stree)
+            # Create Annotald tree
+            id_str = str(aid) + "." + str(ix)
+            meta_node = AnnoTree(
+                "META",
+                [
+                    AnnoTree("ID-CORPUS", [id_str]),
+                    AnnoTree("ID-LOCAL", [outfile]),
+                    AnnoTree("URL", [aurl]),
+                    AnnoTree("COMMENT", [""]),
+                ],
+            )
+            nltk_tree = simpleTree2NLTK(stree)
+            meta_tree = AnnoTree("", [meta_node, nltk_tree])
 
-        # print(meta_tree)
-        # print("")
+            # Accumulate tree strings until we have enough
+            CUMUDICT[code].append(str(meta_tree) + SEPARATOR)
+            accnum = len(CUMUDICT[code])
+            final_batch = (accnum + total) >= num_sent
+            if len(CUMUDICT["silver"]) >= num_sent:
+                final_batch = True
 
-        # Accumulate tree strings until we have enough
-        accumulated.append(str(meta_tree) + SEPARATOR)
-        accnum = len(accumulated)
-        final_batch = (accnum + total) >= num_sent
+            # We have a batch
+            if accnum == MAX_BATCH or final_batch:
+                fh = open(code + ".txt", "a", encoding="utf-8")
+                # Shuffle and write to file
+                accumulated = CUMUDICT[code]
+                shuffle(accumulated)
+                for tree_str in accumulated:
+                    fh.write(tree_str)
 
-        # We have a batch
-        if accnum == MAX_BATCH or final_batch:
-            # Shuffle and write to file
-            shuffle(accumulated)
-            for tree_str in accumulated:
-                fh.write(tree_str)
+                total += accnum
+                CUMUDICT[code] = []
+                fh.close()
+                gc.collect()  # Trigger manual garbage collection
 
-            total += accnum
-            accumulated = []
-            gc.collect()  # Trigger manual garbage collection
+                # print("Dumping sentence trees: %d\r" % total, end="")
 
-            print("Dumping sentence trees: %d\r" % total, end="")
+            if final_batch:
+                break
 
-        if final_batch:
-            break
-
-    fh.close()
-
-    # print("Skipped {0}".format(skipped))
-    fsize = os.path.getsize(outfile) / pow(1024.0, 2)
-    print("\nDumped {0} trees to file '{1}' ({2:.1f} MB)".format(total, outfile, fsize))
+            # print("Skipped {0}".format(skipped))
+            # fsize = os.path.getsize(outfile) / pow(1024.0, 2)
+            # print("\nDumped {0} trees to file '{1}' ({2:.1f} MB)".format(total, outfile, fsize))
 
 
 if __name__ == "__main__":
@@ -286,9 +365,7 @@ if __name__ == "__main__":
         help="Cutoff date for parsed field, format YYYY-MM-DD.",
         default="1970-01-01",
     )
-    parser.add_argument(
-        "--outfile", dest="OUTFILE", type=str, help="Output filename", required=True
-    )
+    parser.add_argument("--outfile", dest="OUTFILE", type=str, help="Output filename")
     parser.add_argument(
         "--count",
         dest="COUNT",
@@ -296,6 +373,10 @@ if __name__ == "__main__":
         help="Count the number of available sentences meeting criteria, print and exit",
     )
 
+    parser.add_argument(
+        "-r", dest="RANDOM", action="store_true", help="Only collect random"
+    )
+
     args = parser.parse_args()
 
-    main(args.NUM_SENT, args.PARSE_DATE_GT, args.OUTFILE, args.COUNT)
+    main(args.NUM_SENT, args.PARSE_DATE_GT, args.OUTFILE, args.COUNT, args.RANDOM)

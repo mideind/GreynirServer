@@ -456,7 +456,7 @@ function getCurrencyValue(currCode, completionHandler) {
    if (currencyCache === undefined) {
       currencyCache = { "ISK": 1 };
       $.ajax({
-         url: 'https://apis.is/currency/lb',
+         url: 'https://apis.is/currency/arion',
          type: 'GET',
          dataType: 'json',
          success: function(response) {
