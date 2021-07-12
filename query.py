@@ -69,7 +69,7 @@ from reynir.fastparser import (
 from reynir.binparser import BIN_Grammar, BIN_Token, GrammarError
 from reynir.reducer import Reducer
 from reynir.bindb import GreynirBin, BIN_Tuple
-from islenska.bindb import EntryFilterFunc
+from islenska.bindb import BinFilterFunc
 
 from tree import Tree, TreeStateDict, Node
 
@@ -107,7 +107,7 @@ class QueryStateDict(TreeStateDict):
 
 class CastFunc(Protocol):
     def __call__(
-        self, w: str, *, filter_func: Optional[EntryFilterFunc] = None
+        self, w: str, *, filter_func: Optional[BinFilterFunc] = None
     ) -> str:
         ...
 
@@ -1050,7 +1050,7 @@ def _to_case(
     np: str,
     lookup_func: LookupFunc,
     cast_func: CastFunc,
-    filter_func: Optional[EntryFilterFunc],
+    filter_func: Optional[BinFilterFunc],
 ) -> str:
     """ Return the noun phrase after casting it from nominative to accusative case """
     # Split the phrase into words and punctuation, respectively
@@ -1087,7 +1087,7 @@ def _to_case(
 
 
 def to_accusative(
-    np: str, *, filter_func: Optional[EntryFilterFunc] = None
+    np: str, *, filter_func: Optional[BinFilterFunc] = None
 ) -> str:
     """ Return the noun phrase after casting it from nominative to accusative case """
     with GreynirBin.get_db() as db:
@@ -1100,7 +1100,7 @@ def to_accusative(
 
 
 def to_dative(
-    np: str, *, filter_func: Optional[EntryFilterFunc] = None
+    np: str, *, filter_func: Optional[BinFilterFunc] = None
 ) -> str:
     """ Return the noun phrase after casting it from nominative to dative case """
     with GreynirBin.get_db() as db:
@@ -1110,7 +1110,7 @@ def to_dative(
 
 
 def to_genitive(
-    np: str, *, filter_func: Optional[EntryFilterFunc] = None
+    np: str, *, filter_func: Optional[BinFilterFunc] = None
 ) -> str:
     """ Return the noun phrase after casting it from nominative to genitive case """
     with GreynirBin.get_db() as db:

@@ -37,12 +37,14 @@
 # TODO: Hvar er nálægasta strætóstoppistöð?
 # TODO: Hvað er ég lengi í næsta strætóskýli?
 
-from typing import Optional, List, Tuple, Union, cast
+from typing import Iterable, Optional, List, Sequence, Set, Tuple, Union, cast
 
 from threading import Lock
 from functools import lru_cache
 from datetime import datetime
 import random
+
+from islenska.basics import BinEntry
 
 import query
 from query import AnswerTuple, Query, QueryStateDict, ResponseType, Session
@@ -592,7 +594,7 @@ def QBusNumberWord(node, params, result):
 # End of grammar nonterminal handlers
 
 
-def _filter_func(mm):
+def _filter_func(mm: Iterable[BinEntry]) -> List[BinEntry]:
     """Filter word meanings when casting bus stop names
     to cases other than nominative"""
     # Handle secondary and ternary forms (ÞFFT2, ÞGFET3...)
@@ -600,12 +602,12 @@ def _filter_func(mm):
     # For place names, ÞGFET2 seems often to be a better choice
     # than ÞGFET, since it has a trailing -i
     # (for instance 'Skjólvangi' instead of 'Skjólvang')
-    mm2 = [m for m in mm if "ÞGF" in m.beyging and "2" in m.beyging]
+    mm2 = [m for m in mm if "ÞGF" in m.mark and "2" in m.mark]
     if not mm2:
         # Did not find the preferred ÞGF2, so we go for the
         # normal form and cut away the secondary and ternary ones
-        mm2 = [m for m in mm if "2" not in m.beyging and "3" not in m.beyging]
-    return mm2 or mm
+        mm2 = [m for m in mm if "2" not in m.mark and "3" not in m.mark]
+    return mm2 or list(mm)
 
 
 @lru_cache(maxsize=None)
@@ -762,28 +764,28 @@ def query_arrival_time(query: Query, session: Session, result: Result):
 
     # Handle the case where no bus number was specified (i.e. is 'Any')
     if result.bus_number == "Any" and stops:
-        stop = stops[0]
-        numbers: List[str] = []
-        for rid in stop.visits.keys():
-            route = straeto.BusRoute.lookup(rid)
-            if route is not None:
-                numbers.append(route.number)
-        routes = sorted(numbers, key=lambda r: int(r))
+        # Accumulate all bus routes that stop on the requested stop(s)
+        stops_canonical: Set[str] = set()
+        numbers: Set[str] = set()
+        for stop in stops:
+            for rid in stop.visits.keys():
+                route = straeto.BusRoute.lookup(rid)
+                if route is not None:
+                    numbers.add(route.number)
+                    stops_canonical.add(stop.name)
+        routes = sorted(list(numbers), key=lambda r: int(r))
         if len(routes) != 1:
             # More than one route possible: ask user to clarify
             route_seq = natlang_seq(list(map(str, routes)))
+            # "Einarsnesi eða Einarsnesi/Bauganesi"
+            stops_list = " eða ".join([to_dative(s) for s in stops_canonical])
             answer = (
-                " ".join(["Leiðir", route_seq, "stoppa á", to_dative(stop.name)])
+                " ".join(["Leiðir", route_seq, "stoppa á", stops_list])
                 + ". Spurðu um eina þeirra."
             )
             voice_answer = (
                 " ".join(
-                    [
-                        "Leiðir",
-                        numbers_to_neutral(route_seq),
-                        "stoppa á",
-                        to_dative(stop.name),
-                    ]
+                    ["Leiðir", numbers_to_neutral(route_seq), "stoppa á", stops_list]
                 )
                 + ". Spurðu um eina þeirra."
             )
