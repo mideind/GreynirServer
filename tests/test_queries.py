@@ -758,12 +758,12 @@ def test_sunpos(client: FlaskClient):
     )
     json = qmcall(client, {"q": "hver er hæð sólarinnar í dag?"}, "SunPosition")
     assert re.match(
-        r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráður\.$",
+        r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráð(a|ur)\.$",
         json["answer"],
     )
     # json = qmcall(client, {"q": "hver er hæð sólar í dag?"}, "SunPosition")
     # assert re.match(
-    #     r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráður\.$",
+    #     r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráð(a|ur)\.$",
     #     json["answer"],
     # )
     json = qmcall(client, {"q": "hvenær var miðnætti í nótt?"}, "SunPosition")
