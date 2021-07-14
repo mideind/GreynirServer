@@ -451,7 +451,9 @@ def _curr_observations(query: Query, result):
     # Talk to weather API
     try:
         if loc:
-            res, _ = observation_for_closest(loc[0], loc[1])
+            res = observation_for_closest(loc[0], loc[1])
+            if isinstance(res, tuple):
+                res = res[0]
         else:
             res = observation_for_station(_RVK_STATION_ID)  # Default to Reykjavík
             result.subject = "Í Reykjavík"
