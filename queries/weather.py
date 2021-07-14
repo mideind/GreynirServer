@@ -452,6 +452,8 @@ def _curr_observations(query: Query, result):
     try:
         if loc:
             res = observation_for_closest(loc[0], loc[1])
+            if isinstance(res, tuple):
+                res = res[0]
         else:
             res = observation_for_station(_RVK_STATION_ID)  # Default to Reykjavík
             result.subject = "Í Reykjavík"
@@ -481,9 +483,9 @@ def get_currweather_answer(query: Query, result) -> AnswerTuple:
         return gen_answer(_API_ERRMSG)
 
     try:
-        temp = int(round(float(res["T"])))  # Round to nearest whole number
+        temp = int(round(float(res["T"].replace(",", "."))))  # Round to nearest whole number
         desc = res["W"].lower()
-        windsp = float(res["F"])
+        windsp = float(res["F"].replace(",", "."))
     except Exception as e:
         logging.warning("Exception parsing weather API result: {0}".format(e))
         return gen_answer(_API_ERRMSG)
@@ -503,12 +505,10 @@ def get_currweather_answer(query: Query, result) -> AnswerTuple:
     )
 
     # Format voice string
-    voice = "{0} er {1} stiga {2}{3} og {4}{5}".format(
-        locdesc.capitalize(), abs(temp), temp_type, mdesc, wind_desc, voice_ms
-    )
+    voice = f"{locdesc.capitalize()} er {abs(temp)} stiga {temp_type}{mdesc} og {wind_desc}{voice_ms}"
 
     # Text answer
-    answer = "{0} °C{1} og {2} ({3} m/s)".format(temp, mdesc, wind_desc, wind_ms_str)
+    answer = f"{temp} °C{mdesc} og {wind_desc} ({wind_ms_str} m/s)"
 
     response = dict(answer=answer)
 
