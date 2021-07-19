@@ -146,7 +146,7 @@ for example, extracts person names and titles from parse trees for storage in a 
 Query (question answering) modules can be plugged into Greynir by adding Python code to
 the [`queries/`](queries/) directory. Reference implementations for several query types
 can be found in that directory, for instance [`queries/builtin.py`](queries/builtin.py)
-which supports questions about persons and titles. Query modules examples can be viewed
+which supports questions about persons and titles. Query module examples can be viewed
 in [`queries/examples`](queries/examples).
 
 ## File details
@@ -218,7 +218,8 @@ export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 python processor.py
 ```
 
-This will run all processors in `processors` directory on unprocessed articles.
+This will run all processors in the `processors` directory on any unprocessed articles
+in the database.
 
 ### Interactive shell
 
