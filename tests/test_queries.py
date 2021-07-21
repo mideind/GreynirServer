@@ -692,22 +692,42 @@ def test_repeat(client: FlaskClient):
 
 def test_schedules(client: FlaskClient):
     """ Schedules module """
+
+    # RÚV tests
     json = qmcall(
-        client, {"q": "hvað er í sjónvarpinu núna", "voice": True}, "Schedule"
+        client, {"q": "hvað er í sjónvarpinu", "voice": True}, "Schedule"
     )
-    assert json["key"] == "TelevisionSchedule"
-    json = qmcall(client, {"q": "Hvaða þáttur er eiginlega á rúv núna"}, "Schedule")
-    assert json["key"] == "TelevisionSchedule"
+    assert json["key"] == "ruv-RÚV"
+    json = qmcall(client, {"q": "hvaða þáttur er eiginlega á rúv núna"}, "Schedule")
+    assert json["key"] == "ruv-RÚV"
+    json = qmcall(client, {"q": "hvaða þátt er verið að sýna í sjónvarpinu"}, "Schedule")
+    assert json["key"] == "ruv-RÚV"
+
+    json = qmcall(client, {"q": "dagskrá rúv klukkan 19:00"}, "Schedule")
+    assert json["key"] == "ruv-RÚV"
     json = qmcall(client, {"q": "hvað er í sjónvarpinu í kvöld?"}, "Schedule")
-    assert json["key"] == "TelevisionEvening"
-    json = qmcall(client, {"q": "hver er sjónvarpsdagskráin í kvöld?"}, "Schedule")
-    assert json["key"] == "TelevisionEvening"
-    # json = qmcall(client, {"q": "hvað er í útvarpinu núna?"}, "Schedule")
-    # assert json["qkey"] == "RadioSchedule"
-    # json = qmcall(client, {"q": "hvað er eiginlega í gangi á rás eitt?"}, "Schedule")
-    # assert json["qkey"] == "RadioSchedule"
-    # json = qmcall(client, {"q": "hvað er á dagskrá á rás tvö?"}, "Schedule")
-    # assert json["qkey"] == "RadioSchedule"
+    assert json["key"] == "ruv-RÚV"
+    # json = qmcall(client, {"q": "hver er sjónvarpsdagskráin í kvöld?"}, "Schedule")
+    # assert json["key"] == "ruv-RÚV"
+
+    # Stöð 2 tests
+    json = qmcall(client, {"q": "hvað er næsti þáttur á stöð 2"}, "Schedule")
+    assert json["key"] == "stod2-Stöð 2"
+    json = qmcall(client, {"q": "Hvaða efni er verið að spila á Stöð 2"}, "Schedule")
+    assert json["key"] == "stod2-Stöð 2"
+
+    # Radio tests
+    json = qmcall(client, {"q": "hvað er í útvarpinu?"}, "Schedule")
+    assert json["key"] == "ras1-RÚV"
+    json = qmcall(client, {"q": "hvað er eiginlega í gangi á rás eitt?"}, "Schedule")
+    assert json["key"] == "ras1-RÚV"
+    json = qmcall(client, {"q": "hvað er á dagskrá á rás tvö?"}, "Schedule")
+    assert json["key"] == "ras2-RÚV"
+
+    json = qmcall(client, {"q": "hvað var í útvarpinu klukkan sjö í morgun"}, "Schedule")
+    assert json["key"] == "ras1-RÚV"
+    json = qmcall(client, {"q": "hvað verður á rás 1 klukkan sjö í kvöld"}, "Schedule")
+    assert json["key"] == "ras1-RÚV"
 
 
 def test_special(client: FlaskClient):

@@ -26,6 +26,7 @@
 # TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str
 # TODO: "Hvað er á dagskrá á rúv annað kvöld?"
 # TODO: "Hvaða þættir eru á rúv?"
+# TODO: Channels provided by Síminn (sometimes foreign channels)
 
 from typing import List, Dict, Optional, Tuple, Any, cast
 from typing_extensions import TypedDict
@@ -70,6 +71,7 @@ def help_text(lemma: str) -> str:
                 "Hvað er í útvarpinu",
                 "Dagskrá RÚV klukkan 19:00",
                 "Hvaða þátt er verið að sýna í sjónvarpinu",
+                "Hvað er næsti þáttur á Stöð 2",
                 "Hvað var í útvarpinu klukkan sjö í morgun",
                 "Hvaða efni er verið að spila á Stöð 2",
                 "Hvað verður á Rás 1 klukkan sjö í kvöld",
@@ -104,6 +106,7 @@ QScheduleQuery →
     | 'dagskrá:kvk' QSchWhen? QSchOn? QSchStation QSchWhen?
     | QSchNextShow
 
+# Queries asking about next program in schedule:
 # Hvað er eiginlega verið að sýna næst á RÚV?
 # Hvað er næst á dagskrá í sjónvarpinu?
 QSchNextShow →
@@ -401,7 +404,6 @@ def QSchNow(node: Node, params: ParamList, result: Result) -> None:
 _STATION_ENDPOINTS = {
     "stod2": "https://api.stod2.is/dagskra/api/{0}/{1}",
     "ruv": "https://muninn.ruv.is/files/json/{0}/{1}/",
-    # TODO Endpoints for siminn
     # "siminn": "https://api.tv.siminn.is/oreo-api/v2/channels/{0}/events?start={1}&end={2}",
 }
 
@@ -428,7 +430,9 @@ def _query_schedule_api(channel: str, station: str, date: datetime.date) -> Sche
         return _SCHED_CACHE[(channel, date)]
 
     if station == "siminn":
-        return []  # TODO
+        # TODO: Siminn endpoint needs its own formatting
+        # since url includes start and end time along with channel ID
+        return []
     else:
         url: str = _STATION_ENDPOINTS[station].format(channel, date.isoformat())
     response: Optional[Dict] = query_json_api(url)
