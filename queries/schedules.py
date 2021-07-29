@@ -23,13 +23,13 @@
 
 """
 
-# TODO: Fix formatting issues w. trailing spaces, periods at the end of answer str
-# TODO: "Hvað er á dagskrá á rúv annað kvöld?"
 # TODO: "Hvaða þættir eru á rúv?"
 # TODO: Channels provided by Síminn (sometimes foreign channels)
 
 from typing import List, Dict, Optional, Tuple, Any, cast
 from typing_extensions import TypedDict
+from query import Query, QueryStateDict
+from tree import Node, TerminalNode, ParamList, Result
 
 import logging
 import random
@@ -37,9 +37,8 @@ import datetime
 import cachetools
 
 from settings import changedlocale
-from query import AnswerTuple, Query, QueryStateDict
-from queries import query_json_api, gen_answer
-from tree import Node, ParamList, Result
+from queries import query_json_api
+from tokenizer import split_into_sentences
 
 
 _SCHEDULES_QTYPE = "Schedule"
@@ -245,11 +244,12 @@ QSchDay →
     | QSchThisEvening
     | QSchTomorrowMorning
     | QSchTomorrowEvening
-    | QSchAM? QSchYesterday
+    | QSchYesterday
+    | QSchYesterdayEvening
 
 QSchThisMorning →
     'í_morgun:ao'
-    | QSchAM QSchToday?
+    | QSchToday?
 
 QSchThisEvening →
     "seinna"? 'í_kvöld'
@@ -259,7 +259,7 @@ QSchToday →
     "í" "dag"
 
 QSchTomorrowMorning →
-    QSchAM? 'á_morgun'
+    'á_morgun'
 
 QSchTomorrowEvening →
     "annað" "kvöld"
@@ -267,8 +267,8 @@ QSchTomorrowEvening →
 QSchYesterday →
     'í_gær'
 
-QSchAM →
-    "fyrir" "hádegi"
+QSchYesterdayEvening →
+    'í_gærkvöld' | 'í_gærkvöldi'
 
 $score(+55) QSchedule
 
@@ -293,66 +293,66 @@ def QSchSérnafn(node: Node, params: ParamList, result: Result) -> None:
 
 
 def QSchRUV(node: Node, params: ParamList, result: Result) -> None:
-    result["channel"] = "ruv"
-    result["channel_pretty"] = "RÚV"
+    result["api_channel"] = "ruv"
+    result["channel"] = "RÚV"
     result["channel_type"] = "tv"
-    result["station"] = "ruv"
+    result["station"] = "RÚV"
 
 
 def QSchRUV2(node: Node, params: ParamList, result: Result) -> None:
-    result["channel"] = "ruv2"
-    result["channel_pretty"] = "RÚV 2"
+    result["api_channel"] = "ruv2"
+    result["channel"] = "RÚV 2"
     result["channel_type"] = "tv"
-    result["station"] = "ruv"
+    result["station"] = "RÚV"
 
 
 def QSchStod2(node: Node, params: ParamList, result: Result) -> None:
-    result["channel"] = "stod2"
-    result["channel_pretty"] = "Stöð 2"
+    result["api_channel"] = "stod2"
+    result["channel"] = "Stöð 2"
     result["channel_type"] = "tv"
-    result["station"] = "stod2"
+    result["station"] = "Stöð 2"
 
 
 def QSchStod2Sport(node: Node, params: ParamList, result: Result) -> None:
-    result["channel"] = "sport"
-    result["channel_pretty"] = "Stöð 2 Sport"
+    result["api_channel"] = "sport"
+    result["channel"] = "Stöð 2 Sport"
     result["channel_type"] = "tv"
-    result["station"] = "stod2"
+    result["station"] = "Stöð 2"
 
 
 def QSchStod2Sport2(node: Node, params: ParamList, result: Result) -> None:
-    result["channel"] = "sport2"
-    result["channel_pretty"] = "Stöð 2 Sport 2"
+    result["api_channel"] = "sport2"
+    result["channel"] = "Stöð 2 Sport 2"
     result["channel_type"] = "tv"
-    result["station"] = "stod2"
+    result["station"] = "Stöð 2"
 
 
 def QSchStod2Bio(node: Node, params: ParamList, result: Result) -> None:
-    result["channel"] = "bio"
-    result["channel_pretty"] = "Stöð 2 Bíó"
+    result["api_channel"] = "bio"
+    result["channel"] = "Stöð 2 Bíó"
     result["channel_type"] = "tv"
-    result["station"] = "stod2"
+    result["station"] = "Stöð 2"
 
 
 def QSchStod3(node: Node, params: ParamList, result: Result) -> None:
-    result["channel"] = "stod3"
-    result["channel_pretty"] = "Stöð 3"
+    result["api_channel"] = "stod3"
+    result["channel"] = "Stöð 3"
     result["channel_type"] = "tv"
-    result["station"] = "stod2"
+    result["station"] = "Stöð 2"
 
 
 def QSchRas1(node: Node, params: ParamList, result: Result) -> None:
-    result["channel"] = "ras1"
-    result["channel_pretty"] = "Rás 1"
+    result["api_channel"] = "ras1"
+    result["channel"] = "Rás 1"
     result["channel_type"] = "radio"
-    result["station"] = "ruv"
+    result["station"] = "RÚV"
 
 
 def QSchRas2(node: Node, params: ParamList, result: Result) -> None:
-    result["channel"] = "ras2"
-    result["channel_pretty"] = "Rás 2"
+    result["api_channel"] = "ras2"
+    result["channel"] = "Rás 2"
     result["channel_type"] = "radio"
-    result["station"] = "ruv"
+    result["station"] = "RÚV"
 
 
 def QSchNext(node: Node, params: ParamList, result: Result) -> None:
@@ -360,8 +360,8 @@ def QSchNext(node: Node, params: ParamList, result: Result) -> None:
 
 
 def QSchTime(node: Node, params: ParamList, result: Result) -> None:
-    # Time nodes
-    tnode = node.first_child(lambda n: n.has_t_base("tími"))
+    # Extract time from time terminal nodes
+    tnode = cast(TerminalNode, node.first_child(lambda n: n.has_t_base("tími")))
     if tnode:
         aux_str = tnode.aux.strip("[]")
         hour, minute, _ = (int(i) for i in aux_str.split(", "))
@@ -370,29 +370,35 @@ def QSchTime(node: Node, params: ParamList, result: Result) -> None:
 
 
 def QSchThisMorning(node: Node, params: ParamList, result: Result) -> None:
-    result["morning"] = True
     result["qdate"] = datetime.date.today()
 
 
 def QSchThisEvening(node: Node, params: ParamList, result: Result) -> None:
-    result["qdate"] = datetime.date.today()
+    now = datetime.datetime.now()
+    evening = datetime.time(20, 0)
+    result["qdate"] = now.date()
+    result["qtime"] = evening if now.time() < evening else now
+    result["PM"] = True
 
 
 def QSchTomorrowMorning(node: Node, params: ParamList, result: Result) -> None:
-    result["morning"] = True
     result["qdate"] = datetime.date.today() + datetime.timedelta(days=1)
 
 
 def QSchTomorrowEvening(node: Node, params: ParamList, result: Result) -> None:
     result["qdate"] = datetime.date.today() + datetime.timedelta(days=1)
-
-
-def QSchAM(node: Node, params: ParamList, result: Result) -> None:
-    result["morning"] = True
+    result["qtime"] = datetime.time(20, 0)
+    result["PM"] = True
 
 
 def QSchYesterday(node: Node, params: ParamList, result: Result) -> None:
     result["qdate"] = datetime.date.today() - datetime.timedelta(days=1)
+
+
+def QSchYesterdayEvening(node: Node, params: ParamList, result: Result) -> None:
+    result["qdate"] = datetime.date.today() - datetime.timedelta(days=1)
+    result["qtime"] = datetime.time(20, 0)
+    result["PM"] = True
 
 
 def QSchNow(node: Node, params: ParamList, result: Result) -> None:
@@ -402,9 +408,9 @@ def QSchNow(node: Node, params: ParamList, result: Result) -> None:
 
 
 _STATION_ENDPOINTS = {
-    "stod2": "https://api.stod2.is/dagskra/api/{0}/{1}",
-    "ruv": "https://muninn.ruv.is/files/json/{0}/{1}/",
-    # "siminn": "https://api.tv.siminn.is/oreo-api/v2/channels/{0}/events?start={1}&end={2}",
+    "Stöð 2": "https://api.stod2.is/dagskra/api/{0}/{1}",
+    "RÚV": "https://muninn.ruv.is/files/json/{0}/{1}/",
+    # "Síminn": "https://api.tv.siminn.is/oreo-api/v2/channels/{0}/events?start={1}&end={2}",
 }
 
 # Schedule cache (keep for one day)
@@ -414,11 +420,11 @@ SchedType = List[Dict[str, Any]]
 
 
 def _extract_ruv_schedule(response: Dict) -> SchedType:
-    """Safely extract schedule from RUV API response."""
+    """Safely extract schedule from RÚV API response."""
     if "error" in response.get("schedule", ""):
         return []
     try:
-        return response["schedule"]["services"][0]["events"]
+        return cast(SchedType, response["schedule"]["services"][0]["events"])
     except (KeyError, IndexError):
         return []
 
@@ -427,22 +433,22 @@ def _query_schedule_api(channel: str, station: str, date: datetime.date) -> Sche
     """Fetch and return channel schedule from API or cache for specified date."""
 
     if (channel, date) in _SCHED_CACHE:
-        return _SCHED_CACHE[(channel, date)]
+        return cast(SchedType, _SCHED_CACHE[(channel, date)])
 
-    if station == "siminn":
-        # TODO: Siminn endpoint needs its own formatting
+    if station == "Síminn":
+        # TODO: Síminn endpoint needs its own formatting
         # since url includes start and end time along with channel ID
         return []
     else:
         url: str = _STATION_ENDPOINTS[station].format(channel, date.isoformat())
-    response: Optional[Dict] = query_json_api(url)
+    response = cast(Optional[List], query_json_api(url))
 
     if response is None:
         return []
 
     sched: SchedType
-    if station == "ruv":
-        sched = _extract_ruv_schedule(response)
+    if station == "RÚV":
+        sched = _extract_ruv_schedule(cast(Dict, response))
     else:
         # Other stations respond with list of dicts
         sched = cast(SchedType, response)
@@ -465,15 +471,15 @@ def _get_program_start_end(
     duration_dt: datetime.datetime
     duration: datetime.timedelta
 
-    if station == "ruv":
+    if station == "RÚV":
         start = datetime.datetime.strptime(program["start-time"], "%Y-%m-%d %H:%M:%S")
         duration_dt = datetime.datetime.strptime(program["duration"], "%H:%M:%S")
 
-    elif station == "stod2":
+    elif station == "Stöð 2":
         start = datetime.datetime.strptime(program["upphaf"], "%Y-%m-%dT%H:%M:%SZ")
         duration_dt = datetime.datetime.strptime(program["slotlengd"], "%H:%M")
 
-    elif station == "siminn":
+    elif station == "Síminn":
         start = datetime.datetime.strptime(program["start"], "%Y-%m-%dT%H:%M:%S.%fZ")
         end = datetime.datetime.strptime(program["end"], "%Y-%m-%dT%H:%M:%S.%fZ")
         return (start, end)
@@ -560,7 +566,7 @@ def _get_current_and_next_program(
     curr_playing: Optional[Dict] = None
     next_playing: Optional[Dict] = None
 
-    if station == "ruv":
+    if station == "RÚV":
         # Special handling for RÚV, as they have events and sub-events
         # e.g. "Morgunfréttir" is shown during "Morgunvaktin" on Rás 1
         progs, sub_progs = _split_ruv_schedule(sched)
@@ -592,7 +598,7 @@ def _get_current_and_next_program(
         if get_next:
 
             # Deal with RÚV sub-events
-            if station == "ruv" and len(sub_progs):
+            if station == "RÚV" and len(sub_progs):
                 if len(progs) > 1:
                     # Get start time of next sub-event and next event
                     next_sub_start = datetime.datetime.strptime(
@@ -621,7 +627,7 @@ def _get_current_and_next_program(
     return curr_playing, next_playing
 
 
-_FRETTIR_FROZENSET = frozenset(("fréttir", "fréttayfirlit"))
+_NO_DESCRIPTION_SET = frozenset(("fréttir", "fréttayfirlit", "veðurfréttir"))
 
 
 def _extract_title_and_desc(prog: Dict, station: str) -> Tuple[str, str]:
@@ -631,79 +637,111 @@ def _extract_title_and_desc(prog: Dict, station: str) -> Tuple[str, str]:
     title: str = ""
     desc: str = ""
 
-    if station == "ruv":
-        title = prog.get("title", "")
+    if station == "RÚV":
+        title = prog.get("title", "") or ""
 
-        if title.lower() not in _FRETTIR_FROZENSET:
-            desc = prog.get("description", "")
+        if title.lower() not in _NO_DESCRIPTION_SET:
+            desc = prog.get("description", "") or ""
 
             # Backup description
-            if desc is None or desc == "":
-                if (
-                    "details" in prog
-                    and prog["details"].get("series-description", "") != ""
-                ):
-                    desc = prog["details"]["series-description"]
+            if desc == "" and prog.get("details"):
+                desc = prog["details"].get("series-description", "") or ""
 
-    elif station == "stod2":
+    elif station == "Stöð 2":
 
-        title = prog.get("isltitill", "")
+        title = prog.get("isltitill", "") or ""
         # Backup title
-        if title is None or title == "":
-            title = prog.get("titill", "")
+        if title == "":
+            title = prog.get("titill", "") or ""
 
-        desc = prog.get("lysing", "")
+        desc = prog.get("lysing", "") or ""
 
-    elif station == "siminn":
-        title = prog.get("title", "")
+    elif station == "Síminn":
+        title = prog.get("title", "") or ""
 
         # TODO: Some channels have descriptions in English,
         # might cause problems for the voice
-        desc = prog.get("description", "")
+        desc = prog.get("description", "") or ""
 
         # Backup description
-        if desc is None or desc == "":
-            if "episode" in prog and prog["episode"].get("description", "") != "":
-                desc = prog["episode"]["description"]
-
-    if title is None:
-        title = ""
-
-    if desc is None:
-        desc = ""
+        if desc == "" and prog.get("episode"):
+            desc = prog["episode"].get("description", "") or ""
 
     return (title, desc)
 
 
 def _clean_desc(d: str) -> str:
     """Return first sentence in multi-sentence string."""
-    # TODO: Improve this
-    return d.replace("Dr.", "Doktor").replace("?", ".").split(".")[0]
+    return list(split_into_sentences(d, original=True))[0]
 
 
-def _generate_answer(
-    curr_prog: Optional[Dict],
+def _answer_next_program(
     next_prog: Optional[Dict],
     station: str,
-    channel_pretty: str,
+    channel: str,
+    is_radio: bool,
+) -> AnswerDict:
+    """
+    Create query answer dict, containing:
+        response dict
+        answer: text for displaying
+        voice: text for voice line
+        station: tv/radio station
+        channel: tv/radio channel
+        expire_time: when the answer becomes outdated.
+    """
+    answer: str = ""
+    prog_endtime: datetime.datetime = datetime.datetime.now()
+
+    if next_prog:
+        next_title, next_desc = _extract_title_and_desc(next_prog, station)
+
+        answer += (
+            f"Næst á dagskrá á {channel} verður "
+            f"{'spilaður' if is_radio else 'sýndur'} dagskrárliðurinn {next_title}."
+        )
+
+        if next_desc != "":
+            answer += " " + _clean_desc(next_desc)
+
+        # Answer is valid for station until the next program starts
+        prog_endtime, _ = _get_program_start_end(next_prog, station)
+    else:
+        answer = f"Það er ekkert á dagskrá á {channel} eftir núverandi dagskrárlið."
+
+    voice = answer
+    return {
+        "response": {"answer": answer, "voice": voice},
+        "answer": answer,
+        "voice": voice,
+        "station": station,
+        "channel": channel,
+        "expire_time": prog_endtime,
+    }
+
+
+def _answer_program(
+    curr_prog: Optional[Dict],
+    station: str,
+    channel: str,
     qdatetime: datetime.datetime,
     is_radio: bool,
 ) -> AnswerDict:
     """
     Create query answer dict, containing:
         response dict
-        answer, text for displaying
-        voice, text for voice line
-        station, tv/radio station
-        channel, tv/radio channel
-        expire_time (datetime), when the answer becomes outdated.
+        answer: text for displaying
+        voice: text for voice line
+        station: tv/radio station
+        channel: tv/radio channel
+        expire_time: when the answer becomes outdated.
     """
 
     answer: str = ""
     voice: str
     is_now: bool
-    is_future: bool = False
-    showtime: str
+    is_future: bool = qdatetime > datetime.datetime.now()
+    showtime: str = ""
     showing: str
     prog_endtime: Optional[datetime.datetime] = None
 
@@ -711,130 +749,105 @@ def _generate_answer(
     is_now = abs(datetime.datetime.now() - qdatetime) <= datetime.timedelta(minutes=1)
 
     if is_now:
-        showing = "er verið að spila" if is_radio else "er verið að sýna"
+        showing = f"er verið að {'spila' if is_radio else 'sýna'} dagskrárliðinn"
     else:
-        if qdatetime > datetime.datetime.now():
-            is_future = True
-            # Wording for schedule in the future
-            showing = f"verður {'spilaður' if is_radio else 'sýndur'} dagskrárliðurinn"
-        else:
-            is_future = False
-            # Wording for schedule in the past
-            showing = f"var {'spilaður' if is_radio else 'sýndur'} dagskrárliðurinn"
+        showing = (
+            f"{'verður' if is_future else 'var'} "
+            f"{'spilaður' if is_radio else 'sýndur'} dagskrárliðurinn"
+        )
 
-        day_diff = datetime.date.today() - qdatetime.date()
-        if day_diff == datetime.timedelta(0):
-            showtime = f"klukkan {qdatetime.strftime('%H:%M')}"
+        showtime = f" klukkan {qdatetime.strftime('%H:%M')}"
 
+        day_diff = qdatetime.date() - datetime.date.today()
+
+        if day_diff == datetime.timedelta(days=1):
+            showtime += " á morgun"
         elif day_diff == datetime.timedelta(days=-1):
-            showtime = f"klukkan {qdatetime.strftime('%H:%M')} á morgun"
-
-        elif day_diff == datetime.timedelta(days=1):
-            showtime = f"klukkan {qdatetime.strftime('%H:%M')} í gær"
-
-        else:
-            showtime = f"klukkan {qdatetime.strftime('%H:%M %-d. %B')}"
+            showtime += " í gær"
+        elif day_diff != datetime.timedelta(days=0):
+            showtime += qdatetime.strftime(" %-d. %B")
 
     if curr_prog:
         curr_title, curr_desc = _extract_title_and_desc(curr_prog, station)
 
-        if is_now:
-            answer += f"Á {channel_pretty} {showing} {curr_title}. "
-        else:
-            answer += f"Á {channel_pretty} {showtime} {showing} {curr_title}. "
+        answer = f"Á {channel}{showtime} {showing} {curr_title}."
 
         if curr_desc != "":
-            answer += f"{_clean_desc(curr_desc)}. "
+            answer += " " + _clean_desc(curr_desc)
 
+        # Answer is valid for station until the program starts
         _, prog_endtime = _get_program_start_end(curr_prog, station)
     else:
         if is_now:
-            answer += f"Ekkert er á dagskrá á {channel_pretty} í augnablikinu. "
+            answer = f"Ekkert er á dagskrá á {channel} í augnablikinu."
         else:
-            if is_future:
-                answer += f"Ekkert verður á dagskrá á {channel_pretty} {showtime}. "
-            else:
-                answer += f"Ekkert var á dagskrá á {channel_pretty} {showtime}. "
+            answer += f"Ekkert {'verður' if is_future else 'var'} á dagskrá á {channel} {showtime}."
 
-    if next_prog:
-        next_title, next_desc = _extract_title_and_desc(next_prog, station)
-
-        answer += f"Næst á dagskrá {channel_pretty} {showing} {next_title}."
-
-        if next_desc != "":
-            answer += f" {_clean_desc(next_desc)}."
-
-        if prog_endtime is None:
-            prog_endtime, _ = _get_program_start_end(next_prog, station)
-
-    answer = answer.rstrip()
-
-    # TODO: use num utils, years, ordinals, so on
     voice = answer
-
     return {
         "response": {"answer": answer, "voice": voice},
         "answer": answer,
         "voice": voice,
         "station": station,
-        "channel": channel_pretty,
-        "expire_time": prog_endtime,
+        "channel": channel,
+        "expire_time": cast(datetime.datetime, prog_endtime),
     }
 
 
 def _get_schedule_answer(result: Result) -> AnswerDict:
     """Generate answer to query about current radio program."""
 
+    api_channel: str = result.get("api_channel")
     channel: str = result.get("channel")
-    channel_pretty: str = result.get("channel_pretty")
     station: str = result.get("station")
-    is_radio: bool = result.get("type") == "radio"
+    is_radio: bool = result.get("channel_type") == "radio"
 
     now = datetime.datetime.now()
 
-    qdate: datetime.date = result.get("qdate")
-    qtime: datetime.time = result.get("qtime")
+    qdate: datetime.date = result.get("qdate") or now.date()
+    qtime: datetime.time = result.get("qtime") or now.time()
 
-    if qtime is None:
-        qtime = now.time()
-    if qdate is None:
-        qdate = now.date()
+    if qtime.hour < 12 and result.get("PM"):
+        qtime = qtime.replace(hour=qtime.hour + 12)
 
     qdatetime: datetime.datetime = datetime.datetime.combine(qdate, qtime)
 
     get_next: bool = result.get("get_next", False)
 
     # Fetch schedule data from API or cache.
-    sched: SchedType = _query_schedule_api(channel, station, qdatetime.date())
+    sched: SchedType = _query_schedule_api(api_channel, station, qdatetime.date())
 
     if len(sched) == 0:
+        date: str = ""
+        # Add date if not asking about today
         if qdatetime.date() != now.date():
             with changedlocale(category="LC_TIME"):
-                # TODO: Declension of channel name
-                error = f"Ekki tókst að sækja dagskrána {qdatetime.strftime('%-d. %B')} á {channel_pretty}."
-        else:
-            error = f"Ekki tókst að sækja dagskrána á {channel_pretty}."
+                date = qdatetime.strftime(" %-d. %B")
 
-        error_ans: AnswerTuple = gen_answer(error)
-        voice = error_ans[2]  # TODO: Fix ordinal
+        error = f"Ekki tókst að sækja dagskrána {date} á {channel}."
+
         return dict(
-            response=cast(Dict[str, Any], error_ans[0]),
-            answer=error_ans[1],
-            voice=cast(str, voice),
+            response={"answer": error, "voice": error},
+            answer=error,
+            voice=error,
             station=station,
-            channel=channel_pretty,
+            channel=channel,
             expire_time=qdatetime,
         )
 
+    curr_prog: Optional[dict]
+    next_prog: Optional[dict]
     curr_prog, next_prog = _get_current_and_next_program(
         sched, station, qdatetime, get_next
     )
 
     with changedlocale(category="LC_TIME"):
-        answ_dict: AnswerDict = _generate_answer(
-            curr_prog, next_prog, station, channel_pretty, qdatetime, is_radio
-        )
-    return answ_dict
+        if get_next:
+            # Only asking for next program
+            return _answer_next_program(next_prog, station, channel, is_radio)
+        else:
+            # Asking for current program or program at specific date/time
+            return _answer_program(curr_prog, station, channel, qdatetime, is_radio)
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
@@ -843,8 +856,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     if (
         "qtype" in result
+        and "api_channel" in result
         and "channel" in result
-        and "channel_pretty" in result
         and "station" in result
     ):
         # Successfully matched a query type
@@ -853,7 +866,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         try:
             r: AnswerDict = _get_schedule_answer(result)
 
-            q.set_key(f"{r['station']}-{r['channel']}")
+            q.set_key(r["station"] + " - " + r["channel"])
             q.set_source(r["station"])
             q.set_beautified_query(q._beautified_query.replace("rúv", "RÚV"))
 
