@@ -124,7 +124,6 @@ QSunIsWillWas →
 
 
 QSunSunheight →
-    # TODO: "hver er hæð sólar í dag" isn't interpreted correctly
     "hver" QSunIsWillWas QSunSólarhæð
 
 QSunSólarhæð →
@@ -564,15 +563,15 @@ def _answer_city_solar_data(
 
             if sun_pos == _SOLAR_POSITIONS.SÓLRIS:
                 if in_past:
-                    voice = answer = f"Sólin reis klukkan {time_str} {when}."
+                    voice = answer = f"Sólin reis um klukkan {time_str} {when}."
                 else:
-                    voice = answer = f"Sólin rís klukkan {time_str} {when}."
+                    voice = answer = f"Sólin rís um klukkan {time_str} {when}."
 
             elif sun_pos == _SOLAR_POSITIONS.SÓLARLAG:
                 if in_past:
-                    voice = answer = f"Sólin settist klukkan {time_str} {when}."
+                    voice = answer = f"Sólin settist um klukkan {time_str} {when}."
                 else:
-                    voice = answer = f"Sólin sest klukkan {time_str} {when}."
+                    voice = answer = f"Sólin sest um klukkan {time_str} {when}."
 
             else:
                 voice = answer = format_ans.format(
