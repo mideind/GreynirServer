@@ -139,9 +139,10 @@ _LARGE_NUMBERS: Tuple[Tuple[int, str, str], ...] = (
 )
 
 
-def number_to_neutral(n: int = 0, *, eitt_hundrad: bool = False) -> str:
+def number_to_neutral(n: int = 0, *, one_hundred: bool = False) -> str:
     """
     Write integer out as neutral gender text in Icelandic.
+    Argument one_hundred specifies whether to add "eitt" before "hundrað".
     Example:
         number_to_neutral(1337) -> "eitt þúsund þrjú hundruð þrjátíu og sjö"
     """
@@ -169,7 +170,7 @@ def number_to_neutral(n: int = 0, *, eitt_hundrad: bool = False) -> str:
 
         large_count, n = divmod(n, large_num)
 
-        text.extend(number_to_neutral(large_count, eitt_hundrad=True).split())
+        text.extend(number_to_neutral(large_count, one_hundred=True).split())
 
         last = text[-1]
         if gender == "kk":
@@ -190,7 +191,7 @@ def number_to_neutral(n: int = 0, *, eitt_hundrad: bool = False) -> str:
         thousands, n = divmod(n, THOUSAND)
 
         if thousands > 1:
-            text.extend(number_to_neutral(thousands, eitt_hundrad=True).split())
+            text.extend(number_to_neutral(thousands, one_hundred=True).split())
         elif thousands == 1:
             text.append("eitt")
         # Singular/Plural form of "þúsund" is the same
@@ -206,10 +207,10 @@ def number_to_neutral(n: int = 0, *, eitt_hundrad: bool = False) -> str:
             # instead of "tuttugu og eitt hundrað"
             text.append("hundruð")
         elif hundreds == 1:
-            if text or eitt_hundrad:
+            if text or one_hundred:
                 # Add "eitt" before "hundrað"
                 # if not first number in text
-                # or if eitt_hundrad is True
+                # or if one_hundred is True
                 text.append("eitt")
             text.append("hundrað")
 
@@ -247,17 +248,16 @@ def number_to_neutral(n: int = 0, *, eitt_hundrad: bool = False) -> str:
     return number_string
 
 
-def number_to_text(
-    n: int, *, case="nf", gender="hk", eitt_hundrad: bool = False
-) -> str:
+def number_to_text(n: int, *, case="nf", gender="hk", one_hundred: bool = False) -> str:
     """
-    Convert an integer into written Icelandic text in given case and gender.
+    Convert an integer into written Icelandic text in given case/gender.
+    Argument one_hundred specifies whether to add "eitt" before "hundrað".
     Example:
         302 -> "þrjú hundruð og tvær" (gender="kvk")
         501 -> "fimm hundruð og einn" (gender="kk")
     """
     n = int(n)
-    nums = number_to_neutral(n, eitt_hundrad=eitt_hundrad).split()
+    nums = number_to_neutral(n, one_hundred=one_hundred).split()
 
     last = nums[-1]
     if last in _NUM_NEUT_TO_DECL:
@@ -272,18 +272,19 @@ def numbers_to_text(
     regex=r"(?<=\b)\d+(?=\b)",
     case="nf",
     gender="hk",
-    eitt_hundrad: bool = False
+    one_hundred: bool = False
 ) -> str:
     """
     Converts numbers in string to Icelandic text.
     (Can also be supplied with custom regex to match certain numbers)
-    Extra argument specifies gender of number (default 'hk').
+    Extra arguments specifies case/gender of number
+    and whether to add "eitt" before "hundrað".
     """
 
     def convert(m):
         match = m.group(0)
         n = int(match)
-        return number_to_text(n, case=case, gender=gender, eitt_hundrad=eitt_hundrad)
+        return number_to_text(n, case=case, gender=gender, one_hundred=one_hundred)
 
     return re.sub(regex, convert, s)
 
@@ -294,10 +295,11 @@ def float_to_text(
     case="nf",
     gender="hk",
     comma_null: bool = True,
-    eitt_hundrad: bool = False
+    one_hundred: bool = False
 ) -> str:
     """
-    Convert a float into written Icelandic text in given gender (hk, kk, kvk).
+    Convert a float into written Icelandic text in given case/gender.
+    Argument one_hundred specifies whether to add "eitt" before "hundrað".
     Example:
         -0.02 -> "mínus núll komma núll tveir" (gender="kk")
     """
@@ -313,7 +315,7 @@ def float_to_text(
 
     # Number before decimal point
     out_str += number_to_text(
-        int(first), case=case, gender=gender, eitt_hundrad=eitt_hundrad
+        int(first), case=case, gender=gender, one_hundred=one_hundred
     )
 
     if not comma_null and second == "0":
@@ -356,19 +358,24 @@ def floats_to_text(
     regex=r"(?<=\b)\d+,\d+(?=\b)",
     case="nf",
     gender="hk",
-    comma_null: bool = True
+    comma_null: bool = True,
+    one_hundred: bool = False
 ) -> str:
     """
     Converts floats of the form '12,14', '0,42' (with Icelandic comma)
     (or matching custom regex if provided)
     in string to Icelandic text.
-    Extra argument specifies gender and case of float.
+    Extra arguments specifies case/gender of float,
+    whether to read after decimal point if fractional part is zero
+    and whether to add "eitt" before "hundrað".
     """
 
     def convert(m):
         match = m.group(0)
         n = float(match.replace(",", "."))
-        return float_to_text(n, case=case, gender=gender, comma_null=comma_null)
+        return float_to_text(
+            n, case=case, gender=gender, comma_null=comma_null, one_hundred=one_hundred
+        )
 
     return re.sub(regex, convert, s)
 

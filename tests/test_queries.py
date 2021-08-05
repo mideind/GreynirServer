@@ -1233,7 +1233,7 @@ def test_numbers():
     assert number_to_text(101, gender="kk") == "hundrað og einn"
     assert number_to_text(-102, gender="kvk") == "mínus hundrað og tvær"
     assert (
-        number_to_text(-102, gender="kvk", eitt_hundrad=True)
+        number_to_text(-102, gender="kvk", one_hundred=True)
         == "mínus eitt hundrað og tvær"
     )
     assert number_to_text(5, gender="kk") == "fimm"
