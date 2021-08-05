@@ -46,7 +46,7 @@ from queries import (
     query_geocode_api_addr,
     query_traveltime_api,
 )
-from queries.num import numbers_to_neutral
+from queries.num import numbers_to_text
 from geo import distance, capitalize_placename
 
 
@@ -275,8 +275,9 @@ def dist_answer_for_loc(matches, query: Query):
     response = dict(answer=answer, distance=km_dist)
 
     loc_nf = capitalize_placename(loc_nf)
-    dist = distance_desc(km_dist, case="þf")
-    voice = "{0} er {1} í burtu".format(numbers_to_neutral(loc_nf), dist)
+    dist = distance_desc(km_dist, case="þf", num_to_str=True)
+    # Turn numbers to neutral in loc_nf for voice
+    voice = f"{numbers_to_text(loc_nf)} er {dist} í burtu"
 
     query.set_key(loc_nf)
 
@@ -327,12 +328,13 @@ def traveltime_answer_for_loc(matches, query: Query):
     # dur_desc = elm["duration"]["text"]  # API duration description
     dur_sec = int(elm["duration"]["value"])
     dur_desc = time_period_desc(dur_sec, case="þf")
+    dur_desc_voice = time_period_desc(dur_sec, case="þf", num_to_str=True)
     dist_desc = elm["distance"]["text"]
 
     # Generate answer
-    answer = "{0} ({1}).".format(dur_desc, dist_desc)
+    answer = f"{dur_desc} ({dist_desc})."
     response = dict(answer=answer, duration=dur_sec)
-    voice = "Að {0} tekur um það bil {1}".format(action_desc, dur_desc)
+    voice = f"Að {action_desc} tekur um það bil {dur_desc_voice}"
 
     # Key is the remote loc in nominative case
     query.set_key(capitalize_placename(loc_nf))

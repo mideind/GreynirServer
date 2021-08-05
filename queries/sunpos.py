@@ -54,7 +54,7 @@ from geo import (
     ICE_PLACENAME_BLACKLIST,
 )
 from iceaddr import placename_lookup
-
+from queries.num import numbers_to_ordinal, floats_to_text
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -534,7 +534,6 @@ def _answer_city_solar_data(
 
         degrees = str(data[city][closest_date][sun_pos]).replace(".", ",")
         answer = f"Sólarhæð um hádegi {when} {is_will_was} um {degrees} {'gráður' if is_plural(degrees) else 'gráða'}."
-        voice = answer
 
     else:
         time: Optional[datetime.time] = cast(
@@ -563,32 +562,35 @@ def _answer_city_solar_data(
 
             if sun_pos == _SOLAR_POSITIONS.SÓLRIS:
                 if in_past:
-                    voice = answer = f"Sólin reis um klukkan {time_str} {when}."
+                    answer = f"Sólin reis um klukkan {time_str} {when}."
                 else:
-                    voice = answer = f"Sólin rís um klukkan {time_str} {when}."
+                    answer = f"Sólin rís um klukkan {time_str} {when}."
 
             elif sun_pos == _SOLAR_POSITIONS.SÓLARLAG:
                 if in_past:
-                    voice = answer = f"Sólin settist um klukkan {time_str} {when}."
+                    answer = f"Sólin settist um klukkan {time_str} {when}."
                 else:
-                    voice = answer = f"Sólin sest um klukkan {time_str} {when}."
+                    answer = f"Sólin sest um klukkan {time_str} {when}."
 
             else:
-                voice = answer = format_ans.format(
+                answer = format_ans.format(
                     _SOLAR_ENUM_TO_WORD[sun_pos], time_str, when
                 )
 
         else:
             format_ans = "Það varð ekki {0} {1}."
 
-            voice = answer = format_ans.format(
+            answer = format_ans.format(
                 _SOLAR_ENUM_TO_WORD[sun_pos].lower(), when
             )
 
     if not in_past:
-        voice = answer = answer.replace("varð", "verður").replace("var", "verður")
+        answer = answer.replace("varð", "verður").replace("var", "verður")
 
-    # TODO: voicify string
+    # Convert date ordinals to text for voice
+    voice = numbers_to_ordinal(answer, case="þf", gender="kk")
+    # Convert degrees to text for voice when asking about height of sun
+    voice = floats_to_text(voice, gender="kvk")
     return {"answer": answer, "voice": voice}, answer, voice
 
 

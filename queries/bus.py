@@ -50,7 +50,7 @@ import query
 from query import AnswerTuple, Query, QueryStateDict, ResponseType, Session
 from tree import Result
 from queries import natlang_seq, cap_first, gen_answer
-from queries.num import numbers_to_neutral
+from queries.num import floats_to_text, numbers_to_text
 from settings import Settings
 from reynir import correct_spaces
 from geo import in_iceland
@@ -635,12 +635,16 @@ def voice_distance(d):
             return "einn kílómetri"
         if km1dec % 10 == 1:
             # 3,1 kílómetri
-            return "{0},{1} kílómetri".format(km1dec // 10, km1dec % 10)
+            return floats_to_text(
+                f"{km1dec // 10},{km1dec % 10} kílómetri", gender="kk", comma_null=False
+            )
         # 5,6 kílómetrar
-        return "{0},{1} kílómetrar".format(km1dec // 10, km1dec % 10)
+        return floats_to_text(
+            f"{km1dec // 10},{km1dec % 10} kílómetrar", gender="kk", comma_null=False
+        )
     # Distance less than 1 km: Round to 10 meters
     m = int(d * 1000 + 5) // 10
-    return "{0}0 metrar".format(m)
+    return numbers_to_text(f"{m}0 metrar", gender="kk")
 
 
 def hms_fmt(hms: Tuple[int, int, int]) -> str:
@@ -784,9 +788,7 @@ def query_arrival_time(query: Query, session: Session, result: Result):
                 + ". Spurðu um eina þeirra."
             )
             voice_answer = (
-                " ".join(
-                    ["Leiðir", numbers_to_neutral(route_seq), "stoppa á", stops_list]
-                )
+                " ".join(["Leiðir", numbers_to_text(route_seq), "stoppa á", stops_list])
                 + ". Spurðu um eina þeirra."
             )
             response = dict(answer=answer)
@@ -800,7 +802,7 @@ def query_arrival_time(query: Query, session: Session, result: Result):
 
     # Prepare results
     bus_name = cap_first(bus_name)
-    va = [bus_name]
+    va = [numbers_to_text(bus_name)]
     a = []
     arrivals = []
     arrivals_dict = {}
@@ -989,7 +991,7 @@ def query_which_route(query: Query, session: Session, result: Result):
             # We convert inflectable numbers to their text equivalents
             # since the speech engine can't be relied upon to get the
             # inflection of numbers right
-            va.append(numbers_to_neutral(rn))
+            va.append(numbers_to_text(rn))
             a.append(rn)
             cnt += 1
         tail = ["stoppar á", to_dative(stop.name)]

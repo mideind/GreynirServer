@@ -22,80 +22,8 @@
 
 """
 
-from typing import Mapping, List, Tuple, Union, Iterable
+from typing import FrozenSet, Mapping, List, Tuple
 import re
-
-
-# Neutral gender form of numbers
-NUMBERS_NEUTRAL = {
-    "1": "eitt",
-    "2": "tvö",
-    "3": "þrjú",
-    "4": "fjögur",
-    "21": "tuttugu og eitt",
-    "22": "tuttugu og tvö",
-    "23": "tuttugu og þrjú",
-    "24": "tuttugu og fjögur",
-    "31": "þrjátíu og eitt",
-    "32": "þrjátíu og tvö",
-    "33": "þrjátíu og þrjú",
-    "34": "þrjátíu og fjögur",
-    "41": "fjörutíu og eitt",
-    "42": "fjörutíu og tvö",
-    "43": "fjörutíu og þrjú",
-    "44": "fjörutíu og fjögur",
-    "51": "fimmtíu og eitt",
-    "52": "fimmtíu og tvö",
-    "53": "fimmtíu og þrjú",
-    "54": "fimmtíu og fjögur",
-    "61": "sextíu og eitt",
-    "62": "sextíu og tvö",
-    "63": "sextíu og þrjú",
-    "64": "sextíu og fjögur",
-    "71": "sjötíu og eitt",
-    "72": "sjötíu og tvö",
-    "73": "sjötíu og þrjú",
-    "74": "sjötíu og fjögur",
-    "81": "áttatíu og eitt",
-    "82": "áttatíu og tvö",
-    "83": "áttatíu og þrjú",
-    "84": "áttatíu og fjögur",
-    "91": "níutíu og eitt",
-    "92": "níutíu og tvö",
-    "93": "níutíu og þrjú",
-    "94": "níutíu og fjögur",
-    "101": "hundrað og eitt",
-    "102": "hundrað og tvö",
-    "103": "hundrað og þrjú",
-    "104": "hundrað og fjögur",
-}
-
-HUNDREDS = ("tvö", "þrjú", "fjögur", "fimm", "sex", "sjö", "átta", "níu")
-
-
-def numbers_to_neutral(s: str) -> str:
-    """Convert integers within the string s to voice
-    representations using neutral gender, i.e.
-    4 -> 'fjögur', 21 -> 'tuttugu og eitt'"""
-
-    def convert(m):
-        match = m.group(0)
-        n = int(match)
-        prefix = ""
-        if 121 <= n <= 999 and 1 <= (n % 10) <= 4 and not 11 <= (n % 100) <= 14:
-            # A number such as 104, 223, 871 (but not 111 or 614)
-            if n // 100 == 1:
-                prefix = "hundrað "
-            else:
-                prefix = HUNDREDS[n // 100 - 2] + " hundruð "
-            n %= 100
-            if n <= 4:
-                # 'tvö hundruð og eitt', 'sjö hundruð og fjögur'
-                prefix += "og "
-            match = str(n)
-        return prefix + NUMBERS_NEUTRAL.get(match, match)
-
-    return re.sub(r"(\d+)", convert, s)
 
 
 _SUB_20_NEUTRAL: Mapping[int, str] = {
@@ -131,53 +59,101 @@ _TENS_NEUTRAL: Mapping[int, str] = {
     90: "níutíu",
 }
 
-_NUM_NEUT_TO_KK: Mapping[str, str] = {
-    "eitt": "einn",
-    "tvö": "tveir",
-    "þrjú": "þrír",
-    "fjögur": "fjórir",
+_PREPEND_OG: FrozenSet[str] = frozenset(
+    (
+        "eitt",
+        "tvö",
+        "þrjú",
+        "fjögur",
+        "einn",
+        "tveir",
+        "þrír",
+        "fjórir",
+        "ein",
+        "tvær",
+        "þrjár",
+        "fjórar",
+        "fimm",
+        "sex",
+        "sjö",
+        "átta",
+        "níu",
+        "tíu",
+        "ellefu",
+        "tólf",
+        "þrettán",
+        "fjórtán",
+        "fimmtán",
+        "sextán",
+        "sautján",
+        "átján",
+        "nítján",
+        "tuttugu",
+        "þrjátíu",
+        "fjörutíu",
+        "fimmtíu",
+        "sextíu",
+        "sjötíu",
+        "áttatíu",
+        "níutíu",
+    )
+)
+
+_DeclensionMapping = Mapping[str, Mapping[str, Mapping[str, str]]]
+_NUM_NEUT_TO_DECL: _DeclensionMapping = {
+    "eitt": {
+        "kk": {"nf": "einn", "þf": "einn", "þgf": "einum", "ef": "eins"},
+        "kvk": {"nf": "ein", "þf": "eina", "þgf": "einni", "ef": "einnar"},
+        "hk": {"nf": "eitt", "þf": "eitt", "þgf": "einu", "ef": "eins"},
+    },
+    "tvö": {
+        "kk": {"nf": "tveir", "þf": "tvo", "þgf": "tveimur", "ef": "tveggja"},
+        "kvk": {"nf": "tvær", "þf": "tvær", "þgf": "tveimur", "ef": "tveggja"},
+        "hk": {"nf": "tvö", "þf": "tvö", "þgf": "tveimur", "ef": "tveggja"},
+    },
+    "þrjú": {
+        "kk": {"nf": "þrír", "þf": "þrjá", "þgf": "þremur", "ef": "þriggja"},
+        "kvk": {"nf": "þrjár", "þf": "þrjár", "þgf": "þremur", "ef": "þriggja"},
+        "hk": {"nf": "þrjú", "þf": "þrjú", "þgf": "þremur", "ef": "þriggja"},
+    },
+    "fjögur": {
+        "kk": {"nf": "fjórir", "þf": "fjóra", "þgf": "fjórum", "ef": "fjögurra"},
+        "kvk": {"nf": "fjórar", "þf": "fjórar", "þgf": "fjórum", "ef": "fjögurra"},
+        "hk": {"nf": "fjögur", "þf": "fjögur", "þgf": "fjórum", "ef": "fjögurra"},
+    },
 }
 
-_NUM_NEUT_TO_KVK: Mapping[str, str] = {
-    "eitt": "ein",
-    "tvö": "tvær",
-    "þrjú": "þrjár",
-    "fjögur": "fjórar",
-}
-
-_LARGE_NUMBERS: Tuple[Tuple[int, str], ...] = (
-    (int(1e21) * int(1e21) * int(1e6), "oktilljón"),  # 10^48
-    (int(1e21) * int(1e21), "septilljón"),  # 10^42
-    (int(1e21) * int(1e15), "sextilljón"),  # 10^36
-    (int(1e21) * int(1e9), "kvintilljón"),  # 10^30
-    (int(1e21) * int(1e6), "kvaðrilljarð"),  # 10^27
-    (int(1e21) * int(1e3), "kvaðrilljón"),  # 10^24
-    (int(1e21), "trilljarð"),  # 10^21
-    (int(1e18), "trilljón"),  # 10^18
-    (int(1e15), "billjarð"),  # 10^15
-    (int(1e12), "billjón"),  # 10^12
-    (int(1e9), "milljarð"),  # 10^9
-    (int(1e6), "milljón"),  # 10^6
+_LARGE_NUMBERS: Tuple[Tuple[int, str, str], ...] = (
+    (10 ** 48, "oktilljón", "kvk"),
+    (10 ** 42, "septilljón", "kvk"),
+    (10 ** 36, "sextilljón", "kvk"),
+    (10 ** 30, "kvintilljón", "kvk"),
+    (10 ** 27, "kvaðrilljarð", "kk"),
+    (10 ** 24, "kvaðrilljón", "kvk"),
+    (10 ** 21, "trilljarð", "kk"),
+    (10 ** 18, "trilljón", "kvk"),
+    (10 ** 15, "billjarð", "kk"),
+    (10 ** 12, "billjón", "kvk"),
+    (10 ** 9, "milljarð", "kk"),
+    (10 ** 6, "milljón", "kvk"),
 )
 
 
-def number_to_neutral(n: int = 0) -> str:
+def number_to_neutral(n: int = 0, *, eitt_hundrad: bool = False) -> str:
     """
     Write integer out as neutral gender text in Icelandic.
     Example:
-        1337 -> "eitt þúsund þrjú hundruð þrjátíu og sjö"
+        number_to_neutral(1337) -> "eitt þúsund þrjú hundruð þrjátíu og sjö"
     """
-    try:
-        n = int(n)
-    except ValueError:
-        return ""
+    n = int(n)
 
     if n == 0:
         return "núll"
 
     text: List[str] = []
+    minus: str = ""
     if n < 0:
-        text.append("mínus")
+        minus = "mínus "
         n = -n
 
     MILLION = 1000000
@@ -186,34 +162,35 @@ def number_to_neutral(n: int = 0) -> str:
     # Very large numbers
     while n >= MILLION:
 
-        large_num, isl_num = 1, ""
-        for large_num, isl_num in _LARGE_NUMBERS:
+        large_num, isl_num, gender = 1, "", ""
+        for large_num, isl_num, gender in _LARGE_NUMBERS:
             if large_num <= n:
                 break
 
         large_count, n = divmod(n, large_num)
 
-        text.extend(number_to_neutral(large_count).split())
+        text.extend(number_to_neutral(large_count, eitt_hundrad=True).split())
 
-        if isl_num.endswith("jarð"):  # kk
-            text[-1] = _NUM_NEUT_TO_KK.get(text[-1], text[-1])
-            if text[-1] == "einn":
-                text.append(isl_num + "ur")
-            else:
-                text.append(isl_num + "ar")
+        last = text[-1]
+        if gender == "kk":
+            # e.g. "milljarður" if last number ends with "eitt/einn" else "milljarðar"
+            isl_num += "ur" if last == "eitt" else "ar"
+        elif gender == "kvk":
+            # e.g. "milljón" if last number ends with "eitt/ein" else "milljónir"
+            if last != "eitt":
+                isl_num += "ir"
 
-        elif isl_num.endswith("jón"):  # kvk
-            text[-1] = _NUM_NEUT_TO_KVK.get(text[-1], text[-1])
-            if text[-1] == "ein":
-                text.append(isl_num)
-            else:
-                text.append(isl_num + "ir")
+        if last in _NUM_NEUT_TO_DECL:
+            # Change "eitt" to "einn/ein"
+            text[-1] = _NUM_NEUT_TO_DECL[last][gender]["nf"]
+
+        text.append(isl_num)
 
     if THOUSAND <= n < MILLION:
         thousands, n = divmod(n, THOUSAND)
 
         if thousands > 1:
-            text.append(number_to_neutral(thousands))
+            text.extend(number_to_neutral(thousands, eitt_hundrad=True).split())
         elif thousands == 1:
             text.append("eitt")
         # Singular/Plural form of "þúsund" is the same
@@ -223,14 +200,17 @@ def number_to_neutral(n: int = 0) -> str:
         hundreds, n = divmod(n, 100)
 
         if hundreds > 1:
-            text.append(number_to_neutral(hundreds))
+            text.extend(number_to_neutral(hundreds).split())
             # Note: don't need to fix singular here as e.g.
             # 2100 gets interpreted as "tvö þúsund og eitt hundrað"
             # instead of "tuttugu og eitt hundrað"
             text.append("hundruð")
-
         elif hundreds == 1:
-            text.append("eitt")
+            if text or eitt_hundrad:
+                # Add "eitt" before "hundrað"
+                # if not first number in text
+                # or if eitt_hundrad is True
+                text.append("eitt")
             text.append("hundrað")
 
     if 20 <= n < 100:
@@ -247,89 +227,150 @@ def number_to_neutral(n: int = 0) -> str:
         text.append(_SUB_20_NEUTRAL[n])
         n = 0
 
-    if len(text) > 2 and text[-2] != "og":
-        # Fix sentences with missing "og"
-        if text[-1] in _SUB_20_NEUTRAL.values() or text[-1] in _TENS_NEUTRAL.values():
-            # "fimm þúsund tuttugu" -> "fimm þúsund og tuttugu"
-            # "eitt hundrað fjögur" -> "eitt hundrað og fjögur"
-            text.insert(-1, "og")
-        elif (
-            len(text) >= 3
-            and not re.search(r"(hundr|þúsund|jarð|jón)", text[-2])
-            and text[-3] != "og"
-        ):
-            # TODO: This if statement can probably be improved
+    # Fix missing "og"
+    if len(text) >= 2 and "og" not in text:
+        i = len(text) - 1
 
-            # If-statement catches errors like "eitt og hundrað milljónir",
-            # but fixes numbers such as:
-            # "fimm þúsund tvö hundruð" -> "fimm þúsund og tvö hundruð"
-            # "sextíu milljónir fjögur hundruð" -> "sextíu milljónir og fjögur hundruð"
-            text.insert(-2, "og")
+        # Find place in sentence where "og" fits
+        while i > 0 and text[i] not in _PREPEND_OG:
+            i -= 1
+
+        # Add "og" if not at front of text
+        if i > 0:
+            text.insert(i, "og")
 
     # Fix e.g. "milljónir milljarðar" -> "milljónir milljarða"
-    number_string: str = re.sub(
+    number_string: str = minus + re.sub(
         r"(\S*(jónir|jarð[au]r?)) (\S*(jarð|jón))[ia]r", r"\1 \3a", " ".join(text)
     )
 
     return number_string
 
 
-def number_to_text(n: int, gender="hk") -> str:
+def number_to_text(
+    n: int, *, case="nf", gender="hk", eitt_hundrad: bool = False
+) -> str:
     """
-    Convert an integer into written Icelandic text in given gender (hk, kk, kvk).
+    Convert an integer into written Icelandic text in given case and gender.
     Example:
         302 -> "þrjú hundruð og tvær" (gender="kvk")
         501 -> "fimm hundruð og einn" (gender="kk")
     """
-    num_str = number_to_neutral(n)
+    n = int(n)
+    nums = number_to_neutral(n, eitt_hundrad=eitt_hundrad).split()
 
-    if gender == "hk":
-        return num_str
-
-    nums = num_str.split()
-
-    if gender == "kk" and nums[-1] in _NUM_NEUT_TO_KK:
-        nums[-1] = _NUM_NEUT_TO_KK[nums[-1]]
-
-    elif gender == "kvk" and nums[-1] in _NUM_NEUT_TO_KVK:
-        nums[-1] = _NUM_NEUT_TO_KVK[nums[-1]]
+    last = nums[-1]
+    if last in _NUM_NEUT_TO_DECL:
+        nums[-1] = _NUM_NEUT_TO_DECL[last][gender][case]
 
     return " ".join(nums)
 
 
-def float_to_text(f: float = 0.0, gender="hk") -> str:
+def numbers_to_text(
+    s: str,
+    *,
+    regex=r"(?<=\b)\d+(?=\b)",
+    case="nf",
+    gender="hk",
+    eitt_hundrad: bool = False
+) -> str:
+    """
+    Converts numbers in string to Icelandic text.
+    (Can also be supplied with custom regex to match certain numbers)
+    Extra argument specifies gender of number (default 'hk').
+    """
+
+    def convert(m):
+        match = m.group(0)
+        n = int(match)
+        return number_to_text(n, case=case, gender=gender, eitt_hundrad=eitt_hundrad)
+
+    return re.sub(regex, convert, s)
+
+
+def float_to_text(
+    f: float = 0.0,
+    *,
+    case="nf",
+    gender="hk",
+    comma_null: bool = True,
+    eitt_hundrad: bool = False
+) -> str:
     """
     Convert a float into written Icelandic text in given gender (hk, kk, kvk).
     Example:
         -0.02 -> "mínus núll komma núll tveir" (gender="kk")
     """
+    f = float(f)
     out_str: str = ""
     # To prevent edge cases like -0.2 being translated to
     # "núll komma tvö" instead of "mínus núll komma tvö"
     if f < 0:
         out_str = "mínus "
+        f = -f
 
     first, second = str(f).split(".")
 
     # Number before decimal point
-    out_str += number_to_text(abs(int(first)), gender)
+    out_str += number_to_text(
+        int(first), case=case, gender=gender, eitt_hundrad=eitt_hundrad
+    )
+
+    if not comma_null and second == "0":
+        # Skip "komma núll" if comma_null is False
+        return out_str
+
     out_str += " komma "
 
-    # Numbers after decimal point
-    for digit in second:
-        if digit == "0":
+    if len(second.lstrip("0")) <= 2:
+        # e.g. 2,41 -> "tveimur komma fjörutíu og einum"
+        while second[0] == "0":
+            # e.g. 1,03 -> "einni komma núll tveimur"
+            # or 2,003 -> "tveimur komma núll núll þremur"
             out_str += "núll "
-        else:
-            digit_str = _SUB_20_NEUTRAL.get(int(digit), "")
-            if gender == "kk" and digit_str in _NUM_NEUT_TO_KK:
-                out_str += _NUM_NEUT_TO_KK[digit_str]
-            elif gender == "kvk" and digit_str in _NUM_NEUT_TO_KVK:
-                out_str += _NUM_NEUT_TO_KVK[digit_str]
+            second = second[1:]
+        out_str += number_to_text(int(second), case=case, gender=gender)
+    else:
+        if len(second) > 2:
+            # Only allow declension for two digits at most after decimal point
+            # Otherwise fall back to "nf"
+            case = "nf"
+        # Numbers after decimal point
+        for digit in second:
+            if digit == "0":
+                out_str += "núll "
             else:
-                out_str += digit_str
-            out_str += " "
+                digit_str = _SUB_20_NEUTRAL.get(int(digit), "")
+                if digit_str in _NUM_NEUT_TO_DECL:
+                    out_str += _NUM_NEUT_TO_DECL[digit_str][gender][case]
+                else:
+                    out_str += digit_str
+                out_str += " "
 
     return out_str.rstrip()
+
+
+def floats_to_text(
+    s: str,
+    *,
+    regex=r"(?<=\b)\d+,\d+(?=\b)",
+    case="nf",
+    gender="hk",
+    comma_null: bool = True
+) -> str:
+    """
+    Converts floats of the form '12,14', '0,42' (with Icelandic comma)
+    (or matching custom regex if provided)
+    in string to Icelandic text.
+    Extra argument specifies gender and case of float.
+    """
+
+    def convert(m):
+        match = m.group(0)
+        n = float(match.replace(",", "."))
+        return float_to_text(n, case=case, gender=gender, comma_null=comma_null)
+
+    return re.sub(regex, convert, s)
 
 
 def year_to_text(year: int, *, after_christ: bool = False) -> str:
@@ -356,6 +397,8 @@ def year_to_text(year: int, *, after_christ: bool = False) -> str:
 
         text.append(_SUB_20_NEUTRAL[hundreds])
         text.append("hundruð")
+        if digits in _SUB_20_NEUTRAL or digits in _TENS_NEUTRAL:
+            text.append("og")
         text.append(number_to_neutral(digits))
 
     # Other years are spoken like regular numbers
@@ -365,8 +408,25 @@ def year_to_text(year: int, *, after_christ: bool = False) -> str:
     return " ".join(text) + suffix
 
 
-DeclensionMapping = Mapping[str, Mapping[str, Mapping[str, str]]]
-_FYRSTUR_STRONG_DECL: DeclensionMapping = {
+def years_to_text(
+    s: str, *, regex: str = r"(?<=\b)\d\d\d\d(?=\b)", after_christ: bool = False
+) -> str:
+    """
+    Converts years of the form '1994', '2021'
+    (or matching regex if provided)
+    in string to Icelandic text.
+    Can also be supplied with custom pattern to match years with shorter length than 4.
+    """
+
+    def convert(m):
+        match = m.group(0)
+        n = int(match.strip(" "))
+        return year_to_text(n, after_christ=after_christ)
+
+    return re.sub(regex, convert, s)
+
+
+FYRSTUR_STRONG_DECL: _DeclensionMapping = {
     "et": {
         "kk": {"nf": "fyrstur", "þf": "fyrstan", "þgf": "fyrstum", "ef": "fyrsts"},
         "kvk": {"nf": "fyrst", "þf": "fyrsta", "þgf": "fyrstri", "ef": "fyrstrar"},
@@ -401,7 +461,7 @@ _SUB_20_NEUT_TO_ORDINAL: Mapping[str, str] = {
     "nítján": "nítjánd",
 }
 
-_ANNAR_TABLE: DeclensionMapping = {
+_ANNAR_TABLE: _DeclensionMapping = {
     "et": {
         "kk": {
             "nf": "annar",
@@ -444,8 +504,8 @@ _ANNAR_TABLE: DeclensionMapping = {
     },
 }
 
-SuffixMapping = Mapping[str, Mapping[str, str]]
-_SUB_20_ORDINAL_SUFFIX: SuffixMapping = {
+_SuffixMapping = Mapping[str, Mapping[str, str]]
+_SUB_20_ORDINAL_SUFFIX: _SuffixMapping = {
     "kk": {
         "nf": "i",
         "þf": "a",
@@ -477,7 +537,7 @@ _TENS_NEUT_TO_ORDINAL: Mapping[str, str] = {
     "níutíu": "nítug",
 }
 
-_LARGE_ORDINAL_SUFFIX: SuffixMapping = {
+_LARGE_ORDINAL_SUFFIX: _SuffixMapping = {
     "kk": {
         "nf": "asti",
         "þf": "asta",
@@ -561,7 +621,7 @@ def _num_to_ordinal(
 
 
 def neutral_text_to_ordinal(
-    s: str, case: str = "nf", gender: str = "kk", number: str = "et"
+    s: str, *, case: str = "nf", gender: str = "kk", number: str = "et"
 ) -> str:
     """
     Takes Icelandic text representation of number
@@ -595,14 +655,39 @@ def neutral_text_to_ordinal(
 
 
 def number_to_ordinal(
-    n: int, case: str = "nf", gender: str = "kk", number: str = "et"
+    n: int, *, case: str = "nf", gender: str = "kk", number: str = "et"
 ) -> str:
     """
     Takes number and returns it as an ordinal
     in specified case (nf, þf, þgf, ef),
     gender (kk, kvk, hk) and number (et, ft).
     """
-    return neutral_text_to_ordinal(number_to_neutral(n), case, gender, number)
+    return neutral_text_to_ordinal(
+        number_to_neutral(n), case=case, gender=gender, number=number
+    )
+
+
+def numbers_to_ordinal(
+    s: str,
+    *,
+    regex: str = r"(?<=\b)\d+\.(?=[ ,])",
+    case: str = "nf",
+    gender: str = "kk",
+    number: str = "et"
+) -> str:
+    """
+    Converts ordinals of the form '2.', '101.'
+    (or matching regex if provided)
+    in string to Icelandic text.
+    Extra arguments specify case, gender and number.
+    """
+
+    def convert(m):
+        match = m.group(0)
+        n = int(match.strip("."))
+        return number_to_ordinal(n, case=case, gender=gender, number=number)
+
+    return re.sub(regex, convert, s)
 
 
 _DIGITS_TO_KK: Mapping[str, str] = {
@@ -619,26 +704,21 @@ _DIGITS_TO_KK: Mapping[str, str] = {
 }
 
 
-def digits_to_text(digit_list: Iterable[Union[str, int]]) -> str:
+def digits_to_text(s: str, *, regex: str = r"(?<=\b)\d+") -> str:
     """
-    Takes in a string of digits (or list of strings/ints)
-    and returns as spoken text in Icelandic.
+    Converts digits in string to Icelandic text.
     Useful for phone numbers, social security numbers and such.
+    Can also supply custom regex to match only certain numbers.
     Examples:
         "5885522" -> "fimm átta átta fimm fimm tveir tveir"
-        ["234",1,"9"] -> "tveir þrír fjórir einn níu"
+        "Síminn minn er 581-2345" -> "Síminn minn er fimm átta einn-tveir þrír fjórir fimm"
     """
-    digit_text: List[str] = []
 
-    for d in digit_list:
-        d = str(d).strip()
-        if not d or not d.isdecimal():
-            continue
-        elif d in _DIGITS_TO_KK:
-            digit_text.append(_DIGITS_TO_KK[d])
-        else:
-            digit_str = digits_to_text(d)
-            if len(digit_str):
-                digit_text.append(digit_str)
+    def convert(m):
+        match = m.group(0).replace("-", "")
+        return "".join(
+            _DIGITS_TO_KK[letter] + " " if letter.isdecimal() else letter
+            for letter in match
+        ).rstrip()
 
-    return " ".join(digit_text)
+    return re.sub(regex, convert, s)

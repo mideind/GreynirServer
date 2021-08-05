@@ -44,7 +44,7 @@ from queries import (
     query_place_details,
     icequote,
 )
-from queries.num import numbers_to_neutral
+from queries.num import numbers_to_text
 from tree import Result
 
 from . import LatLonTuple, AnswerTuple
@@ -266,7 +266,7 @@ def answ_address(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
 
     # Create answer
     answer = final_addr
-    voice = "{0} er {1} {2}".format(placename, prep, numbers_to_neutral(final_addr))
+    voice = f"{placename} er {prep} {numbers_to_text(final_addr)}"
     response = dict(answer=answer)
 
     return response, answer, voice

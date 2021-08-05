@@ -30,6 +30,7 @@ from datetime import datetime
 
 from query import Query, QueryStateDict
 from tree import Result
+from queries.num import numbers_to_ordinal
 
 
 def help_text(lemma: str) -> str:
@@ -120,10 +121,6 @@ _ORDINAL_TO_DATE = {
     "þrítugasta og fyrsta": 31,
 }
 
-_DATE_TO_ORDINAL = {v: k for k, v in _ORDINAL_TO_DATE.items()}
-# Date in genitive case - turns out only the 22nd is different
-_DATE_TO_ORDINAL_GEN = _DATE_TO_ORDINAL.copy()
-_DATE_TO_ORDINAL_GEN[22] = "tuttugasta og annars"
 
 _TWENTY_PART = {"fyrsta": 1, "annan": 2, "þriðja": 3, "fjórða": 4}
 
@@ -464,9 +461,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     if result.qtype == "YuleDate":
         # 'Hvenær kemur [jólasveinn X]'
         yule_lad = result.yule_lad
-        answer = voice_answer = "{0} kemur til byggða aðfaranótt {1} desember.".format(
-            yule_lad, _DATE_TO_ORDINAL_GEN[result.lad_date]
-        )
+        answer = f"{yule_lad} kemur til byggða aðfaranótt {result.lad_date}. desember."
     elif result.qtype == "YuleLad":
         # 'Hvaða jólasveinn kemur til byggða [á degi x]'
         lad_date = result.lad_date
@@ -483,12 +478,11 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         else:
             yule_lad = result.yule_lad
             answer = (
-                voice_answer
-            ) = "{0} kemur til byggða aðfaranótt {1} desember.".format(
-                yule_lad, _DATE_TO_ORDINAL_GEN[result.lad_date]
+                f"{yule_lad} kemur til byggða aðfaranótt {result.lad_date}. desember."
             )
         q.lowercase_beautified_query()
 
+    voice_answer = numbers_to_ordinal(answer, case="ef", gender="kk")
     response = dict(answer=answer)
     # !!! TODO
     # q.set_context({"date": xxx})

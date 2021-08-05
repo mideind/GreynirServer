@@ -24,7 +24,6 @@
 """
 
 # TODO: "Hver er ódýrasta bensínstöðin innan X kílómetra? Innan X kílómetra radíus?" etc.
-# TODO: Laga krónutölur og fjarlægðartölur f. talgervil
 
 from typing import List, Dict, Optional
 
@@ -34,10 +33,15 @@ import random
 
 from geo import distance
 from query import Query
-from queries import query_json_api, gen_answer, distance_desc, krona_desc
-
-from . import AnswerTuple, LatLonTuple
-
+from queries import (
+    query_json_api,
+    gen_answer,
+    distance_desc,
+    krona_desc,
+    AnswerTuple,
+    LatLonTuple,
+)
+from queries.num import numbers_to_text, floats_to_text
 
 _PETROL_QTYPE = "Petrol"
 
@@ -330,7 +334,7 @@ def _answ_for_petrol_query(q: Query, result) -> AnswerTuple:
             "Þar kostar bensínlítrinn {4} og dísel-lítrinn {5}."
         )
         dist_nf = distance_desc(station["distance"], case="nf")
-        dist_þf = distance_desc(station["distance"], case="þf")
+        dist_ef = distance_desc(station["distance"], case="ef", num_to_str=True)
         answer = answ_fmt.format(
             station["company"], station["name"], dist_nf, bensin_kr_desc, diesel_kr_desc
         )
@@ -338,9 +342,9 @@ def _answ_for_petrol_query(q: Query, result) -> AnswerTuple:
             desc,
             station["company"],
             station["name"],
-            dist_þf,
-            bensin_kr_desc,
-            diesel_kr_desc,
+            dist_ef,
+            floats_to_text(bensin_kr_desc.replace(".", ""), gender="kvk"),
+            floats_to_text(diesel_kr_desc.replace(".", ""), gender="kvk"),
         )
     else:
         answ_fmt = "{0} {1} (bensínverð {2}, díselverð {3})"
@@ -349,7 +353,11 @@ def _answ_for_petrol_query(q: Query, result) -> AnswerTuple:
             station["company"], station["name"], bensin_kr_desc, diesel_kr_desc
         )
         voice = voice_fmt.format(
-            desc, station["company"], station["name"], bensin_kr_desc, diesel_kr_desc
+            desc,
+            station["company"],
+            station["name"],
+            floats_to_text(bensin_kr_desc.replace(".", ""), gender="kvk"),
+            floats_to_text(diesel_kr_desc.replace(".", ""), gender="kvk"),
         )
 
     response = dict(answer=answer)
