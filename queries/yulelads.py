@@ -470,11 +470,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 answer = voice_answer = "Þetta er ekki gildur mánaðardagur."
             else:
                 # TODO: Fix, always replies "desember" even during other months
-                answer = (
-                    voice_answer
-                ) = "Enginn jólasveinn kemur til byggða þann {0} desember.".format(
-                    _DATE_TO_ORDINAL[result.lad_date]
-                )
+                answer = f"Enginn jólasveinn kemur til byggða þann {result.lad_date}. desember."
         else:
             yule_lad = result.yule_lad
             answer = (
