@@ -33,7 +33,7 @@ from query import Query, QueryStateDict
 from queries import (
     AnswerTuple,
     LatLonTuple,
-    MONTH_ABBREVS,
+    MONTH_ABBREV_ORDERED,
     sing_or_plur,
     gen_answer,
 )
@@ -409,7 +409,7 @@ def _parse_almanak_hi_data(text: Iterable[str]) -> _SOLAR_DICT_TYPE:
                 if sun_re.group(1) != " - ":
                     # New month started
                     month_str = sun_re.group(1).lower()
-                    month = MONTH_ABBREVS.index(month_str) + 1
+                    month = MONTH_ABBREV_ORDERED.index(month_str) + 1
 
                 # Extract times of solar positions
                 sun_pos: _SOLAR_ROW_TYPE = dict(

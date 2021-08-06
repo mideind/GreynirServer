@@ -44,8 +44,6 @@ import json
 import os
 import re
 import locale
-import datetime
-
 from urllib.parse import urlencode
 from functools import lru_cache
 from xml.dom import minidom  # type: ignore
@@ -64,27 +62,8 @@ from util import read_api_key
 AnswerTuple = Tuple[Dict, str, str]
 LatLonTuple = Tuple[float, float]
 
-WEEKDAY_ABBREVS: Sequence[str] = (
-    "sun",
-    "mán",
-    "þri",
-    "mið",
-    "fim",
-    "fös",
-    "lau",
-)
 
-WEEKDAYS: Sequence[str] = (
-    "sunnudagur",
-    "mánudagur",
-    "þriðjudagur",
-    "miðvikudagur",
-    "fimmtudagur",
-    "föstudagur",
-    "laugardagur",
-)
-
-MONTH_ABBREVS: Sequence[str] = (
+MONTH_ABBREV_ORDERED: Sequence[str] = (
     "jan",
     "feb",
     "mar",
@@ -99,53 +78,7 @@ MONTH_ABBREVS: Sequence[str] = (
     "des",
 )
 
-MONTHS: Sequence[str] = (
-    "janúar",
-    "febrúar",
-    "mars",
-    "apríl",
-    "maí",
-    "júní",
-    "júlí",
-    "ágúst",
-    "september",
-    "október",
-    "nóvember",
-    "desember",
-)
-
-
-def ice_strftime(dt: datetime.datetime, format: str) -> str:
-    """
-    Return a string representing the date and time according to Icelandic locale,
-    controlled by an explicit format string.
-
-    The following format codes are different from English locale strftime:
-    (%a, %A, %b, %B, %c, %D, %p, %x, %X)
-    """
-    # (x + 8) % 7 as weekday starts on a monday
-    weekday_abbrev: str = WEEKDAY_ABBREVS[(dt.weekday() + 8) % 7]
-    weekday: str = WEEKDAYS[(dt.weekday() + 8) % 7]
-    month_abbrev: str = MONTH_ABBREVS[dt.month]
-    month: str = MONTHS[dt.month]
-    am_pm: str = "fh" if dt.hour < 12 else "eh"
-
-    # Expand complex format codes into simpler format codes
-    # TODO: Weird spaces in Icelandic locale for day in "%c" and "%x"
-    format = format.replace("%c", f"%a {dt.day:>{2}}.%b %Y, %X")
-    format = format.replace("%x", f"%a {dt.day:>{2}}.%b %Y")
-    format = format.replace("%X", "%H:%M:%S")
-    format = format.replace("%D", "%d/%m/%Y")
-
-    # Format codes different in Icelandic format
-    format = format.replace("%a", weekday_abbrev)
-    format = format.replace("%A", weekday)
-    format = format.replace("%b", month_abbrev)
-    format = format.replace("%B", month)
-    format = format.replace("%p", am_pm)
-
-    # Format remaining symbols (same in English and Icelandic)
-    return dt.strftime(format)
+MONTH_ABBREV_UNORDERED: FrozenSet[str] = frozenset(MONTH_ABBREV_ORDERED)
 
 
 def natlang_seq(words: List[str], oxford_comma: bool = False) -> str:
