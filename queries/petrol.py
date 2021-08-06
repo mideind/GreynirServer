@@ -343,12 +343,8 @@ def _answ_for_petrol_query(q: Query, result) -> AnswerTuple:
             station["company"],
             station["name"],
             dist_ef,
-            floats_to_text(
-                bensin_kr_desc.replace(".", ""), gender="kvk", comma_null=False
-            ),
-            floats_to_text(
-                diesel_kr_desc.replace(".", ""), gender="kvk", comma_null=False
-            ),
+            floats_to_text(bensin_kr_desc, gender="kvk", comma_null=False),
+            floats_to_text(diesel_kr_desc, gender="kvk", comma_null=False),
         )
     else:
         answ_fmt = "{0} {1} (bensínverð {2}, díselverð {3})"
@@ -360,8 +356,8 @@ def _answ_for_petrol_query(q: Query, result) -> AnswerTuple:
             desc,
             station["company"],
             station["name"],
-            floats_to_text(bensin_kr_desc.replace(".", ""), gender="kvk"),
-            floats_to_text(diesel_kr_desc.replace(".", ""), gender="kvk"),
+            floats_to_text(bensin_kr_desc, gender="kvk", comma_null=False),
+            floats_to_text(diesel_kr_desc, gender="kvk", comma_null=False),
         )
 
     response = dict(answer=answer)

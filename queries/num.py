@@ -328,12 +328,13 @@ def float_to_text(
 
     if len(second.lstrip("0")) <= 2:
         # e.g. 2,41 -> "tveimur komma fjörutíu og einum"
-        while second[0] == "0":
+        while second and second[0] == "0":
             # e.g. 1,03 -> "einni komma núll tveimur"
             # or 2,003 -> "tveimur komma núll núll þremur"
             out_str += "núll "
             second = second[1:]
-        out_str += number_to_text(int(second), case=case, gender=gender)
+        if second:
+            out_str += number_to_text(int(second), case=case, gender=gender)
     else:
         if len(second) > 2:
             # Only allow declension for two digits at most after decimal point
@@ -357,14 +358,14 @@ def float_to_text(
 def floats_to_text(
     s: str,
     *,
-    regex: str = r"\b\d+,\d+\b",
+    regex: str = r"\b(\d?\d?\d\.)*\d+,\d+\b",
     case: str = "nf",
     gender: str = "hk",
     comma_null: bool = True,
     one_hundred: bool = False
 ) -> str:
     """
-    Converts floats of the form '12,14', '0,42' (with Icelandic comma)
+    Converts floats of the form '14.022,14', '0,42' (with Icelandic comma)
     (or matching custom regex if provided)
     in string to Icelandic text.
     Extra arguments specifies case/gender of float,
@@ -374,7 +375,7 @@ def floats_to_text(
 
     def convert(m: Match) -> str:
         match = m.group(0)
-        n = float(match.replace(",", "."))
+        n = float(match.replace(".", "").replace(",", "."))
         return float_to_text(
             n, case=case, gender=gender, comma_null=comma_null, one_hundred=one_hundred
         )

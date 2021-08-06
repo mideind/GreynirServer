@@ -49,7 +49,7 @@ from islenska.basics import BinEntry
 import query
 from query import AnswerTuple, Query, QueryStateDict, ResponseType, Session
 from tree import Result
-from queries import natlang_seq, cap_first, gen_answer
+from queries import natlang_seq, cap_first, gen_answer, sing_or_plur
 from queries.num import floats_to_text, numbers_to_text
 from settings import Settings
 from reynir import correct_spaces
@@ -624,27 +624,18 @@ def to_dative(np: str) -> str:
     return query.to_dative(np, filter_func=_filter_func)
 
 
-def voice_distance(d):
+def voice_distance(d: float) -> str:
     """Convert a distance, given as a float in units of kilometers, to a string
     that can be read aloud in Icelandic"""
-    # Convert to 100 meter integer units
-    km1dec = int(d * 100 + 5) // 10
-    if km1dec >= 10:
-        # One kilometer or longer
-        if km1dec == 10:
-            return "einn kílómetri"
-        if km1dec % 10 == 1:
-            # 3,1 kílómetri
-            return floats_to_text(
-                f"{km1dec // 10},{km1dec % 10} kílómetri", gender="kk", comma_null=False
-            )
-        # 5,6 kílómetrar
-        return floats_to_text(
-            f"{km1dec // 10},{km1dec % 10} kílómetrar", gender="kk", comma_null=False
-        )
+    # Distance more than 1 kilometer
+    if d >= 1:
+        km: float = round(d, 1)
+        out_str = sing_or_plur(km, "kílómetri", "kílómetrar")
+        return floats_to_text(out_str, gender="kk", comma_null=False)
+
     # Distance less than 1 km: Round to 10 meters
-    m = int(d * 1000 + 5) // 10
-    return numbers_to_text(f"{m}0 metrar", gender="kk")
+    m: int = int(round(d * 1000, -1))
+    return numbers_to_text(f"{m} metrar", gender="kk")
 
 
 def hms_fmt(hms: Tuple[int, int, int]) -> str:

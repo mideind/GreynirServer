@@ -1485,7 +1485,14 @@ def test_floats():
         floats_to_text("101,0021 prósent.")
         == "hundrað og eitt komma núll núll tuttugu og eitt prósent."
     )
-
+    assert (
+        floats_to_text("10.100,21 prósent.")
+        == "tíu þúsund og eitt hundrað komma tuttugu og eitt prósent."
+    )
+    assert (
+        floats_to_text("2.000.000,00.", comma_null=False)
+        == "tvær milljónir."
+    )
 
 def test_digits():
     """Test digit string to written text conversion."""

@@ -310,13 +310,14 @@ def distance_desc(
     # E.g. 7,3 kílómetrar
     if km_dist >= in_metres:
         rounded_km = round(km_dist, 1 if km_dist < 10 else 0)
-        if num_to_str:
-            dist = float_to_text(rounded_km, case=case, gender="kk", comma_null=False)
-        else:
-            dist = iceformat_float(rounded_km)
+        dist = iceformat_float(rounded_km)
         plidx = 1 if is_plural(rounded_km) else 0
         unit_long = "kíló" + _METER_NOUN[plidx][cidx]
         unit = "km" if abbr else unit_long
+        if num_to_str:
+            dist = float_to_text(
+                rounded_km, case=case, gender="kk", comma_null=False
+            )
     # E.g. 940 metrar
     else:
         # Round to nearest 10
