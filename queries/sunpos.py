@@ -33,8 +33,8 @@ from query import Query, QueryStateDict
 from queries import (
     AnswerTuple,
     LatLonTuple,
-    MONTH_ABBREV_ORDERED,
-    is_plural,
+    MONTH_ABBREVS,
+    sing_or_plur,
     gen_answer,
 )
 
@@ -409,7 +409,7 @@ def _parse_almanak_hi_data(text: Iterable[str]) -> _SOLAR_DICT_TYPE:
                 if sun_re.group(1) != " - ":
                     # New month started
                     month_str = sun_re.group(1).lower()
-                    month = MONTH_ABBREV_ORDERED.index(month_str) + 1
+                    month = MONTH_ABBREVS.index(month_str) + 1
 
                 # Extract times of solar positions
                 sun_pos: _SOLAR_ROW_TYPE = dict(
@@ -532,8 +532,8 @@ def _answer_city_solar_data(
         else:
             is_will_was = "var"
 
-        degrees = str(data[city][closest_date][sun_pos]).replace(".", ",")
-        answer = f"Sólarhæð um hádegi {when} {is_will_was} um {degrees} {'gráður' if is_plural(degrees) else 'gráða'}."
+        degrees = data[city][closest_date][sun_pos]
+        answer = f"Sólarhæð um hádegi {when} {is_will_was} um {sing_or_plur(degrees, 'gráður', 'gráða')}."
 
     else:
         time: Optional[datetime.time] = cast(

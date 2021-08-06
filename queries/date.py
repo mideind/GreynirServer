@@ -67,7 +67,7 @@ from pytz import timezone
 from calendar import monthrange, isleap
 
 from query import Query, QueryStateDict
-from queries import timezone4loc, gen_answer, is_plural, cap_first
+from queries import timezone4loc, gen_answer, is_plural, sing_or_plur, cap_first
 from tree import Result
 from settings import changedlocale
 from queries.num import numbers_to_ordinal, years_to_text, numbers_to_text
@@ -790,7 +790,7 @@ def days_in_month_answ(q: Query, result):
     ndays = result["days_in_month"]
     t = result["target"]
     mname = t.strftime("%B")
-    answer = f"{ndays} dagar." if is_plural(ndays) else f"{ndays} dagur."
+    answer = sing_or_plur(ndays, "dagar.", "dagur.")
     response = dict(answer=answer)
     voice = (
         f"Það eru {ndays} dagar í {mname} {t.year}"
