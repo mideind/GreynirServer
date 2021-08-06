@@ -257,7 +257,11 @@ _CASE_ABBR = ["nf", "þf", "þgf", "ef"]
 
 
 def time_period_desc(
-    seconds: int, case: str = "nf", omit_seconds: bool = True, num_to_str: bool = False
+    seconds: int,
+    *,
+    case: str = "nf",
+    omit_seconds: bool = True,
+    num_to_str: bool = False,
 ) -> str:
     """Generate Icelandic description of the length of a given time
     span, e.g. "4 dagar, 6 klukkustundir og 21 mínúta."""
@@ -292,6 +296,7 @@ _METER_NOUN = (
 
 def distance_desc(
     km_dist: float,
+    *,
     case: str = "nf",
     in_metres: float = 1.0,
     abbr: bool = False,

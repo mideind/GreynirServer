@@ -248,7 +248,9 @@ def number_to_neutral(n: int = 0, *, one_hundred: bool = False) -> str:
     return number_string
 
 
-def number_to_text(n: int, *, case="nf", gender="hk", one_hundred: bool = False) -> str:
+def number_to_text(
+    n: int, *, case: str = "nf", gender: str = "hk", one_hundred: bool = False
+) -> str:
     """
     Convert an integer into written Icelandic text in given case/gender.
     Argument one_hundred specifies whether to add "eitt" before "hundrað".
@@ -269,9 +271,9 @@ def number_to_text(n: int, *, case="nf", gender="hk", one_hundred: bool = False)
 def numbers_to_text(
     s: str,
     *,
-    regex=r"(?<=\b)\d+(?=\b)",
-    case="nf",
-    gender="hk",
+    regex: str = r"\b\d+\b",
+    case: str = "nf",
+    gender: str = "hk",
     one_hundred: bool = False
 ) -> str:
     """
@@ -281,7 +283,7 @@ def numbers_to_text(
     and whether to add "eitt" before "hundrað".
     """
 
-    def convert(m):
+    def convert(m: re.Match) -> str:
         match = m.group(0)
         n = int(match)
         return number_to_text(n, case=case, gender=gender, one_hundred=one_hundred)
@@ -292,8 +294,8 @@ def numbers_to_text(
 def float_to_text(
     f: float = 0.0,
     *,
-    case="nf",
-    gender="hk",
+    case: str = "nf",
+    gender: str = "hk",
     comma_null: bool = True,
     one_hundred: bool = False
 ) -> str:
@@ -355,9 +357,9 @@ def float_to_text(
 def floats_to_text(
     s: str,
     *,
-    regex=r"(?<=\b)\d+,\d+(?=\b)",
-    case="nf",
-    gender="hk",
+    regex: str = r"\b\d+,\d+\b",
+    case: str = "nf",
+    gender: str = "hk",
     comma_null: bool = True,
     one_hundred: bool = False
 ) -> str:
@@ -370,7 +372,7 @@ def floats_to_text(
     and whether to add "eitt" before "hundrað".
     """
 
-    def convert(m):
+    def convert(m: re.Match) -> str:
         match = m.group(0)
         n = float(match.replace(",", "."))
         return float_to_text(
@@ -416,7 +418,7 @@ def year_to_text(year: int, *, after_christ: bool = False) -> str:
 
 
 def years_to_text(
-    s: str, *, regex: str = r"(?<=\b)\d\d\d\d(?=\b)", after_christ: bool = False
+    s: str, *, regex: str = r"\b\d\d\d\d\b", after_christ: bool = False
 ) -> str:
     """
     Converts years of the form '1994', '2021'
@@ -425,9 +427,9 @@ def years_to_text(
     Can also be supplied with custom pattern to match years with shorter length than 4.
     """
 
-    def convert(m):
+    def convert(m: re.Match) -> str:
         match = m.group(0)
-        n = int(match.strip(" "))
+        n = int(match)
         return year_to_text(n, after_christ=after_christ)
 
     return re.sub(regex, convert, s)
@@ -677,7 +679,7 @@ def number_to_ordinal(
 def numbers_to_ordinal(
     s: str,
     *,
-    regex: str = r"(?<=\b)\d+\.(?=[ ,])",
+    regex: str = r"\b\d+\.(?=[ ,)])",
     case: str = "nf",
     gender: str = "kk",
     number: str = "et"
@@ -689,7 +691,7 @@ def numbers_to_ordinal(
     Extra arguments specify case, gender and number.
     """
 
-    def convert(m):
+    def convert(m: re.Match) -> str:
         match = m.group(0)
         n = int(match.strip("."))
         return number_to_ordinal(n, case=case, gender=gender, number=number)
@@ -711,7 +713,7 @@ _DIGITS_TO_KK: Mapping[str, str] = {
 }
 
 
-def digits_to_text(s: str, *, regex: str = r"(?<=\b)\d+") -> str:
+def digits_to_text(s: str, *, regex: str = r"\b\d+") -> str:
     """
     Converts digits in string to Icelandic text.
     Useful for phone numbers, social security numbers and such.
@@ -721,7 +723,7 @@ def digits_to_text(s: str, *, regex: str = r"(?<=\b)\d+") -> str:
         "Síminn minn er 581-2345" -> "Síminn minn er fimm átta einn-tveir þrír fjórir fimm"
     """
 
-    def convert(m):
+    def convert(m: re.Match) -> str:
         match = m.group(0).replace("-", "")
         return "".join(
             _DIGITS_TO_KK[letter] + " " if letter.isdecimal() else letter
