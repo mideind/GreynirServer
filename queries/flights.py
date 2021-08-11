@@ -22,6 +22,7 @@
     This module handles queries relating to air travel.
 
 """
+# TODO: Fetch more than one flight using "flight_count", maybe not needed though
 
 from typing import List, Dict, Any, Optional
 from typing_extensions import TypedDict
@@ -33,9 +34,10 @@ import cachetools
 from datetime import datetime, timedelta, timezone
 
 from query import Query, QueryStateDict
-from queries import query_json_api
+from queries import query_json_api, is_plural
 from tree import Result
 from settings import changedlocale
+from queries.num import numbers_to_ordinal, numbers_to_text
 
 from reynir import NounPhrase
 from geo import capitalize_placename, iceprep_for_placename, icelandic_city_name
@@ -181,41 +183,6 @@ _IATA_TO_AIRPORT_MAP = {
 
 _AIRPORT_TO_IATA_MAP = {val: key for key, val in _IATA_TO_AIRPORT_MAP.items()}
 
-# Day indices in accusative case
-_DAY_INDEX_ACC = {
-    1: "fyrsta",
-    2: "annan",
-    3: "þriðja",
-    4: "fjórða",
-    5: "fimmta",
-    6: "sjötta",
-    7: "sjöunda",
-    8: "áttunda",
-    9: "níunda",
-    10: "tíunda",
-    11: "ellefta",
-    12: "tólfta",
-    13: "þrettánda",
-    14: "fjórtánda",
-    15: "fimmtánda",
-    16: "sextánda",
-    17: "sautjánda",
-    18: "átjánda",
-    19: "nítjánda",
-    20: "tuttugasta",
-    21: "tuttugasta og fyrsta",
-    22: "tuttugasta og annan",
-    23: "tuttugasta og þriðja",
-    24: "tuttugasta og fjórða",
-    25: "tuttugasta og fimmta",
-    26: "tuttugasta og sjötta",
-    27: "tuttugasta og sjöunda",
-    28: "tuttugasta og áttunda",
-    29: "tuttugasta og níunda",
-    30: "þrítugasta",
-    31: "þrítugasta og fyrsta",
-}
-
 
 def QFlightsQuery(node, params, result):
     # Set the query type
@@ -291,7 +258,12 @@ def _fetch_flight_data(
     res = query_json_api(url)
 
     # Verify result was successful
-    if not isinstance(res, dict) or "Success" not in res or not res["Success"] or "Items" not in res:
+    if (
+        not isinstance(res, dict)
+        or "Success" not in res
+        or not res["Success"]
+        or "Items" not in res
+    ):
         return []
 
     # Add result to cache
@@ -444,7 +416,8 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
                     f"klukkan {flight_time_str} að staðartíma."
                 )
 
-        voice_line = re.sub(r" \d+\. ", " " + _DAY_INDEX_ACC[flight_dt.day] + " ", line)
+        # Convert date ordinals to text for voice ("5. ágúst" -> "fimmta ágúst")
+        voice_line = numbers_to_ordinal(line, case="þf", gender="kk")
 
         answers.append(line)
         voice_lines.append(voice_line)
@@ -491,8 +464,6 @@ def _process_result(result: Result) -> Dict[str, str]:
     # Translate Icelandic airport to its IATA code
     iata_code: str = _AIRPORT_TO_IATA_MAP.get(api_airport, api_airport)
 
-    # TODO: Currently module only fetches one flight,
-    # modifications to the grammar could allow fetching of more flights at once
     flight_count: int = result.get("flight_count", 1)
 
     flight_data: FlightList
@@ -524,17 +495,25 @@ def _process_result(result: Result) -> Dict[str, str]:
         to_airp = NounPhrase(to_airp).genitive or to_airp
 
         if from_airp == "*":
-            answ["answer"] = f"Ekkert flug fannst til {to_airp} næstu {days} daga."
+            answ["answer"] = f"Ekkert flug fannst til {to_airp} "
         elif to_airp == "*":
-            answ["answer"] = f"Ekkert flug fannst frá {from_airp} næstu {days} daga."
+            answ["answer"] = f"Ekkert flug fannst frá {from_airp} "
         else:
-            answ["answer"] = (
-                f"Ekkert flug fannst "
-                f"frá {from_airp} "
-                f"til {to_airp} "
-                f"næstu {days} daga."
+            answ["answer"] = f"Ekkert flug fannst frá {from_airp} til {to_airp} "
+
+        if days == 1:
+            # Wording if only checking next 24 hours
+            answ["answer"] += "næsta sólarhringinn."
+        else:
+            answ["answer"] += (
+                f"næstu {days} sólarhringa."
+                if is_plural(days)
+                else f"næsta {days} sólarhringinn."
             )
-        answ["voice"] = answ["answer"]
+
+        # Convert numbers to text in correct case and gender for voice
+        # ("næstu 4 sólarhringa" -> "næstu fjóra sólarhringa")
+        answ["voice"] = numbers_to_text(answ["answer"], gender="kk", case="þf")
 
     return answ
 

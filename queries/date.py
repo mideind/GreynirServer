@@ -31,7 +31,6 @@
 """
 
 # TODO: Special days should be mentioned by name, not date, in voice answers
-# TODO: Fix pronunciation of ordinal day of month (i.e. "29di" vs "29da")
 # TODO: "How many weeks between April 3 and June 16?"
 # TODO: Restore timezone-awareness
 # TODO: "Hvað er mikið eftir af vinnuvikunni", "hvað er langt í helgina"
@@ -68,9 +67,10 @@ from pytz import timezone
 from calendar import monthrange, isleap
 
 from query import Query, QueryStateDict
-from queries import timezone4loc, gen_answer, is_plural, cap_first
+from queries import timezone4loc, gen_answer, is_plural, sing_or_plur, cap_first
 from tree import Result
 from settings import changedlocale
+from queries.num import numbers_to_ordinal, years_to_text, numbers_to_text
 
 
 _DATE_QTYPE = "Date"
@@ -635,84 +635,6 @@ def QDateWinterSolstice(node, params, result):
     result["target"] = None  # To be completed
 
 
-# Day indices in nominative case
-_DAY_INDEX_NOM = {
-    1: "fyrsti",
-    2: "annar",
-    3: "þriðji",
-    4: "fjórði",
-    5: "fimmti",
-    6: "sjötti",
-    7: "sjöundi",
-    8: "áttundi",
-    9: "níundi",
-    10: "tíundi",
-    11: "ellefti",
-    12: "tólfti",
-    13: "þrettándi",
-    14: "fjórtándi",
-    15: "fimmtándi",
-    16: "sextándi",
-    17: "sautjándi",
-    18: "átjándi",
-    19: "nítjándi",
-    20: "tuttugasti",
-    21: "tuttugasti og fyrsti",
-    22: "tuttugasti og annar",
-    23: "tuttugasti og þriðji",
-    24: "tuttugasti og fjórði",
-    25: "tuttugasti og fimmti",
-    26: "tuttugasti og sjötti",
-    27: "tuttugasti og sjöundi",
-    28: "tuttugasti og áttundi",
-    29: "tuttugasti og níundi",
-    30: "þrítugasti",
-    31: "þrítugasti og fyrsti",
-}
-
-
-# Day indices in accusative case
-_DAY_INDEX_ACC = {
-    1: "fyrsta",
-    2: "annan",
-    3: "þriðja",
-    4: "fjórða",
-    5: "fimmta",
-    6: "sjötta",
-    7: "sjöunda",
-    8: "áttunda",
-    9: "níunda",
-    10: "tíunda",
-    11: "ellefta",
-    12: "tólfta",
-    13: "þrettánda",
-    14: "fjórtánda",
-    15: "fimmtánda",
-    16: "sextánda",
-    17: "sautjánda",
-    18: "átjánda",
-    19: "nítjánda",
-    20: "tuttugasta",
-    21: "tuttugasta og fyrsta",
-    22: "tuttugasta og annan",
-    23: "tuttugasta og þriðja",
-    24: "tuttugasta og fjórða",
-    25: "tuttugasta og fimmta",
-    26: "tuttugasta og sjötta",
-    27: "tuttugasta og sjöunda",
-    28: "tuttugasta og áttunda",
-    29: "tuttugasta og níunda",
-    30: "þrítugasta",
-    31: "þrítugasta og fyrsta",
-}
-
-
-# Day indices in dative case
-_DAY_INDEX_DAT = _DAY_INDEX_ACC.copy()
-_DAY_INDEX_DAT[2] = "öðrum"
-_DAY_INDEX_DAT[22] = "tuttugasta og öðrum"
-
-
 def next_weekday(d: datetime, weekday: int) -> datetime:
     """Get the date of the next weekday after a given date.
     0 = Monday, 1 = Tuesday, 2 = Wednesday, etc."""
@@ -779,14 +701,16 @@ def howlong_answ(q: Query, result):
 
     # Check if it's today
     if target.date() == now.date():
+        answer = gen_answer(f"Það er {target.strftime('%-d. %B')} í dag.")
         return q.set_answer(
-            *gen_answer("Það er {0} í dag.".format(target.strftime("%-d. %B")))
+            answer[0], answer[1], numbers_to_ordinal(answer[2], case="nf", gender="kk")
         )
     # Check if it's tomorrow
     # TODO: Maybe return num hours until tomorrow?
     if target.date() == now.date() + timedelta(days=1):
+        answer = gen_answer(f"Það er {target.strftime('%-d. %B')} á morgun.")
         return q.set_answer(
-            *gen_answer("Það er {0} á morgun.".format(target.strftime("%-d. %B")))
+            answer[0], answer[1], numbers_to_ordinal(answer[2], case="nf", gender="kk")
         )
 
     # Returns num days rounded down, so we increment by one.
@@ -809,17 +733,19 @@ def howlong_answ(q: Query, result):
             verb, days, days_desc, passed, tfmt
         )
         # Convert e.g. '25.' to 'tuttugasta og fimmta'
-        voice = re.sub(r" \d+\. ", " " + _DAY_INDEX_DAT[target.day] + " ", voice)
-        answer = "{0} {1}".format(days, days_desc)
+        voice = numbers_to_ordinal(voice, case="þgf", gender="kk")
+        answer = f"{days} {days_desc}."
     # It's in the future
     else:
         voice = "Það {0} {1} {2} þar til {3} gengur í garð.".format(
             verb, days, days_desc, tfmt
         )
         # Convert e.g. '25.' to 'tuttugasti og fimmti'
-        voice = re.sub(r" \d+\. ", " " + _DAY_INDEX_NOM[target.day] + " ", voice)
-        answer = "{0} {1}".format(days, days_desc)
+        voice = numbers_to_ordinal(voice, case="nf", gender="kk")
+        answer = f"{days} {days_desc}."
 
+    # Convert years to spoken text, along with day count
+    voice = numbers_to_text(years_to_text(voice), gender="kk")
     response = dict(answer=answer)
 
     q.set_answer(response, answer, voice)
@@ -835,7 +761,7 @@ def when_answ(q: Query, result):
     answer = voice = cap_first(date_str)
     # Put a spelled-out ordinal number instead of the numeric one,
     # in accusative case
-    voice = re.sub(r"\d+\. ", _DAY_INDEX_ACC[result.target.day] + " ", voice)
+    voice = numbers_to_ordinal(voice, case="þf", gender="kk")
     response = dict(answer=answer)
 
     q.set_key("WhenSpecialDay")
@@ -848,11 +774,12 @@ def currdate_answ(q: Query, result):
     date_str = now.strftime("%A %-d. %B %Y")
     answer = date_str.capitalize()
     response = dict(answer=answer)
-    voice = "Í dag er {0}".format(date_str)
+    voice = f"Í dag er {date_str}"
 
     # Put a spelled-out ordinal number instead of the numeric one
     # to get the grammar right
-    voice = re.sub(r" \d+\. ", " " + _DAY_INDEX_NOM[now.day] + " ", voice)
+    # Also fix year pronounciation
+    voice = years_to_text(numbers_to_ordinal(voice, case="nf", gender="kk"))
 
     q.set_key("CurrentDate")
     q.set_answer(response, answer, voice)
@@ -863,9 +790,16 @@ def days_in_month_answ(q: Query, result):
     ndays = result["days_in_month"]
     t = result["target"]
     mname = t.strftime("%B")
-    answer = "{0} dagar.".format(ndays)
+    answer = sing_or_plur(ndays, "dagar.", "dagur.")
     response = dict(answer=answer)
-    voice = "Það eru {0} dagar í {1} {2}".format(ndays, mname, t.year)
+    voice = (
+        f"Það eru {ndays} dagar í {mname} {t.year}"
+        if is_plural(ndays)
+        else f"Það er {ndays} dagur í {mname} {t.year}"
+    )
+
+    # Convert year and ndays to text for voice
+    voice = numbers_to_text(years_to_text(voice), case="nf", gender="kk")
 
     q.set_key("DaysInMonth")
     q.set_answer(response, answer, voice)
@@ -875,9 +809,9 @@ def year_answ(q: Query, result):
     """ Generate answer to a question of the form "Hvaða ár er núna?" etc. """
     now = datetime.utcnow()
     y = now.year
-    answer = "{0}.".format(y)
+    answer = f"{y}."
     response = dict(answer=answer)
-    voice = "Það er árið {0}.".format(y)
+    voice = years_to_text(f"Það er árið {y}.")
 
     q.set_key("WhichYear")
     q.set_answer(response, answer, voice)
@@ -891,7 +825,7 @@ def leap_answ(q: Query, result):
     verb = "er" if y >= now.year else "var"
     answer = "Árið {0} {1} {2}hlaupár.".format(y, verb, "" if isleap(y) else "ekki ")
     response = dict(answer=answer)
-    voice = answer
+    voice = years_to_text(answer)
 
     q.set_key("IsLeapYear")
     q.set_answer(response, answer, voice)
