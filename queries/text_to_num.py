@@ -294,11 +294,7 @@ QNum0 →
     'núll'
 
 QNum1Til9 →
-    # 'einn'/fall/tala/kyn  # FIXME: Catch different cases of 1,2,3 and 4
-    # | 'tveir'/fall/tala/kyn
-    # | 'þrír'/fall/tala/kyn
-    # | 'fjórir'/fall/tala/kyn
-    to/tala/fall/kyn
+    to/tala/fall/kyn  # Numbers 1-4
     | "fimm"
     | "sex"
     | "sjö"
@@ -371,12 +367,11 @@ QNumOktilljón →
 
 
 """
-# TODO: CATCH CASES AND GENDER OF NUMBERS !!! Bæta inn í Vocab.conf töluorðum fyrir tölur ekki í BÍN
+# TODO: CATCH CASES AND GENDER OF NUMBERS !!! Add to Vocab.conf numbers not in BÍN
 
-# TODO: "oktilljón og milljón septilljónir" og "septilljón og milljón sextilljónir",
-#       Spyrja hvort eigi að leyfa eða ekki t.d. milljarður septilljóna == eh margar oktilljónir í staðinn
-
-# TODO: "tólf hundruð þúsund"?
+# TODO: "oktilljón og milljón septilljónir" & "septilljón og milljón sextilljónir",
+#       Allow "milljarður septilljóna" == "... oktilljónir"?
+#       Allow "tólf hundruð þúsund"?
 # TODO: Ordinals
 # TODO: "á annan tug manna"? "fjórir tugir"
 
@@ -421,7 +416,7 @@ _NUMBERS = {
     "trilljón": 10 ** 18,
     "trilljarður": 10 ** 21,
     "kvaðrilljón": 10 ** 24,
-    # TODO: Add to BÍN
+    # Following numbers not in BÍN
     "kvaðrilljarður": 10 ** 27,
     "kvintilljón": 10 ** 30,
     "sextilljón": 10 ** 36,
@@ -695,6 +690,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     q.set_answer(*gen_answer(answer))
     q.set_qtype(_NUM_QTYPE)
 
+
+# TODO: BÍN additions in format for Vocab.conf
 
 # kvaðrilljarður    kvaðrilljarður        kk alm NFET
 # kvaðrilljarður    kvaðrilljarð          kk alm ÞFET
