@@ -52,6 +52,7 @@ from tzwhere import tzwhere  # type: ignore
 from pytz import country_timezones
 
 from geo import country_name_for_isocode, iceprep_for_cc
+from queries.num import number_to_text, float_to_text
 from reynir import NounPhrase
 from settings import changedlocale
 from util import read_api_key
@@ -255,7 +256,13 @@ _TIMEUNIT_INTERVALS = (
 _CASE_ABBR = ["nf", "þf", "þgf", "ef"]
 
 
-def time_period_desc(seconds: int, case: str = "nf", omit_seconds: bool = True) -> str:
+def time_period_desc(
+    seconds: int,
+    *,
+    case: str = "nf",
+    omit_seconds: bool = True,
+    num_to_str: bool = False,
+) -> str:
     """Generate Icelandic description of the length of a given time
     span, e.g. "4 dagar, 6 klukkustundir og 21 mínúta."""
     assert case in _CASE_ABBR
@@ -271,7 +278,12 @@ def time_period_desc(seconds: int, case: str = "nf", omit_seconds: bool = True) 
             seconds -= value * count
             plidx = 1 if is_plural(value) else 0
             icename = _TIMEUNIT_NOUNS[unit][plidx][cidx]
-            result.append("{0} {1}".format(value, icename))
+            if num_to_str:
+                # Convert number to spoken text
+                value = number_to_text(
+                    value, case=case, gender="kk" if unit == "d" else "kvk"
+                )
+            result.append(f"{value} {icename}")
 
     return natlang_seq(result)
 
@@ -283,7 +295,12 @@ _METER_NOUN = (
 
 
 def distance_desc(
-    km_dist: float, case: str = "nf", in_metres: float = 1.0, abbr: bool = False
+    km_dist: float,
+    *,
+    case: str = "nf",
+    in_metres: float = 1.0,
+    abbr: bool = False,
+    num_to_str: bool = False,
 ) -> str:
     """Generate an Icelandic description of distance in km/m w. option to
     specify case, abbreviations, cutoff for returning desc in metres."""
@@ -297,6 +314,10 @@ def distance_desc(
         plidx = 1 if is_plural(rounded_km) else 0
         unit_long = "kíló" + _METER_NOUN[plidx][cidx]
         unit = "km" if abbr else unit_long
+        if num_to_str:
+            dist = float_to_text(
+                rounded_km, case=case, gender="kk", comma_null=False
+            )
     # E.g. 940 metrar
     else:
         # Round to nearest 10
@@ -307,8 +328,10 @@ def distance_desc(
         plidx = 1 if is_plural(dist) else 0
         unit_long = _METER_NOUN[plidx][cidx]
         unit = "m" if abbr else unit_long
+        if num_to_str:
+            dist = number_to_text(dist, case=case, gender="kk")
 
-    return "{0} {1}".format(dist, unit)
+    return f"{dist} {unit}"
 
 
 _KRONA_NOUN = (

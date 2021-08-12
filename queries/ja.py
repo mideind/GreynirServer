@@ -36,7 +36,7 @@ from reynir import NounPhrase
 from reynir.bindb import GreynirBin
 
 from . import query_json_api, gen_answer, icequote
-from queries.num import numbers_to_neutral
+from queries.num import numbers_to_text, digits_to_text
 
 from query import AnswerTuple, Query, QueryStateDict
 from tree import Result
@@ -229,7 +229,7 @@ def _answer_phonenum4name_query(q: Query, result: Result) -> AnswerTuple:
     phone_number = phone_number.replace("-", "").replace(" ", "")
     answ = phone_number
     fn = NounPhrase(fname).dative or fname
-    voice = "Síminn hjá {0} er {1}".format(fn, " ".join(list(phone_number)))
+    voice = f"Síminn hjá {fn} er {digits_to_text(phone_number)}"
 
     q.set_context(dict(phone_number=phone_number, name=fname))
     q.set_source(_JA_SOURCE)
@@ -246,7 +246,8 @@ def _answer_name4phonenum_query(q: Query, result: Result) -> AnswerTuple:
     q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     if not clean_num or len(clean_num) < 3:
-        return gen_answer("{0} er ekki gilt símanúmer".format(num))
+        answer = gen_answer(f"{num} er ekki gilt símanúmer")
+        return (answer[0], answer[1], digits_to_text(answer[2]))
 
     res = query_ja_api(clean_num)
 
@@ -276,7 +277,7 @@ def _answer_name4phonenum_query(q: Query, result: Result) -> AnswerTuple:
     answ = "{0}{1}{2}".format(
         name, " " + occup if occup else "", ", " + full_addr if full_addr else ""
     ).strip()
-    voice = numbers_to_neutral(answ)
+    voice = numbers_to_text(answ)
 
     # Set phone number, name and address as context
     q.set_context(dict(phone_number=clean_num, name=name, address=full_addr))

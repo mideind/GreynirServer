@@ -34,7 +34,7 @@ from reynir.bindb import GreynirBin
 from geo import icelandic_addr_info, iceprep_for_placename, iceprep_for_street
 from query import ClientDataDict, Query
 from . import gen_answer
-from queries.num import numbers_to_neutral
+from queries.num import numbers_to_text
 
 
 _USERINFO_QTYPE = "UserInfo"
@@ -194,7 +194,7 @@ def _addr2str(addr: Dict[str, str], case: str = "nf") -> str:
                 astr = n.dative or astr
         except Exception:
             pass
-    return numbers_to_neutral(astr)
+    return numbers_to_text(astr)
 
 
 _WHATS_MY_ADDR = frozenset(

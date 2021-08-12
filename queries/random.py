@@ -31,6 +31,7 @@ import random
 from query import Query, QueryStateDict
 from queries import gen_answer
 from queries.arithmetic import add_num, terminal_num
+from queries.num import number_to_text
 from tree import Result
 
 
@@ -168,9 +169,11 @@ def gen_random_answer(q: Query, result):
     answer = str(random.randint(num1, num2))
     response = dict(answer=answer)
     if result.action == "dieroll":
-        voice_answer = "Talan {0} kom upp á teningnum".format(answer)
+        voice_answer = (
+            f"Talan {number_to_text(answer, gender='kk')} kom upp á teningnum"
+        )
     else:
-        voice_answer = "Ég vel töluna {0}".format(answer)
+        voice_answer = f"Ég vel töluna {number_to_text(answer, gender='kk')}"
 
     return response, answer, voice_answer
 

@@ -34,7 +34,7 @@ import random
 import logging
 
 from query import Query, QueryStateDict
-from queries import query_json_api, iceformat_float, is_plural, gen_answer
+from queries import query_json_api, iceformat_float, sing_or_plur, gen_answer
 from settings import Settings
 from tree import Result
 
@@ -503,7 +503,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             val = _query_exchange_rate(result.currencies[0], "ISK")
             if val is None:
                 val = 1.0
-            suffix = "krónur" if is_plural(iceformat_float(val)) else "króna"
+            suffix = sing_or_plur(val, "krónur", "króna")
         elif result.op == "convert":
             # 'Hvað eru 100 evrur margar krónur?'
             suffix = result.currency  # 'krónur'

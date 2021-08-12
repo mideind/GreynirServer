@@ -214,7 +214,10 @@ def test_bus(client: FlaskClient):
         client, {"q": "hvaða stoppistöð er næst mér", "voice": True}, "NearestStop"
     )
     assert json["answer"] == "Fiskislóð"
-    assert json["voice"] == "Næsta stoppistöð er Fiskislóð; þangað eru 310 metrar."
+    assert (
+        json["voice"]
+        == "Næsta stoppistöð er Fiskislóð; þangað eru þrjú hundruð og tíu metrar."
+    )
 
     json = qmcall(
         client,
@@ -339,16 +342,23 @@ def test_date(client: FlaskClient):
     json = qmcall(client, {"q": "er 2020 hlaupár?"}, "Date")
     assert "var hlaupár" in json["answer"]
 
-    json = qmcall(client, {"q": "var árið 1999 hlaupár?"}, "Date")
+    json = qmcall(client, {"q": "var árið 1999 hlaupár?", "voice": True}, "Date")
     assert "ekki hlaupár" in json["answer"]
+    assert "nítján hundruð níutíu og níu" in json["voice"]
 
-    json = qmcall(client, {"q": "hvað eru margir dagar í desember"}, "Date")
+    json = qmcall(
+        client, {"q": "hvað eru margir dagar í desember", "voice": True}, "Date"
+    )
     assert json["answer"].startswith("31")
     assert "dag" in json["answer"]
+    assert "þrjátíu og einn" in json["voice"]
 
-    json = qmcall(client, {"q": "hvað eru margir dagar í febrúar 2024"}, "Date")
+    json = qmcall(
+        client, {"q": "hvað eru margir dagar í febrúar 2024", "voice": True}, "Date"
+    )
     assert json["answer"].startswith("29")
     assert "dag" in json["answer"]
+    assert "tuttugu og níu" in json["voice"]
 
     json = qmcall(client, {"q": "Hvað er langt fram að verslunarmannahelgi"}, "Date")
     assert re.search(r"^\d+", json["answer"])
@@ -356,8 +366,9 @@ def test_date(client: FlaskClient):
     # json = qmcall(client, {"q": "hvað er langt liðið frá uppstigningardegi"}, "Date")
     # assert re.search(r"^\d+", json["answer"])
 
-    json = qmcall(client, {"q": "hvenær eru jólin"}, "Date")
+    json = qmcall(client, {"q": "hvenær eru jólin", "voice": True}, "Date")
     assert re.search(r"25", json["answer"]) is not None
+    assert "tuttugasta og fimmta" in json["voice"]
 
 
 def test_dictionary(client: FlaskClient):
@@ -382,7 +393,10 @@ def test_distance(client: FlaskClient):
         client, {"q": "hvað er ég langt frá perlunni", "voice": True}, "Distance"
     )
     assert json["answer"].startswith("3,5 km")
-    assert json["voice"].startswith("Perlan er ")
+    assert (
+        json["voice"].startswith("Perlan er ")
+        and "þrjá komma fimm kílómetra" in json["voice"]
+    )
     assert json["source"] == "Google Maps"
 
     json = qmcall(
@@ -408,12 +422,12 @@ def test_distance(client: FlaskClient):
     assert json["answer"].endswith("(389 km).")
 
 
-def _test_flights(client: FlaskClient):
+def test_flights(client: FlaskClient):
     """ Flights module """
     departure_pattern = r"^Flug \w*? til .*? flýgur frá \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
     arrival_pattern = r"^Flug \w*? frá .*? lendir [í|á] \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
     no_matching_flight_pattern = (
-        r"Ekkert flug fannst (frá .*? )?(til .*? )?næstu \d+ daga."
+        r"Ekkert flug fannst (frá .*? )?(til .*? )?næstu \d+ sólarhringa."
     )
 
     json = qmcall(
@@ -562,8 +576,7 @@ def test_ja(client: FlaskClient):
         "PhoneNum4Name",
     )
     assert "6992422" in json["answer"]
-    # TODO
-    # assert "sex níu níu" in json["voice"]
+    assert "sex níu níu tveir fjórir tveir tveir" in json["voice"]
 
     json = qmcall(
         client,
@@ -574,8 +587,7 @@ def test_ja(client: FlaskClient):
         "PhoneNum4Name",
     )
     assert "6992422" in json["answer"]
-    # TODO
-    # assert "sex níu níu" in json["voice"]
+    assert "sex níu níu tveir fjórir tveir tveir" in json["voice"]
 
     json = qmcall(
         client,
@@ -589,10 +601,14 @@ def test_ja(client: FlaskClient):
 
     json = qmcall(
         client,
-        {"q": "hver er síminn hjá Vilhjálmi Þorsteinssyni hugbúnaðarhönnuði"},
+        {
+            "q": "hver er síminn hjá Vilhjálmi Þorsteinssyni hugbúnaðarhönnuði",
+            "voice": True,
+        },
         "PhoneNum4Name",
     )
     assert "8201020" in json["answer"]
+    assert "átta tveir núll einn núll tveir núll" in json["voice"]
 
 
 def test_news(client: FlaskClient):
@@ -746,21 +762,34 @@ def test_sunpos(client: FlaskClient):
     assert re.match(
         fr"^Sólin (sest|settist) um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
     )
-    json = qmcall(client, {"q": "hver er sólarhæð í Reykjavík í dag?"}, "SunPosition")
+    json = qmcall(
+        client,
+        {"q": "hver er sólarhæð í Reykjavík í dag?", "voice": True},
+        "SunPosition",
+    )
     assert re.match(
         r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráð(a|ur)\.$",
         json["answer"],
     )
-    json = qmcall(client, {"q": "hver er hæð sólar í Reykjavík í dag?"}, "SunPosition")
+    assert not re.findall(r"\d+", json["voice"])
+    json = qmcall(
+        client,
+        {"q": "hver er hæð sólar í Reykjavík í dag?", "voice": True},
+        "SunPosition",
+    )
     assert re.match(
         r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráð(a|ur)\.$",
         json["answer"],
     )
-    json = qmcall(client, {"q": "hver er hæð sólarinnar í dag?"}, "SunPosition")
+    assert not re.findall(r"\d+", json["voice"])
+    json = qmcall(
+        client, {"q": "hver er hæð sólarinnar í dag?", "voice": True}, "SunPosition"
+    )
     assert re.match(
         r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráð(a|ur)\.$",
         json["answer"],
     )
+    assert not re.findall(r"\d+", json["voice"])
     # json = qmcall(client, {"q": "hver er hæð sólar í dag?"}, "SunPosition")
     # assert re.match(
     #     r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráð(a|ur)\.$",
@@ -785,7 +814,9 @@ def test_sunpos(client: FlaskClient):
     )
     assert re.match(
         r"^Það verður ekki birting á morgun\.$", json["answer"]
-    ) or re.match(r"^Birting verður um klukkan \d?\d:\d\d (á morgun|í nótt)\.$", json["answer"])
+    ) or re.match(
+        r"^Birting verður um klukkan \d?\d:\d\d (á morgun|í nótt)\.$", json["answer"]
+    )
     json = qmcall(client, {"q": "hvenær er hádegi á morgun á Ísafirði?"}, "SunPosition")
     assert re.match(r"^Hádegi verður um klukkan \d?\d:\d\d á morgun\.$", json["answer"])
     json = qmcall(
@@ -1049,7 +1080,6 @@ def test_query_utility_functions():
         timezone4loc,
         # parse_num,
     )
-    from queries.num import numbers_to_neutral
 
     assert natlang_seq(["Jón", "Gunna"]) == "Jón og Gunna"
     assert natlang_seq(["Jón", "Gunna", "Siggi"]) == "Jón, Gunna og Siggi"
@@ -1063,9 +1093,6 @@ def test_query_utility_functions():
 
     # assert parse_num("11") == 11
     # assert parse_num("17,33") == 17.33
-
-    assert numbers_to_neutral("Öldugötu 4") == "Öldugötu fjögur"
-    assert numbers_to_neutral("Fiskislóð 31") == "Fiskislóð þrjátíu og eitt"
 
     assert is_plural(22)
     assert is_plural(11)
@@ -1103,6 +1130,24 @@ def test_query_utility_functions():
         time_period_desc(121, omit_seconds=False, case="þgf")
         == "2 mínútum og 1 sekúndu"
     )
+    assert time_period_desc(3751, num_to_str=True) == "ein klukkustund og þrjár mínútur"
+    assert (
+        time_period_desc(3751, omit_seconds=False, num_to_str=True)
+        == "ein klukkustund, tvær mínútur og þrjátíu og ein sekúnda"
+    )
+    assert time_period_desc(601, num_to_str=True) == "tíu mínútur"
+    assert (
+        time_period_desc(86401, omit_seconds=False, case="ef", num_to_str=True)
+        == "eins dags og einnar sekúndu"
+    )
+    assert (
+        time_period_desc(172802, omit_seconds=False, case="þf", num_to_str=True)
+        == "tvo daga og tvær sekúndur"
+    )
+    assert (
+        time_period_desc(121, omit_seconds=False, case="þgf", num_to_str=True)
+        == "tveimur mínútum og einni sekúndu"
+    )
 
     assert distance_desc(1.1) == "1,1 kílómetri"
     assert distance_desc(1.2) == "1,2 kílómetrar"
@@ -1110,6 +1155,22 @@ def test_query_utility_functions():
     assert distance_desc(0.021) == "20 metrar"
     assert distance_desc(41, case="þf") == "41 kílómetra"
     assert distance_desc(0.215, case="þgf") == "220 metrum"
+    assert distance_desc(1.1, num_to_str=True) == "einn komma einn kílómetri"
+    assert distance_desc(1.2, num_to_str=True) == "einn komma tveir kílómetrar"
+    assert (
+        distance_desc(1.2, case="þgf", num_to_str=True)
+        == "einum komma tveimur kílómetrum"
+    )
+    assert (
+        distance_desc(1.2, case="ef", num_to_str=True) == "eins komma tveggja kílómetra"
+    )
+    assert distance_desc(0.7, num_to_str=True) == "sjö hundruð metrar"
+    assert distance_desc(0.021, num_to_str=True) == "tuttugu metrar"
+    assert distance_desc(41, case="þf", num_to_str=True) == "fjörutíu og einn kílómetra"
+    assert (
+        distance_desc(0.215, case="þgf", num_to_str=True)
+        == "tvö hundruð og tuttugu metrum"
+    )
 
     assert krona_desc(361) == "361 króna"
     assert krona_desc(28) == "28 krónur"
@@ -1138,7 +1199,7 @@ def test_query_utility_functions():
 
 def test_numbers():
     """ Test number handling functionality in queries """
-    from queries.num import number_to_neutral, number_to_text, numbers_to_neutral
+    from queries.num import number_to_neutral, number_to_text, numbers_to_text
 
     assert number_to_neutral(2) == "tvö"
     assert number_to_neutral(1100) == "eitt þúsund og eitt hundrað"
@@ -1148,185 +1209,193 @@ def test_numbers():
     )
     assert number_to_neutral(241000000000) == "tvö hundruð fjörutíu og einn milljarður"
     assert number_to_neutral(100000000) == "eitt hundrað milljónir"
+    assert number_to_neutral(1001000000) == "einn milljarður og ein milljón"
+    assert number_to_neutral(1002000000) == "einn milljarður og tvær milljónir"
     assert number_to_neutral(200000000000) == "tvö hundruð milljarðar"
     assert (
         number_to_neutral(10000000000000000000000000000000000000000000000000000000)
         == "tíu milljónir oktilljóna"
     )
-
-    assert number_to_text(101, "kk") == "eitt hundrað og einn"
-    assert number_to_text(-102, "kvk") == "mínus eitt hundrað og tvær"
-    assert number_to_text(5, "kk") == "fimm"
-    assert number_to_text(10001, "kvk") == "tíu þúsund og ein"
-    assert number_to_text(400567, "hk") == number_to_neutral(400567)
     assert (
-        number_to_text(-11220024, "kvk")
+        number_to_neutral(1000000000000000000000000000000000000001000000000)
+        == "ein oktilljón og einn milljarður"
+    )
+    assert (
+        number_to_neutral(1000000000000000000000000000000000000003000000000)
+        == "ein oktilljón og þrír milljarðar"
+    )
+    assert number_to_neutral(3000400000) == "þrír milljarðar og fjögur hundruð þúsund"
+    assert (
+        number_to_neutral(2000000000000000000000000000000000100000000000000)
+        == "tvær oktilljónir og eitt hundrað billjónir"
+    )
+
+    assert number_to_text(101, gender="kk") == "hundrað og einn"
+    assert number_to_text(-102, gender="kvk") == "mínus hundrað og tvær"
+    assert (
+        number_to_text(-102, gender="kvk", one_hundred=True)
+        == "mínus eitt hundrað og tvær"
+    )
+    assert number_to_text(5, gender="kk") == "fimm"
+    assert number_to_text(10001, gender="kvk") == "tíu þúsund og ein"
+    assert number_to_text(400567, gender="hk") == number_to_neutral(400567)
+    assert (
+        number_to_text(-11220024, gender="kvk")
         == "mínus ellefu milljónir tvö hundruð og tuttugu þúsund tuttugu og fjórar"
     )
 
-    assert numbers_to_neutral("Baugatangi 1, Reykjavík") == "Baugatangi eitt, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 2, Reykjavík") == "Baugatangi tvö, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 3, Reykjavík") == "Baugatangi þrjú, Reykjavík"
+    assert numbers_to_text("Baugatangi 1, Reykjavík") == "Baugatangi eitt, Reykjavík"
+    assert numbers_to_text("Baugatangi 2, Reykjavík") == "Baugatangi tvö, Reykjavík"
+    assert numbers_to_text("Baugatangi 3, Reykjavík") == "Baugatangi þrjú, Reykjavík"
+    assert numbers_to_text("Baugatangi 4, Reykjavík") == "Baugatangi fjögur, Reykjavík"
+    assert numbers_to_text("Baugatangi 5, Reykjavík") == "Baugatangi fimm, Reykjavík"
+    assert numbers_to_text("Baugatangi 10, Reykjavík") == "Baugatangi tíu, Reykjavík"
+    assert numbers_to_text("Baugatangi 11, Reykjavík") == "Baugatangi ellefu, Reykjavík"
+    assert numbers_to_text("Baugatangi 12, Reykjavík") == "Baugatangi tólf, Reykjavík"
     assert (
-        numbers_to_neutral("Baugatangi 4, Reykjavík") == "Baugatangi fjögur, Reykjavík"
+        numbers_to_text("Baugatangi 13, Reykjavík") == "Baugatangi þrettán, Reykjavík"
     )
-    assert numbers_to_neutral("Baugatangi 5, Reykjavík") == "Baugatangi 5, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 10, Reykjavík") == "Baugatangi 10, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 11, Reykjavík") == "Baugatangi 11, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 12, Reykjavík") == "Baugatangi 12, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 13, Reykjavík") == "Baugatangi 13, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 14, Reykjavík") == "Baugatangi 14, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 15, Reykjavík") == "Baugatangi 15, Reykjavík"
-    assert numbers_to_neutral("Baugatangi 20, Reykjavík") == "Baugatangi 20, Reykjavík"
     assert (
-        numbers_to_neutral("Baugatangi 21, Reykjavík")
+        numbers_to_text("Baugatangi 14, Reykjavík") == "Baugatangi fjórtán, Reykjavík"
+    )
+    assert (
+        numbers_to_text("Baugatangi 15, Reykjavík") == "Baugatangi fimmtán, Reykjavík"
+    )
+    assert (
+        numbers_to_text("Baugatangi 20, Reykjavík") == "Baugatangi tuttugu, Reykjavík"
+    )
+    assert (
+        numbers_to_text("Baugatangi 21, Reykjavík")
         == "Baugatangi tuttugu og eitt, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 22, Reykjavík")
+        numbers_to_text("Baugatangi 22, Reykjavík")
         == "Baugatangi tuttugu og tvö, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 23, Reykjavík")
+        numbers_to_text("Baugatangi 23, Reykjavík")
         == "Baugatangi tuttugu og þrjú, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 24, Reykjavík")
+        numbers_to_text("Baugatangi 24, Reykjavík")
         == "Baugatangi tuttugu og fjögur, Reykjavík"
     )
-    assert numbers_to_neutral("Baugatangi 25, Reykjavík") == "Baugatangi 25, Reykjavík"
     assert (
-        numbers_to_neutral("Baugatangi 100, Reykjavík") == "Baugatangi 100, Reykjavík"
+        numbers_to_text("Baugatangi 25, Reykjavík")
+        == "Baugatangi tuttugu og fimm, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 101, Reykjavík")
+        numbers_to_text("Baugatangi 100, Reykjavík") == "Baugatangi hundrað, Reykjavík"
+    )
+    assert (
+        numbers_to_text("Baugatangi 101, Reykjavík")
         == "Baugatangi hundrað og eitt, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 102, Reykjavík")
+        numbers_to_text("Baugatangi 102, Reykjavík")
         == "Baugatangi hundrað og tvö, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 103, Reykjavík")
+        numbers_to_text("Baugatangi 103, Reykjavík")
         == "Baugatangi hundrað og þrjú, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 104, Reykjavík")
+        numbers_to_text("Baugatangi 104, Reykjavík")
         == "Baugatangi hundrað og fjögur, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 105, Reykjavík") == "Baugatangi 105, Reykjavík"
+        numbers_to_text("Baugatangi 105, Reykjavík")
+        == "Baugatangi hundrað og fimm, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 111, Reykjavík") == "Baugatangi 111, Reykjavík"
+        numbers_to_text("Baugatangi 111, Reykjavík")
+        == "Baugatangi hundrað og ellefu, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 112, Reykjavík") == "Baugatangi 112, Reykjavík"
+        numbers_to_text("Baugatangi 112, Reykjavík")
+        == "Baugatangi hundrað og tólf, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 113, Reykjavík") == "Baugatangi 113, Reykjavík"
+        numbers_to_text("Baugatangi 113, Reykjavík")
+        == "Baugatangi hundrað og þrettán, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 114, Reykjavík") == "Baugatangi 114, Reykjavík"
+        numbers_to_text("Baugatangi 114, Reykjavík")
+        == "Baugatangi hundrað og fjórtán, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 115, Reykjavík") == "Baugatangi 115, Reykjavík"
+        numbers_to_text("Baugatangi 115, Reykjavík")
+        == "Baugatangi hundrað og fimmtán, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 121, Reykjavík")
+        numbers_to_text("Baugatangi 121, Reykjavík")
         == "Baugatangi hundrað tuttugu og eitt, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 174, Reykjavík")
+        numbers_to_text("Baugatangi 174, Reykjavík")
         == "Baugatangi hundrað sjötíu og fjögur, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 200, Reykjavík") == "Baugatangi 200, Reykjavík"
+        numbers_to_text("Baugatangi 200, Reykjavík")
+        == "Baugatangi tvö hundruð, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 201, Reykjavík")
+        numbers_to_text("Baugatangi 201, Reykjavík")
         == "Baugatangi tvö hundruð og eitt, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 202, Reykjavík")
+        numbers_to_text("Baugatangi 202, Reykjavík")
         == "Baugatangi tvö hundruð og tvö, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 203, Reykjavík")
+        numbers_to_text("Baugatangi 203, Reykjavík")
         == "Baugatangi tvö hundruð og þrjú, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 204, Reykjavík")
+        numbers_to_text("Baugatangi 204, Reykjavík")
         == "Baugatangi tvö hundruð og fjögur, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 205, Reykjavík") == "Baugatangi 205, Reykjavík"
+        numbers_to_text("Baugatangi 205, Reykjavík")
+        == "Baugatangi tvö hundruð og fimm, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 211, Reykjavík") == "Baugatangi 211, Reykjavík"
+        numbers_to_text("Baugatangi 211, Reykjavík")
+        == "Baugatangi tvö hundruð og ellefu, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 212, Reykjavík") == "Baugatangi 212, Reykjavík"
+        numbers_to_text("Baugatangi 212, Reykjavík")
+        == "Baugatangi tvö hundruð og tólf, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 213, Reykjavík") == "Baugatangi 213, Reykjavík"
+        numbers_to_text("Baugatangi 213, Reykjavík")
+        == "Baugatangi tvö hundruð og þrettán, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 214, Reykjavík") == "Baugatangi 214, Reykjavík"
+        numbers_to_text("Baugatangi 214, Reykjavík")
+        == "Baugatangi tvö hundruð og fjórtán, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 215, Reykjavík") == "Baugatangi 215, Reykjavík"
+        numbers_to_text("Baugatangi 215, Reykjavík")
+        == "Baugatangi tvö hundruð og fimmtán, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 700, Reykjavík") == "Baugatangi 700, Reykjavík"
+        numbers_to_text("Baugatangi 700, Reykjavík")
+        == "Baugatangi sjö hundruð, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 701, Reykjavík")
-        == "Baugatangi sjö hundruð og eitt, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 702, Reykjavík")
-        == "Baugatangi sjö hundruð og tvö, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 703, Reykjavík")
-        == "Baugatangi sjö hundruð og þrjú, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 704, Reykjavík")
-        == "Baugatangi sjö hundruð og fjögur, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 705, Reykjavík") == "Baugatangi 705, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 711, Reykjavík") == "Baugatangi 711, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 712, Reykjavík") == "Baugatangi 712, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 713, Reykjavík") == "Baugatangi 713, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 714, Reykjavík") == "Baugatangi 714, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 715, Reykjavík") == "Baugatangi 715, Reykjavík"
-    )
-    assert (
-        numbers_to_neutral("Baugatangi 1-4, Reykjavík")
+        numbers_to_text("Baugatangi 1-4, Reykjavík")
         == "Baugatangi eitt-fjögur, Reykjavík"
     )
     assert (
-        numbers_to_neutral("Baugatangi 1-17, Reykjavík")
-        == "Baugatangi eitt-17, Reykjavík"
+        numbers_to_text("Baugatangi 1-17, Reykjavík")
+        == "Baugatangi eitt-sautján, Reykjavík"
     )
 
 
 def test_years():
-    """Test number to written year conversion."""
-    from queries.num import year_to_text
+    """ Test number to written year conversion. """
+    from queries.num import year_to_text, years_to_text
 
     assert year_to_text(1999) == "nítján hundruð níutíu og níu"
     assert year_to_text(2004) == "tvö þúsund og fjögur"
@@ -1335,31 +1404,95 @@ def test_years():
     assert year_to_text(57, after_christ=True) == "fimmtíu og sjö eftir Krist"
     assert year_to_text(2401) == "tvö þúsund fjögur hundruð og eitt"
 
+    assert (
+        years_to_text("Ég fæddist 1994") == "Ég fæddist nítján hundruð níutíu og fjögur"
+    )
+    assert (
+        years_to_text("Árið 1461 var borgin Sarajevo stofnuð")
+        == "Árið fjórtán hundruð sextíu og eitt var borgin Sarajevo stofnuð"
+    )
+    assert (
+        years_to_text("17. júlí 1210 lést Sverker II")
+        == "17. júlí tólf hundruð og tíu lést Sverker II"
+    )
+    assert (
+        years_to_text("2021, 2007 og 1999")
+        == "tvö þúsund tuttugu og eitt, tvö þúsund og sjö og nítján hundruð níutíu og níu"
+    )
+
 
 def test_ordinals():
-    """Test number to written ordinal conversion."""
-    from queries.num import number_to_ordinal
+    """ Test number to written ordinal conversion. """
+    from queries.num import number_to_ordinal, numbers_to_ordinal
 
     assert number_to_ordinal(0) == "núllti"
-    assert number_to_ordinal(22, "þgf", "kvk") == "tuttugustu og annarri"
+    assert number_to_ordinal(22, case="þgf", gender="kvk") == "tuttugustu og annarri"
     assert number_to_ordinal(302, gender="kvk") == "þrjú hundraðasta og önnur"
-    assert number_to_ordinal(302, "þgf", "hk") == "þrjú hundraðasta og öðru"
+    assert number_to_ordinal(302, case="þgf", gender="hk") == "þrjú hundraðasta og öðru"
     assert (
-        number_to_ordinal(10202, "þgf", "hk", "ft")
+        number_to_ordinal(10202, case="þgf", gender="hk", number="ft")
         == "tíu þúsund tvö hundruðustu og öðrum"
     )
-    assert number_to_ordinal(1000000, "þf", "kvk", "et") == "milljónustu"
-    assert number_to_ordinal(1000000002, "þf", "kvk", "et") == "milljörðustu og aðra"
+    assert (
+        number_to_ordinal(1000000, case="þf", gender="kvk", number="et")
+        == "milljónustu"
+    )
+    assert (
+        number_to_ordinal(1000000002, case="þf", gender="kvk", number="et")
+        == "milljörðustu og aðra"
+    )
+
+    assert (
+        numbers_to_ordinal("Ég lenti í 41. sæti.", case="þgf")
+        == "Ég lenti í fertugasta og fyrsta sæti."
+    )
+    assert (
+        numbers_to_ordinal("2. í röðinni var hæstur.") == "annar í röðinni var hæstur."
+    )
+    assert (
+        numbers_to_ordinal("1. konan lenti í 2. sæti.", regex=r"1\.", gender="kvk")
+        == "fyrsta konan lenti í 2. sæti."
+    )
+    assert (
+        numbers_to_ordinal("fyrsta konan lenti í 2. sæti.", gender="hk", case="þgf")
+        == "fyrsta konan lenti í öðru sæti."
+    )
+    assert (
+        numbers_to_ordinal("Ég var 10201. í röðinni.")
+        == "Ég var tíu þúsund tvö hundraðasti og fyrsti í röðinni."
+    )
 
 
 def test_floats():
     """Test float to written text conversion."""
-    from queries.num import float_to_text
+    from queries.num import float_to_text, floats_to_text
 
-    assert float_to_text(-0.12) == "mínus núll komma eitt tvö"
-    assert float_to_text(-21.12, "kk") == "mínus tuttugu og einn komma einn tveir"
-    assert float_to_text(1.03, "kvk") == "ein komma núll þrjár"
+    assert float_to_text(-0.12) == "mínus núll komma tólf"
+    assert float_to_text(-0.1012) == "mínus núll komma eitt núll eitt tvö"
+    assert float_to_text(-21.12, gender="kk") == "mínus tuttugu og einn komma tólf"
+    assert (
+        float_to_text(-21.123, gender="kk")
+        == "mínus tuttugu og einn komma einn tveir þrír"
+    )
+    assert float_to_text(1.03, gender="kvk") == "ein komma núll þrjár"
 
+    assert (
+        floats_to_text("2,13 millilítrar af vökva.", gender="kk")
+        == "tveir komma þrettán millilítrar af vökva."
+    )
+    assert floats_to_text("0,04 prósent.") == "núll komma núll fjögur prósent."
+    assert (
+        floats_to_text("101,0021 prósent.")
+        == "hundrað og eitt komma núll núll tuttugu og eitt prósent."
+    )
+    assert (
+        floats_to_text("10.100,21 prósent.")
+        == "tíu þúsund og eitt hundrað komma tuttugu og eitt prósent."
+    )
+    assert (
+        floats_to_text("2.000.000,00.", comma_null=False)
+        == "tvær milljónir."
+    )
 
 def test_digits():
     """Test digit string to written text conversion."""
@@ -1367,11 +1500,25 @@ def test_digits():
 
     assert digits_to_text("5885522") == "fimm átta átta fimm fimm tveir tveir"
     assert digits_to_text("112") == "einn einn tveir"
-    assert digits_to_text("123-0679") == "einn tveir þrír núll sex sjö níu"
-    assert digits_to_text(["12", "", "342"]) == "einn tveir þrír fjórir tveir"
+    assert digits_to_text("123-0679") == "einn tveir þrír-núll sex sjö níu"
+    assert (
+        digits_to_text("Síminn minn er 12342")
+        == "Síminn minn er einn tveir þrír fjórir tveir"
+    )
     assert digits_to_text("581 2345") == "fimm átta einn tveir þrír fjórir fimm"
-    assert digits_to_text([581, "-", 2345]) == "fimm átta einn tveir þrír fjórir fimm"
+    assert (
+        digits_to_text("5812345, það er síminn hjá þeim.")
+        == "fimm átta einn tveir þrír fjórir fimm, það er síminn hjá þeim."
+    )
     assert (
         digits_to_text("010270-2039")
-        == "núll einn núll tveir sjö núll tveir núll þrír níu"
+        == "núll einn núll tveir sjö núll-tveir núll þrír níu"
+    )
+    assert (
+        digits_to_text("192 0-1-127", regex=r"\d\d\d")
+        == "einn níu tveir 0-1-einn tveir sjö"
+    )
+    assert (
+        digits_to_text("Hringdu í 1-800-BULL", regex=r"\d+-\d+")
+        == "Hringdu í einn átta núll núll-BULL"
     )
