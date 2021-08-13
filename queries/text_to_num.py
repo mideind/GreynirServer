@@ -50,7 +50,10 @@ QNumQuery →
     QNumber '?'?
 
 QNumber →
-    QNumUndirOktilljón | QNumOktilljónir QNumUndirOktilljón? | QNumOktilljónir QNumOgUndirOktilljón
+    QNumUndirOktilljón
+    | QNumOktilljónir QNumUndirOktilljón?
+    | QNumOktilljónir QNumOgUndirOktilljón
+    | QNum0
 
 #################
 # NON-TERMINALS #
@@ -271,30 +274,11 @@ QNumTugurOgEining →
 # TERMINALS #
 #############
 
-QNumAllTerminals →
-    QNum0
-    | QNum1Til9
-    | QNum10Til19
-    | QNumHundrað
-    | QNumÞúsund
-    | QNumMilljón
-    | QNumMilljarður
-    | QNumBilljón
-    | QNumBilljarður
-    | QNumTrilljón
-    | QNumTrilljarður
-    | QNumKvaðrilljón
-    | QNumKvaðrilljarður
-    | QNumKvintilljón
-    | QNumSextilljón
-    | QNumSeptilljón
-    | QNumOktilljón
-
 QNum0 →
     'núll'
 
 QNum1Til9 →
-    to/tala/fall/kyn  # Numbers 1-4
+    to/fall/kyn  # Numbers 1-4
     | "fimm"
     | "sex"
     | "sjö"
@@ -365,15 +349,12 @@ QNumSeptilljón →
 QNumOktilljón →
     'oktilljón'
 
-
 """
-# TODO: CATCH CASES AND GENDER OF NUMBERS !!! Add to Vocab.conf numbers not in BÍN
 
-# TODO: "oktilljón og milljón septilljónir" & "septilljón og milljón sextilljónir",
-#       Allow "milljarður septilljóna" == "... oktilljónir"?
-#       Allow "tólf hundruð þúsund"?
-# TODO: Ordinals
-# TODO: "á annan tug manna"? "fjórir tugir"
+# TODO: CATCH CASES AND GENDER OF NUMBERS !!! Add to Vocab.conf numbers not in BÍN
+# TODO: Allow "tólf hundruð þúsund"?
+# TODO: Ordinals & "á annan tug manna"?
+# TODO: "fjórir tugir"
 
 
 _NUMBERS = {
@@ -423,11 +404,6 @@ _NUMBERS = {
     "septilljón": 10 ** 42,
     "oktilljón": 10 ** 48,
 }
-
-
-def _text_to_num(root: str) -> int:
-    """Return integer value for number word root."""
-    return _NUMBERS[root]
 
 
 def _product(li: Sequence[int]) -> int:
@@ -610,71 +586,71 @@ def QNum0(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QNum1Til9(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNum10Til19(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumTugir(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumHundrað(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumÞúsund(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumMilljón(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumMilljarður(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumBilljón(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumBilljarður(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumTrilljón(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumTrilljarður(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumKvaðrilljón(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumKvaðrilljarður(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumKvintilljón(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumSextilljón(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumSeptilljón(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def QNumOktilljón(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["numbers"] = [_text_to_num(result._root)]
+    result["numbers"] = [_NUMBERS[result._root]]
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
@@ -796,3 +772,4 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 # oktilljón    oktilljónirnar    kvk alm ÞFFTgr
 # oktilljón    oktilljónunum     kvk alm ÞGFFTgr
 # oktilljón    oktilljónanna     kvk alm EFFTgr
+
