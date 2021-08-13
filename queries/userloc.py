@@ -35,7 +35,7 @@ from queries import (
     nom2dat,
     cap_first,
 )
-from queries.num import numbers_to_neutral
+from queries.num import numbers_to_text
 from tree import Result
 from iceaddr import iceaddr_lookup, postcodes  # type: ignore
 from geo import iceprep_for_placename, iceprep_for_street
@@ -212,9 +212,11 @@ def _addr4voice(addr: str) -> Optional[str]:
     """ Prepare an address string for voice synthesizer. """
     # E.g. "Fiskislóð 5-9" becomes "Fiskislóð 5 til 9"
     s = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", addr)
+    # E.g. "Fiskislóð 31d" becomes "Fiskislóð 31 d"
+    s = re.sub(r"(\d+)([a-zA-Z])", r"\1 \2", s)
     # Convert numbers to neutral gender:
     # 'Fiskislóð 2 til 4' -> 'Fiskislóð tvö til fjögur'
-    return numbers_to_neutral(s) if s else None
+    return numbers_to_text(s) if s else None
 
 
 def answer_for_location(loc: Tuple):

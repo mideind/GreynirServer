@@ -31,7 +31,7 @@
 
 """
 
-from typing import Callable
+from typing import Callable, Dict, Pattern, Optional
 
 import sys
 import os
@@ -97,15 +97,15 @@ app.register_blueprint(routes)
 
 
 # Utilities for Flask/Jinja2 formatting of numbers using the Icelandic locale
-def make_pattern(rep_dict):
+def make_pattern(rep_dict: Dict) -> Pattern:
     return re.compile("|".join([re.escape(k) for k in rep_dict.keys()]), re.M)
 
 
-def multiple_replace(string, rep_dict, pattern=None):
+def multiple_replace(s: str, rep_dict: Dict, pattern: Optional[Pattern] = None) -> str:
     """ Perform multiple simultaneous replacements within string """
     if pattern is None:
         pattern = make_pattern(rep_dict)
-    return pattern.sub(lambda x: rep_dict[x.group(0)], string)
+    return pattern.sub(lambda x: rep_dict[x.group(0)], s)
 
 
 _REP_DICT_IS = {",": ".", ".": ","}
@@ -113,7 +113,7 @@ _PATTERN_IS = make_pattern(_REP_DICT_IS)
 
 
 @app.template_filter("format_is")
-def format_is(r, decimals=0):
+def format_is(r, decimals: int = 0):
     """ Flask/Jinja2 template filter to format a number for the Icelandic locale """
     fmt = "{0:,." + str(decimals) + "f}"
     return multiple_replace(fmt.format(float(r)), _REP_DICT_IS, _PATTERN_IS)
@@ -184,7 +184,6 @@ def inject_nn_bools():
 
 
 # Initialize the main module
-t0 = time.time()
 try:
     # Read configuration file
     Settings.read(os.path.join("config", "Greynir.conf"))
@@ -261,7 +260,7 @@ if not RUNNING_AS_SERVER:
                 break
         else:
             print("Extra file '{0}' not found".format(fname))
-    # Add src/reynir/resources/ord.compressed from reynir
+    # Add ord.compressed from GeynirPackage
     extra_files.append(
         os.path.join(
             os.path.dirname(reynir.__file__),

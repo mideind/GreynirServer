@@ -30,6 +30,7 @@
 """
 
 # TODO: "Í hvaða tímabelti er ég?"
+# TODO: "Hvað er klukkan í tókýó?" should capitalize Tókýó
 
 import random
 from datetime import datetime

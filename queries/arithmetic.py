@@ -36,6 +36,7 @@ import random
 from query import AnswerTuple, ContextDict, Query, QueryStateDict
 from queries import iceformat_float, gen_answer
 from tree import Result
+from queries.num import floats_to_text, numbers_to_text
 
 
 _ARITHMETIC_QTYPE = "Arithmetic"
@@ -624,7 +625,8 @@ def calc_arithmetic(query: Query, result: Result) -> Optional[AnswerTuple]:
     """ Calculate the answer to an arithmetic query """
     operator = result.operator
     nums = result.numbers
-    desc = result.desc
+    # Replace period with Icelandic comma in query answer
+    desc = result.desc.replace(".", ",")
 
     if "error_context_reference" in result:
         # Used 'það' or 'því' without context
@@ -697,7 +699,17 @@ def calc_arithmetic(query: Query, result: Result) -> Optional[AnswerTuple]:
         answer = str(res)
 
     response = dict(answer=answer, result=res)
-    voice_answer = "{0} er {1}".format(desc, answer)
+    voice_answer = f"{desc} er {answer}"
+
+    # Format numbers for voice
+    # Use dative when preceded by "deilt með"
+    voice_answer = floats_to_text(
+        voice_answer, regex=r"(?<=deilt með )\d+,\d+", case="þgf", gender="kk"
+    )
+    voice_answer = numbers_to_text(voice_answer, regex=r"(?<=deilt með )\d+", case="þgf", gender="kk")
+
+    voice_answer = floats_to_text(voice_answer, gender="kk")
+    voice_answer = numbers_to_text(voice_answer, gender="kk")
 
     return response, answer, voice_answer
 
@@ -705,7 +717,9 @@ def calc_arithmetic(query: Query, result: Result) -> Optional[AnswerTuple]:
 def pi_answer(q: Query, result: Result) -> AnswerTuple:
     """ Define pi (π) """
     answer = "Talan π („pí“) er stærðfræðilegi fastinn 3,14159265359 eða þar um bil."
-    voice = "Talan pí er stærðfræðilegi fastinn 3,14159265359 eða þar um bil."
+    voice = floats_to_text(
+        "Talan pí er stærðfræðilegi fastinn 3,14159265359 eða þar um bil.", gender="kk"
+    )
     response = dict(answer=answer, result=math.pi)
     q.set_context(dict(result=3.14159265359))
     return response, answer, voice

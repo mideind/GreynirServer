@@ -278,8 +278,8 @@ def _rudeness(qs: str, q: Query) -> AnswerType:
         name = nd["first"]
         answ = f"Æi, {name}. {answ}"
     v = answ.replace(",", "")  # Tweak pronunciation
-    voice = '<amazon:breath duration="long" volume="x-loud"/> {0}'.format(v)
-    return {"answer": answ, "voice": voice, "is_question": False}
+    # voice = '<amazon:breath duration="long" volume="x-loud"/> {0}'.format(v)
+    return {"answer": answ, "voice": v, "is_question": False}
 
 
 def _open_embla_url(qs: str, q: Query) -> AnswerType:
