@@ -113,7 +113,8 @@ QScheduleRadio →
     QSchRadioStationNowQuery
 
 QSchRadioStationNowQuery →
-    QSchWhatIsNom QSchEiginlega? "á" QRadioStation
+    QSchWhatIsNom QSchEiginlega? "á" QRadioStation QSchNow? |
+    QSchWhatIsNom QSchEiginlega? "í" "gangi" "á" QRadioStation QSchNow?
 
 QSchWhatIsNom →
     "hvað" "er" | "hvaða" "þáttur" "er" | "hvaða" "dagskrárliður" "er" | "hvaða" "efni" "er"
