@@ -280,10 +280,10 @@ def time_period_desc(
             icename = _TIMEUNIT_NOUNS[unit][plidx][cidx]
             if num_to_str:
                 # Convert number to spoken text
-                value = number_to_text(
+                svalue = number_to_text(
                     value, case=case, gender="kk" if unit == "d" else "kvk"
                 )
-            result.append(f"{value} {icename}")
+            result.append(f"{svalue} {icename}")
 
     return natlang_seq(result)
 
@@ -324,14 +324,14 @@ def distance_desc(
         def rnd(n):
             return ((n + 5) // 10) * 10
 
-        dist = rnd(int(km_dist * 1000.0))
+        rounded_dist = rnd(int(km_dist * 1000.0))
         plidx = 1 if is_plural(dist) else 0
         unit_long = _METER_NOUN[plidx][cidx]
         unit = "m" if abbr else unit_long
         if num_to_str:
-            dist = number_to_text(dist, case=case, gender="kk")
+            sdist = number_to_text(rounded_dist, case=case, gender="kk")
 
-    return f"{dist} {unit}"
+    return f"{sdist} {unit}"
 
 
 _KRONA_NOUN = (

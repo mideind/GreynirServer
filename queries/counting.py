@@ -29,7 +29,7 @@ from datetime import datetime, timedelta
 
 from queries import parse_num, gen_answer
 from query import Query, QueryStateDict
-from tree import Result
+from tree import Result, Node
 
 
 _COUNTING_QTYPE = "Counting"
@@ -95,28 +95,28 @@ $score(+35) QCounting
 """
 
 
-def QCountingQuery(node, params, result):
+def QCountingQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     # Set the query type
     result.qtype = _COUNTING_QTYPE
 
 
-def QCountingUp(node, params, result):
+def QCountingUp(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "CountUp"
 
 
-def QCountingDown(node, params, result):
+def QCountingDown(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "CountDown"
 
 
-def QCountingBetween(node, params, result):
+def QCountingBetween(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "CountBetween"
 
 
-def QCountingFirstNumber(node, params, result):
+def QCountingFirstNumber(node: Node, params: QueryStateDict, result: Result) -> None:
     result.first_num = int(parse_num(node, result._canonical))
 
 
-def QCountingSecondNumber(node, params, result):
+def QCountingSecondNumber(node: Node, params: QueryStateDict, result: Result) -> None:
     result.second_num = int(parse_num(node, result._canonical))
 
 
@@ -125,11 +125,11 @@ _SPEED2DELAY = {"mjög hægt": 2.0, "hægt": 1.0, "hratt": 0.1, "mjög hratt": 0
 _MAX_COUNT = 100
 
 
-def QCountingSpeed(node, params, result):
+def QCountingSpeed(node: Node, params: QueryStateDict, result: Result) -> None:
     result.delay = _SPEED2DELAY.get(node.contained_text())
 
 
-def _gen_count(q: Query, result):
+def _gen_count(q: Query, result: Result):
     num_range = None
     if result.qkey == "CountUp":
         num_range = list(range(1, result.first_num + 1))
