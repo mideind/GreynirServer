@@ -43,7 +43,8 @@ from treeutil import TreeUtility
 from reynir import TOK, Tok, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
-from query import AnswerTuple, Query, ResponseDict, ResponseType
+from query import AnswerTuple, Query, ResponseDict, ResponseType, QueryStateDict
+from tree import Result
 
 from queries import cap_first
 
@@ -1106,7 +1107,7 @@ _Q_NO_VOICE = frozenset(("Search", "Word"))
 _Q_ONLY_VOICE = frozenset(("Repeat",))
 
 
-def sentence(state, result) -> None:
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" not in result:
