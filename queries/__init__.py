@@ -315,8 +315,9 @@ def distance_desc(
         plidx = 1 if is_plural(rounded_km) else 0
         unit_long = "kíló" + _METER_NOUN[plidx][cidx]
         unit = "km" if abbr else unit_long
+        sdist = dist
         if num_to_str:
-            dist = float_to_text(
+            sdist = float_to_text(
                 rounded_km, case=case, gender="kk", comma_null=False
             )
     # E.g. 940 metrar
@@ -326,9 +327,10 @@ def distance_desc(
             return ((n + 5) // 10) * 10
 
         rounded_dist = rnd(int(km_dist * 1000.0))
-        plidx = 1 if is_plural(dist) else 0
+        plidx = 1 if is_plural(rounded_dist) else 0
         unit_long = _METER_NOUN[plidx][cidx]
         unit = "m" if abbr else unit_long
+        sdist = str(rounded_dist)
         if num_to_str:
             sdist = number_to_text(rounded_dist, case=case, gender="kk")
 

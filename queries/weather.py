@@ -58,7 +58,7 @@ from iceaddr import placename_lookup  # type: ignore
 from iceweather import observation_for_closest, observation_for_station, forecast_text  # type: ignore
 
 from . import AnswerTuple
-from num import number_to_text
+from .num import number_to_text
 
 _WEATHER_QTYPE = "Weather"
 
