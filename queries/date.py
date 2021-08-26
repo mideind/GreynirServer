@@ -701,16 +701,16 @@ def howlong_answ(q: Query, result: Result):
 
     # Check if it's today
     if target.date() == now.date():
-        answer = gen_answer(f"Það er {target.strftime('%-d. %B')} í dag.")
+        answ = gen_answer(f"Það er {target.strftime('%-d. %B')} í dag.")
         return q.set_answer(
-            answer[0], answer[1], numbers_to_ordinal(answer[2], case="nf", gender="kk")
+            answ[0], answ[1], numbers_to_ordinal(answ[2], case="nf", gender="kk")
         )
     # Check if it's tomorrow
     # TODO: Maybe return num hours until tomorrow?
     if target.date() == now.date() + timedelta(days=1):
-        answer = gen_answer(f"Það er {target.strftime('%-d. %B')} á morgun.")
+        answ = gen_answer(f"Það er {target.strftime('%-d. %B')} á morgun.")
         return q.set_answer(
-            answer[0], answer[1], numbers_to_ordinal(answer[2], case="nf", gender="kk")
+            answ[0], answ[1], numbers_to_ordinal(answ[2], case="nf", gender="kk")
         )
 
     # Returns num days rounded down, so we increment by one.

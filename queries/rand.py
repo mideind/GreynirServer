@@ -166,7 +166,7 @@ def gen_random_answer(q: Query, result):
     # Query key is random number range (e.g. 1-6)
     q.set_key("{0}-{1}".format(num1, num2))
 
-    answer = str(random.randint(num1, num2))
+    answer = random.randint(num1, num2)
     response = dict(answer=answer)
     if result.action == "dieroll":
         voice_answer = (
@@ -175,7 +175,7 @@ def gen_random_answer(q: Query, result):
     else:
         voice_answer = f"Ég vel töluna {number_to_text(answer, gender='kk')}"
 
-    return response, answer, voice_answer
+    return response, str(answer), voice_answer
 
 
 def heads_or_tails(q: Query, result):

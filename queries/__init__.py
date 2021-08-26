@@ -278,7 +278,7 @@ def time_period_desc(
             seconds -= value * count
             plidx = 1 if is_plural(value) else 0
             icename = _TIMEUNIT_NOUNS[unit][plidx][cidx]
-            svalue = value
+            svalue: Union[int, str] = value
             if num_to_str:
                 # Convert number to spoken text
                 svalue = number_to_text(

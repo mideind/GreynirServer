@@ -532,7 +532,7 @@ def _answer_city_solar_data(
         else:
             is_will_was = "var"
 
-        degrees = data[city][closest_date][sun_pos]
+        degrees = cast(Union[int, float], data[city][closest_date][sun_pos])
         answer = f"Sólarhæð um hádegi {when} {is_will_was} um {sing_or_plur(degrees, 'gráður', 'gráða')}."
 
     else:

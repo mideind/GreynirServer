@@ -532,7 +532,7 @@ def Prósenta(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QArCurrencyOrNum(node: Node, params: QueryStateDict, result: Result) -> None:
-    amount = node.first_child(lambda n: n.has_t_base("amount"))
+    amount: Optional[Node] = node.first_child(lambda n: n.has_t_base("amount"))
     if amount is not None:
         # Found an amount terminal node
         result.amount, curr = amount.contained_amount
