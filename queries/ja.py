@@ -39,7 +39,7 @@ from . import query_json_api, gen_answer, icequote
 from queries.num import numbers_to_text, digits_to_text
 
 from query import AnswerTuple, Query, QueryStateDict
-from tree import Result
+from tree import Result, Node
 from geo import iceprep_for_street
 from util import read_api_key
 
@@ -110,20 +110,20 @@ $tag(keep) QJaSubject
 """
 
 
-def QJaSubject(node, params, result):
+def QJaSubject(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = result._nominative
 
 
-def QJaPhoneNum(node, params, result):
+def QJaPhoneNum(node: Node, params: QueryStateDict, result: Result) -> None:
     result.phone_number = result._nominative
     result.qkey = result.phone_number
 
 
-def QJaName4PhoneNumQuery(node, params, result):
+def QJaName4PhoneNumQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = "Name4PhoneNum"
 
 
-def QJaPhoneNum4NameQuery(node, params, result):
+def QJaPhoneNum4NameQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = "PhoneNum4Name"
 
 

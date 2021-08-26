@@ -35,7 +35,7 @@ import random
 
 from query import Query, QueryStateDict
 from queries import gen_answer, query_json_api
-from tree import Result
+from tree import Result, Node
 
 
 _NEWS_QTYPE = "News"
@@ -105,7 +105,7 @@ $score(+35) QNewsQuery
 """
 
 
-def QNewsQuery(node, params, result):
+def QNewsQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _NEWS_QTYPE
 
 

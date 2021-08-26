@@ -52,7 +52,7 @@ from datetime import timedelta, datetime
 
 from query import Query, QueryStateDict
 from queries import gen_answer, query_json_api, cap_first, sing_or_plur
-from tree import Result
+from tree import Result, Node
 from geo import in_iceland, RVK_COORDS, near_capital_region, ICE_PLACENAME_BLACKLIST
 from iceaddr import placename_lookup  # type: ignore
 from iceweather import observation_for_closest, observation_for_station, forecast_text  # type: ignore
@@ -590,56 +590,56 @@ def get_umbrella_answer(query: Query, result):
     return None
 
 
-def QWeather(node, params, result):
+def QWeather(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _WEATHER_QTYPE
 
 
-def QWeatherCapitalRegion(node, params, result):
+def QWeatherCapitalRegion(node: Node, params: QueryStateDict, result: Result) -> None:
     result["location"] = "capital"
 
 
-def QWeatherCountry(node, params, result):
+def QWeatherCountry(node: Node, params: QueryStateDict, result: Result) -> None:
     result["location"] = "general"
 
 
-def QWeatherOpenLoc(node, params, result):
+def QWeatherOpenLoc(node: Node, params: QueryStateDict, result: Result) -> None:
     """Store preposition and placename to use in voice
     description, e.g. "Á Raufarhöfn" """
     result["subject"] = result._node.contained_text().title()
 
 
-def Nl(node, params, result):
+def Nl(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Noun phrase containing name of specific location """
     result["location"] = cap_first(result._nominative)
 
 
-def EfLiður(node, params, result):
+def EfLiður(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Don't change the case of possessive clauses """
     result._nominative = result._text
 
 
-def FsMeðFallstjórn(node, params, result):
+def FsMeðFallstjórn(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Don't change the case of prepositional clauses """
     result._nominative = result._text
 
 
-def QWeatherCurrent(node, params, result):
+def QWeatherCurrent(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "CurrentWeather"
 
 
-def QWeatherWind(node, params, result):
+def QWeatherWind(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "CurrentWeather"
 
 
-def QWeatherForecast(node, params, result):
+def QWeatherForecast(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "WeatherForecast"
 
 
-def QWeatherTemperature(node, params, result):
+def QWeatherTemperature(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "CurrentWeather"
 
 
-def QWeatherUmbrella(node, params, result):
+def QWeatherUmbrella(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "Umbrella"
 
 

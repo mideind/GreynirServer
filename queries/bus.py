@@ -37,7 +37,7 @@
 # TODO: Hvar er nálægasta strætóstoppistöð?
 # TODO: Hvað er ég lengi í næsta strætóskýli?
 
-from typing import Iterable, Optional, List, Sequence, Set, Tuple, Union, cast
+from typing import Iterable, Optional, List, Set, Tuple, Union, cast
 
 from threading import Lock
 from functools import lru_cache
@@ -48,7 +48,7 @@ from islenska.basics import BinEntry
 
 import query
 from query import AnswerTuple, Query, QueryStateDict, ResponseType, Session
-from tree import Result
+from tree import Result, Node
 from queries import natlang_seq, cap_first, gen_answer, sing_or_plur
 from queries.num import floats_to_text, numbers_to_text
 from settings import Settings
@@ -408,44 +408,44 @@ QBusNumberWord →
 # tree processing (depth-first, i.e. bottom-up navigation).
 
 
-def QBusNearestStop(node, params, result):
+def QBusNearestStop(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Nearest stop query """
     result.qtype = "NearestStop"
     # No query key in this case
     result.qkey = ""
 
 
-def QBusStop(node, params, result):
+def QBusStop(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Save the word that was used to describe a bus stop """
     result.stop_word = _WRONG_STOP_WORDS.get(result._nominative, result._nominative)
 
 
-def QBusStopName(node, params, result):
+def QBusStopName(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Save the bus stop name """
     result.stop_name = result._nominative
 
 
-def QBusStopThere(node, params, result):
+def QBusStopThere(node: Node, params: QueryStateDict, result: Result) -> None:
     """ A reference to a bus stop mentioned earlier """
     result.stop_name = "þar"
 
 
-def QBusStopToThere(node, params, result):
+def QBusStopToThere(node: Node, params: QueryStateDict, result: Result) -> None:
     """ A reference to a bus stop mentioned earlier """
     result.stop_name = "þangað"
 
 
-def EfLiður(node, params, result):
+def EfLiður(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Don't change the case of possessive clauses """
     result._nominative = result._text
 
 
-def FsMeðFallstjórn(node, params, result):
+def FsMeðFallstjórn(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Don't change the case of prepositional clauses """
     result._nominative = result._text
 
 
-def QBusNoun(node, params, result):
+def QBusNoun(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Save the noun used to refer to a bus """
     # Use singular, indefinite form
     # Hack: if the QBusNoun is a literal string, the _canonical logic
@@ -457,7 +457,7 @@ def QBusNoun(node, params, result):
     result.bus_noun = result._canonical
 
 
-def QBusArrivalTime(node, params, result):
+def QBusArrivalTime(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Bus arrival time query """
     # Set the query type
     result.qtype = "ArrivalTime"
@@ -468,7 +468,7 @@ def QBusArrivalTime(node, params, result):
         result.qkey = result.bus_number
 
 
-def QBusAnyArrivalTime(node, params, result):
+def QBusAnyArrivalTime(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Bus arrival time query """
     # Set the query type
     result.qtype = "ArrivalTime"
@@ -476,7 +476,7 @@ def QBusAnyArrivalTime(node, params, result):
     result.qkey = result.bus_number = "Any"
 
 
-def QBusWhich(node, params, result):
+def QBusWhich(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Buses on which routes stop at a given stop """
     # Set the query type
     result.qtype = "WhichRoute"
@@ -485,7 +485,7 @@ def QBusWhich(node, params, result):
         result.qkey = result.stop_name
 
 
-def QBus(node, params, result):
+def QBus(node: Node, params: QueryStateDict, result: Result) -> None:
     pass
 
 
@@ -550,7 +550,7 @@ _BUS_WORDS = {
 }
 
 
-def QBusWord(node, params, result):
+def QBusWord(node: Node, params: QueryStateDict, result: Result) -> None:
     """Handle buses specified in single words,
     such as 'tvisturinn' or 'fimman'"""
     # Retrieve the contained text (in nominative case)
@@ -565,7 +565,7 @@ def QBusWord(node, params, result):
     result.bus_number = _BUS_WORDS.get(result._canonical, 0)
 
 
-def QBusNumber(node, params, result):
+def QBusNumber(node: Node, params: QueryStateDict, result: Result) -> None:
     """Reflect back the phrase used to specify the bus,
     but in nominative case."""
     # 'vagni númer 17' -> 'vagn númer 17'
@@ -573,7 +573,7 @@ def QBusNumber(node, params, result):
     result.bus_name = result._nominative
 
 
-def QBusNumberWord(node, params, result):
+def QBusNumberWord(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Obtain the bus number as an integer from word or number terminals. """
     # Use the nominative, singular, indefinite form
     number = result._canonical

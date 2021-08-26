@@ -29,7 +29,7 @@ import random
 from datetime import datetime
 
 from query import Query, QueryStateDict
-from tree import Result
+from tree import Result, Node
 from queries.num import numbers_to_ordinal
 
 
@@ -311,34 +311,34 @@ QYuleLad →
 )
 
 
-def QYuleDate(node, params, result):
+def QYuleDate(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Query for date when a particular yule lad appears """
     result.qtype = "YuleDate"
     result.qkey = result.yule_lad
 
 
-def QYuleLad(node, params, result):
+def QYuleLad(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Query for which yule lad appears on a particular date """
     result.qtype = "YuleLad"
     result.qkey = str(result.lad_date)
 
 
-def QYuleLadFirst(node, params, result):
+def QYuleLadFirst(node: Node, params: QueryStateDict, result: Result) -> None:
     result.yule_lad = "Stekkjarstaur"
     result.lad_date = 12
 
 
-def QYuleLadLast(node, params, result):
+def QYuleLadLast(node: Node, params: QueryStateDict, result: Result) -> None:
     result.yule_lad = "Kertasníkir"
     result.lad_date = 24
 
 
-def QYuleLadName(node, params, result):
+def QYuleLadName(node: Node, params: QueryStateDict, result: Result) -> None:
     result.yule_lad = result._nominative
     result.lad_date = _YULE_LADS_BY_NAME[result.yule_lad]
 
 
-def QYuleNumberOrdinal(node, params, result):
+def QYuleNumberOrdinal(node: Node, params: QueryStateDict, result: Result) -> None:
     ordinal = node.first_child(lambda n: True)
     if ordinal is not None:
         result.lad_date = ordinal.contained_number
@@ -353,7 +353,7 @@ def QYuleNumberOrdinal(node, params, result):
         result.invalid_date = True
 
 
-def QYuleValidOrdinal(node, params, result):
+def QYuleValidOrdinal(node: Node, params: QueryStateDict, result: Result) -> None:
     result.lad_date = _ORDINAL_TO_DATE[result._text]
     if 11 <= result.lad_date <= 23:
         # If asking about December 11, reply with the
@@ -362,23 +362,23 @@ def QYuleValidOrdinal(node, params, result):
     result.yule_lad = _YULE_LADS_BY_DATE.get(result.lad_date)
 
 
-def QYuleInvalidOrdinal(node, params, result):
+def QYuleInvalidOrdinal(node: Node, params: QueryStateDict, result: Result) -> None:
     result.lad_date = _ORDINAL_TO_DATE[result._text]
     result.yule_lad = None
     result.invalid_date = True
 
 
-def QYuleDay23(node, params, result):
+def QYuleDay23(node: Node, params: QueryStateDict, result: Result) -> None:
     result.lad_date = 24  # Yes, correct
     result.yule_lad = _YULE_LADS_BY_DATE.get(result.lad_date)
 
 
-def QYuleDay24(node, params, result):
+def QYuleDay24(node: Node, params: QueryStateDict, result: Result) -> None:
     result.lad_date = 24  # Yes, correct
     result.yule_lad = _YULE_LADS_BY_DATE.get(result.lad_date)
 
 
-def QYuleToday(node, params, result):
+def QYuleToday(node: Node, params: QueryStateDict, result: Result) -> None:
     result.yule_lad = None
     result.lad_date = datetime.utcnow().day
     if not (11 <= result.lad_date <= 24):
@@ -391,7 +391,7 @@ def QYuleToday(node, params, result):
         result.yule_lad = _YULE_LADS_BY_DATE.get(result.lad_date)
 
 
-def QYuleTomorrow(node, params, result):
+def QYuleTomorrow(node: Node, params: QueryStateDict, result: Result) -> None:
     result.yule_lad = None
     result.lad_date = datetime.utcnow().day + 1
     if not (11 <= result.lad_date <= 24):
@@ -404,11 +404,11 @@ def QYuleTomorrow(node, params, result):
         result.yule_lad = _YULE_LADS_BY_DATE.get(result.lad_date)
 
 
-def QYuleTwentyPart(node, params, result):
+def QYuleTwentyPart(node: Node, params: QueryStateDict, result: Result) -> None:
     result.twenty_part = _TWENTY_PART[result._text]
 
 
-def QYuleTwentyOrdinal(node, params, result):
+def QYuleTwentyOrdinal(node: Node, params: QueryStateDict, result: Result) -> None:
     result.yule_lad = None
     result.lad_date = 0
     num_node = node.first_child(lambda n: True)
@@ -430,7 +430,7 @@ def QYuleTwentyOrdinal(node, params, result):
             result.yule_lad = _YULE_LADS_BY_DATE.get(result.lad_date)
 
 
-def QYuleDateRel(node, params, result):
+def QYuleDateRel(node: Node, params: QueryStateDict, result: Result) -> None:
     result.yule_lad = None
     daterel = node.first_child(lambda n: True)
     if daterel is not None:

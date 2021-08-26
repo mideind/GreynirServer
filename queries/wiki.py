@@ -37,7 +37,7 @@ from typing import Any
 
 from queries import query_json_api, gen_answer, cap_first
 from query import Query, QueryStateDict, ContextDict
-from tree import Result
+from tree import Result, Node
 
 
 _WIKI_QTYPE = "Wikipedia"
@@ -181,20 +181,20 @@ $score(+35) QWikiQuery
 )
 
 
-def QWikiQuery(node, params, result):
+def QWikiQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     # Set the query type
     result.qtype = _WIKI_QTYPE
     result.qkey = result.get("subject_nom")
 
 
-def QWikiSubjectNlNf(node, params, result):
+def QWikiSubjectNlNf(node: Node, params: QueryStateDict, result: Result) -> None:
     result["subject_nom"] = result._nominative
 
 
 QWikiSubjectNlÞf = QWikiSubjectNlÞgf = QWikiSubjectNlNf
 
 
-def QWikiPrevSubjectNf(node, params, result):
+def QWikiPrevSubjectNf(node: Node, params: QueryStateDict, result: Result) -> None:
     """Reference to previous result, usually via personal
     pronouns ('Hvað segir Wikipedía um hann/hana/það?')."""
     q: Query = result.state.get("query")
@@ -216,12 +216,12 @@ def QWikiPrevSubjectNf(node, params, result):
 QWikiPrevSubjectÞgf = QWikiPrevSubjectÞf = QWikiPrevSubjectNf
 
 
-def EfLiður(node, params, result):
+def EfLiður(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Don't change the case of possessive clauses """
     result._nominative = result._text
 
 
-def FsMeðFallstjórn(node, params, result):
+def FsMeðFallstjórn(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Don't change the case of prepositional clauses """
     result._nominative = result._text
 

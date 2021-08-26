@@ -216,7 +216,9 @@ def QPetrolCheapestStation(node: Node, params: QueryStateDict, result: Result) -
     result.qkey = "CheapestStation"
 
 
-def QPetrolClosestCheapestStation(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPetrolClosestCheapestStation(
+    node: Node, params: QueryStateDict, result: Result
+) -> None:
     result.qkey = "ClosestCheapestStation"
 
 

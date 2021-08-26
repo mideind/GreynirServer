@@ -36,7 +36,7 @@ from queries import (
     cap_first,
 )
 from queries.num import numbers_to_text
-from tree import Result
+from tree import Result, Node
 from iceaddr import iceaddr_lookup, postcodes  # type: ignore
 from geo import iceprep_for_placename, iceprep_for_street
 
@@ -117,15 +117,15 @@ $score(+35) QUserLocation
 """
 
 
-def QUserLocationQuery(node, params, result):
+def QUserLocationQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _LOC_QTYPE
 
 
-def QUserLocationCurrent(node, params, result):
+def QUserLocationCurrent(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "CurrentLocation"
 
 
-def QUserLocationPostcode(node, params, result):
+def QUserLocationPostcode(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "CurrentPostcode"
 
 

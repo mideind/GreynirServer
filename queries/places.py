@@ -45,7 +45,7 @@ from queries import (
     icequote,
 )
 from queries.num import numbers_to_text
-from tree import Result
+from tree import Result, Node
 
 from . import LatLonTuple, AnswerTuple
 
@@ -179,27 +179,27 @@ def _fix_placename(pn: str) -> str:
     return _PLACENAME_MAP.get(p, p)
 
 
-def QPlacesQuery(node, params, result):
+def QPlacesQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result["qtype"] = _PLACES_QTYPE
 
 
-def QPlacesOpeningHours(node, params, result):
+def QPlacesOpeningHours(node: Node, params: QueryStateDict, result: Result) -> None:
     result["qkey"] = "OpeningHours"
 
 
-def QPlacesIsOpen(node, params, result):
+def QPlacesIsOpen(node: Node, params: QueryStateDict, result: Result) -> None:
     result["qkey"] = "IsOpen"
 
 
-def QPlacesIsClosed(node, params, result):
+def QPlacesIsClosed(node: Node, params: QueryStateDict, result: Result) -> None:
     result["qkey"] = "IsClosed"
 
 
-def QPlacesAddress(node, params, result):
+def QPlacesAddress(node: Node, params: QueryStateDict, result: Result) -> None:
     result["qkey"] = "PlaceAddress"
 
 
-def QPlacesSubject(node, params, result):
+def QPlacesSubject(node: Node, params: QueryStateDict, result: Result) -> None:
     result["subject_nom"] = _fix_placename(result._nominative)
 
 

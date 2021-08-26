@@ -37,7 +37,7 @@ from datetime import datetime, timedelta
 
 from query import Query, QueryStateDict
 from queries import query_json_api, query_xml_api, gen_answer
-from tree import Result
+from tree import Result, Node
 
 
 _SCHEDULES_QTYPE = "Schedule"
@@ -176,17 +176,17 @@ $score(+55) QSchedule
 """
 
 
-def QSchTelevisionQuery(node, params, result):
+def QSchTelevisionQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _SCHEDULES_QTYPE
     result.qkey = _TELEVISION_QKEY
 
 
-def QSchTelevisionEveningQuery(node, params, result):
+def QSchTelevisionEveningQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _SCHEDULES_QTYPE
     result.qkey = _TELEVISION_EVENING_QKEY
 
 
-def QSchRadioStationNowQuery(node, params, result):
+def QSchRadioStationNowQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _SCHEDULES_QTYPE
     result.qkey = _RADIO_QKEY
 
