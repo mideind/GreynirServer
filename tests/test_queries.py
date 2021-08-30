@@ -91,6 +91,7 @@ def qmcall(c: FlaskClient, qdict: Dict[str, Any], qtype: Optional[str] = None) -
     assert r.content_type.startswith(API_CONTENT_TYPE)
     assert r.is_json
     json = r.get_json()
+    assert json
     assert "valid" in json
     assert json["valid"]
     assert "error" not in json
@@ -120,6 +121,7 @@ def test_nonsense(client: FlaskClient):
     assert r.content_type.startswith(API_CONTENT_TYPE)
     assert r.is_json
     json = r.get_json()
+    assert json
     assert "valid" in json
     assert json["valid"] == True
     assert "error" in json
@@ -1489,10 +1491,8 @@ def test_floats():
         floats_to_text("10.100,21 prósent.")
         == "tíu þúsund og eitt hundrað komma tuttugu og eitt prósent."
     )
-    assert (
-        floats_to_text("2.000.000,00.", comma_null=False)
-        == "tvær milljónir."
-    )
+    assert floats_to_text("2.000.000,00.", comma_null=False) == "tvær milljónir."
+
 
 def test_digits():
     """Test digit string to written text conversion."""

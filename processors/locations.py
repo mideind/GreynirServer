@@ -211,8 +211,8 @@ def article_end(state):
 
 
 def token(state, paragraph, sentence, token, idx):
-    """ Called for each token in each sentence. idx is the
-        index of the token within the sentence. """
+    """Called for each token in each sentence. idx is the
+    index of the token within the sentence."""
     if "m" not in token or len(token["m"]) < 3:
         return
 

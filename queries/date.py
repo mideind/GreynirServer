@@ -68,7 +68,7 @@ from calendar import monthrange, isleap
 
 from query import Query, QueryStateDict
 from queries import timezone4loc, gen_answer, is_plural, sing_or_plur, cap_first
-from tree import Result, Node
+from tree import Result, Node, TerminalNode
 from settings import changedlocale
 from queries.num import numbers_to_ordinal, years_to_text, numbers_to_text
 
@@ -415,6 +415,7 @@ def QDateLeapYear(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def Árið(node: Node, params: QueryStateDict, result: Result) -> None:
     y_node = node.first_child(lambda n: True)
+    assert isinstance(y_node, TerminalNode)
     y = y_node.contained_year
     if not y:
         raise ValueError("No year number associated with YEAR token.")
@@ -423,8 +424,10 @@ def Árið(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QDateAbsOrRel(node: Node, params: QueryStateDict, result: Result) -> None:
     datenode = node.first_child(lambda n: True)
-    if datenode:
-        y, m, d = datenode.contained_date
+    assert isinstance(datenode, TerminalNode)
+    cdate = datenode.contained_date
+    if cdate:
+        y, m, d = cdate
         now = datetime.utcnow()
 
         # This is a date that contains at least month & mday

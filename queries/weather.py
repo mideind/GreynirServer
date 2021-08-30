@@ -442,7 +442,7 @@ def _curr_observations(query: Query, result: Result):
 
     # Talk to weather API
     try:
-        if loc:
+        if loc and loc[0] and loc[1]:
             res = observation_for_closest(loc[0], loc[1])
             if isinstance(res, tuple):
                 res = res[0]
@@ -475,7 +475,8 @@ def get_currweather_answer(query: Query, result) -> AnswerTuple:
         return gen_answer(_API_ERRMSG)
 
     try:
-        temp = int(round(float(res["T"].replace(",", "."))))  # Round to nearest whole number
+        # Round to nearest whole number
+        temp = int(round(float(res["T"].replace(",", "."))))
         desc = res["W"].lower()
         windsp = float(res["F"].replace(",", "."))
     except Exception as e:

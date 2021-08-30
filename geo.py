@@ -283,7 +283,7 @@ def location_description(loc: Dict[str, str]) -> str:
 
 def location_info(
     name: str, kind: Optional[str], placename_hints: Optional[List[str]] = None
-) -> Dict:
+) -> Dict[str, Any]:
     """Returns dict with info about a location, given name and, preferably, kind.
     Info includes ISO country and continent code, GPS coordinates, etc."""
     assert name
@@ -294,7 +294,7 @@ def location_info(
     elif name in ALWAYS_STREET_ADDR:
         kind = "street"
 
-    loc: Dict[str, Union[None, str, float, Dict]] = dict(name=name, kind=kind)
+    loc: Dict[str, Union[None, str, float, Dict[str, Any]]] = dict(name=name, kind=kind)
     coords = None
 
     # Heimilisfang
@@ -399,7 +399,7 @@ US_STATES_JSONPATH = os.path.join(
 )
 
 
-def _load_us_state_names() -> Dict:
+def _load_us_state_names() -> Dict[str, str]:
     """Load data from JSON file mapping US state names, canonical
     and Icelandic, to their to their corresponding 2-char code."""
     global US_STATE_NAMES
@@ -423,7 +423,7 @@ US_STATE_COORDS_JSONPATH = os.path.join(
 )
 
 
-def _load_us_state_coords() -> Dict:
+def _load_us_state_coords() -> Dict[str, List[float]]:
     """Load data from JSON file mapping two-char US state codes
     to geographic coordinates."""
     global US_STATE_COORDS
@@ -437,8 +437,9 @@ def _load_us_state_coords() -> Dict:
 def coords_for_us_state_code(code: str) -> Optional[LatLonTuple]:
     """ Return the coordinates of a US state given the two-char state code. """
     assert len(code) == 2
-    state_coords = _load_us_state_coords()
-    return state_coords.get(code.upper())
+    state_coords = _load_us_state_coords().get(code)
+    if state_coords is not None:
+        return (state_coords[0], state_coords[1])
 
 
 def icelandic_city_name(name: str) -> str:
@@ -459,7 +460,7 @@ COUNTRY_DATA_JSONPATH = os.path.join(
 )
 
 
-def _load_country_data() -> Dict:
+def _load_country_data() -> Dict[str, Dict[str, Any]]:
     """ Load country coordinates and ISO country code data from JSON file. """
     global COUNTRY_DATA
     if COUNTRY_DATA is None:

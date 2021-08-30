@@ -35,7 +35,7 @@ import random
 
 from query import AnswerTuple, ContextDict, Query, QueryStateDict
 from queries import iceformat_float, gen_answer
-from tree import Result, Node
+from tree import Result, Node, TerminalNode
 from queries.num import floats_to_text, numbers_to_text
 
 
@@ -427,11 +427,13 @@ def add_num(num: Optional[Union[str, int, float]], result: Result):
 def terminal_num(t: Optional[Result]) -> Optional[Union[str, int, float]]:
     """Extract numerical value from terminal token's auxiliary info,
     which is attached as a json-encoded array"""
-    if t and t._node.aux:
-        aux = json.loads(t._node.aux)
-        if isinstance(aux, int) or isinstance(aux, float):
-            return aux
-        return aux[0]
+    if t:
+        tnode = cast(TerminalNode, t._node)
+        if tnode:
+            aux = json.loads(tnode.aux)
+            if isinstance(aux, int) or isinstance(aux, float):
+                return aux
+            return aux[0]
     return None
 
 
@@ -535,8 +537,10 @@ def QArCurrencyOrNum(node: Node, params: QueryStateDict, result: Result) -> None
     amount: Optional[Node] = node.first_child(lambda n: n.has_t_base("amount"))
     if amount is not None:
         # Found an amount terminal node
-        result.amount, curr = amount.contained_amount
-        add_num(result.amount, result)
+        amt = amount.contained_amount
+        if amt:
+            result.amount, curr = amt
+            add_num(result.amount, result)
 
 
 def QArStd(node: Node, params: QueryStateDict, result: Result) -> None:

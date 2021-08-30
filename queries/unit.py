@@ -435,7 +435,9 @@ def QUnitFromPounds(node: Node, params: QueryStateDict, result: Result) -> None:
     amount = node.first_child(lambda n: n.has_t_base("amount"))
     assert amount is not None
     # Extract quantity from the amount token associated with the amount terminal
-    result.number, curr = amount.contained_amount
+    amt = amount.contained_amount
+    assert amt is not None
+    result.number, curr = amt
     assert curr == "GBP"
     result.unit = "pund"
     result.unit_nf = "pund"

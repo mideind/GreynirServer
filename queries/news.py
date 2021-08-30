@@ -136,7 +136,7 @@ _BREAK_LENGTH = 1.0  # Seconds
 _BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
 
 
-def top_news_answer() -> AnswerTuple:
+def top_news_answer() -> Optional[AnswerTuple]:
     """ Answer query about top news. """
     headlines = _get_news_data()
     if not headlines:

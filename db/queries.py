@@ -23,7 +23,7 @@
 
 """
 
-from typing import Iterable, List, Optional, Tuple, cast
+from typing import Iterable, Optional, Tuple, cast
 
 from datetime import datetime
 
@@ -93,8 +93,8 @@ class StatsQuery(_BaseQuery):
 
 
 class ChartsQuery(_BaseQuery):
-    """ Statistics on article, sentence and parse count
-        for all sources for a given time period """
+    """Statistics on article, sentence and parse count
+    for all sources for a given time period"""
 
     _Q = """
         select r.description AS name,
@@ -130,10 +130,14 @@ class QueriesQuery(_BaseQuery):
         """
 
     @classmethod
-    def period(cls, start: datetime, end: datetime, enclosing_session: Optional[Session]=None) -> Iterable[QueriesQueryItem]:
+    def period(
+        cls, start: datetime, end: datetime, enclosing_session: Optional[Session] = None
+    ) -> Iterable[QueriesQueryItem]:
         r = cast(Iterable[QueriesQueryItem], [])
         with SessionContext(session=enclosing_session, commit=False) as session:
-            r = cast(Iterable[QueriesQueryItem], cls().execute(session, start=start, end=end))
+            r = cast(
+                Iterable[QueriesQueryItem], cls().execute(session, start=start, end=end)
+            )
         return r
 
 
@@ -155,8 +159,8 @@ class QueryTypesQuery(_BaseQuery):
 
 
 class BestAuthorsQuery(_BaseQuery):
-    """ A query for statistics on authors with the best parse ratios.
-        The query only includes authors with at least 10 articles. """
+    """A query for statistics on authors with the best parse ratios.
+    The query only includes authors with at least 10 articles."""
 
     _MIN_ARTICLE_COUNT = 10
 
@@ -194,8 +198,8 @@ class BestAuthorsQuery(_BaseQuery):
 
 
 class RelatedWordsQuery(_BaseQuery):
-    """ A query for word stems commonly occurring in the same articles
-        as the given word stem """
+    """A query for word stems commonly occurring in the same articles
+    as the given word stem"""
 
     _Q = """
         select stem, cat, sum(cnt) as c
@@ -214,9 +218,9 @@ class RelatedWordsQuery(_BaseQuery):
     def rel(
         cls, stem: str, limit: int = 21, enclosing_session: Optional[Session] = None
     ) -> Iterable[RelatedWordsItem]:
-        """ Return a list of (stem, category, count) tuples describing
-            word stems that are related to the given stem, in descending
-            order of number of appearances. """
+        """Return a list of (stem, category, count) tuples describing
+        word stems that are related to the given stem, in descending
+        order of number of appearances."""
         # The default limit is 21 instead of 20 because the original stem
         # is usually included in the result list
         r: Iterable[RelatedWordsItem] = []
@@ -226,9 +230,9 @@ class RelatedWordsQuery(_BaseQuery):
 
 
 class TermTopicsQuery(_BaseQuery):
-    """ A query for topic vectors of documents where a given (stem, cat)
-        tuple appears. We return the newest articles first, in case the
-        query result is limited by a specified limit. """
+    """A query for topic vectors of documents where a given (stem, cat)
+    tuple appears. We return the newest articles first, in case the
+    query result is limited by a specified limit."""
 
     _Q = """
         select topic_vector, q.cnt
@@ -258,8 +262,8 @@ class ArticleCountQuery(_BaseQuery):
 
     @classmethod
     def count(cls, stems, enclosing_session=None):
-        """ Return a count of articles containing any of the given word
-            stems. stems may be a single string or an iterable. """
+        """Return a count of articles containing any of the given word
+        stems. stems may be a single string or an iterable."""
         with SessionContext(session=enclosing_session, commit=True) as session:
             return cls().scalar(
                 session,
@@ -268,8 +272,8 @@ class ArticleCountQuery(_BaseQuery):
 
 
 class ArticleListQuery(_BaseQuery):
-    """ A query returning a list of the newest articles that contain
-        a particular word stem. """
+    """A query returning a list of the newest articles that contain
+    a particular word stem."""
 
     _Q_lower = """
         select distinct a.id, a.heading, a.timestamp, r.domain, a.url
@@ -312,9 +316,9 @@ class ArticleListQuery(_BaseQuery):
 
 
 class WordFrequencyQuery(_BaseQuery):
-    """ A query yielding the number of times a given word occurs in
-        articles over a given period of time, broken down by either
-        day or week. """
+    """A query yielding the number of times a given word occurs in
+    articles over a given period of time, broken down by either
+    day or week."""
 
     _Q = """
         with days as (
