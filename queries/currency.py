@@ -26,7 +26,7 @@
 # TODO: "hvað eru 10 evrur í íslenskum krónum"
 # TODO: "Hvert er gengi krónunnar?"
 
-from typing import Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence, Union
 
 import re
 import cachetools  # type: ignore
@@ -331,7 +331,7 @@ QCurAmountConversion →
 """
 
 
-def parse_num(num_str: str):
+def parse_num(num_str: str) -> Union[int, float]:
     """ Parse Icelandic number string to float or int """
     num = None
     try:
@@ -351,7 +351,7 @@ def parse_num(num_str: str):
     return num
 
 
-def add_num(num, result):
+def add_num(num, result) -> None:
     """ Add a number to accumulated number args """
     if "numbers" not in result:
         result.numbers = []
@@ -361,7 +361,7 @@ def add_num(num, result):
         result.numbers.append(num)
 
 
-def add_currency(curr: str, result: Result):
+def add_currency(curr: str, result: Result) -> None:
     if "currencies" not in result:
         result.currencies = []
     result.currencies.append(curr)

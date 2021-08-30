@@ -33,7 +33,7 @@ import logging
 import cachetools  # type: ignore
 import random
 
-from query import Query, QueryStateDict
+from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, query_json_api
 from tree import Result, Node
 
@@ -136,7 +136,7 @@ _BREAK_LENGTH = 1.0  # Seconds
 _BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
 
 
-def top_news_answer():
+def top_news_answer() -> AnswerTuple:
     """ Answer query about top news. """
     headlines = _get_news_data()
     if not headlines:
@@ -165,10 +165,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 q.set_qtype(result.qtype)
                 q.set_key("LatestNews")
                 q.set_answer(*res)
+                q.set_source("RÚV")
             else:
                 errmsg = "Ekki tókst að sækja fréttir"
                 q.set_answer(*gen_answer(errmsg))
-            q.set_source("RÚV")
         except Exception as e:
             logging.warning("Exception answering news query '{0}': {1}".format(q, e))
             q.set_error("E_EXCEPTION: {0}".format(e))

@@ -692,7 +692,7 @@ def _date_diff(d1: datetime, d2: datetime, unit: str = "days") -> int:
     return cnt
 
 
-def howlong_answ(q: Query, result: Result):
+def howlong_answ(q: Query, result: Result) -> None:
     """ Generate answer to a query about number of days since/until a given date. """
     now = datetime.utcnow()
     target = result["target"]
@@ -702,16 +702,18 @@ def howlong_answ(q: Query, result: Result):
     # Check if it's today
     if target.date() == now.date():
         answ = gen_answer(f"Það er {target.strftime('%-d. %B')} í dag.")
-        return q.set_answer(
+        q.set_answer(
             answ[0], answ[1], numbers_to_ordinal(answ[2], case="nf", gender="kk")
         )
+        return
     # Check if it's tomorrow
     # TODO: Maybe return num hours until tomorrow?
     if target.date() == now.date() + timedelta(days=1):
         answ = gen_answer(f"Það er {target.strftime('%-d. %B')} á morgun.")
-        return q.set_answer(
+        q.set_answer(
             answ[0], answ[1], numbers_to_ordinal(answ[2], case="nf", gender="kk")
         )
+        return
 
     # Returns num days rounded down, so we increment by one.
     days = _date_diff(now, target, unit="days") + 1
@@ -751,7 +753,7 @@ def howlong_answ(q: Query, result: Result):
     q.set_answer(response, answer, voice)
 
 
-def when_answ(q: Query, result: Result):
+def when_answ(q: Query, result: Result) -> None:
     """ Generate answer to a question of the form "Hvenær er(u) [hátíðardagur]?" etc. """
     # TODO: Fix this so it includes weekday, e.g.
     # "Sunnudaginn 1. október"
@@ -768,7 +770,7 @@ def when_answ(q: Query, result: Result):
     q.set_answer(response, answer, voice)
 
 
-def currdate_answ(q: Query, result: Result):
+def currdate_answ(q: Query, result: Result) -> None:
     """ Generate answer to a question of the form "Hver er dagsetningin?" etc. """
     now = datetime.utcnow()
     date_str = now.strftime("%A %-d. %B %Y")
@@ -785,7 +787,7 @@ def currdate_answ(q: Query, result: Result):
     q.set_answer(response, answer, voice)
 
 
-def days_in_month_answ(q: Query, result: Result):
+def days_in_month_answ(q: Query, result: Result) -> None:
     """ Generate answer to a question of the form "Hvað eru margir dagar í [MÁNUÐI]?" etc. """
     ndays = result["days_in_month"]
     t = result["target"]
@@ -805,7 +807,7 @@ def days_in_month_answ(q: Query, result: Result):
     q.set_answer(response, answer, voice)
 
 
-def year_answ(q: Query, result: Result):
+def year_answ(q: Query, result: Result) -> None:
     """ Generate answer to a question of the form "Hvaða ár er núna?" etc. """
     now = datetime.utcnow()
     y = now.year
@@ -817,7 +819,7 @@ def year_answ(q: Query, result: Result):
     q.set_answer(response, answer, voice)
 
 
-def leap_answ(q: Query, result: Result):
+def leap_answ(q: Query, result: Result) -> None:
     """ Generate answer to a question of the form "Er hlaupár?" etc. """
     now = datetime.utcnow()
     t = result.get("target")
