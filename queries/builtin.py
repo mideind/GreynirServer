@@ -348,7 +348,7 @@ _MAX_URLS = 5
 _MAX_MENTIONS = 5
 
 
-def append_answers(rd: RegisterType, q, prop_func) -> None:
+def append_answers(rd: RegisterType, q, prop_func: Callable) -> None:
     """ Iterate over query results and add them to the result dictionary rd """
     for p in q:
         s = correct_spaces(prop_func(p))

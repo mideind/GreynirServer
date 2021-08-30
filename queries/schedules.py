@@ -35,7 +35,7 @@ import logging
 import random
 from datetime import datetime, timedelta
 
-from query import Query, QueryStateDict
+from query import Query, QueryStateDict, AnswerTuple
 from queries import query_json_api, query_xml_api, gen_answer
 from tree import Result, Node
 
@@ -288,7 +288,7 @@ def _evening_prog(sched: List) -> List:
     return result
 
 
-def _gen_curr_tv_program_answer(q: Query):
+def _gen_curr_tv_program_answer(q: Query) -> AnswerTuple:
     """ Generate answer to query about current TV program """
     sched = _query_tv_schedule_api()
     if not sched:
@@ -306,7 +306,7 @@ def _gen_curr_tv_program_answer(q: Query):
     return gen_answer(answ)
 
 
-def _gen_evening_tv_program_answer(q: Query) -> Tuple:
+def _gen_evening_tv_program_answer(q: Query) -> AnswerTuple:
     """ Generate answer to query about the evening's TV programs """
     sched = _query_tv_schedule_api()
     if not sched:
@@ -324,7 +324,7 @@ def _gen_evening_tv_program_answer(q: Query) -> Tuple:
     return dict(answer=answer), answer, voice_answer
 
 
-def _gen_curr_radio_program_answer(q: Query):
+def _gen_curr_radio_program_answer(q: Query) -> List:
     xmldoc = _query_radio_schedule_api("ras1")
     return xmldoc
 

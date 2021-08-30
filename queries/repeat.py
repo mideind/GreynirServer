@@ -59,7 +59,7 @@ _REPEAT_PREFIXES = tuple(
 # )
 
 
-def gen_repeat_answ(text: str, cmd_prefix: str, q: Query):
+def gen_repeat_answ(text: str, cmd_prefix: str, q: Query) -> None:
     atxt = text.strip()
     atxt = atxt[:1].upper() + atxt[1:]  # Capitalize first character
     q.set_answer(*gen_answer(atxt))

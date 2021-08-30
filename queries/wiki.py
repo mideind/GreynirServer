@@ -29,11 +29,11 @@
 # TODO: Fix regex that cleans wiki text.
 # TODO: "Segðu mér meira um X" - Return more article text
 
+from typing import Any, Dict
 
 import re
 import random
 from datetime import datetime, timedelta
-from typing import Any
 
 from queries import query_json_api, gen_answer, cap_first
 from query import Query, QueryStateDict, ContextDict
@@ -258,7 +258,7 @@ _WIKI_API_URL = (
 )
 
 
-def _query_wiki_api(subject: str):
+def _query_wiki_api(subject: str) -> Dict:
     """ Fetch JSON from Wikipedia API """
     url = _WIKI_API_URL.format(subject)
     return query_json_api(url)

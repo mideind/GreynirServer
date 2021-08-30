@@ -28,7 +28,7 @@
 import logging
 import random
 
-from query import Query, QueryStateDict
+from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer
 from queries.arithmetic import add_num, terminal_num
 from queries.num import number_to_text
@@ -178,7 +178,7 @@ def gen_random_answer(q: Query, result):
     return response, str(answer), voice_answer
 
 
-def heads_or_tails(q: Query, result):
+def heads_or_tails(q: Query, result) -> AnswerTuple:
     q.set_key("HeadsOrTails")
     return gen_answer(random.choice(("Skjaldarmerki", "Fiskur")))
 

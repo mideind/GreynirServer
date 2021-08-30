@@ -485,10 +485,6 @@ def QBusWhich(node: Node, params: QueryStateDict, result: Result) -> None:
         result.qkey = result.stop_name
 
 
-def QBus(node: Node, params: QueryStateDict, result: Result) -> None:
-    pass
-
-
 # Translate bus number words to integers
 
 _BUS_WORDS = {

@@ -414,17 +414,17 @@ def parse_num(num_str: str) -> float:
     return num
 
 
-def add_num(num: Union[str, int, float], result: Result):
+def add_num(num: Optional[Union[str, int, float]], result: Result):
     """ Add a number to accumulated number args """
     if "numbers" not in result:
         result.numbers = []
     if isinstance(num, str):
         result.numbers.append(parse_num(num))
-    else:
+    elif num:
         result.numbers.append(num)
 
 
-def terminal_num(t):
+def terminal_num(t: Optional[Result]) -> Optional[Union[str, int, float]]:
     """Extract numerical value from terminal token's auxiliary info,
     which is attached as a json-encoded array"""
     if t and t._node.aux:
@@ -432,6 +432,7 @@ def terminal_num(t):
         if isinstance(aux, int) or isinstance(aux, float):
             return aux
         return aux[0]
+    return None
 
 
 def QArNumberWord(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -501,7 +502,6 @@ def QArDivisionOperator(node: Node, params: QueryStateDict, result: Result) -> N
 def QArMultiplicationOperator(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
-    """ 'Hvað er 17 sinnum 34?' """
     result.operator = "multiply"
 
 

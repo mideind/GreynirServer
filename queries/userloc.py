@@ -27,7 +27,7 @@ from typing import Any, Tuple, Optional, cast
 import re
 import logging
 
-from query import Query, QueryStateDict
+from query import Query, QueryStateDict, AnswerTuple
 from queries import (
     gen_answer,
     query_geocode_api_coords,
@@ -219,7 +219,7 @@ def _addr4voice(addr: str) -> Optional[str]:
     return numbers_to_text(s) if s else None
 
 
-def answer_for_location(loc: Tuple):
+def answer_for_location(loc: Tuple) -> Optional[AnswerTuple]:
     # Send API request
     res = query_geocode_api_coords(loc[0], loc[1])
 

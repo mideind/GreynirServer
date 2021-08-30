@@ -403,7 +403,7 @@ def _round_to_nearest_hour(t: datetime) -> datetime:
 _RVK_STATION_ID = 1
 
 
-def _curr_observations(query: Query, result):
+def _curr_observations(query: Query, result: Result):
     """Fetch latest weather observation data from weather station closest
     to the location associated with the query (i.e. either user location
     coordinates or a specific placename)"""
@@ -546,7 +546,7 @@ _COUNTRY_FC_ID = 2
 _CAPITAL_FC_ID = 3
 
 
-def get_forecast_answer(query: Query, result):
+def get_forecast_answer(query: Query, result) -> AnswerTuple:
     """ Handle weather forecast queries """
     loc = query.location
     txt_id = _CAPITAL_FC_ID if (loc and near_capital_region(loc)) else _COUNTRY_FC_ID
@@ -579,7 +579,7 @@ def get_forecast_answer(query: Query, result):
     return response, answer, voice
 
 
-def get_umbrella_answer(query: Query, result):
+def get_umbrella_answer(query: Query, result: Result) -> Optional[AnswerTuple]:
     """Handle a query concerning whether an umbrella is needed
     for current weather conditions."""
 
