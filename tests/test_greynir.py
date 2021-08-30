@@ -411,7 +411,7 @@ def test_geo():
     assert code_for_us_state("Flórída") == "FL"
     assert code_for_us_state("Norður-Karólína") == "NC"
     assert code_for_us_state("Kalifornía") == "CA"
-    assert coords_for_us_state_code("CA") == [36.778261, -119.417932]
+    assert coords_for_us_state_code("CA") == (36.778261, -119.417932)
 
     # Generic location info lookup functions
     assert "country" in location_info("Reykjavík", "placename")

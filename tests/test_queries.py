@@ -808,8 +808,8 @@ def test_sunpos(client: FlaskClient):
     json = qmcall(
         client, {"q": "hvenær verður dögun í Keflavík á morgun?"}, "SunPosition"
     )
-    assert re.match(r"^Það verður ekki dögun á morgun\.$", json["answer"]) or re.match(
-        r"^Dögun verður um klukkan \d?\d:\d\d á morgun\.$", json["answer"]
+    assert re.match(r"^Það verður ekki dögun ", json["answer"]) or re.match(
+        r"^Dögun verður um klukkan \d?\d:\d\d ", json["answer"]
     )
     json = qmcall(
         client, {"q": "klukkan hvað verður birting á Akureyri á morgun?"}, "SunPosition"
