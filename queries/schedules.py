@@ -462,7 +462,7 @@ class _AnswerDict(TypedDict):
 
 
 # Programs which don't have/need a description
-_NO_DESCRIPTION_SET = frozenset(("fréttir", "fréttayfirlit", "veðurfréttir"))
+_NO_DESCRIPTION_SET = frozenset(("fréttir", "fréttayfirlit", "veðurfréttir", "hádegisfréttir"))
 
 
 def _extract_ruv_schedule(response: dict) -> _SchedType:
@@ -693,7 +693,7 @@ def _extract_title_and_desc(prog: dict, station: str) -> Tuple[str, str]:
     elif station == "Síminn":
         title = prog.get("title", "") or ""
 
-        # TODO: Some channels have descriptions in English,
+        # Note: Some channels have descriptions in English,
         # might cause problems for the voice
         desc = prog.get("description", "") or ""
 
@@ -830,7 +830,7 @@ def _answer_program(
 
 
 def _get_schedule_answer(result: Result) -> _AnswerDict:
-    """Generate answer to query about current radio program."""
+    """Generate answer to query about current TV/radio program."""
 
     api_channel: str = result.get("api_channel")
     channel: str = result.get("channel")
@@ -854,7 +854,8 @@ def _get_schedule_answer(result: Result) -> _AnswerDict:
 
         elif result.get("will_be") and qdt < now:
             # If wording implies we want schedule in future
-            # and query datetime is in past (e.g. "verður sýnt kl sjö")
+            # and query datetime is in past
+            # (e.g. "verður sýnt kl sjö" when current time is more than seven)
             qdt += datetime.timedelta(hours=12)
 
     get_next: bool = result.get("get_next", False)
