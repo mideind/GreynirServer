@@ -746,7 +746,7 @@ def test_stats(client: FlaskClient):
 
 def test_sunpos(client: FlaskClient):
     """ Solar position module """
-    timings = r"(í morgun|í dag|í kvöld|í nótt)"
+    timings = r"((á|í) morgun|í dag|í kvöld|í nótt|í gær)"
 
     json = qmcall(client, {"q": "hvenær reis sólin í dag?"}, "SunPosition")
     assert re.match(
@@ -806,30 +806,30 @@ def test_sunpos(client: FlaskClient):
     json = qmcall(
         client, {"q": "hvenær verður dögun í Keflavík á morgun?"}, "SunPosition"
     )
-    assert re.match(r"^Það verður ekki dögun á morgun\.$", json["answer"]) or re.match(
-        r"^Dögun verður um klukkan \d?\d:\d\d á morgun\.$", json["answer"]
+    assert re.match(fr"^Það verður ekki dögun {timings}\.$", json["answer"]) or re.match(
+        fr"^Dögun verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
     )
     json = qmcall(
         client, {"q": "klukkan hvað verður birting á Akureyri á morgun?"}, "SunPosition"
     )
     assert re.match(
-        r"^Það verður ekki birting á morgun\.$", json["answer"]
+        fr"^Það verður ekki birting {timings}\.$", json["answer"]
     ) or re.match(
-        r"^Birting verður um klukkan \d?\d:\d\d (á morgun|í nótt)\.$", json["answer"]
+        fr"^Birting verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
     )
     json = qmcall(client, {"q": "hvenær er hádegi á morgun á Ísafirði?"}, "SunPosition")
-    assert re.match(r"^Hádegi verður um klukkan \d?\d:\d\d á morgun\.$", json["answer"])
+    assert re.match(fr"^Hádegi verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"])
     json = qmcall(
         client, {"q": "hvenær varð myrkur í gær á Egilsstöðum?"}, "SunPosition"
     )
     assert re.match(r"^Það varð ekki myrkur.*\.$", json["answer"]) or re.match(
-        r"^Myrkur var um klukkan \d?\d:\d\d í gær\.$", json["answer"]
+        fr"^Myrkur var um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
     )
     json = qmcall(
         client, {"q": "klukkan hvað varð dagsetur í gær á Reykjanesi?"}, "SunPosition"
     )
     assert re.match(r"^Það varð ekki dagsetur.*\.$", json["answer"]) or re.match(
-        r"^Dagsetur var um klukkan \d?\d:\d\d í gær\.$", json["answer"]
+        fr"^Dagsetur var um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
     )
 
 
