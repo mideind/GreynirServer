@@ -26,10 +26,10 @@
 # TODO: hvað eru íslensku jólasveinarnir margir
 
 import random
-from datetime import datetime
+from datetime import date, datetime
 
 from query import Query, QueryStateDict
-from tree import Result, Node
+from tree import Result, Node, TerminalNode
 from queries.num import numbers_to_ordinal
 
 
@@ -341,7 +341,7 @@ def QYuleLadName(node: Node, params: QueryStateDict, result: Result) -> None:
 def QYuleNumberOrdinal(node: Node, params: QueryStateDict, result: Result) -> None:
     ordinal = node.first_child(lambda n: True)
     if ordinal is not None:
-        result.lad_date = ordinal.contained_number
+        result.lad_date = int(ordinal.contained_number or 0)
     else:
         result.lad_date = 0
     if 11 <= result.lad_date <= 23:
@@ -413,7 +413,7 @@ def QYuleTwentyOrdinal(node: Node, params: QueryStateDict, result: Result) -> No
     result.lad_date = 0
     num_node = node.first_child(lambda n: True)
     if num_node is not None:
-        day = num_node.contained_number
+        day = int(num_node.contained_number or 0)
         if day != 20:
             # Only accept something like '20 og annar', not '10 og annar'
             day = 0
@@ -434,6 +434,8 @@ def QYuleDateRel(node: Node, params: QueryStateDict, result: Result) -> None:
     result.yule_lad = None
     daterel = node.first_child(lambda n: True)
     if daterel is not None:
+        assert isinstance(daterel, TerminalNode)
+        assert daterel.contained_date is not None
         year, month, result.lad_date = daterel.contained_date
         if year != 0 or month != 12:
             result.invalid_date = True
