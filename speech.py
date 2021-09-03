@@ -53,7 +53,7 @@ _VOICES = frozenset(("Dora", "Karl"))
 
 # Audio formats
 _DEFAULT_AUDIO_FORMAT = "mp3"
-_AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
+#  _AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
 
 # Text formats
 # For details about SSML markup, see:
@@ -94,7 +94,7 @@ _CACHE_MAXITEMS = 30
 def get_synthesized_text_url(
     text: str,
     txt_format: str = _DEFAULT_TEXT_FORMAT,
-    voice_id: str = _DEFAULT_VOICE,
+    voice_id: Optional[str] = _DEFAULT_VOICE,
     speed: float = 1.0,
 ) -> Optional[str]:
     """ Returns AWS URL to audio file with speech-synthesised text """

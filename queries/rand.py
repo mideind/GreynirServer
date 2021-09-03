@@ -28,11 +28,11 @@
 import logging
 import random
 
-from query import Query, QueryStateDict
+from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer
 from queries.arithmetic import add_num, terminal_num
 from queries.num import number_to_text
-from tree import Result
+from tree import Result, Node
 
 
 _RANDOM_QTYPE = "Random"
@@ -122,27 +122,27 @@ $score(+35) QRandom
 """
 
 
-def QRandomQuery(node, params, result):
+def QRandomQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _RANDOM_QTYPE
 
 
-def QRandomHeadsOrTails(node, params, result):
+def QRandomHeadsOrTails(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "headstails"
 
 
-def QRandomBetween(node, params, result):
+def QRandomBetween(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "randbtwn"
 
 
-def QRandomDiceRoll(node, params, result):
+def QRandomDiceRoll(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "dieroll"
 
 
-def QRandomDiceSides(node, params, result):
+def QRandomDiceSides(node: Node, params: QueryStateDict, result: Result) -> None:
     result.dice_sides = 6
 
 
-def QRandNumber(node, params, result):
+def QRandNumber(node: Node, params: QueryStateDict, result: Result) -> None:
     d = result.find_descendant(t_base="tala")
     if d:
         add_num(terminal_num(d), result)
@@ -166,7 +166,7 @@ def gen_random_answer(q: Query, result):
     # Query key is random number range (e.g. 1-6)
     q.set_key("{0}-{1}".format(num1, num2))
 
-    answer = str(random.randint(num1, num2))
+    answer = random.randint(num1, num2)
     response = dict(answer=answer)
     if result.action == "dieroll":
         voice_answer = (
@@ -175,10 +175,10 @@ def gen_random_answer(q: Query, result):
     else:
         voice_answer = f"Ég vel töluna {number_to_text(answer, gender='kk')}"
 
-    return response, answer, voice_answer
+    return response, str(answer), voice_answer
 
 
-def heads_or_tails(q: Query, result):
+def heads_or_tails(q: Query, result) -> AnswerTuple:
     q.set_key("HeadsOrTails")
     return gen_answer(random.choice(("Skjaldarmerki", "Fiskur")))
 

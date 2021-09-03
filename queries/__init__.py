@@ -278,12 +278,13 @@ def time_period_desc(
             seconds -= value * count
             plidx = 1 if is_plural(value) else 0
             icename = _TIMEUNIT_NOUNS[unit][plidx][cidx]
+            svalue: Union[int, str] = value
             if num_to_str:
                 # Convert number to spoken text
-                value = number_to_text(
+                svalue = number_to_text(
                     value, case=case, gender="kk" if unit == "d" else "kvk"
                 )
-            result.append(f"{value} {icename}")
+            result.append(f"{svalue} {icename}")
 
     return natlang_seq(result)
 
@@ -314,8 +315,9 @@ def distance_desc(
         plidx = 1 if is_plural(rounded_km) else 0
         unit_long = "kíló" + _METER_NOUN[plidx][cidx]
         unit = "km" if abbr else unit_long
+        sdist = dist
         if num_to_str:
-            dist = float_to_text(
+            sdist = float_to_text(
                 rounded_km, case=case, gender="kk", comma_null=False
             )
     # E.g. 940 metrar
@@ -324,14 +326,15 @@ def distance_desc(
         def rnd(n):
             return ((n + 5) // 10) * 10
 
-        dist = rnd(int(km_dist * 1000.0))
-        plidx = 1 if is_plural(dist) else 0
+        rounded_dist = rnd(int(km_dist * 1000.0))
+        plidx = 1 if is_plural(rounded_dist) else 0
         unit_long = _METER_NOUN[plidx][cidx]
         unit = "m" if abbr else unit_long
+        sdist = str(rounded_dist)
         if num_to_str:
-            dist = number_to_text(dist, case=case, gender="kk")
+            sdist = number_to_text(rounded_dist, case=case, gender="kk")
 
-    return f"{dist} {unit}"
+    return f"{sdist} {unit}"
 
 
 _KRONA_NOUN = (

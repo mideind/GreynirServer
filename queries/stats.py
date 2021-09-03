@@ -242,7 +242,7 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
 )
 
 
-def _gen_num_people_answer(q) -> bool:
+def _gen_num_people_answer(q: Query) -> bool:
     """ Answer questions about person database. """
     with SessionContext(read_only=True) as session:
         qr = session.query(Person.name).distinct().count()
@@ -353,7 +353,7 @@ _MOST_MENTIONED_COUNT = 3  # Individuals
 _MOST_MENTIONED_PERIOD = 7  # Days
 
 
-def _gen_most_mentioned_answer(q) -> bool:
+def _gen_most_mentioned_answer(q: Query) -> bool:
     """ Answer questions about the most mentioned/talked about people in Icelandic news. """
     top = top_persons(limit=_MOST_MENTIONED_COUNT, days=_MOST_MENTIONED_PERIOD)
 

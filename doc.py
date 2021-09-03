@@ -181,12 +181,12 @@ class DocxDocument(Document):
         zipfile.close()
 
         # Parse it
-        tree = ElementTree.fromstring(content)
+        tree: ElementTree = ElementTree.fromstring(content)
 
         # Extract text elements from all paragraphs
         # (with special handling of line breaks)
         paragraphs = []
-        for p in tree.iter(self.PARAGRAPH_TAG):
+        for p in tree.iter(self.PARAGRAPH_TAG):  # type: ignore
             texts = []
             for node in p.iter():
                 if node.tag.endswith(self.TEXT_TAG) and node.text:

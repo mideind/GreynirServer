@@ -36,7 +36,7 @@ from math import floor, log10
 
 from query import Query, QueryStateDict, to_dative, to_accusative
 from queries import iceformat_float, parse_num
-from tree import Result
+from tree import Result, Node
 
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
@@ -394,17 +394,17 @@ QUnit_kvk/fall →
 """
 
 
-def QUnitConversion(node, params, result):
+def QUnitConversion(node: Node, params: QueryStateDict, result: Result) -> None:
     """ Unit conversion query """
     result.qtype = "Unit"
     result.qkey = result.unit_to
 
 
-def QUnitNumber(node, params, result):
+def QUnitNumber(node: Node, params: QueryStateDict, result: Result) -> None:
     result.number = parse_num(node, result._canonical)
 
 
-def QUnit(node, params, result):
+def QUnit(node: Node, params: QueryStateDict, result: Result) -> None:
     # Unit in canonical (nominative, singular, indefinite) form
     unit = result._canonical.lower()
     # Convert irregular forms ('mílu', 'bollum') to canonical ones
@@ -413,14 +413,14 @@ def QUnit(node, params, result):
     result.unit_nf = result._nominative.lower()
 
 
-def QUnitTo(node, params, result):
+def QUnitTo(node: Node, params: QueryStateDict, result: Result) -> None:
     result.unit_to = result.unit
     result.unit_to_nf = result.unit_nf
     del result["unit"]
     del result["unit_nf"]
 
 
-def QUnitFrom(node, params, result):
+def QUnitFrom(node: Node, params: QueryStateDict, result: Result) -> None:
     if "unit" in result:
         result.unit_from = result.unit
         result.unit_from_nf = result.unit_nf
@@ -429,13 +429,15 @@ def QUnitFrom(node, params, result):
         del result["unit_nf"]
 
 
-def QUnitFromPounds(node, params, result):
+def QUnitFromPounds(node: Node, params: QueryStateDict, result: Result) -> None:
     """Special hack for the case of '150 pund' which is
     tokenized as an amount token"""
     amount = node.first_child(lambda n: n.has_t_base("amount"))
     assert amount is not None
     # Extract quantity from the amount token associated with the amount terminal
-    result.number, curr = amount.contained_amount
+    amt = amount.contained_amount
+    assert amt is not None
+    result.number, curr = amt
     assert curr == "GBP"
     result.unit = "pund"
     result.unit_nf = "pund"

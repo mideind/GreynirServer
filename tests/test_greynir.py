@@ -58,9 +58,9 @@ DUMMY_API_KEY = "123456789"
 
 
 def in_ci_environment() -> bool:
-    """ This function determines whether the tests are running in the
-        continuous integration environment by checking if the API key
-        is a dummy value (set in CI config). """
+    """This function determines whether the tests are running in the
+    continuous integration environment by checking if the API key
+    is a dummy value (set in CI config)."""
     global DUMMY_API_KEY
     try:
         return read_api_key("GreynirServerKey") == DUMMY_API_KEY
@@ -90,8 +90,8 @@ REQ_METHODS = frozenset(["GET", "POST"])
 
 
 def test_routes(client: FlaskClient):
-    """ Test all non-argument routes in Flask app by requesting
-        them without passing any query or post parameters """
+    """Test all non-argument routes in Flask app by requesting
+    them without passing any query or post parameters"""
     for rule in app.url_map.iter_rules():
         route = str(rule)
         if rule.arguments or route in SKIP_ROUTES:
@@ -129,6 +129,7 @@ def test_postag_api(client: FlaskClient):
     resp = client.get(r"/postag.api?t=Hér%20er%20ást%20og%20friður")
     assert resp.status_code == 200
     assert resp.content_type == "application/json; charset=utf-8"
+    assert resp.json
     assert "result" in resp.json
     assert len(resp.json["result"]) == 1
     assert len(resp.json["result"][0]) == 5
@@ -138,6 +139,7 @@ def test_ifdtag_api(client: FlaskClient):
     resp = client.get(r"/ifdtag.api?t=Hér%20er%20ást%20og%20friður")
     assert resp.status_code == 200
     assert resp.content_type == "application/json; charset=utf-8"
+    assert resp.json
     assert "valid" in resp.json
     # The IFD tagger doesn't work out of the box, i.e. directly from
     # a git clone. It needs the config/TnT-model.pickle file, which is
@@ -158,8 +160,8 @@ _KEY_RESTRICTED_ROUTES = frozenset(
 
 
 def test_api_key_restriction(client: FlaskClient):
-    """ Make calls to routes that are API key restricted, make sure they complain if no
-        API key is provided as a parameter and accept when correct API key is provided. """
+    """Make calls to routes that are API key restricted, make sure they complain if no
+    API key is provided as a parameter and accept when correct API key is provided."""
 
     # Try routes without API key, expect complaint about missing API key
     for path in _KEY_RESTRICTED_ROUTES:
@@ -189,6 +191,7 @@ def test_api_key_restriction(client: FlaskClient):
     )
     assert resp.status_code == 200
     assert resp.content_type == "application/json; charset=utf-8"
+    assert resp.json
     assert "errmsg" in resp.json and "missing API key" in resp.json["errmsg"]
 
 
@@ -408,7 +411,7 @@ def test_geo():
     assert code_for_us_state("Flórída") == "FL"
     assert code_for_us_state("Norður-Karólína") == "NC"
     assert code_for_us_state("Kalifornía") == "CA"
-    assert coords_for_us_state_code("CA") == [36.778261, -119.417932]
+    assert coords_for_us_state_code("CA") == (36.778261, -119.417932)
 
     # Generic location info lookup functions
     assert "country" in location_info("Reykjavík", "placename")

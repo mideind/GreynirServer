@@ -359,7 +359,7 @@ _UNKNOWN_LOC_RESP = (
 
 
 def handle_plain_text(q: Query) -> bool:
-    """ Handle a plain text query, contained in the q parameter. """
+    """ Handle a plain text query. """
     ql = q.query_lower.rstrip("?")
 
     matches = None

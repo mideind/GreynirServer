@@ -46,7 +46,7 @@ from geo import (
     location_info,
     capitalize_placename,
 )
-from tree import Result
+from tree import Result, Node
 
 
 _GEO_QTYPE = "Geography"
@@ -175,24 +175,24 @@ $score(+35) QGeo
 """
 
 
-def QGeoQuery(node, params, result):
+def QGeoQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     # Set the query type
     result.qtype = _GEO_QTYPE
 
 
-def QGeoCapitalQuery(node, params, result):
+def QGeoCapitalQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result["geo_qtype"] = "capital"
 
 
-def QGeoCountryQuery(node, params, result):
+def QGeoCountryQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result["geo_qtype"] = "country"
 
 
-def QGeoContinentQuery(node, params, result):
+def QGeoContinentQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result["geo_qtype"] = "continent"
 
 
-def QGeoLocationDescQuery(node, params, result):
+def QGeoLocationDescQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result["geo_qtype"] = "loc_desc"
 
 
@@ -214,7 +214,7 @@ def _preprocess(name: str) -> str:
     return fixed
 
 
-def QGeoSubject(node, params, result):
+def QGeoSubject(node: Node, params: QueryStateDict, result: Result) -> None:
     n = capitalize_placename(_preprocess(result._text))
     nom = NounPhrase(n).nominative or n
     result.subject = nom

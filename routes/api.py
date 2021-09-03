@@ -77,9 +77,9 @@ def ifdtag_api(version=1):
 
 @routes.route("/analyze.api", methods=["GET", "POST"])
 @routes.route("/analyze.api/v<int:version>", methods=["GET", "POST"])
-def analyze_api(version: int=1) -> Response:
-    """ Analyze text manually entered by the user, i.e. not coming from an article.
-        This is a lower level API used by the Greynir web front-end. """
+def analyze_api(version: int = 1) -> Response:
+    """Analyze text manually entered by the user, i.e. not coming from an article.
+    This is a lower level API used by the Greynir web front-end."""
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
     # try:
@@ -96,10 +96,10 @@ def analyze_api(version: int=1) -> Response:
 
 @routes.route("/correct.api", methods=["GET", "POST"])
 @routes.route("/correct.api/v<int:version>", methods=["GET", "POST"])
-def correct_api(version: int=1):
-    """ Correct text provided by the user, i.e. not coming from an article.
-        This can be either an uploaded file or a string.
-        This is a lower level API used by the Greynir web front-end. """
+def correct_api(version: int = 1):
+    """Correct text provided by the user, i.e. not coming from an article.
+    This can be either an uploaded file or a string.
+    This is a lower level API used by the Greynir web front-end."""
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
@@ -138,10 +138,10 @@ def correct_api(version: int=1):
 @routes.route("/correct.task", methods=["POST"])
 @routes.route("/correct.task/v<int:version>", methods=["POST"])
 @async_task  # This means that the function is automatically run on a separate thread
-def correct_task(version: int=1) -> Response:
-    """ Correct text provided by the user, i.e. not coming from an article.
-        This can be either an uploaded file or a string.
-        This is a lower level API used by the Greynir web front-end. """
+def correct_task(version: int = 1) -> Response:
+    """Correct text provided by the user, i.e. not coming from an article.
+    This can be either an uploaded file or a string.
+    This is a lower level API used by the Greynir web front-end."""
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
@@ -216,6 +216,7 @@ def postag_api(version=1) -> Response:
 
     return Response("Error", status=403)
 
+
 @routes.route("/parse.api", methods=["GET", "POST"])
 @routes.route("/parse.api/v<int:version>", methods=["GET", "POST"])
 def parse_api(version=1) -> Response:
@@ -274,7 +275,7 @@ def article_api(version=1) -> Response:
 
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
-        elif url.startswith("http:") or url.startswith("https:"):
+        elif url and url.startswith("http:") or url.startswith("https:"):
             a = ArticleProxy.load_from_url(url, session)
         else:
             a = None
@@ -439,9 +440,9 @@ def query_api(version=1):
     )
 
     # Get URL for response synthesized speech audio
-    if voice:
+    if voice and "voice" in result:
         # If the result contains a "voice" key, return it
-        audio = result.get("voice")
+        audio = result["voice"]
         url = (
             get_synthesized_text_url(audio, voice_id=voice_id, speed=voice_speed)
             if audio

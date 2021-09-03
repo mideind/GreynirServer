@@ -27,7 +27,7 @@ from typing import Any, Tuple, Optional, cast
 import re
 import logging
 
-from query import Query, QueryStateDict
+from query import Query, QueryStateDict, AnswerTuple
 from queries import (
     gen_answer,
     query_geocode_api_coords,
@@ -36,7 +36,7 @@ from queries import (
     cap_first,
 )
 from queries.num import numbers_to_text
-from tree import Result
+from tree import Result, Node
 from iceaddr import iceaddr_lookup, postcodes  # type: ignore
 from geo import iceprep_for_placename, iceprep_for_street
 
@@ -117,15 +117,15 @@ $score(+35) QUserLocation
 """
 
 
-def QUserLocationQuery(node, params, result):
+def QUserLocationQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _LOC_QTYPE
 
 
-def QUserLocationCurrent(node, params, result):
+def QUserLocationCurrent(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "CurrentLocation"
 
 
-def QUserLocationPostcode(node, params, result):
+def QUserLocationPostcode(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "CurrentPostcode"
 
 
@@ -219,7 +219,7 @@ def _addr4voice(addr: str) -> Optional[str]:
     return numbers_to_text(s) if s else None
 
 
-def answer_for_location(loc: Tuple):
+def answer_for_location(loc: Tuple) -> Optional[AnswerTuple]:
     # Send API request
     res = query_geocode_api_coords(loc[0], loc[1])
 
