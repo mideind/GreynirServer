@@ -28,7 +28,7 @@ from datetime import datetime, timedelta
 
 from query import Query, QueryStateDict
 from queries import gen_answer
-from tree import Result
+from tree import Result, Node
 
 
 _OPINION_QTYPE = "Opinion"
@@ -80,11 +80,11 @@ $tag(keep) QOpinionSubject/fall
 """
 
 
-def QOpinionQuery(node, params, result):
+def QOpinionQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result["qtype"] = _OPINION_QTYPE
 
 
-def QOpinionSubject(node, params, result):
+def QOpinionSubject(node: Node, params: QueryStateDict, result: Result) -> None:
     result["subject_nom"] = result._nominative
 
 

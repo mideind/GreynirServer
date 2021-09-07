@@ -24,7 +24,7 @@
 """
 # TODO: Fetch more than one flight using "flight_count", maybe not needed though
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 from typing_extensions import TypedDict
 
 import re
@@ -35,7 +35,7 @@ from datetime import datetime, timedelta, timezone
 
 from query import Query, QueryStateDict
 from queries import query_json_api, is_plural
-from tree import Result
+from tree import Result, Node
 from settings import changedlocale
 from queries.num import numbers_to_ordinal, numbers_to_text
 
@@ -184,24 +184,24 @@ _IATA_TO_AIRPORT_MAP = {
 _AIRPORT_TO_IATA_MAP = {val: key for key, val in _IATA_TO_AIRPORT_MAP.items()}
 
 
-def QFlightsQuery(node, params, result):
+def QFlightsQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     # Set the query type
     result.qtype = _FLIGHTS_QTYPE
 
 
-def QFlightsArrivalQuery(node, params, result):
+def QFlightsArrivalQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result["departure"] = False
 
 
-def QFlightsDepartureQuery(node, params, result):
+def QFlightsDepartureQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result["departure"] = True
 
 
-def QFlightsArrLoc(node, params, result):
+def QFlightsArrLoc(node: Node, params: QueryStateDict, result: Result) -> None:
     result["to_loc"] = result._nominative
 
 
-def QFlightsDepLoc(node, params, result):
+def QFlightsDepLoc(node: Node, params: QueryStateDict, result: Result) -> None:
     result["from_loc"] = result._nominative
 
 

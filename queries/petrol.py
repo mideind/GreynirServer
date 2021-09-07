@@ -32,7 +32,8 @@ import cachetools  # type: ignore
 import random
 
 from geo import distance
-from query import Query
+from tree import Result, Node
+from query import Query, QueryStateDict
 from queries import (
     query_json_api,
     gen_answer,
@@ -41,12 +42,12 @@ from queries import (
     AnswerTuple,
     LatLonTuple,
 )
-from queries.num import numbers_to_text, floats_to_text
+from queries.num import floats_to_text
 
 _PETROL_QTYPE = "Petrol"
 
 
-TOPIC_LEMMAS = [
+TOPIC_LEMMAS: List[str] = [
     "bensín",
     "bensínstöð",
     "bensínlítri",
@@ -203,19 +204,21 @@ $score(+35) QPetrol
 """
 
 
-def QPetrolQuery(node, params, result):
+def QPetrolQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _PETROL_QTYPE
 
 
-def QPetrolClosestStation(node, params, result):
+def QPetrolClosestStation(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "ClosestStation"
 
 
-def QPetrolCheapestStation(node, params, result):
+def QPetrolCheapestStation(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "CheapestStation"
 
 
-def QPetrolClosestCheapestStation(node, params, result):
+def QPetrolClosestCheapestStation(
+    node: Node, params: QueryStateDict, result: Result
+) -> None:
     result.qkey = "ClosestCheapestStation"
 
 
@@ -296,7 +299,7 @@ def _closest_cheapest_petrol_station(loc: LatLonTuple) -> Optional[Dict]:
 _ERRMSG = "Ekki tókst að sækja upplýsingar um bensínstöðvar."
 
 
-def _answ_for_petrol_query(q: Query, result) -> AnswerTuple:
+def _answ_for_petrol_query(q: Query, result: Result) -> AnswerTuple:
     req_distance = True
     location = q.location
     if location is None:
@@ -365,7 +368,7 @@ def _answ_for_petrol_query(q: Query, result) -> AnswerTuple:
     return response, answer, voice
 
 
-def sentence(state, result) -> None:
+def sentence(state: QueryStateDict, result: Result) -> None:
     """ Called when sentence processing is complete """
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:

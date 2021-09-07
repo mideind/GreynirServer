@@ -30,7 +30,7 @@ import logging
 from reynir.bindb import GreynirBin
 
 from query import Query, ContextDict, QueryStateDict
-from tree import Result
+from tree import Result, Node
 
 from . import query_json_api, gen_answer, cap_first, icequote
 
@@ -98,11 +98,11 @@ $score(+35) QDictQuery
 """
 
 
-def QDictSubjectNom(node, params, result):
+def QDictSubjectNom(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = result._text
 
 
-def QDictWordQuery(node, params, result):
+def QDictWordQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = "Dictionary"
 
 

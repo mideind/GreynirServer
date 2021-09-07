@@ -127,8 +127,8 @@ _REPEAT_SUFFIXES: FrozenSet[str] = frozenset(("+", "*", "?"))
 
 class Node(abc.ABC):
 
-    """ Base class for terminal and nonterminal nodes reconstructed from
-        trees in text format loaded from the scraper database """
+    """Base class for terminal and nonterminal nodes reconstructed from
+    trees in text format loaded from the scraper database"""
 
     def __init__(self) -> None:
         self.child: Optional["Node"] = None
@@ -187,8 +187,8 @@ class Node(abc.ABC):
         return None
 
     def descendants(self, test_f: Optional[FilterFunction] = None) -> Iterator["Node"]:
-        """ Do a depth-first traversal of all children of this node,
-            returning those that pass a test function, if given """
+        """Do a depth-first traversal of all children of this node,
+        returning those that pass a test function, if given"""
         c = self.child
         while c is not None:
             for cc in c.descendants():
@@ -200,8 +200,8 @@ class Node(abc.ABC):
 
     @abc.abstractmethod
     def contained_text(self) -> str:
-        """ Return a string consisting of the literal text of all
-            descendants of this node, in depth-first order """
+        """Return a string consisting of the literal text of all
+        descendants of this node, in depth-first order"""
         raise NotImplementedError  # Should be overridden
 
     @abc.abstractmethod
@@ -268,22 +268,22 @@ class Node(abc.ABC):
 
 class Result:
 
-    """ Container for results that are sent from child nodes to parent nodes.
-        This class is instrumented so that it is equivalent to use attribute
-        or indexing notation, i.e. r.efliður is the same as r["efliður"].
+    """Container for results that are sent from child nodes to parent nodes.
+    This class is instrumented so that it is equivalent to use attribute
+    or indexing notation, i.e. r.efliður is the same as r["efliður"].
 
-        Additionally, the class implements lazy evaluation of the r._root,
-        r._nominative and similar built-in attributes so that they are only
-        calculated when and if required, and then cached. This is an optimization
-        to save database reads.
+    Additionally, the class implements lazy evaluation of the r._root,
+    r._nominative and similar built-in attributes so that they are only
+    calculated when and if required, and then cached. This is an optimization
+    to save database reads.
 
-        This class has a mechanism which merges the contents of list, set and dict
-        attributes when navigating upwards from child nodes to their parents.
-        This means that, for instance, two child nodes of a "+" operator could
-        each have an attribute called "operand" containing an operand enclosed
-        in a list, like so: [ op ]. When the "+" operator node is processed,
-        it will automatically get an "operand" attribute
-        containing [ left_op, right_op ].
+    This class has a mechanism which merges the contents of list, set and dict
+    attributes when navigating upwards from child nodes to their parents.
+    This means that, for instance, two child nodes of a "+" operator could
+    each have an attribute called "operand" containing an operand enclosed
+    in a list, like so: [ op ]. When the "+" operator node is processed,
+    it will automatically get an "operand" attribute
+    containing [ left_op, right_op ].
 
     """
 
@@ -420,8 +420,8 @@ class Result:
     def enum_children(
         self, test_f: Optional[Callable[[Node], bool]] = None
     ) -> Iterator[ChildTuple]:
-        """ Enumerate the child parameters of this node, yielding (child_node, result)
-            where the child node meets the given test, if any """
+        """Enumerate the child parameters of this node, yielding (child_node, result)
+        where the child node meets the given test, if any"""
         if self._params:
             for p, c in zip(self._params, self._node.children()):
                 if test_f is None or test_f(c):
@@ -430,8 +430,8 @@ class Result:
     def enum_descendants(
         self, test_f: Optional[Callable[[Node], bool]] = None
     ) -> Iterator[ChildTuple]:
-        """ Enumerate the descendant parameters of this node, yielding (child_node, result)
-            where the child node meets the given test, if any """
+        """Enumerate the descendant parameters of this node, yielding (child_node, result)
+        where the child node meets the given test, if any"""
         if self._params:
             for p, c in zip(self._params, self._node.children()):
                 if p is not None:
@@ -505,8 +505,8 @@ class Result:
 
 class TerminalDescriptor:
 
-    """ Wraps a terminal specification and is able to select a token meaning
-        that matches that specification """
+    """Wraps a terminal specification and is able to select a token meaning
+    that matches that specification"""
 
     _CASES = {"nf", "þf", "þgf", "ef"}
     _GENDERS = {"kk", "kvk", "hk"}
@@ -594,8 +594,8 @@ class TerminalDescriptor:
 
     @property
     def clean_terminal(self) -> str:
-        """ Return a 'clean' terminal name, having converted literals
-            to a corresponding category, if available """
+        """Return a 'clean' terminal name, having converted literals
+        to a corresponding category, if available"""
         if self._clean_terminal is None:
             if self.inferred_cat in self._GENDERS:
                 # 'bróðir:kk'_gr_ft_nf becomes no_kk_gr_ft_nf
@@ -612,10 +612,10 @@ class TerminalDescriptor:
 
     @property
     def clean_cat(self) -> str:
-        """ Return the category from the front of the clean terminal name.
-            This returns 'no' for all nouns (instead of 'kk', 'kvk', 'hk'),
-            and handles stem literals correctly (i.e. the terminal
-            'vagn:kk'_nf_et_gr has clean_cat == 'no') """
+        """Return the category from the front of the clean terminal name.
+        This returns 'no' for all nouns (instead of 'kk', 'kvk', 'hk'),
+        and handles stem literals correctly (i.e. the terminal
+        'vagn:kk'_nf_et_gr has clean_cat == 'no')"""
         if self._clean_cat is None:
             self._clean_cat = self.clean_terminal.split("_")[0]
         return self._clean_cat
@@ -662,6 +662,7 @@ class TerminalDescriptor:
             # The following code is parallel to BIN_Token.verb_matches()
             for v in self.varlist:
                 # Lookup variant to see if it is one of the required ones for verbs
+                assert BIN_Token._VERB_FORMS is not None
                 rq = BIN_Token._VERB_FORMS.get(v)
                 if rq and rq not in m.beyging:
                     # If this is required variant that is not found in the form we have,
@@ -832,8 +833,8 @@ class TerminalNode(Node):
         return self.td.has_variant(s)
 
     def contained_text(self) -> str:
-        """ Return a string consisting of the literal text of all
-            descendants of this node, in depth-first order """
+        """Return a string consisting of the literal text of all
+        descendants of this node, in depth-first order"""
         return self.text
 
     @property
@@ -848,8 +849,8 @@ class TerminalNode(Node):
 
     @property
     def contained_amount(self) -> Optional[Tuple[float, str]]:
-        """ Return an amount from the associated token, if any,
-            as an (amount, currency ISO code) tuple """
+        """Return an amount from the associated token, if any,
+        as an (amount, currency ISO code) tuple"""
         if self.tokentype != "AMOUNT":
             return None
         if self._aux is None:
@@ -859,8 +860,8 @@ class TerminalNode(Node):
 
     @property
     def contained_date(self) -> Optional[Tuple[int, int, int]]:
-        """ Return a date from the associated token, if any,
-            as a (year, month, day) tuple """
+        """Return a date from the associated token, if any,
+        as a (year, month, day) tuple"""
         if self.tokentype not in ("DATE", "DATEABS", "DATEREL"):
             return None
         if self._aux is None:
@@ -870,8 +871,8 @@ class TerminalNode(Node):
 
     @property
     def contained_year(self) -> Optional[int]:
-        """ Return a year from the associated token, if any,
-            as an integer """
+        """Return a year from the associated token, if any,
+        as an integer"""
         if self.tokentype != "YEAR":
             return None
         if self._aux is None:
@@ -886,8 +887,8 @@ class TerminalNode(Node):
         return self._root_cache(self.text, self._at_start, self.td.terminal)
 
     def _lazy_eval_root(self) -> Union[str, Tuple[Callable, Tuple[str, bool, str]]]:
-        """ Return a word root (stem) function object, with arguments, that can be
-            used for lazy evaluation of word stems. """
+        """Return a word root (stem) function object, with arguments, that can be
+        used for lazy evaluation of word stems."""
         if (not self.is_word) or self.is_literal:
             return self.text
         return self._root_cache, (self.text, self._at_start, self.td.terminal)
@@ -895,8 +896,8 @@ class TerminalNode(Node):
     def lookup_alternative(
         self, bin_db: GreynirBin, replace_func, sort_func=None
     ) -> str:
-        """ Return a different (but always nominative case) word form, if available,
-            by altering the beyging spec via the given replace_func function """
+        """Return a different (but always nominative case) word form, if available,
+        by altering the beyging spec via the given replace_func function"""
         w, m = bin_db.lookup_g(self.text, self._at_start)
         if m:
             # Narrow the meanings down to those that are compatible with the terminal
@@ -988,8 +989,8 @@ class TerminalNode(Node):
         return w
 
     def _indefinite(self, bin_db: GreynirBin) -> str:
-        """ Look up the indefinite nominative form of a noun
-            or adjective associated with this terminal """
+        """Look up the indefinite nominative form of a noun
+        or adjective associated with this terminal"""
         # Lookup the token in the BIN database
         if (not self.is_word) or self.is_literal:
             # Not a word, not a noun or already indefinite: return it as-is
@@ -1010,8 +1011,8 @@ class TerminalNode(Node):
             assert False
 
         def replace_beyging(b: str, by_case: str = "NF") -> str:
-            """ Change a beyging string to specify a different case,
-                without the definitive article """
+            """Change a beyging string to specify a different case,
+            without the definitive article"""
             for case in ("NF", "ÞF", "ÞGF", "EF"):
                 if case != by_case and case in b:
                     return (
@@ -1025,8 +1026,8 @@ class TerminalNode(Node):
         return w
 
     def _canonical(self, bin_db: GreynirBin) -> str:
-        """ Look up the singular indefinite nominative form of a noun
-            or adjective associated with this terminal """
+        """Look up the singular indefinite nominative form of a noun
+        or adjective associated with this terminal"""
         # Lookup the token in the BIN database
         if (not self.is_word) or self.is_literal:
             # Not a word, not a noun or already indefinite: return it as-is
@@ -1050,8 +1051,8 @@ class TerminalNode(Node):
             assert False
 
         def replace_beyging(b: str, by_case: str = "NF") -> str:
-            """ Change a 'beyging' string to specify a different case,
-                without the definitive article """
+            """Change a 'beyging' string to specify a different case,
+            without the definitive article"""
             for case in ("NF", "ÞF", "ÞGF", "EF"):
                 if case != by_case and case in b:
                     return (
@@ -1131,11 +1132,11 @@ class TerminalNode(Node):
                 d["a"] = t
             if t[0] == '"' or t[0] == "'":
                 pass
-                #assert (
+                # assert (
                 #    False
-                #), "Wrong terminal: {0}, text is '{1}', token {2}, tokentype {3}".format(
+                # ), "Wrong terminal: {0}, text is '{1}', token {2}, tokentype {3}".format(
                 #    self.td.terminal, self.text, self.token, self.tokentype
-                #)
+                # )
             # Category
             d["c"] = self.cat
             if self.tokentype == "WORD":
@@ -1191,7 +1192,7 @@ class PersonNode(TerminalNode):
             # name is not inflectable
             return self.text
         gender = self.td.gender
-        #assert self.td.case is not None
+        # assert self.td.case is not None
         if self.td.case is None:
             case = "NF"
         else:
@@ -1269,8 +1270,8 @@ class NonterminalNode(Node):
         return ""
 
     def contained_text(self) -> str:
-        """ Return a string consisting of the literal text of all
-            descendants of this node, in depth-first order """
+        """Return a string consisting of the literal text of all
+        descendants of this node, in depth-first order"""
         return " ".join(d.text for d in self.descendants() if d.text)
 
     def has_nt_base(self, s: str) -> bool:
@@ -1285,27 +1286,27 @@ class NonterminalNode(Node):
         return self.nt
 
     def root(self, state: TreeStateDict, params: ParamList) -> str:
-        """ The root form of a nonterminal is a sequence of the root
-            forms of its children (parameters) """
+        """The root form of a nonterminal is a sequence of the root
+        forms of its children (parameters)"""
         return " ".join(p._root for p in params if p is not None and p._root)
 
     def nominative(self, state: TreeStateDict, params: ParamList) -> str:
-        """ The nominative form of a nonterminal is a sequence of the
-            nominative forms of its children (parameters) """
+        """The nominative form of a nonterminal is a sequence of the
+        nominative forms of its children (parameters)"""
         return " ".join(
             p._nominative for p in params if p is not None and p._nominative
         )
 
     def indefinite(self, state: TreeStateDict, params: ParamList) -> str:
-        """ The indefinite form of a nonterminal is a sequence of the
-            indefinite forms of its children (parameters) """
+        """The indefinite form of a nonterminal is a sequence of the
+        indefinite forms of its children (parameters)"""
         return " ".join(
             p._indefinite for p in params if p is not None and p._indefinite
         )
 
     def canonical(self, state: TreeStateDict, params: ParamList) -> str:
-        """ The canonical form of a nonterminal is a sequence of the canonical
-            forms of its children (parameters) """
+        """The canonical form of a nonterminal is a sequence of the canonical
+        forms of its children (parameters)"""
         return " ".join(p._canonical for p in params if p is not None and p._canonical)
 
     def process(self, state: TreeStateDict, params: ParamList) -> Result:
@@ -1591,8 +1592,8 @@ class Tree(TreeBase):
     def context(
         self, session: Session, processor: ModuleType, **kwargs: Any
     ) -> Iterator[TreeStateDict]:
-        """ Context manager for tree processing, setting up the environment
-            and encapsulating the sentence tree processing """
+        """Context manager for tree processing, setting up the environment
+        and encapsulating the sentence tree processing"""
 
         # Obtain the processor's handler functions
         article_begin = getattr(processor, "article_begin", None) if processor else None
@@ -1647,9 +1648,9 @@ class Tree(TreeBase):
 
 class TreeGist(TreeBase):
 
-    """ A gist of a tree corresponding to a single parsed article.
-        A gist simply knows which sentences are present in the tree
-        and what the error token index is for sentences that are not present. """
+    """A gist of a tree corresponding to a single parsed article.
+    A gist simply knows which sentences are present in the tree
+    and what the error token index is for sentences that are not present."""
 
     def __init__(self) -> None:
         super().__init__()

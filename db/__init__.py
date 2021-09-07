@@ -78,6 +78,7 @@ class Scraper_DB:
 
 T = TypeVar("T")
 
+
 class classproperty(Generic[T]):
 
     """ A helper that creates read-only class properties """
