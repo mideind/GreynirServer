@@ -154,7 +154,7 @@ def recognize_entities(
                 newstate = defaultdict(list)
                 w = token.txt  # Original word
 
-                def add_to_state(slist, entity):
+                def add_to_state(slist: List[str], entity: Entity) -> None:
                     """ Add the list of subsequent words to the new parser state """
                     wrd = slist[0] if slist else None
                     rest = slist[1:]
@@ -204,7 +204,7 @@ def recognize_entities(
                     weak = True
                     cnt = 1
                     upper = w and w[0].isupper()
-                    parts = []
+                    parts: List[str] = []
 
                     if upper and " " in w:
                         # For all uppercase phrases (words, entities, persons),
@@ -222,6 +222,7 @@ def recognize_entities(
                             else:
                                 lastnames[lastname] = token
 
+                    elist: List[Entity] = []
                     if token.kind == TOK.WORD and upper and w not in Abbreviations.DICT:
                         if " " in w:
                             # w may be a person name with more than one embedded word
@@ -234,8 +235,6 @@ def recognize_entities(
                             weak = False  # Accept single-word entity references
                         # elist is a list of Entity instances
                         elist = query_entities(w)
-                    else:
-                        elist = []
 
                     if elist:
                         # This word might be a candidate to start an entity reference
@@ -282,8 +281,5 @@ def recognize_entities(
             else:
                 yield from tq
             tq = []
-
-    # print("\nEntity cache:\n{0}".format("\n".join("'{0}': {1}".format(k, v) for k, v in ecache.items())))
-    # print("\nLast names:\n{0}".format("\n".join("{0}: {1}".format(k, v) for k, v in lastnames.items())))
 
     assert not tq
