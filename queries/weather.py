@@ -162,6 +162,9 @@ QWeatherForecast →
     | QWeatherWhatKindOfWeather "er" "spáð" QWeatherLocation? QWeatherNextDays?
     | QWeatherWhatKindOfWeather "má" "búast" "við" QWeatherLocation? QWeatherNextDays?
 
+    | "ert" "þú" "með" "veðurspá" QWeatherNextDays?
+    | "ertu" "með" "veðurspá" QWeatherNextDays?
+
 QWeatherWhatKindOfWeather →
     "hvers" "konar" "veðri" | "hverskonar" "veðri"
     | "hvers" "kyns" "veðri" | "hvernig" "veðri"

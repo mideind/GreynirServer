@@ -122,6 +122,8 @@ QPetrolCheapestStation →
     | "hvar" QPetrolCanIGet "ódýrasta" QPetrolPetrol
     | "hvar" QPetrolCanIGet "ódýrasta" "bensínlítrann"
     | QPetrolWhereIs "ódýrast" "að" "fylla" "á"? QPetrolFillableÞf
+    | QPetrolWhereIs QPetrolBestLowest "bensínverð"
+    | QPetrolWhereIs QPetrolBestLowest "bensínverðið"
 
 QPetrolClosestCheapestStation →
     "ódýrt" QPetrolPetrol QPetrolNearMe?
@@ -196,8 +198,11 @@ QPetrolLowPriceÞf →
     | "sæmilegt" "verð" | "sæmilegan" "prís"
 
 QPetrolBestPriceÞf →
-    "lægsta" "verðið" | "besta" "verðið" | "besta" "verð" | "lægsta" "verð"
-    | "lægsta" "prísinn" | "besta" "prísinn" | "lægsta" "prís" | "besta" "prís"
+    QPetrolBestLowest "verðið" | QPetrolBestLowest "verð"
+    | QPetrolBestLowest "prísinn" | QPetrolBestLowest "prís"
+
+QPetrolBestLowest →
+    "lægsta" | "besta" | "hagstæðasta"
 
 $score(+35) QPetrol
 

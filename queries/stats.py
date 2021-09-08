@@ -134,6 +134,8 @@ _MOST_FREQ_QUERIES = frozenset(
         "hvers konar fyrirspurnum hefur þú svarað nýlega",
         "hvaða spurningum hefur þú svarað",
         "hvaða spurningum hefurðu svarað",
+        "hvernig spurningum svararðu oftast",
+        "hvers konar spurningum svararðu oftast",
         "hvers konar spurningum hefur þú svarað",
         "hvers konar spurningum hefurðu svarað",
         "um hvað ertu mest spurð",

@@ -78,7 +78,7 @@ QNewsLatest →
     | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttirnar" QNewsRUV? QNewsNow?
 
 QNewsTellMe →
-    "segðu" "mér" | "geturðu" "sagt" "mér"
+    "segðu" "mér"? | "geturðu" "sagt" "mér"?
 
 QNewsNow →
     "núna" | "þessa_stundina" | "í" "dag" # | 'í_dag'
