@@ -41,7 +41,7 @@ _USERINFO_QTYPE = "UserInfo"
 
 
 _WHO_IS_ME = "hver er {0}"
-_YOU_ARE = "Þú, kæri notandi, heitir {0}"
+_YOU_ARE = "Þú, kæri notandi, heitir {0}."
 
 
 def _whoisme_handler(q: Query, ql: str) -> bool:
@@ -85,6 +85,8 @@ _WHATS_MY_NAME = frozenset(
         "hvað er nafn mitt",
         "hvert er nafnið mitt",
         "hvert er nafn mitt",
+        "segðu nafn mitt",
+        "segðu nafnið mitt",
     )
 )
 
@@ -99,9 +101,9 @@ def _whatsmyname_handler(q: Query, ql: str) -> bool:
     answ: str
     nd = q.client_data("name")
     if nd and "full" in nd:
-        answ = f"Þú heitir {nd['full']}"
+        answ = f"Þú heitir {nd['full']}."
     elif nd and "first" in nd:
-        answ = f"Þú heitir {nd['first']}"
+        answ = f"Þú heitir {nd['first']}."
         if nd["first"] == "Embla":
             answ += " alveg eins og ég!"
     else:
@@ -146,9 +148,11 @@ def _mynameis_handler(q: Query, ql: str) -> bool:
         name = fname.split(" og ")[0]  # "ég heiti X og blablabla"
         name = name.split(" hvað ")[0]  # "ég heiti X hvað heitir þú"
 
-        # Handle "ég heiti ekki X"
+        # Handle "ég heiti ekki X", "ég heiti það ekki"
         components = name.split()
-        if components[0] == "ekki":
+        if components[0] == "ekki" or (
+            len(components) >= 2 and components[:2] == ("það", "ekki")
+        ):
             q.set_answer(*gen_answer("Hvað heitirðu þá?"))
             return True
 

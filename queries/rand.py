@@ -81,7 +81,7 @@ QRandomHeadsOrTails →
 QRandomDiceRoll →
     "kastaðu" QRandomDiceSides? QRandomDie QRandomForMe?
     | "kastaðu" QRandomForMe? QRandomDiceSides? QRandomDie
-    | "kasta" QRandomDiceSides? QRandomDie
+    | "kasta" QRandomDiceSides? QRandomDie QRandomForMe?
     | "geturðu" "kastað" QRandomDiceSides? QRandomDie QRandomForMe?
     | "geturðu" "kastað" QRandomForMe? QRandomDiceSides? QRandomDie
     | "kastaðu" "upp" "á" "teningnum" QRandomForMe?

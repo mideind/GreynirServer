@@ -54,7 +54,7 @@ _DISTANCE_QTYPE = "Distance"
 
 
 _QDISTANCE_REGEXES = (
-    r"^hvað er ég langt frá (.+)$",
+    r"^(en\s)?hvað er ég langt frá (.+)$",
     r"^hvað erum við langt frá (.+)$",
     r"^hvað er langt frá (.+)$",  # Speech recognition often misses "ég" in this context
     r"^hvað er ég langt í burtu frá (.+)$",
@@ -353,9 +353,7 @@ def traveltime_answer_for_loc(matches, query: Query):
     return response, answer, voice
 
 
-_UNKNOWN_LOC_RESP = (
-    "Ég veit ekki hvar þú ert, og get því ekki reiknað út vegalengdir."
-)
+_UNKNOWN_LOC_RESP = "Ég veit ekki hvar þú ert, og get því ekki reiknað út vegalengdir."
 
 
 def handle_plain_text(q: Query) -> bool:

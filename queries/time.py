@@ -124,6 +124,21 @@ _TIME_IN_LOC_QUERIES = frozenset(
 )
 
 
+# Hardcoded fixes for nom. placename lookups
+_LOC2NOM_FIXES = {
+    # BÍN contains placename "Stokkhólmi" as opposed to more probable "Stokkhólmur"
+    "Stokkhólmi": "Stokkhólmur",
+}
+
+
+def _loc2nom(loc: str) -> str:
+    """ Return location name in nominative case. """
+    fix = _LOC2NOM_FIXES.get(loc)
+    if fix:
+        return fix
+    return NounPhrase(loc).nominative or loc
+
+
 def handle_plain_text(q: Query) -> bool:
     """Handle a plain text query, contained in the q parameter
     which is an instance of the query.Query class.
@@ -154,7 +169,7 @@ def handle_plain_text(q: Query) -> bool:
         loc = capitalize_placename(loc)
 
         # Look up nominative
-        loc_nom = NounPhrase(loc).nominative or loc
+        loc_nom = _loc2nom(loc)
         prep = "í"
 
         # Check if loc is a recognised country or city name
