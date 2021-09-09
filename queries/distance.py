@@ -24,8 +24,8 @@
 """
 
 # TODO: This module should probably use grammar instead of regexes
-# TODO: "Hvað er langt á milli X og Y?"
-# TODO: "Hvað er langt til tunglsins"? "Hvað er langt til Mars?"
+# TODO: "Hvað er langt á milli X og Y?", "Hvað er langt frá A til B?"
+# TODO: "Hvað er langt til tunglsins?", "Hvað er langt til Mars?"
 # TODO: Identify when user is present at the location, respond "Þú ert í/á X"
 # TODO: "Hvað er langur/margra kílómetra göngutúr í/á X?"
 # TODO: Fix issue where answer complains about lack of location despite query

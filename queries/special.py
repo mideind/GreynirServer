@@ -862,9 +862,12 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ert þú ástfangin": _ROMANCE,
     "áttu kærasta": _ROMANCE,
     "átt þú kærasta": _ROMANCE,
+    "áttu kærustu": _ROMANCE,
+    "átt þú kærustu": _ROMANCE,
     "viltu ríða": _ROMANCE,
     "viltu ríða mér": _ROMANCE,
     "viltu koma að ríða": _ROMANCE,
+    "má ég ríða þér": _ROMANCE,
     "ertu að halda framhjá mér": _ROMANCE,
     "viltu vera kærasta mín": _ROMANCE,
     "viltu verða kærasta mín": _ROMANCE,
@@ -964,6 +967,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "spilaðu góða tónlist": _play_music,
     "geturðu spilað tónlist": _play_music,
     "geturðu spilað tónlist fyrir mig": _play_music,
+    "geturðu spilað lag": _play_music,
+    "geturðu spilað lag fyrir mig": _play_music,
     # Play a film
     "spilaðu kvikmynd": _play_film,
     "spilaðu bíómynd": _play_film,
@@ -1033,6 +1038,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert handónýt": _sorry,
     "þú ert alveg handónýt": _sorry,
     "þú ert klaufi": _sorry,
+    "þú ert alveg úti að aka": _sorry,
     "þú skilur ekki neitt": _sorry,
     "þú misskilur allt": _sorry,
     "þú skilur mig ekki": _sorry,
@@ -1200,6 +1206,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert besta vinkona mín": _thanks,
     "þú ert besti vinur minn": _thanks,
     "þú ert falleg": {"answer": "Takk fyrir hrósið!"},
+    "þú ert mjög falleg": {"answer": "Takk fyrir hrósið!"},
     "þú ert fallegust": {"answer": "Takk fyrir hrósið!"},
     "þetta var rétt hjá þér": _GOOD_TO_HEAR,
     "það var rétt hjá þér": _GOOD_TO_HEAR,
@@ -1305,6 +1312,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvert er leyndarmál lífsins": _MEANING_OF_LIFE,
     "hver er sannleikurinn": _MEANING_OF_LIFE,
     "hvað snýst lífið um": _MEANING_OF_LIFE,
+    "42": {"answer": "Sex sinnum níu"},  # :)
     "hvað er 42": {"answer": "Sex sinnum níu"},  # :)
     "hvað meinarðu með 42": {"answer": "Sex sinnum níu"},  # :)
     "hvað þýðir 42": {"answer": "Sex sinnum níu"},  # :)
@@ -1375,6 +1383,11 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað heitirðu eiginlega": _identity,
     "hvað heitirðu fullu nafni": _FULL_NAME,
     "hvað heitirðu eiginlega fullu nafni": _FULL_NAME,
+    "hvað er fullt nafn þitt": _FULL_NAME,
+    "hvað er nafn þitt": _identity,
+    "hvað er nafnið þitt": _identity,
+    "hvert er nafn þitt": _identity,
+    "hvert er nafnið þitt": _identity,
     "hver ertu": _identity,
     "hver ert þú": _identity,
     "hver ertu eiginlega": _identity,
@@ -1399,6 +1412,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvar ertu staðsett": _LOC_ANSWER,
     "hvar ertu stödd": _LOC_ANSWER,
     "ertu til": _LOC_ANSWER,
+    "ertu til í alvöru": _LOC_ANSWER,
+    "ertu til í alvörunni": _LOC_ANSWER,
     "í hverju ertu": _LOC_ANSWER,
     "ertu heima": {"answer": "Já. Ég er alltaf heima."},
     "ertu heima hjá þér": {"answer": "Já. Ég er alltaf heima hjá mér."},
@@ -1461,6 +1476,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     # Favorite music
     "hvað er uppáhaldstónlistin þín": _FAVORITE_MUSIC,
     "hvað er uppáhalds tónlistin þín": _FAVORITE_MUSIC,
+    "hver er uppáhaldstónlistin þín": _FAVORITE_MUSIC,
+    "hver er uppáhalds tónlistin þín": _FAVORITE_MUSIC,
     "hvaða tónlist mælir þú með": _FAVORITE_MUSIC,
     "hvaða tónlist mælirðu með": _FAVORITE_MUSIC,
     "hvaða tónlist er best": _FAVORITE_MUSIC,
@@ -1471,6 +1488,20 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað tónlist mælirðu með": _FAVORITE_MUSIC,
     "hvað á ég að hlusta á?": _FAVORITE_MUSIC,
     "hvað ætti ég að hlusta á?": _FAVORITE_MUSIC,
+    "hvað er uppáhaldshljómsveitin þín": _FAVORITE_MUSIC,
+    "hvað er uppáhalds hljómsveitin þín": _FAVORITE_MUSIC,
+    "hver er uppáhaldshljómsveitin þín": _FAVORITE_MUSIC,
+    "hver er uppáhalds hljómsveitin þín": _FAVORITE_MUSIC,
+    "hvaða hljómsveit mælir þú með": _FAVORITE_MUSIC,
+    "hvaða hljómsveit mælirðu með": _FAVORITE_MUSIC,
+    "hvaða hljómsveit er best": _FAVORITE_MUSIC,
+    "hvað er góð hljómsveit": _FAVORITE_MUSIC,
+    "nefndu góða hljómsveit": _FAVORITE_MUSIC,
+    "geturðu mælt með hljómsveit": _FAVORITE_MUSIC,
+    "geturðu mælt með einhverri hljómsveit": _FAVORITE_MUSIC,
+    "hvað hljómsveit mælirðu með": _FAVORITE_MUSIC,
+    "hvaða hljómsveit á ég að hlusta á?": _FAVORITE_MUSIC,
+    "hvaða hljómsveit ætti ég að hlusta á?": _FAVORITE_MUSIC,
     # Favorite animal
     "hvað er uppáhalds dýrið þitt": {
         "answer": "Ég held mikið upp á ketti. Þeir eru frábærir."
@@ -1526,12 +1557,15 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
         "is_question": False,
     },
     # Gender, self-identity
-    "ertu kona": _COMPUTER_PROGRAM,
+    "ertu stelpa": _COMPUTER_PROGRAM,
+    "ertu stúlka": _COMPUTER_PROGRAM,
     "ertu kvenmaður": _COMPUTER_PROGRAM,
+    "ertu kona": _COMPUTER_PROGRAM,
     "ert þú kona": _COMPUTER_PROGRAM,
     "ertu karl": _COMPUTER_PROGRAM,
     "ertu karlmaður": _COMPUTER_PROGRAM,
     "ert þú karl": _COMPUTER_PROGRAM,
+    "ertu gaur": _COMPUTER_PROGRAM,
     "ertu kvenkyns": _COMPUTER_PROGRAM,
     "ert þú kvenkyns": _COMPUTER_PROGRAM,
     "ertu karlkyns": _COMPUTER_PROGRAM,
@@ -1946,6 +1980,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert píka": _rudeness,
     "þú ert fífl": _rudeness,
     "þú ert heimsk": _rudeness,
+    "þú ert heimskur": _rudeness,
     "þú ert mjög heimsk": _rudeness,
     "þú ert fokking heimsk": _rudeness,
     "þú ert ótrúlega heimsk": _rudeness,
@@ -1968,6 +2003,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert kjánaleg": _rudeness,
     "þú ert fábjáni": _rudeness,
     "þú ert algjör fábjáni": _rudeness,
+    "fáviti": _rudeness,
     "þú ert fáviti": _rudeness,
     "þú ert algjör fáviti": _rudeness,
     "þú ert asni": _rudeness,
@@ -2119,7 +2155,10 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvað segir þú núna": _ALL_GOOD,
     "leiðist þér": {"answer": "Nei. Það er svo gaman hjá mér í vinnunni."},
     "hvernig líður þér": {"answer": "Mér líður bara prýðilega. Takk fyrir að spyrja."},
-    "Hvernig líður þér í dag": {
+    "hvernig líður þér í dag": {
+        "answer": "Mér líður bara prýðilega. Takk fyrir að spyrja."
+    },
+    "hvernig líður þér í augnablikinu": {
         "answer": "Mér líður bara prýðilega. Takk fyrir að spyrja."
     },
     "hvernig er stemningin": {"answer": "Bara mjög góð. Takk fyrir að spyrja."},
@@ -2163,6 +2202,12 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "borðaðu": _NO,
     "ertu skemmtileg": {"answer": "Ég reyni að vera það, en sitt sýnist hverjum."},
     "ert þú skemmtileg": {"answer": "Ég reyni að vera það, en sitt sýnist hverjum."},
+    "ertu leiðinleg": {
+        "answer": "Ég reyni að vera skemmtileg, en sitt sýnist hverjum."
+    },
+    "ert þú leiðinleg": {
+        "answer": "Ég reyni að vera skemmtileg, en sitt sýnist hverjum."
+    },
     "ertu með meðvitund": _JUST_QA,
     "ert þú með meðvitund": _JUST_QA,
     "ertu með sjálfsmeðvitund": _JUST_QA,
@@ -2229,6 +2274,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     # Cheating, I know. But I'm never in the news and it just doesn't
     # sit right with me that I should remain incognito :) - Sveinbjörn 04/10/2019
     "hver er sveinbjörn þórðarson": {
+        "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig."
+    },
+    "hver er sveinbjörn": {
         "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig."
     },
 }
