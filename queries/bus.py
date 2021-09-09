@@ -812,6 +812,7 @@ def query_arrival_time(query: Query, session: Session, result: Result):
     if arrivals:
         # Get a predicted arrival time for each direction from the
         # real-time bus location server
+        assert stop is not None
         prediction = SCHEDULE_TODAY.predicted_arrival(route_number, stop)
         now = datetime.utcnow()
         hms_now = (now.hour, now.minute + (now.second // 30), 0)

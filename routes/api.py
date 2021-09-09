@@ -114,7 +114,7 @@ def correct_api(version: int = 1):
         try:
             # filename = werkzeug.secure_filename(file.filename)
             # Instantiate an appropriate class for the MIME type of the file
-            doc = Document.for_mimetype(mimetype)(file.read())
+            doc = Document.for_mimetype(mimetype)(file.read())  # type: ignore
             text = doc.extract_text()
         except Exception as e:
             logging.warning("Exception in correct_api(): {0}".format(e))
@@ -156,7 +156,7 @@ def correct_task(version: int = 1) -> Response:
         # Create document object from an uploaded file and extract its text
         try:
             # Instantiate an appropriate class for the MIME type of the file
-            doc = Document.for_mimetype(mimetype)(file.read())
+            doc = Document.for_mimetype(mimetype)(file.read())  # type: ignore
             text = doc.extract_text()
         except Exception as e:
             logging.warning("Exception in correct_task(): {0}".format(e))
@@ -275,7 +275,7 @@ def article_api(version=1) -> Response:
 
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
-        elif url and url.startswith("http:") or url.startswith("https:"):
+        elif url and (url.startswith("http:") or url.startswith("https:")):
             a = ArticleProxy.load_from_url(url, session)
         else:
             a = None
