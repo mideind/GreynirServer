@@ -304,11 +304,17 @@ def test_date(client: FlaskClient):
         qstr = "hvenær er " + d
         json = qmcall(client, {"q": qstr}, "Date")
 
-    json = qmcall(client, {"q": "hver er dagsetningin?"}, "Date")
+    json = qmcall(client, {"q": "hver er dagsetningin?", "voice": True}, "Date")
     assert json["answer"].endswith(datetime.now().strftime("%Y"))
+    assert "tvö þúsund" in json["voice"]
 
-    json = qmcall(client, {"q": "hvaða dagur er í dag?"}, "Date")
+    json = qmcall(client, {"q": "hvaða dagur er í dag?", "voice": True}, "Date")
     assert json["answer"].endswith(datetime.now().strftime("%Y"))
+    assert "tvö þúsund" in json["voice"]
+
+    json = qmcall(client, {"q": "hvaða dagur er á morgun", "voice": True}, "Date")
+    assert json["answer"].endswith(datetime.now().strftime("%Y"))
+    assert "tvö þúsund" in json["voice"]
 
     json = qmcall(
         client, {"q": "Hvað eru margir dagar til jóla?", "voice": True}, "Date"
@@ -776,19 +782,31 @@ def test_schedules(client: FlaskClient):
     json = qmcall(client, {"q": "hvað verður á rás 2 klukkan sjö í kvöld"}, "Schedule")
     assert json["key"] == "RÚV - Rás 2"
     assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
-    json = qmcall(client, {"q": "hvað verður á rás 2 klukkan fjögur eftir hádegi á morgun"}, "Schedule")
+    json = qmcall(
+        client,
+        {"q": "hvað verður á rás 2 klukkan fjögur eftir hádegi á morgun"},
+        "Schedule",
+    )
     assert json["key"] == "RÚV - Rás 2"
     assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
     assert "16:00" in json["answer"]
-    json = qmcall(client, {"q": "hvað verður á rás 2 klukkan átta á morgun fyrir hádegi"}, "Schedule")
+    json = qmcall(
+        client,
+        {"q": "hvað verður á rás 2 klukkan átta á morgun fyrir hádegi"},
+        "Schedule",
+    )
     assert json["key"] == "RÚV - Rás 2"
     assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
     assert "8:00" in json["answer"]
-    json = qmcall(client, {"q": "hvað var á rás 2 klukkan sex í gær eftir hádegi"}, "Schedule")
+    json = qmcall(
+        client, {"q": "hvað var á rás 2 klukkan sex í gær eftir hádegi"}, "Schedule"
+    )
     assert json["key"] == "RÚV - Rás 2"
     assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
     assert "18:00" in json["answer"]
-    json = qmcall(client, {"q": "hvað var á rás 2 klukkan tvö fyrir hádegi í gær"}, "Schedule")
+    json = qmcall(
+        client, {"q": "hvað var á rás 2 klukkan tvö fyrir hádegi í gær"}, "Schedule"
+    )
     assert json["key"] == "RÚV - Rás 2"
     assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
     assert "2:00" in json["answer"]
