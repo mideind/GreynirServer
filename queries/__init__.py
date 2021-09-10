@@ -59,7 +59,7 @@ from util import read_api_key
 
 
 # Type definitions
-AnswerTuple = Tuple[Dict, str, str]
+AnswerTuple = Tuple[Dict[str, str], str, str]
 LatLonTuple = Tuple[float, float]
 
 

@@ -31,13 +31,13 @@
 # TODO: Fix issue where answer complains about lack of location despite query
 #       being handlable by another module, error checking should take place earlier
 
-from typing import Tuple, cast
+from typing import Callable, List, Match, Optional, Tuple, cast
 
 import re
 import logging
 
 from reynir import NounPhrase
-from query import Query
+from query import AnswerTuple, Query
 from queries import (
     gen_answer,
     cap_first,
@@ -54,7 +54,7 @@ _DISTANCE_QTYPE = "Distance"
 
 
 _QDISTANCE_REGEXES = (
-    r"^(en\s)?hvað er ég langt frá (.+)$",
+    r"^(?:en\s)?hvað er ég langt frá (.+)$",
     r"^hvað erum við langt frá (.+)$",
     r"^hvað er langt frá (.+)$",  # Speech recognition often misses "ég" in this context
     r"^hvað er ég langt í burtu frá (.+)$",
@@ -161,7 +161,7 @@ _TT_MODES = {
 
 _PREPS = ("á", "í", "til", "að")
 _TT_PREP_PREFIX = ("út", "upp", "niður", "vestur", "norður", "austur", "suður")
-_TT_PREPS = []
+_TT_PREPS: List[str] = []
 
 # Construct complex regexes for travel time queries
 for p in _PREPS:
@@ -206,7 +206,7 @@ def _addr2nom(address: str) -> str:
     return nom
 
 
-def dist_answer_for_loc(matches, query: Query):
+def dist_answer_for_loc(matches: Match[str], query: Query) -> Optional[AnswerTuple]:
     """Generate response to distance query, e.g.
     "Hvað er ég langt frá X?" """
     locname = matches.group(1)
@@ -296,7 +296,7 @@ def dist_answer_for_loc(matches, query: Query):
     return response, answer, voice
 
 
-def traveltime_answer_for_loc(matches, query: Query):
+def traveltime_answer_for_loc(matches: Match[str], query: Query) -> Optional[AnswerTuple]:
     """Generate answer to travel time query e.g.
     "Hvað er ég lengi að ganga/keyra í/til X?" """
     action_desc, tmode, locname = matches.group(2, 3, 5)
@@ -360,13 +360,13 @@ def handle_plain_text(q: Query) -> bool:
     """ Handle a plain text query. """
     ql = q.query_lower.rstrip("?")
 
-    matches = None
-    handler = None
+    matches: Optional[Match[str]] = None
+    handler: Optional[Callable[[Match[str], Query], Optional[AnswerTuple]]] = None
 
     # Distance queries
     for rx in _QDISTANCE_REGEXES:
         matches = re.search(rx, ql)
-        if matches:
+        if matches is not None:
             handler = dist_answer_for_loc
             break
 
@@ -374,7 +374,7 @@ def handle_plain_text(q: Query) -> bool:
     if not handler:
         for rx in _QTRAVELTIME_REGEXES:
             matches = re.search(rx, ql)
-            if matches:
+            if matches is not None:
                 handler = traveltime_answer_for_loc
                 break
 

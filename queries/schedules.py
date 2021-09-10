@@ -99,6 +99,7 @@ QSchedule →
 # Hvað er verið að spila á rás eitt?
 # Hvað verður á dagskrá á Stöð 2 klukkan 21:00?
 QScheduleQuery →
+    # 'Hvað er í sjónvarpinu?'
     QSchWhatIsWillWas QSchEiginlega? QSchBeingShown? QSchOnScheduleOnStation QSchWhen?
     | QSchWhatIsWillWas QSchEiginlega? QSchBeingShown? QSchWhen? QSchOnScheduleOnStation
     # Dagskrá Stöð 2 klukkan 18:00
@@ -503,41 +504,38 @@ def _query_schedule_api(channel: str, station: str, date: datetime.date) -> _Sch
 
 
 def _get_program_start_end(
-    program: dict, station: str
+    program: Dict[str, str], station: str
 ) -> Tuple[datetime.datetime, datetime.datetime]:
     """Return the time span of an episode/program."""
 
-    start: datetime.datetime
-    end: datetime.datetime
-    duration_dt: datetime.datetime
-    duration: datetime.timedelta
-
-    if station == _RUV:
-        start = datetime.datetime.strptime(program["start-time"], "%Y-%m-%d %H:%M:%S")
-        duration_dt = datetime.datetime.strptime(program["duration"], "%H:%M:%S")
-
-    elif station == _STOD_TVO:
-        start = datetime.datetime.strptime(program["upphaf"], "%Y-%m-%dT%H:%M:%SZ")
-        duration_dt = datetime.datetime.strptime(program["slotlengd"], "%H:%M")
-
-    elif station == _SIMINN:
+    if station == _SIMINN:
         start = datetime.datetime.strptime(program["start"], "%Y-%m-%dT%H:%M:%S.%fZ")
         end = datetime.datetime.strptime(program["end"], "%Y-%m-%dT%H:%M:%S.%fZ")
         return (start, end)
 
-    # Duration of program
-    duration = datetime.timedelta(
-        hours=duration_dt.hour,
-        minutes=duration_dt.minute,
-        seconds=duration_dt.second,
-    )
-    end = start + duration
-    return (start, end)
+    if station == _RUV:
+        start = datetime.datetime.strptime(program["start-time"], "%Y-%m-%d %H:%M:%S")
+        d = list(map(int, program["duration"].split(":")))
+        duration = datetime.timedelta(
+            hours=d[0], minutes=d[1], seconds=d[2] if len(d) >= 3 else 0
+        )
+    elif station == _STOD_TVO:
+        start = datetime.datetime.strptime(program["upphaf"], "%Y-%m-%dT%H:%M:%SZ")
+        d = list(map(int, program["slotlengd"].split(":")))
+        duration = datetime.timedelta(
+            hours=d[0], minutes=d[1], seconds=0
+        )
+    else:
+        # Unknown station
+        start = datetime.datetime.utcnow()
+        duration = datetime.timedelta()
+
+    return (start, start + duration)
 
 
 def _programs_after_time(
     sched: _SchedType, station: str, qdatetime: datetime.datetime
-) -> Tuple[List[dict], bool]:
+) -> Tuple[_SchedType, bool]:
     """
     Return list of programs in sched that haven't finished at time qdatetime
     and a boolean for whether a program has already started.
@@ -584,7 +582,7 @@ def _get_current_and_next_program(
     station: str,
     qdatetime: datetime.datetime,
     get_next: bool,
-) -> Tuple[Optional[dict], Optional[dict]]:
+) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
     """
     Extract current program and next program, if any,
     from a schedule at time qdatetime.
@@ -592,11 +590,11 @@ def _get_current_and_next_program(
 
     progs: _SchedType
     is_playing: bool
-    sub_progs: _SchedType
+    sub_progs: _SchedType = []
     sub_is_playing: bool = False
 
-    curr_playing: Optional[dict] = None
-    next_playing: Optional[dict] = None
+    curr_playing: Optional[Dict[str, Any]] = None
+    next_playing: Optional[Dict[str, Any]] = None
 
     if station == _RUV:
         # Special handling for RÚV, as they have events and sub-events
@@ -616,7 +614,7 @@ def _get_current_and_next_program(
         # Schedule is finished at qdatetime
         return None, None
 
-    if sub_is_playing and len(sub_progs):
+    if sub_is_playing and sub_progs:
         # RÚV sub-event playing, also fetch parent event
         curr_playing = sub_progs[0]
         next_playing = progs[0]
@@ -639,6 +637,8 @@ def _get_current_and_next_program(
                     next_event_start = datetime.datetime.strptime(
                         progs[1]["start-time"], "%Y-%m-%d %H:%M:%S"
                     )
+                else:
+                    next_sub_start = next_event_start = datetime.datetime.utcnow()
 
                 # If current event is last event of the day or
                 # next sub-event begins before next event
@@ -659,7 +659,7 @@ def _get_current_and_next_program(
     return curr_playing, next_playing
 
 
-def _extract_title_and_desc(prog: dict, station: str) -> Tuple[str, str]:
+def _extract_title_and_desc(prog: Dict[str, Any], station: str) -> Tuple[str, str]:
     """
     Extract title and description of a program on a given station.
     """
@@ -705,7 +705,7 @@ def _clean_desc(d: str) -> str:
 
 
 def _answer_next_program(
-    next_prog: Optional[dict],
+    next_prog: Optional[Dict[str, Any]],
     station: str,
     channel: str,
     is_radio: bool,
@@ -750,7 +750,7 @@ def _answer_next_program(
 
 
 def _answer_program(
-    curr_prog: Optional[dict],
+    curr_prog: Optional[Dict[str, Any]],
     station: str,
     channel: str,
     qdatetime: datetime.datetime,
@@ -866,7 +866,7 @@ def _get_schedule_answer(result: Result) -> _AnswerDict:
 
         error = f"Ekki tókst að sækja dagskrána {date} á {channel}."
 
-        return dict(
+        return _AnswerDict(
             response={"answer": error, "voice": error},
             answer=error,
             voice=error,

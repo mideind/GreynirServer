@@ -23,7 +23,7 @@
 
 """
 
-from typing import Iterable, Optional, Tuple, cast
+from typing import Any, Iterable, Optional, Tuple, Union, cast
 
 from datetime import datetime
 
@@ -41,20 +41,22 @@ class _BaseQuery:
 
     _Q = ""
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def execute_q(self, session, q, **kwargs):
+    def execute_q(self, session: Session, q: str, **kwargs: Any) -> Iterable[Any]:
         """ Execute the given query and return the result from fetchall() """
-        return session.execute(q, kwargs).fetchall()
+        return cast(Iterable[Any], cast(Any, session).execute(q, kwargs).fetchall())
 
-    def execute(self, session, **kwargs):
+    def execute(self, session: Session, **kwargs: Any) -> Iterable[Any]:
         """ Execute the default query and return the result from fetchall() """
-        return session.execute(self._Q, kwargs).fetchall()
+        return cast(
+            Iterable[Any], cast(Any, session).execute(self._Q, kwargs).fetchall()
+        )
 
-    def scalar(self, session, **kwargs):
+    def scalar(self, session: Session, **kwargs: Any) -> Union[int, float]:
         """ Execute the query and return the result from scalar() """
-        return session.scalar(self._Q, kwargs)
+        return cast(Union[int, float], cast(Any, session).scalar(self._Q, kwargs))
 
 
 class GenderQuery(_BaseQuery):
@@ -153,9 +155,13 @@ class QueryTypesQuery(_BaseQuery):
         """
 
     @classmethod
-    def period(cls, start, end, enclosing_session=None):
+    def period(
+        cls, start: datetime, end: datetime, enclosing_session: Optional[Session] = None
+    ) -> Iterable[Any]:
+        g: Iterable[Any] = []
         with SessionContext(session=enclosing_session, commit=False) as session:
-            return cls().execute(session, start=start, end=end)
+            g = cls().execute(session, start=start, end=end)
+        return g
 
 
 class BestAuthorsQuery(_BaseQuery):
@@ -261,14 +267,22 @@ class ArticleCountQuery(_BaseQuery):
         """
 
     @classmethod
-    def count(cls, stems, enclosing_session=None):
+    def count(
+        cls,
+        stems: Union[str, Iterable[str]],
+        enclosing_session: Optional[Session] = None,
+    ) -> int:
         """Return a count of articles containing any of the given word
         stems. stems may be a single string or an iterable."""
+        cnt = 0
         with SessionContext(session=enclosing_session, commit=True) as session:
-            return cls().scalar(
-                session,
-                stems=tuple((stems,)) if isinstance(stems, str) else tuple(stems),
+            cnt = int(
+                cls().scalar(
+                    session,
+                    stems=tuple((stems,)) if isinstance(stems, str) else tuple(stems),
+                )
             )
+        return cnt
 
 
 class ArticleListQuery(_BaseQuery):
@@ -345,12 +359,21 @@ class WordFrequencyQuery(_BaseQuery):
         """
 
     @classmethod
-    def frequency(cls, stem, cat, start, end, timeunit="day", enclosing_session=None):
+    def frequency(
+        cls,
+        stem: str,
+        cat: str,
+        start: datetime,
+        end: datetime,
+        timeunit: str = "day",
+        enclosing_session: Optional[Session] = None,
+    ) -> Iterable[Any]:
+        result: Iterable[Any] = []
         with SessionContext(session=enclosing_session, commit=False) as session:
             assert timeunit in ["week", "day"]
             datefmt = "IYYY-IW" if timeunit == "week" else "YYYY-MM-DD"
             tu = "1 {0}".format(timeunit)
-            return cls().execute(
+            result = cls().execute(
                 session,
                 stem=stem,
                 cat=cat,
@@ -359,3 +382,4 @@ class WordFrequencyQuery(_BaseQuery):
                 timeunit=tu,
                 datefmt=datefmt,
             )
+        return result
