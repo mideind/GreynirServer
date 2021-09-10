@@ -296,7 +296,9 @@ def dist_answer_for_loc(matches: Match[str], query: Query) -> Optional[AnswerTup
     return response, answer, voice
 
 
-def traveltime_answer_for_loc(matches: Match[str], query: Query) -> Optional[AnswerTuple]:
+def traveltime_answer_for_loc(
+    matches: Match[str], query: Query
+) -> Optional[AnswerTuple]:
     """Generate answer to travel time query e.g.
     "Hvað er ég lengi að ganga/keyra í/til X?" """
     action_desc, tmode, locname = matches.group(2, 3, 5)
