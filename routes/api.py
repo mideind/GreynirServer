@@ -275,7 +275,7 @@ def article_api(version: int=1) -> Response:
 
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
-        elif url and (url.startswith("http:") or url.startswith("https:")):
+        elif url and url.startswith(("http:", "https:")):
             a = ArticleProxy.load_from_url(url, session)
         else:
             a = None

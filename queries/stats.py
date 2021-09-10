@@ -142,7 +142,9 @@ _MOST_FREQ_QUERIES = frozenset(
         "um hvað ert þú mest spurð",
         "um hvað ertu spurð",
         "um hvað ert þú spurð",
-        "hvað er algengasta spurniningin",
+        "hvað er algengasta spurningin",
+        "hvað er algengast að þú sért spurð",
+        "hvað er algengast að þú sért spurð um",
     )
 )
 
