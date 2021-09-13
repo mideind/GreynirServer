@@ -59,7 +59,7 @@ _MIDEIND_LOCATION = (64.156896, -21.951200)  # Fiskislóð 31, 101 Reykjavík
 
 @routes.route("/ifdtag.api", methods=["GET", "POST"])
 @routes.route("/ifdtag.api/v<int:version>", methods=["GET", "POST"])
-def ifdtag_api(version=1):
+def ifdtag_api(version: int=1) -> Response:
     """ API to parse text and return IFD tagged tokens in a simple and sparse JSON format """
     if not (1 <= version <= 1):
         # Unsupported version
@@ -96,7 +96,7 @@ def analyze_api(version: int = 1) -> Response:
 
 @routes.route("/correct.api", methods=["GET", "POST"])
 @routes.route("/correct.api/v<int:version>", methods=["GET", "POST"])
-def correct_api(version: int = 1):
+def correct_api(version: int = 1) -> Response:
     """Correct text provided by the user, i.e. not coming from an article.
     This can be either an uploaded file or a string.
     This is a lower level API used by the Greynir web front-end."""
@@ -114,7 +114,7 @@ def correct_api(version: int = 1):
         try:
             # filename = werkzeug.secure_filename(file.filename)
             # Instantiate an appropriate class for the MIME type of the file
-            doc = Document.for_mimetype(mimetype)(file.read())
+            doc = Document.for_mimetype(mimetype)(file.read())  # type: ignore
             text = doc.extract_text()
         except Exception as e:
             logging.warning("Exception in correct_api(): {0}".format(e))
@@ -156,7 +156,7 @@ def correct_task(version: int = 1) -> Response:
         # Create document object from an uploaded file and extract its text
         try:
             # Instantiate an appropriate class for the MIME type of the file
-            doc = Document.for_mimetype(mimetype)(file.read())
+            doc = Document.for_mimetype(mimetype)(file.read())  # type: ignore
             text = doc.extract_text()
         except Exception as e:
             logging.warning("Exception in correct_task(): {0}".format(e))
@@ -181,7 +181,7 @@ def correct_task(version: int = 1) -> Response:
 
 @routes.route("/postag.api", methods=["GET", "POST"])
 @routes.route("/postag.api/v<int:version>", methods=["GET", "POST"])
-def postag_api(version=1) -> Response:
+def postag_api(version: int=1) -> Response:
     """ API to parse text and return POS tagged tokens in a verbose JSON format """
     if not (1 <= version <= 1):
         # Unsupported version
@@ -219,7 +219,7 @@ def postag_api(version=1) -> Response:
 
 @routes.route("/parse.api", methods=["GET", "POST"])
 @routes.route("/parse.api/v<int:version>", methods=["GET", "POST"])
-def parse_api(version=1) -> Response:
+def parse_api(version: int=1) -> Response:
     """ API to parse text and return POS tagged tokens in JSON format """
     if not (1 <= version <= 1):
         # Unsupported version
@@ -252,7 +252,7 @@ def parse_api(version=1) -> Response:
 
 @routes.route("/article.api", methods=["GET", "POST"])
 @routes.route("/article.api/v<int:version>", methods=["GET", "POST"])
-def article_api(version=1) -> Response:
+def article_api(version: int=1) -> Response:
     """ Obtain information about an article, given its URL or id """
 
     if not (1 <= version <= 1):
@@ -275,7 +275,7 @@ def article_api(version=1) -> Response:
 
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
-        elif url and url.startswith("http:") or url.startswith("https:"):
+        elif url and url.startswith(("http:", "https:")):
             a = ArticleProxy.load_from_url(url, session)
         else:
             a = None
@@ -314,7 +314,7 @@ def article_api(version=1) -> Response:
 
 @routes.route("/reparse.api", methods=["POST"])
 @routes.route("/reparse.api/v<int:version>", methods=["POST"])
-def reparse_api(version=1):
+def reparse_api(version: int=1) -> Response:
     """ Reparse an already parsed and stored article with a given UUID """
     if not (1 <= version <= 1):
         return better_jsonify(valid="False", reason="Unsupported version")
@@ -351,7 +351,7 @@ def reparse_api(version=1):
 
 @routes.route("/query.api", methods=["GET", "POST"])
 @routes.route("/query.api/v<int:version>", methods=["GET", "POST"])
-def query_api(version=1):
+def query_api(version: int=1) -> Response:
     """ Respond to a query string """
 
     if not (1 <= version <= 1):
@@ -472,7 +472,7 @@ def query_api(version=1):
 
 @routes.route("/query_history.api", methods=["GET", "POST"])
 @routes.route("/query_history.api/v<int:version>", methods=["GET", "POST"])
-def query_history_api(version=1):
+def query_history_api(version: int=1) -> Response:
     """ Delete query history and/or query data for a particular unique client ID. """
 
     if not (1 <= version <= 1):
@@ -516,7 +516,7 @@ def query_history_api(version=1):
 
 @routes.route("/speech.api", methods=["GET", "POST"])
 @routes.route("/speech.api/v<int:version>", methods=["GET", "POST"])
-def speech_api(version=1):
+def speech_api(version: int=1) -> Response:
     """ Send in text, receive URL to speech-synthesised audio file. """
 
     if not (1 <= version <= 1):
@@ -563,7 +563,7 @@ def speech_api(version=1):
 
 @routes.route("/feedback.api", methods=["POST"])
 @routes.route("/feedback.api/v<int:version>", methods=["POST"])
-def feedback_api(version=1):
+def feedback_api(version: int=1) -> Response:
     """ Endpoint to accept submitted feedback forms """
 
     if not (1 <= version <= 1):
@@ -606,7 +606,7 @@ def exit_api():
 
 @routes.route("/register_query_data.api", methods=["POST"])
 @routes.route("/register_query_data.api/v<int:version>", methods=["POST"])
-def register_query_data_api(version=1):
+def register_query_data_api(version: int=1) -> Response:
     """
     Stores or updates query data for the given client ID
 

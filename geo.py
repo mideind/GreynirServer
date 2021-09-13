@@ -296,6 +296,7 @@ def location_info(
 
     loc: Dict[str, Union[None, str, float, Dict[str, Any]]] = dict(name=name, kind=kind)
     coords = None
+    info: Optional[Dict[Any, Any]] = None
 
     # Heimilisfang
     if kind == "address":
@@ -334,11 +335,11 @@ def location_info(
             loc["country"] = ICELAND_ISOCODE
         elif name not in ICE_PLACENAME_BLACKLIST:
             # Try to find a matching Icelandic placename
-            info = placename_lookup(name)
-            if info:
+            info_list = placename_lookup(name)
+            if info_list:
                 loc["country"] = ICELAND_ISOCODE
                 # Pick first matching placename
-                coords = coords_from_addr_info(info[0])
+                coords = coords_from_addr_info(info_list[0])
 
         # OK, not Icelandic. Let's see if it's a foreign city
         if not info:
@@ -571,7 +572,7 @@ def icelandic_addr_info(
     addr_str: str,
     placename: Optional[str] = None,
     placename_hints: Optional[List[str]] = [],
-) -> Optional[Dict]:
+) -> Optional[Dict[Any, Any]]:
     """Look up info about a specific Icelandic address in Staðfangaskrá via
     the iceaddr package. We want either a single definite match or nothing."""
     addr = parse_address_string(addr_str)

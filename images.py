@@ -26,7 +26,7 @@
 
 """
 
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, NamedTuple, Optional, Sequence, Union
 
 import sys
 import json
@@ -36,7 +36,6 @@ import urllib.parse
 from urllib.error import HTTPError
 from io import BytesIO
 from datetime import datetime, timedelta
-from collections import namedtuple
 from contextlib import closing
 import requests
 from db import Session, SessionContext
@@ -89,13 +88,22 @@ _CACHE_EXPIRATION_DAYS = 30
 _NUM_IMG_URLS = 6
 
 # The returned image descriptor tuple
-Img = namedtuple("Img", ["src", "width", "height", "link", "origin", "name"])
+Img = NamedTuple("Img",
+    [
+        ("src", str),
+        ("width", int),
+        ("height", int),
+        ("link", str),
+        ("origin", str),
+        ("name", str)
+    ]
+)
 
 
 def get_image_url(
     name: str,
     *,
-    hints: List = [],
+    hints: Sequence[str] = [],
     size: str = "large",
     thumb: bool = False,
     enclosing_session: Optional[Session] = None,

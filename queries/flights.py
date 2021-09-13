@@ -23,6 +23,7 @@
 
 """
 # TODO: Fetch more than one flight using "flight_count", maybe not needed though
+# TODO: Spell out flight number using spell_out fn, e.g. "FI432" -> "eff i fjórir þrír tveir"
 
 from typing import List, Dict, Optional
 from typing_extensions import TypedDict
@@ -34,7 +35,7 @@ import cachetools
 from datetime import datetime, timedelta, timezone
 
 from query import Query, QueryStateDict
-from queries import query_json_api, is_plural
+from queries import query_json_api, is_plural, spell_out
 from tree import Result, Node
 from settings import changedlocale
 from queries.num import numbers_to_ordinal, numbers_to_text
