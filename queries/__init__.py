@@ -211,6 +211,55 @@ def parse_num(node: Node, num_str: str) -> float:
     return num or 0.0
 
 
+# Spell out how character names are pronounced in Icelandic
+_CHAR_PRONUNCIATION = {
+    "a": "a",
+    "á": "á",
+    "b": "bé",
+    "c": "sé",
+    "d": "dé",
+    "ð": "eð",
+    "e": "e",
+    "é": "je",
+    "f": "eff",
+    "g": "gé",
+    "h": "há",
+    "i": "i",
+    "í": "í",
+    "j": "joð",
+    "k": "ká",
+    "l": "ell",
+    "m": "emm",
+    "n": "enn",
+    "o": "o",
+    "ó": "ó",
+    "p": "pé",
+    "q": "kú",
+    "r": "err",
+    "s": "ess",
+    "t": "té",
+    "u": "u",
+    "ú": "ú",
+    "v": "vaff",
+    "x": "ex",
+    "y": "ufsilon",
+    "ý": "ufsilon í",
+    "þ": "þoddn",
+    "æ": "æ",
+    "ö": "ö",
+    "z": "seta",
+}
+
+
+def spell_out(s: Optional[str]) -> Optional[str]:
+    """Spell out a sequence of characters, e.g. "LTB" -> "ell té bé".
+    Useful for controlling speech synthesis of serial numbers, etc."""
+    if not s:
+        return s
+    t = [_CHAR_PRONUNCIATION.get(c.lower(), c) if c != " " else "" for c in s]
+    return " ".join(t).replace("  ", " ").strip()
+
+
 def country_desc(cc: str) -> str:
     """Generate Icelandic description of being in a particular country
     with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi'."""
@@ -317,9 +366,7 @@ def distance_desc(
         unit = "km" if abbr else unit_long
         sdist = dist
         if num_to_str:
-            sdist = float_to_text(
-                rounded_km, case=case, gender="kk", comma_null=False
-            )
+            sdist = float_to_text(rounded_km, case=case, gender="kk", comma_null=False)
     # E.g. 940 metrar
     else:
         # Round to nearest 10
