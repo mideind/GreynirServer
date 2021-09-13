@@ -144,7 +144,7 @@ class Fetcher:
         def result(self):
             """ Return the accumulated result as a string """
             assert self._nesting == 0
-            text = "".join(self._result)
+            text = "".join(self._result).strip()
             # Eliminate soft hyphen and zero width space characters
             text = re.sub("\u00AD|\u200B", "", text)
             # Eliminate consecutive whitespace
