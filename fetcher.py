@@ -113,7 +113,7 @@ class Fetcher:
                 if w.isspace():
                     # Whitespace is not reason to emit nesting markers
                     return
-                self._result.append(" [[ " * self._nesting)
+                self._result.append("[[" * self._nesting)
                 self._nesting = 0
             self._result.append(w)
             self._white = False
@@ -132,13 +132,13 @@ class Fetcher:
             if self._nesting > 0:
                 self._nesting -= 1
             else:
-                self._result.append(" ]] ")
+                self._result.append("]]")
                 self._white = True
 
         def insert_break(self):
             """ Used to cut paragraphs at <br> and <hr> tags """
             if self._nesting == 0:
-                self._result.append(" ]] [[ ")
+                self._result.append("]][[")
                 self._white = True
 
         def result(self):
