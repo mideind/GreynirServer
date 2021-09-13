@@ -147,8 +147,13 @@ class Fetcher:
             text = "".join(self._result).strip()
             # Eliminate soft hyphen and zero width space characters
             text = re.sub("\u00AD|\u200B", "", text)
+            # Eliminate space before and after paragraph begin markers
+            text = re.sub(r"\s*\[\[\s*", "[[", text)
+            # Eliminate space before and after paragraph end markers
+            text = re.sub(r"\s*\]\]\s*", "]]", text)
             # Eliminate consecutive whitespace
-            return re.sub(r"\s+", " ", text)
+            text = re.sub(r"\s+", " ", text)
+            return text
 
     @staticmethod
     def extract_text(soup: BeautifulSoup, result: "Fetcher.TextList") -> None:

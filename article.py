@@ -132,7 +132,7 @@ class Article:
         self._html: Optional[str] = None
         self._tree: Optional[str] = None
         self._root_id: Optional[int] = None
-        self._root_domain = None
+        self._root_domain: Optional[str] = None
         self._helper = None
         self._tokens: Optional[str] = None  # JSON string
         # The tokens themselves: Lists of paragraphs of sentences
@@ -198,7 +198,7 @@ class Article:
             return a
 
     @classmethod
-    def load_from_url(cls, url, enclosing_session=None):
+    def load_from_url(cls, url: str, enclosing_session: Optional[Session]=None) -> Optional["Article"]:
         """ Load or scrape an article, given its URL """
         with SessionContext(enclosing_session) as session:
             ar = session.query(ArticleRow).filter(ArticleRow.url == url).one_or_none()
@@ -208,7 +208,7 @@ class Article:
             return cls._init_from_scrape(url, session)
 
     @classmethod
-    def scrape_from_url(cls, url, enclosing_session=None):
+    def scrape_from_url(cls, url: str, enclosing_session: Optional[Session]=None) -> Optional["Article"]:
         """ Force fetch of an article, given its URL """
         with SessionContext(enclosing_session) as session:
             ar = session.query(ArticleRow).filter(ArticleRow.url == url).one_or_none()
@@ -219,7 +219,7 @@ class Article:
             return a
 
     @classmethod
-    def load_from_uuid(cls, uuid, enclosing_session=None):
+    def load_from_uuid(cls, uuid: str, enclosing_session: Optional[Session]=None) -> Optional["Article"]:
         """ Load an article, given its UUID """
         with SessionContext(enclosing_session) as session:
             try:
@@ -278,7 +278,7 @@ class Article:
             add_entity_to_register(name, register, session, all_names=all_names)
         return register
 
-    def _store_words(self, session):
+    def _store_words(self, session: Session) -> None:
         """ Store word stems """
         assert session is not None
         # Delete previously stored words for this article
@@ -326,7 +326,7 @@ class Article:
 
             # Dict of parse trees in string dump format,
             # stored by sentence index (1-based)
-            trees = OrderedDict()
+            trees: OrderedDict[int, str] = OrderedDict()
 
             # Word stem dictionary, indexed by (stem, cat)
             words: Dict[WordTuple, int] = defaultdict(int)

@@ -26,12 +26,12 @@
 """
 
 from typing import (
+    TYPE_CHECKING,
     Callable,
     Dict,
     Iterable,
     Mapping,
-    Sequence,
-    TYPE_CHECKING,
+    NamedTuple,
     List,
     Optional,
     Tuple,
@@ -40,7 +40,6 @@ from typing import (
 )
 
 import time
-from collections import namedtuple
 
 from sqlalchemy.orm.session import Session
 from tokenizer.definitions import PersonNameList, PersonNameTuple
@@ -49,7 +48,6 @@ from nertokenizer import recognize_entities
 
 from reynir import TOK, Tok, mark_paragraphs, tokenize
 from reynir.binparser import (
-    BIN_Parser,
     BIN_Terminal,
     BIN_Tuple,
     CanonicalTokenDict,
@@ -66,7 +64,10 @@ if TYPE_CHECKING:
     from queries.builtin import RegisterType
 
 
-WordTuple = namedtuple("WordTuple", ["stem", "cat"])
+class WordTuple(NamedTuple):
+    stem: str
+    cat: str
+
 StatsDict = Dict[str, Union[int, float]]
 PgsList = List[List[List[TokenDict]]]
 XformFunc = Callable[[List[Tok], Optional[Node], Optional[int]], List[TokenDict]]
