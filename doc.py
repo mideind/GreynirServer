@@ -32,16 +32,16 @@ from html2text import HTML2Text
 
 from striprtf.striprtf import rtf_to_text  # type: ignore
 
-from odf import teletype
-from odf import text as odf_text
-from odf.opendocument import load as load_odf
+from odf import teletype  # type: ignore
+from odf import text as odf_text  # type: ignore
+from odf.opendocument import load as load_odf  # type: ignore
 
-from pdfminer.converter import TextConverter
-from pdfminer.layout import LAParams
-from pdfminer.pdfdocument import PDFDocument as PDFMinerDocument
-from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-from pdfminer.pdfpage import PDFPage
-from pdfminer.pdfparser import PDFParser
+from pdfminer.converter import TextConverter  # type: ignore
+from pdfminer.layout import LAParams  # type: ignore
+from pdfminer.pdfdocument import PDFDocument as PDFMinerDocument  # type: ignore
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter  # type: ignore
+from pdfminer.pdfpage import PDFPage  # type: ignore
+from pdfminer.pdfparser import PDFParser  # type: ignore
 
 # Use defusedxml module to prevent parsing of malicious XML
 from defusedxml import ElementTree  # type: ignore

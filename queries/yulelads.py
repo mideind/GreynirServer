@@ -26,7 +26,7 @@
 # TODO: hvað eru íslensku jólasveinarnir margir
 
 import random
-from datetime import date, datetime
+from datetime import datetime
 
 from query import Query, QueryStateDict
 from tree import Result, Node, TerminalNode

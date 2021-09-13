@@ -68,8 +68,8 @@ routes: Blueprint = Blueprint("routes", __name__)
 
 
 def max_age(seconds: int) -> Callable[[Callable], Callable]:
-    """ Caching decorator for Flask - augments response
-        with a max-age cache header """
+    """Caching decorator for Flask - augments response
+    with a max-age cache header"""
 
     def decorator(f: Callable):
         @wraps(f)
@@ -125,11 +125,11 @@ def better_jsonify(**kwargs) -> Response:
 def text_from_request(
     rq: Request, *, post_field: Optional[str] = None, get_field: Optional[str] = None
 ) -> str:
-    """ Return text passed in a HTTP request, either using GET or POST.
-        When using GET, the default parameter name is 't'. This can
-        be overridden using the get_field parameter.
-        When using POST, the default form field name is 'text'. This can
-        be overridden using the post_field paramter.
+    """Return text passed in a HTTP request, either using GET or POST.
+    When using GET, the default parameter name is 't'. This can
+    be overridden using the get_field parameter.
+    When using POST, the default form field name is 'text'. This can
+    be overridden using the post_field paramter.
     """
     if rq.method == "POST":
         if rq.headers.get("Content-Type") == "text/plain":
@@ -203,8 +203,8 @@ def before_first_request() -> None:
 
 class _FileProxy:
 
-    """ A hack that implements an in-memory proxy object for a Werkzeug FileStorage
-        instance, enabling it to be passed between threads """
+    """A hack that implements an in-memory proxy object for a Werkzeug FileStorage
+    instance, enabling it to be passed between threads"""
 
     def __init__(self, fs: FileStorage) -> None:
         # Initialize the file proxy object from a Werkzeug FileStorage instance,
@@ -215,7 +215,7 @@ class _FileProxy:
         # !!! Note: this reads the entire file stream into memory.
         # !!! A fancier method using temporary files could be applied here
         # !!! when and if needed.
-        self._bytes = fs.read()
+        self._bytes = fs.read()  # type: ignore
 
     @property
     def mimetype(self) -> str:
@@ -235,13 +235,13 @@ class _FileProxy:
 
 class _RequestProxy:
 
-    """ A hack to emulate a Flask Request object with a data structure
-        that can be passed safely between threads, while retaining
-        the ability to read uploaded files and form data """
+    """A hack to emulate a Flask Request object with a data structure
+    that can be passed safely between threads, while retaining
+    the ability to read uploaded files and form data"""
 
     def __init__(self, rq: Request) -> None:
-        """ Create an instance that walks and quacks sufficiently similarly
-            to the Flask Request object in rq """
+        """Create an instance that walks and quacks sufficiently similarly
+        to the Flask Request object in rq"""
         self.method = rq.method
         self.headers = {k: v for k, v in rq.headers}
         self.environ = rq.environ
@@ -274,8 +274,8 @@ class _RequestProxy:
 
 
 def async_task(f: Callable) -> Callable:
-    """ This decorator transforms a sync route into an asynchronous one
-        by running it in a background thread """
+    """This decorator transforms a sync route into an asynchronous one
+    by running it in a background thread"""
 
     @wraps(f)
     def wrapped(*args, **kwargs):
@@ -294,7 +294,7 @@ def async_task(f: Callable) -> Callable:
             # Pretty ugly hack, but no better solution is apparent:
             # Create a fresh Flask RequestContext object, wrapping our
             # custom _RequestProxy object that can be safely passed between threads
-            with RequestContext(app, rq.environ, request=rq):
+            with RequestContext(app, rq.environ, request=rq):  # type: ignore
                 try:
                     # Run the original route function and record
                     # the response (return value)
@@ -321,7 +321,7 @@ def async_task(f: Callable) -> Callable:
             # intact and available even after the original request has been closed
             rq = _RequestProxy(request)
             new_task = threading.Thread(
-                target=task, args=(current_app._get_current_object(), rq)
+                target=task, args=(current_app._get_current_object(), rq)  # type: ignore
             )
 
         new_task.start()
@@ -343,10 +343,10 @@ def async_task(f: Callable) -> Callable:
 
 @routes.route("/status/<task>", methods=["GET"])
 def get_status(task: str):
-    """ Return the status of an asynchronous task. If this request returns a
-        202 ACCEPTED status code, it means that task hasn't finished yet.
-        Else, the response from the task is returned (normally with a
-        200 OK status). """
+    """Return the status of an asynchronous task. If this request returns a
+    202 ACCEPTED status code, it means that task hasn't finished yet.
+    Else, the response from the task is returned (normally with a
+    200 OK status)."""
     task_id = task
     with _tasks_lock:
         assert _tasks is not None

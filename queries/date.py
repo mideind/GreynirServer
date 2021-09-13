@@ -40,7 +40,7 @@
 #       "Hvaða dagur var í gær?"
 # TODO: "Hvenær eru vetrarsólstöður" + more astronomical dates
 # TODO: "Hvað er langt í helgina?" "Hvenær er næsti (opinberi) frídagur?"
-# TODO: "Hvað eru margir dagar að fram að jólum?"
+# TODO: "Hvað eru margir dagar fram að jólum?"
 # TODO: "Hvað eru margir dagar eftir af árinu? mánuðinum? vikunni?"
 # TODO: "Hvað eru margir dagar eftir af árinu?" "Hvað er mikið eftir af árinu 2020?"
 # TODO: "Hvenær er næst hlaupár?"
@@ -49,7 +49,6 @@
 # TODO: "Hvenær er fyrsti í aðventu"
 # TODO: "Hvaða öld er núna"
 # TODO: "Hvað eru margir mánuðir í sumardaginn fyrsta" "hvað eru margar vikur í skírdag"
-# TODO: "hvaða dagur er á morgun"
 # TODO: "Þorláksmessa" not working
 # TODO: "Hvenær er næst fullt tungl"
 # TODO: Specify weekday in "hvenær er" queries (e.g. "Sjómannadagurinn er *sunnudaginn* 7. júní")
@@ -79,6 +78,7 @@ _DATE_QTYPE = "Date"
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [
     "dagsetning",
+    "morgundagur",
     "mánaðardagur",
     "vikudagur",
     "vika",
@@ -118,6 +118,7 @@ def help_text(lemma: str) -> str:
         random.choice(
             (
                 "Hvaða dagur er í dag",
+                "Hvaða dagur er á morgun",
                 "Hvað er langt til jóla",
                 "Hvenær eru páskarnir",
                 "Á hvaða degi er frídagur verslunarmanna",
@@ -145,6 +146,7 @@ QDate →
 
 QDateQuery →
     QDateCurrent
+    | QDateNextDay
     | QDateHowLongUntil
     # | QDateHowLongSince  # Disabled for now.
     | QDateWhenIs
@@ -154,7 +156,7 @@ QDateQuery →
 QDateCurrent →
     "dagsetning" QDateNow?
     | "dagsetningin" QDateNow?
-    |"hvað" "er" "dagsetningin" QDateNow?
+    | "hvað" "er" "dagsetningin" QDateNow?
     | "hver" "er" "dagsetningin" QDateNow?
     | "hvaða" "dagsetning" "er" QDateNow?
     | "hvaða" "dagur" "er" QDateNow?
@@ -164,9 +166,34 @@ QDateCurrent →
     | "hver" "er" "dagurinn" QDateNow?
     | "hver" "er" "mánaðardagurinn" QDateNow?
     | "hver" "er" "vikudagurinn" QDateNow?
+    | "dagurinn" QDateNow
+
+QDateNextDay →
+    "dagsetning" QDateTomorrow
+    | "dagsetningin" QDateTomorrow
+    | "hvað" "er" "dagsetningin" QDateTomorrow
+    | "hver" "er" "dagsetningin" QDateTomorrow
+    | "hvaða" "dagsetning" "er" QDateTomorrow
+    | "hvaða" "dagur" "er" QDateTomorrow
+    | "hvaða" "dagur" "kemur" QDateTomorrow
+    | "hvaða" "mánaðardagur" "er" QDateTomorrow
+    | "hvaða" "vikudagur" "er" QDateTomorrow
+    | "hvaða" "vikudagur" "kemur" QDateTomorrow
+    | "hvaða" "mánuður" "er" QDateTomorrow
+    | "hvaða" "mánuður" "kemur" QDateTomorrow
+    | "hver" "er" "dagurinn" QDateTomorrow
+    | "hver" "er" "mánaðardagurinn" QDateTomorrow
+    | "hver" "er" "vikudagurinn" QDateTomorrow
+    | "hver" "er" "morgundagurinn"
+    | "hvað" "er" "morgundagurinn"
+    | "hvaða" "dagur" "er" "morgundagurinn"
+    | "morgundagurinn"
+
+QDateTomorrow →
+    "á_morgun"  # "á" "morgun"
 
 QDateNow →
-    "í" "dag" | "nákvæmlega"? "núna" | "í" "augnablikinu" | "eins" "og" "stendur" # | 'í_dag' 
+    "í" "dag" | "nákvæmlega"? "núna" | "í" "augnablikinu" | "eins" "og" "stendur" # | 'í_dag'
 
 QDateHowLongUntil →
     "hvað" "er" "langt" "í" QDateItem_þf
@@ -391,6 +418,10 @@ def QDateQuery(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QDateCurrent(node: Node, params: QueryStateDict, result: Result) -> None:
     result["now"] = True
+
+
+def QDateNextDay(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["tomorrow"] = True
 
 
 def QDateHowLongUntil(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -774,7 +805,7 @@ def when_answ(q: Query, result: Result) -> None:
 
 
 def currdate_answ(q: Query, result: Result) -> None:
-    """ Generate answer to a question of the form "Hver er dagsetningin?" etc. """
+    """ Generate answer to a question of the form "Hver er dagsetningin [í dag]?" etc. """
     now = datetime.utcnow()
     date_str = now.strftime("%A %-d. %B %Y")
     answer = date_str.capitalize()
@@ -782,11 +813,26 @@ def currdate_answ(q: Query, result: Result) -> None:
     voice = f"Í dag er {date_str}"
 
     # Put a spelled-out ordinal number instead of the numeric one
-    # to get the grammar right
-    # Also fix year pronounciation
+    # to get the grammar right. Also fixes year pronunciation.
     voice = years_to_text(numbers_to_ordinal(voice, case="nf", gender="kk"))
 
     q.set_key("CurrentDate")
+    q.set_answer(response, answer, voice)
+
+
+def tomorrowdate_answ(q: Query, result: Result) -> None:
+    """ Generate answer to a question of the form "Hvaða dagur er á morgun?" etc. """
+    now = datetime.utcnow() + timedelta(days=1)
+    date_str = now.strftime("%A %-d. %B %Y")
+    answer = date_str.capitalize()
+    response = dict(answer=answer)
+    voice = f"Á morgun er {date_str}"
+
+    # Put a spelled-out ordinal number instead of the numeric one
+    # to get the grammar right. Also fixes year pronunciation.
+    voice = years_to_text(numbers_to_ordinal(voice, case="nf", gender="kk"))
+
+    q.set_key("TomorrowDate")
     q.set_answer(response, answer, voice)
 
 
@@ -838,6 +884,7 @@ def leap_answ(q: Query, result: Result) -> None:
 
 _Q2FN_MAP = [
     ("now", currdate_answ),
+    ("tomorrow", tomorrowdate_answ),
     ("days_in_month", days_in_month_answ),
     ("until", howlong_answ),
     ("since", howlong_answ),

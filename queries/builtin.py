@@ -208,6 +208,8 @@ QRepeatQuery →
     | "geturðu" "sagt" QRepeatThis "aftur"
     | "gætirðu" "endurtekið" QRepeatThis?
     | "gætirðu" "sagt" QRepeatThis "aftur"
+    | "hvað" "sagðir" "þú"
+    | "hvað" "sagðirðu"
 
 QPlease →
     "vinsamlega" | "vinsamlegast"

@@ -50,7 +50,7 @@
 
 """
 
-from typing import List, Optional, Tuple
+from typing import Any, DefaultDict, Dict, Generic, List, Optional, Tuple, Type, TypeVar
 
 import os
 import time
@@ -70,21 +70,21 @@ StateList = List[Tuple[float, List[Tuple[str, bool]]]]
 
 
 @contextmanager
-def timeit(description="Timing"):
+def timeit(description: str="Timing"):
     t0 = time.time()
     yield
     t1 = time.time()
     print("{0}: {1:.2f} seconds".format(description, t1 - t0))
 
 
-class FreqDist(defaultdict):
+class FreqDist(DefaultDict[str, int]):
 
     """ A frequency distribution for the outcomes of an experiment.  A
         frequency distribution records the number of times each outcome of
         an experiment has occurred. """
 
     def __init__(
-        self, cls=int
+        self, cls: Type[Any]=int
     ):  # Note: the cls parameter seems to be required for pickling to work
         """ Construct a new frequency distribution.  If ``samples`` is
             given, then the frequency distribution will be initialized
@@ -92,17 +92,17 @@ class FreqDist(defaultdict):
             will be initialized to be empty. """
         super().__init__(cls)
 
-    def N(self):
+    def N(self) -> int:
         """ Return the total number of sample outcomes that have been
             recorded by this FreqDist. """
         return sum(self.values())
 
-    def freeze_N(self):
+    def freeze_N(self) -> None:
         """ Set N permanently to its current value, avoiding multiple recalculations """
         n = self.N()
         setattr(self, "N", lambda: n)
 
-    def freq(self, sample):
+    def freq(self, sample: str) -> float:
         """ Return the frequency of a given sample. """
         n = self.N()
         if n == 0:
@@ -116,15 +116,15 @@ class ConditionalFreqDist(defaultdict):
 
     def __init__(
         self, cls=FreqDist
-    ):  # Note: the cls parameter seems to be required for pickling to work
+    ) -> None:  # Note: the cls parameter seems to be required for pickling to work
         """ Construct a new empty conditional frequency distribution. """
         super().__init__(cls)
 
-    def N(self):
+    def N(self) -> int:
         """ Return the total number of sample outcomes """
         return sum(fdist.N() for fdist in self.values())
 
-    def freeze_N(self):
+    def freeze_N(self) -> None:
         """ Freeze the total number of sample outcomes at the current value """
         for fdist in self.values():
             fdist.freeze_N()
@@ -194,7 +194,7 @@ class TnT:
     gain in the accuracy of the results.
     """
 
-    def __init__(self, N=1000, C=False):
+    def __init__(self, N: int=1000, C: bool=False) -> None:
         """
         Construct a TnT statistical tagger. Tagger must be trained
         before being used to tag input.
@@ -241,19 +241,19 @@ class TnT:
         del state["_unk"]
         return state
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         """ Restore the state of this object from a pickle """
         self.__dict__.update(state)
         self._unk = UnknownWordTagger()
 
-    def _freeze_N(self):
+    def _freeze_N(self) -> None:
         """ Make sure all contained FreqDicts are 'frozen' """
         self._uni.freeze_N()
         self._bi.freeze_N()
         self._tri.freeze_N()
         self._wd.freeze_N()
 
-    def _finish_training(self):
+    def _finish_training(self) -> None:
         """ Freeze the current frequency counts and compute lambdas """
         if self._training:
             self._freeze_N()
@@ -262,17 +262,17 @@ class TnT:
             self._training = False
 
     @property
-    def count(self):
+    def count(self) -> int:
         return self._count
 
-    def store(self, filename):
+    def store(self, filename: str) -> None:
         """ Store a previously trained model in a file """
         self._finish_training()
         with open(filename, "wb") as file:
             pickle.dump(self, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     @staticmethod
-    def load(filename):
+    def load(filename: str) -> Optional["TnT"]:
         """ Load a previously trained and stored model from file """
         try:
             with open(filename, "rb") as file:
@@ -283,7 +283,7 @@ class TnT:
         except OSError:
             return None
 
-    def train(self, sentences):
+    def train(self, sentences: List[List[Tuple[str, str]]]) -> None:
         """
         Uses a set of tagged data to train the tagger.
         :param data: List of lists of (word, tag) tuples
@@ -307,7 +307,7 @@ class TnT:
 
                 history = (history[1], tC)
 
-    def _compute_lambda(self):
+    def _compute_lambda(self) -> None:
         """
         creates lambda values based upon training data
         NOTE: no need to explicitly reference C,
@@ -393,14 +393,14 @@ class TnT:
         self._l2 = tl2 / (tl1 + tl2 + tl3)
         self._l3 = tl3 / (tl1 + tl2 + tl3)
 
-    def _safe_div(self, v1, v2):
+    def _safe_div(self, v1: float, v2: float) -> float:
         """
         Safe floating point division function, does not allow division by 0
         returns -1 if the denominator is 0
         """
         return -1 if v2 == 0 else v1 / v2
 
-    def tag_sents(self, sentences):
+    def tag_sents(self, sentences: List[List[str]]) -> List[List[Tuple[str, str]]]:
         """
         Tags each sentence in a list of sentences
         :param data:list of list of words
@@ -412,7 +412,7 @@ class TnT:
         """
         return [self.tag(sent) for sent in sentences]
 
-    def tag(self, sentence):
+    def tag(self, sentence: List[str]) -> List[Tuple[str, str]]:
         """
         Tags a single sentence
         :param data: list of words
@@ -508,7 +508,7 @@ _TAGGER: Optional[TnT] = None
 _XLT = {"—": "-", "–": "-"}
 
 
-def ifd_tag(text):
+def ifd_tag(text: str) -> List[List[str]]:
     """ Tokenize the given text and use a global singleton TnT tagger to tag it """
     global _TAGGER
     if _TAGGER is None:
@@ -520,9 +520,9 @@ def ifd_tag(text):
             return []  # No tagger model - unable to tag
 
     token_stream = tokenize(text)
-    result = []
+    result: List[List[str]] = []
 
-    def xlt(txt):
+    def xlt(txt: str) -> str:
         """ Translate the token text as required before tagging it """
         if txt[0] == "[" and txt[-1] == "]":
             # Abbreviation enclosed in square brackets: remove'em

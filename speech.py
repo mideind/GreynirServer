@@ -111,9 +111,8 @@ def get_synthesized_text_url(
 
     # Special preprocessing for SSML markup
     if txt_format == "ssml":
-        # Escape entities to prevent characters such as
-        # "&" and "<" from breaking the markup
-        text = html.escape(text)
+        # Prevent '&' symbol from breaking markup
+        text = text.replace("&", "&amp;")
         # Adjust voice speed as appropriate
         if speed != 1.0:
             # Restrict to 50%-150% speed range

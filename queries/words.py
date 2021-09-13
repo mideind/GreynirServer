@@ -43,47 +43,7 @@ from islenska.bindb import BinEntryIterable, BinEntryList
 from reynir.bindb import GreynirBin
 
 from query import Query, AnswerTuple
-from queries import gen_answer, icequote
-
-
-# Spell out how character names are pronounced in Icelandic
-_CHAR_PRONUNCIATION = {
-    "a": "a",
-    "á": "á",
-    "b": "bé",
-    "c": "sé",
-    "d": "dé",
-    "ð": "eð",
-    "e": "e",
-    "é": "je",
-    "f": "eff",
-    "g": "gé",
-    "h": "há",
-    "i": "i",
-    "í": "í",
-    "j": "joð",
-    "k": "ká",
-    "l": "ell",
-    "m": "emm",
-    "n": "enn",
-    "o": "o",
-    "ó": "ó",
-    "p": "pé",
-    "q": "kú",
-    "r": "err",
-    "s": "ess",
-    "t": "té",
-    "u": "u",
-    "ú": "ú",
-    "v": "vaff",
-    "x": "ex",
-    "y": "ufsilon i",
-    "ý": "ufsilon í",
-    "þ": "þoddn",
-    "æ": "æ",
-    "ö": "ö",
-    "z": "seta",
-}
+from queries import gen_answer, icequote, spell_out
 
 
 _WORDTYPE_RX_NOM = "(?:orðið|nafnið|nafnorðið)"
@@ -219,7 +179,7 @@ def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
     response = dict(answer=answ)
 
     # Piece together SSML for speech synthesis
-    v = [_CHAR_PRONUNCIATION.get(c, c) for c in chars]
+    v = spell_out(word)
     jfmt = '<break time="{0}s"/>'.format(_LETTER_INTERVAL)
     voice = "Orðið {0} er stafað á eftirfarandi hátt: {1} {2}".format(
         icequote(word), jfmt, jfmt.join(v)

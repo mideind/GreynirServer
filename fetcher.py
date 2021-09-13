@@ -23,7 +23,7 @@
 
 """
 
-from typing import Any, Dict, Iterator, Optional, Tuple, cast
+from typing import Any, Dict, Iterator, List, Optional, Tuple, cast
 from types import ModuleType
 
 import re
@@ -103,12 +103,12 @@ class Fetcher:
         """ Accumulates raw text blocks and eliminates
             unnecessary nesting indicators """
 
-        def __init__(self):
-            self._result = []
+        def __init__(self) -> None:
+            self._result: List[str] = []
             self._nesting = 0
             self._white = False
 
-        def append(self, w):
+        def append(self, w: str) -> None:
             if self._nesting > 0:
                 if w.isspace():
                     # Whitespace is not reason to emit nesting markers
@@ -151,13 +151,13 @@ class Fetcher:
             return re.sub(r"\s+", " ", text)
 
     @staticmethod
-    def extract_text(soup, result):
+    def extract_text(soup: BeautifulSoup, result: "Fetcher.TextList") -> None:
         """ Append the human-readable text found in an HTML soup
             to the result TextList """
         if soup is None:
             return
         for t in soup.children:
-            if type(t) == NavigableString:
+            if type(t) is NavigableString:
                 # Text content node
                 result.append(t)
             elif isinstance(t, NavigableString):
@@ -190,7 +190,7 @@ class Fetcher:
                 Fetcher.extract_text(t, result)
 
     @staticmethod
-    def to_tokens(soup, enclosing_session=None):
+    def to_tokens(soup: BeautifulSoup, enclosing_session: Optional[Session]=None) -> Iterator[Tok]:
         """ Convert an HTML soup root into a parsable token stream """
 
         # Extract the text content of the HTML into a list
@@ -203,7 +203,7 @@ class Fetcher:
         return recognize_entities(token_stream, enclosing_session=enclosing_session)
 
     @classmethod
-    def raw_fetch_url(cls, url):
+    def raw_fetch_url(cls, url: str) -> Optional[str]:
         """ Low-level fetch of an URL, returning a decoded string """
         html_doc = None
         try:

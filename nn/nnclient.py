@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# type: ignore
 """
     Greynir: Natural language processing for Icelandic
 
