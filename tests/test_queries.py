@@ -958,6 +958,15 @@ def test_tel(client: FlaskClient):
     assert "ekki gilt símanúmer" in json["answer"]
 
 
+def test_test(client: FlaskClient):
+    """ Test module """
+    json = qmcall(client, {"q": "keyrðu kóða"}, "Test")
+    assert "command" in json
+
+    json = qmcall(client, {"q": "opnaðu vefsíðu"}, "Test")
+    assert "open_url" in json
+
+
 def test_time(client: FlaskClient):
     """ Time module """
     json = qmcall(
