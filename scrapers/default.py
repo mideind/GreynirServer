@@ -1963,3 +1963,58 @@ class SedlabankinnScraper(ScrapeHelper):
         for span in content.find_all("span", {"class": "news-img"}):
             span.decompose()
         return content
+
+
+class BaendabladidScraper(ScrapeHelper):
+    """ Scraping helper for bbl.is """
+
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["https://www.bbl.is/rss/"]
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+
+        # Author
+        author = "Ritstjórn Bændablaðsins"
+
+        timestamp = None
+        try:
+            # Extract date (no timestamp available) from pubdate tag
+            time_tag = soup.find("span", {"class": "entry-date"})
+            ts = None
+            if time_tag:
+                ts = time_tag["datetime"]
+            if ts:
+                timestamp = datetime(
+                    year=int(ts[0:4]),
+                    month=int(ts[5:7]),
+                    day=int(ts[8:10]),
+                    hour=int(ts[11:13]),
+                    minute=int(ts[14:16]),
+                    second=int(ts[17:19]),
+                )
+        except Exception as e:
+            logging.warning(
+                "Exception when obtaining date of man.is article: {0}".format(e)
+            )
+
+        if not timestamp:
+            timestamp = datetime.utcnow()
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        content = ScrapeHelper.div_class(soup_body, "tdb_single_content")
+        ScrapeHelper.del_div_class(content, "td-a-ad")
+        ScrapeHelper.del_tag(content, "figure")
+        return content

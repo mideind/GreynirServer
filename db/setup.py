@@ -231,10 +231,19 @@ ROOTS = [
         "SedlabankinnScraper",
         True,
     ),
+    (
+        "https://bbl.is/",
+        "bbl.is",
+        "Bændablaðið",
+        1.0,
+        "scrapers.default",
+        "BaendabladidScraper",
+        True,
+    ),
 ]
 
 
-def init_roots(wait: bool=False) -> int:
+def init_roots(wait: bool = False) -> int:
     """Create tables and initialize the scraping roots, if not already present.
     If wait = True, repeated attempts are made to connect to the database
     before returning an error code. This is useful for instance in a Docker
