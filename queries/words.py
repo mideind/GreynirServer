@@ -60,11 +60,16 @@ _SPELLING_RX = (
     r"^hvernig skrifar maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig skrifa ég {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig stafar maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig rita ég {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig ritar maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig er {0}?\s?(.+) stafsett$".format(_WORDTYPE_RX_NOM),
     r"^hvernig er {0}?\s?(.+) skrifað$".format(_WORDTYPE_RX_NOM),
     r"^hvernig er {0}?\s?(.+) stafað$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig er {0}?\s?(.+) ritað$".format(_WORDTYPE_RX_NOM),
     r"^hvernig skal stafa {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig skal stafsetja {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig stafast {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig ritast {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
 )
 
 
@@ -89,6 +94,7 @@ _DECLENSION_RX = (
     r"^hvernig er {0}\s?(.+) fallbeygt$".format(_WORDTYPE_RX_NOM),
     r"^hverjar eru beygingarmyndir {0}\s?(.+)$".format(_WORDTYPE_RX_GEN),
     r"^hvað eru beygingarmyndir {0}\s?(.+)$".format(_WORDTYPE_RX_GEN),
+    r"^hvernig eru beygingarmyndir {0}\s?(.+)$".format(_WORDTYPE_RX_GEN),
     r"^fallbeyging á {0}\s?(.+)$".format(_WORDTYPE_RX_DAT),
 )
 
@@ -180,7 +186,7 @@ def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
 
     # Piece together SSML for speech synthesis
     v = spell_out(word)
-    vlist = list(v)
+    vlist: list = list(v)
     jfmt = '<break time="{0}s"/>'.format(_LETTER_INTERVAL)
     voice = "Orðið {0} er stafað á eftirfarandi hátt: {1} {2}".format(
         icequote(word), jfmt, jfmt.join(vlist)
