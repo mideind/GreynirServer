@@ -226,7 +226,7 @@ ROOTS = [
         "https://sedlabanki.is/",
         "sedlabanki.is",
         "Seðlabankinn",
-        1.0,
+        0.5,
         "scrapers.default",
         "SedlabankinnScraper",
         True,

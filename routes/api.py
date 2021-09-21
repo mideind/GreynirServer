@@ -27,7 +27,8 @@ from typing import Dict, Any, List, Optional, cast
 from datetime import datetime
 import logging
 
-from flask import request, abort, Response
+from flask import request, abort
+from flask.wrappers import Response
 
 from settings import Settings
 
