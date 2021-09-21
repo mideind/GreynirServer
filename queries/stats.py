@@ -334,7 +334,9 @@ def _gen_most_freq_queries_answer(q: Query) -> bool:
         now = datetime.utcnow()
         start = now - timedelta(days=_QUERIES_PERIOD)
         end = now
-        qr = QueryTypesQuery.period(start=start, end=end, enclosing_session=session)
+        qr = list(
+            QueryTypesQuery.period(start=start, end=end, enclosing_session=session)
+        )
 
         if qr:
             top_qtype = qr[0][1]

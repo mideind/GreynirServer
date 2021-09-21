@@ -33,8 +33,8 @@ import urllib.parse as urlparse
 import requests
 from datetime import datetime
 
-from bs4 import BeautifulSoup, Tag
-from bs4.element import NavigableString
+from bs4 import BeautifulSoup
+from bs4.element import NavigableString, Tag
 
 MODULE_NAME = __name__
 
@@ -1982,29 +1982,7 @@ class BaendabladidScraper(ScrapeHelper):
         # Author
         author = "Ritstjórn Bændablaðsins"
 
-        timestamp = None
-        try:
-            # Extract date (no timestamp available) from pubdate tag
-            time_tag = soup.find("span", {"class": "entry-date"})
-            ts = None
-            if time_tag:
-                ts = time_tag["datetime"]
-            if ts:
-                timestamp = datetime(
-                    year=int(ts[0:4]),
-                    month=int(ts[5:7]),
-                    day=int(ts[8:10]),
-                    hour=int(ts[11:13]),
-                    minute=int(ts[14:16]),
-                    second=int(ts[17:19]),
-                )
-        except Exception as e:
-            logging.warning(
-                "Exception when obtaining date of man.is article: {0}".format(e)
-            )
-
-        if not timestamp:
-            timestamp = datetime.utcnow()
+        timestamp = datetime.utcnow()
 
         metadata.heading = heading
         metadata.author = author
@@ -2014,7 +1992,16 @@ class BaendabladidScraper(ScrapeHelper):
 
     def _get_content(self, soup_body):
         """ Find the article content (main text) in the soup """
-        content = ScrapeHelper.div_class(soup_body, "tdb_single_content")
-        ScrapeHelper.del_div_class(content, "td-a-ad")
-        ScrapeHelper.del_tag(content, "figure")
+        content = ScrapeHelper.div_class(soup_body, "article-text")
+        assert content is not None
+        ScrapeHelper.del_div_class(content, "mb-4")
+        ScrapeHelper.del_div_class(content, "date")
+        ScrapeHelper.del_tag(content, "h1")
+        ScrapeHelper.del_tag(content, "h2")
+        ScrapeHelper.del_tag(content, "h3")
+        ScrapeHelper.del_tag(content, "h4")
+        ScrapeHelper.del_tag(content, "h5")
+
+        for span in content.find_all("span", {"class": "date"}):
+            span.decompose()
         return content
