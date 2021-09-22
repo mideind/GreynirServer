@@ -38,12 +38,11 @@ from flask import (
     jsonify,
     make_response,
     current_app,
-    Response,
-    Request,
     abort,
     request,
     url_for,
 )
+from flask.wrappers import Response, Request
 from flask import _request_ctx_stack  # type: ignore
 from flask.ctx import RequestContext
 from werkzeug.datastructures import FileStorage

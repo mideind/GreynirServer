@@ -271,7 +271,7 @@ def test_locations():
     pmod = importlib.import_module("processors.locations")
 
     tc = TokenContainer(tokens_json, "", 1.0)
-    tc.process(session, pmod)
+    tc.process(session, pmod)  # type: ignore
 
     session.check(("Fiskislóð 31b", "address"))
     session.check(("Öldugata 4", "address"))
