@@ -164,7 +164,7 @@ class Fetcher:
         for t in soup.children:
             if type(t) is NavigableString:
                 # Text content node
-                result.append(t)
+                result.append(cast(str, t))
             elif isinstance(t, NavigableString):
                 # Comment, CDATA or other text data: ignore
                 pass
@@ -195,7 +195,9 @@ class Fetcher:
                 Fetcher.extract_text(t, result)
 
     @staticmethod
-    def to_tokens(soup: BeautifulSoup, enclosing_session: Optional[Session]=None) -> Iterator[Tok]:
+    def to_tokens(
+        soup: BeautifulSoup, enclosing_session: Optional[Session] = None
+    ) -> Iterator[Tok]:
         """ Convert an HTML soup root into a parsable token stream """
 
         # Extract the text content of the HTML into a list
@@ -416,7 +418,9 @@ class Fetcher:
             return (article, metadata, content)
 
     @classmethod
-    def fetch_url(cls, url, enclosing_session=None):
+    def fetch_url(
+        cls, url: str, enclosing_session: Optional[Session] = None
+    ) -> Optional[Tuple[Any, Any]]:
         """ Fetch a URL using the scraping mechanism, returning
             a tuple (metadata, content) or None if error """
 
@@ -448,7 +452,9 @@ class Fetcher:
             return (metadata, content)
 
     @classmethod
-    def fetch_url_html(cls, url: str, enclosing_session: Optional[Session]=None) -> Tuple[Optional[str], Any, Any]:
+    def fetch_url_html(
+        cls, url: str, enclosing_session: Optional[Session] = None
+    ) -> Tuple[Optional[str], Any, Any]:
         """ Fetch a URL using the scraping mechanism, returning
             a tuple (html, metadata, helper) or None if error """
 

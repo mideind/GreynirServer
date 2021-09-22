@@ -29,12 +29,13 @@
 
 """
 
-from typing import List, Iterator, Dict, Union, Tuple, Optional, Type
+from typing import DefaultDict, List, Iterator, Dict, Union, Tuple, Optional, Type
 
 from collections import defaultdict
 import logging
 
-from reynir import Abbreviations, TOK, Tok
+from tokenizer import TOK, Tok
+from tokenizer.abbrev import Abbreviations
 from reynir.bindb import GreynirBin
 
 from db import SessionContext, OperationalError, Session
@@ -70,7 +71,7 @@ def recognize_entities(
         session=enclosing_session, commit=True, read_only=True
     ) as session:
 
-        def fetch_entities(w: str, fuzzy: bool=True) -> List[Entity]:
+        def fetch_entities(w: str, fuzzy: bool = True) -> List[Entity]:
             """ Return a list of entities matching the word(s) given,
                 exactly if fuzzy = False, otherwise also as a starting word(s) """
             try:
@@ -151,7 +152,9 @@ def recognize_entities(
                     continue
 
                 # Look for matches in the current state and build a new state
-                newstate = defaultdict(list)
+                newstate: DefaultDict[
+                    Union[str, None], List[Tuple[List[str], Entity]]
+                ] = defaultdict(list)
                 w = token.txt  # Original word
 
                 def add_to_state(slist: List[str], entity: Entity) -> None:

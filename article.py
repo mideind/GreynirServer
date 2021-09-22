@@ -46,7 +46,7 @@ from sqlalchemy.orm.query import Query as SqlQuery
 from sqlalchemy.sql.expression import func
 
 from reynir import TOK, Tok
-from reynir.binparser import TokenDict
+from reynir.bintokenizer import TokenDict
 from reynir.fastparser import Fast_Parser, ParseForestDumper
 from reynir.incparser import IncrementalParser
 from reynir.simpletree import SimpleTree
@@ -599,7 +599,7 @@ class Article:
             q: SqlQuery[ArticleRow] = (
                 session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
                 .filter(ArticleRow.tokens != None)
-                .order_by(desc(cast(Column, ArticleRow.parsed)))
+                .order_by(desc(cast(Column[datetime], ArticleRow.parsed)))
                 .yield_per(200)
             )
 
@@ -639,7 +639,7 @@ class Article:
             q: SqlQuery[ArticleRow] = (
                 session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
                 .filter(ArticleRow.tokens != None)
-                .order_by(desc(cast(Column, ArticleRow.parsed)))
+                .order_by(desc(cast(Column[datetime], ArticleRow.parsed)))
                 .yield_per(200)
             )
 
@@ -714,7 +714,7 @@ class Article:
 
             if criteria and criteria.get("order_by_parse"):
                 # Order with newest parses first
-                q = q.order_by(desc(cast(Column, ArticleRow.parsed)))
+                q = q.order_by(desc(cast(Column[datetime], ArticleRow.parsed)))
             elif criteria and criteria.get("random"):
                 q = q.order_by(func.random())
 

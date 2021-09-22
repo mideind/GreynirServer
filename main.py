@@ -40,6 +40,7 @@ import logging
 from datetime import datetime
 
 from flask import Flask, send_from_directory, render_template
+from flask.wrappers import Response
 from flask_caching import Cache  # type: ignore
 from flask_cors import CORS  # type: ignore
 
@@ -71,7 +72,7 @@ cors = CORS(app)
 app.config["CORS_HEADERS"] = "Content-Type"
 
 # Fix access to client remote_addr when running behind proxy
-setattr(app, "wsgi_app", ProxyFix(app.wsgi_app))
+setattr(app, "wsgi_app", ProxyFix(app.wsgi_app))  # type: ignore
 
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB, max upload file size
@@ -112,21 +113,21 @@ _PATTERN_IS = make_pattern(_REP_DICT_IS)
 
 
 @app.template_filter("format_is")
-def format_is(r: float, decimals: int = 0):
+def format_is(r: float, decimals: int = 0) -> str:
     """ Flask/Jinja2 template filter to format a number for the Icelandic locale """
     fmt = "{0:,." + str(decimals) + "f}"
     return multiple_replace(fmt.format(float(r)), _REP_DICT_IS, _PATTERN_IS)
 
 
 @app.template_filter("format_ts")
-def format_ts(ts: datetime):
+def format_ts(ts: datetime) -> str:
     """ Flask/Jinja2 template filter to format a timestamp """
     return str(ts)[0:19]
 
 
 # Flask cache busting for static .css and .js files
 @app.url_defaults
-def hashed_url_for_static_file(endpoint: str, values: Dict[str, Union[int, str]]):
+def hashed_url_for_static_file(endpoint: str, values: Dict[str, Union[int, str]]) -> None:
     """ Add a ?h=XXX parameter to URLs for static .js and .css files,
         where XXX is calculated from the file timestamp """
 
@@ -156,26 +157,26 @@ def hashed_url_for_static_file(endpoint: str, values: Dict[str, Union[int, str]]
 
 @app.route("/static/fonts/<path:path>")
 @max_age(seconds=24 * 60 * 60)  # Client should cache font for 24 hours
-def send_font(path: str):
+def send_font(path: str) -> Response:
     return send_from_directory(os.path.join("static", "fonts"), path)
 
 
 # Custom 404 error handler
 @app.errorhandler(404)
-def page_not_found(_):
+def page_not_found(_) -> str:
     """ Return a custom 404 error """
     return render_template("404.html")
 
 
 # Custom 500 error handler
 @app.errorhandler(500)
-def server_error(_):
+def server_error(_) -> str:
     """ Return a custom 500 error """
     return render_template("500.html")
 
 
 @app.context_processor
-def inject_nn_bools():
+def inject_nn_bools() -> Dict[str, Union[str, bool]]:
     """ Inject bool switches for neural network features """
     return dict(
         nn_parsing_enabled=Settings.NN_PARSING_ENABLED,
@@ -325,5 +326,5 @@ else:
     sys.stdout.flush()
 
     # Running as a server module: pre-load the grammar into memory
-    with Fast_Parser() as fp:
+    with Fast_Parser() as _:
         pass

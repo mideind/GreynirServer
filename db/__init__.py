@@ -120,7 +120,7 @@ class SessionContext:
             # (if commit == True) and closed upon exit from the context
             # pylint: disable=no-member
             # Creates a new Scraper_DB instance if needed
-            self._session = cast(Session, self.db.session)
+            self._session = self.db.session
             self._new_session = True
             if read_only:
                 # Set the transaction as read only, which can save resources

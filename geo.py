@@ -295,7 +295,7 @@ def location_info(
         kind = "street"
 
     loc: Dict[str, Union[None, str, float, Dict[str, Any]]] = dict(name=name, kind=kind)
-    coords = None
+    coords: Optional[LatLonTuple] = None
     info: Optional[Dict[Any, Any]] = None
 
     # Heimilisfang
@@ -349,7 +349,7 @@ def location_info(
                 # ordered by population, with capital cities given precedence
                 c = cities[0]
                 loc["country"] = c.get("country")
-                coords = coords_from_addr_info(c)
+                coords = coords_from_addr_info(cast(Dict[str, float], c))
 
     # Check if it's a US state (marked as either "lönd" or "örn" in BÍN)
     if "country" not in loc and (kind == "country" or kind == "placename"):
@@ -385,7 +385,7 @@ def _load_city_names() -> Dict[str, str]:
     return ICE_CITY_NAMES
 
 
-def lookup_city_info(name: str) -> Optional[List[Dict[str, str]]]:
+def lookup_city_info(name: str) -> Optional[List[Dict[str, Union[str, float]]]]:
     """Look up name in city database. Convert Icelandic-specific
     city names (e.g. "Lundúnir") to their corresponding
     English/international name before querying."""
@@ -418,7 +418,7 @@ def code_for_us_state(name: str) -> Optional[str]:
     return names.get(name.strip())
 
 
-US_STATE_COORDS: Optional[Dict[str, list]] = None
+US_STATE_COORDS: Optional[Dict[str, List[float]]] = None
 US_STATE_COORDS_JSONPATH = os.path.join(
     os.path.dirname(__file__), "resources", "geo", "us_state_coords.json"
 )
@@ -526,7 +526,7 @@ def coords_for_street_name(
     return coords_from_addr_info(addr)
 
 
-def coords_from_addr_info(info: Optional[Dict]) -> Optional[LatLonTuple]:
+def coords_from_addr_info(info: Optional[Dict[str, float]]) -> Optional[LatLonTuple]:
     """ Get coordinates from the address dict provided by iceaddr package. """
     if info is not None and "lat_wgs84" in info and "long_wgs84" in info:
         return (info["lat_wgs84"], info["long_wgs84"])

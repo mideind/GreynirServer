@@ -31,7 +31,7 @@
 
 """
 
-from typing import Optional, List, cast
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, List, cast
 from types import ModuleType
 
 import getopt
@@ -41,13 +41,16 @@ import sys
 import time
 import os
 
-# from multiprocessing.dummy import Pool
-from multiprocessing import Pool
+if TYPE_CHECKING:
+    from multiprocessing.dummy import Pool
+else:
+    from multiprocessing import Pool
+
 from contextlib import closing
 from datetime import datetime
 
 from settings import Settings, ConfigError
-from db import Scraper_DB
+from db import Scraper_DB, Session
 from db.models import Article, Person, Column
 from tree import Tree
 
@@ -73,12 +76,14 @@ class TokenContainer:
 
     """ Class wrapper around tokens """
 
-    def __init__(self, tokens_json, url, authority) -> None:
+    def __init__(self, tokens_json: str, url: str, authority: float) -> None:
         self.tokens = json.loads(tokens_json)
         self.url = url
         self.authority = authority
 
-    def process(self, session, processor, **kwargs) -> None:
+    def process(
+        self, session: Session, processor: ModuleType, **kwargs: Any
+    ) -> None:
         """ Process tokens for an entire article.  Iterate over each paragraph,
             sentence and token, calling revelant functions in processor module. """
 
@@ -169,13 +174,16 @@ class Processor:
         cls._db = None
 
     def __init__(
-        self, processor_directory, single_processor=None, num_workers=None
+        self,
+        processor_directory: str,
+        single_processor: Optional[str] = None,
+        num_workers: Optional[int] = None,
     ) -> None:
 
         Processor._init_class()
         self.num_workers = num_workers
 
-        self.processors = []
+        self.processors: List[str] = []
         self.pmodules: Optional[List[ModuleType]] = None
 
         # Find .py files in the processor directory
@@ -257,9 +265,10 @@ class Processor:
                             elif ptype == "token":
                                 token_container.process(session, p)
                             else:
-                                assert False, (
-                                    "Unknown processor type '{0}'; should be 'tree' or 'token'"
-                                    .format(ptype)
+                                assert (
+                                    False
+                                ), "Unknown processor type '{0}'; should be 'tree' or 'token'".format(
+                                    ptype
                                 )
 
                     # Mark the article as being processed
@@ -272,25 +281,27 @@ class Processor:
                 # If an exception occurred, roll back the transaction
                 session.rollback()
                 print(
-                    "Exception in article {0}, transaction rolled back\nException: {1}"
-                    .format(url, e)
+                    "Exception in article {0}, transaction rolled back\nException: {1}".format(
+                        url, e
+                    )
                 )
                 raise
 
         sys.stdout.flush()
 
     def go(
-        self, from_date=None, limit=0, force=False, update=False, title=None
+        self, from_date: Optional[datetime]=None, limit: int=0, force: bool=False, update: bool=False, title: Optional[str]=None
     ) -> None:
         """ Process already parsed articles from the database """
 
         # noinspection PyComparisonWithNone,PyShadowingNames
-        def iter_parsed_articles():
+        def iter_parsed_articles() -> Iterable[str]:
 
             assert self._db is not None
 
             with closing(self._db.session) as session:
                 """ Go through parsed articles and process them """
+                field: Callable[[Any], str]
                 if title is not None:
                     # Use a title query on Person to find the URLs to process
                     qtitle = title.lower()
@@ -311,16 +322,16 @@ class Processor:
                             # If update, we re-process articles that have been parsed
                             # again in the meantime
                             q = q.filter(
-                                cast(Column, Article.processed) < cast(Column, Article.parsed)).order_by(
-                                Article.processed
-                            )
+                                cast(Column[datetime], Article.processed)
+                                < cast(Column[datetime], Article.parsed)
+                            ).order_by(Article.processed)
                         else:
                             q = q.filter(Article.processed == None)
                     if from_date is not None:
                         # Only go through articles parsed since the given date
-                        q = q.filter(cast(datetime, Article.parsed) >= from_date).order_by(
-                            Article.parsed
-                        )
+                        q = q.filter(
+                            cast(Column[datetime], Article.parsed) >= from_date
+                        ).order_by(Article.parsed)
                 if limit > 0:
                     q = q.limit(limit)
                 for a in q.yield_per(200):
@@ -341,13 +352,13 @@ class Processor:
 
 
 def process_articles(
-    from_date=None,
-    limit=0,
-    force=False,
-    update=False,
-    title=None,
-    processor=None,
-    num_workers=None,
+    from_date: Optional[datetime]=None,
+    limit: int=0,
+    force: bool=False,
+    update: bool=False,
+    title: Optional[str]=None,
+    processor: Optional[str]=None,
+    num_workers: Optional[int]=None,
 ) -> None:
     """ Process multiple articles according to the given parameters """
     print("------ Greynir starting processing -------")
@@ -390,7 +401,7 @@ def process_articles(
     print("Time: {0}\n".format(ts))
 
 
-def process_article(url: str, processor=None) -> None:
+def process_article(url: str, processor: Optional[str]=None) -> None:
     """ Process a single article, eventually with a single processor """
     try:
         proc = Processor(processor_directory="processors", single_processor=processor)
@@ -437,7 +448,7 @@ __doc__ = """
 """
 
 
-def _main(argv=None) -> int:
+def _main(argv: Optional[List[str]]=None) -> int:
     """ Guido van Rossum's pattern for a Python main function """
     if argv is None:
         argv = sys.argv
