@@ -71,6 +71,7 @@ QNewsQuery →
 QNewsLatest →
     QNewsTellMe? QNewsQualifiersDef? "fréttir"
     | QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttum" QNewsRUV? QNewsNow?
+    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttunum" QNewsRUV? QNewsNow?
     | QNewsTellMe? "hvað" "er" QNewsQualifiers? "að" "frétta" QNewsRUV? QNewsNow?
     | QNewsTellMe? "hvað" "er" "að" "gerast" QNewsNow?
     | QNewsTellMe? "hvaða" "fréttir" "eru" QNewsQualifiers? QNewsRUV QNewsNow?

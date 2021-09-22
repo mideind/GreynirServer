@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Word properties query response module
+    Test query response module
 
     Copyright (C) 2021 Miðeind ehf.
 
@@ -20,7 +20,7 @@
 
 
     This module handles queries related to testing various response
-    payload functionality, e.g. JS code to be executed client-side.
+    payload functionality, e.g. JS code to be executed client-side, etc.
 
 """
 

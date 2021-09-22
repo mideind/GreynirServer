@@ -87,6 +87,10 @@ _WHATS_MY_NAME = frozenset(
         "hvert er nafn mitt",
         "segðu nafn mitt",
         "segðu nafnið mitt",
+        "manstu hvað ég heiti",
+        "manst þú hvað ég heiti",
+        "þekkir þú mig",
+        "þekkirðu mig",
     )
 )
 
