@@ -316,6 +316,10 @@ def test_date(client: FlaskClient):
     assert json["answer"].endswith(datetime.now().strftime("%Y"))
     assert "tvö þúsund" in json["voice"]
 
+    json = qmcall(client, {"q": "hvaða mánaðardagur var í gær", "voice": True}, "Date")
+    assert " 20" in json["answer"]
+    assert "tvö þúsund" in json["voice"]
+
     json = qmcall(
         client, {"q": "Hvað eru margir dagar til jóla?", "voice": True}, "Date"
     )
@@ -961,10 +965,10 @@ def test_tel(client: FlaskClient):
 def test_test(client: FlaskClient):
     """ Test module """
     json = qmcall(client, {"q": "keyrðu kóða"}, "Test")
-    assert "command" in json
+    assert "command" in json and isinstance(json["command"], str)
 
     json = qmcall(client, {"q": "opnaðu vefsíðu"}, "Test")
-    assert "open_url" in json
+    assert "open_url" in json and json["open_url"].startswith("http")
 
 
 def test_time(client: FlaskClient):
