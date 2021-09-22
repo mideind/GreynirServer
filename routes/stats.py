@@ -86,8 +86,8 @@ def chart_stats(session=None, num_days: int = 7) -> Dict[str, Any]:
             start = today - timedelta(days=days_back)
             end = today - timedelta(days=days_back - 1)
 
-            # Generate label
-            dfmtstr = "%-d. %b" if start < today - timedelta(days=6) else "%a %-d. %b"
+            # Generate date label
+            dfmtstr = "%a %-d. %b"
             labels.append(start.strftime(dfmtstr))
 
             sent = 0
