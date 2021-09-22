@@ -21,7 +21,7 @@
 
 """
 
-from typing import Union, Dict, Type, Mapping
+from typing import Any, List, Union, Dict, Type, Mapping, cast
 
 import re
 import abc
@@ -181,13 +181,13 @@ class DocxDocument(Document):
         zipfile.close()
 
         # Parse it
-        tree: ElementTree = ElementTree.fromstring(content)
+        tree = cast(Any, ElementTree).fromstring(content)
 
         # Extract text elements from all paragraphs
         # (with special handling of line breaks)
-        paragraphs = []
-        for p in tree.iter(self.PARAGRAPH_TAG):  # type: ignore
-            texts = []
+        paragraphs: List[str] = []
+        for p in tree.iter(self.PARAGRAPH_TAG):
+            texts: List[str] = []
             for node in p.iter():
                 if node.tag.endswith(self.TEXT_TAG) and node.text:
                     texts.append(node.text)
@@ -203,8 +203,8 @@ class ODTDocument(Document):
     """ OpenDocument format. """
 
     def extract_text(self) -> str:
-        textdoc = load_odf(BytesIO(self.data))
-        paragraphs = textdoc.getElementsByType(odf_text.P)  # Find all paragraphs
+        textdoc: Any = load_odf(BytesIO(self.data))
+        paragraphs: List[Any] = textdoc.getElementsByType(odf_text.P)  # Find all paragraphs
         ptexts = [teletype.extractText(p) for p in paragraphs]
         return "\n\n".join(ptexts)
 

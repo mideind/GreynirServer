@@ -25,8 +25,10 @@
 """
 
 from typing import Iterator, List, cast
+
+from tokenizer import Tok
 from reynir.bintokenizer import StringIterable
-from reynir.reynir import ProgressFunc, Tok
+from reynir.reynir import ProgressFunc
 import nertokenizer
 import reynir_correct
 

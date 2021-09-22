@@ -21,12 +21,13 @@ from typing import List, Tuple, Dict
 
 import tokenizer
 
-from reynir.binparser import BIN_Token, Tok
+from tokenizer import Tok
+from reynir.binparser import BIN_Token
 from reynir import bintokenizer
 
 
 def prep_text_for_tokenizer(text: str) -> str:
-    return "[[ " + " ]] [[ ".join(text.split("\n")) + " ]]"
+    return "[[" + "]][[".join(text.split("\n")) + "]]"
 
 
 def index_text(text: str) -> Tuple[Dict[int, List[int]], Dict[int, str]]:
@@ -44,7 +45,7 @@ def index_text(text: str) -> Tuple[Dict[int, List[int]], Dict[int, str]]:
     curr_pg_idx = 0
 
     for pg in pgs:
-        sent_idxs = []
+        sent_idxs: List[int] = []
         for _, sent in pg:
             curr_sent = list(filter(BIN_Token.is_understood, sent))  # type: List[Tok]
             curr_sent_text = tokenizer.normalized_text_from_tokens(curr_sent)

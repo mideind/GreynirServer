@@ -50,7 +50,7 @@
 
 """
 
-from typing import Any, DefaultDict, Dict, Generic, List, Optional, Tuple, Type, TypeVar
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple, Type
 
 import os
 import time
@@ -61,8 +61,9 @@ from math import log
 from collections import defaultdict
 from contextlib import contextmanager
 
+from tokenizer import TOK, paragraphs, parse_tokens
 from reynir.bindb import GreynirBin
-from reynir.bintokenizer import tokenize, parse_tokens, paragraphs, TOK
+from reynir.bintokenizer import tokenize
 from postagger import NgramTagger
 
 
