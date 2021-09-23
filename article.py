@@ -32,7 +32,8 @@ from typing import (
     Dict,
     Any,
     TYPE_CHECKING,
-    Tuple, Union,
+    Tuple,
+    Union,
     cast,
 )
 
@@ -58,7 +59,7 @@ from fetcher import Fetcher
 from tree import Tree
 from treeutil import TreeUtility, WordTuple, PgsList
 from settings import Settings, NoIndexWords
-from tokenizer import __version__ as tokenizer_version
+from tokenizer.version import __version__ as tokenizer_version
 
 
 if TYPE_CHECKING:
@@ -73,8 +74,8 @@ MAX_SENTENCE_TOKENS = 90
 
 class Article:
 
-    """ An Article represents a new article typically scraped from a web site,
-        as it is tokenized, parsed and stored in the Greynir database. """
+    """An Article represents a new article typically scraped from a web site,
+    as it is tokenized, parsed and stored in the Greynir database."""
 
     _parser: Optional[Fast_Parser] = None
 
@@ -171,7 +172,9 @@ class Article:
         return a
 
     @classmethod
-    def _init_from_scrape(cls, url: Optional[str], enclosing_session: Optional[Session]=None):
+    def _init_from_scrape(
+        cls, url: Optional[str], enclosing_session: Optional[Session] = None
+    ):
         """ Scrape an article from its URL """
         if url is None:
             return None
@@ -198,7 +201,9 @@ class Article:
             return a
 
     @classmethod
-    def load_from_url(cls, url: str, enclosing_session: Optional[Session]=None) -> Optional["Article"]:
+    def load_from_url(
+        cls, url: str, enclosing_session: Optional[Session] = None
+    ) -> Optional["Article"]:
         """ Load or scrape an article, given its URL """
         with SessionContext(enclosing_session) as session:
             ar = session.query(ArticleRow).filter(ArticleRow.url == url).one_or_none()
@@ -208,7 +213,9 @@ class Article:
             return cls._init_from_scrape(url, session)
 
     @classmethod
-    def scrape_from_url(cls, url: str, enclosing_session: Optional[Session]=None) -> Optional["Article"]:
+    def scrape_from_url(
+        cls, url: str, enclosing_session: Optional[Session] = None
+    ) -> Optional["Article"]:
         """ Force fetch of an article, given its URL """
         with SessionContext(enclosing_session) as session:
             ar = session.query(ArticleRow).filter(ArticleRow.url == url).one_or_none()
@@ -219,7 +226,9 @@ class Article:
             return a
 
     @classmethod
-    def load_from_uuid(cls, uuid: str, enclosing_session: Optional[Session]=None) -> Optional["Article"]:
+    def load_from_uuid(
+        cls, uuid: str, enclosing_session: Optional[Session] = None
+    ) -> Optional["Article"]:
         """ Load an article, given its UUID """
         with SessionContext(enclosing_session) as session:
             try:
@@ -489,8 +498,8 @@ class Article:
         verbose: bool = False,
         reload_parser: bool = False,
     ) -> None:
-        """ Prepare the article for display.
-            If it's not already tokenized and parsed, do it now. """
+        """Prepare the article for display.
+        If it's not already tokenized and parsed, do it now."""
         with SessionContext(enclosing_session, commit=True) as session:
             if self._tree is None or self._tokens is None:
                 if reload_parser:
@@ -591,9 +600,9 @@ class Article:
     def token_stream(
         limit: Optional[int] = None, skip_errors: bool = True
     ) -> Iterator[Optional[TokenDict]]:
-        """ Generator of a token stream consisting of `limit` sentences
-            (or less) from the most recently parsed articles. After
-            each sentence, None is yielded. """
+        """Generator of a token stream consisting of `limit` sentences
+        (or less) from the most recently parsed articles. After
+        each sentence, None is yielded."""
         with SessionContext(commit=True, read_only=True) as session:
 
             q: SqlQuery[ArticleRow] = (
@@ -631,9 +640,9 @@ class Article:
         skip: Optional[int] = None,
         skip_errors: bool = True,
     ) -> Iterator[List[TokenDict]]:
-        """ Generator of a sentence stream consisting of `limit`
-            sentences (or less) from the most recently parsed articles.
-            Each sentence is a list of token dicts. """
+        """Generator of a sentence stream consisting of `limit`
+        sentences (or less) from the most recently parsed articles.
+        Each sentence is a list of token dicts."""
         with SessionContext(commit=True, read_only=True) as session:
 
             q: SqlQuery[ArticleRow] = (
@@ -673,8 +682,8 @@ class Article:
     def articles(
         cls, criteria: Mapping[str, Any], enclosing_session: Optional[Session] = None
     ) -> Iterator["Article"]:
-        """ Generator of Article objects from the database that
-            meet the given criteria """
+        """Generator of Article objects from the database that
+        meet the given criteria"""
         # The criteria are currently "timestamp", "author" and "domain",
         # as well as "order_by_parse" which if True indicates that the result
         # should be ordered with the most recently parsed articles first.
@@ -732,8 +741,8 @@ class Article:
         pattern: str,
         enclosing_session: Optional[Session] = None,
     ) -> Iterator[Tuple["Article", int, SimpleTree]]:
-        """ Generator of SimpleTree objects (see matcher.py) from
-            articles matching the given criteria and the pattern """
+        """Generator of SimpleTree objects (see matcher.py) from
+        articles matching the given criteria and the pattern"""
 
         with SessionContext(
             commit=True, read_only=True, session=enclosing_session

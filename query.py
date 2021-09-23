@@ -66,9 +66,11 @@ from reynir.fastparser import (
     ParseError,
     ffi,  # type: ignore
 )
-from reynir.binparser import BIN_Grammar, BIN_Token, GrammarError
+from tokenizer import BIN_Tuple
+from reynir.binparser import BIN_Grammar, BIN_Token
 from reynir.reducer import Reducer
-from reynir.bindb import GreynirBin, BIN_Tuple
+from reynir.bindb import GreynirBin
+from reynir.grammar import GrammarError
 from islenska.bindb import BinFilterFunc
 
 from tree import Tree, TreeStateDict, Node
@@ -106,9 +108,7 @@ class QueryStateDict(TreeStateDict):
 
 
 class CastFunc(Protocol):
-    def __call__(
-        self, w: str, *, filter_func: Optional[BinFilterFunc] = None
-    ) -> str:
+    def __call__(self, w: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
         ...
 
 
@@ -1086,9 +1086,7 @@ def _to_case(
     return "".join(a)
 
 
-def to_accusative(
-    np: str, *, filter_func: Optional[BinFilterFunc] = None
-) -> str:
+def to_accusative(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
     """ Return the noun phrase after casting it from nominative to accusative case """
     with GreynirBin.get_db() as db:
         return _to_case(
@@ -1099,19 +1097,18 @@ def to_accusative(
         )
 
 
-def to_dative(
-    np: str, *, filter_func: Optional[BinFilterFunc] = None
-) -> str:
+def to_dative(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
     """ Return the noun phrase after casting it from nominative to dative case """
     with GreynirBin.get_db() as db:
         return _to_case(
-            np, db.lookup_g, db.cast_to_dative, filter_func=filter_func,
+            np,
+            db.lookup_g,
+            db.cast_to_dative,
+            filter_func=filter_func,
         )
 
 
-def to_genitive(
-    np: str, *, filter_func: Optional[BinFilterFunc] = None
-) -> str:
+def to_genitive(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
     """ Return the noun phrase after casting it from nominative to genitive case """
     with GreynirBin.get_db() as db:
         return _to_case(

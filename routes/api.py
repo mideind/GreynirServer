@@ -37,7 +37,8 @@ from db import SessionContext
 from db.models import ArticleTopic, Query, Feedback, QueryData
 from treeutil import TreeUtility
 from correct import check_grammar
-from reynir.binparser import TokenDict, canonicalize_token
+from reynir.bintokenizer import TokenDict
+from reynir.binparser import canonicalize_token
 from article import Article as ArticleProxy
 from query import process_query
 from query import Query as QueryObject
