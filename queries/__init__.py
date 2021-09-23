@@ -255,7 +255,7 @@ def spell_out(s: str) -> str:
     """Spell out a sequence of characters, e.g. "LTB" -> "ell té bé".
     Useful for controlling speech synthesis of serial numbers, etc."""
     if not s:
-        return s
+        return ""
     t = [_CHAR_PRONUNCIATION.get(c.lower(), c) if c != " " else "" for c in s]
     return " ".join(t).replace("  ", " ").strip()
 
@@ -320,7 +320,7 @@ def time_period_desc(
     seconds = ((seconds + 30) // 60) * 60 if omit_seconds else seconds
 
     # Break it down to weeks, days, hours, mins, secs.
-    result = []
+    result: List[str] = []
     for unit, count in _TIMEUNIT_INTERVALS:
         value = seconds // count
         if value:
@@ -370,7 +370,7 @@ def distance_desc(
     # E.g. 940 metrar
     else:
         # Round to nearest 10
-        def rnd(n):
+        def rnd(n: int) -> int:
             return ((n + 5) // 10) * 10
 
         rounded_dist = rnd(int(km_dist * 1000.0))
@@ -428,7 +428,7 @@ def gen_answer(a: str) -> AnswerTuple:
 
 
 def query_json_api(
-    url: str, headers: Optional[Dict] = None
+    url: str, headers: Optional[Dict[str, str]] = None
 ) -> Union[None, List[Any], Dict[str, Any]]:
     """Request the URL, expecting a JSON response which is
     parsed and returned as a Python data structure."""
@@ -454,7 +454,7 @@ def query_json_api(
     return None
 
 
-def query_xml_api(url: str):
+def query_xml_api(url: str) -> Any:
     """Request the URL, expecting an XML response which is
     parsed and returned as an XML document object."""
 
@@ -474,7 +474,7 @@ def query_xml_api(url: str):
 
     # Parse XML response text
     try:
-        xmldoc = minidom.parseString(r.text)
+        xmldoc = cast(Any, minidom).parseString(r.text)
         return xmldoc
     except Exception as e:
         logging.warning("Error parsing XML response from {0}: {1}".format(url, e))
@@ -572,7 +572,7 @@ def query_places_api(
     userloc: Optional[LatLonTuple] = None,
     radius: float = _PLACES_LOCBIAS_RADIUS,
     fields: Optional[str] = None,
-) -> Optional[Dict]:
+) -> Optional[Dict[str, Any]]:
     """Look up a placename in Google's Places API. For details, see:
     https://developers.google.com/places/web-service/search"""
 
@@ -611,7 +611,9 @@ _PLACEDETAILS_API_URL = "https://maps.googleapis.com/maps/api/place/details/json
 
 
 @lru_cache(maxsize=32)
-def query_place_details(place_id: str, fields: Optional[str] = None) -> Optional[Dict]:
+def query_place_details(
+    place_id: str, fields: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
     """Look up place details by ID in Google's Place Details API. If "fields"
     parameter is omitted, *all* fields are returned. For details, see
     https://developers.google.com/places/web-service/details"""
@@ -651,7 +653,10 @@ def timezone4loc(
     """Returns timezone string given a tuple of coordinates.
     Fallback argument should be a 2-char ISO 3166 country code."""
     if loc is not None:
-        return _tzwhere_singleton().tzNameAt(loc[0], loc[1], forceTZ=True)
+        return cast(
+            Optional[str],
+            cast(Any, _tzwhere_singleton()).tzNameAt(loc[0], loc[1], forceTZ=True),
+        )
     if fallback and fallback in country_timezones:
         return country_timezones[fallback][0]
     return None

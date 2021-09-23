@@ -241,7 +241,7 @@ def parse_api(version: int = 1) -> Response:
                 pgs = pgs[0]
             else:
                 # More than one paragraph: gotta concatenate 'em all
-                pa = []
+                pa: List[List[TokenDict]] = []
                 for pg in pgs:
                     pa.extend(pg)
                 pgs = pa
@@ -260,8 +260,8 @@ def article_api(version: int = 1) -> Response:
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
-    url = request.values.get("url")
-    uuid = request.values.get("id")
+    url: Optional[str] = request.values.get("url")
+    uuid: Optional[str] = request.values.get("id")
 
     if url:
         url = url.strip()[0:MAX_URL_LENGTH]
@@ -360,16 +360,16 @@ def query_api(version: int = 1) -> Response:
         return better_jsonify(valid=False, reason="Unsupported version")
 
     # String with query
-    q = request.values.get("q", "")
+    qs: str = request.values.get("q", "")
     # q param contains one or more |-separated strings
-    mq = q.split("|")[0:_MAX_QUERY_VARIANTS]
-    # Retain only nonempty strings in q
-    q = list(filter(None, (m.strip()[0:_MAX_QUERY_LENGTH] for m in mq)))
+    mq: List[str] = qs.split("|")[0:_MAX_QUERY_VARIANTS]
+    # Retain only nonempty strings in qs
+    q: List[str] = list(filter(None, (m.strip()[0:_MAX_QUERY_LENGTH] for m in mq)))
 
     # If voice is set, return a voice-friendly string
     voice = bool_from_request(request, "voice")
     # Request a particular voice
-    voice_id = request.values.get("voice_id")
+    voice_id: Optional[str] = request.values.get("voice_id")
     # Request a particular voice speed
     try:
         voice_speed = float(request.values.get("voice_speed", 1.0))
@@ -382,15 +382,15 @@ def query_api(version: int = 1) -> Response:
     test = Settings.DEBUG and bool_from_request(request, "test")
 
     # Obtain the client's location, if present
-    lat = request.values.get("latitude")
-    lon = request.values.get("longitude")
+    slat: Optional[str] = request.values.get("latitude")
+    slon: Optional[str] = request.values.get("longitude")
 
     # Additional client info
     # !!! FIXME: The client_id for web browser clients is the browser version,
     # !!! which is not particularly useful. Consider using an empty string instead.
-    client_id = request.values.get("client_id")
-    client_type = request.values.get("client_type")
-    client_version = request.values.get("client_version")
+    client_id: Optional[str] = request.values.get("client_id")
+    client_type: Optional[str] = request.values.get("client_type")
+    client_version: Optional[str] = request.values.get("client_version")
     # When running behind an nginx reverse proxy, the client's remote
     # address is passed to the web application via the "X-Real-IP" header
     client_ip = request.remote_addr or request.headers.get("X-Real-IP")
@@ -399,24 +399,26 @@ def query_api(version: int = 1) -> Response:
     private = bool_from_request(request, "private")
 
     # Attempt to convert the (lat, lon) location coordinates to floats
-    location_present = bool(lat) and bool(lon)
+    location_present = bool(slat) and bool(slon)
+
+    lat, lon = 0.0, 0.0
 
     # For testing, insert a synthetic location if not already present
     if not location_present and test:
         lat, lon = _MIDEIND_LOCATION
         location_present = True
 
-    if location_present:
+    if location_present and not test:
         try:
-            lat = float(lat)
+            lat = float(slat or "0")
             if not (-90.0 <= lat <= 90.0):
                 location_present = False
         except ValueError:
             location_present = False
 
-    if location_present:
+    if location_present and not test:
         try:
-            lon = float(lon)
+            lon = float(slon or "0")
             if not (-180.0 <= lon <= 180.0):
                 location_present = False
         except ValueError:
