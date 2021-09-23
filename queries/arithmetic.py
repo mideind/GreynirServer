@@ -25,7 +25,7 @@
 
 # TODO: Hvað er X með Y aukastöfum?
 
-from typing import Dict, Any, Mapping, Optional, Sequence, Union, cast
+from typing import Dict, Any, List, Mapping, Optional, Sequence, Union, cast
 
 import math
 import json
@@ -418,10 +418,11 @@ def add_num(num: Optional[Union[str, int, float]], result: Result):
     """ Add a number to accumulated number args """
     if "numbers" not in result:
         result.numbers = []
+    rn = cast(List[float], result.numbers)
     if isinstance(num, str):
-        result.numbers.append(parse_num(num))
+        rn.append(parse_num(num))
     elif num:
-        result.numbers.append(num)
+        rn.append(num)
 
 
 def terminal_num(t: Optional[Result]) -> Optional[Union[str, int, float]]:
@@ -539,7 +540,7 @@ def QArCurrencyOrNum(node: Node, params: QueryStateDict, result: Result) -> None
         # Found an amount terminal node
         amt = amount.contained_amount
         if amt:
-            result.amount, curr = amt
+            result.amount, _ = amt
             add_num(result.amount, result)
 
 
@@ -698,7 +699,7 @@ def calc_arithmetic(query: Query, result: Result) -> Optional[AnswerTuple]:
     # Run eval on expression
     res: float = eval(s, eval_globals, {})
 
-    if isinstance(res, float):
+    if isinstance(res, float):  # type: ignore
         # Convert result to Icelandic decimal format
         answer = iceformat_float(res)
     else:
