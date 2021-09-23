@@ -20,7 +20,8 @@
 
 
     This module handles queries related to testing various response
-    payload functionality, e.g. JS code to be executed client-side, etc.
+    payload functionality both server and client-side, for example
+    JS code to be executed, URL to be opened, image to display, etc.
 
 """
 
@@ -39,6 +40,8 @@ def handle_plain_text(q: Query) -> bool:
         q.set_command("2 + 2")
     elif ql == "opnaðu vefsíðu":
         q.set_url("https://mideind.is")
+    elif ql == "sýndu mynd":
+        q.set_image("https://greynir.is/static/img/GreynirLogoHoriz180x80.png")
     else:
         return False
 

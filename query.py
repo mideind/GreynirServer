@@ -371,6 +371,8 @@ class Query:
         self._url: Optional[str] = None
         # Command returned by query
         self._command: Optional[str] = None
+        # Image URL returned by query
+        self._image: Optional[str] = None
         # Client id, if known
         self._client_id = client_id
         # Client type, if known
@@ -753,6 +755,15 @@ class Query:
         self._command = c
 
     @property
+    def image(self) -> Optional[str]:
+        """ Image URL associated with this query """
+        return self._image
+
+    def set_image(self, url: str) -> None:
+        """ Set the image URL command associated with this query """
+        self._image = url
+
+    @property
     def source(self) -> Optional[str]:
         """ Return the source of the answer to this query """
         return self._source
@@ -1013,6 +1024,9 @@ class Query:
         # ...and a command, if any has been set
         if self.command:
             result["command"] = self.command
+        # ...image URL, if any
+        if self.image:
+            result["image"] = self.image
         # .. and the source, if set by query processor
         if self.source:
             result["source"] = self.source

@@ -970,6 +970,9 @@ def test_test(client: FlaskClient):
     json = qmcall(client, {"q": "opnaðu vefsíðu"}, "Test")
     assert "open_url" in json and json["open_url"].startswith("http")
 
+    json = qmcall(client, {"q": "sýndu mynd"}, "Test")
+    assert "image" in json and json["image"].startswith("http")
+
 
 def test_time(client: FlaskClient):
     """ Time module """
