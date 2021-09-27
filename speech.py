@@ -109,6 +109,8 @@ def get_synthesized_text_url(
     if voice_id not in _VOICES:
         voice_id = _DEFAULT_VOICE
 
+    text = text.strip()
+
     # Special preprocessing for SSML markup
     if txt_format == "ssml":
         # Prevent '&' symbol from breaking markup
