@@ -680,15 +680,16 @@ class MblScraper(ScrapeHelper):
         rp = ScrapeHelper.div_class(soup.html.body, "frett-main", "reporter-profile")
         f = lambda tag: ScrapeHelper.general_filter(tag, "a", "class", "name")
         rname = rp.find(f) if rp else None
+        authname = None
         if rname:
-            rname = rname.string
+            authname = rname.string
         else:
             # Probably a blog post
             rp = ScrapeHelper.div_class(soup.html.body, "pistlar-author-profile-box")
             if rp and rp.h4:
-                rname = rp.h4.string
+                authname = rp.h4.string
 
-        author = rname if rname else "Ritstjórn mbl.is"
+        author: str = authname if authname else "Ritstjórn mbl.is"
         metadata.heading = heading
         metadata.author = author
         metadata.timestamp = timestamp
@@ -1949,7 +1950,7 @@ class SedlabankinnScraper(ScrapeHelper):
         try:
             media = ScrapeHelper.div_class(soup, "media")
             if media:
-                tstr = media["data-last-modified"]
+                tstr = str(media["data-last-modified"])
                 timestamp = datetime.strptime(tstr, "%Y-%m-%d %H:%M:%S")
         except Exception as e:
             logging.warning(f"Unable to parse date for Sedlabankinn article: {e}")
