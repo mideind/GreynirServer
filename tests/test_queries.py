@@ -699,7 +699,7 @@ def test_places(client: FlaskClient):
     qmcall(client, {"q": "Hvenær opnar sundhöllin?"}, "Places")
 
 
-def test_random(client: FlaskClient):
+def test_rand(client: FlaskClient):
     """ Random module """
     json = qmcall(client, {"q": "Veldu tölu milli sautján og 30"}, "Random")
     assert int(json["answer"]) >= 17 and int(json["answer"]) <= 30
