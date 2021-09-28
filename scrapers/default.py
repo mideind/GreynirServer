@@ -689,9 +689,8 @@ class MblScraper(ScrapeHelper):
             if rp and rp.h4:
                 authname = rp.h4.string
 
-        author: str = authname if authname else "Ritstjórn mbl.is"
         metadata.heading = heading
-        metadata.author = author
+        metadata.author = authname or "Ritstjórn mbl.is"
         metadata.timestamp = timestamp
         return metadata
 

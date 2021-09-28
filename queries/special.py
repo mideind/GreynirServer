@@ -462,7 +462,7 @@ _MY_PHILOSOPHY: AnswerType = {
 
 _SORRY_TO_HEAR: AnswerType = {"answer": "Það þykir mér leitt að heyra."}
 
-_THREATS: AnswerType = {"answer": "Ei skal höggva!"}
+_THREATS: AnswerType = {"answer": "Eigi skal höggva!"}
 
 _I_KNOW_STUFF: AnswerType = {"answer": "Ég veit eitt og annað. Spurðu mig!"}
 

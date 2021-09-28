@@ -73,7 +73,6 @@ MAX_SENTENCE_TOKENS = 90
 
 
 class Article:
-
     """An Article represents a new article typically scraped from a web site,
     as it is tokenized, parsed and stored in the Greynir database."""
 
@@ -81,7 +80,7 @@ class Article:
 
     @classmethod
     def _init_class(cls) -> None:
-        """ Initialize class attributes """
+        """Initialize class attributes"""
         if cls._parser is None:
             cls._parser = Fast_Parser(verbose=False)  # Don't emit diagnostic messages
 
@@ -100,13 +99,13 @@ class Article:
 
     @classmethod
     def reload_parser(cls) -> None:
-        """ Force reload of a fresh parser instance """
+        """Force reload of a fresh parser instance"""
         cls._parser = None
         cls._init_class()
 
     @classmethod
     def parser_version(cls) -> str:
-        """ Return the current grammar timestamp + parser version """
+        """Return the current grammar timestamp + parser version"""
         cls._init_class()
         assert cls._parser is not None
         return cls._parser.version
@@ -144,7 +143,7 @@ class Article:
 
     @classmethod
     def _init_from_row(cls, ar: ArticleRow) -> "Article":
-        """ Initialize a fresh Article instance from a database row object """
+        """Initialize a fresh Article instance from a database row object"""
         a = cls(uuid=ar.id)
         a._url = ar.url
         a._heading = ar.heading
@@ -174,8 +173,8 @@ class Article:
     @classmethod
     def _init_from_scrape(
         cls, url: Optional[str], enclosing_session: Optional[Session] = None
-    ):
-        """ Scrape an article from its URL """
+    ) -> Optional["Article"]:
+        """Scrape an article from its URL"""
         if url is None:
             return None
         a = cls(url=url)
@@ -204,7 +203,7 @@ class Article:
     def load_from_url(
         cls, url: str, enclosing_session: Optional[Session] = None
     ) -> Optional["Article"]:
-        """ Load or scrape an article, given its URL """
+        """Load or scrape an article, given its URL"""
         with SessionContext(enclosing_session) as session:
             ar = session.query(ArticleRow).filter(ArticleRow.url == url).one_or_none()
             if ar is not None:
@@ -216,7 +215,7 @@ class Article:
     def scrape_from_url(
         cls, url: str, enclosing_session: Optional[Session] = None
     ) -> Optional["Article"]:
-        """ Force fetch of an article, given its URL """
+        """Force fetch of an article, given its URL"""
         with SessionContext(enclosing_session) as session:
             ar = session.query(ArticleRow).filter(ArticleRow.url == url).one_or_none()
             a = cls._init_from_scrape(url, session)
@@ -229,7 +228,7 @@ class Article:
     def load_from_uuid(
         cls, uuid: str, enclosing_session: Optional[Session] = None
     ) -> Optional["Article"]:
-        """ Load an article, given its UUID """
+        """Load an article, given its UUID"""
         with SessionContext(enclosing_session) as session:
             try:
                 ar = (
@@ -243,7 +242,7 @@ class Article:
             return None if ar is None else cls._init_from_row(ar)
 
     def person_names(self) -> Iterator[str]:
-        """ A generator yielding all person names in an article token stream """
+        """A generator yielding all person names in an article token stream"""
         if self._raw_tokens is None and self._tokens:
             # Lazy generation of the raw tokens from the JSON rep
             self._raw_tokens = json.loads(self._tokens)
@@ -256,7 +255,7 @@ class Article:
                             yield cast(str, t.get("v", ""))
 
     def entity_names(self) -> Iterator[str]:
-        """ A generator for entity names from an article token stream """
+        """A generator for entity names from an article token stream"""
         if self._raw_tokens is None and self._tokens:
             # Lazy generation of the raw tokens from the JSON rep
             self._raw_tokens = json.loads(self._tokens)
@@ -271,7 +270,7 @@ class Article:
     def create_register(
         self, session: Session, all_names: bool = False
     ) -> "RegisterType":
-        """ Create a name register dictionary for this article """
+        """Create a name register dictionary for this article"""
         from queries.builtin import (
             add_name_to_register,
             add_entity_to_register,
@@ -288,7 +287,7 @@ class Article:
         return register
 
     def _store_words(self, session: Session) -> None:
-        """ Store word stems """
+        """Store word stems"""
         assert session is not None
         # Delete previously stored words for this article
         session.execute(Word.table().delete().where(Word.article_id == self._uuid))
@@ -311,7 +310,7 @@ class Article:
     def _parse(
         self, enclosing_session: Optional[Session] = None, verbose: bool = False
     ) -> None:
-        """ Parse the article content to yield parse trees and annotated token list """
+        """Parse the article content to yield parse trees and annotated token list"""
         with SessionContext(enclosing_session) as session:
 
             # Convert the content soup to a token iterable (generator)
@@ -410,7 +409,7 @@ class Article:
             )
 
     def store(self, enclosing_session: Optional[Session] = None) -> bool:
-        """ Store an article in the database, inserting it or updating """
+        """Store an article in the database, inserting it or updating"""
         with SessionContext(enclosing_session, commit=True) as session:
             if self._uuid is None:
                 # Insert a new row
@@ -516,7 +515,7 @@ class Article:
         verbose: bool = False,
         reload_parser: bool = False,
     ) -> None:
-        """ Force a parse of the article """
+        """Force a parse of the article"""
         with SessionContext(enclosing_session, commit=True) as session:
             if reload_parser:
                 # We need a parse: Make sure we're using the newest grammar
@@ -584,7 +583,7 @@ class Article:
 
     @property
     def num_tokens(self) -> int:
-        """ Count the tokens in the article and cache the result """
+        """Count the tokens in the article and cache the result"""
         if self._num_tokens is None:
             if self._raw_tokens is None and self._tokens:
                 self._raw_tokens = json.loads(self._tokens)
