@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
-# This program reads all logged queries in the database and dumps
-# various stats wrt. unanswered queries + more.
+# This program examines hardcoded queries in the special.py
+# query module and checks if they can be improved.
 
 import os
 import sys

@@ -161,6 +161,7 @@ QDateCurrent →
     | "hver" "er" "dagsetningin" QDateNow?
     | "hvaða" "dagsetning" "er" QDateNow?
     | "hvaða" "dagur" "er" QDateNow?
+    | "hvaða" "dagur" "er" "dagurinn" "í" "dag"
     | "hvaða" "mánaðardagur" "er" QDateNow?
     | "hvaða" "vikudagur" "er" QDateNow?
     | "hvaða" "mánuður" "er" QDateNow?
@@ -191,7 +192,7 @@ QDateNextDay →
     | "morgundagurinn"
 
 QDateTomorrow →
-    "á_morgun"  # "á" "morgun"
+    "á_morgun" | "í" "fyrramálið"
 
 QDatePrevDay →
     "dagsetning" QDateYesterday
@@ -215,10 +216,11 @@ QDatePrevDay →
     | "gærdagurinn"
 
 QDateYesterday →
-    "í_gær" | "í_gærkvöldi"
+    "í_gær" | "í_gærkvöldi" | "í_gærmorgun"
 
 QDateNow →
-    "í" "dag" | "nákvæmlega"? "núna" | "í" "augnablikinu" | "eins" "og" "stendur" # | 'í_dag'
+    "í" "dag" | "í" "augnablikinu" | "eins" "og" "stendur"
+    | "nákvæmlega"? "núna" | "einmitt" "núna" | "akkúrat" "núna"
 
 QDateHowLongUntil →
     "hvað" "er" "langt" "í" QDateItem_þf

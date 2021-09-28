@@ -216,7 +216,7 @@ if Settings.DEBUG:
     )
     # Clobber Settings.DEBUG in GreynirPackage and GreynirCorrect
     reynir.Settings.DEBUG = True
-    reynir_correct.settings.Settings.DEBUG = True
+    reynir_correct.Settings.DEBUG = True
 
 
 if not RUNNING_AS_SERVER:
