@@ -744,7 +744,7 @@ def test_schedules(client: FlaskClient):
     ANYTIME_RE = (
         r"^(Á {0}( klukkan \d+:\d+)?( í gær| á morgun)? "
         r"(er verið að (spila|sýna)|(var|verður) (spilaður|sýndur)) dagskrárliðurinn .*|"
-        r"Ekkert (er|verður|var) á dagskrá á {0} (í augnablikinu|klukkan \d?\d:\d\d (\d+\. \w+|á morgun|í gær))\.)$"
+        r"Ekkert (er|verður|var) á dagskrá á {0} (í augnablikinu|klukkan \d?\d:\d\d( \d+\. \w+| á morgun| í gær)?)\.)$"
     )
     # RÚV tests
     json = qmcall(client, {"q": "hvað er í sjónvarpinu", "voice": True}, "Schedule")
