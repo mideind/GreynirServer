@@ -280,6 +280,7 @@ def answ_openhours(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
         userloc=loc,
         fields="opening_hours,place_id,formatted_address,geometry",
     )
+
     if (
         res is None
         or res["status"] != "OK"
@@ -388,9 +389,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         subj = result["subject_nom"]
         try:
             handlerfunc = _HANDLER_MAP[result.qkey]
-            res: Optional[AnswerTuple] = None
-            if q.location is not None:
-                res = handlerfunc(subj, q.location, result.qkey)
+            res: Optional[AnswerTuple] = handlerfunc(subj, q.location, result.qkey)
             if res:
                 q.set_answer(*res)
                 q.set_source("Google Maps")
