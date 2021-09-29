@@ -231,7 +231,7 @@ for instructions.
 
 See [Contributing to Greynir](CONTRIBUTING.md).
 
-## Copyright and licensing
+## License
 
 Greynir is Copyright &copy; 2021 [Miðeind ehf.](https://mideind.is)
 The original author of this software is *Vilhjálmur Þorsteinsson*.
@@ -248,7 +248,7 @@ This set of programs is distributed in the hope that it will be useful, but WITH
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-<img src="static/img/GPLv3.png" align="right" style="margin-left:15px;" width="180" height="60">
+<a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="static/img/GPLv3.png" align="right" style="margin-left:15px;" width="180" height="60"></a>
 
 The full text of the GNU General Public License v3 is
 [included here](https://github.com/mideind/Greynir/blob/master/LICENSE.txt)
@@ -260,7 +260,7 @@ to negotiate a custom license. This applies for instance if you want to include 
 this software, in part or in full, in other software that is not licensed under
 GNU GPLv3 or other compatible licenses.
 
-----
+## Acknowledgements
 
 Greynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](https://bin.arnastofnun.is))
 lexicon and database of Icelandic word forms to identify words and find their
@@ -269,8 +269,6 @@ potential meanings and lemmas. The database is included in
 BÍN is licensed under CC-BY-4.0, and credit is hereby given as follows:
 
 *Beygingarlýsing íslensks nútímamáls. Stofnun Árna Magnússonar í íslenskum fræðum. Höfundur og ritstjóri Kristín Bjarnadóttir.*
-
-----
 
 The Greynir web interface uses map data from [OpenStreetMap](https://www.openstreetmap.org),
 [Google](https://maps.google.com) and [Wikipedia](https://is.wikipedia.org).
