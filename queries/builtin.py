@@ -69,14 +69,6 @@ QUERY_NONTERMINALS = {"BuiltinQueries"}
 
 GRAMMAR = """
 
-# ----------------------------------------------
-#
-# Query grammar
-#
-# The following grammar is used for queries only
-#
-# ----------------------------------------------
-
 Query →
     BuiltinQueries
 

@@ -58,7 +58,8 @@ from islenska.basics import BinMeaning, make_bin_entry
 
 from sqlalchemy.orm import Session
 
-from reynir.bindb import GreynirBin, BIN_Tuple
+from tokenizer import BIN_Tuple
+from reynir.bindb import GreynirBin
 from reynir.binparser import BIN_Token
 from reynir.simpletree import SimpleTree, SimpleTreeBuilder
 from reynir.cache import LRU_Cache
@@ -1168,6 +1169,7 @@ class PersonNode(TerminalNode):
         case = self.td.case or None
         # Aux contains a JSON-encoded list of tuples: (name, gender, case)
         fn_list = self._aux = json.loads(aux) if aux else []
+        assert fn_list is not None
         # Collect the potential full names that are available in nominative
         # case and match the gender of the terminal
         self.fullnames = [

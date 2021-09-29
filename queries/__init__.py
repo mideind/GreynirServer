@@ -251,7 +251,7 @@ _CHAR_PRONUNCIATION = {
 }
 
 
-def spell_out(s: Optional[str]) -> str:
+def spell_out(s: str) -> str:
     """Spell out a sequence of characters, e.g. "LTB" -> "ell té bé".
     Useful for controlling speech synthesis of serial numbers, etc."""
     if not s:
@@ -353,7 +353,7 @@ def distance_desc(
     num_to_str: bool = False,
 ) -> str:
     """Generate an Icelandic description of distance in km/m w. option to
-    specify case, abbreviations, cutoff for returning desc in metres."""
+    specify case, abbreviations, cutoff for returning descr. in metres."""
     assert case in _CASE_ABBR
     cidx = _CASE_ABBR.index(case)
 

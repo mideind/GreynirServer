@@ -24,6 +24,7 @@
 """
 
 # TODO: "Hvenær rís sólin [any date]"
+# TODO: "Hvenær kemur sólin upp"
 
 from typing import Dict, List, Iterable, Tuple, Optional, Union, cast
 
@@ -573,16 +574,12 @@ def _answer_city_solar_data(
                     answer = f"Sólin sest um klukkan {time_str} {when}."
 
             else:
-                answer = format_ans.format(
-                    _SOLAR_ENUM_TO_WORD[sun_pos], time_str, when
-                )
+                answer = format_ans.format(_SOLAR_ENUM_TO_WORD[sun_pos], time_str, when)
 
         else:
             format_ans = "Það varð ekki {0} {1}."
 
-            answer = format_ans.format(
-                _SOLAR_ENUM_TO_WORD[sun_pos].lower(), when
-            )
+            answer = format_ans.format(_SOLAR_ENUM_TO_WORD[sun_pos].lower(), when)
 
     if not in_past:
         answer = answer.replace("varð", "verður").replace("var", "verður")

@@ -87,6 +87,10 @@ _WHATS_MY_NAME = frozenset(
         "hvert er nafn mitt",
         "segðu nafn mitt",
         "segðu nafnið mitt",
+        "manstu hvað ég heiti",
+        "manst þú hvað ég heiti",
+        "þekkir þú mig",
+        "þekkirðu mig",
     )
 )
 
@@ -108,6 +112,7 @@ def _whatsmyname_handler(q: Query, ql: str) -> bool:
             answ += " alveg eins og ég!"
     else:
         answ = _DUNNO_NAME
+    q.set_key("UserNameInfo")
     q.set_answer(*gen_answer(answ))
     return True
 
@@ -116,8 +121,10 @@ _MY_NAME_IS_REGEXES = frozenset(
     (
         r"^ég heiti (.+)$",
         r"^hæ ég heiti (.+)$",
+        r"^hæ embla ég heiti (.+)$",
         r"^nafn mitt er (.+)$",
         r"^nafnið mitt er (.+)$",
+        r"^fullt nafn mitt er (.+)$",
         r"^ég ber heitið (.+)$",
         r"^ég ber nafnið (.+)$",
         r"^ég er kallaður (.+)$",
@@ -178,6 +185,7 @@ def _mynameis_handler(q: Query, ql: str) -> bool:
         voice = answ.replace(",", "")
         q.set_answer(dict(answer=answ), answ, voice)
         q.query_is_command()
+        q.set_key("SetUserName")
 
         return True
 
@@ -389,15 +397,15 @@ def _device_type_handler(q: Query, ql: str) -> bool:
     if ql not in _DEVICE_TYPE_QUERIES:
         return False
 
+    q.set_key("DeviceInfo")
+
     if q.client_type:
         for prefix in _DEVICE_TYPE_TO_DESC.keys():
             if q.client_type.startswith(prefix):
                 answ = _DEVICE_TYPE_TO_DESC[prefix] + " Meira veit ég ekki."
                 q.set_answer(*gen_answer(answ))
-                q.set_key("DeviceInfo")
                 return True
 
-    q.set_key("DeviceInfo")
     q.set_answer(*gen_answer(_DUNNO_DEVICE_TYPE))
     return True
 
@@ -406,16 +414,21 @@ _CLIENT_VERSION_QUERIES = frozenset(
     (
         "hvaða útgáfu er ég með",
         "hvaða útgáfu er ég að keyra",
+        "hvaða útgáfu er ég keyrandi",
         "hvaða útgáfu er verið að keyra",
         "hvaða útgáfu af emblu er ég að keyra",
         "hvaða útgáfu af emblu er ég með",
+        "hvaða útgáfu af emblu er ég með í gangi",
         "hvaða útgáfa af emblu er að keyra",
+        "hvaða útgáfa af emblu er ég að keyra",
         "hvaða útgáfa er keyrandi",
         "hvaða útgáfa er í gangi",
         "hvaða útgáfa ertu",
         "hvaða útgáfa ert þú",
         "hvaða útgáfa af emblu ertu",
         "hvaða útgáfa af emblu ert þú",
+        "útgáfa af emblu",
+        "útgáfan af emblu",
     )
 )
 

@@ -147,6 +147,7 @@ QDate →
 QDateQuery →
     QDateCurrent
     | QDateNextDay
+    | QDatePrevDay
     | QDateHowLongUntil
     # | QDateHowLongSince  # Disabled for now.
     | QDateWhenIs
@@ -160,6 +161,7 @@ QDateCurrent →
     | "hver" "er" "dagsetningin" QDateNow?
     | "hvaða" "dagsetning" "er" QDateNow?
     | "hvaða" "dagur" "er" QDateNow?
+    | "hvaða" "dagur" "er" "dagurinn" "í" "dag"
     | "hvaða" "mánaðardagur" "er" QDateNow?
     | "hvaða" "vikudagur" "er" QDateNow?
     | "hvaða" "mánuður" "er" QDateNow?
@@ -190,10 +192,35 @@ QDateNextDay →
     | "morgundagurinn"
 
 QDateTomorrow →
-    "á_morgun"  # "á" "morgun"
+    "á_morgun" | "í" "fyrramálið"
+
+QDatePrevDay →
+    "dagsetning" QDateYesterday
+    | "dagsetningin" QDateYesterday
+    | "hvað" "var" "dagsetningin" QDateYesterday
+    | "hver" "var" "dagsetningin" QDateYesterday
+    | "hvaða" "dagsetning" "var" QDateYesterday
+    | "hvaða" "dagur" "var" QDateYesterday
+    | "hvaða" "dagur" "kom" QDateYesterday
+    | "hvaða" "mánaðardagur" "var" QDateYesterday
+    | "hvaða" "vikudagur" "var" QDateYesterday
+    | "hvaða" "vikudagur" "kom" QDateYesterday
+    | "hvaða" "mánuður" "var" QDateYesterday
+    | "hvaða" "mánuður" "kom" QDateYesterday
+    | "hver" "var" "dagurinn" QDateYesterday
+    | "hver" "var" "mánaðardagurinn" QDateYesterday
+    | "hver" "var" "vikudagurinn" QDateYesterday
+    | "hver" "var" "gærdagurinn"
+    | "hvað" "er" "gærdagurinn"
+    | "hvaða" "dagur" "var" "gærdagurinn"
+    | "gærdagurinn"
+
+QDateYesterday →
+    "í_gær" | "í_gærkvöldi" | "í_gærmorgun"
 
 QDateNow →
-    "í" "dag" | "nákvæmlega"? "núna" | "í" "augnablikinu" | "eins" "og" "stendur" # | 'í_dag'
+    "í" "dag" | "í" "augnablikinu" | "eins" "og" "stendur"
+    | "nákvæmlega"? "núna" | "einmitt" "núna" | "akkúrat" "núna"
 
 QDateHowLongUntil →
     "hvað" "er" "langt" "í" QDateItem_þf
@@ -422,6 +449,10 @@ def QDateCurrent(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QDateNextDay(node: Node, params: QueryStateDict, result: Result) -> None:
     result["tomorrow"] = True
+
+
+def QDatePrevDay(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["yesterday"] = True
 
 
 def QDateHowLongUntil(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -804,7 +835,7 @@ def when_answ(q: Query, result: Result) -> None:
     q.set_answer(response, answer, voice)
 
 
-def currdate_answ(q: Query, result: Result) -> None:
+def curr_date_answ(q: Query, result: Result) -> None:
     """ Generate answer to a question of the form "Hver er dagsetningin [í dag]?" etc. """
     now = datetime.utcnow()
     date_str = now.strftime("%A %-d. %B %Y")
@@ -820,7 +851,7 @@ def currdate_answ(q: Query, result: Result) -> None:
     q.set_answer(response, answer, voice)
 
 
-def tomorrowdate_answ(q: Query, result: Result) -> None:
+def tomorrow_date_answ(q: Query, result: Result) -> None:
     """ Generate answer to a question of the form "Hvaða dagur er á morgun?" etc. """
     now = datetime.utcnow() + timedelta(days=1)
     date_str = now.strftime("%A %-d. %B %Y")
@@ -833,6 +864,22 @@ def tomorrowdate_answ(q: Query, result: Result) -> None:
     voice = years_to_text(numbers_to_ordinal(voice, case="nf", gender="kk"))
 
     q.set_key("TomorrowDate")
+    q.set_answer(response, answer, voice)
+
+
+def yesterday_date_answ(q: Query, result: Result) -> None:
+    """ Generate answer to a question of the form "Hvaða dagur var í gær?" etc. """
+    now = datetime.utcnow() - timedelta(days=1)
+    date_str = now.strftime("%A %-d. %B %Y")
+    answer = date_str.capitalize()
+    response = dict(answer=answer)
+    voice = f"Dagurinn í gær var {date_str}"
+
+    # Put a spelled-out ordinal number instead of the numeric one
+    # to get the grammar right. Also fixes year pronunciation.
+    voice = years_to_text(numbers_to_ordinal(voice, case="nf", gender="kk"))
+
+    q.set_key("YesterdayDate")
     q.set_answer(response, answer, voice)
 
 
@@ -883,8 +930,9 @@ def leap_answ(q: Query, result: Result) -> None:
 
 
 _Q2FN_MAP = [
-    ("now", currdate_answ),
-    ("tomorrow", tomorrowdate_answ),
+    ("now", curr_date_answ),
+    ("tomorrow", tomorrow_date_answ),
+    ("yesterday", yesterday_date_answ),
     ("days_in_month", days_in_month_answ),
     ("until", howlong_answ),
     ("since", howlong_answ),

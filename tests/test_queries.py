@@ -316,6 +316,10 @@ def test_date(client: FlaskClient):
     assert json["answer"].endswith(datetime.now().strftime("%Y"))
     assert "tvö þúsund" in json["voice"]
 
+    json = qmcall(client, {"q": "hvaða mánaðardagur var í gær", "voice": True}, "Date")
+    assert " 20" in json["answer"]
+    assert "tvö þúsund" in json["voice"]
+
     json = qmcall(
         client, {"q": "Hvað eru margir dagar til jóla?", "voice": True}, "Date"
     )
@@ -695,7 +699,7 @@ def test_places(client: FlaskClient):
     qmcall(client, {"q": "Hvenær opnar sundhöllin?"}, "Places")
 
 
-def test_random(client: FlaskClient):
+def test_rand(client: FlaskClient):
     """ Random module """
     json = qmcall(client, {"q": "Veldu tölu milli sautján og 30"}, "Random")
     assert int(json["answer"]) >= 17 and int(json["answer"]) <= 30
@@ -956,6 +960,18 @@ def test_tel(client: FlaskClient):
 
     json = qmcall(client, {"q": "hringdu í 26"}, "Telephone")
     assert "ekki gilt símanúmer" in json["answer"]
+
+
+def test_test(client: FlaskClient):
+    """ Test module """
+    json = qmcall(client, {"q": "keyrðu kóða"}, "Test")
+    assert "command" in json and isinstance(json["command"], str)
+
+    json = qmcall(client, {"q": "opnaðu vefsíðu"}, "Test")
+    assert "open_url" in json and json["open_url"].startswith("http")
+
+    json = qmcall(client, {"q": "sýndu mynd"}, "Test")
+    assert "image" in json and json["image"].startswith("http")
 
 
 def test_time(client: FlaskClient):

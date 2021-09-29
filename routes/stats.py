@@ -65,10 +65,12 @@ _SOURCE_ROOT_COLORS = {
     "DV": "#ed1c24",
     "BB": "#ffb6c1",
     "Mannlíf": "#ffcc00",  # Gula pressan ;)
+    "Hagstofan": "#828282",
+    "Bændablaðið": "#41938A",
 }
 
 
-def chart_stats(session=None, num_days: int=7) -> Dict[str, Any]:
+def chart_stats(session=None, num_days: int = 7) -> Dict[str, Any]:
     """ Return scraping and parsing stats for charts """
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     labels = []
@@ -84,8 +86,8 @@ def chart_stats(session=None, num_days: int=7) -> Dict[str, Any]:
             start = today - timedelta(days=days_back)
             end = today - timedelta(days=days_back - 1)
 
-            # Generate label
-            dfmtstr = "%-d. %b" if start < today - timedelta(days=6) else "%a %-d. %b"
+            # Generate date label
+            dfmtstr = "%a %-d. %b"
             labels.append(start.strftime(dfmtstr))
 
             sent = 0
@@ -134,13 +136,15 @@ def chart_stats(session=None, num_days: int=7) -> Dict[str, Any]:
     }
 
 
-def top_authors(days: int=_TOP_AUTHORS_PERIOD, session: Optional[Session]=None):
+def top_authors(
+    days: int = _TOP_AUTHORS_PERIOD, session: Optional[Session] = None
+) -> List[Dict[str, Any]]:
     """ Generate list of top authors w. parse percentage. """
     end = datetime.utcnow()
     start = end - timedelta(days=days)
-    authors = list(BestAuthorsQuery.period(
-        start, end, enclosing_session=session, min_articles=10
-    ))[:20]
+    authors = list(
+        BestAuthorsQuery.period(start, end, enclosing_session=session, min_articles=10)
+    )[:20]
 
     authresult = list()
     with GreynirBin.get_db() as bindb:

@@ -28,7 +28,7 @@ from datetime import datetime
 import logging
 
 from flask import request, abort
-from werkzeug.wrappers import Response
+from flask.wrappers import Response
 
 from settings import Settings
 

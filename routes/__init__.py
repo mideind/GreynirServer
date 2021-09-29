@@ -38,14 +38,13 @@ from flask import (
     jsonify,
     make_response,
     current_app,
-    Request,
     abort,
     request,
     url_for,
 )
+from flask.wrappers import Response, Request
 from flask import _request_ctx_stack  # type: ignore
 from flask.ctx import RequestContext
-from werkzeug.wrappers import Response
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import HTTPException, InternalServerError
 import flask_caching  # type: ignore
@@ -67,12 +66,13 @@ cache: flask_caching.Cache = current_app.config["CACHE"]
 routes: Blueprint = Blueprint("routes", __name__)
 
 
-def max_age(seconds: int) -> Callable[[Callable[..., Response]], Callable[..., Response]]:
+def max_age(
+    seconds: int,
+) -> Callable[[Callable[..., Response]], Callable[..., Response]]:
     """Caching decorator for Flask - augments response
     with a max-age cache header"""
 
     def decorator(f: Callable[..., Response]) -> Callable[..., Response]:
-
         @wraps(f)
         def decorated_function(*args: Any, **kwargs: Any) -> Response:
             resp = f(*args, **kwargs)
@@ -244,7 +244,9 @@ class _RequestProxy:
         """Create an instance that walks and quacks sufficiently similarly
         to the Flask Request object in rq"""
         self.method = rq.method
-        self.headers: Dict[str, str] = {k: v for k, v in cast(Dict[str, str], rq.headers)}
+        self.headers: Dict[str, str] = {
+            k: v for k, v in cast(Dict[str, str], rq.headers)
+        }
         self.environ = rq.environ
         self.blueprint = rq.blueprint
         self.progress_func: Optional[ProgressFunc] = None

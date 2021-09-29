@@ -51,9 +51,8 @@ from sqlalchemy.orm.relationships import RelationshipProperty
 
 
 class CaseInsensitiveComparator(Comparator):
-
-    """ Boilerplate from the PostgreSQL documentation to implement
-        a case-insensitive comparator """
+    """Boilerplate from the PostgreSQL documentation to implement
+    a case-insensitive comparator"""
 
     # See https://docs.sqlalchemy.org/en/13/orm/extensions/hybrid.html
 
@@ -72,7 +71,6 @@ setattr(Base, "table", classmethod(lambda cls: cls.__table__))
 
 
 class Root(Base):
-
     """ Represents a scraper root, i.e. a base domain and root URL """
 
     __tablename__ = "roots"
@@ -110,9 +108,8 @@ class Root(Base):
 
 
 class Article(Base):
-
-    """ Represents an article from one of the roots, to be scraped
-        or having already been scraped """
+    """Represents an article from one of the roots, to be scraped
+    or having already been scraped"""
 
     __tablename__ = "articles"
 
@@ -191,7 +188,6 @@ class Article(Base):
 
 
 class Person(Base):
-
     """ Represents a person """
 
     __tablename__ = "persons"
@@ -237,7 +233,6 @@ class Person(Base):
 
 
 class Entity(Base):
-
     """ Represents a named entity """
 
     __tablename__ = "entities"
@@ -289,7 +284,6 @@ class Entity(Base):
 
 
 class Location(Base):
-
     """ Represents a location """
 
     __tablename__ = "locations"
@@ -347,7 +341,6 @@ class Location(Base):
 
 
 class Word(Base):
-
     """ Represents a word occurring in an article """
 
     __tablename__ = "words"
@@ -384,7 +377,6 @@ class Word(Base):
 
 
 class Topic(Base):
-
     """ Represents a topic for an article """
 
     __tablename__ = "topics"
@@ -416,7 +408,6 @@ class Topic(Base):
 
 
 class ArticleTopic(Base):
-
     """ Represents an article having a topic, a 1:N relationship """
 
     __tablename__ = "atopics"
@@ -449,7 +440,6 @@ class ArticleTopic(Base):
 
 
 class Trigram(Base):
-
     """ Represents a trigram of tokens from a parsed sentence """
 
     __tablename__ = "trigrams"
@@ -504,8 +494,8 @@ class Trigram(Base):
 
 
 class Link(Base):
-    """ Represents a (content-type, key) to URL mapping,
-        usable for instance to cache image searches """
+    """Represents a (content-type, key) to URL mapping,
+    usable for instance to cache image searches"""
 
     __tablename__ = "links"
 
@@ -555,8 +545,7 @@ class BlacklistedLink(Base):
 
 
 class Query(Base):
-
-    """ Represents a logged incoming query with its answer """
+    """ Represents a logged incoming query with its answer and client data. """
 
     __tablename__ = "queries"
 
@@ -667,7 +656,6 @@ class Query(Base):
 
 
 class QueryLog(Base):
-
     """ Represents a fully anonymized, logged query and its answer. """
 
     __tablename__ = "querylog"
@@ -723,6 +711,7 @@ class QueryLog(Base):
 
 
 class QueryData(Base):
+    """ Represents client data saved from a processed query. """
 
     __tablename__ = "querydata"
 

@@ -56,8 +56,8 @@ from settings import Settings, ConfigError
 from article import Article as ArticleProxy
 
 from platform import system as os_name
-from reynir import __version__ as greynir_version
-from tokenizer import __version__ as tokenizer_version
+from reynir.version import __version__ as greynir_version
+from tokenizer.version import __version__ as tokenizer_version
 
 
 # RUNNING_AS_SERVER is True if we're executing under nginx/Gunicorn,
@@ -101,7 +101,9 @@ def make_pattern(rep_dict: Dict[str, str]) -> Pattern[str]:
     return re.compile("|".join([re.escape(k) for k in rep_dict.keys()]), re.M)
 
 
-def multiple_replace(s: str, rep_dict: Dict[str, str], pattern: Optional[Pattern[str]] = None) -> str:
+def multiple_replace(
+    s: str, rep_dict: Dict[str, str], pattern: Optional[Pattern[str]] = None
+) -> str:
     """ Perform multiple simultaneous replacements within string """
     if pattern is None:
         pattern = make_pattern(rep_dict)
@@ -127,9 +129,11 @@ def format_ts(ts: datetime) -> str:
 
 # Flask cache busting for static .css and .js files
 @app.url_defaults
-def hashed_url_for_static_file(endpoint: str, values: Dict[str, Union[int, str]]) -> None:
-    """ Add a ?h=XXX parameter to URLs for static .js and .css files,
-        where XXX is calculated from the file timestamp """
+def hashed_url_for_static_file(
+    endpoint: str, values: Dict[str, Union[int, str]]
+) -> None:
+    """Add a ?h=XXX parameter to URLs for static .js and .css files,
+    where XXX is calculated from the file timestamp"""
 
     def static_file_hash(filename: str):
         """ Obtain a timestamp for the given file """

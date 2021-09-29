@@ -36,7 +36,7 @@ import re
 from datetime import datetime
 
 from db.models import Entity
-from reynir import Abbreviations
+from tokenizer import Abbreviations
 
 from query import QueryStateDict
 from tree import Result
@@ -535,8 +535,8 @@ def visit(state, node):
 
 
 def EfLiður(node, params, result):
-    """ Ekki láta sérnafn lifa í gegn um eignarfallslið, nema
-        það sé fyrirtækisnafn, sbr. 'Eimskipafélag Íslands hf.' """
+    """Ekki láta sérnafn lifa í gegn um eignarfallslið, nema
+    það sé fyrirtækisnafn, sbr. 'Eimskipafélag Íslands hf.'"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
     # Ekki breyta eignarfallsliðum í nefnifall
     result._nominative = result._text
