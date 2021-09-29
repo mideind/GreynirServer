@@ -63,7 +63,7 @@ _TEXT_FORMATS = frozenset(("text", "ssml"))
 
 
 def _initialize_client() -> Optional[boto3.Session]:
-    """ Set up AWS Polly client """
+    """Set up AWS Polly client"""
     global _api_client
 
     # Make sure that only one thread is messing with the global variable
@@ -97,7 +97,7 @@ def get_synthesized_text_url(
     voice_id: Optional[str] = _DEFAULT_VOICE,
     speed: float = 1.0,
 ) -> Optional[str]:
-    """ Returns AWS URL to audio file with speech-synthesised text """
+    """Returns AWS URL to audio file with speech-synthesised text"""
 
     assert txt_format in _TEXT_FORMATS
 
@@ -157,8 +157,17 @@ def get_synthesized_text_url(
 
 
 if __name__ == "__main__":
-    """ Test speech synthesis through command line invocation """
+    """Test speech synthesis through command line invocation"""
+    import requests
+
     txt = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "Góðan daginn, félagi."
+    fn = "_".join([t.lower() for t in txt.split()]) + ".mp3"
 
     url = get_synthesized_text_url(txt)
-    print(url)
+    print(f"Downloading URL {url}")
+    r = requests.get(url)
+    # print(url)
+    # print(fn)
+    print(f'Writing to file "{fn}"')
+    with open(fn, "wb") as f:
+        f.write(r.content)
