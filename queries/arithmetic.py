@@ -57,7 +57,6 @@ TOPIC_LEMMAS: Sequence[str] = [
     "prósent",
     "prósenta",
     "hundraðshluti",
-    "hlutfall",
     "frádreginn",
     "viðbættur",
 ]
@@ -384,7 +383,7 @@ QArPiQuery →
 
 
 def parse_num(num_str: str) -> float:
-    """ Parse Icelandic number string to float or int """
+    """Parse Icelandic number string to float or int"""
     num = None
     try:
         # Pi
@@ -415,7 +414,7 @@ def parse_num(num_str: str) -> float:
 
 
 def add_num(num: Optional[Union[str, int, float]], result: Result):
-    """ Add a number to accumulated number args """
+    """Add a number to accumulated number args"""
     if "numbers" not in result:
         result.numbers = []
     rn = cast(List[float], result.numbers)
@@ -467,7 +466,7 @@ def QArFractionWord(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QArMultOperator(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ 'tvisvar_sinnum', 'þrisvar_sinnum', 'fjórum_sinnum' """
+    """'tvisvar_sinnum', 'þrisvar_sinnum', 'fjórum_sinnum'"""
     add_num(result._nominative, result)
     result.operator = "multiply"
 
@@ -629,7 +628,7 @@ _VAT_MULT = 1.24
 
 
 def calc_arithmetic(query: Query, result: Result) -> Optional[AnswerTuple]:
-    """ Calculate the answer to an arithmetic query """
+    """Calculate the answer to an arithmetic query"""
     operator = result.operator
     nums = result.numbers
     # Replace period with Icelandic comma in query answer
@@ -724,7 +723,7 @@ def calc_arithmetic(query: Query, result: Result) -> Optional[AnswerTuple]:
 
 
 def pi_answer(q: Query, result: Result) -> AnswerTuple:
-    """ Define pi (π) """
+    """Define pi (π)"""
     answer = "Talan π („pí“) er stærðfræðilegi fastinn 3,14159265359 eða þar um bil."
     voice = floats_to_text(
         "Talan pí er stærðfræðilegi fastinn 3,14159265359 eða þar um bil.", gender="kk"
@@ -735,7 +734,7 @@ def pi_answer(q: Query, result: Result) -> AnswerTuple:
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q = state["query"]
     if "qtype" in result:
         # Successfully matched a query type
