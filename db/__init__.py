@@ -41,10 +41,10 @@ from .models import Base
 
 
 class Scraper_DB:
-    """ Wrapper around the SQLAlchemy connection, engine and session """
+    """Wrapper around the SQLAlchemy connection, engine and session"""
 
     def __init__(self) -> None:
-        """ Initialize the SQLAlchemy connection to the scraper database """
+        """Initialize the SQLAlchemy connection to the scraper database"""
 
         # Assemble the connection string, using psycopg2cffi which
         # supports both PyPy and CPython
@@ -63,16 +63,16 @@ class Scraper_DB:
         )
 
     def create_tables(self) -> None:
-        """ Create all missing tables in the database """
+        """Create all missing tables in the database"""
         Base.metadata.create_all(self._engine)  # type: ignore
 
     def execute(self, sql: str, **kwargs: Any) -> CursorResult:
-        """ Execute raw SQL directly on the engine """
+        """Execute raw SQL directly on the engine"""
         return self._engine.execute(sql, **kwargs)  # type: ignore
 
     @property
     def session(self) -> Session:
-        """ Returns a freshly created Session instance from the sessionmaker """
+        """Returns a freshly created Session instance from the sessionmaker"""
         return self._Session()
 
 
@@ -80,8 +80,7 @@ T = TypeVar("T")
 
 
 class classproperty(Generic[T]):
-
-    """ A helper that creates read-only class properties """
+    """A helper that creates read-only class properties"""
 
     def __init__(self, f: Callable[..., T]) -> None:
         self.f = f
@@ -91,7 +90,7 @@ class classproperty(Generic[T]):
 
 
 class SessionContext:
-    """ Context manager for database sessions """
+    """Context manager for database sessions"""
 
     # Singleton instance of Scraper_DB
     _db: Optional[Scraper_DB] = None
@@ -105,7 +104,7 @@ class SessionContext:
 
     @classmethod
     def cleanup(cls) -> None:
-        """ Clean up the reference to the singleton Scraper_DB instance """
+        """Clean up the reference to the singleton Scraper_DB instance"""
         cls._db = None
 
     def __init__(
@@ -134,7 +133,7 @@ class SessionContext:
             self._commit = False
 
     def __enter__(self) -> Session:
-        """ Python context manager protocol """
+        """Python context manager protocol"""
         # Return the wrapped database session
         return self._session
 
@@ -142,7 +141,7 @@ class SessionContext:
     def __exit__(
         self, exc_type: Type[BaseException], exc_value: BaseException, traceback: Any
     ) -> Literal[False]:
-        """ Python context manager protocol """
+        """Python context manager protocol"""
         if self._new_session:
             if self._commit:
                 if exc_type is None:
