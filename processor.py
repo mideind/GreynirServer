@@ -59,7 +59,7 @@ _PROFILING = False
 
 
 def modules_in_dir(directory: str) -> List[str]:
-    """ Find all python modules in a given directory """
+    """Find all python modules in a given directory"""
     files = os.listdir(directory)
     modnames: List[str] = list()
     for fname in files:
@@ -73,19 +73,16 @@ def modules_in_dir(directory: str) -> List[str]:
 
 
 class TokenContainer:
-
-    """ Class wrapper around tokens """
+    """Class wrapper around tokens"""
 
     def __init__(self, tokens_json: str, url: str, authority: float) -> None:
         self.tokens = json.loads(tokens_json)
         self.url = url
         self.authority = authority
 
-    def process(
-        self, session: Session, processor: ModuleType, **kwargs: Any
-    ) -> None:
-        """ Process tokens for an entire article.  Iterate over each paragraph,
-            sentence and token, calling revelant functions in processor module. """
+    def process(self, session: Session, processor: ModuleType, **kwargs: Any) -> None:
+        """Process tokens for an entire article.  Iterate over each paragraph,
+        sentence and token, calling revelant functions in processor module."""
 
         assert processor is not None
 
@@ -156,21 +153,25 @@ class TokenContainer:
             article_end(state)
 
 
-class Processor:
+_PROCESSOR_TYPE_TREE = "tree"
+_PROCESSOR_TYPE_TOKEN = "token"
+_PROCESSOR_TYPES = frozenset((_PROCESSOR_TYPE_TREE, _PROCESSOR_TYPE_TOKEN))
 
-    """ The worker class that processes parsed articles """
+
+class Processor:
+    """The worker class that processes parsed articles"""
 
     _db: Optional[Scraper_DB] = None
 
     @classmethod
     def _init_class(cls) -> None:
-        """ Initialize class attributes """
+        """Initialize class attributes"""
         if cls._db is None:
             cls._db = Scraper_DB()
 
     @classmethod
     def cleanup(cls) -> None:
-        """ Perform any cleanup """
+        """Perform any cleanup"""
         cls._db = None
 
     def __init__(
@@ -226,8 +227,8 @@ class Processor:
                 )
 
     def go_single(self, url: str) -> None:
-        """ Single article processor that will be called by a process within a
-            multiprocessing pool """
+        """Single article processor that will be called by a process within a
+        multiprocessing pool"""
 
         assert self._db is not None
 
@@ -260,16 +261,14 @@ class Processor:
                         # Run all processors in turn
                         for p in self.pmodules:
                             ptype: str = getattr(p, "PROCESSOR_TYPE")
-                            if ptype == "tree":
+                            if ptype == _PROCESSOR_TYPE_TREE:
                                 tree.process(session, p)
-                            elif ptype == "token":
+                            elif ptype == _PROCESSOR_TYPE_TOKEN:
                                 token_container.process(session, p)
                             else:
                                 assert (
                                     False
-                                ), "Unknown processor type '{0}'; should be 'tree' or 'token'".format(
-                                    ptype
-                                )
+                                ), f"Unknown processor type '{ptype}'; should be in {_PROCESSOR_TYPES}"
 
                     # Mark the article as being processed
                     article.processed = datetime.utcnow()
@@ -290,9 +289,14 @@ class Processor:
         sys.stdout.flush()
 
     def go(
-        self, from_date: Optional[datetime]=None, limit: int=0, force: bool=False, update: bool=False, title: Optional[str]=None
+        self,
+        from_date: Optional[datetime] = None,
+        limit: int = 0,
+        force: bool = False,
+        update: bool = False,
+        title: Optional[str] = None,
     ) -> None:
-        """ Process already parsed articles from the database """
+        """Process already parsed articles from the database"""
 
         # noinspection PyComparisonWithNone,PyShadowingNames
         def iter_parsed_articles() -> Iterable[str]:
@@ -300,7 +304,7 @@ class Processor:
             assert self._db is not None
 
             with closing(self._db.session) as session:
-                """ Go through parsed articles and process them """
+                """Go through parsed articles and process them"""
                 field: Callable[[Any], str]
                 if title is not None:
                     # Use a title query on Person to find the URLs to process
@@ -352,15 +356,15 @@ class Processor:
 
 
 def process_articles(
-    from_date: Optional[datetime]=None,
-    limit: int=0,
-    force: bool=False,
-    update: bool=False,
-    title: Optional[str]=None,
-    processor: Optional[str]=None,
-    num_workers: Optional[int]=None,
+    from_date: Optional[datetime] = None,
+    limit: int = 0,
+    force: bool = False,
+    update: bool = False,
+    title: Optional[str] = None,
+    processor: Optional[str] = None,
+    num_workers: Optional[int] = None,
 ) -> None:
-    """ Process multiple articles according to the given parameters """
+    """Process multiple articles according to the given parameters"""
     print("------ Greynir starting processing -------")
     if from_date:
         print("From date: {0}".format(from_date))
@@ -401,8 +405,8 @@ def process_articles(
     print("Time: {0}\n".format(ts))
 
 
-def process_article(url: str, processor: Optional[str]=None) -> None:
-    """ Process a single article, eventually with a single processor """
+def process_article(url: str, processor: Optional[str] = None) -> None:
+    """Process a single article, eventually with a single processor"""
     try:
         proc = Processor(processor_directory="processors", single_processor=processor)
         proc.go_single(url)
@@ -417,7 +421,7 @@ class Usage(Exception):
 
 
 def init_db() -> None:
-    """ Initialize the database, to the extent required """
+    """Initialize the database, to the extent required"""
     db = Scraper_DB()
     try:
         db.create_tables()
@@ -448,8 +452,8 @@ __doc__ = """
 """
 
 
-def _main(argv: Optional[List[str]]=None) -> int:
-    """ Guido van Rossum's pattern for a Python main function """
+def _main(argv: Optional[List[str]] = None) -> int:
+    """Guido van Rossum's pattern for a Python main function"""
     if argv is None:
         argv = sys.argv
     try:
@@ -471,6 +475,7 @@ def _main(argv: Optional[List[str]]=None) -> int:
             )
         except getopt.error as msg:
             raise Usage(str(msg))
+
         limit = 10  # Default number of articles to parse, unless otherwise specified
         init = False
         url = None
@@ -479,6 +484,7 @@ def _main(argv: Optional[List[str]]=None) -> int:
         title = None  # Title pattern
         proc = None  # Single processor to invoke
         num_workers = None  # Number of workers to run simultaneously
+
         # Process options
         for o, a in opts:
             if o in ("-h", "--help"):
@@ -516,9 +522,7 @@ def _main(argv: Optional[List[str]]=None) -> int:
             # Initialize the scraper database
             init_db()
         else:
-
             # Read the configuration settings file
-
             try:
                 Settings.read("config/Greynir.conf")
                 # Don't run the processor in debug mode
@@ -561,7 +565,7 @@ def _main(argv: Optional[List[str]]=None) -> int:
 
 
 def main() -> None:
-    """ Main function to invoke for profiling """
+    """Main function to invoke for profiling"""
     import cProfile as profile
     import pstats
 
