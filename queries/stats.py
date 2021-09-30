@@ -251,7 +251,7 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
 
 
 def _gen_num_people_answer(q: Query) -> bool:
-    """ Answer questions about person database. """
+    """Answer questions about person database."""
     with SessionContext(read_only=True) as session:
         qr = session.query(Person.name).distinct().count()
 
@@ -274,7 +274,7 @@ _QUERIES_PERIOD = 30  # days
 
 
 def _gen_num_queries_answer(q: Query) -> bool:
-    """ Answer questions concerning the number of queries handled. """
+    """Answer questions concerning the number of queries handled."""
     with SessionContext(read_only=True) as session:
         qr = (
             session.query(QueryModel.id)
@@ -332,7 +332,7 @@ _QTYPE_TO_DESC = {
 
 
 def _gen_most_freq_queries_answer(q: Query) -> bool:
-    """ Answer question concerning most frequent queries. """
+    """Answer question concerning most frequent queries."""
     with SessionContext(read_only=True) as session:
         now = datetime.utcnow()
         start = now - timedelta(days=_QUERIES_PERIOD)
@@ -364,7 +364,7 @@ _MOST_MENTIONED_PERIOD = 7  # Days
 
 
 def _gen_most_mentioned_answer(q: Query) -> bool:
-    """ Answer questions about the most mentioned/talked about people in Icelandic news. """
+    """Answer questions about the most mentioned/talked about people in Icelandic news."""
     top = top_persons(limit=_MOST_MENTIONED_COUNT, days=_MOST_MENTIONED_PERIOD)
 
     q.set_qtype(_STATS_QTYPE)
@@ -393,7 +393,7 @@ _Q2HANDLER = {
 
 
 def handle_plain_text(q: Query) -> bool:
-    """ Handle a plain text query about query statistics. """
+    """Handle a plain text query about query statistics."""
     ql = q.query_lower.rstrip("?")
 
     for qset, handler in _Q2HANDLER.items():

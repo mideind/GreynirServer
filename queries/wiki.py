@@ -217,12 +217,12 @@ QWikiPrevSubjectÞgf = QWikiPrevSubjectÞf = QWikiPrevSubjectNf
 
 
 def EfLiður(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Don't change the case of possessive clauses """
+    """Don't change the case of possessive clauses"""
     result._nominative = result._text
 
 
 def FsMeðFallstjórn(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Don't change the case of prepositional clauses """
+    """Don't change the case of prepositional clauses"""
     result._nominative = result._text
 
 
@@ -259,13 +259,13 @@ _WIKI_API_URL = (
 
 
 def _query_wiki_api(subject: str) -> Union[None, List[Any], Dict[str, Any]]:
-    """ Fetch JSON from Wikipedia API """
+    """Fetch JSON from Wikipedia API"""
     url = _WIKI_API_URL.format(subject)
     return query_json_api(url)
 
 
 def get_wiki_summary(subject_nom: str) -> str:
-    """ Fetch summary of subject from Icelandic Wikipedia """
+    """Fetch summary of subject from Icelandic Wikipedia"""
 
     def has_entry(r: Any) -> bool:
         return (
@@ -304,7 +304,7 @@ def get_wiki_summary(subject_nom: str) -> str:
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

@@ -130,7 +130,7 @@ def QUserLocationPostcode(node: Node, params: QueryStateDict, result: Result) ->
 
 
 def _addrinfo_from_api_result(result) -> Tuple:
-    """ Extract relevant address components from Google API result """
+    """Extract relevant address components from Google API result"""
 
     comp = result["address_components"]
 
@@ -203,13 +203,13 @@ def street_desc(street_nom: str, street_num: int, locality_nom: str) -> str:
 
 
 def _locality_desc(locality_nom: str) -> str:
-    """ Return an appropriate preposition plus a locality name in dative case """
+    """Return an appropriate preposition plus a locality name in dative case"""
     locality_dat = nom2dat(locality_nom)
     return iceprep_for_placename(locality_nom) + " " + locality_dat
 
 
 def _addr4voice(addr: str) -> Optional[str]:
-    """ Prepare an address string for voice synthesizer. """
+    """Prepare an address string for voice synthesizer."""
     # E.g. "Fiskislóð 5-9" becomes "Fiskislóð 5 til 9"
     s = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", addr)
     # E.g. "Fiskislóð 31d" becomes "Fiskislóð 31 d"
@@ -311,7 +311,7 @@ def answer_for_postcode(loc: Tuple):
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type

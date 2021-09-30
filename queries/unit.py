@@ -395,7 +395,7 @@ QUnit_kvk/fall →
 
 
 def QUnitConversion(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Unit conversion query """
+    """Unit conversion query"""
     result.qtype = "Unit"
     result.qkey = result.unit_to
 
@@ -471,7 +471,7 @@ def _convert(quantity: float, unit_from: str, unit_to: str) -> Tuple:
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" in result and result.qtype == "Unit":
         # Successfully matched a query type

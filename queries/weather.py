@@ -308,7 +308,7 @@ _OWM_KEY_PATH = os.path.join(
 
 
 def _get_OWM_API_key() -> str:
-    """ Read OpenWeatherMap API key from file """
+    """Read OpenWeatherMap API key from file"""
     global _OWM_API_KEY
     if not _OWM_API_KEY:
         try:
@@ -360,7 +360,7 @@ _BFT_THRESHOLD = (0.3, 1.5, 3.4, 5.4, 7.9, 10.7, 13.8, 17.1, 20.7, 24.4, 28.4, 3
 
 
 def _wind_bft(ms: float) -> int:
-    """ Convert wind from metres per second to Beaufort scale """
+    """Convert wind from metres per second to Beaufort scale"""
     if ms is None:
         return 0
     ix = 0
@@ -397,7 +397,7 @@ def _wind_descr(wind_ms: float) -> Optional[str]:
 
 
 def _round_to_nearest_hour(t: datetime) -> datetime:
-    """ Round datetime to nearest hour """
+    """Round datetime to nearest hour"""
     return t.replace(second=0, microsecond=0, minute=0, hour=t.hour) + timedelta(
         hours=t.minute // 30
     )
@@ -472,7 +472,7 @@ _API_ERRMSG = "Ekki tókst að sækja veðurupplýsingar."
 
 
 def get_currweather_answer(query: Query, result) -> AnswerTuple:
-    """ Handle queries concerning current weather conditions """
+    """Handle queries concerning current weather conditions"""
     res = _curr_observations(query, result)
     if not res:
         return gen_answer(_API_ERRMSG)
@@ -551,7 +551,7 @@ _CAPITAL_FC_ID = 3
 
 
 def get_forecast_answer(query: Query, result) -> AnswerTuple:
-    """ Handle weather forecast queries """
+    """Handle weather forecast queries"""
     loc = query.location
     txt_id = _CAPITAL_FC_ID if (loc and near_capital_region(loc)) else _COUNTRY_FC_ID
 
@@ -613,17 +613,17 @@ def QWeatherOpenLoc(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def Nl(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Noun phrase containing name of specific location """
+    """Noun phrase containing name of specific location"""
     result["location"] = cap_first(result._nominative)
 
 
 def EfLiður(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Don't change the case of possessive clauses """
+    """Don't change the case of possessive clauses"""
     result._nominative = result._text
 
 
 def FsMeðFallstjórn(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Don't change the case of prepositional clauses """
+    """Don't change the case of prepositional clauses"""
     result._nominative = result._text
 
 
@@ -655,7 +655,7 @@ _HANDLERS = {
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type

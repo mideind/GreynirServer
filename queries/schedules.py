@@ -522,9 +522,7 @@ def _get_program_start_end(
     elif station == _STOD_TVO:
         start = datetime.datetime.strptime(program["upphaf"], "%Y-%m-%dT%H:%M:%SZ")
         d = list(map(int, program["slotlengd"].split(":")))
-        duration = datetime.timedelta(
-            hours=d[0], minutes=d[1], seconds=0
-        )
+        duration = datetime.timedelta(hours=d[0], minutes=d[1], seconds=0)
     else:
         # Unknown station
         start = datetime.datetime.utcnow()

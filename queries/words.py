@@ -100,7 +100,7 @@ _DECLENSION_RX = (
 
 
 def lookup_best_word(word: str) -> Optional[Tuple[str, str, str, str]]:
-    """ Look up word in BÍN, pick right one acc. to a criterion. """
+    """Look up word in BÍN, pick right one acc. to a criterion."""
     with GreynirBin().get_db() as db:
 
         def nouns_only(bin_meaning: BIN_Tuple) -> bool:
@@ -175,7 +175,7 @@ _LETTER_INTERVAL = 0.3  # Seconds
 
 
 def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
-    """ Spell out a word provided in a query. """
+    """Spell out a word provided in a query."""
 
     # Generate list of characters in word
     chars = list(word)
@@ -203,7 +203,7 @@ def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
 
 
 def handle_plain_text(q: Query) -> bool:
-    """ Handle a plain text query, contained in the q parameter. """
+    """Handle a plain text query, contained in the q parameter."""
     ql = q.query_lower.rstrip("?")
 
     matches = None

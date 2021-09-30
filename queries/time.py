@@ -132,7 +132,7 @@ _LOC2NOM_FIXES = {
 
 
 def _loc2nom(loc: str) -> str:
-    """ Return location name in nominative case. """
+    """Return location name in nominative case."""
     fix = _LOC2NOM_FIXES.get(loc)
     if fix:
         return fix
