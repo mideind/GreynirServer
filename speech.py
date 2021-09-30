@@ -53,7 +53,7 @@ _VOICES = frozenset(("Dora", "Karl"))
 
 # Audio formats
 _DEFAULT_AUDIO_FORMAT = "mp3"
-#  _AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
+_SUPPORTED_AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
 
 # Text formats
 # For details about SSML markup, see:
@@ -94,12 +94,14 @@ _CACHE_MAXITEMS = 30
 def get_synthesized_text_url(
     text: str,
     txt_format: str = _DEFAULT_TEXT_FORMAT,
+    audio_format: str = _DEFAULT_AUDIO_FORMAT,
     voice_id: Optional[str] = _DEFAULT_VOICE,
     speed: float = 1.0,
 ) -> Optional[str]:
     """Returns AWS URL to audio file with speech-synthesised text"""
 
     assert txt_format in _TEXT_FORMATS
+    assert audio_format in _SUPPORTED_AUDIO_FORMATS
 
     client = _initialize_client()  # Set up client lazily
     if client is None:
@@ -130,7 +132,7 @@ def get_synthesized_text_url(
         # The text to synthesize
         "Text": text,
         # mp3 | ogg_vorbis | pcm
-        "OutputFormat": _DEFAULT_AUDIO_FORMAT,
+        "OutputFormat": audio_format,
         # Dora or Karl
         "VoiceId": voice_id,
         # Valid values for mp3 and ogg_vorbis are "8000", "16000", and "22050".
@@ -158,16 +160,34 @@ def get_synthesized_text_url(
 
 if __name__ == "__main__":
     """Test speech synthesis through command line invocation"""
-    import requests
+    args = sys.argv
 
-    txt = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "Góðan daginn, félagi."
-    fn = "_".join([t.lower() for t in txt.split()]) + ".mp3"
+    audio_fmt = _DEFAULT_AUDIO_FORMAT
+    # Optionally, specify audio format as last argument
+    if args[-1] in _SUPPORTED_AUDIO_FORMATS:
+        audio_fmt = args[-1]
+        args.pop()
 
-    url = get_synthesized_text_url(txt)
-    print(f"Downloading URL {url}")
-    r = requests.get(url)
-    # print(url)
-    # print(fn)
-    print(f'Writing to file "{fn}"')
-    with open(fn, "wb") as f:
-        f.write(r.content)
+    txt = " ".join(args[1:]) if len(args) > 1 else "Góðan daginn, félagi"
+    fn = "_".join([t.lower() for t in txt.split()]) + "." + audio_fmt
+
+    url = get_synthesized_text_url(txt, audio_format=audio_fmt)
+    if url:
+        import requests
+
+        print(f"Downloading URL {url}")
+        r = requests.get(url)
+
+        print(f'Writing to file "{fn}"')
+        with open(fn, "wb") as f:
+            f.write(r.content)
+
+        # If running on a system that can play audio via shell
+        AFPLAY_PATH = "/usr/bin/afplay"
+        MPG123_PATH = "/usr/bin/mpg123"
+        if os.path.exists(AFPLAY_PATH):
+            os.system(f"{AFPLAY_PATH} {fn}")
+        elif os.path.exists(MPG123_PATH):
+            os.system(f"{MPG123_PATH} {fn}")
+    else:
+        raise Exception("Error generating speech synthesis URL")
