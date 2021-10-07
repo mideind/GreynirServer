@@ -74,10 +74,15 @@ _TIME_QUERIES = frozenset(
     (
         "klukkan",
         "tíminn",
+        "núna",
         "hvað klukkan",
+        "hvað klukkan núna",
         "hver klukkan",
         "hvað tíminn",
+        "hvað tíminn núna",
         "hver tíminn",
+        "tíminn núna",
+        "klukkan núna",
         "hvað er klukkan",
         "hvað er klukkan eiginlega",
         "hvað er klukkan nákvæmlega",
@@ -88,6 +93,7 @@ _TIME_QUERIES = frozenset(
         "hver er klukkan núna",
         "hver er klukkan nákvæmlega",
         "hver er klukkan eins og stendur",
+        "hver tíminn",
         "hvað er tíminn",
         "hvað er tíminn núna",
         "hvað er tíminn nákvæmlega",
@@ -97,7 +103,9 @@ _TIME_QUERIES = frozenset(
         "hver er tíminn nákvæmlega",
         "hver er tíminn eins og stendur",
         "hvað líður tímanum",
+        "veistu hvað klukkan",
         "veistu hvað klukkan er",
+        "veist þú hvað klukkan",
         "veist þú hvað klukkan er",
         "veistu hvað klukkan er núna",
         "veist þú hvað klukkan er núna",
@@ -140,12 +148,7 @@ def _loc2nom(loc: str) -> str:
 
 
 def handle_plain_text(q: Query) -> bool:
-    """Handle a plain text query, contained in the q parameter
-    which is an instance of the query.Query class.
-    Returns True if the query was handled, and in that case
-    the appropriate properties on the Query instance have
-    been set, such as the answer and the query type (qtype).
-    If the query is not recognized, returns False."""
+    """Handle plain text query."""
     ql = q.query_lower.rstrip("?")
 
     # Timezone being asked about
