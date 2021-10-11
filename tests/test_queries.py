@@ -1200,10 +1200,58 @@ def _cleanup() -> None:
         # so we cannot delete the logged queries there by this criterion.
 
 
+QUERY_HISTORY_ENDPOINT = "/query_history.api?"
+
+
 def test_query_history_api(client: FlaskClient) -> None:
     """Tests for the query history deletion API endpoint."""
     if not has_greynir_api_key():
+        # We don't run these tests unless a Greynir API key is present
         return
+
+    def _verify_basic(r: Any) -> Dict:
+        """Make sure the server response is minimally sane."""
+        assert r.content_type.startswith(API_CONTENT_TYPE)
+        assert r.is_json
+        json = r.get_json()
+        assert json
+        assert "valid" in json
+        return json
+
+    # Create query param dict
+    qdict: Dict[str, Any] = dict(
+        api_key=read_api_key("GreynirServerKey"),
+        action="clear",
+        client_id=DUMMY_CLIENT_ID,
+    )
+
+    from copy import deepcopy
+
+    # Send valid requests
+    for action in ["clear", "clear_all"]:
+        qd = deepcopy(qdict)
+        qd["action"] = action
+        r = client.get(QUERY_HISTORY_ENDPOINT + urlencode(qdict))
+        json = _verify_basic(r)
+        assert json["valid"]
+
+    # Send invalid requests with missing keys
+    # We expect "valid" key to be false in dict returned
+    for qkey in ["api_key", "action", "client_id"]:
+        qd = deepcopy(qdict)
+        qd.pop(qkey, None)
+        r = client.get(QUERY_HISTORY_ENDPOINT + urlencode(qd))
+        json = _verify_basic(r)
+        assert json["valid"] == False
+        assert "errmsg" in json
+
+    # Send request with unsupported action
+    qd = deepcopy(qdict)
+    qd["action"] = "dance_in_the_moonlight"
+    r = client.get(QUERY_HISTORY_ENDPOINT + urlencode(qd))
+    json = _verify_basic(r)
+    assert json["valid"] == False
+    assert "errmsg" in json
 
 
 def test_query_utility_functions() -> None:

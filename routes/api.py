@@ -485,24 +485,22 @@ def query_history_api(version: int = 1) -> Response:
     resp: Dict[str, Any] = dict(valid=True)
 
     # Calling this endpoint requires the Greynir API key
-    # TODO: Enable when clients (iOS, Android) have been updated
     key = request.values.get("api_key")
     gak = read_api_key("GreynirServerKey")
     if not gak or not key or key != gak:
         resp["errmsg"] = "Invalid or missing API key."
+        resp["valid"] = False
         return better_jsonify(**resp)
 
+    VALID_ACTIONS = frozenset(("clear", "clear_all"))
+
     action = request.values.get("action")
-    # client_type = request.values.get("client_type")
-    # client_version = request.values.get("client_version")
     client_id = request.values.get("client_id")
 
-    valid_actions = ("clear", "clear_all")
-
     if not client_id:
-        return better_jsonify(valid=False, reason="Missing parameters")
-    if action not in valid_actions:
-        return better_jsonify(valid=False, reason="Invalid action parameter")
+        return better_jsonify(valid=False, errmsg="Missing parameters")
+    if action not in VALID_ACTIONS:
+        return better_jsonify(valid=False, errmsg="Invalid action parameter")
 
     with SessionContext(commit=True) as session:
         # Clear all logged user queries
