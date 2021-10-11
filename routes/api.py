@@ -62,7 +62,7 @@ _MIDEIND_LOCATION = (64.156896, -21.951200)  # Fiskislóð 31, 101 Reykjavík
 @routes.route("/ifdtag.api", methods=["GET", "POST"])
 @routes.route("/ifdtag.api/v<int:version>", methods=["GET", "POST"])
 def ifdtag_api(version: int = 1) -> Response:
-    """ API to parse text and return IFD tagged tokens in a simple and sparse JSON format """
+    """API to parse text and return IFD tagged tokens in a simple and sparse JSON format"""
     if not (1 <= version <= 1):
         # Unsupported version
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -184,7 +184,7 @@ def correct_task(version: int = 1) -> Response:
 @routes.route("/postag.api", methods=["GET", "POST"])
 @routes.route("/postag.api/v<int:version>", methods=["GET", "POST"])
 def postag_api(version: int = 1) -> Response:
-    """ API to parse text and return POS tagged tokens in a verbose JSON format """
+    """API to parse text and return POS tagged tokens in a verbose JSON format"""
     if not (1 <= version <= 1):
         # Unsupported version
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -222,7 +222,7 @@ def postag_api(version: int = 1) -> Response:
 @routes.route("/parse.api", methods=["GET", "POST"])
 @routes.route("/parse.api/v<int:version>", methods=["GET", "POST"])
 def parse_api(version: int = 1) -> Response:
-    """ API to parse text and return POS tagged tokens in JSON format """
+    """API to parse text and return POS tagged tokens in JSON format"""
     if not (1 <= version <= 1):
         # Unsupported version
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -255,7 +255,7 @@ def parse_api(version: int = 1) -> Response:
 @routes.route("/article.api", methods=["GET", "POST"])
 @routes.route("/article.api/v<int:version>", methods=["GET", "POST"])
 def article_api(version: int = 1) -> Response:
-    """ Obtain information about an article, given its URL or id """
+    """Obtain information about an article, given its URL or id"""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -317,7 +317,7 @@ def article_api(version: int = 1) -> Response:
 @routes.route("/reparse.api", methods=["POST"])
 @routes.route("/reparse.api/v<int:version>", methods=["POST"])
 def reparse_api(version: int = 1) -> Response:
-    """ Reparse an already parsed and stored article with a given UUID """
+    """Reparse an already parsed and stored article with a given UUID"""
     if not (1 <= version <= 1):
         return better_jsonify(valid="False", reason="Unsupported version")
 
@@ -354,7 +354,7 @@ def reparse_api(version: int = 1) -> Response:
 @routes.route("/query.api", methods=["GET", "POST"])
 @routes.route("/query.api/v<int:version>", methods=["GET", "POST"])
 def query_api(version: int = 1) -> Response:
-    """ Respond to a query string """
+    """Respond to a query string"""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -477,20 +477,20 @@ def query_api(version: int = 1) -> Response:
 @routes.route("/query_history.api", methods=["GET", "POST"])
 @routes.route("/query_history.api/v<int:version>", methods=["GET", "POST"])
 def query_history_api(version: int = 1) -> Response:
-    """ Delete query history and/or query data for a particular unique client ID. """
+    """Delete query history and/or query data for a particular unique client ID."""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
+    resp: Dict[str, Any] = dict(valid=True)
+
     # Calling this endpoint requires the Greynir API key
     # TODO: Enable when clients (iOS, Android) have been updated
-    # key = request.values.get("api_key")
-    # gak = read_api_key("GreynirServerKey")
-    # if not gak or not key or key != gak:
-    #     resp["errmsg"] = "Invalid or missing API key."
-    #     return better_jsonify(**resp)
-
-    resp = dict(valid=True)
+    key = request.values.get("api_key")
+    gak = read_api_key("GreynirServerKey")
+    if not gak or not key or key != gak:
+        resp["errmsg"] = "Invalid or missing API key."
+        return better_jsonify(**resp)
 
     action = request.values.get("action")
     # client_type = request.values.get("client_type")
@@ -521,7 +521,7 @@ def query_history_api(version: int = 1) -> Response:
 @routes.route("/speech.api", methods=["GET", "POST"])
 @routes.route("/speech.api/v<int:version>", methods=["GET", "POST"])
 def speech_api(version: int = 1) -> Response:
-    """ Send in text, receive URL to speech-synthesised audio file. """
+    """Send in text, receive URL to speech-synthesised audio file."""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -568,7 +568,7 @@ def speech_api(version: int = 1) -> Response:
 @routes.route("/feedback.api", methods=["POST"])
 @routes.route("/feedback.api/v<int:version>", methods=["POST"])
 def feedback_api(version: int = 1) -> Response:
-    """ Endpoint to accept submitted feedback forms """
+    """Endpoint to accept submitted feedback forms"""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -598,7 +598,7 @@ def feedback_api(version: int = 1) -> Response:
 
 @routes.route("/exit.api", methods=["GET"])
 def exit_api():
-    """ Allow a server to be remotely terminated if running in debug mode """
+    """Allow a server to be remotely terminated if running in debug mode"""
     if not Settings.DEBUG:
         abort(404)
     shutdown_func = request.environ.get("werkzeug.server.shutdown")
