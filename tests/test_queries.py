@@ -1203,6 +1203,10 @@ def _cleanup() -> None:
 QUERY_HISTORY_ENDPOINT = "/query_history.api?"
 
 
+# NB: Do not move this function. Pytest runs tests in the order they
+# appear in the source file, and this test function should be the
+# last to run, since it has the fortuitous side effect of deleting
+# any logged queries/query data saved to the database due to tests.
 def test_query_history_api(client: FlaskClient) -> None:
     """Tests for the query history deletion API endpoint."""
     if not has_greynir_api_key():
@@ -1218,7 +1222,21 @@ def test_query_history_api(client: FlaskClient) -> None:
         assert "valid" in json
         return json
 
-    # Create query param dict
+    def _str2cls(name: str) -> Any:
+        """Get class from name string."""
+        return getattr(sys.modules[__name__], name)
+
+    def _num_logged_query_info(client_id: str, model_name: str) -> int:
+        """Make sure no query or query data associated with
+        the provided client_id exists in database."""
+        assert model_name in ["Query", "QueryData"]
+        with SessionContext(read_only=True) as session:
+            classn = _str2cls(model_name)
+            q = session.query(classn).filter(classn.client_id == client_id)
+            ql = list(q)
+            return len(ql)
+
+    # Create basic query param dict
     qdict: Dict[str, Any] = dict(
         api_key=read_api_key("GreynirServerKey"),
         action="clear",
@@ -1227,25 +1245,41 @@ def test_query_history_api(client: FlaskClient) -> None:
 
     from copy import deepcopy
 
-    # Send valid requests
-    for action in ["clear", "clear_all"]:
-        qd = deepcopy(qdict)
-        qd["action"] = action
-        r = client.get(QUERY_HISTORY_ENDPOINT + urlencode(qdict))
-        json = _verify_basic(r)
-        assert json["valid"]
+    # Make a query module call and make sure it is logged
+    qmcall(client, {"q": "hvað er klukkan", "private": False})
+    assert _num_logged_query_info(DUMMY_CLIENT_ID, "Query") > 0
+    # And try to clear query history via valid call to API endpoint
+    qd = deepcopy(qdict)
+    qd["action"] = "clear"
+    r = client.get(QUERY_HISTORY_ENDPOINT + urlencode(qd))
+    json = _verify_basic(r)
+    assert json["valid"] == True
+    assert _num_logged_query_info(DUMMY_CLIENT_ID, "Query") == 0
+
+    # Make a query module call that is logged AND saves query data
+    qmcall(client, {"q": "Ég heiti Jón Jónsson", "private": False})
+    assert _num_logged_query_info(DUMMY_CLIENT_ID, "Query") > 0
+    assert _num_logged_query_info(DUMMY_CLIENT_ID, "QueryData") > 0
+    # And try to clear query history AND query data via call to API endpoint
+    qd = deepcopy(qdict)
+    qd["action"] = "clear_all"
+    r = client.get(QUERY_HISTORY_ENDPOINT + urlencode(qd))
+    json = _verify_basic(r)
+    assert json["valid"] == True
+    assert _num_logged_query_info(DUMMY_CLIENT_ID, "Query") == 0
+    assert _num_logged_query_info(DUMMY_CLIENT_ID, "QueryData") == 0
 
     # Send invalid requests with missing keys
     # We expect "valid" key to be false in dict returned
     for qkey in ["api_key", "action", "client_id"]:
         qd = deepcopy(qdict)
-        qd.pop(qkey, None)
+        qd.pop(qkey, None)  # Remove req. key from query param dict
         r = client.get(QUERY_HISTORY_ENDPOINT + urlencode(qd))
         json = _verify_basic(r)
         assert json["valid"] == False
         assert "errmsg" in json
 
-    # Send request with unsupported action
+    # Send invalid request with unsupported action
     qd = deepcopy(qdict)
     qd["action"] = "dance_in_the_moonlight"
     r = client.get(QUERY_HISTORY_ENDPOINT + urlencode(qd))
