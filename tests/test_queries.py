@@ -27,6 +27,7 @@ import re
 import os
 import sys
 import pytest
+from copy import deepcopy
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
 
@@ -43,7 +44,7 @@ from main import app  # noqa
 
 from settings import changedlocale  # noqa
 from db import SessionContext  # noqa
-from db.models import Query, QueryData  # noqa
+from db.models import Query, QueryData, QueryLog  # noqa
 from util import read_api_key  # noqa
 
 
@@ -63,9 +64,15 @@ API_CONTENT_TYPE = "application/json"
 DUMMY_CLIENT_ID = "QueryTesting123"
 
 
+# API endpoints tested in this module
+QUERY_API_ENDPOINT = "/query.api"
+QUERY_HISTORY_API_ENDPOINT = "/query_history.api"
+
+
 def qmcall(c: FlaskClient, qdict: Dict[str, Any], qtype: Optional[str] = None) -> Dict:
     """Use passed client object to call query API with
     query string key value pairs provided in dict arg."""
+
     assert isinstance(c, FlaskClient)
 
     # test=1 ensures that we bypass the cache and have a (fixed) location
@@ -85,7 +92,7 @@ def qmcall(c: FlaskClient, qdict: Dict[str, Any], qtype: Optional[str] = None) -
     qstr = urlencode(qdict)
 
     # Use client to call API endpoint
-    r = c.get("/query.api?" + qstr)
+    r = c.get(f"{QUERY_API_ENDPOINT}?{qstr}")
 
     # Basic validation of response
     assert r.content_type.startswith(API_CONTENT_TYPE)
@@ -106,6 +113,24 @@ def qmcall(c: FlaskClient, qdict: Dict[str, Any], qtype: Optional[str] = None) -
     return json
 
 
+def _query_data_cleanup() -> None:
+    """Delete any queries or query data logged as
+    result of query module tests"""
+
+    with SessionContext(commit=True) as session:
+        session.execute(
+            Query.table().delete().where(Query.client_id == DUMMY_CLIENT_ID)
+        )
+        session.execute(
+            QueryData.table().delete().where(QueryData.client_id == DUMMY_CLIENT_ID)
+        )
+        # Note: there is no client_id associated w. entries in the QueryLog table
+        # so we cannot delete the logged queries there by this criterion.
+        # session.execute(
+        #     QueryLog.table().delete().where(QueryLog.client_id == DUMMY_CLIENT_ID)
+        # )
+
+
 def has_google_api_key() -> bool:
     return read_api_key("GoogleServerKey") != ""
 
@@ -120,6 +145,7 @@ def has_greynir_api_key() -> bool:
 
 def test_nonsense(client: FlaskClient) -> None:
     """Make sure nonsensical queries are not answered"""
+
     qstr = {"q": "blergh smergh vlurgh"}
     r = client.get("/query.api?" + urlencode(qstr))
     assert r.content_type.startswith(API_CONTENT_TYPE)
@@ -134,6 +160,7 @@ def test_nonsense(client: FlaskClient) -> None:
 
 def test_arithmetic(client: FlaskClient) -> None:
     """Arithmetic module"""
+
     ARITHM_QUERIES = {
         "hvað er fimm sinnum tólf": "60",
         "hvað er 12 sinnum 12?": "144",
@@ -184,6 +211,8 @@ def test_arithmetic(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "hvað er það sinnum tveir"}, "Arithmetic")
     assert json["answer"].startswith("6,")
 
+    _query_data_cleanup()  # Remove any data logged to DB on account of tests
+
 
 def test_builtin(client: FlaskClient) -> None:
     """Person and entity title queries are tested using a dummy database
@@ -216,6 +245,7 @@ def test_builtin(client: FlaskClient) -> None:
 
 def test_bus(client: FlaskClient) -> None:
     """Bus module"""
+
     json = qmcall(
         client, {"q": "hvaða stoppistöð er næst mér", "voice": True}, "NearestStop"
     )
@@ -235,6 +265,7 @@ def test_bus(client: FlaskClient) -> None:
 
 def test_counting(client: FlaskClient) -> None:
     """Counting module"""
+
     json = qmcall(client, {"q": "teldu frá einum upp í tíu"}, "Counting")
     assert json["answer"] == "1…10"
 
@@ -253,6 +284,7 @@ def test_counting(client: FlaskClient) -> None:
 
 def test_currency(client: FlaskClient) -> None:
     """Currency module"""
+
     json = qmcall(client, {"q": "hvert er gengi dönsku krónunnar?"}, "Currency")
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
@@ -283,6 +315,7 @@ def test_currency(client: FlaskClient) -> None:
 
 def test_date(client: FlaskClient) -> None:
     """Date module"""
+
     SPECIAL_DAYS = (
         "jólin",
         "gamlársdagur",
@@ -389,6 +422,7 @@ def test_date(client: FlaskClient) -> None:
 
 def test_dictionary(client: FlaskClient) -> None:
     """Dictionary module"""
+
     json = qmcall(
         client, {"q": "hvernig skilgreinir orðabókin orðið kettlingur"}, "Dictionary"
     )
@@ -401,6 +435,7 @@ def test_dictionary(client: FlaskClient) -> None:
 
 def test_distance(client: FlaskClient) -> None:
     """Distance module"""
+
     if not has_google_api_key():
         # NB: No Google API key on test server
         return
@@ -440,6 +475,7 @@ def test_distance(client: FlaskClient) -> None:
 
 def test_flights(client: FlaskClient) -> None:
     """Flights module"""
+
     departure_pattern = r"^Flug \w*? til .*? flýgur frá \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
     arrival_pattern = r"^Flug \w*? frá .*? lendir [í|á] \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
     no_matching_flight_pattern = (
@@ -556,6 +592,7 @@ def test_flights(client: FlaskClient) -> None:
 
 def test_geography(client: FlaskClient) -> None:
     """Geography module"""
+
     json = qmcall(client, {"q": "hver er höfuðborg spánar", "voice": True}, "Geography")
     assert json["answer"] == "Madríd"
     assert "Spánar" in json["voice"]  # not 'Spáns', which was a bug
@@ -599,6 +636,7 @@ def test_geography(client: FlaskClient) -> None:
 
 def test_ja(client: FlaskClient) -> None:
     """Ja.is module"""
+
     if not has_ja_api_key():
         return
 
@@ -645,6 +683,7 @@ def test_ja(client: FlaskClient) -> None:
 
 def test_news(client: FlaskClient) -> None:
     """News module"""
+
     json = qmcall(client, {"q": "Hvað er í fréttum", "voice": True}, "News")
     assert len(json["answer"]) > 80  # This is always going to be a long answer
     assert json["voice"].startswith("Í fréttum rúv er þetta helst")
@@ -656,6 +695,7 @@ def test_news(client: FlaskClient) -> None:
 
 def test_opinion(client: FlaskClient) -> None:
     """Opinion module"""
+
     json = qmcall(
         client, {"q": "hvaða skoðun hefurðu á þriðja orkupakkanum"}, "Opinion"
     )
@@ -675,6 +715,7 @@ def test_opinion(client: FlaskClient) -> None:
 
 def test_petrol(client: FlaskClient) -> None:
     """Petrol module"""
+
     json = qmcall(client, {"q": "Hvar er næsta bensínstöð", "voice": True}, "Petrol")
     assert "Ánanaust" in json["answer"]
     assert "source" in json and json["source"].startswith("Gasvaktin")
@@ -693,6 +734,7 @@ def test_petrol(client: FlaskClient) -> None:
 
 def test_places(client: FlaskClient) -> None:
     """Places module"""
+
     if not has_google_api_key():
         # NB: No Google API key on test server
         return
@@ -705,6 +747,7 @@ def test_places(client: FlaskClient) -> None:
 
 def test_rand(client: FlaskClient) -> None:
     """Random module"""
+
     json = qmcall(client, {"q": "Veldu tölu milli sautján og 30"}, "Random")
     assert int(json["answer"]) >= 17 and int(json["answer"]) <= 30
 
@@ -728,6 +771,7 @@ def test_rand(client: FlaskClient) -> None:
 
 def test_repeat(client: FlaskClient) -> None:
     """Repeat module"""
+
     json = qmcall(client, {"q": "segðu setninguna simmi er bjálfi"}, "Parrot")
     assert json["answer"] == "Simmi er bjálfi"
     assert json["q"] == "Segðu setninguna „Simmi er bjálfi.“"
@@ -837,6 +881,7 @@ def test_schedules(client: FlaskClient) -> None:
 
 def test_special(client: FlaskClient) -> None:
     """Special module"""
+
     json = qmcall(client, {"q": "Hver er sætastur?", "voice": True}, "Special")
     assert json["answer"] == "Tumi Þorsteinsson."
     assert json["voice"] == "Tumi Þorsteinsson er langsætastur."
@@ -847,6 +892,7 @@ def test_special(client: FlaskClient) -> None:
 
 def test_stats(client: FlaskClient) -> None:
     """Stats module"""
+
     qmcall(client, {"q": "hversu marga einstaklinga þekkirðu?"}, "Stats")
     qmcall(client, {"q": "Hversu mörgum spurningum hefur þú svarað?"}, "Stats")
     qmcall(client, {"q": "hvað ertu aðallega spurð um?"}, "Stats")
@@ -855,6 +901,7 @@ def test_stats(client: FlaskClient) -> None:
 
 def test_sunpos(client: FlaskClient) -> None:
     """Solar position module"""
+
     timings = r"((á|í) morgun|í dag|í kvöld|í nótt|í gær)"
 
     json = qmcall(client, {"q": "hvenær reis sólin í dag?"}, "SunPosition")
@@ -946,6 +993,7 @@ def test_sunpos(client: FlaskClient) -> None:
 
 def test_tel(client: FlaskClient) -> None:
     """Telephone module"""
+
     json = qmcall(client, {"q": "Hringdu í síma 6 9 9 2 4 2 2"}, "Telephone")
     assert "open_url" in json
     assert json["open_url"] == "tel:6992422"
@@ -967,6 +1015,7 @@ def test_tel(client: FlaskClient) -> None:
 
 def test_test(client: FlaskClient) -> None:
     """Test module"""
+
     json = qmcall(client, {"q": "keyrðu kóða"}, "Test")
     assert "command" in json and isinstance(json["command"], str)
 
@@ -979,6 +1028,7 @@ def test_test(client: FlaskClient) -> None:
 
 def test_time(client: FlaskClient) -> None:
     """Time module"""
+
     json = qmcall(
         client, {"q": "hvað er klukkan í Kaupmannahöfn?", "voice": True}, "Time"
     )
@@ -998,6 +1048,7 @@ def test_time(client: FlaskClient) -> None:
 
 def test_unit(client: FlaskClient) -> None:
     """Unit module"""
+
     json = qmcall(client, {"q": "Hvað eru margir metrar í mílu?"}, "Unit")
     assert json["answer"] == "1.610 metrar"
 
@@ -1022,6 +1073,7 @@ def test_unit(client: FlaskClient) -> None:
 
 def test_userinfo(client: FlaskClient) -> None:
     """User info module"""
+
     json = qmcall(
         client,
         {"q": "ég heiti Gunna Jónsdóttir"},
@@ -1075,6 +1127,7 @@ def test_userinfo(client: FlaskClient) -> None:
 
 def test_userloc(client: FlaskClient) -> None:
     """User location module"""
+
     if not has_google_api_key():
         # NB: No Google API key on test server
         return
@@ -1105,6 +1158,7 @@ def test_userloc(client: FlaskClient) -> None:
 
 def test_weather(client: FlaskClient) -> None:
     """Weather module"""
+
     json = qmcall(client, {"q": "hvernig er veðrið í Reykjavík?"}, "Weather")
     assert re.search(r"^\-?\d+ °C", json["answer"]) is not None
 
@@ -1127,6 +1181,7 @@ def test_whatis(client: FlaskClient) -> None:
 
 def test_wiki(client: FlaskClient) -> None:
     """Wikipedia module"""
+
     json = qmcall(client, {"q": "Hvað segir wikipedia um Jón Leifs?"}, "Wikipedia")
     assert "Wikipedía" in json["q"]  # Make sure it's being beautified
     assert "tónskáld" in json["answer"]
@@ -1157,9 +1212,12 @@ def test_wiki(client: FlaskClient) -> None:
     )
     assert "Katrín Jakobsdóttir" in json["answer"]
 
+    _query_data_cleanup()  # Remove any data logged to DB on account of tests
+
 
 def test_words(client: FlaskClient) -> None:
     """Words module"""
+
     json = qmcall(
         client, {"q": "hvernig stafar maður orðið hestur", "voice": True}, "Spelling"
     )
@@ -1179,28 +1237,12 @@ def test_words(client: FlaskClient) -> None:
 
 def test_yulelads(client: FlaskClient) -> None:
     """Yule lads module"""
+
     qmcall(
         client,
         {"q": "hvenær kemur fyrsti jólasveinninn til byggða", "voice": True},
         "YuleLads",
     )
-
-
-def _cleanup() -> None:
-    """Delete any queries or query data logged as
-    result of query module tests"""
-    with SessionContext(commit=True) as session:
-        session.execute(
-            Query.table().delete().where(Query.client_id == DUMMY_CLIENT_ID)
-        )
-        session.execute(
-            QueryData.table().delete().where(QueryData.client_id == DUMMY_CLIENT_ID)
-        )
-        # Note: there is no client_id in the querylog table
-        # so we cannot delete the logged queries there by this criterion.
-
-
-QUERY_HISTORY_ENDPOINT = "/query_history.api?"
 
 
 # NB: Do not move this function. Pytest runs tests in the order they
@@ -1209,6 +1251,7 @@ QUERY_HISTORY_ENDPOINT = "/query_history.api?"
 # any logged queries/query data saved to the database due to tests.
 def test_query_history_api(client: FlaskClient) -> None:
     """Tests for the query history deletion API endpoint."""
+
     if not has_greynir_api_key():
         # We don't run these tests unless a Greynir API key is present
         return
@@ -1227,14 +1270,15 @@ def test_query_history_api(client: FlaskClient) -> None:
         return getattr(sys.modules[__name__], name)
 
     def _num_logged_query_info(client_id: str, model_name: str) -> int:
-        """Make sure no query or query data associated with
+        """Make sure no db model entries associated with
         the provided client_id exists in database."""
-        assert model_name in ["Query", "QueryData"]
+        # assert model_name in ["Query", "QueryData"]
         with SessionContext(read_only=True) as session:
             classn = _str2cls(model_name)
             q = session.query(classn).filter(classn.client_id == client_id)
             ql = list(q)
             return len(ql)
+        return 0
 
     # Create basic query param dict
     qdict: Dict[str, Any] = dict(
@@ -1243,15 +1287,13 @@ def test_query_history_api(client: FlaskClient) -> None:
         client_id=DUMMY_CLIENT_ID,
     )
 
-    from copy import deepcopy
-
     # Make a query module call and make sure it is logged
     qmcall(client, {"q": "hvað er klukkan", "private": False})
     assert _num_logged_query_info(DUMMY_CLIENT_ID, "Query") > 0
     # And try to clear query history via valid call to API endpoint
     qd = deepcopy(qdict)
     qd["action"] = "clear"
-    r = client.get(QUERY_HISTORY_ENDPOINT + urlencode(qd))
+    r = client.get(f"{QUERY_HISTORY_API_ENDPOINT}?{urlencode(qd)}")
     json = _verify_basic(r)
     assert json["valid"] == True
     assert _num_logged_query_info(DUMMY_CLIENT_ID, "Query") == 0
@@ -1263,7 +1305,7 @@ def test_query_history_api(client: FlaskClient) -> None:
     # And try to clear query history AND query data via call to API endpoint
     qd = deepcopy(qdict)
     qd["action"] = "clear_all"
-    r = client.get(QUERY_HISTORY_ENDPOINT + urlencode(qd))
+    r = client.get(f"{QUERY_HISTORY_API_ENDPOINT}?{urlencode(qd)}")
     json = _verify_basic(r)
     assert json["valid"] == True
     assert _num_logged_query_info(DUMMY_CLIENT_ID, "Query") == 0
@@ -1274,7 +1316,7 @@ def test_query_history_api(client: FlaskClient) -> None:
     for qkey in ["api_key", "action", "client_id"]:
         qd = deepcopy(qdict)
         qd.pop(qkey, None)  # Remove req. key from query param dict
-        r = client.get(QUERY_HISTORY_ENDPOINT + urlencode(qd))
+        r = client.get(f"{QUERY_HISTORY_API_ENDPOINT}?{urlencode(qd)}")
         json = _verify_basic(r)
         assert json["valid"] == False
         assert "errmsg" in json
@@ -1282,7 +1324,7 @@ def test_query_history_api(client: FlaskClient) -> None:
     # Send invalid request with unsupported action
     qd = deepcopy(qdict)
     qd["action"] = "dance_in_the_moonlight"
-    r = client.get(QUERY_HISTORY_ENDPOINT + urlencode(qd))
+    r = client.get(f"{QUERY_HISTORY_API_ENDPOINT}?{urlencode(qd)}")
     json = _verify_basic(r)
     assert json["valid"] == False
     assert "errmsg" in json
@@ -1636,6 +1678,7 @@ def test_numbers() -> None:
 
 def test_years() -> None:
     """Test number to written year conversion."""
+
     from queries.num import year_to_text, years_to_text
 
     assert year_to_text(1999) == "nítján hundruð níutíu og níu"
@@ -1664,6 +1707,7 @@ def test_years() -> None:
 
 def test_ordinals() -> None:
     """Test number to written ordinal conversion."""
+
     from queries.num import number_to_ordinal, numbers_to_ordinal
 
     assert number_to_ordinal(0) == "núllti"
@@ -1706,6 +1750,7 @@ def test_ordinals() -> None:
 
 def test_floats() -> None:
     """Test float to written text conversion."""
+
     from queries.num import float_to_text, floats_to_text
 
     assert float_to_text(-0.12) == "mínus núll komma tólf"
@@ -1735,6 +1780,7 @@ def test_floats() -> None:
 
 def test_digits() -> None:
     """Test digit string to written text conversion."""
+
     from queries.num import digits_to_text
 
     assert digits_to_text("5885522") == "fimm átta átta fimm fimm tveir tveir"
