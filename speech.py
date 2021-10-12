@@ -179,18 +179,18 @@ def aws_polly_synthesized_text_url(
 _TIRO_TTS_URL = "https://tts.tiro.is/v0/speech"
 
 
-def tiro_synthesized_text_url(
+def tiro_synthesized_text_data(
     text: str,
     text_format: str = _DEFAULT_TEXT_FORMAT,
     audio_format: str = _DEFAULT_AUDIO_FORMAT,
     voice_id: Optional[str] = _DEFAULT_VOICE,
     speed: float = 1.0,
-) -> Optional[str]:
-    """Returns Tiro URL to audio file with speech-synthesised text."""
+) -> bytes:
+    """Feeds text to Tiro's TTS API and returns audio data from server."""
 
     assert voice_id in _TIRO_VOICES
 
-    # No proper support for SSML yet
+    # No proper support for SSML yet in Tiro's API
     text = _strip_ssml_markup(text)
     text_format = "text"
 
@@ -198,7 +198,7 @@ def tiro_synthesized_text_url(
         "Engine": "standard",
         "LanguageCode": "is-IS",
         "OutputFormat": audio_format,
-        "SampleRate": "22050",
+        # "SampleRate": "22050",
         "Text": text,
         "TextType": "text",
         "VoiceId": voice_id,
@@ -208,11 +208,24 @@ def tiro_synthesized_text_url(
     if r.status_code != 200:
         raise Exception(f"Received HTTP status code {r.status_code} from Tiro server")
 
-    data: bytes = r.content
+    return r.content
+
+
+def tiro_synthesized_text_url(
+    text: str,
+    text_format: str = _DEFAULT_TEXT_FORMAT,
+    audio_format: str = _DEFAULT_AUDIO_FORMAT,
+    voice_id: Optional[str] = _DEFAULT_VOICE,
+    speed: float = 1.0,
+) -> Optional[str]:
+    """Returns Tiro (data) URL for speech-synthesised text."""
+
+    data: bytes = tiro_synthesized_text_data(**locals())
+    if not len(data):
+        return None
 
     # Generate Data URI (RFC2397) from bytes received
     b64str = b64encode(data).decode("utf-8")
-
     mime_type = _AUDIOFMT_TO_MIMETYPE.get(audio_format, _BINARY_MIMETYPE)
     data_uri = f"data:{mime_type};{b64str}"
 
@@ -263,6 +276,7 @@ def _play_audio_file(path: str) -> bool:
         print(f"Playing file '{path}'")
         os.system(f"{MPG123_PATH} {path}")
     else:
+        print("Unable to play audio file. Install mpg123 player.")
         return False
 
     return True
@@ -291,6 +305,10 @@ def _fetch_audio_bytes(url: str) -> bytes:
         return _bytes4data_uri(url)
 
     r = requests.get(url)
+    if r.status_code != 200:
+        raise Exception(
+            f"Received HTTP status code {r.status_code} when fetching {url}"
+        )
     return r.content
 
 
@@ -337,10 +355,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "text",
         help="text to synthesize",
+        nargs="?",
         default="Góðan daginn og til hamingju með lífið.",
     )
 
     args = parser.parse_args()
+
+    def die(msg: str) -> None:
+        print(msg, file=sys.stderr)
+        sys.exit(1)
+
+    if len(args.text.strip()) == 0:
+        die("No text provided")
 
     # Synthesize the text according to CLI options
     url = get_synthesized_text_url(
@@ -351,7 +377,7 @@ if __name__ == "__main__":
         speed=args.speed,
     )
     if not url:
-        print("Error generating speech synthesis URL")
+        die("Error generating speech synthesis URL")
         sys.exit(1)
 
     if args.url:
@@ -359,22 +385,23 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # Download
-    print(f"Downloading URL {url[:200]}")
-    data: Optional[bytes] = _fetch_audio_bytes(url)
+    print(f"Downloading URL {url[:100]}")
+    data: bytes = _fetch_audio_bytes(url)
     if not data:
-        raise Exception("Unable to fetch audio data")
+        die("Unable to fetch audio data")
 
     # Generate file name
     fn = "_".join([t.lower() for t in args.text.rstrip(".").split()])
     fn = icelandic_asciify(fn)[:60].rstrip("_")  # Rm unicode chars + limit length
     fn = fn.replace(",", "")
-    fn = f"{fn}.{_AUDIOFMT_TO_SUFFIX.get(args.audioformat)}"
+    suffix = _AUDIOFMT_TO_SUFFIX.get(args.audioformat, "")
+    fn = f"{fn}.{suffix}"
 
     # Write audio data to file
     print(f'Writing to file "{fn}"')
     with open(fn, "wb") as f:
         f.write(data)
 
-    # Play
+    # Play audio file using command line tool (if available)
     if not args.noplay:
         _play_audio_file(fn)
