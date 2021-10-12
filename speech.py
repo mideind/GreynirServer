@@ -30,6 +30,7 @@ import json
 import logging
 import html
 import re
+from base64 import b64encode, b64decode
 from threading import Lock
 
 import requests
@@ -203,9 +204,7 @@ def tiro_synthesized_text_url(
 
     data: bytes = r.content
 
-    # Generate Data URI from bytes received (RFC2397)
-    from base64 import b64encode
-
+    # Generate Data URI (RFC2397) from bytes received
     b64str = b64encode(data).decode("utf-8")
 
     mime_type = _AUDIOFMT_TO_MIMETYPE.get(audio_format, _BINARY_MIMETYPE)
@@ -221,7 +220,7 @@ def get_synthesized_text_url(
     voice_id: Optional[str] = _DEFAULT_VOICE,
     speed: float = 1.0,
 ) -> Optional[str]:
-    """Returns URL to audio file with speech-synthesised text."""
+    """Returns URL to audio of speech-synthesised text."""
 
     text = text.strip()
 
@@ -263,14 +262,30 @@ def _play_audio_file(path: str) -> bool:
     return True
 
 
+_DATA_URI_PREFIX = "data:"
+
+
+def _is_data_uri(s: str) -> bool:
+    """Returns whether a URL is a data URI (RFC2397)."""
+    return s.startswith(_DATA_URI_PREFIX)
+
+
+def _bytes4data_uri(data_uri: str) -> bytes:
+    """Returns data in data URI (RFC2397) as bytes."""
+    # Format is "data:[mimetype];SUQzBAAAAAAAI1RTU0UAAA..."
+    uri = data_uri[len(_DATA_URI_PREFIX) :]
+    cmp = uri.split(";")
+    b64str = cmp[1] if len(cmp) == 2 else cmp[0]  # Optional mime type
+    return b64decode(b64str)
+
+
 def _fetch_audio_bytes(url: str) -> bytes:
     """Returns bytes of audio file at URL."""
+    if _is_data_uri(url):
+        return _bytes4data_uri(url)
 
-    if url.startswith("data:"):
-        pass
-    else:
-        r = requests.get(url)
-        return r.content
+    r = requests.get(url)
+    return r.content
 
 
 if __name__ == "__main__":
@@ -338,8 +353,10 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # Download
-    print(f"Downloading URL {url}")
-    data: bytes = _fetch_audio_bytes(url)
+    print(f"Downloading URL {url[:200]}")
+    data: Optional[bytes] = _fetch_audio_bytes(url)
+    if not data:
+        raise Exception("Unable to fetch audio data")
 
     # Write to file system
     fn = "_".join([t.lower() for t in args.text.split()]) + "." + args.audioformat
