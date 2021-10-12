@@ -18,7 +18,9 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    Icelandic text to speech via AWS Polly.
+    Icelandic text to speech via TTS web services.
+
+    Includes friendly command line interface.
 
 """
 
@@ -68,17 +70,15 @@ _SUPPORTED_AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
 _DEFAULT_TEXT_FORMAT = "ssml"
 _SUPPORTED_TEXT_FORMATS = frozenset(("text", "ssml"))
 
-
+# Mime types and suffixes
 _BINARY_MIMETYPE = "application/octet-stream"
 _AUDIOFMT_TO_MIMETYPE = {
     "mp3": "audio/mpeg",
-    "wav": "audio/wav",
     "ogg_vorbis": "audio/ogg",
     "pcm": _BINARY_MIMETYPE,
 }
 _AUDIOFMT_TO_SUFFIX = {
     "mp3": "mp3",
-    "wav": "wav",
     "ogg_vorbis": "ogg",
     "pcm": "pcm",
 }
@@ -286,7 +286,7 @@ _DATA_URI_PREFIX = "data:"
 
 
 def _is_data_uri(s: str) -> bool:
-    """Returns whether a URL is a data URI (RFC2397)."""
+    """Returns whether a URL is a data URI (RFC2397). Tolerates uppercase prefix."""
     return s.startswith(_DATA_URI_PREFIX) or s.startswith(_DATA_URI_PREFIX.upper())
 
 
@@ -312,8 +312,8 @@ def _fetch_audio_bytes(url: str) -> bytes:
     return r.content
 
 
-if __name__ == "__main__":
-    """Perform speech synthesis of Icelandic text via command line."""
+def main() -> None:
+    """Main program function."""
     from argparse import ArgumentParser
 
     parser = ArgumentParser()
@@ -405,3 +405,8 @@ if __name__ == "__main__":
     # Play audio file using command line tool (if available)
     if not args.noplay:
         _play_audio_file(fn)
+
+
+if __name__ == "__main__":
+    """Perform speech synthesis of Icelandic text via command line."""
+    main()
