@@ -552,7 +552,7 @@ def speech_api(version: int = 1) -> Response:
 
     try:
         url = get_synthesized_text_url(
-            text, txt_format=fmt, voice_id=voice_id, speed=speed
+            text, text_format=fmt, voice_id=voice_id, speed=speed
         )
     except Exception:
         return better_jsonify(**reply)

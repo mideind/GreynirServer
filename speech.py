@@ -62,7 +62,7 @@ _SUPPORTED_AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
 # For details about SSML markup, see:
 # https://developer.amazon.com/en-US/docs/alexa/custom-skills/speech-synthesis-markup-language-ssml-reference.html
 _DEFAULT_TEXT_FORMAT = "ssml"
-_TEXT_FORMATS = frozenset(("text", "ssml"))
+_SUPPORTED_TEXT_FORMATS = frozenset(("text", "ssml"))
 
 
 def strip_ssml_markup(text: str) -> str:
@@ -101,12 +101,12 @@ def _initialize_aws_client() -> Optional[boto3.Session]:
 @cachetools.cached(cachetools.TTLCache(_AWS_CACHE_MAXITEMS, _AWS_CACHE_TTL))
 def aws_polly_synthesized_text_url(
     text: str,
-    txt_format: str = _DEFAULT_TEXT_FORMAT,
+    text_format: str = _DEFAULT_TEXT_FORMAT,
     audio_format: str = _DEFAULT_AUDIO_FORMAT,
     voice_id: Optional[str] = _DEFAULT_VOICE,
     speed: float = 1.0,
 ) -> Optional[str]:
-    """Returns AWS URL to audio file with speech-synthesised text."""
+    """Returns AWS Polly URL to audio file with speech-synthesised text."""
     client = _initialize_aws_client()  # Set up client lazily
     if client is None:
         logging.warning("Unable to instantiate AWS client")
@@ -115,7 +115,7 @@ def aws_polly_synthesized_text_url(
     text = text.strip()
 
     # Special preprocessing for SSML markup
-    if txt_format == "ssml":
+    if text_format == "ssml":
         # Prevent '&' symbol from breaking markup
         text = text.replace("&", "&amp;")
         # Adjust voice speed as appropriate
@@ -138,7 +138,7 @@ def aws_polly_synthesized_text_url(
         # The default value is "22050".
         # "SampleRate": "",
         # "text" or "ssml"
-        "TextType": txt_format,
+        "TextType": text_format,
         # Only required for bilingual voices
         # "LanguageCode": "is-IS"
     }
@@ -157,9 +157,25 @@ def aws_polly_synthesized_text_url(
     return url
 
 
+def tiro_synthesized_text_url(
+    text: str,
+    text_format: str = _DEFAULT_TEXT_FORMAT,
+    audio_format: str = _DEFAULT_AUDIO_FORMAT,
+    voice_id: Optional[str] = _DEFAULT_VOICE,
+    speed: float = 1.0,
+) -> Optional[str]:
+    """Returns Tiro URL to audio file with speech-synthesised text."""
+
+    assert voice_id in _TIRO_VOICES
+
+    # No proper support for SSML yet
+    text = strip_ssml_markup(text)
+    text_format = "text"
+
+
 def get_synthesized_text_url(
     text: str,
-    txt_format: str = _DEFAULT_TEXT_FORMAT,
+    text_format: str = _DEFAULT_TEXT_FORMAT,
     audio_format: str = _DEFAULT_AUDIO_FORMAT,
     voice_id: Optional[str] = _DEFAULT_VOICE,
     speed: float = 1.0,
@@ -167,7 +183,8 @@ def get_synthesized_text_url(
     """Returns URL to audio file with speech-synthesised text."""
 
     # Basic sanity checks
-    assert txt_format in _TEXT_FORMATS
+    assert text
+    assert text_format in _SUPPORTED_TEXT_FORMATS
     assert audio_format in _SUPPORTED_AUDIO_FORMATS
     assert voice_id in _SUPPORTED_VOICES
 
@@ -178,7 +195,7 @@ def get_synthesized_text_url(
         # Pass kwargs to function
         return aws_polly_synthesized_text_url(**locals())
     elif voice_id in _TIRO_VOICES:
-        pass
+        tiro_synthesized_text_url(**locals())
     else:
         # Shouldn't get here
         raise Exception(f"The voice '{voice_id}' is not supported")
@@ -202,30 +219,80 @@ def _play_audio_file(path: str) -> bool:
 
 
 if __name__ == "__main__":
-    """Test speech synthesis through command line invocation."""
-    args = sys.argv
+    """Perform speech synthesis of Icelandic text via command line."""
+    import argparse
 
-    audio_fmt = _DEFAULT_AUDIO_FORMAT
-    # Optionally, specify audio format as last argument
-    if args[-1] in _SUPPORTED_AUDIO_FORMATS:
-        audio_fmt = args[-1]
-        args.pop()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-v",
+        "--voice",
+        help="specify voice",
+        default=_DEFAULT_VOICE,
+        choices=list(_SUPPORTED_VOICES),
+    )
+    parser.add_argument(
+        "-f",
+        "--audioformat",
+        help="select audio format",
+        default=_DEFAULT_AUDIO_FORMAT,
+        choices=list(_SUPPORTED_AUDIO_FORMATS),
+    )
+    parser.add_argument(
+        "-s",
+        "--speed",
+        help="set speech speed",
+        default=1.0,
+        type=float,
+    )
+    parser.add_argument(
+        "-t",
+        "--textformat",
+        help="set text format",
+        default=_DEFAULT_TEXT_FORMAT,
+        choices=list(_SUPPORTED_TEXT_FORMATS),
+    )
+    parser.add_argument(
+        "-u", "--url", help="just dump audio URL to stdout", action="store_true"
+    )
+    parser.add_argument(
+        "-n", "--noplay", help="do not play resulting audio file", action="store_true"
+    )
+    parser.add_argument(
+        "text",
+        help="text to synthesize",
+        default="Góðan daginn og til hamingju með lífið.",
+    )
 
-    DEFAULT_TEXT = "Góðan daginn og til hamingju með lífið."
+    args = parser.parse_args()
 
-    txt = " ".join(args[1:]) if len(args) > 1 else DEFAULT_TEXT
-    fn = "_".join([t.lower() for t in txt.split()]) + "." + audio_fmt
+    # Synthesize the text using CLI options
+    url = get_synthesized_text_url(
+        args.text,
+        text_format=args.textformat,
+        audio_format=args.audioformat,
+        voice_id=args.voice,
+        speed=args.speed,
+    )
+    if not url:
+        print("Error generating speech synthesis URL")
+        sys.exit(0)
 
-    url = get_synthesized_text_url(txt, audio_format=audio_fmt)
-    if url:
-        import requests
+    if args.url:
+        print(url)
+        sys.exit(0)
 
-        print(f"Downloading URL {url}")
-        r = requests.get(url)
+    import requests
 
-        print(f'Writing to file "{fn}"')
-        with open(fn, "wb") as f:
-            f.write(r.content)
+    # Download
+    print(f"Downloading URL {url}")
+    r = requests.get(url)
+
+    # Write to file system
+    fn = "_".join([t.lower() for t in args.text.split()]) + "." + args.audioformat
+    print(f'Writing to file "{fn}"')
+    with open(fn, "wb") as f:
+        f.write(r.content)
+
+    # Play
+    if not args.noplay:
         _play_audio_file(fn)
-    else:
-        raise Exception("Error generating speech synthesis URL")
