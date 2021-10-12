@@ -1400,6 +1400,8 @@ def test_query_utility_functions() -> None:
     assert cap_first("YOLO") == "YOLO"
     assert cap_first("yoLo") == "YoLo"
     assert cap_first("Yolo") == "Yolo"
+    assert cap_first("þristur") == "Þristur"
+    assert cap_first("illur ásetninguR") == "Illur ásetninguR"
 
     assert time_period_desc(3751) == "1 klukkustund og 3 mínútur"
     assert (
@@ -1482,6 +1484,7 @@ def test_query_utility_functions() -> None:
 
 def test_numbers() -> None:
     """Test number handling functionality in queries"""
+
     from queries.num import number_to_neutral, number_to_text, numbers_to_text
 
     assert number_to_neutral(2) == "tvö"

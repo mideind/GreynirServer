@@ -696,7 +696,7 @@ def calc_arithmetic(query: Query, result: Result) -> Optional[AnswerTuple]:
     result.qkey = s
 
     # Run eval on expression
-    res: float = eval(s, eval_globals, {})
+    res: Any = eval(s, eval_globals, {})
 
     if isinstance(res, float):  # type: ignore
         # Convert result to Icelandic decimal format
