@@ -54,10 +54,12 @@ _SUPPORTED_VOICES = _AWS_VOICES.union(_TIRO_VOICES)
 # https://developer.amazon.com/en-US/docs/alexa/custom-skills/speech-synthesis-markup-language-ssml-reference.html
 _DEFAULT_TEXT_FORMAT = "ssml"
 _SUPPORTED_TEXT_FORMATS = frozenset(("text", "ssml"))
+assert _DEFAULT_TEXT_FORMAT in _SUPPORTED_TEXT_FORMATS
 
 # Audio formats
 _DEFAULT_AUDIO_FORMAT = "mp3"
 _SUPPORTED_AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
+assert _DEFAULT_AUDIO_FORMAT in _SUPPORTED_AUDIO_FORMATS
 
 # Mime types and suffixes
 _BINARY_MIMETYPE = "application/octet-stream"
@@ -71,6 +73,9 @@ _AUDIOFMT_TO_SUFFIX = {
     "ogg_vorbis": "ogg",
     "pcm": "pcm",
 }
+for af in _SUPPORTED_AUDIO_FORMATS:
+    assert af in _AUDIOFMT_TO_MIMETYPE
+    assert af in _AUDIOFMT_TO_SUFFIX
 
 
 def _strip_ssml_markup(text: str) -> str:
@@ -78,7 +83,8 @@ def _strip_ssml_markup(text: str) -> str:
     return re.sub(r"<.*?>", "", text)
 
 
-# The AWS Polly API access keys (you must obtain your own keys if you want to use this code)
+# The AWS Polly API access keys
+# You must obtain your own keys if you want to use this code
 # JSON format is the following:
 # {
 #     "aws_access_key_id": ""my_key,
@@ -92,7 +98,7 @@ _aws_api_client_lock = Lock()
 
 
 def _initialize_aws_client() -> Optional[boto3.Session]:
-    """Set up AWS Polly client"""
+    """Set up AWS Polly client."""
     global _api_client
 
     # Make sure that only one thread is messing with the global variable
@@ -243,12 +249,12 @@ def get_synthesized_text_url(
 ) -> Optional[str]:
     """Returns URL to audio of speech-synthesised text."""
 
-    text = text.strip()
-
     if not voice_id:
         voice_id = _DEFAULT_VOICE
     else:
         voice_id = voice_id.lower().capitalize()
+
+    text = text.strip()
 
     # Basic sanity checks
     assert text
@@ -256,10 +262,10 @@ def get_synthesized_text_url(
     assert audio_format in _SUPPORTED_AUDIO_FORMATS
     assert voice_id in _SUPPORTED_VOICES
 
-    # Clamp speed to 50%-150% range
+    # Clamp speed to 50-150% range
     speed = max(min(1.5, speed), 0.5)
 
-    # We pass all arguments on to the appropriate function using locals()
+    # We pass all arguments on to the appropriate function by unpacking locals()
     if voice_id in _AWS_VOICES:
         return aws_polly_synthesized_text_url(**locals())
     elif voice_id in _TIRO_VOICES:
@@ -278,10 +284,10 @@ def _play_audio_file(path: str) -> bool:
 
     if os.path.exists(AFPLAY_PATH):
         print(f"Playing file '{path}'")
-        os.system(f"{AFPLAY_PATH} {path}")
+        os.system(f"{AFPLAY_PATH} '{path}'")
     elif os.path.exists(MPG123_PATH):
         print(f"Playing file '{path}'")
-        os.system(f"{MPG123_PATH} {path}")
+        os.system(f"{MPG123_PATH} '{path}'")
     else:
         print("Unable to play audio file. Please install mpg123 player.")
         return False
@@ -298,7 +304,7 @@ def _is_data_uri(s: str) -> bool:
 
 
 def _bytes4data_uri(data_uri: str) -> bytes:
-    """Returns data in data URI (RFC2397) as bytes."""
+    """Returns data contained in data URI (RFC2397) as bytes."""
     # Format is "data:[mimetype];SUQzBAAAAAAAI1RTU0UAAA..."
     uri = data_uri[len(_DATA_URI_PREFIX) :]
     cmp = uri.split(";")
@@ -402,7 +408,7 @@ def main() -> None:
     fn = icelandic_asciify(fn)[:60].rstrip("_")  # Rm unicode chars + limit length
     fn = fn.replace(",", "")
     suffix = _AUDIOFMT_TO_SUFFIX.get(args.audioformat, "")
-    fn = f"{fn}.{suffix}"
+    fn = f"{fn}.{suffix}".rstrip(".")
 
     # Write audio data to file
     print(f'Writing to file "{fn}"')
