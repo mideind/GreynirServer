@@ -39,7 +39,7 @@ def read_api_key(key_name: str) -> str:
 
 def icelandic_asciify(text: str) -> str:
     """Convert Icelandic characters to their ASCII equivalent
-    and remove all Unicode characters."""
+    and then remove all non-ASCII characters."""
 
     ICECHARS_TO_ASCII = {
         "ð": "d",
@@ -64,12 +64,12 @@ def icelandic_asciify(text: str) -> str:
         "Æ": "AE",
     }
 
-    # Substitute all Icelandic chars for ASCII equivalents
+    # Substitute all Icelandic chars for their ASCII equivalents
     t = text
     for k, v in ICECHARS_TO_ASCII.items():
         t = t.replace(k, v)
 
-    # Remove any remaining Unicode chars
+    # Remove any remaining non-ASCII chars
     t = t.encode("ascii", "ignore").decode()
 
     return t

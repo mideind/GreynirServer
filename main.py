@@ -104,7 +104,7 @@ def make_pattern(rep_dict: Dict[str, str]) -> Pattern[str]:
 def multiple_replace(
     s: str, rep_dict: Dict[str, str], pattern: Optional[Pattern[str]] = None
 ) -> str:
-    """ Perform multiple simultaneous replacements within string """
+    """Perform multiple simultaneous replacements within string"""
     if pattern is None:
         pattern = make_pattern(rep_dict)
     return pattern.sub(lambda x: rep_dict[x.group(0)], s)
@@ -116,14 +116,14 @@ _PATTERN_IS = make_pattern(_REP_DICT_IS)
 
 @app.template_filter("format_is")
 def format_is(r: float, decimals: int = 0) -> str:
-    """ Flask/Jinja2 template filter to format a number for the Icelandic locale """
+    """Flask/Jinja2 template filter to format a number for the Icelandic locale"""
     fmt = "{0:,." + str(decimals) + "f}"
     return multiple_replace(fmt.format(float(r)), _REP_DICT_IS, _PATTERN_IS)
 
 
 @app.template_filter("format_ts")
 def format_ts(ts: datetime) -> str:
-    """ Flask/Jinja2 template filter to format a timestamp """
+    """Flask/Jinja2 template filter to format a timestamp"""
     return str(ts)[0:19]
 
 
@@ -136,7 +136,7 @@ def hashed_url_for_static_file(
     where XXX is calculated from the file timestamp"""
 
     def static_file_hash(filename: str):
-        """ Obtain a timestamp for the given file """
+        """Obtain a timestamp for the given file"""
         return int(os.stat(filename).st_mtime)
 
     if "static" == endpoint or endpoint.endswith(".static"):
@@ -168,20 +168,20 @@ def send_font(path: str) -> Response:
 # Custom 404 error handler
 @app.errorhandler(404)
 def page_not_found(_) -> str:
-    """ Return a custom 404 error """
+    """Return a custom 404 error"""
     return render_template("404.html")
 
 
 # Custom 500 error handler
 @app.errorhandler(500)
 def server_error(_) -> str:
-    """ Return a custom 500 error """
+    """Return a custom 500 error"""
     return render_template("500.html")
 
 
 @app.context_processor
 def inject_nn_bools() -> Dict[str, Union[str, bool]]:
-    """ Inject bool switches for neural network features """
+    """Inject bool switches for neural network features"""
     return dict(
         nn_parsing_enabled=Settings.NN_PARSING_ENABLED,
         nn_translate_enabled=Settings.NN_TRANSLATION_ENABLED,
@@ -265,6 +265,7 @@ if not RUNNING_AS_SERVER:
                 break
         else:
             print("Extra file '{0}' not found".format(fname))
+
     # Add ord.compressed from GeynirPackage
     extra_files.append(
         os.path.join(
@@ -316,14 +317,10 @@ else:
 
     # Log our startup
     log_str = (
-        "Greynir instance starting with "
-        "host={0}:{1}, db_host={2}:{3} on Python {4}".format(
-            Settings.HOST,
-            Settings.PORT,
-            Settings.DB_HOSTNAME,
-            Settings.DB_PORT,
-            sys.version.replace("\n", " "),
-        )
+        f"Greynir instance starting with "
+        "host={Settings.HOST}:{Settings.PORT}, "
+        "db_host={Settings.DB_HOSTNAME}:{Settings.DB_PORT} "
+        "on Python {sys.version.replace('\n', ' ')}"
     )
     logging.info(log_str)
     print(log_str)

@@ -42,17 +42,6 @@ from botocore.exceptions import ClientError  # type: ignore
 
 from util import icelandic_asciify
 
-# The AWS Polly API access keys (you must obtain your own keys if you want to use this code)
-# JSON format is the following:
-# {
-#     "aws_access_key_id": ""my_key,
-#     "aws_secret_access_key": "my_secret",
-#     "region_name": "my_region"
-# }
-#
-_API_KEYS_PATH = os.path.join("resources", "aws_polly_keys.mideind.json")
-_api_client: Optional[boto3.Session] = None
-_api_client_lock = Lock()
 
 # Voices
 _DEFAULT_VOICE = "Dora"
@@ -60,15 +49,15 @@ _AWS_VOICES = frozenset(("Dora", "Karl"))
 _TIRO_VOICES = frozenset(("Dilja", "Alfur"))
 _SUPPORTED_VOICES = _AWS_VOICES.union(_TIRO_VOICES)
 
-# Audio formats
-_DEFAULT_AUDIO_FORMAT = "mp3"
-_SUPPORTED_AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
-
 # Text formats
 # For details about SSML markup, see:
 # https://developer.amazon.com/en-US/docs/alexa/custom-skills/speech-synthesis-markup-language-ssml-reference.html
 _DEFAULT_TEXT_FORMAT = "ssml"
 _SUPPORTED_TEXT_FORMATS = frozenset(("text", "ssml"))
+
+# Audio formats
+_DEFAULT_AUDIO_FORMAT = "mp3"
+_SUPPORTED_AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
 
 # Mime types and suffixes
 _BINARY_MIMETYPE = "application/octet-stream"
@@ -89,12 +78,17 @@ def _strip_ssml_markup(text: str) -> str:
     return re.sub(r"<.*?>", "", text)
 
 
-# Time to live (in seconds) for synthesised text URL caching
-# Add a safe 30 second margin to ensure that clients are never provided with an
-# audio URL that's just about to expire and might do so before playback starts.
-_AWS_URL_TTL = 300  # 5 mins in seconds
-_AWS_CACHE_TTL = _AWS_URL_TTL - 30  # seconds
-_AWS_CACHE_MAXITEMS = 30
+# The AWS Polly API access keys (you must obtain your own keys if you want to use this code)
+# JSON format is the following:
+# {
+#     "aws_access_key_id": ""my_key,
+#     "aws_secret_access_key": "my_secret",
+#     "region_name": "my_region"
+# }
+#
+_AWS_API_KEYS_PATH = os.path.join("resources", "aws_polly_keys.mideind.json")
+_aws_api_client: Optional[boto3.Session] = None
+_aws_api_client_lock = Lock()
 
 
 def _initialize_aws_client() -> Optional[boto3.Session]:
@@ -102,12 +96,12 @@ def _initialize_aws_client() -> Optional[boto3.Session]:
     global _api_client
 
     # Make sure that only one thread is messing with the global variable
-    with _api_client_lock:
-        if _api_client is None:
+    with _aws_api_client_lock:
+        if _aws_api_client is None:
             # Read AWS Polly API keys from file
             aws_config = {}
             try:
-                with open(_API_KEYS_PATH) as json_file:
+                with open(_AWS_API_KEYS_PATH) as json_file:
                     aws_config = json.load(json_file)
             except FileNotFoundError:
                 logging.warning("Unable to read AWS Polly keys")
@@ -115,6 +109,14 @@ def _initialize_aws_client() -> Optional[boto3.Session]:
             _api_client = boto3.Session(**aws_config).client("polly")
         # Return client instance
         return _api_client
+
+
+# Time to live (in seconds) for synthesised text URL caching
+# Add a safe 30 second margin to ensure that clients are never provided with an
+# audio URL that's just about to expire and might do so before playback starts.
+_AWS_URL_TTL = 300  # 5 mins in seconds
+_AWS_CACHE_TTL = _AWS_URL_TTL - 30  # seconds
+_AWS_CACHE_MAXITEMS = 30
 
 
 @cachetools.cached(cachetools.TTLCache(_AWS_CACHE_MAXITEMS, _AWS_CACHE_TTL))
@@ -243,6 +245,11 @@ def get_synthesized_text_url(
 
     text = text.strip()
 
+    if not voice_id:
+        voice_id = _DEFAULT_VOICE
+    else:
+        voice_id = voice_id.lower().capitalize()
+
     # Basic sanity checks
     assert text
     assert text_format in _SUPPORTED_TEXT_FORMATS
@@ -276,7 +283,7 @@ def _play_audio_file(path: str) -> bool:
         print(f"Playing file '{path}'")
         os.system(f"{MPG123_PATH} {path}")
     else:
-        print("Unable to play audio file. Install mpg123 player.")
+        print("Unable to play audio file. Please install mpg123 player.")
         return False
 
     return True
