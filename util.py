@@ -53,7 +53,7 @@ def icelandic_asciify(text: str) -> str:
         "é": "e",
         "É": "E",
         "þ": "th",
-        "Þ": "Th",
+        "Þ": "TH",
         "ó": "o",
         "Ó": "O",
         "ý": "y",
@@ -61,10 +61,10 @@ def icelandic_asciify(text: str) -> str:
         "ö": "o",
         "Ö": "O",
         "æ": "ae",
-        "Æ": "Ae",
+        "Æ": "AE",
     }
 
-    # Substitute all Icelandic chars w. ASCII equivalent
+    # Substitute all Icelandic chars for ASCII equivalents
     t = text
     for k, v in ICECHARS_TO_ASCII.items():
         t = t.replace(k, v)

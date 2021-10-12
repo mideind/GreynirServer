@@ -76,6 +76,12 @@ _AUDIOFMT_TO_MIMETYPE = {
     "ogg_vorbis": "audio/ogg",
     "pcm": _BINARY_MIMETYPE,
 }
+_AUDIOFMT_TO_SUFFIX = {
+    "mp3": "mp3",
+    "wav": "wav",
+    "ogg_vorbis": "ogg",
+    "pcm": "pcm",
+}
 
 
 def _strip_ssml_markup(text: str) -> str:
@@ -267,7 +273,7 @@ _DATA_URI_PREFIX = "data:"
 
 def _is_data_uri(s: str) -> bool:
     """Returns whether a URL is a data URI (RFC2397)."""
-    return s.startswith(_DATA_URI_PREFIX)
+    return s.startswith(_DATA_URI_PREFIX) or s.startswith(_DATA_URI_PREFIX.upper())
 
 
 def _bytes4data_uri(data_uri: str) -> bytes:
@@ -358,9 +364,13 @@ if __name__ == "__main__":
     if not data:
         raise Exception("Unable to fetch audio data")
 
-    # Write to file system
-    fn = "_".join([t.lower() for t in args.text.split()]) + "." + args.audioformat
-    fn = icelandic_asciify(fn)
+    # Generate file name
+    fn = "_".join([t.lower() for t in args.text.rstrip(".").split()])
+    fn = icelandic_asciify(fn)[:60].rstrip("_")  # Rm unicode chars + limit length
+    fn = fn.replace(",", "")
+    fn = f"{fn}.{_AUDIOFMT_TO_SUFFIX.get(args.audioformat)}"
+
+    # Write audio data to file
     print(f'Writing to file "{fn}"')
     with open(fn, "wb") as f:
         f.write(data)
