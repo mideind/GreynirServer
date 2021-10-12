@@ -32,9 +32,12 @@ import html
 import re
 from threading import Lock
 
+import requests
 import cachetools  # type: ignore
 import boto3  # type: ignore
 from botocore.exceptions import ClientError  # type: ignore
+
+from util import icelandic_asciify
 
 # The AWS Polly API access keys (you must obtain your own keys if you want to use this code)
 # JSON format is the following:
@@ -65,7 +68,16 @@ _DEFAULT_TEXT_FORMAT = "ssml"
 _SUPPORTED_TEXT_FORMATS = frozenset(("text", "ssml"))
 
 
-def strip_ssml_markup(text: str) -> str:
+_BINARY_MIMETYPE = "application/octet-stream"
+_AUDIOFMT_TO_MIMETYPE = {
+    "mp3": "audio/mpeg",
+    "wav": "audio/wav",
+    "ogg_vorbis": "audio/ogg",
+    "pcm": _BINARY_MIMETYPE,
+}
+
+
+def _strip_ssml_markup(text: str) -> str:
     """Remove SSML markup tags from a string"""
     return re.sub(r"<.*?>", "", text)
 
@@ -107,12 +119,12 @@ def aws_polly_synthesized_text_url(
     speed: float = 1.0,
 ) -> Optional[str]:
     """Returns AWS Polly URL to audio file with speech-synthesised text."""
-    client = _initialize_aws_client()  # Set up client lazily
+
+    # Set up client lazily
+    client = _initialize_aws_client()
     if client is None:
         logging.warning("Unable to instantiate AWS client")
         return None
-
-    text = text.strip()
 
     # Special preprocessing for SSML markup
     if text_format == "ssml":
@@ -157,6 +169,9 @@ def aws_polly_synthesized_text_url(
     return url
 
 
+_TIRO_TTS_URL = "https://tts.tiro.is/v0/speech"
+
+
 def tiro_synthesized_text_url(
     text: str,
     text_format: str = _DEFAULT_TEXT_FORMAT,
@@ -169,8 +184,34 @@ def tiro_synthesized_text_url(
     assert voice_id in _TIRO_VOICES
 
     # No proper support for SSML yet
-    text = strip_ssml_markup(text)
+    text = _strip_ssml_markup(text)
     text_format = "text"
+
+    jdict = {
+        "Engine": "standard",
+        "LanguageCode": "is-IS",
+        "OutputFormat": audio_format,
+        "SampleRate": "22050",
+        "Text": text,
+        "TextType": "text",
+        "VoiceId": voice_id,
+    }
+
+    r = requests.post(_TIRO_TTS_URL, json=jdict)
+    if r.status_code != 200:
+        raise Exception(f"Received HTTP status code {r.status_code} from Tiro server")
+
+    data: bytes = r.content
+
+    # Generate Data URI from bytes received (RFC2397)
+    from base64 import b64encode
+
+    b64str = b64encode(data).decode("utf-8")
+
+    mime_type = _AUDIOFMT_TO_MIMETYPE.get(audio_format, _BINARY_MIMETYPE)
+    data_uri = f"data:{mime_type};{b64str}"
+
+    return data_uri
 
 
 def get_synthesized_text_url(
@@ -182,6 +223,8 @@ def get_synthesized_text_url(
 ) -> Optional[str]:
     """Returns URL to audio file with speech-synthesised text."""
 
+    text = text.strip()
+
     # Basic sanity checks
     assert text
     assert text_format in _SUPPORTED_TEXT_FORMATS
@@ -191,11 +234,11 @@ def get_synthesized_text_url(
     # Clamp speed to 50%-150% range
     speed = max(min(1.5, speed), 0.5)
 
+    # We pass all arguments on to the appropriate function using locals()
     if voice_id in _AWS_VOICES:
-        # Pass kwargs to function
         return aws_polly_synthesized_text_url(**locals())
     elif voice_id in _TIRO_VOICES:
-        tiro_synthesized_text_url(**locals())
+        return tiro_synthesized_text_url(**locals())
     else:
         # Shouldn't get here
         raise Exception(f"The voice '{voice_id}' is not supported")
@@ -207,6 +250,7 @@ def _play_audio_file(path: str) -> bool:
 
     AFPLAY_PATH = "/usr/bin/afplay"
     MPG123_PATH = "/usr/bin/mpg123"
+
     if os.path.exists(AFPLAY_PATH):
         print(f"Playing file '{path}'")
         os.system(f"{AFPLAY_PATH} {path}")
@@ -215,14 +259,26 @@ def _play_audio_file(path: str) -> bool:
         os.system(f"{MPG123_PATH} {path}")
     else:
         return False
+
     return True
+
+
+def _fetch_audio_bytes(url: str) -> bytes:
+    """Returns bytes of audio file at URL."""
+
+    if url.startswith("data:"):
+        pass
+    else:
+        r = requests.get(url)
+        return r.content
 
 
 if __name__ == "__main__":
     """Perform speech synthesis of Icelandic text via command line."""
-    import argparse
+    from argparse import ArgumentParser
 
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser()
+
     parser.add_argument(
         "-v",
         "--voice",
@@ -265,7 +321,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Synthesize the text using CLI options
+    # Synthesize the text according to CLI options
     url = get_synthesized_text_url(
         args.text,
         text_format=args.textformat,
@@ -275,23 +331,22 @@ if __name__ == "__main__":
     )
     if not url:
         print("Error generating speech synthesis URL")
-        sys.exit(0)
+        sys.exit(1)
 
     if args.url:
         print(url)
         sys.exit(0)
 
-    import requests
-
     # Download
     print(f"Downloading URL {url}")
-    r = requests.get(url)
+    data: bytes = _fetch_audio_bytes(url)
 
     # Write to file system
     fn = "_".join([t.lower() for t in args.text.split()]) + "." + args.audioformat
+    fn = icelandic_asciify(fn)
     print(f'Writing to file "{fn}"')
     with open(fn, "wb") as f:
-        f.write(r.content)
+        f.write(data)
 
     # Play
     if not args.noplay:
