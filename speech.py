@@ -29,6 +29,7 @@ import os
 import json
 import logging
 import html
+import re
 from threading import Lock
 
 import cachetools  # type: ignore
@@ -49,7 +50,9 @@ _api_client_lock = Lock()
 
 # Voices
 _DEFAULT_VOICE = "Dora"
-_VOICES = frozenset(("Dora", "Karl"))
+_AWS_VOICES = frozenset(("Dora", "Karl"))
+_TIRO_VOICES = frozenset(("Dilja", "Alfur"))
+_SUPPORTED_VOICES = _AWS_VOICES.union(_TIRO_VOICES)
 
 # Audio formats
 _DEFAULT_AUDIO_FORMAT = "mp3"
@@ -62,7 +65,20 @@ _DEFAULT_TEXT_FORMAT = "ssml"
 _TEXT_FORMATS = frozenset(("text", "ssml"))
 
 
-def _initialize_client() -> Optional[boto3.Session]:
+def strip_ssml_markup(text: str) -> str:
+    """Remove SSML markup tags from a string"""
+    return re.sub(r"<.*?>", "", text)
+
+
+# Time to live (in seconds) for synthesised text URL caching
+# Add a safe 30 second margin to ensure that clients are never provided with an
+# audio URL that's just about to expire and might do so before playback starts.
+_AWS_URL_TTL = 300  # 5 mins in seconds
+_AWS_CACHE_TTL = _AWS_URL_TTL - 30  # seconds
+_AWS_CACHE_MAXITEMS = 30
+
+
+def _initialize_aws_client() -> Optional[boto3.Session]:
     """Set up AWS Polly client"""
     global _api_client
 
@@ -82,34 +98,19 @@ def _initialize_client() -> Optional[boto3.Session]:
         return _api_client
 
 
-# TTL (in seconds) for get_synthesized_text_url caching
-# Add a safe 30 second margin to ensure that clients are never provided with an
-# audio URL that's just about to expire and could do so before playback starts.
-_AWS_URL_TTL = 300  # 5 mins in seconds
-_CACHE_TTL = _AWS_URL_TTL - 30  # seconds
-_CACHE_MAXITEMS = 30
-
-
-@cachetools.cached(cachetools.TTLCache(_CACHE_MAXITEMS, _CACHE_TTL))
-def get_synthesized_text_url(
+@cachetools.cached(cachetools.TTLCache(_AWS_CACHE_MAXITEMS, _AWS_CACHE_TTL))
+def aws_polly_synthesized_text_url(
     text: str,
     txt_format: str = _DEFAULT_TEXT_FORMAT,
     audio_format: str = _DEFAULT_AUDIO_FORMAT,
     voice_id: Optional[str] = _DEFAULT_VOICE,
     speed: float = 1.0,
 ) -> Optional[str]:
-    """Returns AWS URL to audio file with speech-synthesised text"""
-
-    assert txt_format in _TEXT_FORMATS
-    assert audio_format in _SUPPORTED_AUDIO_FORMATS
-
-    client = _initialize_client()  # Set up client lazily
+    """Returns AWS URL to audio file with speech-synthesised text."""
+    client = _initialize_aws_client()  # Set up client lazily
     if client is None:
         logging.warning("Unable to instantiate AWS client")
         return None
-
-    if voice_id not in _VOICES:
-        voice_id = _DEFAULT_VOICE
 
     text = text.strip()
 
@@ -119,8 +120,6 @@ def get_synthesized_text_url(
         text = text.replace("&", "&amp;")
         # Adjust voice speed as appropriate
         if speed != 1.0:
-            # Restrict to 50%-150% speed range
-            speed = max(min(1.5, speed), 0.5)
             perc = int(speed * 100)
             text = f'<prosody rate="{perc}%">{text}</prosody>'
         # Wrap text in the required <speak> tag
@@ -158,8 +157,52 @@ def get_synthesized_text_url(
     return url
 
 
+def get_synthesized_text_url(
+    text: str,
+    txt_format: str = _DEFAULT_TEXT_FORMAT,
+    audio_format: str = _DEFAULT_AUDIO_FORMAT,
+    voice_id: Optional[str] = _DEFAULT_VOICE,
+    speed: float = 1.0,
+) -> Optional[str]:
+    """Returns URL to audio file with speech-synthesised text."""
+
+    # Basic sanity checks
+    assert txt_format in _TEXT_FORMATS
+    assert audio_format in _SUPPORTED_AUDIO_FORMATS
+    assert voice_id in _SUPPORTED_VOICES
+
+    # Clamp speed to 50%-150% range
+    speed = max(min(1.5, speed), 0.5)
+
+    if voice_id in _AWS_VOICES:
+        # Pass kwargs to function
+        return aws_polly_synthesized_text_url(**locals())
+    elif voice_id in _TIRO_VOICES:
+        pass
+    else:
+        # Shouldn't get here
+        raise Exception(f"The voice '{voice_id}' is not supported")
+
+
+def _play_audio_file(path: str) -> bool:
+    """Play audio file at path via command line player. This only
+    works on systems with either afplay (macOS) or mpg123 (Linux)."""
+
+    AFPLAY_PATH = "/usr/bin/afplay"
+    MPG123_PATH = "/usr/bin/mpg123"
+    if os.path.exists(AFPLAY_PATH):
+        print(f"Playing file '{path}'")
+        os.system(f"{AFPLAY_PATH} {path}")
+    elif os.path.exists(MPG123_PATH):
+        print(f"Playing file '{path}'")
+        os.system(f"{MPG123_PATH} {path}")
+    else:
+        return False
+    return True
+
+
 if __name__ == "__main__":
-    """Test speech synthesis through command line invocation"""
+    """Test speech synthesis through command line invocation."""
     args = sys.argv
 
     audio_fmt = _DEFAULT_AUDIO_FORMAT
@@ -168,7 +211,9 @@ if __name__ == "__main__":
         audio_fmt = args[-1]
         args.pop()
 
-    txt = " ".join(args[1:]) if len(args) > 1 else "Góðan daginn, félagi"
+    DEFAULT_TEXT = "Góðan daginn og til hamingju með lífið."
+
+    txt = " ".join(args[1:]) if len(args) > 1 else DEFAULT_TEXT
     fn = "_".join([t.lower() for t in txt.split()]) + "." + audio_fmt
 
     url = get_synthesized_text_url(txt, audio_format=audio_fmt)
@@ -181,13 +226,6 @@ if __name__ == "__main__":
         print(f'Writing to file "{fn}"')
         with open(fn, "wb") as f:
             f.write(r.content)
-
-        # If running on a system that can play audio via shell
-        AFPLAY_PATH = "/usr/bin/afplay"
-        MPG123_PATH = "/usr/bin/mpg123"
-        if os.path.exists(AFPLAY_PATH):
-            os.system(f"{AFPLAY_PATH} {fn}")
-        elif os.path.exists(MPG123_PATH):
-            os.system(f"{MPG123_PATH} {fn}")
+        _play_audio_file(fn)
     else:
         raise Exception("Error generating speech synthesis URL")
