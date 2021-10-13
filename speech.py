@@ -220,6 +220,13 @@ def tiro_synthesized_text_data(
     return r.content
 
 
+def _gen_data_uri(data: bytes, mime_type=_BINARY_MIMETYPE) -> str:
+    """Generate Data URI (RFC2397) from bytes."""
+    b64str = b64encode(data).decode("ascii")
+    data_uri = f"data:{mime_type};base64,{b64str}"
+    return data_uri
+
+
 def tiro_synthesized_text_url(
     text: str,
     text_format: str = _DEFAULT_TEXT_FORMAT,
@@ -233,10 +240,9 @@ def tiro_synthesized_text_url(
     if not len(data):
         return None
 
-    # Generate Data URI (RFC2397) from bytes received
-    b64str = b64encode(data).decode("utf-8")
+    # Generate Data URI from the bytes received
     mime_type = _AUDIOFMT_TO_MIMETYPE.get(audio_format, _BINARY_MIMETYPE)
-    data_uri = f"data:{mime_type};{b64str}"
+    data_uri = _gen_data_uri(data, mime_type=mime_type)
 
     return data_uri
 
