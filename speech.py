@@ -34,6 +34,7 @@ import html
 import re
 from base64 import b64encode, b64decode
 from threading import Lock
+from urllib.request import urlopen
 
 import requests
 import cachetools  # type: ignore
@@ -312,11 +313,8 @@ def _is_data_uri(s: str) -> bool:
 
 def _bytes4data_uri(data_uri: str) -> bytes:
     """Returns data contained in data URI (RFC2397) as bytes."""
-    # Format is "data:[mimetype];SUQzBAAAAAAAI1RTU0UAAA..."
-    uri = data_uri[len(_DATA_URI_PREFIX) :]
-    cmp = uri.split(";")
-    b64str = cmp[1] if len(cmp) == 2 else cmp[0]  # Optional mime type
-    return b64decode(b64str)
+    with urlopen(data_uri) as response:
+        return response.read()
 
 
 def _fetch_audio_bytes(url: str) -> bytes:
