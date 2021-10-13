@@ -92,7 +92,8 @@ def _strip_ssml_markup(text: str) -> str:
 #     "region_name": "my_region"
 # }
 #
-_AWS_API_KEYS_PATH = os.path.join("resources", "aws_polly_keys.mideind.json")
+_AWS_KEYFILE_NAME = "aws_polly_keys.mideind.json"
+_AWS_API_KEYS_PATH = os.path.join("resources", _AWS_KEYFILE_NAME)
 _aws_api_client: Optional[boto3.Session] = None
 _aws_api_client_lock = Lock()
 
