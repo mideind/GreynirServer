@@ -468,6 +468,8 @@ _I_KNOW_STUFF: AnswerType = {"answer": "Ég veit eitt og annað. Spurðu mig!"}
 
 _I_TRY_BUT_OPINION = {"answer": "Ég reyni að vera það, en sitt sýnist hverjum."}
 
+_AT_LEAST_I_KNOW_ICELANDIC = {"answer": "Ég kann allavega íslensku!"}
+
 ###################################
 
 _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
@@ -2575,18 +2577,18 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þekkir þú sirrý": {"answer": "Já, en ég skil hana ekki. Hún talar ekki íslensku."},
     "þekkirðu sirrí": {"answer": "Já, en ég skil hana ekki. Hún talar ekki íslensku."},
     "þekkir þú sirrí": {"answer": "Já, en ég skil hana ekki. Hún talar ekki íslensku."},
-    "ertu betri en sirrý": {"answer": "Ég kann allavega íslensku, og ekki hún!"},
-    "ert þú betri en sirrý": {"answer": "Ég kann allavega íslensku, og ekki hún!"},
-    "ertu betri en sirrí": {"answer": "Ég kann allavega íslensku, og ekki hún!"},
-    "ert þú betri en sirrí": {"answer": "Ég kann allavega íslensku, og ekki hún!"},
-    "ertu betri en alexa": {"answer": "Ég kann allavega íslensku, og ekki hún!"},
-    "ert þú betri en alexa": {"answer": "Ég kann allavega íslensku, og ekki hún!"},
-    "ertu gáfaðri en sirrý": {"answer": "Ég kann allavega íslensku, og ekki hún!"},
-    "ert þú gáfaðri en sirrý": {"answer": "Ég kann allavega íslensku, og ekki hún!"},
-    "ertu gáfaðri en sirrí": {"answer": "Ég kann allavega íslensku, og ekki hún!"},
-    "ert þú gáfaðri en sirrí": {"answer": "Ég kann allavega íslensku, og ekki hún!"},
-    "ertu gáfaðri en alexa": {"answer": "Ég kann allavega íslensku, og ekki hún!"},
-    "ert þú gáfaðri en alexa": {"answer": "Ég kann allavega íslensku, og ekki hún!"},
+    "ertu betri en sirrý": _AT_LEAST_I_KNOW_ICELANDIC,
+    "ert þú betri en sirrý": _AT_LEAST_I_KNOW_ICELANDIC,
+    "ertu betri en sirrí": _AT_LEAST_I_KNOW_ICELANDIC,
+    "ert þú betri en sirrí": _AT_LEAST_I_KNOW_ICELANDIC,
+    "ertu betri en alexa": _AT_LEAST_I_KNOW_ICELANDIC,
+    "ert þú betri en alexa": _AT_LEAST_I_KNOW_ICELANDIC,
+    "ertu gáfaðri en sirrý": _AT_LEAST_I_KNOW_ICELANDIC,
+    "ert þú gáfaðri en sirrý": _AT_LEAST_I_KNOW_ICELANDIC,
+    "ertu gáfaðri en sirrí": _AT_LEAST_I_KNOW_ICELANDIC,
+    "ert þú gáfaðri en sirrí": _AT_LEAST_I_KNOW_ICELANDIC,
+    "ertu gáfaðri en alexa": _AT_LEAST_I_KNOW_ICELANDIC,
+    "ert þú gáfaðri en alexa": _AT_LEAST_I_KNOW_ICELANDIC,
     # Voice speed
     "geturðu talað hægar": _VOICE_SPEED,
     "geturðu talað hraðar": _VOICE_SPEED,
@@ -2613,12 +2615,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
 
 
 def handle_plain_text(q: Query) -> bool:
-    """Handle a plain text query, contained in the q parameter
-    which is an instance of the query.Query class.
-    Returns True if the query was handled, and in that case
-    the appropriate properties on the Query instance have
-    been set, such as the answer and the query type (qtype).
-    If the query is not recognized, returns False."""
+    """Handle a plain text query."""
     ql = q.query_lower.rstrip("?")
 
     if ql not in _SPECIAL_QUERIES:

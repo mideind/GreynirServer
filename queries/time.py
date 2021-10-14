@@ -109,6 +109,11 @@ _TIME_QUERIES = frozenset(
         "veist þú hvað klukkan er",
         "veistu hvað klukkan er núna",
         "veist þú hvað klukkan er núna",
+        "veistu hvað tímanum líður",
+        "veist þú hvað tímanum líður",
+        "segðu mér hvað klukkan er",
+        "segðu mér hvað er klukkan",
+        "segðu mér hvað tímanum líður",
     )
 )
 

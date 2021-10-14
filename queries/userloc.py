@@ -236,7 +236,7 @@ def _addr4voice(addr: str) -> Optional[str]:
     return numbers_to_text(s) if s else None
 
 
-_LOC_LOOKUP_FAIL_MSG = "Ekki tókst að fletta upp staðsetningu"
+_LOC_LOOKUP_FAIL_MSG = "Ekki tókst að fletta upp staðsetningu."
 
 
 def answer_for_location(loc: LatLonTuple) -> Optional[AnswerTuple]:
