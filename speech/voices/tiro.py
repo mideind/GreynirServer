@@ -93,6 +93,7 @@ def text_to_audio_data(
     voice_id: str,
     speed: float,
 ) -> bytes:
+    """Returns audio data for speech-synthesised text."""
     return _tiro_synthesized_text_data(**locals())
 
 
@@ -103,4 +104,5 @@ def text_to_audio_url(
     voice_id: str,
     speed: float,
 ) -> Optional[str]:
+    """Returns URL to audio of speech-synthesised text."""
     return _tiro_synthesized_text_url(**locals())

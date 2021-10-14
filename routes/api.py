@@ -43,7 +43,7 @@ from article import Article as ArticleProxy
 from query import process_query
 from query import Query as QueryObject
 from doc import SUPPORTED_DOC_MIMETYPES, Document
-from speech import get_synthesized_text_url
+from speech import text_to_audio_url
 from util import read_api_key
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
@@ -369,7 +369,7 @@ def query_api(version: int = 1) -> Response:
     # If voice is set, return a voice-friendly string
     voice = bool_from_request(request, "voice")
     # Request a particular voice
-    voice_id: Optional[str] = request.values.get("voice_id")
+    voice_id: str = request.values.get("voice_id", "Dora")
     # Request a particular voice speed
     try:
         voice_speed = float(request.values.get("voice_speed", 1.0))
@@ -448,7 +448,7 @@ def query_api(version: int = 1) -> Response:
         # If the result contains a "voice" key, return it
         audio = result["voice"]
         url = (
-            get_synthesized_text_url(audio, voice_id=voice_id, speed=voice_speed)
+            text_to_audio_url(audio, voice_id=voice_id, speed=voice_speed)
             if audio
             else None
         )
@@ -554,9 +554,7 @@ def speech_api(version: int = 1) -> Response:
             speed = 1.0
 
     try:
-        url = get_synthesized_text_url(
-            text, text_format=fmt, voice_id=voice_id, speed=speed
-        )
+        url = text_to_audio_url(text, text_format=fmt, voice_id=voice_id, speed=speed)
     except Exception:
         return better_jsonify(**reply)
 

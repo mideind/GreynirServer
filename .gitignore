@@ -157,7 +157,7 @@ $RECYCLE.BIN/
 
 # API keys
 resources/*Key.txt
-resources/aws_polly_keys.*.json
+resources/*Key.json
 resources/salescloud_key.bin
 
 # JSHint config

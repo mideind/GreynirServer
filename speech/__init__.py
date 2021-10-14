@@ -77,8 +77,6 @@ def load_voice_modules() -> Dict[str, ModuleType]:
         try:
             # Try to import
             m = importlib.import_module(modname)
-            if not m:
-                continue
             voices: Iterable[str] = getattr(m, "VOICES")
             if not voices:
                 continue  # No voices declared, skip

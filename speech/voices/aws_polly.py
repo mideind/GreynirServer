@@ -29,6 +29,7 @@ import json
 import logging
 from threading import Lock
 
+import requests
 import cachetools  # type: ignore
 import boto3  # type: ignore
 from botocore.exceptions import ClientError  # type: ignore
@@ -49,7 +50,7 @@ VOICES = frozenset(("Karl", "Dora"))
 #     "region_name": "my_region"
 # }
 #
-_AWS_KEYFILE_NAME = "aws_polly_keys.mideind.json"
+_AWS_KEYFILE_NAME = "AWSPollyServerKey.json"
 _AWS_API_KEYS_PATH = os.path.join("resources", _AWS_KEYFILE_NAME)
 _aws_api_client: Optional[boto3.Session] = None
 _aws_api_client_lock = Lock()
@@ -148,8 +149,12 @@ def text_to_audio_data(
     audio_format: str,
     voice_id: str,
     speed: float,
-) -> bytes:
-    return b""
+) -> Optional[bytes]:
+    """Returns audio data for speech-synthesised text."""
+    url = _aws_polly_synthesized_text_url(**locals())
+    if url:
+        r = requests.get(url)
+        return r.content
 
 
 def text_to_audio_url(
@@ -159,4 +164,5 @@ def text_to_audio_url(
     voice_id: str,
     speed: float,
 ) -> Optional[str]:
+    """Returns URL to audio of speech-synthesised text."""
     return _aws_polly_synthesized_text_url(**locals())
