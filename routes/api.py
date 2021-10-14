@@ -500,7 +500,10 @@ def query_history_api(version: int = 1) -> Response:
     if not client_id:
         return better_jsonify(valid=False, errmsg="Missing parameters")
     if action not in VALID_ACTIONS:
-        return better_jsonify(valid=False, errmsg="Invalid action parameter")
+        return better_jsonify(
+            valid=False,
+            errmsg=f"Invalid action parameter '{action}'. Should be in {VALID_ACTIONS}.",
+        )
 
     with SessionContext(commit=True) as session:
         # Clear all logged user queries
