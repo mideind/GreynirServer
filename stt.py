@@ -40,6 +40,7 @@ from speech import (
 from speech.voices import suffix4audiofmt
 from util import icelandic_asciify
 
+
 _DATA_URI_PREFIX = "data:"
 
 
@@ -87,6 +88,9 @@ def _play_audio_file(path: str) -> bool:
     return True
 
 
+DEFAULT_TEXT = "Góðan daginn og til hamingju með lífið."
+
+
 def main() -> None:
     """Main program function."""
     from argparse import ArgumentParser
@@ -96,7 +100,7 @@ def main() -> None:
     parser.add_argument(
         "-v",
         "--voice",
-        help="specify voice",
+        help="specify which voice to use",
         default=DEFAULT_VOICE,
         choices=list(SUPPORTED_VOICES),
     )
@@ -131,17 +135,17 @@ def main() -> None:
         "text",
         help="text to synthesize",
         nargs="?",
-        default="Góðan daginn og til hamingju með lífið.",
+        default=DEFAULT_TEXT,
     )
 
     args = parser.parse_args()
 
-    def die(msg: str) -> None:
+    def die(msg: str, exit_code: int = 1) -> None:
         print(msg, file=sys.stderr)
-        sys.exit(1)
+        sys.exit(exit_code)
 
     if len(args.text.strip()) == 0:
-        die("No text provided")
+        die("No text provided.")
 
     # Synthesize the text according to CLI options
     url = text_to_audio_url(
@@ -152,18 +156,17 @@ def main() -> None:
         speed=args.speed,
     )
     if not url:
-        die("Error generating speech synthesis URL")
-        sys.exit(1)
+        die("Error generating speech synthesis URL.")
 
     if args.url:
         print(url)
         sys.exit(0)
 
     # Download
-    print(f"Downloading URL {url[:100]}")
+    print(f"Downloading URL {url[:300]}")
     data: bytes = _fetch_audio_bytes(url)
     if not data:
-        die("Unable to fetch audio data")
+        die("Unable to fetch audio data.")
 
     # Generate file name
     fn = "_".join([t.lower() for t in args.text.rstrip(".").split()])
@@ -173,7 +176,7 @@ def main() -> None:
     fn = f"{fn}.{suffix}".rstrip(".")
 
     # Write audio data to file
-    print(f'Writing to file "{fn}"')
+    print(f'Writing to file "{fn}".')
     with open(fn, "wb") as f:
         f.write(data)
 
