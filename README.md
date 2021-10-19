@@ -163,14 +163,19 @@ in [`queries/examples`](queries/examples).
 * [`fetcher.py`](fetcher.py): Utility classes for fetching articles given their URLs
 * [`nertokenizer.py`](nertokenizer.py): A layer on top of the tokenizer for named entity recognition
 * [`processor.py`](processor.py): Information extraction from parse trees and token streams
+* [`postagger.py`](postagger.py): Part-of-speech tagging
 * [`article.py`](article.py): Representation of an article through its life cycle
-* [`tree.py`](tree.py): Representation of parse trees for processing
 * [`vectors/builder.py`](vectors/builder.py): Article indexer and LSA topic vector builder
 * [`doc.py`](doc.py): Extract plain text from various document formats
 * [`geo.py`](geo.py): Geography and location-related utility functions
-* [`speech.py`](speech.py): Speech synthesis-related utility functions
+* [`speech/*.py`](speech/): Speech synthesizer modules
+* [`stt.py`](stt.py): Command line interface for Icelandic synthesis
 * [`tools/*.py`](tools/): Various command line tools
-* [`util.py`](util.py): Various utility functions used throughout the codebase
+* [`tnttagger.py`](tnttagger.py): Statistical POS tagging
+* [`tree.py`](tree.py): Representation of parse trees for processing
+* [`treeutil.py`](treeutil.py): Utility functions for working
+        with parse trees and tokens
+* [`util.py`](util.py): Assorted utility functions used throughout the codebase
 
 ## Installation and setup
 
