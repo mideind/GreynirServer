@@ -32,7 +32,7 @@
 # TODO: "Verður sól á morgun?" "Verður sól í dag?" - sólskin - sést til sólar
 # TODO: "Hvernig er færðin?"
 # TODO: "Hversu hvasst er úti?"
-# TODO: "HVAÐ er hitastigið á egilsstöðum?" "Hvað er mikill hiti úti?"
+# TODO: "Hvað er hitastigið á egilsstöðum?" "Hvað er mikill hiti úti?"
 # TODO: "Hvar er heitast á landinu?"
 # TODO: "Er gott veður úti?"
 # TODO: "Hvað er mikið frost?" "Hversu mikið frost er úti?"
@@ -40,6 +40,7 @@
 # TODO: "Hvað er mikill hiti úti?"
 # TODO: "Hvernig er veðurspáin fyrir garðabæ?"
 # TODO: "Hvernig er færðin"
+# TODO: Er rigning úti? Er sól úti? Er sól á Húsavík? Er rigning í Reykjavík?
 # TODO: "Hvernig eru loftgæðin [í Reykjavík] etc."
 
 from typing import Optional
