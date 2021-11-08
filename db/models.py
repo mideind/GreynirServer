@@ -175,10 +175,10 @@ class Article(Base):
     topic_vector = cast(Optional[str], Column(String))
 
     # The back-reference to the Root parent of this Article
-    root: RelationshipProperty = relationship(  # type: ignore
+    root: RelationshipProperty = relationship(
         "Root",
         foreign_keys="Article.root_id",
-        backref=backref("articles", order_by=url),  # type: ignore
+        backref=backref("articles", order_by=url),
     )
 
     def __repr__(self):

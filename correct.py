@@ -24,7 +24,7 @@
 
 """
 
-from typing import Iterator, List, cast
+from typing import Any, Iterator, List, cast
 
 from tokenizer import Tok
 from reynir.bintokenizer import StringIterable
@@ -55,8 +55,8 @@ class NERCorrect(reynir_correct.GreynirCorrect):
     """ Derived class to override the default tokenization of
         GreynirCorrect to perform named entity recognition """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, **options: Any) -> None:
+        super().__init__(**options)
 
     def tokenize(self, text: StringIterable) -> Iterator[Tok]:
         """ Use the recognizing & correcting tokenizer instead
