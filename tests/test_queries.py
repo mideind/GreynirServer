@@ -131,6 +131,7 @@ def test_nonsense(client: FlaskClient):
 def test_arithmetic(client: FlaskClient):
     """ Arithmetic module """
     ARITHM_QUERIES = {
+        "hvað er 17 deilt með fjórum": "4,25",
         "hvað er fimm sinnum tólf": "60",
         "hvað er 12 sinnum 12?": "144",
         "hvað er nítján plús 3": "22",
@@ -142,7 +143,6 @@ def test_arithmetic(client: FlaskClient):
         "hvað er hundrað - sautján": "83",
         "hvað er 100 - sautján": "83",
         "hvað er 100 - 17": "83",
-        "hvað er 17 deilt með fjórum": "4,25",
         "hvað er 17 / 4": "4,25",
         "hvað er 18 deilt með þrem": "6",
         "hvað er 18 / þrem": "6",
