@@ -108,8 +108,12 @@ QRandAction →
     | "geturðu" "valið" "fyrir" "mig" | "getur" "þú" "valið" "fyrir" "mig"
     | "gætir" "þú" "valið" "fyrir" "mig" | "værirðu" "til" "í" "að" "velja" "fyrir" "mig"
     | "nefndu" | "nefndu" "fyrir" "mig" | "nefndu" "fyrir" "okkur"
-    | "komdu" "með" | "geturðu" "komið" "með" | "getur" "þú" "komið" "með"
-    | "gefðu" "mér" | "geturðu" "gefið" "mér" |  "getur" "þú" "gefið" "mér"
+    | "komdu" "með"
+    | "geturðu" "komið" "með" | "getur" "þú" "komið" "með"
+    | "gætirðu" "komið" "með" | "gætir" "þú" "komið" "með"
+    | "gefðu" "mér"
+    | "geturðu" "gefið" "mér" |  "getur" "þú" "gefið" "mér"
+    | "gætirðu" "gefið" "mér" |  "gætir" "þú" "gefið" "mér"
 
 QRandRand →
     # "Að handahófi" is incorrect but we'll allow it
