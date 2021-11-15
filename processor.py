@@ -261,14 +261,11 @@ class Processor:
                         # Run all processors in turn
                         for p in self.pmodules:
                             ptype: str = getattr(p, "PROCESSOR_TYPE")
+                            assert ptype in _PROCESSOR_TYPES, "Unknown processor type"
                             if ptype == _PROCESSOR_TYPE_TREE:
                                 tree.process(session, p)
                             elif ptype == _PROCESSOR_TYPE_TOKEN:
                                 token_container.process(session, p)
-                            else:
-                                assert (
-                                    False
-                                ), f"Unknown processor type '{ptype}'; should be in {_PROCESSOR_TYPES}"
 
                     # Mark the article as being processed
                     article.processed = datetime.utcnow()

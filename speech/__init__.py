@@ -20,8 +20,6 @@
 
     Icelandic text to speech via TTS web services.
 
-    Includes friendly command line interface.
-
 """
 
 from typing import List, Iterable, Dict, Set
@@ -34,7 +32,7 @@ import importlib
 
 
 DEFAULT_VOICE = "Dora"
-VOICES_DIR = "voices"
+VOICES_DIR = "speech/voices"
 
 # Text formats
 # For details about SSML markup, see:
@@ -53,10 +51,8 @@ def load_voice_modules() -> Dict[str, ModuleType]:
     """Dynamically load all voice modules, map voice ID
     strings to the relevant modules."""
 
-    prevdir = os.getcwd()
     abspath = os.path.abspath(__file__)
     dname = os.path.dirname(abspath)
-    os.chdir(dname)
     sys.path.append(dname)
 
     def modules_in_dir(directory: str) -> List[str]:
@@ -85,13 +81,11 @@ def load_voice_modules() -> Dict[str, ModuleType]:
         except Exception as e:
             print(f"Error importing voice module {modname}: {e}")
 
-    os.chdir(prevdir)
-
     return v2m
 
 
 VOICE_TO_MODULE = load_voice_modules()
-SUPPORTED_VOICES = VOICE_TO_MODULE.keys()
+SUPPORTED_VOICES = set(VOICE_TO_MODULE.keys())
 
 
 def _sanitize_args(args: Dict) -> Dict:
