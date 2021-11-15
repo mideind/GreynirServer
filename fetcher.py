@@ -246,7 +246,7 @@ class Fetcher:
         return html_doc
 
     @classmethod
-    def _get_helper(cls, root) -> Optional[ModuleType]:
+    def _get_helper(cls, root: Root) -> Optional[ModuleType]:
         """ Return a scrape helper instance for the given root """
         # Obtain an instance of a scraper helper class for this root
         helper_id = root.scr_module + "." + root.scr_class

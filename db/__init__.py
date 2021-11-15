@@ -27,7 +27,7 @@ from typing import Any, Callable, Generic, Optional, Type, TypeVar, cast
 
 from sqlalchemy import create_engine, desc, func as dbfunc
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.engine.cursor import CursorResult
+from sqlalchemy.engine.cursor import CursorResult  # type: ignore
 
 from sqlalchemy.exc import SQLAlchemyError as DatabaseError
 from sqlalchemy.exc import IntegrityError
@@ -37,7 +37,23 @@ from typing_extensions import Literal
 
 from settings import Settings, ConfigError
 
-from .models import Base
+__all__ = (
+    "create_engine",
+    "desc",
+    "dbfunc",
+    "sessionmaker",
+    "CursorResult",
+    "Session",
+    "DatabaseError",
+    "IntegrityError",
+    "DataError",
+    "OperationalError",
+    "ConfigError",
+    "Settings",
+    "Scraper_DB",
+    "classproperty",
+    "SessionContext",
+)
 
 
 class Scraper_DB:
@@ -64,6 +80,8 @@ class Scraper_DB:
 
     def create_tables(self) -> None:
         """Create all missing tables in the database"""
+        from .models import Base
+
         Base.metadata.create_all(self._engine)  # type: ignore
 
     def execute(self, sql: str, **kwargs: Any) -> CursorResult:
@@ -123,7 +141,7 @@ class SessionContext:
             self._new_session = True
             if read_only:
                 # Set the transaction as read only, which can save resources
-                self._session.execute("SET TRANSACTION READ ONLY")
+                self._session.execute("SET TRANSACTION READ ONLY")  # type: ignore
                 self._commit = True
             else:
                 self._commit = commit
