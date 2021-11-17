@@ -732,6 +732,19 @@ def test_petrol(client: FlaskClient) -> None:
     assert "source" in json and json["source"].startswith("Gasvaktin")
 
 
+def test_pic(client: FlaskClient) -> None:
+    """Pic module"""
+    if not has_google_api_key():
+        # NB: No Google API key on test server
+        return
+
+    json = qmcall(client, {"q": "Sýndu mér mynd af Katrínu Jakobsdóttur"}, "Picture")
+    assert "image" in json
+
+    json = qmcall(client, {"q": "sýndu ljósmynd af hörpunni"}, "Picture")
+    assert "image" in json
+
+
 def test_places(client: FlaskClient) -> None:
     """Places module"""
 
