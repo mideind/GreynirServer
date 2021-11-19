@@ -25,6 +25,7 @@ from typing import Optional
 import random
 import logging
 from datetime import datetime, timedelta
+from urllib.parse import urlparse
 
 from query import Query, QueryStateDict
 from queries import gen_answer, icequote
@@ -70,11 +71,14 @@ QPic →
 QPicQuery →
     QPicShowMePictureQuery | QPicWrongPictureQuery
 
+QPicShowMe →
+    "sýndu" | "getur" "þú" "sýnt" | "geturðu" "sýnt" | "viltu" "sýna"
+
 QPicShowMePictureQuery →
-    "sýndu" QPicMeOrUs? QPicPictureOrPhoto "af" QPicSubject
+    QPicShowMe QPicMeOrUs? QPicPictureOrPhoto "af" QPicSubject
 
 QPicPictureOrPhoto →
-    "ljósmynd" | "mynd"
+    "ljósmynd" | "mynd" | "ljósmyndir" | "myndir"
 
 QPicMeOrUs →
     "mér" | "okkur"
@@ -121,8 +125,14 @@ def _gen_pic_answer(result: Result, q: Query):
         img = get_image_url(subj)
         if img and img.src:
             # We found an image of the subject
-            q.set_answer(*gen_answer("Skal gert!"))
+            answ = f"Hér er mynd af {icequote(subj_þgf)}"
+            q.set_answer(*gen_answer(answ))
             q.set_image(img.src)
+            src: str = "Google Images"
+            o = urlparse(img.src)
+            if o and o.hostname:
+                src = o.hostname
+            q.set_source(src)
             # q.set_expires(datetime.utcnow() + timedelta(hours=1))
         else:
             # No picture found
@@ -141,7 +151,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     if "qtype" in result:
         # Successfully matched a query type
         try:
-            logging.error("GENERATING PIC ANSWER")
             _gen_pic_answer(result, q)
         except Exception as e:
             logging.warning(f"Exception answering picture query: {e}")
