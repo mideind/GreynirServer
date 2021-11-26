@@ -292,36 +292,6 @@ def _open_mideind_url(qs: str, q: Query) -> AnswerType:
     return {"answer": "Skal gert!", "is_question": False}
 
 
-def _play_jazz(qs: str, q: Query) -> AnswerType:
-    q.set_url("https://www.youtube.com/watch?v=E5loTx0_KDE")
-    return {"answer": "Skal gert!", "is_question": False}
-
-
-def _play_blues(qs: str, q: Query) -> AnswerType:
-    q.set_url("https://www.youtube.com/watch?v=jw9tMRhKEak")
-    return {"answer": "Skal gert!", "is_question": False}
-
-
-def _play_rock(qs: str, q: Query) -> AnswerType:
-    q.set_url("https://www.youtube.com/watch?v=y8OtzJtp-EM")
-    return {"answer": "Skal gert!", "is_question": False}
-
-
-def _play_classical(qs: str, q: Query) -> AnswerType:
-    q.set_url("https://www.youtube.com/watch?v=iwIvS4yIThU")
-    return {"answer": "Skal gert!", "is_question": False}
-
-
-def _play_music(qs: str, q: Query) -> AnswerType:
-    m = [_play_jazz, _play_blues, _play_rock, _play_classical]
-    return choice(m)(qs, q)
-
-
-def _play_film(qs: str, q: Query) -> AnswerType:
-    q.set_url("https://www.youtube.com/watch?v=FC6jFoYm3xs")
-    return {"answer": "Skal gert!", "is_question": False}
-
-
 _MEANING_OF_LIFE: AnswerType = {"answer": "42.", "voice": "Fjörutíu og tveir."}
 
 _YOU_MY_ONLY_GOD: AnswerType = {"answer": "Þú ert minn eini guð, kæri notandi."}
@@ -1022,55 +992,6 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "opnaðu vef emblu": _open_embla_url,
     "opnaðu vefsíðu miðeindar": _open_mideind_url,
     "opnaðu vef miðeindar": _open_mideind_url,
-    # Play some music. Just experimental fun for now.
-    # Jazz
-    "spilaðu djass": _play_jazz,
-    "spila þú djass": _play_jazz,
-    "spilaðu jass": _play_jazz,
-    "spila þú jass": _play_jazz,
-    "spilaðu jazz": _play_jazz,
-    "spila þú jazz": _play_jazz,
-    # Blues
-    "spilaðu blús": _play_blues,
-    "spila þú blús": _play_blues,
-    "spilaðu rokk": _play_rock,
-    "spila þú rokk": _play_rock,
-    # Classical
-    "spilaðu klassík": _play_classical,
-    "spila þú klassík": _play_classical,
-    "spilaðu klassíska tónlist": _play_classical,
-    "spila þú klassíska tónlist": _play_classical,
-    # Generic
-    "spila tónlist": _play_music,
-    "spilaðu tónlist": _play_music,
-    "spila þú tónlist": _play_music,
-    "spilaðu skemmtilega tónlist": _play_music,
-    "spilaðu einhverja tónlist": _play_music,
-    "spila þú einhverja tónlist": _play_music,
-    "spilaðu fyrir mig tónlist": _play_music,
-    "spilaðu tónlist fyrir mig": _play_music,
-    "spilaðu fyrir mig lag": _play_music,
-    "spilaðu lag fyrir mig": _play_music,
-    "spilaðu skemmtilega tónlist fyrir mig": _play_music,
-    "viltu spila fyrir mig tónlist": _play_music,
-    "viltu spila einhverja tónlist fyrir mig": _play_music,
-    "spilaðu gott lag": _play_music,
-    "spilaðu góða tónlist": _play_music,
-    "geturðu spilað tónlist": _play_music,
-    "getur þú spilað tónlist": _play_music,
-    "geturðu spilað tónlist fyrir mig": _play_music,
-    "getur þú spilað tónlist fyrir mig": _play_music,
-    "geturðu spilað lag": _play_music,
-    "getur þú spilað lag": _play_music,
-    "geturðu spilað lag fyrir mig": _play_music,
-    "getur þú spilað lag fyrir mig": _play_music,
-    # Play a film
-    "spilaðu kvikmynd": _play_film,
-    "spilaðu bíómynd": _play_film,
-    "spilaðu kvikmynd fyrir mig": _play_film,
-    "spilaðu bíómynd fyrir mig": _play_film,
-    "sýndu mér kvikmynd": _play_film,
-    "sýndu mér bíómynd": _play_film,
     # Blame
     "ekki rétt": _sorry,
     "þetta er ekki rétt": _sorry,

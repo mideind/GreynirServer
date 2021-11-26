@@ -72,7 +72,8 @@ QPicQuery →
     QPicShowMePictureQuery | QPicWrongPictureQuery
 
 QPicShowMe →
-    "sýndu" | "getur" "þú" "sýnt" | "geturðu" "sýnt" | "viltu" "sýna"
+    "sýndu" | "getur" "þú" "sýnt" | "geturðu" "sýnt" | "viltu" "sýna" |
+    "nennirðu" "að "sýna" | "nennir" "þú" "að" "sýna"
 
 QPicShowMePictureQuery →
     QPicShowMe QPicMeOrUs? QPicPictureOrPhoto "af" QPicSubject
@@ -125,7 +126,7 @@ def _gen_pic_answer(result: Result, q: Query):
         img = get_image_url(subj)
         if img and img.src:
             # We found an image of the subject
-            answ = f"Hér er mynd af {icequote(subj_þgf)}"
+            answ = f"Hér er mynd sem ég fann af {icequote(subj_þgf)}"
             q.set_answer(*gen_answer(answ))
             q.set_image(img.src)
             src: str = "Google Images"
