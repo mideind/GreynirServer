@@ -22,12 +22,13 @@
 
 """
 
-from typing import List, Iterable, Dict, Set
+from typing import List, Iterable, Dict, Any
 from types import ModuleType
 
 import os
 import sys
 import logging
+from inspect import isfunction
 import importlib
 
 
@@ -64,7 +65,7 @@ def load_voice_modules() -> Dict[str, ModuleType]:
                 continue
             if fname.startswith("_"):  # Skip any files starting with _
                 continue
-            mod = directory.replace("/", ".") + "." + fname[:-3]  # Cut off .py
+            mod = directory.replace("/", ".") + "." + fname[:-3]  # Cut off .py suffix
             modnames.append(mod)
         return modnames
 
@@ -88,7 +89,7 @@ VOICE_TO_MODULE = load_voice_modules()
 SUPPORTED_VOICES = set(VOICE_TO_MODULE.keys())
 
 
-def _sanitize_args(args: Dict) -> Dict:
+def _sanitize_args(args: Dict[str, Any]) -> Dict[str, Any]:
     """Make sure arguments to speech synthesis functions are sane."""
     # Make sure we have a valid voice ID
     voice_id = args["voice_id"].lower().capitalize()
@@ -114,9 +115,14 @@ def text_to_audio_data(
     speed: float = 1.0,
 ) -> bytes:
     """Returns audio data for speech-synthesised text."""
+    # Create a copy of all function arguments
     args = locals().copy()
+    # Find the module that provides this voice
     module = VOICE_TO_MODULE.get(voice_id)
+    assert module is not None
     fn = getattr(module, "text_to_audio_data")
+    assert isfunction(fn)
+    # Call function in module, passing on the arguments
     return fn(**_sanitize_args(args))
 
 
@@ -128,7 +134,12 @@ def text_to_audio_url(
     speed: float = 1.0,
 ) -> str:
     """Returns URL to audio of speech-synthesised text."""
+    # Create a copy of all function arguments
     args = locals().copy()
+    # Find the module that provides this voice
     module = VOICE_TO_MODULE.get(voice_id)
+    assert module is not None
     fn = getattr(module, "text_to_audio_url")
+    assert isfunction(fn)
+    # Call function in module, passing on the arguments
     return fn(**_sanitize_args(args))

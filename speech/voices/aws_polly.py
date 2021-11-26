@@ -152,9 +152,14 @@ def text_to_audio_data(
 ) -> Optional[bytes]:
     """Returns audio data for speech-synthesised text."""
     url = _aws_polly_synthesized_text_url(**locals())
-    if url:
+    if not url:
+        return None
+    try:
         r = requests.get(url)
         return r.content
+    except Exception as e:
+        logging.error("Error fetching URL {url}: {e}")
+    return None
 
 
 def text_to_audio_url(
