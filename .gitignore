@@ -159,6 +159,7 @@ $RECYCLE.BIN/
 resources/*Key.txt
 resources/aws_polly_keys.*.json
 resources/salescloud_key.bin
+resources/*Key.json
 
 # JSHint config
 #.jshintrc
