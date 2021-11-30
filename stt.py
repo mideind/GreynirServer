@@ -74,24 +74,19 @@ def _fetch_audio_bytes(url: str) -> Optional[bytes]:
         logging.error(f"Error fetching audio bytes: {e}")
 
 
-def _play_audio_file(path: str) -> bool:
+def _play_audio_file(path: str) -> None:
     """Play audio file at path via command line player. This only
     works on systems with either afplay (macOS) or mpg123 (Linux)."""
 
-    AFPLAY_PATH = "/usr/bin/afplay"
-    MPG123_PATH = "/usr/bin/mpg123"
+    AFPLAY = "/usr/bin/afplay"  # afplay is only present on macOS systems
+    MPG123 = "mpg123"
 
-    if os.path.exists(AFPLAY_PATH):
+    if os.path.exists(AFPLAY):
         print(f"Playing file '{path}'")
-        os.system(f"{AFPLAY_PATH} '{path}'")
-    elif os.path.exists(MPG123_PATH):
-        print(f"Playing file '{path}'")
-        os.system(f"{MPG123_PATH} '{path}'")
+        os.system(f"{AFPLAY} '{path}'")
     else:
-        print("Unable to play audio file. Please install mpg123 player.")
-        return False
-
-    return True
+        print(f"Playing file '{path}'")
+        os.system(f"{MPG123} '{path}'")
 
 
 DEFAULT_TEXT = "Góðan daginn og til hamingju með lífið."
