@@ -159,6 +159,7 @@ $RECYCLE.BIN/
 resources/*Key.txt
 resources/*Key.json
 resources/salescloud_key.bin
+resources/*keys.*.json
 
 # JSHint config
 #.jshintrc
