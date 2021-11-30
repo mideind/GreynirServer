@@ -51,7 +51,9 @@ VOICES = frozenset(("Karl", "Dora"))
 # }
 #
 _AWS_KEYFILE_NAME = "AWSPollyServerKey.json"
-_AWS_API_KEYS_PATH = os.path.join("resources", _AWS_KEYFILE_NAME)
+_AWS_API_KEYS_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "..", "resources", _AWS_KEYFILE_NAME
+)
 _aws_api_client: Optional[boto3.Session] = None
 _aws_api_client_lock = Lock()
 
