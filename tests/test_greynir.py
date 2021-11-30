@@ -47,7 +47,7 @@ from geo import *  # noqa
 
 @pytest.fixture
 def client() -> FlaskClient:
-    """ Instantiate Flask's modified Werkzeug client to use in tests """
+    """Instantiate Flask's modified Werkzeug client to use in tests"""
     app.config["TESTING"] = True
     app.config["DEBUG"] = True
     return app.test_client()
@@ -116,7 +116,7 @@ API_ROUTES = [
 
 
 def test_api(client: FlaskClient):
-    """ Call API routes and validate response. """
+    """Call API routes and validate response."""
     # TODO: Route-specific validation of JSON responses
     for r in API_ROUTES:
         # BUG: As-is, this makes pretty little sense
@@ -195,54 +195,6 @@ def test_api_key_restriction(client: FlaskClient):
     assert "errmsg" in resp.json and "missing API key" in resp.json["errmsg"]
 
 
-def test_query_history_api(client: FlaskClient):
-    """ Test query history and query data deletion API. """
-
-    # We don't run these tests except during the CI testing process, for fear of
-    # corrupting existing data when developers run them on their local machine.
-    if not IN_CI_TESTING_ENV:
-        return
-
-    _TEST_CLIENT_ID = "123456789"
-
-    with SessionContext(commit=False) as session:
-        # First test API w. "clear" action (which clears query history only)
-        # Num queries in dummy test data
-        TEST_EXPECTED_NUM_QUERIES = 6
-
-        # Number of queries prior to API call
-        pre_numq = session.query(Query).count()
-        assert (
-            pre_numq == TEST_EXPECTED_NUM_QUERIES
-        ), "Malformed queries dummy test data"
-
-        qstr = urlencode({"action": "clear", "client_id": _TEST_CLIENT_ID})
-
-        _ = client.get("/query_history.api?" + qstr)
-
-        post_numq = session.query(Query).count()
-
-        assert post_numq == pre_numq - 1
-
-        # Test API w. "clear_all" action (which clears query both history and querydata)
-        # Num queries in dummy test data
-        TEST_EXPECTED_NUM_QUERYDATA = 2
-
-        # Number of querydata rows prior to API call
-        pre_numq = session.query(QueryData).count()
-        assert (
-            pre_numq == TEST_EXPECTED_NUM_QUERYDATA
-        ), "Malformed querydata dummy test data"
-
-        qstr = urlencode({"action": "clear_all", "client_id": _TEST_CLIENT_ID})
-
-        _ = client.get("/query_history.api?" + qstr)
-
-        post_numqdata_cnt = session.query(QueryData).count()
-
-        assert post_numqdata_cnt == pre_numq - 1
-
-
 def test_nertokenizer():
     from nertokenizer import recognize_entities
 
@@ -286,7 +238,7 @@ def test_tnttagger():
 
 
 def test_geo():
-    """ Test geography and location-related functions in geo.py """
+    """Test geography and location-related functions in geo.py"""
     from geo import (
         icelandic_city_name,
         continent_for_country,
@@ -429,7 +381,7 @@ def test_geo():
 
 
 def test_doc():
-    """ Test document-related functions in doc.py """
+    """Test document-related functions in doc.py"""
     from doc import PlainTextDocument, DocxDocument
 
     txt_bytes = "Halló, gaman að kynnast þér.\n\nHvernig gengur?".encode("utf-8")

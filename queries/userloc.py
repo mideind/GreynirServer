@@ -38,7 +38,14 @@ from queries import (
 from queries.num import numbers_to_text
 from tree import Result, Node
 from iceaddr import iceaddr_lookup, postcodes  # type: ignore
-from geo import iceprep_for_placename, iceprep_for_street
+from geo import (
+    iceprep_for_placename,
+    iceprep_for_street,
+    iceprep_for_cc,
+    in_iceland,
+    country_name_for_isocode,
+    LatLonTuple,
+)
 
 
 _LOC_QTYPE = "UserLocation"
@@ -59,7 +66,7 @@ Query →
 QUserLocation → QUserLocationQuery '?'?
 
 QUserLocationQuery →
-    QUserLocationCurrent | QUserLocationPostcode
+    QUserLocationCurrent | QUserLocationPostcode | QUserLocationCountry
 
 QUserLocationCurrent →
     "hvar" "er" "ég" QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
@@ -79,9 +86,15 @@ QUserLocationPostcode →
     | "í" "hvaða" "póstnúmeri" "erum" "við" QULocEiginlega? QULocLocated? QULocNow?
     | "hvaða" "póstnúmeri" "erum" "við" QULocEiginlega? QULocLocated? "í" QULocNow?
 
+QUserLocationCountry →
+    QULocPreposition "hvaða" "landi" "er" "ég" QULocLocated? QULocNow?
+    | QULocPreposition "hvaða" "landi" "erum" "við" QULocLocated? QULocNow?
+    | "hvaða" "landi" "er" "ég" QULocLocated? QULocPreposition QULocNow?
+    | "hvaða" "landi" "erum" "við" QULocLocated? QULocPreposition QULocNow?
+
 QULocWhichStreet →
-    QULocPreposition "hvaða" "götu" "er" "ég"
-    | QULocPreposition "hvaða" "götu" "erum" "við"
+    QULocPreposition "hvaða" "götu" "er" "ég" QULocLocated? QULocNow?
+    | QULocPreposition "hvaða" "götu" "erum" "við" QULocLocated? QULocNow?
 
 QULocPreposition →
     "á" | "í"
@@ -129,8 +142,12 @@ def QUserLocationPostcode(node: Node, params: QueryStateDict, result: Result) ->
     result.qkey = "CurrentPostcode"
 
 
+def QUserLocationCountry(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qkey = "CurrentCountry"
+
+
 def _addrinfo_from_api_result(result) -> Tuple:
-    """ Extract relevant address components from Google API result """
+    """Extract relevant address components from Google API result."""
 
     comp = result["address_components"]
 
@@ -203,13 +220,13 @@ def street_desc(street_nom: str, street_num: int, locality_nom: str) -> str:
 
 
 def _locality_desc(locality_nom: str) -> str:
-    """ Return an appropriate preposition plus a locality name in dative case """
+    """Return an appropriate preposition plus a locality name in dative case."""
     locality_dat = nom2dat(locality_nom)
     return iceprep_for_placename(locality_nom) + " " + locality_dat
 
 
 def _addr4voice(addr: str) -> Optional[str]:
-    """ Prepare an address string for voice synthesizer. """
+    """Prepare an address string for voice synthesizer."""
     # E.g. "Fiskislóð 5-9" becomes "Fiskislóð 5 til 9"
     s = re.sub(r"(\d+)\-(\d+)", r"\1 til \2", addr)
     # E.g. "Fiskislóð 31d" becomes "Fiskislóð 31 d"
@@ -219,7 +236,11 @@ def _addr4voice(addr: str) -> Optional[str]:
     return numbers_to_text(s) if s else None
 
 
-def answer_for_location(loc: Tuple) -> Optional[AnswerTuple]:
+_LOC_LOOKUP_FAIL_MSG = "Ekki tókst að fletta upp staðsetningu."
+
+
+def answer_for_location(loc: LatLonTuple) -> Optional[AnswerTuple]:
+    """Answer user location query, e.g. 'Hvar er ég staddur?'"""
     # Send API request
     res = query_geocode_api_coords(loc[0], loc[1])
 
@@ -230,7 +251,7 @@ def answer_for_location(loc: Tuple) -> Optional[AnswerTuple]:
         or not len(res["results"])
         or not res["results"][0]
     ):
-        return None
+        return gen_answer(_LOC_LOOKUP_FAIL_MSG)
 
     # Grab top result from API call
     top = res["results"][0]
@@ -278,7 +299,8 @@ def answer_for_location(loc: Tuple) -> Optional[AnswerTuple]:
     return response, answer, voice
 
 
-def answer_for_postcode(loc: Tuple):
+def answer_for_postcode(loc: LatLonTuple):
+    """Answer postcode query, e.g. 'Í hvaða póstnúmeri er ég?'"""
     # Send API request
     res = query_geocode_api_coords(loc[0], loc[1])
 
@@ -289,7 +311,7 @@ def answer_for_postcode(loc: Tuple):
         or not len(res["results"])
         or not res["results"][0]
     ):
-        return None
+        return gen_answer(_LOC_LOOKUP_FAIL_MSG)
 
     # Grab top result from API call
     top = res["results"][0]
@@ -310,8 +332,37 @@ def answer_for_postcode(loc: Tuple):
         return gen_answer("Ég veit ekki í hvaða póstnúmeri þú ert.")
 
 
+def answer_for_country(loc: LatLonTuple):
+    """Answer country query, e.g. 'Í hvaða landi er ég?'"""
+    if in_iceland(loc):
+        return gen_answer("Þú ert á Íslandi.")
+
+    # Send API request
+    res = query_geocode_api_coords(loc[0], loc[1])
+
+    # Verify that we have at least one valid result
+    if (
+        not res
+        or "results" not in res
+        or not len(res["results"])
+        or not res["results"][0]
+    ):
+        return gen_answer(_LOC_LOOKUP_FAIL_MSG)
+
+    # Grab top result from API call
+    top = res["results"][0]
+
+    # Extract address info from top result
+    street, num, locality, postcode, country_code = _addrinfo_from_api_result(top)
+    if not country_code or len(country_code) != 2:
+        return gen_answer(_LOC_LOOKUP_FAIL_MSG)
+
+    # OK, we have a valid country code
+    return gen_answer(f"Þú ert {country_desc(country_code)}.")
+
+
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type
@@ -325,6 +376,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 # Get relevant info about this location
                 if result.qkey == "CurrentPostcode":
                     answ = answer_for_postcode(loc)
+                elif result.qkey == "CurrentCountry":
+                    answ = answer_for_country(loc)
                 else:
                     answ = answer_for_location(loc)
             if answ and loc is not None:

@@ -109,7 +109,7 @@ def FsMeðFallstjórn(node: Node, params: ParamList, result: Result) -> None:
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q = state["query"]
     if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

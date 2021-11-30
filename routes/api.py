@@ -43,7 +43,7 @@ from article import Article as ArticleProxy
 from query import process_query
 from query import Query as QueryObject
 from doc import SUPPORTED_DOC_MIMETYPES, Document
-from speech import get_synthesized_text_url
+from speech import text_to_audio_url
 from util import read_api_key
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
@@ -62,7 +62,7 @@ _MIDEIND_LOCATION = (64.156896, -21.951200)  # Fiskislóð 31, 101 Reykjavík
 @routes.route("/ifdtag.api", methods=["GET", "POST"])
 @routes.route("/ifdtag.api/v<int:version>", methods=["GET", "POST"])
 def ifdtag_api(version: int = 1) -> Response:
-    """ API to parse text and return IFD tagged tokens in a simple and sparse JSON format """
+    """API to parse text and return IFD tagged tokens in a simple and sparse JSON format"""
     if not (1 <= version <= 1):
         # Unsupported version
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -184,7 +184,7 @@ def correct_task(version: int = 1) -> Response:
 @routes.route("/postag.api", methods=["GET", "POST"])
 @routes.route("/postag.api/v<int:version>", methods=["GET", "POST"])
 def postag_api(version: int = 1) -> Response:
-    """ API to parse text and return POS tagged tokens in a verbose JSON format """
+    """API to parse text and return POS tagged tokens in a verbose JSON format"""
     if not (1 <= version <= 1):
         # Unsupported version
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -222,7 +222,7 @@ def postag_api(version: int = 1) -> Response:
 @routes.route("/parse.api", methods=["GET", "POST"])
 @routes.route("/parse.api/v<int:version>", methods=["GET", "POST"])
 def parse_api(version: int = 1) -> Response:
-    """ API to parse text and return POS tagged tokens in JSON format """
+    """API to parse text and return POS tagged tokens in JSON format"""
     if not (1 <= version <= 1):
         # Unsupported version
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -255,7 +255,7 @@ def parse_api(version: int = 1) -> Response:
 @routes.route("/article.api", methods=["GET", "POST"])
 @routes.route("/article.api/v<int:version>", methods=["GET", "POST"])
 def article_api(version: int = 1) -> Response:
-    """ Obtain information about an article, given its URL or id """
+    """Obtain information about an article, given its URL or id"""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -317,7 +317,7 @@ def article_api(version: int = 1) -> Response:
 @routes.route("/reparse.api", methods=["POST"])
 @routes.route("/reparse.api/v<int:version>", methods=["POST"])
 def reparse_api(version: int = 1) -> Response:
-    """ Reparse an already parsed and stored article with a given UUID """
+    """Reparse an already parsed and stored article with a given UUID"""
     if not (1 <= version <= 1):
         return better_jsonify(valid="False", reason="Unsupported version")
 
@@ -354,7 +354,7 @@ def reparse_api(version: int = 1) -> Response:
 @routes.route("/query.api", methods=["GET", "POST"])
 @routes.route("/query.api/v<int:version>", methods=["GET", "POST"])
 def query_api(version: int = 1) -> Response:
-    """ Respond to a query string """
+    """Respond to a query string"""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -369,7 +369,7 @@ def query_api(version: int = 1) -> Response:
     # If voice is set, return a voice-friendly string
     voice = bool_from_request(request, "voice")
     # Request a particular voice
-    voice_id: Optional[str] = request.values.get("voice_id")
+    voice_id: str = request.values.get("voice_id", "Dora")
     # Request a particular voice speed
     try:
         voice_speed = float(request.values.get("voice_speed", 1.0))
@@ -448,7 +448,7 @@ def query_api(version: int = 1) -> Response:
         # If the result contains a "voice" key, return it
         audio = result["voice"]
         url = (
-            get_synthesized_text_url(audio, voice_id=voice_id, speed=voice_speed)
+            text_to_audio_url(audio, voice_id=voice_id, speed=voice_speed)
             if audio
             else None
         )
@@ -477,32 +477,33 @@ def query_api(version: int = 1) -> Response:
 @routes.route("/query_history.api", methods=["GET", "POST"])
 @routes.route("/query_history.api/v<int:version>", methods=["GET", "POST"])
 def query_history_api(version: int = 1) -> Response:
-    """ Delete query history and/or query data for a particular unique client ID. """
+    """Delete query history and/or query data for a particular unique client ID."""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
-    # Calling this endpoint requires the Greynir API key
-    # TODO: Enable when clients (iOS, Android) have been updated
-    # key = request.values.get("api_key")
-    # gak = read_api_key("GreynirServerKey")
-    # if not gak or not key or key != gak:
-    #     resp["errmsg"] = "Invalid or missing API key."
-    #     return better_jsonify(**resp)
+    resp: Dict[str, Any] = dict(valid=True)
 
-    resp = dict(valid=True)
+    # Calling this endpoint requires the Greynir API key
+    key = request.values.get("api_key")
+    gak = read_api_key("GreynirServerKey")
+    if not gak or not key or key != gak:
+        resp["errmsg"] = "Invalid or missing API key."
+        resp["valid"] = False
+        return better_jsonify(**resp)
+
+    VALID_ACTIONS = frozenset(("clear", "clear_all"))
 
     action = request.values.get("action")
-    # client_type = request.values.get("client_type")
-    # client_version = request.values.get("client_version")
     client_id = request.values.get("client_id")
 
-    valid_actions = ("clear", "clear_all")
-
     if not client_id:
-        return better_jsonify(valid=False, reason="Missing parameters")
-    if action not in valid_actions:
-        return better_jsonify(valid=False, reason="Invalid action parameter")
+        return better_jsonify(valid=False, errmsg="Missing parameters")
+    if action not in VALID_ACTIONS:
+        return better_jsonify(
+            valid=False,
+            errmsg=f"Invalid action parameter '{action}'. Should be in {VALID_ACTIONS}.",
+        )
 
     with SessionContext(commit=True) as session:
         # Clear all logged user queries
@@ -521,7 +522,7 @@ def query_history_api(version: int = 1) -> Response:
 @routes.route("/speech.api", methods=["GET", "POST"])
 @routes.route("/speech.api/v<int:version>", methods=["GET", "POST"])
 def speech_api(version: int = 1) -> Response:
-    """ Send in text, receive URL to speech-synthesised audio file. """
+    """Send in text, receive URL to speech-synthesised audio file."""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -553,9 +554,7 @@ def speech_api(version: int = 1) -> Response:
             speed = 1.0
 
     try:
-        url = get_synthesized_text_url(
-            text, txt_format=fmt, voice_id=voice_id, speed=speed
-        )
+        url = text_to_audio_url(text, text_format=fmt, voice_id=voice_id, speed=speed)
     except Exception:
         return better_jsonify(**reply)
 
@@ -568,7 +567,7 @@ def speech_api(version: int = 1) -> Response:
 @routes.route("/feedback.api", methods=["POST"])
 @routes.route("/feedback.api/v<int:version>", methods=["POST"])
 def feedback_api(version: int = 1) -> Response:
-    """ Endpoint to accept submitted feedback forms """
+    """Endpoint to accept submitted feedback forms"""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -598,7 +597,7 @@ def feedback_api(version: int = 1) -> Response:
 
 @routes.route("/exit.api", methods=["GET"])
 def exit_api():
-    """ Allow a server to be remotely terminated if running in debug mode """
+    """Allow a server to be remotely terminated if running in debug mode"""
     if not Settings.DEBUG:
         abort(404)
     shutdown_func = request.environ.get("werkzeug.server.shutdown")

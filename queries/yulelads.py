@@ -312,13 +312,13 @@ QYuleLad →
 
 
 def QYuleDate(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Query for date when a particular yule lad appears """
+    """Query for date when a particular yule lad appears"""
     result.qtype = "YuleDate"
     result.qkey = result.yule_lad
 
 
 def QYuleLad(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Query for which yule lad appears on a particular date """
+    """Query for which yule lad appears on a particular date"""
     result.qtype = "YuleLad"
     result.qkey = str(result.lad_date)
 
@@ -453,7 +453,7 @@ def QYuleDateRel(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

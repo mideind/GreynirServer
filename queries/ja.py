@@ -133,7 +133,7 @@ _JA_API_URL = "https://api.ja.is/search/v6/?{0}"
 
 
 def query_ja_api(q: str) -> Optional[Dict[str, Any]]:
-    """ Send query to ja.is API """
+    """Send query to ja.is API"""
     key = read_api_key("JaServerKey")
     if not key:
         # No key, can't query the API
@@ -148,8 +148,8 @@ def query_ja_api(q: str) -> Optional[Dict[str, Any]]:
     return cast(Optional[Dict[str, Any]], query_json_api(url, headers=headers))
 
 
-def _best_number(item: Dict[str, Any]) -> Optional[str]:
-    """ Return best phone number, given a result item from ja.is API """
+def _best_phone_number(item: Dict[str, Any]) -> Optional[str]:
+    """Return best phone number, given a result item from ja.is API"""
     phone_num = item.get("phone")
     add_nums = item.get("additional_phones")
     if not phone_num and not add_nums:
@@ -172,7 +172,7 @@ def _best_number(item: Dict[str, Any]) -> Optional[str]:
 
 
 def phonenums4name(name: str) -> Optional[List[Dict[str, Any]]]:
-    """ Receives name string in nominative case. Returns list of candidates found. """
+    """Receives name string in nominative case. Returns list of candidates found."""
     res = query_ja_api(name)
     # Verify that we have a sane response with at least 1 result
     if not res or not res.get("people") or not res["people"].get("items"):
@@ -181,7 +181,7 @@ def phonenums4name(name: str) -> Optional[List[Dict[str, Any]]]:
 
 
 def _answer_phonenum4name_query(q: Query, result: Result) -> AnswerTuple:
-    """ Answer query of the form "hvað er síminn hjá [íslenskt mannsnafn]?" """
+    """Answer query of the form "hvað er síminn hjá [íslenskt mannsnafn]?" """
     nþgf = NounPhrase(result.qkey).dative or result.qkey
 
     res = phonenums4name(result.qkey)
@@ -221,7 +221,7 @@ def _answer_phonenum4name_query(q: Query, result: Result) -> AnswerTuple:
         return gen_answer(msg)
 
     # Scan API call result, try to find the best phone number
-    phone_number = _best_number(first)
+    phone_number = _best_phone_number(first)
     if not phone_number:
         return gen_answer("Ég finn ekki símanúmerið hjá {0}".format(nþgf))
 
@@ -238,7 +238,7 @@ def _answer_phonenum4name_query(q: Query, result: Result) -> AnswerTuple:
 
 
 def _answer_name4phonenum_query(q: Query, result: Result) -> AnswerTuple:
-    """ Answer query of the form "hver er með símanúmerið [númer]?"""
+    """Answer query of the form "hver er með símanúmerið [númer]?"""
     num = result.phone_number
     clean_num = re.sub(r"[^0-9]", "", num).strip()
 
@@ -296,7 +296,7 @@ _QTYPE2HANDLER: Mapping[str, Callable[[Query, Result], AnswerTuple]] = {
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type

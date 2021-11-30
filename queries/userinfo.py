@@ -45,7 +45,7 @@ _YOU_ARE = "Þú, kæri notandi, heitir {0}."
 
 
 def _whoisme_handler(q: Query, ql: str) -> bool:
-    """ Handle queries of the form "Hver er [nafn notanda]?" """
+    """Handle queries of the form "Hver er [nafn notanda]?" """
     nd = q.client_data("name")
     if not nd:
         return False
@@ -99,7 +99,7 @@ _DUNNO_NAME = "Ég veit ekki hvað þú heitir, en þú getur sagt mér það."
 
 
 def _whatsmyname_handler(q: Query, ql: str) -> bool:
-    """ Handle queries of the form "Hvað heiti ég?" """
+    """Handle queries of the form "Hvað heiti ég?" """
     if ql not in _WHATS_MY_NAME:
         return False
     answ: str
@@ -140,7 +140,7 @@ _MY_NAME_IS_RESPONSES = {
 
 
 def _mynameis_handler(q: Query, ql: str) -> bool:
-    """ Handle queries of the form "Ég heiti X", store this information. """
+    """Handle queries of the form "Ég heiti X", store this information."""
     m: Optional[Match[str]] = None
     for rx in _MY_NAME_IS_REGEXES:
         m = re.search(rx, ql)
@@ -193,7 +193,7 @@ def _mynameis_handler(q: Query, ql: str) -> bool:
 
 
 def _addr2str(addr: Dict[str, str], case: str = "nf") -> str:
-    """ Format address canonically given dict w. address info. """
+    """Format address canonically given dict w. address info."""
     assert case in ["nf", "þgf"]
     prep = iceprep_for_placename(addr["placename"])
     astr = "{0} {1} {2} {3}".format(
@@ -231,7 +231,7 @@ _DUNNO_ADDRESS = "Ég veit ekki hvar þú átt heima, en þú getur sagt mér þ
 
 
 def _whatsmyaddr_handler(q: Query, ql: str) -> bool:
-    """ Handle queries of the form "Hvar á ég heima?" """
+    """Handle queries of the form "Hvar á ég heima?" """
     if ql not in _WHATS_MY_ADDR:
         return False
     answ = None
@@ -327,7 +327,7 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
 
 
 def _whatsmynum_handler(q: Query, ql: str) -> bool:
-    """ Handle queries of the form "Hvað er símanúmerið mitt? """
+    """Handle queries of the form "Hvað er símanúmerið mitt?"""
     return False
 
 
@@ -343,7 +343,7 @@ _DUNNO_PHONE_NUM = "Ég veit ekki hvert símanúmer þitt er, en þú getur sagt
 
 
 def _mynumis_handler(q: Query, ql: str) -> bool:
-    """ Handle queries of the form "Hvað er símanúmerið mitt? """
+    """Handle queries of the form "Hvað er símanúmerið mitt?"""
     return False
 
 
@@ -393,7 +393,7 @@ _DEVICE_TYPE_TO_DESC = {
 
 
 def _device_type_handler(q: Query, ql: str) -> bool:
-    """ Handle queries about user's device. """
+    """Handle queries about user's device."""
     if ql not in _DEVICE_TYPE_QUERIES:
         return False
 
@@ -445,7 +445,7 @@ _DEVICE_TYPE_TO_APPENDED_DESC = {
 
 
 def _client_version_handler(q: Query, ql: str) -> bool:
-    """ Handle queries about client version. """
+    """Handle queries about client version."""
     if ql not in _CLIENT_VERSION_QUERIES:
         return False
 
@@ -484,7 +484,7 @@ _HANDLERS = tuple(
 
 
 def handle_plain_text(q: Query) -> bool:
-    """ Handle plain text query. """
+    """Handle plain text query."""
     ql = q.query_lower.rstrip("?")
 
     # Iterate over all handlers, see if any

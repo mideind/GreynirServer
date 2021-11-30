@@ -57,8 +57,8 @@ These trees can then be further processed and acted upon by sets of Python
 functions that are linked to grammar nonterminals.
 
 **Greynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
-and many well-written articles can be parsed completely. It presently has over 700,000 parsed articles
-in its database, containing about 12 million parsed sentences. A recent version of this database is available
+and many well-written articles can be parsed completely. It presently has over 800,000 parsed articles
+in its database, containing about 13 million parsed sentences. A recent version of this database is available
 via the [GreynirCorpus](https://github.com/mideind/GreynirCorpus) project.
 
 Greynir supports natural language querying of its databases. Users can ask about person names, titles and
@@ -163,14 +163,18 @@ in [`queries/examples`](queries/examples).
 * [`fetcher.py`](fetcher.py): Utility classes for fetching articles given their URLs
 * [`nertokenizer.py`](nertokenizer.py): A layer on top of the tokenizer for named entity recognition
 * [`processor.py`](processor.py): Information extraction from parse trees and token streams
+* [`postagger.py`](postagger.py): Part-of-speech tagging
 * [`article.py`](article.py): Representation of an article through its life cycle
-* [`tree.py`](tree.py): Representation of parse trees for processing
 * [`vectors/builder.py`](vectors/builder.py): Article indexer and LSA topic vector builder
 * [`doc.py`](doc.py): Extract plain text from various document formats
 * [`geo.py`](geo.py): Geography and location-related utility functions
-* [`speech.py`](speech.py): Speech synthesis-related utility functions
+* [`speech/*.py`](speech/): Speech synthesizer modules
+* [`stt.py`](stt.py): Command line interface for speech synthesis
 * [`tools/*.py`](tools/): Various command line tools
-* [`util.py`](util.py): Various utility functions used throughout the codebase
+* [`tnttagger.py`](tnttagger.py): Statistical POS tagging
+* [`tree.py`](tree.py): Representation of parse trees for processing
+* [`treeutil.py`](treeutil.py): Utility functions for working with parse trees and tokens
+* [`util.py`](util.py): Assorted utility functions used throughout the codebase
 
 ## Installation and setup
 
@@ -231,7 +235,7 @@ for instructions.
 
 See [Contributing to Greynir](CONTRIBUTING.md).
 
-## Copyright and licensing
+## License
 
 Greynir is Copyright &copy; 2021 [Miðeind ehf.](https://mideind.is)
 The original author of this software is *Vilhjálmur Þorsteinsson*.
@@ -248,7 +252,7 @@ This set of programs is distributed in the hope that it will be useful, but WITH
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-<img src="static/img/GPLv3.png" align="right" style="margin-left:15px;" width="180" height="60">
+<a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="static/img/GPLv3.png" align="right" style="margin-left:15px;" width="180" height="60"></a>
 
 The full text of the GNU General Public License v3 is
 [included here](https://github.com/mideind/Greynir/blob/master/LICENSE.txt)
@@ -260,7 +264,7 @@ to negotiate a custom license. This applies for instance if you want to include 
 this software, in part or in full, in other software that is not licensed under
 GNU GPLv3 or other compatible licenses.
 
-----
+## Acknowledgements
 
 Greynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](https://bin.arnastofnun.is))
 lexicon and database of Icelandic word forms to identify words and find their
@@ -269,8 +273,6 @@ potential meanings and lemmas. The database is included in
 BÍN is licensed under CC-BY-4.0, and credit is hereby given as follows:
 
 *Beygingarlýsing íslensks nútímamáls. Stofnun Árna Magnússonar í íslenskum fræðum. Höfundur og ritstjóri Kristín Bjarnadóttir.*
-
-----
 
 The Greynir web interface uses map data from [OpenStreetMap](https://www.openstreetmap.org),
 [Google](https://maps.google.com) and [Wikipedia](https://is.wikipedia.org).

@@ -27,7 +27,7 @@ from functools import lru_cache
 
 @lru_cache(maxsize=32)
 def read_api_key(key_name: str) -> str:
-    """ Read the given key from a text file in resources directory. Cached. """
+    """Read the given key from a text file in resources directory. Cached."""
     path = os.path.join(os.path.dirname(__file__), "resources", key_name + ".txt")
     try:
         with open(path) as f:
@@ -35,3 +35,41 @@ def read_api_key(key_name: str) -> str:
     except FileNotFoundError:
         pass
     return ""
+
+
+def icelandic_asciify(text: str) -> str:
+    """Convert Icelandic characters to their ASCII equivalent
+    and then remove all non-ASCII characters."""
+
+    ICECHARS_TO_ASCII = {
+        "ð": "d",
+        "Ð": "D",
+        "á": "a",
+        "Á": "A",
+        "ú": "u",
+        "Ú": "U",
+        "í": "i",
+        "Í": "I",
+        "é": "e",
+        "É": "E",
+        "þ": "th",
+        "Þ": "TH",
+        "ó": "o",
+        "Ó": "O",
+        "ý": "y",
+        "Ý": "Y",
+        "ö": "o",
+        "Ö": "O",
+        "æ": "ae",
+        "Æ": "AE",
+    }
+
+    # Substitute all Icelandic chars for their ASCII equivalents
+    t = text
+    for k, v in ICECHARS_TO_ASCII.items():
+        t = t.replace(k, v)
+
+    # Remove any remaining non-ASCII chars
+    t = t.encode("ascii", "ignore").decode()
+
+    return t
