@@ -51,7 +51,9 @@ VOICES = frozenset(("Karl", "Dora"))
 # }
 #
 _AWS_KEYFILE_NAME = "AWSPollyServerKey.json"
-_AWS_API_KEYS_PATH = os.path.join("resources", _AWS_KEYFILE_NAME)
+_AWS_API_KEYS_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "..", "resources", _AWS_KEYFILE_NAME
+)
 _aws_api_client: Optional[boto3.Session] = None
 _aws_api_client_lock = Lock()
 
@@ -152,9 +154,14 @@ def text_to_audio_data(
 ) -> Optional[bytes]:
     """Returns audio data for speech-synthesised text."""
     url = _aws_polly_synthesized_text_url(**locals())
-    if url:
+    if not url:
+        return None
+    try:
         r = requests.get(url)
         return r.content
+    except Exception as e:
+        logging.error("Error fetching URL {url}: {e}")
+    return None
 
 
 def text_to_audio_url(

@@ -24,6 +24,8 @@
 
 from typing import Optional
 
+import logging
+
 from . import generate_data_uri, strip_markup, mimetype4audiofmt
 
 import requests
@@ -42,7 +44,7 @@ def _tiro_synthesized_text_data(
     audio_format: str,
     voice_id: str,
     speed: float = 1.0,
-) -> bytes:
+) -> Optional[bytes]:
     """Feeds text to Tiro's TTS API and returns audio data received from server."""
 
     # No proper support for SSML yet in Tiro's API
@@ -59,11 +61,15 @@ def _tiro_synthesized_text_data(
         "VoiceId": voice_id,
     }
 
-    r = requests.post(_TIRO_TTS_URL, json=jdict)
-    if r.status_code != 200:
-        raise Exception(f"Received HTTP status code {r.status_code} from {NAME} server")
-
-    return r.content
+    try:
+        r = requests.post(_TIRO_TTS_URL, json=jdict)
+        if r.status_code != 200:
+            raise Exception(
+                f"Received HTTP status code {r.status_code} from {NAME} server"
+            )
+        return r.content
+    except Exception as e:
+        logging.error(f"Error communicating with Tiro API at {_TIRO_TTS_URL}: {e}")
 
 
 def _tiro_synthesized_text_url(
@@ -75,8 +81,8 @@ def _tiro_synthesized_text_url(
 ) -> Optional[str]:
     """Returns Tiro (data) URL for speech-synthesised text."""
 
-    data: bytes = _tiro_synthesized_text_data(**locals())
-    if not len(data):
+    data = _tiro_synthesized_text_data(**locals())
+    if not data:
         return None
 
     # Generate Data URI from the bytes received
@@ -92,8 +98,9 @@ def text_to_audio_data(
     audio_format: str,
     voice_id: str,
     speed: float,
-) -> bytes:
+) -> Optional[bytes]:
     """Returns audio data for speech-synthesised text."""
+    # Pass all arguments on to another function
     return _tiro_synthesized_text_data(**locals())
 
 
@@ -105,4 +112,5 @@ def text_to_audio_url(
     speed: float,
 ) -> Optional[str]:
     """Returns URL to audio of speech-synthesised text."""
+    # Pass all arguments on to another function
     return _tiro_synthesized_text_url(**locals())

@@ -22,8 +22,11 @@
 
 """
 
+from typing import Optional
+
 import os
 import sys
+import logging
 from urllib.request import urlopen
 
 import requests
@@ -55,37 +58,35 @@ def _bytes4data_uri(data_uri: str) -> bytes:
         return response.read()
 
 
-def _fetch_audio_bytes(url: str) -> bytes:
+def _fetch_audio_bytes(url: str) -> Optional[bytes]:
     """Returns bytes of audio file at URL."""
     if _is_data_uri(url):
         return _bytes4data_uri(url)
 
-    r = requests.get(url)
-    if r.status_code != 200:
-        raise Exception(
-            f"Received HTTP status code {r.status_code} when fetching {url}"
-        )
-    return r.content
+    try:
+        r = requests.get(url)
+        if r.status_code != 200:
+            raise Exception(
+                f"Received HTTP status code {r.status_code} when fetching {url}"
+            )
+        return r.content
+    except Exception as e:
+        logging.error(f"Error fetching audio bytes: {e}")
 
 
-def _play_audio_file(path: str) -> bool:
+def _play_audio_file(path: str) -> None:
     """Play audio file at path via command line player. This only
     works on systems with either afplay (macOS) or mpg123 (Linux)."""
 
-    AFPLAY_PATH = "/usr/bin/afplay"
-    MPG123_PATH = "/usr/bin/mpg123"
+    AFPLAY = "/usr/bin/afplay"  # afplay is only present on macOS systems
+    MPG123 = "mpg123"
 
-    if os.path.exists(AFPLAY_PATH):
+    if os.path.exists(AFPLAY):
         print(f"Playing file '{path}'")
-        os.system(f"{AFPLAY_PATH} '{path}'")
-    elif os.path.exists(MPG123_PATH):
-        print(f"Playing file '{path}'")
-        os.system(f"{MPG123_PATH} '{path}'")
+        os.system(f"{AFPLAY} '{path}'")
     else:
-        print("Unable to play audio file. Please install mpg123 player.")
-        return False
-
-    return True
+        print(f"Playing file '{path}'")
+        os.system(f"{MPG123} '{path}'")
 
 
 DEFAULT_TEXT = "Góðan daginn og til hamingju með lífið."
@@ -164,9 +165,11 @@ def main() -> None:
 
     # Download
     print(f"Downloading URL {url[:300]}")
-    data: bytes = _fetch_audio_bytes(url)
+    data: Optional[bytes] = _fetch_audio_bytes(url)
     if not data:
         die("Unable to fetch audio data.")
+
+    assert data is not None  # Silence typing complaints
 
     # Generate file name
     fn = "_".join([t.lower() for t in args.text.rstrip(".").split()])
