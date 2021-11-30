@@ -52,15 +52,12 @@ def load_voice_modules() -> Dict[str, ModuleType]:
     """Dynamically load all voice modules, map voice ID
     strings to the relevant modules."""
 
-    abspath = os.path.abspath(__file__)
-    dname = os.path.dirname(abspath)
-    sys.path.append(dname)
-
     def modules_in_dir(directory: str) -> List[str]:
         """Find all python modules in a given directory"""
         files = os.listdir(directory)
         modnames: List[str] = list()
         for fname in files:
+
             if not fname.endswith(".py"):
                 continue
             if fname.startswith("_"):  # Skip any files starting with _
