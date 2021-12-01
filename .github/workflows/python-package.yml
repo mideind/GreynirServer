@@ -74,9 +74,10 @@ jobs:
         PGPASSWORD=postgres psql -h localhost -U postgres -d scraper -c "create extension if not exists \"uuid-ossp\";"
         python scraper.py --init
         psql -f tests/files/populate_testdb.sql postgresql://postgres:postgres@localhost:5432/scraper
-    - name: Create dummy API key
+    - name: Create API key(s)
       run: |
         cat "tests/files/dummy_greynir_api_key.txt" > "resources/GreynirServerKey.txt"
+        echo "${{ secrets.AWSPOLLY_KEY_JSON }}" > "resources/AWSPollyServerKey.json"
     - name: Test with pytest
       run: |
         python -m pytest
