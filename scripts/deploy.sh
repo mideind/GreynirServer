@@ -77,6 +77,7 @@ cp treeutil.py $DEST/treeutil.py
 cp util.py $DEST/util.py
 cp -r db $DEST/
 cp -r routes $DEST/
+cp -r speech $DEST/
 cp scrapers/*.py $DEST/scrapers/
 cp nn/*.py $DEST/nn/
 
