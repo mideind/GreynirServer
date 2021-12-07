@@ -73,7 +73,7 @@ QPicQuery →
 
 QPicShowMe →
     "sýndu" | "getur" "þú" "sýnt" | "geturðu" "sýnt" | "viltu" "sýna" |
-    "nennirðu" "að "sýna" | "nennir" "þú" "að" "sýna"
+    "nennirðu" "að" "sýna" | "nennir" "þú" "að" "sýna"
 
 QPicShowMePictureQuery →
     QPicShowMe QPicMeOrUs? QPicPictureOrPhoto "af" QPicSubject
