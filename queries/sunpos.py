@@ -157,6 +157,8 @@ QSunSólris →
     'rísa' "sólin"
     | "mun" "sólin" "rísa"
     | QSunIsWillWas "sólarupprás"
+    | "kemur" "sólin" "upp"
+    | "kom" "sólin" "upp"
 
 QSunHádegi →
     QSunIsWillWas "hádegi"
@@ -164,6 +166,8 @@ QSunHádegi →
 QSunSólarlag →
     "sest" "sólin"
     | "mun" "sólin" "setjast"
+    | "fer" "sólin" "niður"
+    | "fór" "sólin" "niður"
     | QSunIsWillWas 'sólsetur'
     | QSunIsWillWas "sólarlag"
 
