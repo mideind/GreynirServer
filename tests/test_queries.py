@@ -238,9 +238,9 @@ def test_builtin(client: FlaskClient) -> None:
     # assert json["voice"].startswith("Forstjóri") and "Jón Jónsson" in json["voice"]
 
     # Builtin module: entities
-    json = qmcall(client, {"q": "hvað er Nox Medical"}, "Entity")
-    assert "nýsköpunarfyrirtæki" in json["answer"].lower()
-    assert json["key"] == "Nox Medical"
+    # json = qmcall(client, {"q": "hvað er Nox Medical"}, "Entity")
+    # assert "nýsköpunarfyrirtæki" in json["answer"].lower()
+    # assert json["key"] == "Nox Medical"
 
 
 def test_bus(client: FlaskClient) -> None:
@@ -1195,6 +1195,7 @@ def test_whatis(client: FlaskClient) -> None:
 def test_wiki(client: FlaskClient) -> None:
     """Wikipedia module"""
 
+    # "Hvað segir Wikipedía um X" queries
     json = qmcall(client, {"q": "Hvað segir wikipedia um Jón Leifs?"}, "Wikipedia")
     assert "Wikipedía" in json["q"]  # Make sure it's being beautified
     assert "tónskáld" in json["answer"]
@@ -1204,9 +1205,6 @@ def test_wiki(client: FlaskClient) -> None:
         client, {"q": "hvað segir vikipedija um jóhann sigurjónsson"}, "Wikipedia"
     )
     assert "Jóhann" in json["answer"]
-
-    json = qmcall(client, {"q": "fræddu mig um berlín"}, "Wikipedia")
-    assert "Berlín" in json["answer"]
 
     json = qmcall(
         client,
@@ -1224,6 +1222,13 @@ def test_wiki(client: FlaskClient) -> None:
         "Wikipedia",
     )
     assert "Katrín Jakobsdóttir" in json["answer"]
+
+    # "Hvað er X" queries
+    json = qmcall(client, {"q": "hvað er mjólk"}, "Wikipedia")
+    assert "Mjólk" in json["answer"] and "spendýr" in json["answer"]
+
+    json = qmcall(client, {"q": "hvað er fjall"}, "Wikipedia")
+    assert "Fjall" in json["answer"]
 
     _query_data_cleanup()  # Remove any data logged to DB on account of tests
 
