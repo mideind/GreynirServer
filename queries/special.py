@@ -1555,8 +1555,11 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvaða rödd ertu með": _VOICE_EXPL,
     "hvaða rödd ert þú með": _VOICE_EXPL,
     "hver er röddin þín": _VOICE_EXPL,
+    "hver er rödd þín": _VOICE_EXPL,
     "hvaða rödd er embla með": _VOICE_EXPL,
     "hver er rödd emblu": _VOICE_EXPL,
+    "hvaðan kemur rödd þín": _VOICE_EXPL,
+    "hvaðan kemur röddin þín": _VOICE_EXPL,
     # Favorite colour
     "hver er uppáhalds liturinn þinn": _FAVORITE_COLOR,
     "hver er uppáhaldsliturinn þinn": _FAVORITE_COLOR,
@@ -2080,9 +2083,6 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "segðu grín": _random_joke,
     "komdu með grín": _random_joke,
     "komdu með eitthvað grín": _random_joke,
-    # Tell me a story
-    # "segðu sögu": _story,
-    # "segðu mér sögu": _story,
     # Trivia
     "vertu skemmtileg": _random_trivia,
     "segðu eitthvað skemmtilegt": _random_trivia,
@@ -2197,7 +2197,18 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     # Storytelling
     "segðu sögu": _story,
     "segðu mér sögu": _story,
+    "segðu okkur sögu": _story,
     "komdu með sögu": _story,
+    "komdu með sögu handa okkur": _story,
+    "komdu með sögu fyrir okkur": _story,
+    "kanntu sögu": _story,
+    "kannt þú sögu": _story,
+    "kanntu sögu að segja": _story,
+    "kannt þú sögu að segja": _story,
+    "kanntu sögu til að segja": _story,
+    "kannt þú sögu til að segja": _story,
+    "kanntu sögu til næsta bæjar": _story,
+    "kannt þú sögu til næsta bæjar": _story,
     # Rudeness :)
     "þú sökkar": _rudeness,
     "þú ert ljót": _rudeness,
