@@ -110,7 +110,9 @@ def correct_api(version: int = 1) -> Response:
         # file is a Werkzeug FileStorage object
         mimetype = file.content_type
         if mimetype not in SUPPORTED_DOC_MIMETYPES:
-            return better_jsonify(valid=False, reason="File type not supported")
+            return better_jsonify(
+                valid=False, reason=f"File type not supported: {mimetype}"
+            )
 
         # Create document object from file and extract text
         try:
@@ -659,3 +661,33 @@ def register_query_data_api(version: int = 1) -> Response:
         return better_jsonify(valid=True, msg="Query data registered")
 
     return better_jsonify(valid=False, errmsg="Error registering query data.")
+
+
+_WAV_MIMETYPES = frozenset(("audio/wav", "audio/x-wav"))
+
+
+@routes.route("/upload_speech_audio.api", methods=["POST"])
+@routes.route("/upload_speech_audio.api/v<int:version>", methods=["POST"])
+def upload_speech_audio(version: int = 1) -> Response:
+    """Receives uploaded speech audio for a query."""
+
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, errmsg="Unsupported version")
+
+    file = request.files.get("file")
+    if file is not None:
+        # file is a Werkzeug FileStorage object
+        mimetype = file.content_type
+        if mimetype not in _WAV_MIMETYPES:
+            return better_jsonify(
+                valid=False, reason=f"File type not supported: {mimetype}"
+            )
+        try:
+            with open("/tmp/myfile.wav", "wb") as f:
+                # Writing data to a file
+                f.write(file.read())
+        except Exception as e:
+            logging.warning("Exception in upload_speech_audio(): {0}".format(e))
+            return better_jsonify(valid=False, reason="Error reading file")
+
+    return better_jsonify(valid=True, msg="Audio data received")
