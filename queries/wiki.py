@@ -318,7 +318,7 @@ def get_wiki_summary(result: Result) -> Optional[str]:
     not_found = "Ég fann ekkert um '{0}' í Wikipedíu".format(subject_nom)
 
     if not has_entry(res):
-        if result["explicit_wikipedia"] == True:
+        if result.get("explicit_wikipedia") == True:
             return not_found
         else:
             return None

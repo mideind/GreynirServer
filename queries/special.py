@@ -227,6 +227,16 @@ def _poetry(qs: str, q: Query) -> AnswerType:
     }
 
 
+_STORY = """Einu sinni var karl og kerling í koti.
+Þau áttu sér kálf. Þá er sagan hálf.
+Hann hljóp út um víðan völl.
+Þá er sagan öll."""
+
+
+def _story(qs: str, q: Query) -> AnswerType:
+    return dict(answer=_STORY, voice=_STORY)
+
+
 def _identity(qs: str, q: Query) -> AnswerType:
     answer: AnswerType = {}
     a = "Ég heiti Embla. Ég skil íslensku og get tekið við fyrirspurnum og skipunum frá þér."
@@ -340,6 +350,10 @@ _LIKEWISE: AnswerType = {
 _NAME_EXPL: AnswerType = {
     "answer": "Embla er fallegt og hljómfagurt nafn.",
     "voice": "Ég heiti Embla því Embla er fallegt og hljómfagurt nafn.",
+}
+
+_VOICE_EXPL: AnswerType = {
+    "answer": "Ég nota rödd sem Blindrafélagið lét útbúa árið 2011.",
 }
 
 _JUST_QA: AnswerType = {"answer": "Nei, ég er nú bara ósköp einfalt fyrirspurnakerfi."}
@@ -1534,6 +1548,15 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "embla": _NAME_EXPL,
     "þú heitir embla": _NAME_EXPL,
     "af hverju fékkstu það nafn": _NAME_EXPL,
+    # Voice explained
+    "hver talar fyrir þig": _VOICE_EXPL,
+    "hver talar fyrir emblu": _VOICE_EXPL,
+    "hvaða rödd er þetta": _VOICE_EXPL,
+    "hvaða rödd ertu með": _VOICE_EXPL,
+    "hvaða rödd ert þú með": _VOICE_EXPL,
+    "hver er röddin þín": _VOICE_EXPL,
+    "hvaða rödd er embla með": _VOICE_EXPL,
+    "hver er rödd emblu": _VOICE_EXPL,
     # Favorite colour
     "hver er uppáhalds liturinn þinn": _FAVORITE_COLOR,
     "hver er uppáhaldsliturinn þinn": _FAVORITE_COLOR,
@@ -2171,6 +2194,10 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "getur þú farið með ljóð": _poetry,
     "ljóð fyrir mig": _poetry,
     "segðu mér vísu": _poetry,
+    # Storytelling
+    "segðu sögu": _story,
+    "segðu mér sögu": _story,
+    "komdu með sögu": _story,
     # Rudeness :)
     "þú sökkar": _rudeness,
     "þú ert ljót": _rudeness,
