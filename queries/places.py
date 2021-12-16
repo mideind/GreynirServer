@@ -24,8 +24,9 @@
 
 """
 
-# TODO: Handle opening hours with intervals, e.g. 10:00-14:00 and 18:00-22:00
+# TODO: Handle opening hours with intervals, e.g. 10:00-14:00 and 18:00-22:00 [!]
 # TODO: "Hvenær er X opið?"
+# TODO: Refactor this module (use grammar?)
 
 from typing import List, Dict, Optional
 
@@ -45,7 +46,7 @@ from queries import (
     icequote,
 )
 from queries.num import numbers_to_text
-from tree import Result
+from tree import Result, Node
 
 from . import LatLonTuple, AnswerTuple
 
@@ -179,27 +180,27 @@ def _fix_placename(pn: str) -> str:
     return _PLACENAME_MAP.get(p, p)
 
 
-def QPlacesQuery(node, params, result):
+def QPlacesQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result["qtype"] = _PLACES_QTYPE
 
 
-def QPlacesOpeningHours(node, params, result):
+def QPlacesOpeningHours(node: Node, params: QueryStateDict, result: Result) -> None:
     result["qkey"] = "OpeningHours"
 
 
-def QPlacesIsOpen(node, params, result):
+def QPlacesIsOpen(node: Node, params: QueryStateDict, result: Result) -> None:
     result["qkey"] = "IsOpen"
 
 
-def QPlacesIsClosed(node, params, result):
+def QPlacesIsClosed(node: Node, params: QueryStateDict, result: Result) -> None:
     result["qkey"] = "IsClosed"
 
 
-def QPlacesAddress(node, params, result):
+def QPlacesAddress(node: Node, params: QueryStateDict, result: Result) -> None:
     result["qkey"] = "PlaceAddress"
 
 
-def QPlacesSubject(node, params, result):
+def QPlacesSubject(node: Node, params: QueryStateDict, result: Result) -> None:
     result["subject_nom"] = _fix_placename(result._nominative)
 
 
@@ -280,6 +281,7 @@ def answ_openhours(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
         userloc=loc,
         fields="opening_hours,place_id,formatted_address,geometry",
     )
+
     if (
         res is None
         or res["status"] != "OK"
@@ -388,9 +390,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         subj = result["subject_nom"]
         try:
             handlerfunc = _HANDLER_MAP[result.qkey]
-            res: Optional[AnswerTuple] = None
-            if q.location is not None:
-                res = handlerfunc(subj, q.location, result.qkey)
+            res: Optional[AnswerTuple] = handlerfunc(subj, q.location, result.qkey)
             if res:
                 q.set_answer(*res)
                 q.set_source("Google Maps")

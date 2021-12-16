@@ -29,12 +29,13 @@
 
 """
 
-from typing import List, Iterator, Dict, Union, Tuple, Optional, Type
+from typing import DefaultDict, List, Iterator, Dict, Union, Tuple, Optional, Type
 
 from collections import defaultdict
 import logging
 
-from reynir import Abbreviations, TOK, Tok
+from tokenizer import TOK, Tok
+from tokenizer.abbrev import Abbreviations
 from reynir.bindb import GreynirBin
 
 from db import SessionContext, OperationalError, Session
@@ -70,7 +71,7 @@ def recognize_entities(
         session=enclosing_session, commit=True, read_only=True
     ) as session:
 
-        def fetch_entities(w: str, fuzzy: bool=True) -> List[Entity]:
+        def fetch_entities(w: str, fuzzy: bool = True) -> List[Entity]:
             """ Return a list of entities matching the word(s) given,
                 exactly if fuzzy = False, otherwise also as a starting word(s) """
             try:
@@ -151,10 +152,12 @@ def recognize_entities(
                     continue
 
                 # Look for matches in the current state and build a new state
-                newstate = defaultdict(list)
+                newstate: DefaultDict[
+                    Union[str, None], List[Tuple[List[str], Entity]]
+                ] = defaultdict(list)
                 w = token.txt  # Original word
 
-                def add_to_state(slist, entity):
+                def add_to_state(slist: List[str], entity: Entity) -> None:
                     """ Add the list of subsequent words to the new parser state """
                     wrd = slist[0] if slist else None
                     rest = slist[1:]
@@ -204,7 +207,7 @@ def recognize_entities(
                     weak = True
                     cnt = 1
                     upper = w and w[0].isupper()
-                    parts = []
+                    parts: List[str] = []
 
                     if upper and " " in w:
                         # For all uppercase phrases (words, entities, persons),
@@ -222,6 +225,7 @@ def recognize_entities(
                             else:
                                 lastnames[lastname] = token
 
+                    elist: List[Entity] = []
                     if token.kind == TOK.WORD and upper and w not in Abbreviations.DICT:
                         if " " in w:
                             # w may be a person name with more than one embedded word
@@ -234,8 +238,6 @@ def recognize_entities(
                             weak = False  # Accept single-word entity references
                         # elist is a list of Entity instances
                         elist = query_entities(w)
-                    else:
-                        elist = []
 
                     if elist:
                         # This word might be a candidate to start an entity reference
@@ -282,8 +284,5 @@ def recognize_entities(
             else:
                 yield from tq
             tq = []
-
-    # print("\nEntity cache:\n{0}".format("\n".join("'{0}': {1}".format(k, v) for k, v in ecache.items())))
-    # print("\nLast names:\n{0}".format("\n".join("{0}: {1}".format(k, v) for k, v in lastnames.items())))
 
     assert not tq

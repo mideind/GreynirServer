@@ -43,8 +43,6 @@
 
 """
 
-from datetime import datetime
-
 from query import QueryStateDict
 from tree import Result
 

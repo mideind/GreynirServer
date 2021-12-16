@@ -29,15 +29,15 @@
 # TODO: Fix regex that cleans wiki text.
 # TODO: "Segðu mér meira um X" - Return more article text
 
+from typing import Any, Dict, Optional, Union, List
 
 import re
 import random
 from datetime import datetime, timedelta
-from typing import Any
 
 from queries import query_json_api, gen_answer, cap_first
 from query import Query, QueryStateDict, ContextDict
-from tree import Result
+from tree import Result, Node
 
 
 _WIKI_QTYPE = "Wikipedia"
@@ -181,23 +181,23 @@ $score(+35) QWikiQuery
 )
 
 
-def QWikiQuery(node, params, result):
+def QWikiQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     # Set the query type
     result.qtype = _WIKI_QTYPE
     result.qkey = result.get("subject_nom")
 
 
-def QWikiSubjectNlNf(node, params, result):
+def QWikiSubjectNlNf(node: Node, params: QueryStateDict, result: Result) -> None:
     result["subject_nom"] = result._nominative
 
 
 QWikiSubjectNlÞf = QWikiSubjectNlÞgf = QWikiSubjectNlNf
 
 
-def QWikiPrevSubjectNf(node, params, result):
+def QWikiPrevSubjectNf(node: Node, params: QueryStateDict, result: Result) -> None:
     """Reference to previous result, usually via personal
     pronouns ('Hvað segir Wikipedía um hann/hana/það?')."""
-    q: Query = result.state.get("query")
+    q: Optional[Query] = result.state.get("query")
     ctx = None if q is None else q.fetch_context()
     ctx_keys = ["person_name", "entity_name", "subject"]
     if ctx is not None:
@@ -216,13 +216,13 @@ def QWikiPrevSubjectNf(node, params, result):
 QWikiPrevSubjectÞgf = QWikiPrevSubjectÞf = QWikiPrevSubjectNf
 
 
-def EfLiður(node, params, result):
-    """ Don't change the case of possessive clauses """
+def EfLiður(node: Node, params: QueryStateDict, result: Result) -> None:
+    """Don't change the case of possessive clauses"""
     result._nominative = result._text
 
 
-def FsMeðFallstjórn(node, params, result):
-    """ Don't change the case of prepositional clauses """
+def FsMeðFallstjórn(node: Node, params: QueryStateDict, result: Result) -> None:
+    """Don't change the case of prepositional clauses"""
     result._nominative = result._text
 
 
@@ -258,14 +258,14 @@ _WIKI_API_URL = (
 )
 
 
-def _query_wiki_api(subject: str):
-    """ Fetch JSON from Wikipedia API """
+def _query_wiki_api(subject: str) -> Union[None, List[Any], Dict[str, Any]]:
+    """Fetch JSON from Wikipedia API"""
     url = _WIKI_API_URL.format(subject)
     return query_json_api(url)
 
 
 def get_wiki_summary(subject_nom: str) -> str:
-    """ Fetch summary of subject from Icelandic Wikipedia """
+    """Fetch summary of subject from Icelandic Wikipedia"""
 
     def has_entry(r: Any) -> bool:
         return (
@@ -304,7 +304,7 @@ def get_wiki_summary(subject_nom: str) -> str:
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

@@ -221,12 +221,17 @@ COUNTRY_NAME_TO_ISOCODE_ADDITIONS = {
 }
 
 # The following names should never be identified as US states
-NEVER_US_STATE = frozenset(("Georgía", "Georgia",))
+NEVER_US_STATE = frozenset(
+    (
+        "Georgía",
+        "Georgia",
+    )
+)
 
 
 def location_description(loc: Dict[str, str]) -> str:
-    """ Return a natural language description string (in Icelandic) for a given
-        location. Argument is a dictionary with at least "name" and "kind" keys. """
+    """Return a natural language description string (in Icelandic) for a given
+    location. Argument is a dictionary with at least "name" and "kind" keys."""
     if "kind" not in loc or "name" not in loc:
         return "staðarheiti"
 
@@ -278,9 +283,9 @@ def location_description(loc: Dict[str, str]) -> str:
 
 def location_info(
     name: str, kind: Optional[str], placename_hints: Optional[List[str]] = None
-) -> Dict:
-    """ Returns dict with info about a location, given name and, preferably, kind.
-        Info includes ISO country and continent code, GPS coordinates, etc. """
+) -> Dict[str, Any]:
+    """Returns dict with info about a location, given name and, preferably, kind.
+    Info includes ISO country and continent code, GPS coordinates, etc."""
     assert name
 
     # Continents are marked as "lönd" in BÍN, so we set kind manually
@@ -289,8 +294,9 @@ def location_info(
     elif name in ALWAYS_STREET_ADDR:
         kind = "street"
 
-    loc: Dict[str, Union[None, str, float, Dict]] = dict(name=name, kind=kind)
-    coords = None
+    loc: Dict[str, Union[None, str, float, Dict[str, Any]]] = dict(name=name, kind=kind)
+    coords: Optional[LatLonTuple] = None
+    info: Optional[Dict[Any, Any]] = None
 
     # Heimilisfang
     if kind == "address":
@@ -329,11 +335,11 @@ def location_info(
             loc["country"] = ICELAND_ISOCODE
         elif name not in ICE_PLACENAME_BLACKLIST:
             # Try to find a matching Icelandic placename
-            info = placename_lookup(name)
-            if info:
+            info_list = placename_lookup(name)
+            if info_list:
                 loc["country"] = ICELAND_ISOCODE
                 # Pick first matching placename
-                coords = coords_from_addr_info(info[0])
+                coords = coords_from_addr_info(info_list[0])
 
         # OK, not Icelandic. Let's see if it's a foreign city
         if not info:
@@ -343,7 +349,7 @@ def location_info(
                 # ordered by population, with capital cities given precedence
                 c = cities[0]
                 loc["country"] = c.get("country")
-                coords = coords_from_addr_info(c)
+                coords = coords_from_addr_info(cast(Dict[str, float], c))
 
     # Check if it's a US state (marked as either "lönd" or "örn" in BÍN)
     if "country" not in loc and (kind == "country" or kind == "placename"):
@@ -369,8 +375,8 @@ ICE_CITIES_JSONPATH = os.path.join(
 
 
 def _load_city_names() -> Dict[str, str]:
-    """ Load data from JSON file mapping Icelandic city names
-        to their corresponding English/international name. """
+    """Load data from JSON file mapping Icelandic city names
+    to their corresponding English/international name."""
     global ICE_CITY_NAMES
     if ICE_CITY_NAMES is None:
         with open(ICE_CITIES_JSONPATH) as f:
@@ -379,10 +385,10 @@ def _load_city_names() -> Dict[str, str]:
     return ICE_CITY_NAMES
 
 
-def lookup_city_info(name: str) -> Optional[List[Dict[str, str]]]:
-    """ Look up name in city database. Convert Icelandic-specific
-        city names (e.g. "Lundúnir") to their corresponding
-        English/international name before querying. """
+def lookup_city_info(name: str) -> Optional[List[Dict[str, Union[str, float]]]]:
+    """Look up name in city database. Convert Icelandic-specific
+    city names (e.g. "Lundúnir") to their corresponding
+    English/international name before querying."""
     cnames = _load_city_names()  # Lazy-load
     cn = cnames.get(name.strip(), name)
     return city_lookup(cn)
@@ -394,9 +400,9 @@ US_STATES_JSONPATH = os.path.join(
 )
 
 
-def _load_us_state_names() -> Dict:
-    """ Load data from JSON file mapping US state names, canonical
-        and Icelandic, to their to their corresponding 2-char code. """
+def _load_us_state_names() -> Dict[str, str]:
+    """Load data from JSON file mapping US state names, canonical
+    and Icelandic, to their to their corresponding 2-char code."""
     global US_STATE_NAMES
     if US_STATE_NAMES is None:
         with open(US_STATES_JSONPATH) as f:
@@ -406,21 +412,21 @@ def _load_us_state_names() -> Dict:
 
 
 def code_for_us_state(name: str) -> Optional[str]:
-    """ Given a US state name string, canonical or Icelandicized,
-        return the state's 2-char code. """
+    """Given a US state name string, canonical or Icelandicized,
+    return the state's 2-char code."""
     names = _load_us_state_names()  # Lazy-load
     return names.get(name.strip())
 
 
-US_STATE_COORDS: Optional[Dict[str, list]] = None
+US_STATE_COORDS: Optional[Dict[str, List[float]]] = None
 US_STATE_COORDS_JSONPATH = os.path.join(
     os.path.dirname(__file__), "resources", "geo", "us_state_coords.json"
 )
 
 
-def _load_us_state_coords() -> Dict:
-    """ Load data from JSON file mapping two-char US state codes
-        to geographic coordinates. """
+def _load_us_state_coords() -> Dict[str, List[float]]:
+    """Load data from JSON file mapping two-char US state codes
+    to geographic coordinates."""
     global US_STATE_COORDS
     if US_STATE_COORDS is None:
         with open(US_STATE_COORDS_JSONPATH) as f:
@@ -432,13 +438,14 @@ def _load_us_state_coords() -> Dict:
 def coords_for_us_state_code(code: str) -> Optional[LatLonTuple]:
     """ Return the coordinates of a US state given the two-char state code. """
     assert len(code) == 2
-    state_coords = _load_us_state_coords()
-    return state_coords.get(code.upper())
+    state_coords = _load_us_state_coords().get(code)
+    if state_coords is not None:
+        return (state_coords[0], state_coords[1])
 
 
 def icelandic_city_name(name: str) -> str:
-    """ Look up the Icelandic name of a city, given its
-        English/international name. """
+    """Look up the Icelandic name of a city, given its
+    English/international name."""
     name = name.strip()
     cnames = _load_city_names()  # Lazy-load
     for ice, n in cnames.items():
@@ -454,7 +461,7 @@ COUNTRY_DATA_JSONPATH = os.path.join(
 )
 
 
-def _load_country_data() -> Dict:
+def _load_country_data() -> Dict[str, Dict[str, Any]]:
     """ Load country coordinates and ISO country code data from JSON file. """
     global COUNTRY_DATA
     if COUNTRY_DATA is None:
@@ -490,10 +497,10 @@ def coords_for_street_name(
     placename: Optional[str] = None,
     placename_hints: Optional[List[str]] = None,
 ) -> Optional[LatLonTuple]:
-    """ Return coordinates for an Icelandic street name as a tuple. As some
-        street names exist in more than one place, we try to narrow it down
-        to a single street if possible. Street coordinates are the coordinates
-        of the lowest house number. """
+    """Return coordinates for an Icelandic street name as a tuple. As some
+    street names exist in more than one place, we try to narrow it down
+    to a single street if possible. Street coordinates are the coordinates
+    of the lowest house number."""
 
     addresses = iceaddr_lookup(street_name, placename=placename, limit=100)
 
@@ -519,7 +526,7 @@ def coords_for_street_name(
     return coords_from_addr_info(addr)
 
 
-def coords_from_addr_info(info: Optional[Dict]) -> Optional[LatLonTuple]:
+def coords_from_addr_info(info: Optional[Dict[str, float]]) -> Optional[LatLonTuple]:
     """ Get coordinates from the address dict provided by iceaddr package. """
     if info is not None and "lat_wgs84" in info and "long_wgs84" in info:
         return (info["lat_wgs84"], info["long_wgs84"])
@@ -543,8 +550,8 @@ def country_name_for_isocode(
 def isocode_for_country_name(
     country_name: str, lang: str = ICELANDIC_LANG_ISOCODE
 ) -> Optional[str]:
-    """ Return the ISO 3166-1 alpha-2 code for a country
-        name in the specified language (two-char ISO 639-1). """
+    """Return the ISO 3166-1 alpha-2 code for a country
+    name in the specified language (two-char ISO 639-1)."""
     assert len(lang) == 2
     lang = lang.lower()
     if lang not in available_languages():
@@ -565,9 +572,9 @@ def icelandic_addr_info(
     addr_str: str,
     placename: Optional[str] = None,
     placename_hints: Optional[List[str]] = [],
-) -> Optional[Dict]:
-    """ Look up info about a specific Icelandic address in Staðfangaskrá via
-        the iceaddr package. We want either a single definite match or nothing. """
+) -> Optional[Dict[Any, Any]]:
+    """Look up info about a specific Icelandic address in Staðfangaskrá via
+    the iceaddr package. We want either a single definite match or nothing."""
     addr = parse_address_string(addr_str)
 
     def lookup(pn: Optional[str]):
@@ -638,8 +645,8 @@ _I_SUFFIXES = (
 
 
 def iceprep_for_street(street_name: str) -> str:
-    """ Return the right preposition ("í" or "á") for
-        an Icelandic street name, e.g. "Fiskislóð". """
+    """Return the right preposition ("í" or "á") for
+    an Icelandic street name, e.g. "Fiskislóð"."""
     if street_name.endswith(_I_SUFFIXES):
         return "í"
     return "á"
@@ -652,8 +659,8 @@ ICELOC_PREP_JSONPATH = os.path.join(
 
 
 def _load_placename_prepositions() -> Dict[str, str]:
-    """ Load data mapping Icelandic placenames to the correct
-        prepositions ("á" or "í") from JSON file. """
+    """Load data mapping Icelandic placenames to the correct
+    prepositions ("á" or "í") from JSON file."""
     global ICELOC_PREP
     if ICELOC_PREP is None:
         with open(ICELOC_PREP_JSONPATH) as f:
@@ -680,8 +687,8 @@ _SUFFIX2PREP: Mapping[str, str] = {
 
 
 def iceprep_for_placename(pn: str) -> str:
-    """ Attempt to return the right preposition ("í" or "á")
-        for an Icelandic placename, e.g. "Akureyri". """
+    """Attempt to return the right preposition ("í" or "á")
+    for an Icelandic placename, e.g. "Akureyri"."""
     place2prep = _load_placename_prepositions()  # Lazy-load
     if pn in place2prep:
         return place2prep[pn]
@@ -767,15 +774,15 @@ CC_ICEPREP_A = frozenset(
 
 
 def iceprep_for_cc(cc: str) -> str:
-    """ Return the right Icelandic preposition ("í" or "á") for
-        a country, given its ISO country code, e.g. "IS". """
+    """Return the right Icelandic preposition ("í" or "á") for
+    a country, given its ISO country code, e.g. "IS"."""
     return "á" if cc.upper() in CC_ICEPREP_A else "í"
 
 
 def iceprep_for_country(cn: str) -> Optional[str]:
-    """ Return the right Icelandic preposition ("í" or "á") for
-        a country, given its Icelandic name in the nominative
-        case, e.g. "Ítalía". """
+    """Return the right Icelandic preposition ("í" or "á") for
+    a country, given its Icelandic name in the nominative
+    case, e.g. "Ítalía"."""
     cc = isocode_for_country_name(cn)
     return iceprep_for_cc(cc) if cc else None
 
@@ -785,9 +792,9 @@ _PLACENAME_PREPS = frozenset(("í", "á", "de", "la", "am", "og"))
 
 
 def capitalize_placename(pn: str) -> str:
-    """ Correctly capitalize an Icelandic-language lowercase placename, e.g.
-        "vík í mýrdal"->"Vík í Mýrdal", "bosnía og hersegóvína"->"Bosnía og Hersegóvína",
-        "norður-makedónía"->"Norður-Makedónía", "rio de janeiro"->"Rio de Janeiro", etc. """
+    """Correctly capitalize an Icelandic-language lowercase placename, e.g.
+    "vík í mýrdal"->"Vík í Mýrdal", "bosnía og hersegóvína"->"Bosnía og Hersegóvína",
+    "norður-makedónía"->"Norður-Makedónía", "rio de janeiro"->"Rio de Janeiro", etc."""
     if not pn:
         return pn
     comp = pn.split()
@@ -847,6 +854,14 @@ ICELAND_COORDS = (64.9957538607, -18.5739616708)
 def in_iceland(loc: LatLonTuple, km_radius: float = 300.0) -> bool:
     """ Check if coordinates are within or very close to Iceland. """
     return distance(loc, ICELAND_COORDS) <= km_radius
+
+
+RVK_COORDS = (64.133097, -21.898145)
+
+
+def near_capital_region(loc: LatLonTuple, km_radius: int = 30) -> bool:
+    """ Returns true if location coordinates are within X km of central Rvk """
+    return distance(loc, RVK_COORDS) < km_radius
 
 
 if __name__ == "__main__":

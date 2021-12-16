@@ -98,8 +98,8 @@ def analysis():
 
 @routes.route("/correct", methods=["GET", "POST"])
 def correct():
-    """ Handler for a page for spelling and grammar correction
-        of user-entered text """
+    """Handler for a page for spelling and grammar correction
+    of user-entered text"""
     try:
         txt = text_from_request(request, post_field="txt", get_field="txt")
     except Exception:
@@ -123,7 +123,8 @@ def similar() -> Response:
     # Parse query args
     try:
         uuid = request.values.get("id")
-        uuid = uuid.strip()[0:MAX_UUID_LENGTH]
+        if uuid:
+            uuid = uuid.strip()[0:MAX_UUID_LENGTH]
     except Exception:
         uuid = None
 
@@ -144,8 +145,8 @@ def similar() -> Response:
 
 @routes.route("/page")
 def page() -> Union[Response, str]:
-    """ Handler for a page displaying the parse of an arbitrary web
-        page by URL or an already scraped article by UUID """
+    """Handler for a page displaying the parse of an arbitrary web
+    page by URL or an already scraped article by UUID"""
     url = request.args.get("url")
     uuid = request.args.get("id")
     if url:
@@ -190,7 +191,7 @@ def page() -> Union[Response, str]:
         )
 
     return Response("Error", status=403)
-    
+
 
 @routes.route("/treegrid", methods=["GET"])
 def tree_grid():
@@ -212,8 +213,8 @@ def tree_grid():
         tbl, root, is_nt_func, children_func, nt_info_func, t_info_func
     ):
         def _build_tbl(level, offset, nodelist):
-            """ Add the tree node data to be displayed at a particular
-                level (row) in the result table """
+            """Add the tree node data to be displayed at a particular
+            level (row) in the result table"""
             while len(tbl) <= level:
                 tbl.append([])
             tlevel = tbl[level]
@@ -375,8 +376,8 @@ def terms():
 def about():
     """ Handler for the 'About' page """
     try:
-        parser_version = reynir.__version__
-        tokenizer_version = tokenizer.__version__
+        parser_version = reynir.version.__version__
+        tokenizer_version = tokenizer.version.__version__
         python_version = "{0} ({1})".format(
             ".".join(str(n) for n in sys.version_info[:3]),
             platform.python_implementation(),

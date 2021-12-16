@@ -28,13 +28,13 @@
 
 import re
 import logging
-from typing import Optional, Sequence
+from typing import Any, Iterable, Match, Optional, Sequence, Union
 import urllib.parse as urlparse
 import requests
 from datetime import datetime
 
-from bs4 import BeautifulSoup, NavigableString, Tag
-
+from bs4 import BeautifulSoup
+from bs4.element import Tag, NavigableString
 
 MODULE_NAME = __name__
 
@@ -109,7 +109,7 @@ class ScrapeHelper:
         self._root_id = root.id
         self._feeds = []
 
-    def make_soup(self, doc):
+    def make_soup(self, doc: str) -> Optional[BeautifulSoup]:
         """ Make a soup object from a document """
         soup = BeautifulSoup(doc, _HTML_PARSER)
         return None if (soup is None or soup.html is None) else soup
@@ -126,7 +126,7 @@ class ScrapeHelper:
     def unescape(s: str) -> str:
         """ Unescape headings that may contain Unicode characters """
 
-        def replacer(matchobj):
+        def replacer(matchobj: Match[str]) -> str:
             m = matchobj.group(1)
             assert m
             return chr(int(m, 16))  # Hex
@@ -134,7 +134,7 @@ class ScrapeHelper:
         # Example: \u0084 -> chr(132)
         return re.sub(r"\\u([0-9a-fA-F]{4})", replacer, s) if s else ""
 
-    def get_metadata(self, soup) -> Metadata:
+    def get_metadata(self, soup: BeautifulSoup) -> Metadata:
         """ Analyze the article HTML soup and return metadata """
         return Metadata(
             heading=None,
@@ -145,11 +145,11 @@ class ScrapeHelper:
         )
 
     @staticmethod
-    def _get_body(soup):
+    def _get_body(soup: BeautifulSoup):
         """ Can be overridden in subclasses in special situations """
         return soup.html.body
 
-    def get_content(self, soup):
+    def get_content(self, soup: BeautifulSoup):
         """Find the actual article content within an HTML soup
         and return its parent node"""
         if not soup or not soup.html or not soup.html.body:
@@ -168,7 +168,7 @@ class ScrapeHelper:
         return content or self._get_body(soup)
 
     @property
-    def root_id(self):
+    def root_id(self) -> str:
         """ Return the root id corresponding to this domain """
         return self._root_id
 
@@ -210,7 +210,9 @@ class ScrapeHelper:
         return getattr(self.__class__, "VERSION", "1.0")
 
     @staticmethod
-    def general_filter(tag, name, attr, attr_val) -> bool:
+    def general_filter(
+        tag: Tag, name: str, attr: str, attr_val: Union[str, Iterable[str]]
+    ) -> bool:
         """General filter function to use with BeautifulSoup.find().
         Looks for tag['attr'] == attr_val or attr_val in tag['attr'].
         attr_val can also be iterable, in which case all the given
@@ -232,23 +234,27 @@ class ScrapeHelper:
         return all(v in a for v in attr_val)
 
     @staticmethod
-    def meta_property_filter(tag, prop_val, prop_attr="property"):
+    def meta_property_filter(
+        tag: Tag, prop_val: Union[str, Iterable[str]], prop_attr: str = "property"
+    ) -> bool:
         """ Filter function for meta properties in HTML documents """
         # By default, catch <meta property='prop_val' content='X'>
         return ScrapeHelper.general_filter(tag, "meta", prop_attr, prop_val)
 
     @staticmethod
-    def div_class_filter(tag, cls):
+    def div_class_filter(tag: Tag, cls: Union[str, Iterable[str]]) -> bool:
         """ Filter function for divs in HTML documents, selected by class """
         return ScrapeHelper.general_filter(tag, "div", "class", cls)
 
     @staticmethod
-    def div_id_filter(tag, div_id):
+    def div_id_filter(tag: Tag, div_id: Union[str, Iterable[str]]) -> bool:
         """ Filter function for divs in HTML documents, selected by id """
         return ScrapeHelper.general_filter(tag, "div", "id", div_id)
 
     @staticmethod
-    def meta_property(soup, property_name, prop_attr="property"):
+    def meta_property(
+        soup: BeautifulSoup, property_name: str, prop_attr: str = "property"
+    ):
         try:
             f = lambda tag: ScrapeHelper.meta_property_filter(
                 tag, property_name, prop_attr
@@ -268,19 +274,21 @@ class ScrapeHelper:
             return None
 
     @staticmethod
-    def tag_prop_val(soup, tag, prop, val):
+    def tag_prop_val(
+        soup: BeautifulSoup, tag: Tag, prop: str, val: Union[str, Iterable[str]]
+    ):
         """ Find a tag of a given type with an attribute having the specified value """
         if not soup:
             return None
         return soup.find(lambda t: ScrapeHelper.general_filter(t, tag, prop, val))
 
     @staticmethod
-    def tag_class(soup, tag, cls):
+    def tag_class(soup: BeautifulSoup, tag: Tag, cls: Union[str, Iterable[str]]):
         """ Find a tag of a given type with a particular class """
         return ScrapeHelper.tag_prop_val(soup, tag, "class", cls)
 
     @staticmethod
-    def div_class(soup, *argv):
+    def div_class(soup: BeautifulSoup, *argv: Any) -> Optional[BeautifulSoup]:
         """Find a div with a particular class/set of classes within the
         HTML soup, recursively within its parent if more than one
         div spec is given"""
@@ -292,7 +300,7 @@ class ScrapeHelper:
         return soup
 
     @staticmethod
-    def nested_tag(soup, *argv):
+    def nested_tag(soup: BeautifulSoup, *argv: Any):
         """ Find a tag within a nested hierarchy of tags """
         for next_tag in argv:
             if not soup:
@@ -301,7 +309,7 @@ class ScrapeHelper:
         return soup
 
     @staticmethod
-    def div_id(soup, div_id):
+    def div_id(soup: BeautifulSoup, div_id: str):
         """ Find a div with a particular id """
         if not soup or not div_id:
             return None
@@ -309,7 +317,9 @@ class ScrapeHelper:
         return soup.find(f)
 
     @staticmethod
-    def del_tag_prop_val(soup, tag, prop, val):
+    def del_tag_prop_val(
+        soup: BeautifulSoup, tag: Tag, prop: str, val: Union[str, Iterable[str]]
+    ):
         """Delete all occurrences of the tag that have
         a property with the given value"""
         if soup is None:
@@ -321,7 +331,7 @@ class ScrapeHelper:
             s.decompose()
 
     @staticmethod
-    def del_div_class(soup, *argv):
+    def del_div_class(soup: BeautifulSoup, *argv: Any):
         """ Delete all occurrences of the specified div.class """
         if soup is None:
             return
@@ -332,7 +342,7 @@ class ScrapeHelper:
             s.decompose()
 
     @staticmethod
-    def del_tag(soup, tag_name):
+    def del_tag(soup: BeautifulSoup, tag_name: str):
         """ Delete all occurrences of the specified tag """
         if soup is None:
             return
@@ -343,7 +353,7 @@ class ScrapeHelper:
             s.decompose()
 
     @staticmethod
-    def del_social_embeds(soup):
+    def del_social_embeds(soup: BeautifulSoup):
         # Delete all iframes and embedded FB/Twitter/Instagram posts
         ScrapeHelper.del_tag(soup, "iframe")
         ScrapeHelper.del_tag(soup, "twitterwidget")
@@ -360,7 +370,7 @@ class KjarninnScraper(ScrapeHelper):
         super().__init__(root)
         self._feeds = ["https://kjarninn.is/feed/"]
 
-    def skip_url(self, url):
+    def skip_url(self, url: str) -> bool:
         """ Return True if this URL should not be scraped """
         s = urlparse.urlsplit(url)
         if s.path and s.path.startswith("/tag/"):
@@ -670,17 +680,17 @@ class MblScraper(ScrapeHelper):
         rp = ScrapeHelper.div_class(soup.html.body, "frett-main", "reporter-profile")
         f = lambda tag: ScrapeHelper.general_filter(tag, "a", "class", "name")
         rname = rp.find(f) if rp else None
+        authname = None
         if rname:
-            rname = rname.string
+            authname = rname.string
         else:
             # Probably a blog post
             rp = ScrapeHelper.div_class(soup.html.body, "pistlar-author-profile-box")
             if rp and rp.h4:
-                rname = rp.h4.string
+                authname = rp.h4.string
 
-        author = rname if rname else "Ritstjórn mbl.is"
         metadata.heading = heading
-        metadata.author = author
+        metadata.author = authname or "Ritstjórn mbl.is"
         metadata.timestamp = timestamp
         return metadata
 
@@ -1939,7 +1949,7 @@ class SedlabankinnScraper(ScrapeHelper):
         try:
             media = ScrapeHelper.div_class(soup, "media")
             if media:
-                tstr = media["data-last-modified"]
+                tstr = str(media["data-last-modified"])
                 timestamp = datetime.strptime(tstr, "%Y-%m-%d %H:%M:%S")
         except Exception as e:
             logging.warning(f"Unable to parse date for Sedlabankinn article: {e}")
@@ -1961,5 +1971,47 @@ class SedlabankinnScraper(ScrapeHelper):
         for a in content.find_all("a", {"class": "til-baka"}):
             a.decompose()
         for span in content.find_all("span", {"class": "news-img"}):
+            span.decompose()
+        return content
+
+
+class BaendabladidScraper(ScrapeHelper):
+    """ Scraping helper for bbl.is """
+
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["https://www.bbl.is/rss/"]
+
+    def get_metadata(self, soup):
+        """ Analyze the article soup and return metadata """
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+
+        # Author
+        author = "Ritstjórn Bændablaðsins"
+
+        timestamp = datetime.utcnow()
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """ Find the article content (main text) in the soup """
+        content = ScrapeHelper.div_class(soup_body, "article-text")
+        assert content is not None
+        ScrapeHelper.del_div_class(content, "mb-4")
+        ScrapeHelper.del_div_class(content, "date")
+        ScrapeHelper.del_tag(content, "h1")
+        ScrapeHelper.del_tag(content, "h2")
+        ScrapeHelper.del_tag(content, "h3")
+        ScrapeHelper.del_tag(content, "h4")
+        ScrapeHelper.del_tag(content, "h5")
+
+        for span in content.find_all("span", {"class": "date"}):
             span.decompose()
         return content

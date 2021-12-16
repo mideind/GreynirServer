@@ -1,5 +1,10 @@
 # type: ignore
 
+"""
+    Manipulate articles from database
+"""
+
+
 import datetime
 import json
 import sys

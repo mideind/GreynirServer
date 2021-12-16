@@ -59,7 +59,7 @@ _REPEAT_PREFIXES = tuple(
 # )
 
 
-def gen_repeat_answ(text: str, cmd_prefix: str, q: Query):
+def gen_repeat_answ(text: str, cmd_prefix: str, q: Query) -> None:
     atxt = text.strip()
     atxt = atxt[:1].upper() + atxt[1:]  # Capitalize first character
     q.set_answer(*gen_answer(atxt))
@@ -74,10 +74,7 @@ def gen_repeat_answ(text: str, cmd_prefix: str, q: Query):
 
 
 def handle_plain_text(q: Query) -> bool:
-    """ Handles a plain text query. """
-
-    # Temporarily disable this module
-    return False
+    """Handles a plain text query."""
 
     ql = q.query_lower.rstrip("?")
 

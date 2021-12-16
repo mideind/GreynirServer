@@ -24,6 +24,7 @@
 """
 
 # TODO: "Hvenær rís sólin [any date]"
+# TODO: "Hvenær kemur sólin upp"
 
 from typing import Dict, List, Iterable, Tuple, Optional, Union, cast
 
@@ -53,7 +54,7 @@ from geo import (
     capitalize_placename,
     ICE_PLACENAME_BLACKLIST,
 )
-from iceaddr import placename_lookup
+from iceaddr import placename_lookup  # type: ignore
 from queries.num import numbers_to_ordinal, floats_to_text
 
 # Indicate that this module wants to handle parse trees for queries,
@@ -532,7 +533,7 @@ def _answer_city_solar_data(
         else:
             is_will_was = "var"
 
-        degrees = data[city][closest_date][sun_pos]
+        degrees = cast(Union[int, float], data[city][closest_date][sun_pos])
         answer = f"Sólarhæð um hádegi {when} {is_will_was} um {sing_or_plur(degrees, 'gráður', 'gráða')}."
 
     else:
@@ -573,16 +574,12 @@ def _answer_city_solar_data(
                     answer = f"Sólin sest um klukkan {time_str} {when}."
 
             else:
-                answer = format_ans.format(
-                    _SOLAR_ENUM_TO_WORD[sun_pos], time_str, when
-                )
+                answer = format_ans.format(_SOLAR_ENUM_TO_WORD[sun_pos], time_str, when)
 
         else:
             format_ans = "Það varð ekki {0} {1}."
 
-            answer = format_ans.format(
-                _SOLAR_ENUM_TO_WORD[sun_pos].lower(), when
-            )
+            answer = format_ans.format(_SOLAR_ENUM_TO_WORD[sun_pos].lower(), when)
 
     if not in_past:
         answer = answer.replace("varð", "verður").replace("var", "verður")

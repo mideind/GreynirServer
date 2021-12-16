@@ -31,7 +31,7 @@
 
 """
 
-from typing import Optional, List, cast
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, List, cast
 from types import ModuleType
 
 import getopt
@@ -41,13 +41,16 @@ import sys
 import time
 import os
 
-# from multiprocessing.dummy import Pool
-from multiprocessing import Pool
+if TYPE_CHECKING:
+    from multiprocessing.dummy import Pool
+else:
+    from multiprocessing import Pool
+
 from contextlib import closing
 from datetime import datetime
 
 from settings import Settings, ConfigError
-from db import Scraper_DB
+from db import Scraper_DB, Session
 from db.models import Article, Person, Column
 from tree import Tree
 
@@ -56,7 +59,7 @@ _PROFILING = False
 
 
 def modules_in_dir(directory: str) -> List[str]:
-    """ Find all python modules in a given directory """
+    """Find all python modules in a given directory"""
     files = os.listdir(directory)
     modnames: List[str] = list()
     for fname in files:
@@ -70,17 +73,16 @@ def modules_in_dir(directory: str) -> List[str]:
 
 
 class TokenContainer:
+    """Class wrapper around tokens"""
 
-    """ Class wrapper around tokens """
-
-    def __init__(self, tokens_json, url, authority) -> None:
+    def __init__(self, tokens_json: str, url: str, authority: float) -> None:
         self.tokens = json.loads(tokens_json)
         self.url = url
         self.authority = authority
 
-    def process(self, session, processor, **kwargs) -> None:
-        """ Process tokens for an entire article.  Iterate over each paragraph,
-            sentence and token, calling revelant functions in processor module. """
+    def process(self, session: Session, processor: ModuleType, **kwargs: Any) -> None:
+        """Process tokens for an entire article.  Iterate over each paragraph,
+        sentence and token, calling revelant functions in processor module."""
 
         assert processor is not None
 
@@ -151,31 +153,38 @@ class TokenContainer:
             article_end(state)
 
 
-class Processor:
+_PROCESSOR_TYPE_TREE = "tree"
+_PROCESSOR_TYPE_TOKEN = "token"
+_PROCESSOR_TYPES = frozenset((_PROCESSOR_TYPE_TREE, _PROCESSOR_TYPE_TOKEN))
 
-    """ The worker class that processes parsed articles """
+
+class Processor:
+    """The worker class that processes parsed articles"""
 
     _db: Optional[Scraper_DB] = None
 
     @classmethod
     def _init_class(cls) -> None:
-        """ Initialize class attributes """
+        """Initialize class attributes"""
         if cls._db is None:
             cls._db = Scraper_DB()
 
     @classmethod
     def cleanup(cls) -> None:
-        """ Perform any cleanup """
+        """Perform any cleanup"""
         cls._db = None
 
     def __init__(
-        self, processor_directory, single_processor=None, num_workers=None
+        self,
+        processor_directory: str,
+        single_processor: Optional[str] = None,
+        num_workers: Optional[int] = None,
     ) -> None:
 
         Processor._init_class()
         self.num_workers = num_workers
 
-        self.processors = []
+        self.processors: List[str] = []
         self.pmodules: Optional[List[ModuleType]] = None
 
         # Find .py files in the processor directory
@@ -218,8 +227,8 @@ class Processor:
                 )
 
     def go_single(self, url: str) -> None:
-        """ Single article processor that will be called by a process within a
-            multiprocessing pool """
+        """Single article processor that will be called by a process within a
+        multiprocessing pool"""
 
         assert self._db is not None
 
@@ -252,15 +261,11 @@ class Processor:
                         # Run all processors in turn
                         for p in self.pmodules:
                             ptype: str = getattr(p, "PROCESSOR_TYPE")
-                            if ptype == "tree":
+                            assert ptype in _PROCESSOR_TYPES, "Unknown processor type"
+                            if ptype == _PROCESSOR_TYPE_TREE:
                                 tree.process(session, p)
-                            elif ptype == "token":
+                            elif ptype == _PROCESSOR_TYPE_TOKEN:
                                 token_container.process(session, p)
-                            else:
-                                assert False, (
-                                    "Unknown processor type '{0}'; should be 'tree' or 'token'"
-                                    .format(ptype)
-                                )
 
                     # Mark the article as being processed
                     article.processed = datetime.utcnow()
@@ -272,25 +277,32 @@ class Processor:
                 # If an exception occurred, roll back the transaction
                 session.rollback()
                 print(
-                    "Exception in article {0}, transaction rolled back\nException: {1}"
-                    .format(url, e)
+                    "Exception in article {0}, transaction rolled back\nException: {1}".format(
+                        url, e
+                    )
                 )
                 raise
 
         sys.stdout.flush()
 
     def go(
-        self, from_date=None, limit=0, force=False, update=False, title=None
+        self,
+        from_date: Optional[datetime] = None,
+        limit: int = 0,
+        force: bool = False,
+        update: bool = False,
+        title: Optional[str] = None,
     ) -> None:
-        """ Process already parsed articles from the database """
+        """Process already parsed articles from the database"""
 
         # noinspection PyComparisonWithNone,PyShadowingNames
-        def iter_parsed_articles():
+        def iter_parsed_articles() -> Iterable[str]:
 
             assert self._db is not None
 
             with closing(self._db.session) as session:
-                """ Go through parsed articles and process them """
+                """Go through parsed articles and process them"""
+                field: Callable[[Any], str]
                 if title is not None:
                     # Use a title query on Person to find the URLs to process
                     qtitle = title.lower()
@@ -311,16 +323,16 @@ class Processor:
                             # If update, we re-process articles that have been parsed
                             # again in the meantime
                             q = q.filter(
-                                cast(Column, Article.processed) < cast(Column, Article.parsed)).order_by(
-                                Article.processed
-                            )
+                                cast(Column[datetime], Article.processed)
+                                < cast(Column[datetime], Article.parsed)
+                            ).order_by(Article.processed)
                         else:
                             q = q.filter(Article.processed == None)
                     if from_date is not None:
                         # Only go through articles parsed since the given date
-                        q = q.filter(cast(datetime, Article.parsed) >= from_date).order_by(
-                            Article.parsed
-                        )
+                        q = q.filter(
+                            cast(Column[datetime], Article.parsed) >= from_date
+                        ).order_by(Article.parsed)
                 if limit > 0:
                     q = q.limit(limit)
                 for a in q.yield_per(200):
@@ -341,15 +353,15 @@ class Processor:
 
 
 def process_articles(
-    from_date=None,
-    limit=0,
-    force=False,
-    update=False,
-    title=None,
-    processor=None,
-    num_workers=None,
+    from_date: Optional[datetime] = None,
+    limit: int = 0,
+    force: bool = False,
+    update: bool = False,
+    title: Optional[str] = None,
+    processor: Optional[str] = None,
+    num_workers: Optional[int] = None,
 ) -> None:
-    """ Process multiple articles according to the given parameters """
+    """Process multiple articles according to the given parameters"""
     print("------ Greynir starting processing -------")
     if from_date:
         print("From date: {0}".format(from_date))
@@ -390,8 +402,8 @@ def process_articles(
     print("Time: {0}\n".format(ts))
 
 
-def process_article(url: str, processor=None) -> None:
-    """ Process a single article, eventually with a single processor """
+def process_article(url: str, processor: Optional[str] = None) -> None:
+    """Process a single article, eventually with a single processor"""
     try:
         proc = Processor(processor_directory="processors", single_processor=processor)
         proc.go_single(url)
@@ -406,7 +418,7 @@ class Usage(Exception):
 
 
 def init_db() -> None:
-    """ Initialize the database, to the extent required """
+    """Initialize the database, to the extent required"""
     db = Scraper_DB()
     try:
         db.create_tables()
@@ -437,8 +449,8 @@ __doc__ = """
 """
 
 
-def _main(argv=None) -> int:
-    """ Guido van Rossum's pattern for a Python main function """
+def _main(argv: Optional[List[str]] = None) -> int:
+    """Guido van Rossum's pattern for a Python main function"""
     if argv is None:
         argv = sys.argv
     try:
@@ -460,6 +472,7 @@ def _main(argv=None) -> int:
             )
         except getopt.error as msg:
             raise Usage(str(msg))
+
         limit = 10  # Default number of articles to parse, unless otherwise specified
         init = False
         url = None
@@ -468,6 +481,7 @@ def _main(argv=None) -> int:
         title = None  # Title pattern
         proc = None  # Single processor to invoke
         num_workers = None  # Number of workers to run simultaneously
+
         # Process options
         for o, a in opts:
             if o in ("-h", "--help"):
@@ -505,9 +519,7 @@ def _main(argv=None) -> int:
             # Initialize the scraper database
             init_db()
         else:
-
             # Read the configuration settings file
-
             try:
                 Settings.read("config/Greynir.conf")
                 # Don't run the processor in debug mode
@@ -550,7 +562,7 @@ def _main(argv=None) -> int:
 
 
 def main() -> None:
-    """ Main function to invoke for profiling """
+    """Main function to invoke for profiling"""
     import cProfile as profile
     import pstats
 

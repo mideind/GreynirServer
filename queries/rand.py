@@ -28,11 +28,11 @@
 import logging
 import random
 
-from query import Query, QueryStateDict
+from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer
 from queries.arithmetic import add_num, terminal_num
 from queries.num import number_to_text
-from tree import Result
+from tree import Result, Node
 
 
 _RANDOM_QTYPE = "Random"
@@ -81,7 +81,8 @@ QRandomHeadsOrTails →
 QRandomDiceRoll →
     "kastaðu" QRandomDiceSides? QRandomDie QRandomForMe?
     | "kastaðu" QRandomForMe? QRandomDiceSides? QRandomDie
-    | "kasta" QRandomDiceSides? QRandomDie
+    | "kasta" QRandomDiceSides? QRandomDie QRandomForMe?
+    | "nennirðu" "að" "kasta" QRandomDiceSides? QRandomDie QRandomForMe?
     | "geturðu" "kastað" QRandomDiceSides? QRandomDie QRandomForMe?
     | "geturðu" "kastað" QRandomForMe? QRandomDiceSides? QRandomDie
     | "kastaðu" "upp" "á" "teningnum" QRandomForMe?
@@ -103,9 +104,16 @@ QRandomBetween →
     | QRandAction QRandRand? "tölu" "á"? "milli" QRandNumber "og" QRandNumber
 
 QRandAction →
-    "veldu" | "veldu" "fyrir" "mig" | "nefndu" | "nefndu" "fyrir" "mig"
-    | "gefðu" "mér" | "komdu" "með" | "getur" "þú" "gefið" "mér"
-    | "geturðu" "gefið" "mér" | "segðu" "mér"
+    "veldu" | "veldu" "fyrir" "mig" | "veldu" "handa" "mér" | "veldu" "fyrir" "okkur"
+    | "geturðu" "valið" "fyrir" "mig" | "getur" "þú" "valið" "fyrir" "mig"
+    | "gætir" "þú" "valið" "fyrir" "mig" | "værirðu" "til" "í" "að" "velja" "fyrir" "mig"
+    | "nefndu" | "nefndu" "fyrir" "mig" | "nefndu" "fyrir" "okkur"
+    | "komdu" "með"
+    | "geturðu" "komið" "með" | "getur" "þú" "komið" "með"
+    | "gætirðu" "komið" "með" | "gætir" "þú" "komið" "með"
+    | "gefðu" "mér"
+    | "geturðu" "gefið" "mér" |  "getur" "þú" "gefið" "mér"
+    | "gætirðu" "gefið" "mér" |  "gætir" "þú" "gefið" "mér"
 
 QRandRand →
     # "Að handahófi" is incorrect but we'll allow it
@@ -122,27 +130,27 @@ $score(+35) QRandom
 """
 
 
-def QRandomQuery(node, params, result):
+def QRandomQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _RANDOM_QTYPE
 
 
-def QRandomHeadsOrTails(node, params, result):
+def QRandomHeadsOrTails(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "headstails"
 
 
-def QRandomBetween(node, params, result):
+def QRandomBetween(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "randbtwn"
 
 
-def QRandomDiceRoll(node, params, result):
+def QRandomDiceRoll(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "dieroll"
 
 
-def QRandomDiceSides(node, params, result):
+def QRandomDiceSides(node: Node, params: QueryStateDict, result: Result) -> None:
     result.dice_sides = 6
 
 
-def QRandNumber(node, params, result):
+def QRandNumber(node: Node, params: QueryStateDict, result: Result) -> None:
     d = result.find_descendant(t_base="tala")
     if d:
         add_num(terminal_num(d), result)
@@ -151,6 +159,7 @@ def QRandNumber(node, params, result):
 
 
 def gen_random_answer(q: Query, result):
+    """Generate answer to a query asking for a random number between two numbers."""
     (num1, num2) = (1, 6)  # Default
 
     if "numbers" in result:
@@ -166,7 +175,7 @@ def gen_random_answer(q: Query, result):
     # Query key is random number range (e.g. 1-6)
     q.set_key("{0}-{1}".format(num1, num2))
 
-    answer = str(random.randint(num1, num2))
+    answer = random.randint(num1, num2)
     response = dict(answer=answer)
     if result.action == "dieroll":
         voice_answer = (
@@ -175,16 +184,17 @@ def gen_random_answer(q: Query, result):
     else:
         voice_answer = f"Ég vel töluna {number_to_text(answer, gender='kk')}"
 
-    return response, answer, voice_answer
+    return response, str(answer), voice_answer
 
 
-def heads_or_tails(q: Query, result):
+def heads_or_tails(q: Query, result) -> AnswerTuple:
+    """Generate answer to "heads or tails" queries, i.e. "fiskur eða skjaldarmerki."""
     q.set_key("HeadsOrTails")
     return gen_answer(random.choice(("Skjaldarmerki", "Fiskur")))
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

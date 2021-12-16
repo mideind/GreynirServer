@@ -27,7 +27,7 @@ from typing import Any, Callable, Generic, Optional, Type, TypeVar, cast
 
 from sqlalchemy import create_engine, desc, func as dbfunc
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.engine.cursor import CursorResult
+from sqlalchemy.engine.cursor import CursorResult  # type: ignore
 
 from sqlalchemy.exc import SQLAlchemyError as DatabaseError
 from sqlalchemy.exc import IntegrityError
@@ -37,14 +37,30 @@ from typing_extensions import Literal
 
 from settings import Settings, ConfigError
 
-from .models import Base
+__all__ = (
+    "create_engine",
+    "desc",
+    "dbfunc",
+    "sessionmaker",
+    "CursorResult",
+    "Session",
+    "DatabaseError",
+    "IntegrityError",
+    "DataError",
+    "OperationalError",
+    "ConfigError",
+    "Settings",
+    "Scraper_DB",
+    "classproperty",
+    "SessionContext",
+)
 
 
 class Scraper_DB:
-    """ Wrapper around the SQLAlchemy connection, engine and session """
+    """Wrapper around the SQLAlchemy connection, engine and session"""
 
     def __init__(self) -> None:
-        """ Initialize the SQLAlchemy connection to the scraper database """
+        """Initialize the SQLAlchemy connection to the scraper database"""
 
         # Assemble the connection string, using psycopg2cffi which
         # supports both PyPy and CPython
@@ -63,24 +79,26 @@ class Scraper_DB:
         )
 
     def create_tables(self) -> None:
-        """ Create all missing tables in the database """
+        """Create all missing tables in the database"""
+        from .models import Base
+
         Base.metadata.create_all(self._engine)  # type: ignore
 
     def execute(self, sql: str, **kwargs: Any) -> CursorResult:
-        """ Execute raw SQL directly on the engine """
+        """Execute raw SQL directly on the engine"""
         return self._engine.execute(sql, **kwargs)  # type: ignore
 
     @property
     def session(self) -> Session:
-        """ Returns a freshly created Session instance from the sessionmaker """
+        """Returns a freshly created Session instance from the sessionmaker"""
         return self._Session()
 
 
 T = TypeVar("T")
 
-class classproperty(Generic[T]):
 
-    """ A helper that creates read-only class properties """
+class classproperty(Generic[T]):
+    """A helper that creates read-only class properties"""
 
     def __init__(self, f: Callable[..., T]) -> None:
         self.f = f
@@ -90,7 +108,7 @@ class classproperty(Generic[T]):
 
 
 class SessionContext:
-    """ Context manager for database sessions """
+    """Context manager for database sessions"""
 
     # Singleton instance of Scraper_DB
     _db: Optional[Scraper_DB] = None
@@ -104,7 +122,7 @@ class SessionContext:
 
     @classmethod
     def cleanup(cls) -> None:
-        """ Clean up the reference to the singleton Scraper_DB instance """
+        """Clean up the reference to the singleton Scraper_DB instance"""
         cls._db = None
 
     def __init__(
@@ -119,11 +137,11 @@ class SessionContext:
             # (if commit == True) and closed upon exit from the context
             # pylint: disable=no-member
             # Creates a new Scraper_DB instance if needed
-            self._session = cast(Session, self.db.session)
+            self._session = self.db.session
             self._new_session = True
             if read_only:
                 # Set the transaction as read only, which can save resources
-                self._session.execute("SET TRANSACTION READ ONLY")
+                self._session.execute("SET TRANSACTION READ ONLY")  # type: ignore
                 self._commit = True
             else:
                 self._commit = commit
@@ -133,7 +151,7 @@ class SessionContext:
             self._commit = False
 
     def __enter__(self) -> Session:
-        """ Python context manager protocol """
+        """Python context manager protocol"""
         # Return the wrapped database session
         return self._session
 
@@ -141,7 +159,7 @@ class SessionContext:
     def __exit__(
         self, exc_type: Type[BaseException], exc_value: BaseException, traceback: Any
     ) -> Literal[False]:
-        """ Python context manager protocol """
+        """Python context manager protocol"""
         if self._new_session:
             if self._commit:
                 if exc_type is None:

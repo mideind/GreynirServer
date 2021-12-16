@@ -33,9 +33,9 @@ import logging
 import cachetools  # type: ignore
 import random
 
-from query import Query, QueryStateDict
+from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, query_json_api
-from tree import Result
+from tree import Result, Node
 
 
 _NEWS_QTYPE = "News"
@@ -71,14 +71,20 @@ QNewsQuery →
 QNewsLatest →
     QNewsTellMe? QNewsQualifiersDef? "fréttir"
     | QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttum" QNewsRUV? QNewsNow?
+    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttunum" QNewsRUV? QNewsNow?
     | QNewsTellMe? "hvað" "er" QNewsQualifiers? "að" "frétta" QNewsRUV? QNewsNow?
     | QNewsTellMe? "hvað" "er" "að" "gerast" QNewsNow?
     | QNewsTellMe? "hvaða" "fréttir" "eru" QNewsQualifiers? QNewsRUV QNewsNow?
     | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttir" QNewsRUV? QNewsNow?
     | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttirnar" QNewsRUV? QNewsNow?
+    | QNewsCanYou "lesið" "fyrir" "mig" QNewsQualifiersDef? "fréttir" QNewsRUV?
+    | QNewsCanYou "lesið" QNewsQualifiersDef? QNewsRUV? "fréttir" "fyrir" "mig"
 
 QNewsTellMe →
-    "segðu" "mér" | "geturðu" "sagt" "mér"
+    "segðu" "mér"? | "geturðu" "sagt" "mér"?
+
+QNewsCanYou →
+    "geturðu" | "getur" "þú"
 
 QNewsNow →
     "núna" | "þessa_stundina" | "í" "dag" # | 'í_dag'
@@ -105,7 +111,7 @@ $score(+35) QNewsQuery
 """
 
 
-def QNewsQuery(node, params, result):
+def QNewsQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _NEWS_QTYPE
 
 
@@ -136,7 +142,7 @@ _BREAK_LENGTH = 1.0  # Seconds
 _BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
 
 
-def top_news_answer():
+def top_news_answer() -> Optional[AnswerTuple]:
     """ Answer query about top news. """
     headlines = _get_news_data()
     if not headlines:
@@ -165,10 +171,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 q.set_qtype(result.qtype)
                 q.set_key("LatestNews")
                 q.set_answer(*res)
+                q.set_source("RÚV")
             else:
                 errmsg = "Ekki tókst að sækja fréttir"
                 q.set_answer(*gen_answer(errmsg))
-            q.set_source("RÚV")
         except Exception as e:
             logging.warning("Exception answering news query '{0}': {1}".format(q, e))
             q.set_error("E_EXCEPTION: {0}".format(e))

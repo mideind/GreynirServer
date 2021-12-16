@@ -23,7 +23,7 @@
 
 """
 
-# TODO: Transition this module over to using grammar.
+# TODO: Transition this module over to using query grammar.
 
 from datetime import datetime, timedelta
 
@@ -134,12 +134,17 @@ _MOST_FREQ_QUERIES = frozenset(
         "hvers konar fyrirspurnum hefur þú svarað nýlega",
         "hvaða spurningum hefur þú svarað",
         "hvaða spurningum hefurðu svarað",
+        "hvernig spurningum svararðu oftast",
+        "hvers konar spurningum svararðu oftast",
         "hvers konar spurningum hefur þú svarað",
         "hvers konar spurningum hefurðu svarað",
         "um hvað ertu mest spurð",
         "um hvað ert þú mest spurð",
         "um hvað ertu spurð",
         "um hvað ert þú spurð",
+        "hvað er algengasta spurningin",
+        "hvað er algengast að þú sért spurð",
+        "hvað er algengast að þú sért spurð um",
     )
 )
 
@@ -162,10 +167,13 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
         "hverjir eru mest áberandi í fjölmiðlum þessa dagana",
         "hverjir eru áberandi í fjölmiðlum",
         "hverjir eru áberandi í fjölmiðlum þessa dagana",
+        "hverjir eru mest í fjölmiðlum",
         "hverjir eru mest í fjölmiðlum núna",
         "hverjir eru mest í fjölmiðlum þessa dagana",
+        "hverjir eru mest í fjölmiðlum upp á síðkastið",
         "hvaða fólk hefur verið mest í fjölmiðlum síðustu daga",
         "hvaða fólk er mest í fréttum",
+        "hvaða fólk er mest í fréttum núna",
         "hvaða fólk er mest í fréttum þessa dagana",
         "hvaða fólk hefur verið mest í fréttum",
         "hvaða fólk hefur verið mest í fréttum nýlega",
@@ -242,8 +250,8 @@ _MOST_MENTIONED_PEOPLE_QUERIES = frozenset(
 )
 
 
-def _gen_num_people_answer(q) -> bool:
-    """ Answer questions about person database. """
+def _gen_num_people_answer(q: Query) -> bool:
+    """Answer questions about person database."""
     with SessionContext(read_only=True) as session:
         qr = session.query(Person.name).distinct().count()
 
@@ -266,7 +274,7 @@ _QUERIES_PERIOD = 30  # days
 
 
 def _gen_num_queries_answer(q: Query) -> bool:
-    """ Answer questions concerning the number of queries handled. """
+    """Answer questions concerning the number of queries handled."""
     with SessionContext(read_only=True) as session:
         qr = (
             session.query(QueryModel.id)
@@ -324,12 +332,14 @@ _QTYPE_TO_DESC = {
 
 
 def _gen_most_freq_queries_answer(q: Query) -> bool:
-    """ Answer question concerning most frequent queries. """
+    """Answer question concerning most frequent queries."""
     with SessionContext(read_only=True) as session:
         now = datetime.utcnow()
         start = now - timedelta(days=_QUERIES_PERIOD)
         end = now
-        qr = QueryTypesQuery.period(start=start, end=end, enclosing_session=session)
+        qr = list(
+            QueryTypesQuery.period(start=start, end=end, enclosing_session=session)
+        )
 
         if qr:
             top_qtype = qr[0][1]
@@ -353,8 +363,8 @@ _MOST_MENTIONED_COUNT = 3  # Individuals
 _MOST_MENTIONED_PERIOD = 7  # Days
 
 
-def _gen_most_mentioned_answer(q) -> bool:
-    """ Answer questions about the most mentioned/talked about people in Icelandic news. """
+def _gen_most_mentioned_answer(q: Query) -> bool:
+    """Answer questions about the most mentioned/talked about people in Icelandic news."""
     top = top_persons(limit=_MOST_MENTIONED_COUNT, days=_MOST_MENTIONED_PERIOD)
 
     q.set_qtype(_STATS_QTYPE)
@@ -363,14 +373,12 @@ def _gen_most_mentioned_answer(q) -> bool:
     if not top:
         # No people for the period, empty scraper db?
         q.set_answer(*gen_answer("Engar manneskjur fundust í gagnagrunni"))
-        return True
-
-    answer = natlang_seq([t["name"] for t in top if "name" in t])
-    response = dict(answer=answer)
-    voice = "Umtöluðustu einstaklingar síðustu daga eru {0}.".format(answer)
-
-    q.set_expires(datetime.utcnow() + timedelta(hours=1))
-    q.set_answer(response, answer, voice)
+    else:
+        answer = natlang_seq([t["name"] for t in top if "name" in t])
+        response = dict(answer=answer)
+        voice = "Umtöluðustu einstaklingar síðustu daga eru {0}.".format(answer)
+        q.set_expires(datetime.utcnow() + timedelta(hours=1))
+        q.set_answer(response, answer, voice)
 
     return True
 
@@ -385,7 +393,7 @@ _Q2HANDLER = {
 
 
 def handle_plain_text(q: Query) -> bool:
-    """ Handle a plain text query about query statistics. """
+    """Handle a plain text query about query statistics."""
     ql = q.query_lower.rstrip("?")
 
     for qset, handler in _Q2HANDLER.items():

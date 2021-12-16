@@ -18,24 +18,31 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    Icelandic text to speech via AWS Polly.
+    Icelandic-language text to speech via Amazon Polly.
 
 """
 
-from typing import Any, Optional, cast
+from typing import Optional, Any, cast
 
-import sys
 import os
 import json
 import logging
-import html
 from threading import Lock
 
+import requests
 import cachetools  # type: ignore
 import boto3  # type: ignore
 from botocore.exceptions import ClientError  # type: ignore
 
-# The AWS Polly API access keys (you must obtain your own keys if you want to use this code)
+from . import generate_data_uri
+
+
+NAME = "Amazon Polly"
+VOICES = frozenset(("Karl", "Dora"))
+
+
+# The AWS Polly API access keys
+# You must obtain your own keys if you want to use this code
 # JSON format is the following:
 # {
 #     "aws_access_key_id": ""my_key,
@@ -43,36 +50,25 @@ from botocore.exceptions import ClientError  # type: ignore
 #     "region_name": "my_region"
 # }
 #
-_API_KEYS_PATH = os.path.join("resources", "aws_polly_keys.mideind.json")
-_api_client: Optional[boto3.Session] = None
-_api_client_lock = Lock()
-
-# Voices
-_DEFAULT_VOICE = "Dora"
-_VOICES = frozenset(("Dora", "Karl"))
-
-# Audio formats
-_DEFAULT_AUDIO_FORMAT = "mp3"
-_AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
-
-# Text formats
-# For details about SSML markup, see:
-# https://developer.amazon.com/en-US/docs/alexa/custom-skills/speech-synthesis-markup-language-ssml-reference.html
-_DEFAULT_TEXT_FORMAT = "ssml"
-_TEXT_FORMATS = frozenset(("text", "ssml"))
+_AWS_KEYFILE_NAME = "AWSPollyServerKey.json"
+_AWS_API_KEYS_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "..", "resources", _AWS_KEYFILE_NAME
+)
+_aws_api_client: Optional[boto3.Session] = None
+_aws_api_client_lock = Lock()
 
 
-def _initialize_client() -> Optional[boto3.Session]:
-    """ Set up AWS Polly client """
+def _initialize_aws_client() -> Optional[boto3.Session]:
+    """Set up AWS Polly client."""
     global _api_client
 
     # Make sure that only one thread is messing with the global variable
-    with _api_client_lock:
-        if _api_client is None:
+    with _aws_api_client_lock:
+        if _aws_api_client is None:
             # Read AWS Polly API keys from file
             aws_config = {}
             try:
-                with open(_API_KEYS_PATH) as json_file:
+                with open(_AWS_API_KEYS_PATH) as json_file:
                     aws_config = json.load(json_file)
             except FileNotFoundError:
                 logging.warning("Unable to read AWS Polly keys")
@@ -82,42 +78,36 @@ def _initialize_client() -> Optional[boto3.Session]:
         return _api_client
 
 
-# TTL (in seconds) for get_synthesized_text_url caching
+# Time to live (in seconds) for synthesised text URL caching
 # Add a safe 30 second margin to ensure that clients are never provided with an
-# audio URL that's just about to expire and could do so before playback starts.
+# audio URL that's just about to expire and might do so before playback starts.
 _AWS_URL_TTL = 300  # 5 mins in seconds
-_CACHE_TTL = _AWS_URL_TTL - 30  # seconds
-_CACHE_MAXITEMS = 30
+_AWS_CACHE_TTL = _AWS_URL_TTL - 30  # seconds
+_AWS_CACHE_MAXITEMS = 30
 
 
-@cachetools.cached(cachetools.TTLCache(_CACHE_MAXITEMS, _CACHE_TTL))
-def get_synthesized_text_url(
+@cachetools.cached(cachetools.TTLCache(_AWS_CACHE_MAXITEMS, _AWS_CACHE_TTL))
+def _aws_polly_synthesized_text_url(
     text: str,
-    txt_format: str = _DEFAULT_TEXT_FORMAT,
-    voice_id: str = _DEFAULT_VOICE,
+    text_format: str,
+    audio_format: str,
+    voice_id: Optional[str],
     speed: float = 1.0,
 ) -> Optional[str]:
-    """ Returns AWS URL to audio file with speech-synthesised text """
+    """Returns AWS Polly URL to audio file with speech-synthesised text."""
 
-    assert txt_format in _TEXT_FORMATS
-
-    client = _initialize_client()  # Set up client lazily
+    # Set up client lazily
+    client = _initialize_aws_client()
     if client is None:
         logging.warning("Unable to instantiate AWS client")
         return None
 
-    if voice_id not in _VOICES:
-        voice_id = _DEFAULT_VOICE
-
     # Special preprocessing for SSML markup
-    if txt_format == "ssml":
-        # Escape entities to prevent characters such as
-        # "&" and "<" from breaking the markup
-        text = html.escape(text)
+    if text_format == "ssml":
+        # Prevent '&' symbol from breaking markup
+        text = text.replace("&", "&amp;")
         # Adjust voice speed as appropriate
         if speed != 1.0:
-            # Restrict to 50%-150% speed range
-            speed = max(min(1.5, speed), 0.5)
             perc = int(speed * 100)
             text = f'<prosody rate="{perc}%">{text}</prosody>'
         # Wrap text in the required <speak> tag
@@ -129,14 +119,14 @@ def get_synthesized_text_url(
         # The text to synthesize
         "Text": text,
         # mp3 | ogg_vorbis | pcm
-        "OutputFormat": _DEFAULT_AUDIO_FORMAT,
+        "OutputFormat": audio_format,
         # Dora or Karl
         "VoiceId": voice_id,
         # Valid values for mp3 and ogg_vorbis are "8000", "16000", and "22050".
         # The default value is "22050".
         # "SampleRate": "",
         # "text" or "ssml"
-        "TextType": txt_format,
+        "TextType": text_format,
         # Only required for bilingual voices
         # "LanguageCode": "is-IS"
     }
@@ -155,9 +145,31 @@ def get_synthesized_text_url(
     return url
 
 
-if __name__ == "__main__":
-    """ Test speech synthesis through command line invocation """
-    txt = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "Góðan daginn, félagi."
+def text_to_audio_data(
+    text: str,
+    text_format: str,
+    audio_format: str,
+    voice_id: str,
+    speed: float,
+) -> Optional[bytes]:
+    """Returns audio data for speech-synthesised text."""
+    url = _aws_polly_synthesized_text_url(**locals())
+    if not url:
+        return None
+    try:
+        r = requests.get(url)
+        return r.content
+    except Exception as e:
+        logging.error("Error fetching URL {url}: {e}")
+    return None
 
-    url = get_synthesized_text_url(txt)
-    print(url)
+
+def text_to_audio_url(
+    text: str,
+    text_format: str,
+    audio_format: str,
+    voice_id: str,
+    speed: float,
+) -> Optional[str]:
+    """Returns URL to audio of speech-synthesised text."""
+    return _aws_polly_synthesized_text_url(**locals())

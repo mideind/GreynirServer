@@ -59,7 +59,7 @@ from util import read_api_key
 
 
 # Type definitions
-AnswerTuple = Tuple[Dict, str, str]
+AnswerTuple = Tuple[Dict[str, str], str, str]
 LatLonTuple = Tuple[float, float]
 
 
@@ -211,6 +211,55 @@ def parse_num(node: Node, num_str: str) -> float:
     return num or 0.0
 
 
+# Spell out how character names are pronounced in Icelandic
+_CHAR_PRONUNCIATION = {
+    "a": "a",
+    "á": "á",
+    "b": "bé",
+    "c": "sé",
+    "d": "dé",
+    "ð": "eð",
+    "e": "e",
+    "é": "je",
+    "f": "eff",
+    "g": "gé",
+    "h": "há",
+    "i": "i",
+    "í": "í",
+    "j": "joð",
+    "k": "ká",
+    "l": "ell",
+    "m": "emm",
+    "n": "enn",
+    "o": "o",
+    "ó": "ó",
+    "p": "pé",
+    "q": "kú",
+    "r": "err",
+    "s": "ess",
+    "t": "té",
+    "u": "u",
+    "ú": "ú",
+    "v": "vaff",
+    "x": "ex",
+    "y": "ufsilon",
+    "ý": "ufsilon í",
+    "þ": "þoddn",
+    "æ": "æ",
+    "ö": "ö",
+    "z": "seta",
+}
+
+
+def spell_out(s: str) -> str:
+    """Spell out a sequence of characters, e.g. "LTB" -> "ell té bé".
+    Useful for controlling speech synthesis of serial numbers, etc."""
+    if not s:
+        return ""
+    t = [_CHAR_PRONUNCIATION.get(c.lower(), c) if c != " " else "" for c in s]
+    return " ".join(t).replace("  ", " ").strip()
+
+
 def country_desc(cc: str) -> str:
     """Generate Icelandic description of being in a particular country
     with correct preposition and case e.g. 'á Spáni', 'í Þýskalandi'."""
@@ -271,19 +320,20 @@ def time_period_desc(
     seconds = ((seconds + 30) // 60) * 60 if omit_seconds else seconds
 
     # Break it down to weeks, days, hours, mins, secs.
-    result = []
+    result: List[str] = []
     for unit, count in _TIMEUNIT_INTERVALS:
         value = seconds // count
         if value:
             seconds -= value * count
             plidx = 1 if is_plural(value) else 0
             icename = _TIMEUNIT_NOUNS[unit][plidx][cidx]
+            svalue: Union[int, str] = value
             if num_to_str:
                 # Convert number to spoken text
-                value = number_to_text(
+                svalue = number_to_text(
                     value, case=case, gender="kk" if unit == "d" else "kvk"
                 )
-            result.append(f"{value} {icename}")
+            result.append(f"{svalue} {icename}")
 
     return natlang_seq(result)
 
@@ -303,7 +353,7 @@ def distance_desc(
     num_to_str: bool = False,
 ) -> str:
     """Generate an Icelandic description of distance in km/m w. option to
-    specify case, abbreviations, cutoff for returning desc in metres."""
+    specify case, abbreviations, cutoff for returning descr. in metres."""
     assert case in _CASE_ABBR
     cidx = _CASE_ABBR.index(case)
 
@@ -314,24 +364,24 @@ def distance_desc(
         plidx = 1 if is_plural(rounded_km) else 0
         unit_long = "kíló" + _METER_NOUN[plidx][cidx]
         unit = "km" if abbr else unit_long
+        sdist = dist
         if num_to_str:
-            dist = float_to_text(
-                rounded_km, case=case, gender="kk", comma_null=False
-            )
+            sdist = float_to_text(rounded_km, case=case, gender="kk", comma_null=False)
     # E.g. 940 metrar
     else:
         # Round to nearest 10
-        def rnd(n):
+        def rnd(n: int) -> int:
             return ((n + 5) // 10) * 10
 
-        dist = rnd(int(km_dist * 1000.0))
-        plidx = 1 if is_plural(dist) else 0
+        rounded_dist = rnd(int(km_dist * 1000.0))
+        plidx = 1 if is_plural(rounded_dist) else 0
         unit_long = _METER_NOUN[plidx][cidx]
         unit = "m" if abbr else unit_long
+        sdist = str(rounded_dist)
         if num_to_str:
-            dist = number_to_text(dist, case=case, gender="kk")
+            sdist = number_to_text(rounded_dist, case=case, gender="kk")
 
-    return f"{dist} {unit}"
+    return f"{sdist} {unit}"
 
 
 _KRONA_NOUN = (
@@ -378,7 +428,7 @@ def gen_answer(a: str) -> AnswerTuple:
 
 
 def query_json_api(
-    url: str, headers: Optional[Dict] = None
+    url: str, headers: Optional[Dict[str, str]] = None
 ) -> Union[None, List[Any], Dict[str, Any]]:
     """Request the URL, expecting a JSON response which is
     parsed and returned as a Python data structure."""
@@ -404,7 +454,7 @@ def query_json_api(
     return None
 
 
-def query_xml_api(url: str):
+def query_xml_api(url: str) -> Any:
     """Request the URL, expecting an XML response which is
     parsed and returned as an XML document object."""
 
@@ -424,7 +474,7 @@ def query_xml_api(url: str):
 
     # Parse XML response text
     try:
-        xmldoc = minidom.parseString(r.text)
+        xmldoc = cast(Any, minidom).parseString(r.text)
         return xmldoc
     except Exception as e:
         logging.warning("Error parsing XML response from {0}: {1}".format(url, e))
@@ -522,7 +572,7 @@ def query_places_api(
     userloc: Optional[LatLonTuple] = None,
     radius: float = _PLACES_LOCBIAS_RADIUS,
     fields: Optional[str] = None,
-) -> Optional[Dict]:
+) -> Optional[Dict[str, Any]]:
     """Look up a placename in Google's Places API. For details, see:
     https://developers.google.com/places/web-service/search"""
 
@@ -561,7 +611,9 @@ _PLACEDETAILS_API_URL = "https://maps.googleapis.com/maps/api/place/details/json
 
 
 @lru_cache(maxsize=32)
-def query_place_details(place_id: str, fields: Optional[str] = None) -> Optional[Dict]:
+def query_place_details(
+    place_id: str, fields: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
     """Look up place details by ID in Google's Place Details API. If "fields"
     parameter is omitted, *all* fields are returned. For details, see
     https://developers.google.com/places/web-service/details"""
@@ -601,7 +653,10 @@ def timezone4loc(
     """Returns timezone string given a tuple of coordinates.
     Fallback argument should be a 2-char ISO 3166 country code."""
     if loc is not None:
-        return _tzwhere_singleton().tzNameAt(loc[0], loc[1], forceTZ=True)
+        return cast(
+            Optional[str],
+            cast(Any, _tzwhere_singleton()).tzNameAt(loc[0], loc[1], forceTZ=True),
+        )
     if fallback and fallback in country_timezones:
         return country_timezones[fallback][0]
     return None

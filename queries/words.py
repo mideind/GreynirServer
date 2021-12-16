@@ -32,7 +32,7 @@
 # TODO: Handle numbers ("3" should be spelled as "þrír" etc.)
 # TODO "Hvaða orð rímar við X"
 
-from typing import Optional, Tuple
+from typing import Iterable, Optional, Tuple
 
 import re
 import logging
@@ -43,47 +43,7 @@ from islenska.bindb import BinEntryIterable, BinEntryList
 from reynir.bindb import GreynirBin
 
 from query import Query, AnswerTuple
-from queries import gen_answer, icequote
-
-
-# Spell out how character names are pronounced in Icelandic
-_CHAR_PRONUNCIATION = {
-    "a": "a",
-    "á": "á",
-    "b": "bé",
-    "c": "sé",
-    "d": "dé",
-    "ð": "eð",
-    "e": "e",
-    "é": "je",
-    "f": "eff",
-    "g": "gé",
-    "h": "há",
-    "i": "i",
-    "í": "í",
-    "j": "joð",
-    "k": "ká",
-    "l": "ell",
-    "m": "emm",
-    "n": "enn",
-    "o": "o",
-    "ó": "ó",
-    "p": "pé",
-    "q": "kú",
-    "r": "err",
-    "s": "ess",
-    "t": "té",
-    "u": "u",
-    "ú": "ú",
-    "v": "vaff",
-    "x": "ex",
-    "y": "ufsilon i",
-    "ý": "ufsilon í",
-    "þ": "þoddn",
-    "æ": "æ",
-    "ö": "ö",
-    "z": "seta",
-}
+from queries import gen_answer, icequote, spell_out
 
 
 _WORDTYPE_RX_NOM = "(?:orðið|nafnið|nafnorðið)"
@@ -100,11 +60,16 @@ _SPELLING_RX = (
     r"^hvernig skrifar maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig skrifa ég {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig stafar maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig rita ég {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig ritar maður {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig er {0}?\s?(.+) stafsett$".format(_WORDTYPE_RX_NOM),
     r"^hvernig er {0}?\s?(.+) skrifað$".format(_WORDTYPE_RX_NOM),
     r"^hvernig er {0}?\s?(.+) stafað$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig er {0}?\s?(.+) ritað$".format(_WORDTYPE_RX_NOM),
     r"^hvernig skal stafa {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig skal stafsetja {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
     r"^hvernig stafast {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
+    r"^hvernig ritast {0}?\s?(.+)$".format(_WORDTYPE_RX_NOM),
 )
 
 
@@ -129,12 +94,13 @@ _DECLENSION_RX = (
     r"^hvernig er {0}\s?(.+) fallbeygt$".format(_WORDTYPE_RX_NOM),
     r"^hverjar eru beygingarmyndir {0}\s?(.+)$".format(_WORDTYPE_RX_GEN),
     r"^hvað eru beygingarmyndir {0}\s?(.+)$".format(_WORDTYPE_RX_GEN),
+    r"^hvernig eru beygingarmyndir {0}\s?(.+)$".format(_WORDTYPE_RX_GEN),
     r"^fallbeyging á {0}\s?(.+)$".format(_WORDTYPE_RX_DAT),
 )
 
 
 def lookup_best_word(word: str) -> Optional[Tuple[str, str, str, str]]:
-    """ Look up word in BÍN, pick right one acc. to a criterion. """
+    """Look up word in BÍN, pick right one acc. to a criterion."""
     with GreynirBin().get_db() as db:
 
         def nouns_only(bin_meaning: BIN_Tuple) -> bool:
@@ -209,7 +175,7 @@ _LETTER_INTERVAL = 0.3  # Seconds
 
 
 def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
-    """ Spell out a word provided in a query. """
+    """Spell out a word provided in a query."""
 
     # Generate list of characters in word
     chars = list(word)
@@ -219,10 +185,11 @@ def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
     response = dict(answer=answ)
 
     # Piece together SSML for speech synthesis
-    v = [_CHAR_PRONUNCIATION.get(c, c) for c in chars]
+    v = spell_out(word)
+    vlist: list = list(v)
     jfmt = '<break time="{0}s"/>'.format(_LETTER_INTERVAL)
     voice = "Orðið {0} er stafað á eftirfarandi hátt: {1} {2}".format(
-        icequote(word), jfmt, jfmt.join(v)
+        icequote(word), jfmt, jfmt.join(vlist)
     )
 
     query.set_qtype("Spelling")
@@ -236,7 +203,7 @@ def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
 
 
 def handle_plain_text(q: Query) -> bool:
-    """ Handle a plain text query, contained in the q parameter. """
+    """Handle a plain text query, contained in the q parameter."""
     ql = q.query_lower.rstrip("?")
 
     matches = None

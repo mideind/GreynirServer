@@ -27,7 +27,8 @@ from typing import Dict, Any, List, Optional, cast
 from datetime import datetime
 import logging
 
-from flask import request, abort, Response
+from flask import request, abort
+from flask.wrappers import Response
 
 from settings import Settings
 
@@ -36,12 +37,13 @@ from db import SessionContext
 from db.models import ArticleTopic, Query, Feedback, QueryData
 from treeutil import TreeUtility
 from correct import check_grammar
-from reynir.binparser import TokenDict, canonicalize_token
+from reynir.bintokenizer import TokenDict
+from reynir.binparser import canonicalize_token
 from article import Article as ArticleProxy
 from query import process_query
 from query import Query as QueryObject
 from doc import SUPPORTED_DOC_MIMETYPES, Document
-from speech import get_synthesized_text_url
+from speech import text_to_audio_url
 from util import read_api_key
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
@@ -59,8 +61,8 @@ _MIDEIND_LOCATION = (64.156896, -21.951200)  # Fiskislóð 31, 101 Reykjavík
 
 @routes.route("/ifdtag.api", methods=["GET", "POST"])
 @routes.route("/ifdtag.api/v<int:version>", methods=["GET", "POST"])
-def ifdtag_api(version=1):
-    """ API to parse text and return IFD tagged tokens in a simple and sparse JSON format """
+def ifdtag_api(version: int = 1) -> Response:
+    """API to parse text and return IFD tagged tokens in a simple and sparse JSON format"""
     if not (1 <= version <= 1):
         # Unsupported version
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -77,9 +79,9 @@ def ifdtag_api(version=1):
 
 @routes.route("/analyze.api", methods=["GET", "POST"])
 @routes.route("/analyze.api/v<int:version>", methods=["GET", "POST"])
-def analyze_api(version: int=1) -> Response:
-    """ Analyze text manually entered by the user, i.e. not coming from an article.
-        This is a lower level API used by the Greynir web front-end. """
+def analyze_api(version: int = 1) -> Response:
+    """Analyze text manually entered by the user, i.e. not coming from an article.
+    This is a lower level API used by the Greynir web front-end."""
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
     # try:
@@ -96,10 +98,10 @@ def analyze_api(version: int=1) -> Response:
 
 @routes.route("/correct.api", methods=["GET", "POST"])
 @routes.route("/correct.api/v<int:version>", methods=["GET", "POST"])
-def correct_api(version: int=1):
-    """ Correct text provided by the user, i.e. not coming from an article.
-        This can be either an uploaded file or a string.
-        This is a lower level API used by the Greynir web front-end. """
+def correct_api(version: int = 1) -> Response:
+    """Correct text provided by the user, i.e. not coming from an article.
+    This can be either an uploaded file or a string.
+    This is a lower level API used by the Greynir web front-end."""
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
@@ -114,7 +116,7 @@ def correct_api(version: int=1):
         try:
             # filename = werkzeug.secure_filename(file.filename)
             # Instantiate an appropriate class for the MIME type of the file
-            doc = Document.for_mimetype(mimetype)(file.read())
+            doc = Document.for_mimetype(mimetype)(file.read())  # type: ignore
             text = doc.extract_text()
         except Exception as e:
             logging.warning("Exception in correct_api(): {0}".format(e))
@@ -138,10 +140,10 @@ def correct_api(version: int=1):
 @routes.route("/correct.task", methods=["POST"])
 @routes.route("/correct.task/v<int:version>", methods=["POST"])
 @async_task  # This means that the function is automatically run on a separate thread
-def correct_task(version: int=1) -> Response:
-    """ Correct text provided by the user, i.e. not coming from an article.
-        This can be either an uploaded file or a string.
-        This is a lower level API used by the Greynir web front-end. """
+def correct_task(version: int = 1) -> Response:
+    """Correct text provided by the user, i.e. not coming from an article.
+    This can be either an uploaded file or a string.
+    This is a lower level API used by the Greynir web front-end."""
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
@@ -156,7 +158,7 @@ def correct_task(version: int=1) -> Response:
         # Create document object from an uploaded file and extract its text
         try:
             # Instantiate an appropriate class for the MIME type of the file
-            doc = Document.for_mimetype(mimetype)(file.read())
+            doc = Document.for_mimetype(mimetype)(file.read())  # type: ignore
             text = doc.extract_text()
         except Exception as e:
             logging.warning("Exception in correct_task(): {0}".format(e))
@@ -181,8 +183,8 @@ def correct_task(version: int=1) -> Response:
 
 @routes.route("/postag.api", methods=["GET", "POST"])
 @routes.route("/postag.api/v<int:version>", methods=["GET", "POST"])
-def postag_api(version=1) -> Response:
-    """ API to parse text and return POS tagged tokens in a verbose JSON format """
+def postag_api(version: int = 1) -> Response:
+    """API to parse text and return POS tagged tokens in a verbose JSON format"""
     if not (1 <= version <= 1):
         # Unsupported version
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -216,10 +218,11 @@ def postag_api(version=1) -> Response:
 
     return Response("Error", status=403)
 
+
 @routes.route("/parse.api", methods=["GET", "POST"])
 @routes.route("/parse.api/v<int:version>", methods=["GET", "POST"])
-def parse_api(version=1) -> Response:
-    """ API to parse text and return POS tagged tokens in JSON format """
+def parse_api(version: int = 1) -> Response:
+    """API to parse text and return POS tagged tokens in JSON format"""
     if not (1 <= version <= 1):
         # Unsupported version
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -238,7 +241,7 @@ def parse_api(version=1) -> Response:
                 pgs = pgs[0]
             else:
                 # More than one paragraph: gotta concatenate 'em all
-                pa = []
+                pa: List[List[TokenDict]] = []
                 for pg in pgs:
                     pa.extend(pg)
                 pgs = pa
@@ -251,14 +254,14 @@ def parse_api(version=1) -> Response:
 
 @routes.route("/article.api", methods=["GET", "POST"])
 @routes.route("/article.api/v<int:version>", methods=["GET", "POST"])
-def article_api(version=1) -> Response:
-    """ Obtain information about an article, given its URL or id """
+def article_api(version: int = 1) -> Response:
+    """Obtain information about an article, given its URL or id"""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
-    url = request.values.get("url")
-    uuid = request.values.get("id")
+    url: Optional[str] = request.values.get("url")
+    uuid: Optional[str] = request.values.get("id")
 
     if url:
         url = url.strip()[0:MAX_URL_LENGTH]
@@ -274,7 +277,7 @@ def article_api(version=1) -> Response:
 
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
-        elif url.startswith("http:") or url.startswith("https:"):
+        elif url and url.startswith(("http:", "https:")):
             a = ArticleProxy.load_from_url(url, session)
         else:
             a = None
@@ -313,8 +316,8 @@ def article_api(version=1) -> Response:
 
 @routes.route("/reparse.api", methods=["POST"])
 @routes.route("/reparse.api/v<int:version>", methods=["POST"])
-def reparse_api(version=1):
-    """ Reparse an already parsed and stored article with a given UUID """
+def reparse_api(version: int = 1) -> Response:
+    """Reparse an already parsed and stored article with a given UUID"""
     if not (1 <= version <= 1):
         return better_jsonify(valid="False", reason="Unsupported version")
 
@@ -350,23 +353,23 @@ def reparse_api(version=1):
 
 @routes.route("/query.api", methods=["GET", "POST"])
 @routes.route("/query.api/v<int:version>", methods=["GET", "POST"])
-def query_api(version=1):
-    """ Respond to a query string """
+def query_api(version: int = 1) -> Response:
+    """Respond to a query string"""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
     # String with query
-    q = request.values.get("q", "")
+    qs: str = request.values.get("q", "")
     # q param contains one or more |-separated strings
-    mq = q.split("|")[0:_MAX_QUERY_VARIANTS]
-    # Retain only nonempty strings in q
-    q = list(filter(None, (m.strip()[0:_MAX_QUERY_LENGTH] for m in mq)))
+    mq: List[str] = qs.split("|")[0:_MAX_QUERY_VARIANTS]
+    # Retain only nonempty strings in qs
+    q: List[str] = list(filter(None, (m.strip()[0:_MAX_QUERY_LENGTH] for m in mq)))
 
     # If voice is set, return a voice-friendly string
     voice = bool_from_request(request, "voice")
     # Request a particular voice
-    voice_id = request.values.get("voice_id")
+    voice_id: str = request.values.get("voice_id", "Dora")
     # Request a particular voice speed
     try:
         voice_speed = float(request.values.get("voice_speed", 1.0))
@@ -379,15 +382,15 @@ def query_api(version=1):
     test = Settings.DEBUG and bool_from_request(request, "test")
 
     # Obtain the client's location, if present
-    lat = request.values.get("latitude")
-    lon = request.values.get("longitude")
+    slat: Optional[str] = request.values.get("latitude")
+    slon: Optional[str] = request.values.get("longitude")
 
     # Additional client info
     # !!! FIXME: The client_id for web browser clients is the browser version,
     # !!! which is not particularly useful. Consider using an empty string instead.
-    client_id = request.values.get("client_id")
-    client_type = request.values.get("client_type")
-    client_version = request.values.get("client_version")
+    client_id: Optional[str] = request.values.get("client_id")
+    client_type: Optional[str] = request.values.get("client_type")
+    client_version: Optional[str] = request.values.get("client_version")
     # When running behind an nginx reverse proxy, the client's remote
     # address is passed to the web application via the "X-Real-IP" header
     client_ip = request.remote_addr or request.headers.get("X-Real-IP")
@@ -396,24 +399,26 @@ def query_api(version=1):
     private = bool_from_request(request, "private")
 
     # Attempt to convert the (lat, lon) location coordinates to floats
-    location_present = bool(lat) and bool(lon)
+    location_present = bool(slat) and bool(slon)
+
+    lat, lon = 0.0, 0.0
 
     # For testing, insert a synthetic location if not already present
     if not location_present and test:
         lat, lon = _MIDEIND_LOCATION
         location_present = True
 
-    if location_present:
+    if location_present and not test:
         try:
-            lat = float(lat)
+            lat = float(slat or "0")
             if not (-90.0 <= lat <= 90.0):
                 location_present = False
         except ValueError:
             location_present = False
 
-    if location_present:
+    if location_present and not test:
         try:
-            lon = float(lon)
+            lon = float(slon or "0")
             if not (-180.0 <= lon <= 180.0):
                 location_present = False
         except ValueError:
@@ -434,16 +439,16 @@ def query_api(version=1):
         client_type=client_type,
         client_id=client_id,
         client_version=client_version,
-        bypass_cache=Settings.DEBUG,
+        bypass_cache=True,  # Settings.DEBUG,
         private=private,
     )
 
     # Get URL for response synthesized speech audio
-    if voice:
+    if voice and "voice" in result:
         # If the result contains a "voice" key, return it
-        audio = result.get("voice")
+        audio = result["voice"]
         url = (
-            get_synthesized_text_url(audio, voice_id=voice_id, speed=voice_speed)
+            text_to_audio_url(audio, voice_id=voice_id, speed=voice_speed)
             if audio
             else None
         )
@@ -471,33 +476,34 @@ def query_api(version=1):
 
 @routes.route("/query_history.api", methods=["GET", "POST"])
 @routes.route("/query_history.api/v<int:version>", methods=["GET", "POST"])
-def query_history_api(version=1):
-    """ Delete query history and/or query data for a particular unique client ID. """
+def query_history_api(version: int = 1) -> Response:
+    """Delete query history and/or query data for a particular unique client ID."""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
-    # Calling this endpoint requires the Greynir API key
-    # TODO: Enable when clients (iOS, Android) have been updated
-    # key = request.values.get("api_key")
-    # gak = read_api_key("GreynirServerKey")
-    # if not gak or not key or key != gak:
-    #     resp["errmsg"] = "Invalid or missing API key."
-    #     return better_jsonify(**resp)
+    resp: Dict[str, Any] = dict(valid=True)
 
-    resp = dict(valid=True)
+    # Calling this endpoint requires the Greynir API key
+    key = request.values.get("api_key")
+    gak = read_api_key("GreynirServerKey")
+    if not gak or not key or key != gak:
+        resp["errmsg"] = "Invalid or missing API key."
+        resp["valid"] = False
+        return better_jsonify(**resp)
+
+    VALID_ACTIONS = frozenset(("clear", "clear_all"))
 
     action = request.values.get("action")
-    # client_type = request.values.get("client_type")
-    # client_version = request.values.get("client_version")
     client_id = request.values.get("client_id")
 
-    valid_actions = ("clear", "clear_all")
-
     if not client_id:
-        return better_jsonify(valid=False, reason="Missing parameters")
-    if action not in valid_actions:
-        return better_jsonify(valid=False, reason="Invalid action parameter")
+        return better_jsonify(valid=False, errmsg="Missing parameters")
+    if action not in VALID_ACTIONS:
+        return better_jsonify(
+            valid=False,
+            errmsg=f"Invalid action parameter '{action}'. Should be in {VALID_ACTIONS}.",
+        )
 
     with SessionContext(commit=True) as session:
         # Clear all logged user queries
@@ -515,8 +521,8 @@ def query_history_api(version=1):
 
 @routes.route("/speech.api", methods=["GET", "POST"])
 @routes.route("/speech.api/v<int:version>", methods=["GET", "POST"])
-def speech_api(version=1):
-    """ Send in text, receive URL to speech-synthesised audio file. """
+def speech_api(version: int = 1) -> Response:
+    """Send in text, receive URL to speech-synthesised audio file."""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -548,9 +554,7 @@ def speech_api(version=1):
             speed = 1.0
 
     try:
-        url = get_synthesized_text_url(
-            text, txt_format=fmt, voice_id=voice_id, speed=speed
-        )
+        url = text_to_audio_url(text, text_format=fmt, voice_id=voice_id, speed=speed)
     except Exception:
         return better_jsonify(**reply)
 
@@ -562,8 +566,8 @@ def speech_api(version=1):
 
 @routes.route("/feedback.api", methods=["POST"])
 @routes.route("/feedback.api/v<int:version>", methods=["POST"])
-def feedback_api(version=1):
-    """ Endpoint to accept submitted feedback forms """
+def feedback_api(version: int = 1) -> Response:
+    """Endpoint to accept submitted feedback forms"""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -593,7 +597,7 @@ def feedback_api(version=1):
 
 @routes.route("/exit.api", methods=["GET"])
 def exit_api():
-    """ Allow a server to be remotely terminated if running in debug mode """
+    """Allow a server to be remotely terminated if running in debug mode"""
     if not Settings.DEBUG:
         abort(404)
     shutdown_func = request.environ.get("werkzeug.server.shutdown")
@@ -605,7 +609,7 @@ def exit_api():
 
 @routes.route("/register_query_data.api", methods=["POST"])
 @routes.route("/register_query_data.api/v<int:version>", methods=["POST"])
-def register_query_data_api(version=1):
+def register_query_data_api(version: int = 1) -> Response:
     """
     Stores or updates query data for the given client ID
 

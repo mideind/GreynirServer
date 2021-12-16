@@ -24,8 +24,11 @@
 
 """
 
-from typing import Iterator, List, cast
-from reynir.reynir import ProgressFunc, Tok
+from typing import Any, Iterator, List, cast
+
+from tokenizer import Tok
+from reynir.bintokenizer import StringIterable
+from reynir.reynir import ProgressFunc
 import nertokenizer
 import reynir_correct
 
@@ -35,7 +38,7 @@ class RecognitionPipeline(reynir_correct.CorrectionPipeline):
     """ Derived class that adds a named entity recognition pass
         to the GreynirCorrect tokenization pipeline """
 
-    def __init__(self, text: str) -> None:
+    def __init__(self, text: StringIterable) -> None:
         super().__init__(text)
 
     def recognize_entities(self, stream: Iterator[Tok]) -> Iterator[Tok]:
@@ -52,10 +55,10 @@ class NERCorrect(reynir_correct.GreynirCorrect):
     """ Derived class to override the default tokenization of
         GreynirCorrect to perform named entity recognition """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, **options: Any) -> None:
+        super().__init__(**options)
 
-    def tokenize(self, text):
+    def tokenize(self, text: StringIterable) -> Iterator[Tok]:
         """ Use the recognizing & correcting tokenizer instead
             of the normal one """
         pipeline = RecognitionPipeline(text)

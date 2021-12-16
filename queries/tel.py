@@ -185,7 +185,7 @@ _PHONECALL_REGEXES = [
 
 
 def handle_plain_text(q: Query) -> bool:
-    """ Handle a plain text query requesting a call to a telephone number. """
+    """Handle a plain text query requesting a call to a telephone number."""
     ql = q.query_lower.strip().rstrip("?")
 
     pfx = None

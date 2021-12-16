@@ -23,7 +23,7 @@
 
 """
 
-from typing import Any, Dict, Iterator, Optional, Tuple, cast
+from typing import Any, Dict, Iterator, List, Optional, Tuple, cast
 from types import ModuleType
 
 import re
@@ -103,17 +103,17 @@ class Fetcher:
         """ Accumulates raw text blocks and eliminates
             unnecessary nesting indicators """
 
-        def __init__(self):
-            self._result = []
+        def __init__(self) -> None:
+            self._result: List[str] = []
             self._nesting = 0
             self._white = False
 
-        def append(self, w):
+        def append(self, w: str) -> None:
             if self._nesting > 0:
                 if w.isspace():
                     # Whitespace is not reason to emit nesting markers
                     return
-                self._result.append(" [[ " * self._nesting)
+                self._result.append("[[" * self._nesting)
                 self._nesting = 0
             self._result.append(w)
             self._white = False
@@ -132,34 +132,39 @@ class Fetcher:
             if self._nesting > 0:
                 self._nesting -= 1
             else:
-                self._result.append(" ]] ")
+                self._result.append("]]")
                 self._white = True
 
         def insert_break(self):
             """ Used to cut paragraphs at <br> and <hr> tags """
             if self._nesting == 0:
-                self._result.append(" ]] [[ ")
+                self._result.append("]][[")
                 self._white = True
 
         def result(self):
             """ Return the accumulated result as a string """
             assert self._nesting == 0
-            text = "".join(self._result)
+            text = "".join(self._result).strip()
             # Eliminate soft hyphen and zero width space characters
             text = re.sub("\u00AD|\u200B", "", text)
+            # Eliminate space before and after paragraph begin markers
+            text = re.sub(r"\s*\[\[\s*", "[[", text)
+            # Eliminate space before and after paragraph end markers
+            text = re.sub(r"\s*\]\]\s*", "]]", text)
             # Eliminate consecutive whitespace
-            return re.sub(r"\s+", " ", text)
+            text = re.sub(r"\s+", " ", text)
+            return text
 
     @staticmethod
-    def extract_text(soup, result):
+    def extract_text(soup: BeautifulSoup, result: "Fetcher.TextList") -> None:
         """ Append the human-readable text found in an HTML soup
             to the result TextList """
         if soup is None:
             return
         for t in soup.children:
-            if type(t) == NavigableString:
+            if type(t) is NavigableString:
                 # Text content node
-                result.append(t)
+                result.append(cast(str, t))
             elif isinstance(t, NavigableString):
                 # Comment, CDATA or other text data: ignore
                 pass
@@ -190,7 +195,9 @@ class Fetcher:
                 Fetcher.extract_text(t, result)
 
     @staticmethod
-    def to_tokens(soup, enclosing_session=None):
+    def to_tokens(
+        soup: BeautifulSoup, enclosing_session: Optional[Session] = None
+    ) -> Iterator[Tok]:
         """ Convert an HTML soup root into a parsable token stream """
 
         # Extract the text content of the HTML into a list
@@ -203,7 +210,7 @@ class Fetcher:
         return recognize_entities(token_stream, enclosing_session=enclosing_session)
 
     @classmethod
-    def raw_fetch_url(cls, url):
+    def raw_fetch_url(cls, url: str) -> Optional[str]:
         """ Low-level fetch of an URL, returning a decoded string """
         html_doc = None
         try:
@@ -239,7 +246,7 @@ class Fetcher:
         return html_doc
 
     @classmethod
-    def _get_helper(cls, root) -> Optional[ModuleType]:
+    def _get_helper(cls, root: Root) -> Optional[ModuleType]:
         """ Return a scrape helper instance for the given root """
         # Obtain an instance of a scraper helper class for this root
         helper_id = root.scr_module + "." + root.scr_class
@@ -411,7 +418,9 @@ class Fetcher:
             return (article, metadata, content)
 
     @classmethod
-    def fetch_url(cls, url, enclosing_session=None):
+    def fetch_url(
+        cls, url: str, enclosing_session: Optional[Session] = None
+    ) -> Optional[Tuple[Any, Any]]:
         """ Fetch a URL using the scraping mechanism, returning
             a tuple (metadata, content) or None if error """
 
@@ -443,7 +452,9 @@ class Fetcher:
             return (metadata, content)
 
     @classmethod
-    def fetch_url_html(cls, url: str, enclosing_session: Optional[Session]=None) -> Tuple[Optional[str], Any, Any]:
+    def fetch_url_html(
+        cls, url: str, enclosing_session: Optional[Session] = None
+    ) -> Tuple[Optional[str], Any, Any]:
         """ Fetch a URL using the scraping mechanism, returning
             a tuple (html, metadata, helper) or None if error """
 

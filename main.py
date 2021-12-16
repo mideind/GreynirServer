@@ -31,16 +31,16 @@
 
 """
 
-from typing import Callable, Dict, Pattern, Optional
+from typing import Callable, Dict, Pattern, Optional, Union
 
 import sys
 import os
-import time
 import re
 import logging
 from datetime import datetime
 
 from flask import Flask, send_from_directory, render_template
+from flask.wrappers import Response
 from flask_caching import Cache  # type: ignore
 from flask_cors import CORS  # type: ignore
 
@@ -56,8 +56,8 @@ from settings import Settings, ConfigError
 from article import Article as ArticleProxy
 
 from platform import system as os_name
-from reynir import __version__ as greynir_version
-from tokenizer import __version__ as tokenizer_version
+from reynir.version import __version__ as greynir_version
+from tokenizer.version import __version__ as tokenizer_version
 
 
 # RUNNING_AS_SERVER is True if we're executing under nginx/Gunicorn,
@@ -72,7 +72,7 @@ cors = CORS(app)
 app.config["CORS_HEADERS"] = "Content-Type"
 
 # Fix access to client remote_addr when running behind proxy
-setattr(app, "wsgi_app", ProxyFix(app.wsgi_app))
+setattr(app, "wsgi_app", ProxyFix(app.wsgi_app))  # type: ignore
 
 app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB, max upload file size
@@ -97,12 +97,14 @@ app.register_blueprint(routes)
 
 
 # Utilities for Flask/Jinja2 formatting of numbers using the Icelandic locale
-def make_pattern(rep_dict: Dict) -> Pattern:
+def make_pattern(rep_dict: Dict[str, str]) -> Pattern[str]:
     return re.compile("|".join([re.escape(k) for k in rep_dict.keys()]), re.M)
 
 
-def multiple_replace(s: str, rep_dict: Dict, pattern: Optional[Pattern] = None) -> str:
-    """ Perform multiple simultaneous replacements within string """
+def multiple_replace(
+    s: str, rep_dict: Dict[str, str], pattern: Optional[Pattern[str]] = None
+) -> str:
+    """Perform multiple simultaneous replacements within string"""
     if pattern is None:
         pattern = make_pattern(rep_dict)
     return pattern.sub(lambda x: rep_dict[x.group(0)], s)
@@ -113,30 +115,33 @@ _PATTERN_IS = make_pattern(_REP_DICT_IS)
 
 
 @app.template_filter("format_is")
-def format_is(r, decimals: int = 0):
-    """ Flask/Jinja2 template filter to format a number for the Icelandic locale """
+def format_is(r: float, decimals: int = 0) -> str:
+    """Flask/Jinja2 template filter to format a number for the Icelandic locale"""
     fmt = "{0:,." + str(decimals) + "f}"
     return multiple_replace(fmt.format(float(r)), _REP_DICT_IS, _PATTERN_IS)
 
 
 @app.template_filter("format_ts")
-def format_ts(ts):
-    """ Flask/Jinja2 template filter to format a timestamp """
+def format_ts(ts: datetime) -> str:
+    """Flask/Jinja2 template filter to format a timestamp"""
     return str(ts)[0:19]
 
 
 # Flask cache busting for static .css and .js files
 @app.url_defaults
-def hashed_url_for_static_file(endpoint, values):
-    """ Add a ?h=XXX parameter to URLs for static .js and .css files,
-        where XXX is calculated from the file timestamp """
+def hashed_url_for_static_file(
+    endpoint: str, values: Dict[str, Union[int, str]]
+) -> None:
+    """Add a ?h=XXX parameter to URLs for static .js and .css files,
+    where XXX is calculated from the file timestamp"""
 
-    def static_file_hash(filename):
-        """ Obtain a timestamp for the given file """
+    def static_file_hash(filename: str):
+        """Obtain a timestamp for the given file"""
         return int(os.stat(filename).st_mtime)
 
     if "static" == endpoint or endpoint.endswith(".static"):
         filename = values.get("filename")
+        assert isinstance(filename, str)
         if filename and filename.endswith((".js", ".css")):
             # if "." in endpoint:  # has higher priority
             #     blueprint = endpoint.rsplit(".", 1)[0]
@@ -156,27 +161,27 @@ def hashed_url_for_static_file(endpoint, values):
 
 @app.route("/static/fonts/<path:path>")
 @max_age(seconds=24 * 60 * 60)  # Client should cache font for 24 hours
-def send_font(path):
+def send_font(path: str) -> Response:
     return send_from_directory(os.path.join("static", "fonts"), path)
 
 
 # Custom 404 error handler
 @app.errorhandler(404)
-def page_not_found(e):
-    """ Return a custom 404 error """
+def page_not_found(_) -> str:
+    """Return a custom 404 error"""
     return render_template("404.html")
 
 
 # Custom 500 error handler
 @app.errorhandler(500)
-def server_error(e):
-    """ Return a custom 500 error """
+def server_error(_) -> str:
+    """Return a custom 500 error"""
     return render_template("500.html")
 
 
 @app.context_processor
-def inject_nn_bools():
-    """ Inject bool switches for neural network features """
+def inject_nn_bools() -> Dict[str, Union[str, bool]]:
+    """Inject bool switches for neural network features"""
     return dict(
         nn_parsing_enabled=Settings.NN_PARSING_ENABLED,
         nn_translate_enabled=Settings.NN_TRANSLATION_ENABLED,
@@ -260,6 +265,7 @@ if not RUNNING_AS_SERVER:
                 break
         else:
             print("Extra file '{0}' not found".format(fname))
+
     # Add ord.compressed from GeynirPackage
     extra_files.append(
         os.path.join(
@@ -311,19 +317,15 @@ else:
 
     # Log our startup
     log_str = (
-        "Greynir instance starting with "
-        "host={0}:{1}, db_host={2}:{3} on Python {4}".format(
-            Settings.HOST,
-            Settings.PORT,
-            Settings.DB_HOSTNAME,
-            Settings.DB_PORT,
-            sys.version.replace("\n", " "),
-        )
+        f"Greynir instance starting with "
+        "host={Settings.HOST}:{Settings.PORT}, "
+        "db_host={Settings.DB_HOSTNAME}:{Settings.DB_PORT} "
+        "on Python {sys.version.replace('\n', ' ')}"
     )
     logging.info(log_str)
     print(log_str)
     sys.stdout.flush()
 
     # Running as a server module: pre-load the grammar into memory
-    with Fast_Parser() as fp:
+    with Fast_Parser() as _:
         pass
