@@ -23,6 +23,7 @@
 """
 
 # TODO: "Heinsaðu fyrirspurnasögu [mína]", "Hreinsaðu öll gögn um mig", etc. commands
+# TODO: "hvernig veistu hvað ég heiti?", "hvernig veistu X um mig?"
 
 from typing import Dict, Match, Optional, cast
 
@@ -207,7 +208,7 @@ def _addr2str(addr: Dict[str, str], case: str = "nf") -> str:
                 astr = n.dative or astr
         except Exception:
             pass
-    return numbers_to_text(astr)
+    return astr
 
 
 _WHATS_MY_ADDR = frozenset(
@@ -238,13 +239,15 @@ def _whatsmyaddr_handler(q: Query, ql: str) -> bool:
     answ = None
     ad = q.client_data("address")
     if not ad:
-        answ = _DUNNO_ADDRESS
+        q.set_answer(*gen_answer(_DUNNO_ADDRESS))
     else:
         addr = cast(Dict[str, str], ad)
         street = addr["street"]
         prep = iceprep_for_street(street)
         answ = "Þú átt heima {0} {1}".format(prep, _addr2str(addr, case="þgf"))
-    q.set_answer(*gen_answer(answ))
+        voice = numbers_to_text(answ)
+        resp = dict(answer=answ)
+        q.set_answer(resp, answ, voice)
     return True
 
 
@@ -261,7 +264,9 @@ _MY_ADDRESS_REGEXES = (
     r"heimilisfang mitt er (.+)$",
 )
 
-_ADDR_LOOKUP_FAIL = "Ég fann ekki þetta heimilisfang."
+_ADDR_LOOKUP_FAIL = "Ég fann ekki þetta heimilisfang í staðfangaskrá."
+_ADDR_CLIENT_ID_MISSING = "Ég gat ekki vistað heimilisfangið af því að \
+ég hef ekki auðkenni tækisins sem þú notar."
 
 
 def _myaddris_handler(q: Query, ql: str) -> bool:
@@ -280,7 +285,7 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
         return False
 
     # Try to parse address, e.g. "Öldugötu 4 [í Reykjavík]"
-    m = re.search(r"^(\w+)\s(\d+)\s?([í|á]\s)?(\w+)?$", addr_str.strip())
+    m = re.search(r"^(\w+)\s(\d+)\s?(([í|á]\s)?(\w+)?)?$", addr_str.strip())
     if not m:
         q.set_answer(*gen_answer(_ADDR_LOOKUP_FAIL))
         return True
@@ -318,11 +323,7 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
         answ = "Heimilisfang þitt hefur verið skráð sem {0}".format(_addr2str(d))
         q.set_answer(*gen_answer(answ))
     else:
-        q.set_answer(
-            *gen_answer(
-                "Ég gat ekki vistað heimilisfangið af því að ég hef ekki auðkenni tækisins sem þú notar."
-            )
-        )
+        q.set_answer(*gen_answer(_ADDR_CLIENT_ID_MISSING))
 
     return True
 
@@ -474,8 +475,8 @@ _HANDLERS = tuple(
         _whoisme_handler,
         _whatsmyname_handler,
         _mynameis_handler,
-        # _whatsmyaddr_handler,
-        # _myaddris_handler,
+        _whatsmyaddr_handler,
+        _myaddris_handler,
         # _whatsmynum_handler,
         # _mynumis_handler,
         _device_type_handler,
