@@ -35,6 +35,7 @@ import logging
 
 from query import Query, QueryStateDict
 from queries import query_json_api, iceformat_float, sing_or_plur, gen_answer
+from queries.plugins.text_to_num import *
 from settings import Settings
 from tree import Result, Node, TerminalNode, NonterminalNode
 
@@ -277,10 +278,9 @@ QCurCNY/fall →
     | currency_cny/fall
 
 QCurNumberWord →
-    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
-    # töl is an undeclinable number word ('sautján')
+    # TöluðTala is a written number ('tíu þúsund')
     # tala is a number ('17')
-    to | töl | tala
+    TöluðTala | tala
 
 QCurCurrencyIndex/fall →
     'gengisvísitala:kvk'_et/fall QCurISK_ef?
@@ -351,16 +351,6 @@ def parse_num(num_str: str) -> Optional[Union[int, float]]:
     return num
 
 
-def add_num(num, result) -> None:
-    """ Add a number to accumulated number args """
-    if "numbers" not in result:
-        result.numbers = []
-    if isinstance(num, str):
-        result.numbers.append(parse_num(num))
-    else:
-        result.numbers.append(num)
-
-
 def add_currency(curr: str, result: Result) -> None:
     if "currencies" not in result:
         result.currencies = []
@@ -374,7 +364,10 @@ def QCurrency(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QCurNumberWord(node: Node, params: QueryStateDict, result: Result) -> None:
-    add_num(result._canonical, result)
+    if isinstance(result._canonical, (int, float)):
+        if "numbers" not in result:
+            result["numbers"] = []
+        result["numbers"].append(result._canonical)
 
 
 def QCurUnit(node: Node, params: QueryStateDict, result: Result) -> None:
