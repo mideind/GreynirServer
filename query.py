@@ -323,6 +323,8 @@ class Query:
     _tree_processors: List[ModuleType] = []
     # Handler functions within processors that handle plain text
     _text_processors: List[Callable[["Query"], bool]] = []
+    # Additions to query grammar
+    _query_grammar_additions: List[ModuleType] = []
     # Singleton instance of the query parser
     _parser: Optional[QueryParser] = None
     # Help texts associated with lemmas
@@ -437,9 +439,23 @@ class Query:
         cls._tree_processors = [t[1] for t in sorted(tree_procs, key=lambda x: -x[0])]
         cls._text_processors = [t[1] for t in sorted(text_procs, key=lambda x: -x[0])]
 
-        # Obtain query grammar fragments from the tree processors
+        # Query grammar plug-ins:
+        # Additional grammar fragments,
+        # which can be used in query module grammars
+        cls._query_grammar_additions = []
+        plugnames = modules_in_dir("queries/plugins")
+        for plug in plugnames:
+            try:
+                m = importlib.import_module(plug)
+                cls._query_grammar_additions.append(m)
+            except ImportError as e:
+                logging.error(
+                    "Error importing query plugin {0}: {1}".format(plug, e)
+                )
+
+        # Obtain query grammar fragments from the tree processors and query plugins
         grammar_fragments: List[str] = []
-        for processor in cls._tree_processors:
+        for processor in cls._tree_processors + cls._query_grammar_additions:
             # Check whether this tree processor supplies a query grammar fragment
             fragment = getattr(processor, "GRAMMAR", None)
             if fragment and isinstance(fragment, str):
