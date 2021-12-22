@@ -26,6 +26,7 @@
 from typing import Optional, List, Dict, Any, Union, cast
 
 import re
+import logging
 from random import choice
 from collections import OrderedDict
 
@@ -57,14 +58,18 @@ _YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v={0}"
 def find_youtube_videos(q: str, limit: int = 1) -> List[str]:
     """Find video URLs for a given a search string using the YouTube API."""
     vids = []
-    r = search_youtube(q, limit=limit)
-    if r is None or r.items is None:
-        return vids
-    for i in r.items:
-        item = i.to_dict()
-        if "id" not in item or "videoId" not in item["id"]:
-            continue
-        vids.append(_YOUTUBE_VIDEO_URL.format(item["id"]["videoId"]))
+    try:
+        r = search_youtube(q, limit=limit)
+        if r is None or r.items is None:
+            return vids
+
+        for i in r.items:
+            item = i.to_dict()
+            if "id" not in item or "videoId" not in item["id"]:
+                continue
+            vids.append(_YOUTUBE_VIDEO_URL.format(item["id"]["videoId"]))
+    except Exception as e:
+        logging.error(f"Error communicating with YouTube API: {e}")
 
     return vids
 
@@ -75,24 +80,28 @@ _YOUTUBE_PLAYLIST_URL = "https://www.youtube.com/watch?v={0}&list={1}"
 def find_youtube_playlists(q: str, limit: int = 3) -> List[str]:
     """Find playlists for a given a search string using the YouTube API."""
     vids = []
-    r = search_youtube(q, types=["playlist"], limit=limit)
-    if r is None or r.items is None:
-        return vids
-    for i in r.items:
-        item = i.to_dict()
-        if "id" not in item or "playlistId" not in item["id"]:
-            continue
-        playlist_id = item["id"]["playlistId"]
-        pl_vids = YT_API.get_playlist_items(playlist_id=playlist_id, count=1)
-        if not pl_vids.items:
-            continue
-        first_vid_id = pl_vids.items[0].snippet.resourceId.videoId
-        vids.append(_YOUTUBE_PLAYLIST_URL.format(first_vid_id, playlist_id))
+    try:
+        r = search_youtube(q, types=["playlist"], limit=limit)
+        if r is None or r.items is None:
+            return vids
+
+        for i in r.items:
+            item = i.to_dict()
+            if "id" not in item or "playlistId" not in item["id"]:
+                continue
+            playlist_id = item["id"]["playlistId"]
+            pl_vids = YT_API.get_playlist_items(playlist_id=playlist_id, count=1)
+            if not pl_vids.items:
+                continue
+            first_vid_id = pl_vids.items[0].snippet.resourceId.videoId
+            vids.append(_YOUTUBE_PLAYLIST_URL.format(first_vid_id, playlist_id))
+    except Exception as e:
+        logging.error(f"Error communicating with YouTube API: {e}")
 
     return vids
 
 
-def random_playlist_for_genre(genre_name: str, limit: int = 5, fallback="") -> str:
+def rand_yt_playlist_for_genre(genre_name: str, limit: int = 5, fallback="") -> str:
     """Given a musical genre name, search for YouTube playlists and return
     URL to a randomly selected one, with an (optional) fallback video URL."""
     urls = find_youtube_playlists(genre_name, limit=limit)
@@ -105,35 +114,35 @@ def random_playlist_for_genre(genre_name: str, limit: int = 5, fallback="") -> s
 def _play_jazz(qs: str, q: Query) -> None:
     # Caravan - Duke Ellington classic
     fb = "https://www.youtube.com/watch?v=E5loTx0_KDE"
-    q.set_url(random_playlist_for_genre("jazz", fallback=fb))
+    q.set_url(rand_yt_playlist_for_genre("jazz", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
 
 
 def _play_blues(qs: str, q: Query) -> None:
     # How Long Blues - Jimmy & Mama Yancey
     fb = "https://www.youtube.com/watch?v=jw9tMRhKEak"
-    q.set_url(random_playlist_for_genre("blues", fallback=fb))
+    q.set_url(rand_yt_playlist_for_genre("blues", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
 
 
 def _play_rock(qs: str, q: Query) -> None:
     # Led Zeppelin - Immigrant Song
     fb = "https://www.youtube.com/watch?v=y8OtzJtp-EM"
-    q.set_url(random_playlist_for_genre("classic rock", fallback=fb))
+    q.set_url(rand_yt_playlist_for_genre("classic rock", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
 
 
 def _play_classical(qs: str, q: Query) -> None:
     # Beethoven - 9th symph. 2nd movement
     fb = "https://www.youtube.com/watch?v=iwIvS4yIThU"
-    q.set_url(random_playlist_for_genre("classical music", fallback=fb))
+    q.set_url(rand_yt_playlist_for_genre("classical music", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
 
 
 def _play_electronic(qs: str, q: Query) -> None:
     # Orbital - The Box
     fb = "https://www.youtube.com/watch?v=qddG0iUSax4"
-    q.set_url(random_playlist_for_genre("electronic music", fallback=fb))
+    q.set_url(rand_yt_playlist_for_genre("retro electronic music", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
 
 
@@ -143,7 +152,7 @@ def _play_music(qs: str, q: Query) -> None:
     choice(m)(qs, q)
 
 
-# Out of copyright films definitely available on YouTube
+# Classic out-of-copyright films definitely available on YouTube
 _FILMS = [
     "Metropolis 1927",
     "Nosferatu 1922",
@@ -153,7 +162,7 @@ _FILMS = [
 
 
 def _play_film(qs: str, q: Query) -> Any:
-    """Play a randomly selected out of copyright film on YouTube."""
+    """Play a randomly selected out-of-copyright film on YouTube."""
     url = "https://www.youtube.com/watch?v=FC6jFoYm3xs"  # Nosferatu, 1922
     urls = find_youtube_videos(choice(_FILMS), limit=1)
     if urls:
