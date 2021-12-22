@@ -56,7 +56,7 @@ _YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v={0}"
 
 
 def find_youtube_videos(q: str, limit: int = 1) -> List[str]:
-    """Find video URLs for a given a search string using the YouTube API."""
+    """Find video URLs for a given a search string via the YouTube API."""
     vids = []
     try:
         r = search_youtube(q, limit=limit)
@@ -78,7 +78,7 @@ _YOUTUBE_PLAYLIST_URL = "https://www.youtube.com/watch?v={0}&list={1}"
 
 
 def find_youtube_playlists(q: str, limit: int = 3) -> List[str]:
-    """Find playlists for a given a search string using the YouTube API."""
+    """Find URLs for playlists given a search string via the YouTube API."""
     vids = []
     try:
         r = search_youtube(q, types=["playlist"], limit=limit)
@@ -101,8 +101,10 @@ def find_youtube_playlists(q: str, limit: int = 3) -> List[str]:
     return vids
 
 
-def rand_yt_playlist_for_genre(genre_name: str, limit: int = 5, fallback="") -> str:
-    """Given a musical genre name, search for YouTube playlists and return
+def rand_yt_playlist_for_genre(
+    genre_name: str, limit: int = 5, fallback=None
+) -> Optional[str]:
+    """Given a musical genre name, search for YouTube playlists and return a
     URL to a randomly selected one, with an (optional) fallback video URL."""
     urls = find_youtube_playlists(genre_name, limit=limit)
     if urls:
@@ -202,12 +204,15 @@ _ADJ = "|".join(
             "góðan",
             "góða",
             "gott",
+            "góð",
             "skemmtilegan",
             "skemmtilegt",
             "skemmtilega",
+            "skemmtileg",
             "huggulegan",
             "huggulega",
             "huggulegt",
+            "hugguleg",
             "einhvern",
             "eitthvað",
             "einhverja",
@@ -285,7 +290,7 @@ REGEX_Q2H = OrderedDict(
         r"^(?:{0})\s?(?:{1})?\s(rokk|rokktónlist|rokklag|rokk og ról)\s?(?:{2})?$".format(
             _VERB, _ADJ, _POST
         ): _play_rock,
-        # Electronic
+        # Classical
         r"^(?:{0})\s?(?:{1})?\s(klassíska tónlist|klassík|klassískt)\s?(?:{2})?$".format(
             _VERB, _ADJ, _POST
         ): _play_classical,
@@ -296,6 +301,7 @@ REGEX_Q2H = OrderedDict(
         # Play music by X
         # r"^(?:{0})\s?(?:{1})?\s(tónlist|tónverk|lag|verk|slagara) (?:eftir|með|í flutningi) (.+)$".format(): _play_music_named,
         # Play song Y by X
+        # r"": _play_song_by_artist(song: str, artist: str):
     }
 )
 

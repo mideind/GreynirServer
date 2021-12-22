@@ -741,7 +741,7 @@ class Query:
         """URL answer associated with this query"""
         return self._url
 
-    def set_url(self, u: str) -> None:
+    def set_url(self, u: Optional[str]) -> None:
         """Set the URL answer associated with this query"""
         self._url = u
 
