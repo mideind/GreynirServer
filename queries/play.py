@@ -19,7 +19,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module handles queries relating to music playback.
+    This module handles queries relating to music and video playback.
 
 """
 
@@ -29,7 +29,7 @@ import re
 from random import choice
 from collections import OrderedDict
 
-from pyyoutube import Api, SearchListResponse, SearchResult
+from pyyoutube import Api, SearchListResponse
 
 from query import Query
 from queries import gen_answer
@@ -72,7 +72,7 @@ def find_youtube_videos(q: str, limit: int = 1) -> List[str]:
 _YOUTUBE_PLAYLIST_URL = "https://www.youtube.com/watch?v={0}&list={1}"
 
 
-def find_youtube_playlists(q: str, limit: int = 1) -> List[str]:
+def find_youtube_playlists(q: str, limit: int = 3) -> List[str]:
     """Find playlists for a given a search string using the YouTube API."""
     vids = []
     r = search_youtube(q, types=["playlist"], limit=limit)
@@ -92,66 +92,73 @@ def find_youtube_playlists(q: str, limit: int = 1) -> List[str]:
     return vids
 
 
+def random_playlist_for_genre(genre_name: str, limit: int = 5, fallback="") -> str:
+    """Given a musical genre name, search for YouTube playlists and return
+    URL to a randomly selected one, with an (optional) fallback video URL."""
+    urls = find_youtube_playlists(genre_name, limit=limit)
+    if urls:
+        return choice(urls)
+    return fallback
+
+
 # Musical genres
 def _play_jazz(qs: str, q: Query) -> None:
-    urls = find_youtube_playlists("jazz")
-    if urls:
-        q.set_url(urls[0])
-    else:
-        # Caravan - Duke Ellington classic
-        q.set_url("https://www.youtube.com/watch?v=E5loTx0_KDE")
+    # Caravan - Duke Ellington classic
+    fb = "https://www.youtube.com/watch?v=E5loTx0_KDE"
+    q.set_url(random_playlist_for_genre("jazz", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
 
 
 def _play_blues(qs: str, q: Query) -> None:
-    urls = find_youtube_playlists("blues")
-    if urls:
-        q.set_url(urls[0])
-    else:
-        # How Long Blues - Jimmy & Mama Yancey
-        q.set_url("https://www.youtube.com/watch?v=jw9tMRhKEak")
+    # How Long Blues - Jimmy & Mama Yancey
+    fb = "https://www.youtube.com/watch?v=jw9tMRhKEak"
+    q.set_url(random_playlist_for_genre("blues", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
 
 
 def _play_rock(qs: str, q: Query) -> None:
-    urls = find_youtube_playlists("rock music")
-    if urls:
-        q.set_url(urls[0])
-    else:
-        # How Long Blues - Jimmy & Mama Yancey
-        q.set_url("https://www.youtube.com/watch?v=y8OtzJtp-EM")
+    # Led Zeppelin - Immigrant Song
+    fb = "https://www.youtube.com/watch?v=y8OtzJtp-EM"
+    q.set_url(random_playlist_for_genre("classic rock", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
 
 
 def _play_classical(qs: str, q: Query) -> None:
-    urls = find_youtube_playlists("classical music")
-    if urls:
-        q.set_url(urls[0])
-    else:
-        # Beethoven - 9th symph. 2nd movement
-        q.set_url("https://www.youtube.com/watch?v=iwIvS4yIThU")
+    # Beethoven - 9th symph. 2nd movement
+    fb = "https://www.youtube.com/watch?v=iwIvS4yIThU"
+    q.set_url(random_playlist_for_genre("classical music", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
 
 
 def _play_electronic(qs: str, q: Query) -> None:
-    urls = find_youtube_playlists("electronic music")
-    if urls:
-        q.set_url(urls[0])
-    else:
-        # Orbital - The Box
-        q.set_url("https://www.youtube.com/watch?v=qddG0iUSax4")
+    # Orbital - The Box
+    fb = "https://www.youtube.com/watch?v=qddG0iUSax4"
+    q.set_url(random_playlist_for_genre("electronic music", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
 
 
-# Randomly selected genre
+# Play music from a randomly selected genre
 def _play_music(qs: str, q: Query) -> None:
     m = [_play_jazz, _play_blues, _play_rock, _play_classical, _play_electronic]
     choice(m)(qs, q)
 
 
-# Films
+# Out of copyright films definitely available on YouTube
+_FILMS = [
+    "Metropolis 1927",
+    "Nosferatu 1922",
+    "Battleship Potemkin 1925",
+    "Plan 9 from Outer Space 1959",
+]
+
+
 def _play_film(qs: str, q: Query) -> Any:
-    q.set_url("https://www.youtube.com/watch?v=FC6jFoYm3xs")
+    """Play a randomly selected out of copyright film on YouTube."""
+    url = "https://www.youtube.com/watch?v=FC6jFoYm3xs"  # Nosferatu, 1922
+    urls = find_youtube_videos(choice(_FILMS), limit=1)
+    if urls:
+        url = urls[0]
+    q.set_url(url)
     q.set_answer(*gen_answer(_AFFIRMITIVE))
 
 
@@ -163,25 +170,46 @@ _VERB = "|".join(
             "spila þú",
             "spila þú fyrir mig",
             "settu á fóninn",
+            "settu á fóninn fyrir mig",
+            "geturðu spilað",
+            "getur þú spilað fyrir mig",
             "gætirðu spilað",
+            "gætir þú spilað fyrir mig",
+            "viltu spila",
+            "viltu spila fyrir mig",
+            "vilt þú spila",
+            "vilt þú spila fyrir mig",
+            "nennirðu að spila",
+            "nennirðu að spila fyrir mig",
+            "nennir þú að spila",
+            "nennir þú að spila fyrir mig",
         )
     )
 )
+
 _ADJ = "|".join(
-    frozenset(("góðan", "góða", "gott", "skemmtilegan", "skemmtilegt", "skemmtilega"))
+    frozenset(
+        (
+            "góðan",
+            "góða",
+            "gott",
+            "skemmtilegan",
+            "skemmtilegt",
+            "skemmtilega",
+            "huggulegan",
+            "huggulega",
+            "huggulegt",
+            "einhvern",
+            "eitthvað",
+            "einhverja",
+        )
+    )
 )
+
+_POST = "|".join(frozenset(("fyrir mig", "fyrir okkur")))
 
 
 HARDCODED_Q2H = {
-    # Classical
-    "spilaðu klassík": _play_classical,
-    "spila þú klassík": _play_classical,
-    "spilaðu klassíkt": _play_classical,
-    "spila þú klassíkt": _play_classical,
-    "spilaðu klassíska tónlist": _play_classical,
-    "spila þú klassíska tónlist": _play_classical,
-    "spilaðu klassísk tónverk": _play_classical,
-    "spila þú klassísk tónverk": _play_classical,
     # Generic
     "spila tónlist": _play_music,
     "spilaðu tónlist": _play_music,
@@ -232,24 +260,33 @@ def _play_music_named(qs: str, q: Query) -> Any:
 
 REGEX_Q2H = OrderedDict(
     {
+        # Any music
+        r"^(?:{0})\s?(?:{1})?\s(tónlist|tónverk|lag|slagara)\s?(?:{2})?$".format(
+            _VERB, _ADJ, _POST
+        ): _play_music,
         # Jazz
-        r"^(?:{0})\s?(?:{1})?\s(djass|jazz|jass|djasstónlist)$".format(
-            _VERB, _ADJ
+        r"^(?:{0})\s?(?:{1})?\s(djass|jazz|jass|djasstónlist|djasslag)\s?(?:{2})?$".format(
+            _VERB, _ADJ, _POST
         ): _play_jazz,
         # Blues
-        r"^(?:{0})\s?(?:{1})?\s(blús|blúsinn|blústónlist)$".format(
-            _VERB, _ADJ
+        r"^(?:{0})\s?(?:{1})?\s(blús|blúsinn|blústónlist|blúslag)\s?(?:{2})?$".format(
+            _VERB, _ADJ, _POST
         ): _play_blues,
         # Rock
-        r"^(?:{0})\s?(?:{1})?\s(rokk|rokktónlist|rokk og ról)$".format(
-            _VERB, _ADJ
-        ): _play_jazz,
+        r"^(?:{0})\s?(?:{1})?\s(rokk|rokktónlist|rokklag|rokk og ról)\s?(?:{2})?$".format(
+            _VERB, _ADJ, _POST
+        ): _play_rock,
         # Electronic
-        r"^(?:{0})\s?(?:{1})?\s(raftónlist|elektróníska tónlist|elektrónískt)$".format(
-            _VERB, _ADJ
+        r"^(?:{0})\s?(?:{1})?\s(klassíska tónlist|klassík|klassískt)\s?(?:{2})?$".format(
+            _VERB, _ADJ, _POST
+        ): _play_classical,
+        # Electronic
+        r"^(?:{0})\s?(?:{1})?\s(raftónlist|elektróníska tónlist|elektrónískt)\s?(?:{2})?$".format(
+            _VERB, _ADJ, _POST
         ): _play_electronic,
         # Play music by X
-        r"^(spilaðu|spila þú)\s?(?:góða|gott|góðan|skemmtilega|skemmtilegt|skemmtilegan)?\s(tónlist|tónverk|lag|verk|slagara) (eftir|með|í flutningi) (.+)$": _play_music_named,
+        # r"^(?:{0})\s?(?:{1})?\s(tónlist|tónverk|lag|verk|slagara) (?:eftir|með|í flutningi) (.+)$".format(): _play_music_named,
+        # Play song Y by X
     }
 )
 
@@ -279,25 +316,5 @@ def handle_plain_text(q: Query) -> bool:
     q.set_qtype(_PLAY_QTYPE)
 
     q.set_answer(*gen_answer("Skal gert!"))
-
-    return True
-
-    # A non-voice answer is usually a dict or a list
-    answer = cast(str, res.get("answer")) or ""
-    # A voice answer is always a plain string
-    voice = cast(str, response.get("voice")) or answer
-    q.set_answer(dict(answer=answer), answer, voice)
-    # If this is a command, rather than a question,
-    # let the query object know so that it can represent
-    # itself accordingly
-    if not response.get("is_question", True):
-        q.query_is_command()
-    # Add source
-    source = response.get("source")
-    if source is not None:
-        q.set_source(cast(str, source))
-    # Caching for non-dynamic answers
-    # if is_func or response.get("can_cache", False):
-    #     q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     return True
