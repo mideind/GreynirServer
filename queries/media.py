@@ -23,7 +23,7 @@
 
 """
 
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Dict, Any, Union, cast
 
 import re
 from random import choice
@@ -32,70 +32,173 @@ from collections import OrderedDict
 from pyyoutube import Api, SearchListResponse, SearchResult
 
 from query import Query
-from special import AnswerType
+from queries import gen_answer
 
 
 _PLAY_QTYPE = "Play"
 
 
-def _play_jazz(qs: str, q: Query) -> AnswerType:
-    q.set_url("https://www.youtube.com/watch?v=E5loTx0_KDE")
-    return {"answer": "Skal gert!", "is_question": False}
+_AFFIRMITIVE = "Skal gert!"
 
 
-def _play_blues(qs: str, q: Query) -> AnswerType:
-    q.set_url("https://www.youtube.com/watch?v=jw9tMRhKEak")
-    return {"answer": "Skal gert!", "is_question": False}
+YT_API = Api(api_key="AIzaSyC3_19QvfPme_CwyTDmiuw3617RV0-lqzI")
 
 
-def _play_rock(qs: str, q: Query) -> AnswerType:
-    q.set_url("https://www.youtube.com/watch?v=y8OtzJtp-EM")
-    return {"answer": "Skal gert!", "is_question": False}
+def search_youtube(
+    q: str, types: List[str] = ["video"], limit: int = 5
+) -> Optional[Union[SearchListResponse, Dict[Any, Any]]]:
+    r = YT_API.search_by_keywords(q=q, search_type=types, count=5, limit=5)
+    return r
 
 
-def _play_classical(qs: str, q: Query) -> AnswerType:
-    q.set_url("https://www.youtube.com/watch?v=iwIvS4yIThU")
-    return {"answer": "Skal gert!", "is_question": False}
+_YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v={0}"
 
 
-def _play_music(qs: str, q: Query) -> AnswerType:
-    m = [_play_jazz, _play_blues, _play_rock, _play_classical]
-    return choice(m)(qs, q)
+def find_youtube_videos(q: str, limit: int = 1) -> List[str]:
+    """Find video URLs for a given a search string using the YouTube API."""
+    vids = []
+    r = search_youtube(q, limit=limit)
+    if r is None or r.items is None:
+        return vids
+    for i in r.items:
+        item = i.to_dict()
+        if "id" not in item or "videoId" not in item["id"]:
+            continue
+        vids.append(_YOUTUBE_VIDEO_URL.format(item["id"]["videoId"]))
+
+    return vids
 
 
-def _play_film(qs: str, q: Query) -> AnswerType:
+_YOUTUBE_PLAYLIST_URL = "https://www.youtube.com/watch?v={0}&list={1}"
+
+
+def find_youtube_playlists(q: str, limit: int = 1) -> List[str]:
+    """Find playlists for a given a search string using the YouTube API."""
+    vids = []
+    r = search_youtube(q, types=["playlist"], limit=limit)
+    if r is None or r.items is None:
+        return vids
+    for i in r.items:
+        item = i.to_dict()
+        if "id" not in item or "playlistId" not in item["id"]:
+            continue
+        playlist_id = item["id"]["playlistId"]
+        pl_vids = YT_API.get_playlist_items(playlist_id=playlist_id, count=1)
+        if not pl_vids.items:
+            continue
+        first_vid_id = pl_vids.items[0].snippet.resourceId.videoId
+        vids.append(_YOUTUBE_PLAYLIST_URL.format(first_vid_id, playlist_id))
+
+    return vids
+
+
+# Musical genres
+def _play_jazz(qs: str, q: Query) -> None:
+    urls = find_youtube_playlists("jazz")
+    if urls:
+        q.set_url(urls[0])
+    else:
+        # Caravan - Duke Ellington classic
+        q.set_url("https://www.youtube.com/watch?v=E5loTx0_KDE")
+    q.set_answer(*gen_answer(_AFFIRMITIVE))
+
+
+def _play_blues(qs: str, q: Query) -> None:
+    urls = find_youtube_playlists("blues")
+    if urls:
+        q.set_url(urls[0])
+    else:
+        # How Long Blues - Jimmy & Mama Yancey
+        q.set_url("https://www.youtube.com/watch?v=jw9tMRhKEak")
+    q.set_answer(*gen_answer(_AFFIRMITIVE))
+
+
+def _play_rock(qs: str, q: Query) -> None:
+    urls = find_youtube_playlists("rock music")
+    if urls:
+        q.set_url(urls[0])
+    else:
+        # How Long Blues - Jimmy & Mama Yancey
+        q.set_url("https://www.youtube.com/watch?v=y8OtzJtp-EM")
+    q.set_answer(*gen_answer(_AFFIRMITIVE))
+
+
+def _play_classical(qs: str, q: Query) -> None:
+    urls = find_youtube_playlists("classical music")
+    if urls:
+        q.set_url(urls[0])
+    else:
+        # Beethoven - 9th symph. 2nd movement
+        q.set_url("https://www.youtube.com/watch?v=iwIvS4yIThU")
+    q.set_answer(*gen_answer(_AFFIRMITIVE))
+
+
+def _play_electronic(qs: str, q: Query) -> None:
+    urls = find_youtube_playlists("electronic music")
+    if urls:
+        q.set_url(urls[0])
+    else:
+        # Orbital - The Box
+        q.set_url("https://www.youtube.com/watch?v=qddG0iUSax4")
+    q.set_answer(*gen_answer(_AFFIRMITIVE))
+
+
+# Randomly selected genre
+def _play_music(qs: str, q: Query) -> None:
+    m = [_play_jazz, _play_blues, _play_rock, _play_classical, _play_electronic]
+    choice(m)(qs, q)
+
+
+# Films
+def _play_film(qs: str, q: Query) -> Any:
     q.set_url("https://www.youtube.com/watch?v=FC6jFoYm3xs")
-    return {"answer": "Skal gert!", "is_question": False}
+    q.set_answer(*gen_answer(_AFFIRMITIVE))
+
+
+_VERB = "|".join(
+    frozenset(
+        (
+            "spilaðu",
+            "spilaðu fyrir mig",
+            "spila þú",
+            "spila þú fyrir mig",
+            "settu á fóninn",
+            "gætirðu spilað",
+        )
+    )
+)
+_ADJ = "|".join(
+    frozenset(("góðan", "góða", "gott", "skemmtilegan", "skemmtilegt", "skemmtilega"))
+)
 
 
 HARDCODED_Q2H = {
-    # Play some music. Just experimental fun for now.
-    # Jazz
-    "spilaðu djass": _play_jazz,
-    "spila þú djass": _play_jazz,
-    "spilaðu jass": _play_jazz,
-    "spila þú jass": _play_jazz,
-    "spilaðu jazz": _play_jazz,
-    "spila þú jazz": _play_jazz,
-    # Blues
-    "spilaðu blús": _play_blues,
-    "spila þú blús": _play_blues,
-    "spilaðu rokk": _play_rock,
-    "spila þú rokk": _play_rock,
     # Classical
     "spilaðu klassík": _play_classical,
     "spila þú klassík": _play_classical,
+    "spilaðu klassíkt": _play_classical,
+    "spila þú klassíkt": _play_classical,
     "spilaðu klassíska tónlist": _play_classical,
     "spila þú klassíska tónlist": _play_classical,
+    "spilaðu klassísk tónverk": _play_classical,
+    "spila þú klassísk tónverk": _play_classical,
     # Generic
     "spila tónlist": _play_music,
     "spilaðu tónlist": _play_music,
     "spila þú tónlist": _play_music,
+    "spila tónverk": _play_music,
+    "spilaðu tónverk": _play_music,
+    "spila þú tónverk": _play_music,
     "spilaðu skemmtilega tónlist": _play_music,
     "spilaðu einhverja tónlist": _play_music,
     "spila þú einhverja tónlist": _play_music,
     "spilaðu fyrir mig tónlist": _play_music,
     "spilaðu tónlist fyrir mig": _play_music,
+    "spilaðu skemmtilegt tónverk": _play_music,
+    "spilaðu einhvert tónverk": _play_music,
+    "spila þú einhvert tónverk": _play_music,
+    "spilaðu fyrir mig tónverk": _play_music,
+    "spilaðu tónverk fyrir mig": _play_music,
     "spilaðu fyrir mig lag": _play_music,
     "spilaðu lag fyrir mig": _play_music,
     "spilaðu skemmtilega tónlist fyrir mig": _play_music,
@@ -114,31 +217,41 @@ HARDCODED_Q2H = {
     # Play a film
     "spilaðu kvikmynd": _play_film,
     "spilaðu bíómynd": _play_film,
+    "spilaðu mynd": _play_film,
     "spilaðu kvikmynd fyrir mig": _play_film,
     "spilaðu bíómynd fyrir mig": _play_film,
+    "spilaðu mynd fyrir mig": _play_film,
     "sýndu mér kvikmynd": _play_film,
     "sýndu mér bíómynd": _play_film,
 }
 
 
-def _play_music_named(qs: str, q: Query) -> AnswerType:
+def _play_music_named(qs: str, q: Query) -> Any:
     pass
 
 
 REGEX_Q2H = OrderedDict(
     {
-        r"^spilaðu tónlist með (.+)": _play_music_named,
-        r"^spilaðu tónlist með (.+)": _play_music_named,
+        # Jazz
+        r"^(?:{0})\s?(?:{1})?\s(djass|jazz|jass|djasstónlist)$".format(
+            _VERB, _ADJ
+        ): _play_jazz,
+        # Blues
+        r"^(?:{0})\s?(?:{1})?\s(blús|blúsinn|blústónlist)$".format(
+            _VERB, _ADJ
+        ): _play_blues,
+        # Rock
+        r"^(?:{0})\s?(?:{1})?\s(rokk|rokktónlist|rokk og ról)$".format(
+            _VERB, _ADJ
+        ): _play_jazz,
+        # Electronic
+        r"^(?:{0})\s?(?:{1})?\s(raftónlist|elektróníska tónlist|elektrónískt)$".format(
+            _VERB, _ADJ
+        ): _play_electronic,
+        # Play music by X
+        r"^(spilaðu|spila þú)\s?(?:góða|gott|góðan|skemmtilega|skemmtilegt|skemmtilegan)?\s(tónlist|tónverk|lag|verk|slagara) (eftir|með|í flutningi) (.+)$": _play_music_named,
     }
 )
-
-
-def search_youtube(
-    q: str, types: List[str] = ["video"], limit: int = 5
-) -> Optional[Union[SearchListResponse, Dict[Any, Any]]]:
-    api = Api(api_key="AIzaSyC3_19QvfPme_CwyTDmiuw3617RV0-lqzI")
-    r = api.search_by_keywords(q=q, search_type=["video"], count=5, limit=5)
-    return r
 
 
 def handle_plain_text(q: Query) -> bool:
@@ -148,13 +261,15 @@ def handle_plain_text(q: Query) -> bool:
     # Check if it's a hardcoded barestring query
     handler_fn = HARDCODED_Q2H.get(ql)
     if handler_fn:
-        q.set_answer(*handler_fn())
+        handler_fn(ql, q)
+        return True
 
     # Check if query matches regexes supported by this module
     res = None
-    for rx in REGEX_Q2H.keys():
+    for rx, fn in REGEX_Q2H.items():
         res = re.search(rx, ql)
         if res:
+            fn(ql, q)
             break
 
     if not res:
@@ -163,15 +278,12 @@ def handle_plain_text(q: Query) -> bool:
     # OK, this is a query we recognize and handle
     q.set_qtype(_PLAY_QTYPE)
 
-    r = _SPECIAL_QUERIES[ql]
-    is_func = isfunction(r)
-    if is_func:
-        response = cast(AnswerCallable, r)(ql, q)
-    else:
-        response = cast(AnswerType, r)
+    q.set_answer(*gen_answer("Skal gert!"))
+
+    return True
 
     # A non-voice answer is usually a dict or a list
-    answer = cast(str, response.get("answer")) or ""
+    answer = cast(str, res.get("answer")) or ""
     # A voice answer is always a plain string
     voice = cast(str, response.get("voice")) or answer
     q.set_answer(dict(answer=answer), answer, voice)
@@ -185,7 +297,7 @@ def handle_plain_text(q: Query) -> bool:
     if source is not None:
         q.set_source(cast(str, source))
     # Caching for non-dynamic answers
-    if is_func or response.get("can_cache", False):
-        q.set_expires(datetime.utcnow() + timedelta(hours=24))
+    # if is_func or response.get("can_cache", False):
+    #     q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
     return True
