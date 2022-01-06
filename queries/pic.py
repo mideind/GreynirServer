@@ -47,7 +47,7 @@ def help_text(lemma: str) -> str:
             (
                 "Sýndu mér mynd af Halldóri Laxness",
                 "Sýndu ljósmynd af Kára Stefánssyni",
-                "Sýndu mér mynd af Hörpunni",
+                "Sýndu mynd af Hörpunni",
             )
         )
     )
@@ -115,6 +115,10 @@ def QPicSubject(node: Node, params: QueryStateDict, result: Result) -> None:
     result.subject_þgf = result._text
 
 
+def QPicWrongPictureQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.wrong = True
+
+
 def _gen_pic_answer(result: Result, q: Query):
     """Generate answer to query asking for a picture of something."""
     subj = result["subject"]
@@ -145,6 +149,12 @@ def _gen_pic_answer(result: Result, q: Query):
     q.set_qtype(result.qtype)
 
 
+def _gen_wrong_pic_answer(result: Result, q: Query):
+    """Query states that previous picture was wrong."""
+    q.set_qtype(result.qtype)
+    q.set_answer(*gen_answer("Ég biðst afsökunar á því. Enginn er fullkominn."))
+
+
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete."""
     q: Query = state["query"]
@@ -152,7 +162,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     if "qtype" in result:
         # Successfully matched a query type
         try:
-            _gen_pic_answer(result, q)
+            if "wrong" in result:
+                _gen_wrong_pic_answer(result, q)
+            else:
+                _gen_pic_answer(result, q)
         except Exception as e:
             logging.warning(f"Exception answering picture query: {e}")
             q.set_error(f"E_EXCEPTION: {e}")

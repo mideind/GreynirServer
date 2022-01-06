@@ -327,9 +327,8 @@ def handle_plain_text(q: Query) -> bool:
     if not res:
         return False
 
-    # OK, this is a query we recognize and handle
+    # OK, this is a query we've recognized and handled
     q.set_qtype(_PLAY_QTYPE)
-
     q.set_answer(*gen_answer("Skal gert!"))
 
     return True
