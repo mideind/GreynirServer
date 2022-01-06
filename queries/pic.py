@@ -149,10 +149,13 @@ def _gen_pic_answer(result: Result, q: Query):
     q.set_qtype(result.qtype)
 
 
+_WRONG_PIC_ANSWER = "Ég biðst afsökunar á því. Enginn er fullkominn."
+
+
 def _gen_wrong_pic_answer(result: Result, q: Query):
     """Query states that previous picture was wrong."""
     q.set_qtype(result.qtype)
-    q.set_answer(*gen_answer("Ég biðst afsökunar á því. Enginn er fullkominn."))
+    q.set_answer(*gen_answer(_WRONG_PIC_ANSWER))
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:

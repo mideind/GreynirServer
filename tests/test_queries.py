@@ -734,6 +734,7 @@ def test_petrol(client: FlaskClient) -> None:
 
 def test_pic(client: FlaskClient) -> None:
     """Pic module"""
+
     if not has_google_api_key():
         # NB: No Google API key on test server
         return
@@ -744,6 +745,9 @@ def test_pic(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "sýndu ljósmynd af hörpunni"}, "Picture")
     assert "image" in json
 
+    json = qmcall(client, {"q": "þetta var ekki rétt mynd"}, "Picture")
+    assert "answer" in json and json["answer"]
+
 
 def test_places(client: FlaskClient) -> None:
     """Places module"""
@@ -752,10 +756,43 @@ def test_places(client: FlaskClient) -> None:
         # NB: No Google API key on test server
         return
 
-    # TODO: Improve these tests
-    qmcall(client, {"q": "Hvað er opið lengi í Melabúðinni"}, "Places")
-    qmcall(client, {"q": "Er lokað á Forréttabarnum?"}, "Places")
-    qmcall(client, {"q": "Hvenær opnar sundhöllin?"}, "Places")
+    json = qmcall(client, {"q": "Er lokað á Forréttabarnum?"}, "Places")
+    assert (
+        "answer" in json
+        and "Forréttabarinn" in json["answer"]
+        and "opinn" in json["answer"]
+    )
+
+    json = qmcall(client, {"q": "Hvað er opið lengi í Melabúðinni"}, "Places")
+    assert (
+        "answer" in json
+        and "voice" in json
+        and "Melabúðin" in json["answer"]
+        and "opin" in json["voice"]
+    )
+
+    json = qmcall(client, {"q": "Hvenær opnar sundhöllin?", "voice": True}, "Places")
+    assert "answer" in json and "voice" in json and " opin " in json["voice"]
+
+
+def test_play(client: FlaskClient) -> None:
+    """Play module"""
+
+    if not has_google_api_key():
+        # NB: No Google (YouTube) API key on test server
+        return
+
+    json = qmcall(client, {"q": "spilaðu einhverja klassíska tónlist"}, "Play")
+    assert "open_url" in json
+
+    json = qmcall(client, {"q": "Spilaðu lag með rolling stones"}, "Play")
+    assert "open_url" in json
+
+    json = qmcall(client, {"q": "spilaðu skemmtilega tónlist"}, "Play")
+    assert "open_url" in json
+
+    json = qmcall(client, {"q": "spilaðu kvikmynd fyrir mig"}, "Play")
+    assert "open_url" in json
 
 
 def test_rand(client: FlaskClient) -> None:
@@ -791,7 +828,6 @@ def test_repeat(client: FlaskClient) -> None:
 
     json = qmcall(client, {"q": "segðu eitthvað skemmtilegt"})
     assert json["qtype"] != "Parrot"
-    pass
 
 
 def test_schedules(client: FlaskClient) -> None:

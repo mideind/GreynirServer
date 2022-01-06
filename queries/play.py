@@ -135,7 +135,7 @@ def _play_rock(qs: str, q: Query) -> None:
 
 
 def _play_classical(qs: str, q: Query) -> None:
-    # Beethoven - 9th symph. 2nd movement
+    # Beethoven - 9th symphony, 2nd movement
     fb = "https://www.youtube.com/watch?v=iwIvS4yIThU"
     q.set_url(rand_yt_playlist_for_genre("classical music", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
@@ -160,6 +160,7 @@ _FILMS = [
     "Nosferatu 1922",
     "Battleship Potemkin 1925",
     "Plan 9 from Outer Space 1959",
+    "Cyrano de Bergerac 1950",
 ]
 
 
