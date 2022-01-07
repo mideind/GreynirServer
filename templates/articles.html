@@ -1,49 +1,48 @@
-
 {% if articles %}
 
-   <div class="table-scroll-wrapper">
+<div class="table-scroll-wrapper">
    <table class="table table-hover" id="toplist">
       <thead>
-   {% if display_time %}
+         {% if display_time %}
          <th class="hidden-xs">Tími</th>
-   {% else %}
+         {% else %}
          <th class="hidden-xs">Dags.</th>
-   {% endif %}
+         {% endif %}
          <th class="hidden-sm hidden-xs">%</th>
          <th class="hidden-xs">Fyrirsögn</th>
          <th class="hidden-sm hidden-xs"></th>
       </thead>
       <tbody>
-   {% for article in articles %}
-      <tr class="topitem" onClick="openURL('{{ url_for('routes.page') }}?id={{ article.uuid }}', event);">
-         <td class="timestamp text-muted hidden-xs {{ '' if display_time else 'wide' }}"
-            title="{{ article.time }}, {{ article.fulldate }}">
-            {{ article.time if display_time else article.date }}
-         </td>
-         <td class="ratio hidden-sm hidden-xs">
-            <div class="progress" title="{{ article.width }} málsgreina trjágreind">
-               <div class="progress-bar progress-bar-success" role="progressbar"
-                  style="width:{{ article.width }}">{{ article.width }}</div>
-            </div>
-         </td>
-         <td class="heading">
-            <img src="{{ url_for('static', filename = 'img/sources/' + article.icon) }}"
-               width="16" height="16" alt="{{ article.source }}"/>
-            {{ article.heading }}
-         </td>
-         <td class="extlink hidden-sm hidden-xs">
-            <a href="{{ article.url }}" onclick="event.stopPropagation();"
-               title="Skoða grein á {{ article.source }}">
-               <span class="glyphicon glyphicon-arrow-right"></span>
-            </a>
-         </td>
-      </tr>
-   {% endfor %}
+         {% for article in articles %}
+         <tr class="topitem" onClick="openURL('{{ url_for('routes.page') }}?id={{ article.uuid }}', event);">
+            <td class="timestamp text-muted hidden-xs {{ '' if display_time else 'wide' }}"
+               title="{{ article.time }}, {{ article.fulldate }}">
+               {{ article.time if display_time else article.date }}
+            </td>
+            <td class="ratio hidden-sm hidden-xs">
+               <div class="progress" title="{{ article.width }} málsgreina trjágreind">
+                  <div class="progress-bar progress-bar-success" role="progressbar" style="width:{{ article.width }}">{{
+                     article.width }}</div>
+               </div>
+            </td>
+            <td class="heading">
+               <img src="{{ url_for('static', filename = 'img/sources/' + article.icon) }}" width="16" height="16"
+                  alt="{{ article.source }}" />
+               {{ article.heading }}
+            </td>
+            <td class="extlink hidden-sm hidden-xs">
+               <a href="{{ article.url }}" onclick="event.stopPropagation();" rel="noopener noreferrer nofollow"
+                  title="Skoða grein á {{ article.source }}">
+                  <span class="glyphicon glyphicon-arrow-right"></span>
+               </a>
+            </td>
+         </tr>
+         {% endfor %}
       </tbody>
    </table>
-   </div>
+</div>
 {% else %}
-   
-   <p class="no-results">Engar greinar fundust.</p>
+
+<p class="no-results">Engar greinar fundust.</p>
 
 {% endif %}
