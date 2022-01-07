@@ -23,7 +23,7 @@
 
 """
 
-from typing import Optional, List, Dict, Any, Union, cast
+from typing import Optional, List, Dict, Any, Union, Match, cast
 
 import re
 import logging
@@ -113,45 +113,71 @@ def rand_yt_playlist_for_genre(
 
 
 # Musical genres
-def _play_jazz(qs: str, q: Query) -> None:
+def _play_jazz(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
     # Caravan - Duke Ellington classic
     fb = "https://www.youtube.com/watch?v=E5loTx0_KDE"
     q.set_url(rand_yt_playlist_for_genre("jazz", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
+    q.set_key(matches.group(1) if matches else "")
 
 
-def _play_blues(qs: str, q: Query) -> None:
+def _play_blues(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
     # How Long Blues - Jimmy & Mama Yancey
     fb = "https://www.youtube.com/watch?v=jw9tMRhKEak"
     q.set_url(rand_yt_playlist_for_genre("blues", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
+    q.set_key(matches.group(1) if matches else "")
 
 
-def _play_rock(qs: str, q: Query) -> None:
+def _play_rock(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
     # Led Zeppelin - Immigrant Song
     fb = "https://www.youtube.com/watch?v=y8OtzJtp-EM"
     q.set_url(rand_yt_playlist_for_genre("classic rock", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
+    q.set_key(matches.group(1) if matches else "")
 
 
-def _play_classical(qs: str, q: Query) -> None:
+def _play_classical(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
     # Beethoven - 9th symphony, 2nd movement
     fb = "https://www.youtube.com/watch?v=iwIvS4yIThU"
     q.set_url(rand_yt_playlist_for_genre("classical music", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
+    q.set_key(matches.group(1) if matches else "")
 
 
-def _play_electronic(qs: str, q: Query) -> None:
+def _play_electronic(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
     # Orbital - The Box
     fb = "https://www.youtube.com/watch?v=qddG0iUSax4"
     q.set_url(rand_yt_playlist_for_genre("retro electronic music", fallback=fb))
     q.set_answer(*gen_answer(_AFFIRMITIVE))
+    q.set_key(matches.group(1) if matches else "")
 
 
 # Play music from a randomly selected genre
-def _play_music(qs: str, q: Query) -> None:
+def _play_music(qs: str, q: Query, matches: Match[str]) -> None:
     m = [_play_jazz, _play_blues, _play_rock, _play_classical, _play_electronic]
-    choice(m)(qs, q)
+    choice(m)(qs, q, None)
+
+
+_NO_MUSIC_FOUND = "Engin tónlist fannst."
+
+
+def _play_music_by_artist(qs: str, q: Query, matches: Match[str]) -> Any:
+    """Play a song (any song) by a given artist"""
+    artist = matches.group(1)
+    q.set_key(artist)
+
+    r = find_youtube_videos(artist)
+    if not r:
+        q.set_answer(*gen_answer(_NO_MUSIC_FOUND))
+    else:
+        q.set_answer(*gen_answer(_AFFIRMITIVE))
+        q.set_url(choice(r))
+
+
+def _play_song_by_artist(qs: str, q: Query, matches: Match[str]) -> Any:
+    """Play a particular, named song by a given artist"""
+    pass
 
 
 # Classic out-of-copyright films definitely available on YouTube
@@ -225,7 +251,7 @@ _POST = "|".join(frozenset(("fyrir mig", "fyrir okkur")))
 
 
 HARDCODED_Q2H = {
-    # Generic
+    # Play some music, play a song
     "spila tónlist": _play_music,
     "spilaðu tónlist": _play_music,
     "spila þú tónlist": _play_music,
@@ -238,12 +264,17 @@ HARDCODED_Q2H = {
     "spilaðu fyrir mig tónlist": _play_music,
     "spilaðu tónlist fyrir mig": _play_music,
     "spilaðu skemmtilegt tónverk": _play_music,
-    "spilaðu einhvert tónverk": _play_music,
-    "spila þú einhvert tónverk": _play_music,
+    "spilaðu eitthvert tónverk": _play_music,
+    "spila þú eitthvert tónverk": _play_music,
+    "spilaðu eitthvað tónverk": _play_music,
+    "spila þú eitthvað tónverk": _play_music,
     "spilaðu fyrir mig tónverk": _play_music,
     "spilaðu tónverk fyrir mig": _play_music,
-    "spilaðu fyrir mig lag": _play_music,
+    "spilaðu lag": _play_music,
+    "spilaðu eitthvað lag": _play_music,
+    "spilaðu skemmtilegt lag": _play_music,
     "spilaðu lag fyrir mig": _play_music,
+    "spilaðu fyrir mig lag": _play_music,
     "spilaðu skemmtilega tónlist fyrir mig": _play_music,
     "viltu spila fyrir mig tónlist": _play_music,
     "viltu spila einhverja tónlist fyrir mig": _play_music,
@@ -264,13 +295,11 @@ HARDCODED_Q2H = {
     "spilaðu kvikmynd fyrir mig": _play_film,
     "spilaðu bíómynd fyrir mig": _play_film,
     "spilaðu mynd fyrir mig": _play_film,
+    "sýndu kvikmynd": _play_film,
+    "sýndu bíómynd": _play_film,
     "sýndu mér kvikmynd": _play_film,
     "sýndu mér bíómynd": _play_film,
 }
-
-
-def _play_music_named(qs: str, q: Query) -> Any:
-    pass
 
 
 REGEX_Q2H = OrderedDict(
@@ -300,9 +329,13 @@ REGEX_Q2H = OrderedDict(
             _VERB, _ADJ, _POST
         ): _play_electronic,
         # Play music by X
-        # r"^(?:{0})\s?(?:{1})?\s(tónlist|tónverk|lag|verk|slagara) (?:eftir|með|í flutningi) (.+)$".format(): _play_music_named,
+        r"^(?:{0})\s?(?:{1})?\s(?:tónlist|tónverk|lag|verk|slagara) (?:eftir|með|í flutningi) (.+)$".format(
+            _VERB, _ADJ
+        ): _play_music_by_artist,
         # Play song Y by X
-        # r"": _play_song_by_artist(song: str, artist: str):
+        r"(?:{0}) (.+) (?:eftir|með|í flutningi) (.+)$".format(
+            _VERB
+        ): _play_song_by_artist,
     }
 )
 
@@ -318,14 +351,15 @@ def handle_plain_text(q: Query) -> bool:
         return True
 
     # Check if query matches regexes supported by this module
-    res = None
+    matches = None
     for rx, fn in REGEX_Q2H.items():
-        res = re.search(rx, ql)
-        if res:
-            fn(ql, q)
+        matches = re.search(rx, ql)
+        if matches:
+            print(matches.groups())
+            fn(ql, q, matches)
             break
 
-    if not res:
+    if not matches:
         return False
 
     # OK, this is a query we've recognized and handled
