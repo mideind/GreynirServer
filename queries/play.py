@@ -117,7 +117,6 @@ def _play_jazz(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
     # Caravan - Duke Ellington classic
     fb = "https://www.youtube.com/watch?v=E5loTx0_KDE"
     q.set_url(rand_yt_playlist_for_genre("jazz", fallback=fb))
-    q.set_answer(*gen_answer(_AFFIRMITIVE))
     q.set_key(matches.group(1) if matches else "")
 
 
@@ -125,7 +124,6 @@ def _play_blues(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
     # How Long Blues - Jimmy & Mama Yancey
     fb = "https://www.youtube.com/watch?v=jw9tMRhKEak"
     q.set_url(rand_yt_playlist_for_genre("blues", fallback=fb))
-    q.set_answer(*gen_answer(_AFFIRMITIVE))
     q.set_key(matches.group(1) if matches else "")
 
 
@@ -133,7 +131,6 @@ def _play_rock(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
     # Led Zeppelin - Immigrant Song
     fb = "https://www.youtube.com/watch?v=y8OtzJtp-EM"
     q.set_url(rand_yt_playlist_for_genre("classic rock", fallback=fb))
-    q.set_answer(*gen_answer(_AFFIRMITIVE))
     q.set_key(matches.group(1) if matches else "")
 
 
@@ -141,7 +138,6 @@ def _play_classical(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
     # Beethoven - 9th symphony, 2nd movement
     fb = "https://www.youtube.com/watch?v=iwIvS4yIThU"
     q.set_url(rand_yt_playlist_for_genre("classical music", fallback=fb))
-    q.set_answer(*gen_answer(_AFFIRMITIVE))
     q.set_key(matches.group(1) if matches else "")
 
 
@@ -149,7 +145,6 @@ def _play_electronic(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
     # Orbital - The Box
     fb = "https://www.youtube.com/watch?v=qddG0iUSax4"
     q.set_url(rand_yt_playlist_for_genre("retro electronic music", fallback=fb))
-    q.set_answer(*gen_answer(_AFFIRMITIVE))
     q.set_key(matches.group(1) if matches else "")
 
 
@@ -171,7 +166,6 @@ def _play_music_by_artist(qs: str, q: Query, matches: Match[str]) -> Any:
     if not r:
         q.set_answer(*gen_answer(_NO_MUSIC_FOUND))
     else:
-        q.set_answer(*gen_answer(_AFFIRMITIVE))
         q.set_url(choice(r))
 
 
@@ -197,59 +191,9 @@ def _play_film(qs: str, q: Query) -> Any:
     if urls:
         url = urls[0]
     q.set_url(url)
-    q.set_answer(*gen_answer(_AFFIRMITIVE))
 
 
-_VERB = "|".join(
-    frozenset(
-        (
-            "spilaðu",
-            "spilaðu fyrir mig",
-            "spila þú",
-            "spila þú fyrir mig",
-            "settu á fóninn",
-            "settu á fóninn fyrir mig",
-            "geturðu spilað",
-            "getur þú spilað fyrir mig",
-            "gætirðu spilað",
-            "gætir þú spilað fyrir mig",
-            "viltu spila",
-            "viltu spila fyrir mig",
-            "vilt þú spila",
-            "vilt þú spila fyrir mig",
-            "nennirðu að spila",
-            "nennirðu að spila fyrir mig",
-            "nennir þú að spila",
-            "nennir þú að spila fyrir mig",
-        )
-    )
-)
-
-_ADJ = "|".join(
-    frozenset(
-        (
-            "góðan",
-            "góða",
-            "gott",
-            "góð",
-            "skemmtilegan",
-            "skemmtilegt",
-            "skemmtilega",
-            "skemmtileg",
-            "huggulegan",
-            "huggulega",
-            "huggulegt",
-            "hugguleg",
-            "einhvern",
-            "eitthvað",
-            "einhverja",
-        )
-    )
-)
-
-_POST = "|".join(frozenset(("fyrir mig", "fyrir okkur")))
-
-
+# Hardcoded non-regex queries handled by this module
 HARDCODED_Q2H = {
     # Play some music, play a song
     "spila tónlist": _play_music,
@@ -300,6 +244,55 @@ HARDCODED_Q2H = {
     "sýndu mér kvikmynd": _play_film,
     "sýndu mér bíómynd": _play_film,
 }
+
+_VERB = "|".join(
+    frozenset(
+        (
+            "spilaðu",
+            "spilaðu fyrir mig",
+            "spila þú",
+            "spila þú fyrir mig",
+            "settu á fóninn",
+            "settu á fóninn fyrir mig",
+            "geturðu spilað",
+            "getur þú spilað fyrir mig",
+            "gætirðu spilað",
+            "gætir þú spilað fyrir mig",
+            "viltu spila",
+            "viltu spila fyrir mig",
+            "vilt þú spila",
+            "vilt þú spila fyrir mig",
+            "nennirðu að spila",
+            "nennirðu að spila fyrir mig",
+            "nennir þú að spila",
+            "nennir þú að spila fyrir mig",
+        )
+    )
+)
+
+_ADJ = "|".join(
+    frozenset(
+        (
+            "góðan",
+            "góða",
+            "gott",
+            "góð",
+            "skemmtilegan",
+            "skemmtilegt",
+            "skemmtilega",
+            "skemmtileg",
+            "huggulegan",
+            "huggulega",
+            "huggulegt",
+            "hugguleg",
+            "einhvern",
+            "eitthvað",
+            "einhverja",
+        )
+    )
+)
+
+_POST = "|".join(frozenset(("fyrir mig", "fyrir okkur")))
 
 
 REGEX_Q2H = OrderedDict(
@@ -355,7 +348,6 @@ def handle_plain_text(q: Query) -> bool:
     for rx, fn in REGEX_Q2H.items():
         matches = re.search(rx, ql)
         if matches:
-            print(matches.groups())
             fn(ql, q, matches)
             break
 
@@ -364,6 +356,7 @@ def handle_plain_text(q: Query) -> bool:
 
     # OK, this is a query we've recognized and handled
     q.set_qtype(_PLAY_QTYPE)
-    q.set_answer(*gen_answer("Skal gert!"))
+    if not q.answer:
+        q.set_answer(*gen_answer(_AFFIRMITIVE))
 
     return True
