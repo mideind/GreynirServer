@@ -171,7 +171,16 @@ def _play_music_by_artist(qs: str, q: Query, matches: Match[str]) -> Any:
 
 def _play_song_by_artist(qs: str, q: Query, matches: Match[str]) -> Any:
     """Play a particular, named song by a given artist"""
-    pass
+    song = matches.group(1)
+    artist = matches.group(2)
+    searchstr = f"{song} {artist}"
+    q.set_key(searchstr)
+
+    r = find_youtube_videos(searchstr)
+    if not r:
+        q.set_answer(*gen_answer(_NO_MUSIC_FOUND))
+    else:
+        q.set_url(choice(r))
 
 
 # Classic out-of-copyright films definitely available on YouTube
@@ -356,7 +365,7 @@ def handle_plain_text(q: Query) -> bool:
 
     # OK, this is a query we've recognized and handled
     q.set_qtype(_PLAY_QTYPE)
-    if not q.answer:
-        q.set_answer(*gen_answer(_AFFIRMITIVE))
+    # if not q.answer:
+    q.set_answer(*gen_answer(_AFFIRMITIVE))
 
     return True
