@@ -671,6 +671,9 @@ _WAV_MIMETYPES = frozenset(("audio/wav", "audio/x-wav"))
 def upload_speech_audio(version: int = 1) -> Response:
     """Receives uploaded speech audio for a query."""
 
+    # This is disabled for now
+    return better_jsonify(valid=False, errmsg="Not implemented")
+
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, errmsg="Unsupported version")
 
