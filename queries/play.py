@@ -34,6 +34,7 @@ from pyyoutube import Api, SearchListResponse
 
 from query import Query
 from queries import gen_answer
+from util import read_api_key
 
 
 _PLAY_QTYPE = "Play"
@@ -42,13 +43,13 @@ _PLAY_QTYPE = "Play"
 _AFFIRMITIVE = "Skal gert!"
 
 
-YT_API = Api(api_key="AIzaSyC3_19QvfPme_CwyTDmiuw3617RV0-lqzI")
+YT_API = Api(api_key=read_api_key("GoogleServerKey"))
 
 
 def search_youtube(
     q: str, types: List[str] = ["video"], limit: int = 5
 ) -> Optional[Union[SearchListResponse, Dict[Any, Any]]]:
-    r = YT_API.search_by_keywords(q=q, search_type=types, count=5, limit=5)
+    r = YT_API.search_by_keywords(q=q, search_type=types, limit=limit)
     return r
 
 
