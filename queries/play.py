@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Weather query response module
+    Media playback query response module
 
     Copyright (C) 2021 Miðeind ehf.
 
@@ -40,7 +40,7 @@ from util import read_api_key
 _PLAY_QTYPE = "Play"
 
 
-_AFFIRMITIVE = "Skal gert!"
+_AFFIRMATIVE = "Skal gert!"
 
 
 YT_API = Api(api_key=read_api_key("GoogleServerKey"))
@@ -150,7 +150,7 @@ def _play_electronic(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
 
 
 # Play music from a randomly selected genre
-def _play_music(qs: str, q: Query, matches: Match[str]) -> None:
+def _play_music(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
     m = [_play_jazz, _play_blues, _play_rock, _play_classical, _play_electronic]
     choice(m)(qs, q, None)
 
@@ -158,7 +158,7 @@ def _play_music(qs: str, q: Query, matches: Match[str]) -> None:
 _NO_MUSIC_FOUND = "Engin tónlist fannst."
 
 
-def _play_music_by_artist(qs: str, q: Query, matches: Match[str]) -> Any:
+def _play_music_by_artist(qs: str, q: Query, matches: Optional[Match[str]]) -> Any:
     """Play a song (any song) by a given artist"""
     artist = matches.group(1)
     q.set_key(artist)
@@ -170,7 +170,7 @@ def _play_music_by_artist(qs: str, q: Query, matches: Match[str]) -> Any:
         q.set_url(choice(r))
 
 
-def _play_song_by_artist(qs: str, q: Query, matches: Match[str]) -> Any:
+def _play_song_by_artist(qs: str, q: Query, matches: Optional[Match[str]]) -> Any:
     """Play a particular, named song by a given artist"""
     song = matches.group(1)
     artist = matches.group(2)
@@ -256,27 +256,25 @@ HARDCODED_Q2H = {
 }
 
 _VERB = "|".join(
-    frozenset(
-        (
-            "spilaðu",
-            "spilaðu fyrir mig",
-            "spila þú",
-            "spila þú fyrir mig",
-            "settu á fóninn",
-            "settu á fóninn fyrir mig",
-            "geturðu spilað",
-            "getur þú spilað fyrir mig",
-            "gætirðu spilað",
-            "gætir þú spilað fyrir mig",
-            "viltu spila",
-            "viltu spila fyrir mig",
-            "vilt þú spila",
-            "vilt þú spila fyrir mig",
-            "nennirðu að spila",
-            "nennirðu að spila fyrir mig",
-            "nennir þú að spila",
-            "nennir þú að spila fyrir mig",
-        )
+    (
+        "spilaðu",
+        "spilaðu fyrir mig",
+        "spila þú",
+        "spila þú fyrir mig",
+        "settu á fóninn",
+        "settu á fóninn fyrir mig",
+        "geturðu spilað",
+        "getur þú spilað fyrir mig",
+        "gætirðu spilað",
+        "gætir þú spilað fyrir mig",
+        "viltu spila",
+        "viltu spila fyrir mig",
+        "vilt þú spila",
+        "vilt þú spila fyrir mig",
+        "nennirðu að spila",
+        "nennirðu að spila fyrir mig",
+        "nennir þú að spila",
+        "nennir þú að spila fyrir mig",
     )
 )
 
@@ -302,7 +300,7 @@ _ADJ = "|".join(
     )
 )
 
-_POST = "|".join(frozenset(("fyrir mig", "fyrir okkur")))
+_POST = "|".join(("fyrir mig", "fyrir okkur"))
 
 
 REGEX_Q2H = OrderedDict(
@@ -367,6 +365,6 @@ def handle_plain_text(q: Query) -> bool:
     # OK, this is a query we've recognized and handled
     q.set_qtype(_PLAY_QTYPE)
     # if not q.answer:
-    q.set_answer(*gen_answer(_AFFIRMITIVE))
+    q.set_answer(*gen_answer(_AFFIRMATIVE))
 
     return True

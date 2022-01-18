@@ -227,7 +227,7 @@ def _poetry(qs: str, q: Query) -> AnswerType:
     }
 
 
-_STORY = """Einu sinni var karl og kerling í koti.
+_STORY = """Einu sinni voru karl og kerling í koti.
 Þau áttu sér kálf. Þá er sagan hálf.
 Hann hljóp út um víðan völl.
 Þá er sagan öll."""

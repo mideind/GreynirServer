@@ -265,8 +265,8 @@ _MY_ADDRESS_REGEXES = (
 )
 
 _ADDR_LOOKUP_FAIL = "Ég fann ekki þetta heimilisfang í staðfangaskrá."
-_ADDR_CLIENT_ID_MISSING = "Ég get ekki vistað heimilisfangið því \
-ég veit ekki auðkenni tækisins sem þú notar."
+_ADDR_CLIENT_ID_MISSING = """Ég get ekki vistað heimilisfangið því
+ ég veit ekki auðkenni tækisins sem þú notar."""
 
 
 def _myaddris_handler(q: Query, ql: str) -> bool:

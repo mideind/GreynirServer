@@ -674,23 +674,24 @@ def upload_speech_audio(version: int = 1) -> Response:
     # This is disabled for now
     return better_jsonify(valid=False, errmsg="Not implemented")
 
-    if not (1 <= version <= 1):
-        return better_jsonify(valid=False, errmsg="Unsupported version")
+    # This code is currently here only for debugging/development purposes
+    # if not (1 <= version <= 1):
+    #     return better_jsonify(valid=False, errmsg="Unsupported version")
 
-    file = request.files.get("file")
-    if file is not None:
-        # file is a Werkzeug FileStorage object
-        mimetype = file.content_type
-        if mimetype not in _WAV_MIMETYPES:
-            return better_jsonify(
-                valid=False, reason=f"File type not supported: {mimetype}"
-            )
-        try:
-            with open("/tmp/myfile.wav", "wb") as f:
-                # Writing data to a file
-                f.write(file.read())
-        except Exception as e:
-            logging.warning("Exception in upload_speech_audio(): {0}".format(e))
-            return better_jsonify(valid=False, reason="Error reading file")
+    # file = request.files.get("file")
+    # if file is not None:
+    #     # file is a Werkzeug FileStorage object
+    #     mimetype = file.content_type
+    #     if mimetype not in _WAV_MIMETYPES:
+    #         return better_jsonify(
+    #             valid=False, reason=f"File type not supported: {mimetype}"
+    #         )
+    #     try:
+    #         with open("/tmp/myfile.wav", "wb") as f:
+    #             # Writing data to a file
+    #             f.write(file.read())
+    #     except Exception as e:
+    #         logging.warning("Exception in upload_speech_audio(): {0}".format(e))
+    #         return better_jsonify(valid=False, reason="Error reading file")
 
-    return better_jsonify(valid=True, msg="Audio data received")
+    # return better_jsonify(valid=True, msg="Audio data received")
