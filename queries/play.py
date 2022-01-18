@@ -43,13 +43,21 @@ _PLAY_QTYPE = "Play"
 _AFFIRMATIVE = "Skal gert!"
 
 
-YT_API = Api(api_key=read_api_key("GoogleServerKey"))
+_YT_API = None
+
+
+def yt_api() -> Api:
+    """Lazily instantiate YouTube API client."""
+    global _YT_API
+    if not _YT_API:
+        _YT_API = Api(api_key=read_api_key("GoogleServerKey"))
+    return _YT_API
 
 
 def search_youtube(
     q: str, types: List[str] = ["video"], limit: int = 5
 ) -> Optional[Union[SearchListResponse, Dict[Any, Any]]]:
-    r = YT_API.search_by_keywords(q=q, search_type=types, limit=limit)
+    r = yt_api().search_by_keywords(q=q, search_type=types, limit=limit)
     return r
 
 
@@ -91,7 +99,7 @@ def find_youtube_playlists(q: str, limit: int = 3) -> List[str]:
             if "id" not in item or "playlistId" not in item["id"]:
                 continue
             playlist_id = item["id"]["playlistId"]
-            pl_vids = YT_API.get_playlist_items(playlist_id=playlist_id, count=1)
+            pl_vids = yt_api().get_playlist_items(playlist_id=playlist_id, count=1)
             if not pl_vids.items:
                 continue
             first_vid_id = pl_vids.items[0].snippet.resourceId.videoId
@@ -348,7 +356,7 @@ def handle_plain_text(q: Query) -> bool:
     # Check if it's a hardcoded barestring query
     handler_fn = HARDCODED_Q2H.get(ql)
     if handler_fn:
-        handler_fn(ql, q)
+        handler_fn(ql, q, None)
         return True
 
     # Check if query matches regexes supported by this module

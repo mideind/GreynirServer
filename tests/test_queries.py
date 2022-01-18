@@ -430,7 +430,6 @@ def test_dictionary(client: FlaskClient) -> None:
 
     json = qmcall(client, {"q": "flettu upp orðinu skíthæll í orðabók"}, "Dictionary")
     assert "skíthæll" in json["answer"].lower()
-    assert json["source"] == "Íslensk nútímamálsorðabók"
 
 
 def test_distance(client: FlaskClient) -> None:
