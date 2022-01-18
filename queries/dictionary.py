@@ -55,6 +55,7 @@ QDictWordQuery →
     | "hvað" "stendur" QDictInDictionary "um" "orðið" QDictSubjectNom
     | QDictWhatWhich "er" QDictDefinition "á" "orðinu" QDictSubjectNom QDictInDictionary?
     | "flettu" "upp" "orðinu" QDictSubjectNom QDictInDictionary?
+    | "flettu" "orðinu" QDictSubjectNom "upp" QDictInDictionary?
     | QDictCanYou "flett" "upp" "orðinu" QDictSubjectNom QDictInDictionary?
     | "hvernig" "skilgreinir" QDictDict "orðið" QDictSubjectNom
     | "hvernig" "er" "orðið" QDictSubjectNom "skilgreint" QDictInDictionary?
@@ -109,7 +110,9 @@ def QDictWordQuery(node: Node, params: QueryStateDict, result: Result) -> None:
 _DICT_SOURCE = "Íslensk nútímamálsorðabók"
 
 _WORD_SEARCH_URL = "https://islenskordabok.arnastofnun.is/django/api/es/flettur/?fletta={0}*&simple=true"
-_WORD_LOOKUP_URL = "https://islenskordabok.arnastofnun.is/django/api/es/fletta/{0}/?lang=IS"
+_WORD_LOOKUP_URL = (
+    "https://islenskordabok.arnastofnun.is/django/api/es/fletta/{0}/?lang=IS"
+)
 
 
 _ENUM_WORDS = [
@@ -134,7 +137,7 @@ def _clean4voice(s: str) -> str:
 
 
 def _answer_dictionary_query(q: Query, result: Result) -> None:
-    """ Answer query of the form "hver er orðabókaskilgreiningin á X?" """
+    """Answer query of the form "hver er orðabókaskilgreiningin á X?" """
     # TODO: Note, here we are taking only the first word of a potential noun phrase
     # containing multiple words. This will have to do for now but can be improved.
     wnat = result.qkey
@@ -145,7 +148,7 @@ def _answer_dictionary_query(q: Query, result: Result) -> None:
     res = query_json_api(url)
 
     def not_found() -> None:
-        """ Set answer for cases when word lookup fails. """
+        """Set answer for cases when word lookup fails."""
         nf = "Ekki tókst að fletta upp orðinu {0}".format(icequote(word))
         q.set_answer(*gen_answer(nf))
         return None
@@ -218,7 +221,7 @@ def _answer_dictionary_query(q: Query, result: Result) -> None:
 
 
 def sentence(state: QueryStateDict, result: Result):
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type

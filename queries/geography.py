@@ -221,7 +221,7 @@ def QGeoSubject(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def _capital_query(country: str, q: Query):
-    """ Generate answer to question concerning a country capital. """
+    """Generate answer to question concerning a country capital."""
 
     # Get country code
     cc = isocode_for_country_name(country)
@@ -363,7 +363,7 @@ _HANDLERS = {
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
 
     handled = False
@@ -379,8 +379,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             fn = _HANDLERS[result.geo_qtype]
             handled = fn(result.subject, q)
         except Exception as e:
-            logging.warning("Exception answering geography query: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception answering geography query: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
             return
 
     if handled:

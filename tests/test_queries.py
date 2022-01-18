@@ -238,9 +238,9 @@ def test_builtin(client: FlaskClient) -> None:
     # assert json["voice"].startswith("Forstjóri") and "Jón Jónsson" in json["voice"]
 
     # Builtin module: entities
-    json = qmcall(client, {"q": "hvað er Nox Medical"}, "Entity")
-    assert "nýsköpunarfyrirtæki" in json["answer"].lower()
-    assert json["key"] == "Nox Medical"
+    # json = qmcall(client, {"q": "hvað er Nox Medical"}, "Entity")
+    # assert "nýsköpunarfyrirtæki" in json["answer"].lower()
+    # assert json["key"] == "Nox Medical"
 
 
 def test_bus(client: FlaskClient) -> None:
@@ -732,6 +732,23 @@ def test_petrol(client: FlaskClient) -> None:
     assert "source" in json and json["source"].startswith("Gasvaktin")
 
 
+def test_pic(client: FlaskClient) -> None:
+    """Pic module"""
+
+    if not has_google_api_key():
+        # NB: No Google API key on test server
+        return
+
+    json = qmcall(client, {"q": "Sýndu mér mynd af Katrínu Jakobsdóttur"}, "Picture")
+    assert "image" in json
+
+    json = qmcall(client, {"q": "sýndu ljósmynd af hörpunni"}, "Picture")
+    assert "image" in json
+
+    json = qmcall(client, {"q": "þetta var ekki rétt mynd"}, "Picture")
+    assert "answer" in json and json["answer"]
+
+
 def test_places(client: FlaskClient) -> None:
     """Places module"""
 
@@ -739,10 +756,43 @@ def test_places(client: FlaskClient) -> None:
         # NB: No Google API key on test server
         return
 
-    # TODO: Improve these tests
-    qmcall(client, {"q": "Hvað er opið lengi í Melabúðinni"}, "Places")
-    qmcall(client, {"q": "Er lokað á Forréttabarnum?"}, "Places")
-    qmcall(client, {"q": "Hvenær opnar sundhöllin?"}, "Places")
+    json = qmcall(client, {"q": "Er lokað á Forréttabarnum?"}, "Places")
+    assert (
+        "answer" in json
+        and "Forréttabarinn" in json["answer"]
+        and "opinn" in json["answer"]
+    )
+
+    json = qmcall(client, {"q": "Hvað er opið lengi í Melabúðinni"}, "Places")
+    assert (
+        "answer" in json
+        and "voice" in json
+        and "Melabúðin" in json["answer"]
+        and "opin" in json["voice"]
+    )
+
+    json = qmcall(client, {"q": "Hvenær opnar sundhöllin?", "voice": True}, "Places")
+    assert "answer" in json and "voice" in json and " opin " in json["voice"]
+
+
+def test_play(client: FlaskClient) -> None:
+    """Play module"""
+
+    if not has_google_api_key():
+        # NB: No Google (YouTube) API key on test server
+        return
+
+    json = qmcall(client, {"q": "spilaðu einhverja klassíska tónlist"}, "Play")
+    assert "open_url" in json
+
+    json = qmcall(client, {"q": "Spilaðu lag með rolling stones"}, "Play")
+    assert "open_url" in json
+
+    json = qmcall(client, {"q": "spilaðu skemmtilega tónlist"}, "Play")
+    assert "open_url" in json
+
+    json = qmcall(client, {"q": "spilaðu kvikmynd fyrir mig"}, "Play")
+    assert "open_url" in json
 
 
 def test_rand(client: FlaskClient) -> None:
@@ -778,7 +828,6 @@ def test_repeat(client: FlaskClient) -> None:
 
     json = qmcall(client, {"q": "segðu eitthvað skemmtilegt"})
     assert json["qtype"] != "Parrot"
-    pass
 
 
 def test_schedules(client: FlaskClient) -> None:
@@ -1182,6 +1231,7 @@ def test_whatis(client: FlaskClient) -> None:
 def test_wiki(client: FlaskClient) -> None:
     """Wikipedia module"""
 
+    # "Hvað segir Wikipedía um X" queries
     json = qmcall(client, {"q": "Hvað segir wikipedia um Jón Leifs?"}, "Wikipedia")
     assert "Wikipedía" in json["q"]  # Make sure it's being beautified
     assert "tónskáld" in json["answer"]
@@ -1191,9 +1241,6 @@ def test_wiki(client: FlaskClient) -> None:
         client, {"q": "hvað segir vikipedija um jóhann sigurjónsson"}, "Wikipedia"
     )
     assert "Jóhann" in json["answer"]
-
-    json = qmcall(client, {"q": "fræddu mig um berlín"}, "Wikipedia")
-    assert "Berlín" in json["answer"]
 
     json = qmcall(
         client,
@@ -1211,6 +1258,13 @@ def test_wiki(client: FlaskClient) -> None:
         "Wikipedia",
     )
     assert "Katrín Jakobsdóttir" in json["answer"]
+
+    # "Hvað er X" queries
+    json = qmcall(client, {"q": "hvað er mjólk"}, "Wikipedia")
+    assert "Mjólk" in json["answer"] and "spendýr" in json["answer"]
+
+    json = qmcall(client, {"q": "hvað er fjall"}, "Wikipedia")
+    assert "Fjall" in json["answer"]
 
     _query_data_cleanup()  # Remove any data logged to DB on account of tests
 

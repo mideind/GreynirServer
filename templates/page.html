@@ -1,4 +1,3 @@
-
 {% extends "container-normal.html" %}
 
 {% block meta %}
@@ -12,7 +11,6 @@
 <link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
 
 <style>
-
    h1#meta-heading {
       font-family: 'Oswald', 'Open Sans', sans-serif;
       font-weight: 400;
@@ -33,34 +31,38 @@
       font-style: italic;
       font-size: 1.05em;
    }
+
    div#result-translation span.good i:hover {
       background-color: #77FF77;
       color: black;
    }
+
    div#result-translation span.average i:hover {
       background-color: #777777;
       color: white;
    }
+
    div#result-translation span.bad i:hover {
       color: black;
       background-color: #FF7777;
    }
+
    div#result-translation span.translated i {
       font-style: normal;
    }
+
    span#spinner {
       color: #f0ad4e;
    }
-
 </style>
 
 {% endblock %}
 
 {% block content %}
-    {% if nn_translate_enabled -%}
-    <div id="info-trnsl">
-    </div>
-    {%- endif -%}
+{% if nn_translate_enabled -%}
+<div id="info-trnsl">
+</div>
+{%- endif -%}
 
 <div id="output">
 
@@ -71,32 +73,34 @@
          <!-- Article metadata -->
          <div id="topics">
 
-{% set labelmap = {
-   "business" : "label-primary",
-   "technology" : "label-primary",
-   "sport" : "label-warning",
-   "culture" : "label-warning",
-   "politics" : "label-success",
-   "economy" : "label-success",
-   "health" : "label-info",
-   "salmon" : "label-info",
-   "weather" : "label-danger",
-   "accidents" : "label-danger",
-   "immigration" : "label-warning"
-} %}
+            {% set labelmap = {
+            "business" : "label-primary",
+            "technology" : "label-primary",
+            "sport" : "label-warning",
+            "culture" : "label-warning",
+            "politics" : "label-success",
+            "economy" : "label-success",
+            "health" : "label-info",
+            "salmon" : "label-info",
+            "weather" : "label-danger",
+            "accidents" : "label-danger",
+            "immigration" : "label-warning"
+            } %}
 
-{% for t in topics -%}
-            <span class="topic label {{ labelmap[t.id] }}"><span class="glyphicon glyphicon-tag"></span>{{ t.name }}</span>
-{%- endfor -%}
+            {% for t in topics -%}
+            <span class="topic label {{ labelmap[t.id] }}"><span class="glyphicon glyphicon-tag"></span>{{ t.name
+               }}</span>
+            {%- endfor -%}
          </div>
          <h1 id="meta-heading">{{ article.heading }}</h1>
          <h3 id="meta-author" class="text-muted">{{ article.author }}</h3>
          <h4 id="meta-timestamp" class="text-muted">{{ article.timestamp | format_ts }}</h4>
          <h5 id="meta-url">
-            <a href="{{ article.url }}" target="_blank">Upphafleg grein
-{%- if article.root_domain -%}
-               <img src="{{ url_for('static', filename = 'img/sources/' + article.root_domain + '.png') }}" width="16" height="16">
-{%- endif -%}
+            <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer nofollow">Upphafleg grein
+               {%- if article.root_domain -%}
+               <img src="{{ url_for('static', filename = 'img/sources/' + article.root_domain + '.png') }}" width="16"
+                  height="16">
+               {%- endif -%}
             </a>
             <button type="button" class="btn btn-warning" id="refresh" title="Endurgreina">
                <span class="glyphicon glyphicon-restart"></span>
@@ -107,51 +111,55 @@
          </h5>
       </div>
 
-     {% if nn_translate_enabled -%}
+      {% if nn_translate_enabled -%}
       <div id="language-tabs">
-          <ul id="language-hdr" class="nav nav-tabs" role="tablist">
-              <li role="presentation" class="active">
-                  <a href="#translation-article-src" aria-controls="icelandic" role="tab" data-toggle="tab">
-                      <!-- https://www.countryflags.com/en/iceland-flag-icon.html -->
-                      <img src="{{ url_for('static', filename = 'img/flags/IS.png') }}" width="32" height="23">&nbsp;Íslenska&nbsp;
-                  </a>
-              </li>
-              <li role="presentation">
-                  <a id="translate-tgt-btn" href="#translation-article-tgt" aria-controls="translation" role="tab" data-toggle="tab">
-                      <!-- https://www.countryflags.com/en/united-states-flag-icon.html -->
-                      <span><img src="{{ url_for('static', filename = 'img/flags/GB.png') }}" width="32" height="20">&nbsp;Enska
-                      </span>
-                      &nbsp;<span id="spinner" style="display: none;" class='glyphicon glyphicon-restart glyphicon-spin-white'></span>
-                  </a>
-              </li>
-              <li role="presentation" class="pull-right">
-                  <div id="help">
-                      <h4 class="help"><small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h4>
-                  </div>
-              </li>
-          </ul>
+         <ul id="language-hdr" class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="active">
+               <a href="#translation-article-src" aria-controls="icelandic" role="tab" data-toggle="tab">
+                  <!-- https://www.countryflags.com/en/iceland-flag-icon.html -->
+                  <img src="{{ url_for('static', filename = 'img/flags/IS.png') }}" width="32"
+                     height="23">&nbsp;Íslenska&nbsp;
+               </a>
+            </li>
+            <li role="presentation">
+               <a id="translate-tgt-btn" href="#translation-article-tgt" aria-controls="translation" role="tab"
+                  data-toggle="tab">
+                  <!-- https://www.countryflags.com/en/united-states-flag-icon.html -->
+                  <span><img src="{{ url_for('static', filename = 'img/flags/GB.png') }}" width="32"
+                        height="20">&nbsp;Enska
+                  </span>
+                  &nbsp;<span id="spinner" style="display: none;"
+                     class='glyphicon glyphicon-restart glyphicon-spin-white'></span>
+               </a>
+            </li>
+            <li role="presentation" class="pull-right">
+               <div id="help">
+                  <h4 class="help"><small>Smelltu á málsgrein til að sjá trjágreiningu hennar</small></h4>
+               </div>
+            </li>
+         </ul>
       </div>
-     <div class="tab-content">
-        <div role="tabpanel" class="tab-pane active" id="translation-article-src">
-           <div id="result" class="result">
-             {% include 'hover-infobox.html' %}
-             <div id="pgs">
-                <!-- Result of analysis goes here -->
-                <p>Sæki grein...
-                   <span class="glyphicon glyphicon-restart glyphicon-spin"></span>
-                </p>
-             </div>
+      <div class="tab-content">
+         <div role="tabpanel" class="tab-pane active" id="translation-article-src">
+            <div id="result" class="result">
+               {% include 'hover-infobox.html' %}
+               <div id="pgs">
+                  <!-- Result of analysis goes here -->
+                  <p>Sæki grein...
+                     <span class="glyphicon glyphicon-restart glyphicon-spin"></span>
+                  </p>
+               </div>
 
-          </div>
-        </div>
-          <div role="tabpanel" class="tab-pane" id="translation-article-tgt">
-              <div id="result-translation">
-                  <!-- Translated article goes here -->
-              </div>
-          </div>
-     </div>
-     {% else %}
-        <div id="result" class="result">
+            </div>
+         </div>
+         <div role="tabpanel" class="tab-pane" id="translation-article-tgt">
+            <div id="result-translation">
+               <!-- Translated article goes here -->
+            </div>
+         </div>
+      </div>
+      {% else %}
+      <div id="result" class="result">
 
          {% include 'hover-infobox.html' %}
 
@@ -161,8 +169,8 @@
                <span class="glyphicon glyphicon-restart glyphicon-spin"></span>
             </p>
          </div>
-        </div>
-     {% endif %}
+      </div>
+      {% endif %}
    </div> <!-- column -->
 
    <div id="register">
@@ -192,11 +200,11 @@
 {% endblock %}
 
 {% block endscripts %}
-    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/page.js') }}"></script>
-    {% if nn_translate_enabled -%}
-       <script src="{{ url_for('static', filename='js/translation.js') }}"></script>
-    {%- endif %}
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/page.js') }}"></script>
+{% if nn_translate_enabled -%}
+<script src="{{ url_for('static', filename='js/translation.js') }}"></script>
+{%- endif %}
 
 <script>
 
@@ -204,7 +212,7 @@
    // noinspection SyntaxError
    var j =
       {{ article.tokens | safe }}
-      ;
+   ;
 
    // Name and title list
    nameDict = {{ register | tojson | safe }};
@@ -259,7 +267,7 @@
       $("div#similar").css("display", "none");
       serverQuery('/reparse.api', // Endpoints with .api suffix are not cached
          {
-            id : uuid
+            id: uuid
          },
          populateArticle,
          null,
@@ -271,7 +279,7 @@
       // Send the text of the current article over to correct.html
       // for spelling and grammar checking
       var txt = "";
-      $.each($("div#pgs p"), function() {
+      $.each($("div#pgs p"), function () {
          // Handle each paragraph
          var ptxt = "";
          $.each($("span.sent", this), function () {
@@ -287,8 +295,8 @@
    function fetchSimilarArticles() {
       var errmsg = "Ekki tókst að sækja svipaðar greinar.";
       serverQuery('/similar',
-         { id : "{{ article.uuid | safe }}" },
-         function(resp) {
+         { id: "{{ article.uuid | safe }}" },
+         function (resp) {
             html = errmsg;
             if (resp && resp["err"] === false) {
                html = resp["payload"];
@@ -296,7 +304,7 @@
             $("#similar-content").html(html);
          },
          null,
-         function() {
+         function () {
             $("#similar-content").html(errmsg);
          }
       );
@@ -305,7 +313,7 @@
    function init() {
       // Show help text
       $("div#help").show();
-      $("button#refresh").click(function(ev) {
+      $("button#refresh").click(function (ev) {
          reparseArticle("{{ article.uuid | safe }}");
       });
       $("button#check").click(checkArticle);
@@ -317,8 +325,8 @@
       $("div#statistics").show();
       populateRegister();
 
-       $('#lang-hdr a').click(function() {
-          $(this).tab('show');
+      $('#lang-hdr a').click(function () {
+         $(this).tab('show');
       });
       $('#lang-hdr a:first').tab('show');
 
@@ -327,17 +335,16 @@
    }
 
    {% if nn_translate_enabled -%}
-        $("#translate-tgt-btn").click(function (item) {
-            doTranslation();
-        });
-        $("#translation-article-src").click(function (item) {
-            showOriginalArticle();
-        });
-    {% endif %}
+   $("#translate-tgt-btn").click(function (item) {
+      doTranslation();
+   });
+   $("#translation-article-src").click(function (item) {
+      showOriginalArticle();
+   });
+   {% endif %}
 
    $(document).ready(init);
 
 </script>
 
 {% endblock %}
-

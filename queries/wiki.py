@@ -51,23 +51,35 @@ _WIKI_VARIATIONS = (
     "víkípedija",
     "vikípedija",
     "víkipedija",
+    "vikipedíja",
+    "víkípedíja",
+    "vikípedíja",
+    "víkipedíja",
     "víkípedía",
     "víkipedía",
     "vikípedía",
     "vikipedía",
     "wikipedia",
     "wikipedía",
+    "wikípedia",
+    "wikípedía",
     # Dative
     "vikipediju",
     "víkípediju",
     "vikípediju",
     "víkipediju",
+    "vikipedíju",
+    "víkípedíju",
+    "vikípedíju",
+    "víkipedíju",
     "víkípedíu",
     "víkipedíu",
     "vikípedíu",
     "vikipedíu",
     "wikipediu",
     "wikipedíu",
+    "wikípediu",
+    "wikípedíu",
 )
 
 
@@ -102,7 +114,7 @@ Query →
     QWiki
 
 QWiki →
-    QWikiQuery '?'?
+    QWikiQuery '?'? | QWikiWhatIsQuery '?'?
 
 QWikiQuery →
     # These take the subject in the nominative case
@@ -133,6 +145,10 @@ QWikiQuery →
     | "geturðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
     | "nennirðu" "að" "fletta" "upp" QWikiSubjectÞgf "í" QWikipedia
     | "gætirðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
+
+QWikiWhatIsQuery →
+    "hvað" "er" QWikiSubjectNlNf |
+    "hvað" "eru" QWikiSubjectNlNf
 
 QWikiMeOrUsÞgf →
     "mér" | "okkur"
@@ -185,12 +201,21 @@ def QWikiQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     # Set the query type
     result.qtype = _WIKI_QTYPE
     result.qkey = result.get("subject_nom")
+    # Mark the query as explicitly asking for information from Wikipedia
+    result["explicit_wikipedia"] = True
+
+
+def QWikiWhatIsQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+    # Set the query type
+    result.qtype = _WIKI_QTYPE
+    result.qkey = result.get("subject_nom")
 
 
 def QWikiSubjectNlNf(node: Node, params: QueryStateDict, result: Result) -> None:
     result["subject_nom"] = result._nominative
 
 
+# No matter the case, we want it in nominative
 QWikiSubjectNlÞf = QWikiSubjectNlÞgf = QWikiSubjectNlNf
 
 
@@ -230,10 +255,11 @@ def _clean_answer(answer: str) -> str:
     # Split on newline, use only first paragraph
     a = answer.split("\n")[0].strip()
     # Get rid of "Getur líka átt við" leading sentence
+    # TODO: Fix me
     if a.startswith("Getur líka átt"):
         a = ". ".join(a.split(".")[1:])
     # Remove text within parentheses
-    a = re.sub(r"\([^)]+\)", "", a)
+    a = re.sub(r"\([^)]+\)", " ", a)
     # Fix any whitespace formatting issues created by
     # removing text within parentheses
     a = re.sub(r"\s+", " ", a)
@@ -242,6 +268,7 @@ def _clean_answer(answer: str) -> str:
     a = re.sub(r"\s\.\s", ". ", a)
     # E.g. "100-700" becomes "100 til 700"
     a = re.sub(r"(\d+)\s?\-\s?(\d+)", r"\1 til \2", a)
+    a = a.replace("[heimild vantar]", "")
     return a
 
 
@@ -264,7 +291,7 @@ def _query_wiki_api(subject: str) -> Union[None, List[Any], Dict[str, Any]]:
     return query_json_api(url)
 
 
-def get_wiki_summary(subject_nom: str) -> str:
+def get_wiki_summary(result: Result) -> Optional[str]:
     """Fetch summary of subject from Icelandic Wikipedia"""
 
     def has_entry(r: Any) -> bool:
@@ -275,12 +302,15 @@ def get_wiki_summary(subject_nom: str) -> str:
             and "-1" not in r["query"]["pages"]
         )
 
+    subject_nom = result["subject_nom"]
+
     # Wiki pages always start with an uppercase character
     cap_subj = cap_first(subject_nom)
     # Talk to API
     res = _query_wiki_api(cap_subj)
-    # OK, Wikipedia doesn't have anything with current capitalization
-    # or lack thereof. Try uppercasing first character of each word.
+
+    # If Wikipedia doesn't have any entry with current capitalization,
+    # we try uppercasing the first character of each word.
     titled_subj = subject_nom.title()
     if not has_entry(res) and cap_subj != titled_subj:
         res = _query_wiki_api(titled_subj)
@@ -288,7 +318,10 @@ def get_wiki_summary(subject_nom: str) -> str:
     not_found = "Ég fann ekkert um '{0}' í Wikipedíu".format(subject_nom)
 
     if not has_entry(res):
-        return not_found
+        if result.get("explicit_wikipedia") == True:
+            return not_found
+        else:
+            return None
 
     assert isinstance(res, dict)
     pages = res["query"]["pages"]
@@ -310,7 +343,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
-    # Successfully matched a query type, we're handling it...
+    # Successfully matched a query type
     q.set_qtype(result.qtype)
 
     # Beautify query by fixing spelling of Wikipedia
@@ -329,7 +362,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     if "subject_nom" in result:
         # Fetch data from Wikipedia API
         subj = result["subject_nom"]
-        answer = get_wiki_summary(subj)
+        answer = get_wiki_summary(result)
+        if not answer:
+            q.set_error("E_QUERY_NOT_UNDERSTOOD")
+            return
         response = dict(answer=answer)
         voice = _clean_voice_answer(answer)
         # Set query answer

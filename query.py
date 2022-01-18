@@ -147,7 +147,7 @@ _CAPITALIZATION_REPLACEMENTS = (("í Dag", "í dag"),)
 
 
 def beautify_query(query: str) -> str:
-    """ Return a minimally beautified version of the given query string """
+    """Return a minimally beautified version of the given query string"""
     # Make sure the query starts with an uppercase letter
     bq = (query[0].upper() + query[1:]) if query else ""
     # Add a question mark if no other ending punctuation is present
@@ -218,7 +218,7 @@ class QueryGrammar(BIN_Grammar):
 
 class QueryParser(Fast_Parser):
 
-    """ A subclass of Fast_Parser, specialized to parse queries """
+    """A subclass of Fast_Parser, specialized to parse queries"""
 
     # Override the punctuation that is understood by the parser,
     # adding the forward slash ('/')
@@ -261,11 +261,11 @@ class QueryTree(Tree):
         self._query_trees: List[Node] = []
 
     def handle_O(self, n: int, s: str) -> None:
-        """ Handle the O (option) tree record """
+        """Handle the O (option) tree record"""
         assert n == 1
 
     def handle_Q(self, n: int) -> None:
-        """ Handle the Q (final) tree record """
+        """Handle the Q (final) tree record"""
         super().handle_Q(n)
         # Access the QueryRoot node
         root = self.s[1]
@@ -276,18 +276,18 @@ class QueryTree(Tree):
 
     @property
     def query_trees(self) -> List[Node]:
-        """ Returns the list of valid query parse trees, i.e. child nodes of Query """
+        """Returns the list of valid query parse trees, i.e. child nodes of Query"""
         return self._query_trees
 
     @property
     def query_nonterminals(self) -> Set[str]:
-        """ Return the set of query nonterminals that match this query """
+        """Return the set of query nonterminals that match this query"""
         return set(node.string_self() for node in self._query_trees)
 
     def process_queries(
         self, query: "Query", session: Session, processor: ModuleType
     ) -> bool:
-        """ Process all query trees that the given processor is interested in """
+        """Process all query trees that the given processor is interested in"""
         processor_query_types: Set[str] = getattr(
             processor, "QUERY_NONTERMINALS", set()
         )
@@ -386,7 +386,7 @@ class Query:
         self._context: Optional[ContextDict] = None
 
     def _preprocess_query_string(self, q: str) -> str:
-        """ Preprocess the query string prior to further analysis """
+        """Preprocess the query string prior to further analysis"""
         if not q:
             return q
         qf = re.sub(_IGNORED_PREFIX_RE, "", q, flags=re.IGNORECASE)
@@ -470,7 +470,7 @@ class Query:
 
     @staticmethod
     def _parse(toklist: Iterable[Tok]) -> Tuple[ResponseDict, Dict[int, str]]:
-        """ Parse a token list as a query """
+        """Parse a token list as a query"""
         bp = Query._parser
         assert bp is not None
         num_sent = 0
@@ -521,7 +521,7 @@ class Query:
 
     @staticmethod
     def _query_string_from_toklist(toklist: Iterable[Tok]) -> str:
-        """ Re-create a query string from an auto-capitalized token list """
+        """Re-create a query string from an auto-capitalized token list"""
         actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
         if actual_q:
             # Fix stuff that the auto-capitalization tends to get wrong,
@@ -537,7 +537,7 @@ class Query:
         return actual_q
 
     def parse(self, result: ResponseDict) -> bool:
-        """ Parse the query from its string, returning True if valid """
+        """Parse the query from its string, returning True if valid"""
         self._tree = None  # Erase previous tree, if any
         self._error = None  # Erase previous error, if any
         self._qtype = None  # Erase previous query type, if any
@@ -603,7 +603,7 @@ class Query:
         return True
 
     def execute_from_plain_text(self) -> bool:
-        """ Attempt to execute a plain text query, without having to parse it """
+        """Attempt to execute a plain text query, without having to parse it"""
         if not self._query:
             return False
         # Call the handle_plain_text() function in each text processor,
@@ -642,7 +642,7 @@ class Query:
         return False
 
     def has_answer(self) -> bool:
-        """ Return True if the query currently has an answer """
+        """Return True if the query currently has an answer"""
         return bool(self._answer) and self._error is None
 
     def last_answer(self, *, within_minutes: int = 5) -> Optional[Tuple[str, str]]:
@@ -693,21 +693,21 @@ class Query:
 
     @property
     def query(self) -> str:
-        """ The query text, in its original form """
+        """The query text, in its original form"""
         return self._query
 
     @property
     def query_lower(self) -> str:
-        """ The query text, all lower case """
+        """The query text, all lower case"""
         return self._query.lower()
 
     @property
     def beautified_query(self) -> str:
-        """ Return the query string that will be reflected back to the client """
+        """Return the query string that will be reflected back to the client"""
         return self._beautified_query
 
     def set_beautified_query(self, q: str) -> None:
-        """ Set the query string that will be reflected back to the client """
+        """Set the query string that will be reflected back to the client"""
         self._beautified_query = (
             q.replace("embla", "Embla")
             .replace("miðeind", "Miðeind")
@@ -721,7 +721,7 @@ class Query:
         self.set_beautified_query(self._beautified_query.capitalize())
 
     def query_is_command(self) -> None:
-        """ Called from a query processor if the query is a command, not a question """
+        """Called from a query processor if the query is a command, not a question"""
         # Put a period at the end of the beautified query text
         # instead of a question mark
         if self._beautified_query.endswith("?"):
@@ -729,71 +729,71 @@ class Query:
 
     @property
     def expires(self) -> Optional[datetime]:
-        """ Expiration time stamp for this query answer, if any """
+        """Expiration time stamp for this query answer, if any"""
         return self._expires
 
     def set_expires(self, ts: datetime) -> None:
-        """ Set an expiration time stamp for this query answer """
+        """Set an expiration time stamp for this query answer"""
         self._expires = ts
 
     @property
     def url(self) -> Optional[str]:
-        """ URL answer associated with this query """
+        """URL answer associated with this query"""
         return self._url
 
-    def set_url(self, u: str) -> None:
-        """ Set the URL answer associated with this query """
+    def set_url(self, u: Optional[str]) -> None:
+        """Set the URL answer associated with this query"""
         self._url = u
 
     @property
     def command(self) -> Optional[str]:
-        """ JavaScript command associated with this query """
+        """JavaScript command associated with this query"""
         return self._command
 
     def set_command(self, c: str) -> None:
-        """ Set the JavaScript command associated with this query """
+        """Set the JavaScript command associated with this query"""
         self._command = c
 
     @property
     def image(self) -> Optional[str]:
-        """ Image URL associated with this query """
+        """Image URL associated with this query"""
         return self._image
 
     def set_image(self, url: str) -> None:
-        """ Set the image URL command associated with this query """
+        """Set the image URL command associated with this query"""
         self._image = url
 
     @property
     def source(self) -> Optional[str]:
-        """ Return the source of the answer to this query """
+        """Return the source of the answer to this query"""
         return self._source
 
     def set_source(self, s: str) -> None:
-        """ Set the source for the answer to this query """
+        """Set the source for the answer to this query"""
         self._source = s
 
     @property
     def location(self) -> Optional[LocationType]:
-        """ The client location, if known, as a (lat, lon) tuple """
+        """The client location, if known, as a (lat, lon) tuple"""
         return self._location
 
     @property
     def token_list(self) -> Optional[List[Tok]]:
-        """ The original token list for the query """
+        """The original token list for the query"""
         return self._toklist
 
     def qtype(self) -> Optional[str]:
-        """ Return the query type """
+        """Return the query type"""
         return self._qtype
 
     def set_qtype(self, qtype: str) -> None:
-        """ Set the query type ('Person', 'Title', 'Company', 'Entity'...) """
+        """Set the query type ('Person', 'Title', 'Company', 'Entity'...)"""
         self._qtype = qtype
 
     def set_answer(
         self, response: ResponseType, answer: str, voice_answer: Optional[str] = None
     ) -> None:
-        """ Set the answer to the query """
+        """Set the answer to the query"""
         # Detailed response (this is usually a dict)
         self._response = response
         # Single best answer, as a displayable string
@@ -802,17 +802,17 @@ class Query:
         self._voice_answer = voice_answer
 
     def set_key(self, key: str) -> None:
-        """ Set the query key, i.e. the term or string used to execute the query """
+        """Set the query key, i.e. the term or string used to execute the query"""
         # This is for instance a person name in nominative case
         self._key = key
 
     def set_error(self, error: str) -> None:
-        """ Set an error result """
+        """Set an error result"""
         self._error = error
 
     @property
     def is_voice(self) -> bool:
-        """ Return True if this is a voice query """
+        """Return True if this is a voice query"""
         return self._voice
 
     @property
@@ -821,24 +821,24 @@ class Query:
 
     @property
     def client_type(self) -> Optional[str]:
-        """ Return client type string, e.g. "ios", "android", "www", etc. """
+        """Return client type string, e.g. "ios", "android", "www", etc."""
         return self._client_type
 
     @property
     def client_version(self) -> Optional[str]:
-        """ Return client version string, e.g. "1.0.3" """
+        """Return client version string, e.g. "1.0.3" """
         return self._client_version
 
     def response(self) -> Optional[ResponseType]:
-        """ Return the detailed query answer """
+        """Return the detailed query answer"""
         return self._response
 
     def answer(self) -> Optional[str]:
-        """ Return the 'single best' displayable query answer """
+        """Return the 'single best' displayable query answer"""
         return self._answer
 
     def voice_answer(self) -> str:
-        """ Return a voice version of the 'single best' answer, if any """
+        """Return a voice version of the 'single best' answer, if any"""
         va = self._voice_answer
         if va is None:
             return ""
@@ -847,16 +847,16 @@ class Query:
         return va
 
     def key(self) -> Optional[str]:
-        """ Return the query key """
+        """Return the query key"""
         return self._key
 
     def error(self) -> Optional[str]:
-        """ Return the query error, if any """
+        """Return the query error, if any"""
         return self._error
 
     @property
     def context(self) -> Optional[ContextDict]:
-        """ Return the context that has been set by self.set_context() """
+        """Return the context that has been set by self.set_context()"""
         return self._context
 
     def set_context(self, ctx: ContextDict) -> None:
@@ -865,7 +865,7 @@ class Query:
         self._context = ctx
 
     def client_data(self, key: str) -> Optional[ClientDataDict]:
-        """ Fetch client_id-associated data stored in the querydata table """
+        """Fetch client_id-associated data stored in the querydata table"""
         if not self.client_id:
             return None
         with SessionContext(read_only=True) as session:
@@ -889,7 +889,7 @@ class Query:
         return None
 
     def set_client_data(self, key: str, data: ClientDataDict) -> None:
-        """ Setter for client query data """
+        """Setter for client query data"""
         if not self.client_id or not key:
             logging.warning("Couldn't save query data, no client ID or key")
             return
@@ -897,7 +897,7 @@ class Query:
 
     @staticmethod
     def store_query_data(client_id: str, key: str, data: ClientDataDict) -> bool:
-        """ Save client query data in the database, under the given key """
+        """Save client query data in the database, under the given key"""
         if not client_id or not key:
             return False
         now = datetime.utcnow()
@@ -1047,7 +1047,7 @@ class Query:
         if Settings.DEBUG:
             # Dump query results to the console
             def converter(o):
-                """ Ensure that datetime is output in ISO format to JSON """
+                """Ensure that datetime is output in ISO format to JSON"""
                 if isinstance(o, datetime):
                     return o.isoformat()[0:16]
                 return None
@@ -1066,7 +1066,7 @@ def _to_case(
     cast_func: CastFunc,
     filter_func: Optional[BinFilterFunc],
 ) -> str:
-    """ Return the noun phrase after casting it from nominative to accusative case """
+    """Return the noun phrase after casting it from nominative to accusative case"""
     # Split the phrase into words and punctuation, respectively
     a = re.split(r"([\w]+)", np)
     seen_preposition = False
@@ -1101,7 +1101,7 @@ def _to_case(
 
 
 def to_accusative(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
-    """ Return the noun phrase after casting it from nominative to accusative case """
+    """Return the noun phrase after casting it from nominative to accusative case"""
     with GreynirBin.get_db() as db:
         return _to_case(
             np,
@@ -1112,7 +1112,7 @@ def to_accusative(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> st
 
 
 def to_dative(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
-    """ Return the noun phrase after casting it from nominative to dative case """
+    """Return the noun phrase after casting it from nominative to dative case"""
     with GreynirBin.get_db() as db:
         return _to_case(
             np,
@@ -1123,7 +1123,7 @@ def to_dative(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
 
 
 def to_genitive(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
-    """ Return the noun phrase after casting it from nominative to genitive case """
+    """Return the noun phrase after casting it from nominative to genitive case"""
     with GreynirBin.get_db() as db:
         return _to_case(
             np,
@@ -1254,8 +1254,8 @@ def process_query(
                             expires=query.expires if voice else None,
                             qtype=result.get("qtype"),
                             key=result.get("key"),
-                            latitude=location[0] if location else None,
-                            longitude=location[1] if location else None,
+                            latitude=None,
+                            longitude=None,
                             # Client identifier
                             client_id=client_id[:256] if client_id else None,
                             client_type=client_type[:80] if client_type else None,
