@@ -71,7 +71,7 @@ _SOURCE_ROOT_COLORS = {
 
 
 def chart_stats(session=None, num_days: int = 7) -> Dict[str, Any]:
-    """ Return scraping and parsing stats for charts """
+    """Return scraping and parsing stats for charts"""
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     labels = []
     sources: Dict[str, List[int]] = {}
@@ -139,7 +139,7 @@ def chart_stats(session=None, num_days: int = 7) -> Dict[str, Any]:
 def top_authors(
     days: int = _TOP_AUTHORS_PERIOD, session: Optional[Session] = None
 ) -> List[Dict[str, Any]]:
-    """ Generate list of top authors w. parse percentage. """
+    """Generate list of top authors w. parse percentage."""
     end = datetime.utcnow()
     start = end - timedelta(days=days)
     authors = list(
@@ -163,7 +163,7 @@ def top_authors(
 @cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
 @max_age(seconds=30 * 60)
 def stats() -> Union[Response, str]:
-    """ Render a page containing various statistics from the Greynir database. """
+    """Render a page containing various statistics from the Greynir database."""
     days = _DEFAULT_STATS_PERIOD
     try:
         days = min(
