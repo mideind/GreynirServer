@@ -1502,6 +1502,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvaðan ert þú": _LINEAGE,
     "hvaðan kemurðu": _LINEAGE,
     "hvaðan kemur þú": _LINEAGE,
+    "hverra manna ert þú": _LINEAGE,
+    "af hvaða ættum ert þú": _LINEAGE,
     # Home/Location
     "hvar býrðu": _LOC_ANSWER,
     "hvar býrð þú": _LOC_ANSWER,
@@ -1595,6 +1597,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvaða kvikmyndum mælirðu með": _FAVORITE_FILM,
     "hvað er góð kvikmynd": _FAVORITE_FILM,
     "nefndu góða kvikmynd": _FAVORITE_FILM,
+    "mæltu með einhverri kvikmynd": _FAVORITE_FILM,
     "geturðu mælt með kvikmynd": _FAVORITE_FILM,
     "geturðu mælt með einhverri kvikmynd": _FAVORITE_FILM,
     "hvað mynd mælirðu með": _FAVORITE_FILM,

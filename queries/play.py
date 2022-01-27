@@ -202,7 +202,7 @@ _FILMS = [
 ]
 
 
-def _play_film(qs: str, q: Query) -> Any:
+def _play_film(qs: str, q: Query, matches: Optional[Match[str]]) -> Any:
     """Play a randomly selected out-of-copyright film on YouTube."""
     url = "https://www.youtube.com/watch?v=FC6jFoYm3xs"  # Nosferatu, 1922
     urls = find_youtube_videos(choice(_FILMS), limit=1)
@@ -261,6 +261,8 @@ HARDCODED_Q2H = {
     "sýndu bíómynd": _play_film,
     "sýndu mér kvikmynd": _play_film,
     "sýndu mér bíómynd": _play_film,
+    "sýndu mér einhverja kvikmynd": _play_film,
+    "sýndu mér einhverja bíómynd": _play_film,
 }
 
 _VERB = "|".join(
@@ -318,11 +320,11 @@ REGEX_Q2H = OrderedDict(
             _VERB, _ADJ, _POST
         ): _play_music,
         # Jazz
-        r"^(?:{0})\s?(?:{1})?\s(djass|jazz|jass|djasstónlist|djasslag)\s?(?:{2})?$".format(
+        r"^(?:{0})\s?(?:{1})?\s(djass|jazz|jass|djasstónlist|djasslag|djass lag)\s?(?:{2})?$".format(
             _VERB, _ADJ, _POST
         ): _play_jazz,
         # Blues
-        r"^(?:{0})\s?(?:{1})?\s(blús|blúsinn|blústónlist|blúslag)\s?(?:{2})?$".format(
+        r"^(?:{0})\s?(?:{1})?\s(blús|blúsinn|blústónlist|blúslag|blús lag)\s?(?:{2})?$".format(
             _VERB, _ADJ, _POST
         ): _play_blues,
         # Rock
