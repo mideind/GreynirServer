@@ -488,6 +488,13 @@ def _query_exchange_rate(curr1: str, curr2: str) -> Optional[float]:
     return None
 
 
+def _clean_voice_answer(s: str) -> str:
+    """Clean up potential errors in speech recognised text."""
+    s = s.replace("slot í", "slotí")
+    s = s.replace(" dollars ", " Bandaríkjadals ")
+    return s
+
+
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
@@ -533,11 +540,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 float_to_text(val, case="þf", gender="kvk", comma_null=False),
                 (" " + suffix) if suffix else "",
             ).capitalize()
-            print(answer)
-            print(suffix)
-            # Clean up voice answer
-            voice_answer = voice_answer.replace("slot í", "slotí")
-            voice_answer = voice_answer.replace(" dollars ", " Bandaríkjadals ")
+            voice_answer = _clean_voice_answer(voice_answer)
             q.set_answer(response, answer, voice_answer)
         else:
             # Ekki tókst að fletta upp gengi
