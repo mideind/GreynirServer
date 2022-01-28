@@ -82,6 +82,12 @@ QJaName4PhoneNumQuery →
     | "flettu" "upp" QJaPhoneNum QJaInPhonebook
     | "hver" "er" "í" "síma" QJaPhoneNum
 
+QJaClosestBusinessQuery →
+    "hver" "er" "næsta" QJaBusinessType
+
+QJaBusinessType →
+    "matvöruverslun"
+
 QJaThemÞgf →
     "hann" | "hana" | "þau" | "þá" | "þær" | "það" "númer"? | "þetta" "númer"?
 
@@ -125,6 +131,14 @@ def QJaName4PhoneNumQuery(node: Node, params: QueryStateDict, result: Result) ->
 
 def QJaPhoneNum4NameQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = "PhoneNum4Name"
+
+
+def QJaClosestBusinessQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qtype = "ClosestBusiness"
+
+
+def QJaBusinessType(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["business"] = result._nominative
 
 
 _JA_SOURCE = "ja.is"
@@ -289,9 +303,17 @@ def _answer_name4phonenum_query(q: Query, result: Result) -> AnswerTuple:
     return dict(answer=answ), answ, voice
 
 
+def _answer_closest_business_query(q: Query, result: Result) -> AnswerTuple:
+    """Answer query of the form "hvar er næsta matvöruverslun/veitingastaður/X?"""
+    answ = ""
+    voice = answ
+    return dict(answer=answ), answ, voice
+
+
 _QTYPE2HANDLER: Mapping[str, Callable[[Query, Result], AnswerTuple]] = {
     "Name4PhoneNum": _answer_name4phonenum_query,
     "PhoneNum4Name": _answer_phonenum4name_query,
+    "ClosestBusiness": _answer_closest_business_query,
 }
 
 
