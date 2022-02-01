@@ -51,6 +51,8 @@ def yt_api() -> Api:
     global _YT_API
     if not _YT_API:
         _YT_API = Api(api_key=read_api_key("GoogleServerKey"))
+    if not _YT_API:
+        logging.error("Unable to instantiate YouTube API client")
     return _YT_API
 
 
@@ -67,6 +69,8 @@ _YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v={0}"
 def find_youtube_videos(q: str, limit: int = 1) -> List[str]:
     """Find video URLs for a given a search string via the YouTube API."""
     vids = []
+    if not q:
+        return vids
     try:
         r = search_youtube(q, limit=limit)
         if r is None or r.items is None:
@@ -168,7 +172,7 @@ _NO_MUSIC_FOUND = "Engin tónlist fannst."
 
 def _play_music_by_artist(qs: str, q: Query, matches: Optional[Match[str]]) -> Any:
     """Play a song (any song) by a given artist"""
-    artist = matches.group(1)
+    artist = matches.group(1) if matches else ""
     q.set_key(artist)
 
     r = find_youtube_videos(artist)
@@ -180,9 +184,9 @@ def _play_music_by_artist(qs: str, q: Query, matches: Optional[Match[str]]) -> A
 
 def _play_song_by_artist(qs: str, q: Query, matches: Optional[Match[str]]) -> Any:
     """Play a particular, named song by a given artist"""
-    song = matches.group(1)
-    artist = matches.group(2)
-    searchstr = f"{song} {artist}"
+    song = matches.group(1) if matches else ""
+    artist = matches.group(2) if matches else ""
+    searchstr = f"{song} {artist}".strip()
     q.set_key(searchstr)
 
     r = find_youtube_videos(searchstr)
@@ -208,6 +212,8 @@ def _play_film(qs: str, q: Query, matches: Optional[Match[str]]) -> Any:
     urls = find_youtube_videos(choice(_FILMS), limit=1)
     if urls:
         url = urls[0]
+    else:
+        q.set_answer(*gen_answer("Ekki tókst að finna kvikmynd"))
     q.set_url(url)
 
 
@@ -374,7 +380,7 @@ def handle_plain_text(q: Query) -> bool:
 
     # OK, this is a query we've recognized and handled
     q.set_qtype(_PLAY_QTYPE)
-    # if not q.answer:
-    q.set_answer(*gen_answer(_AFFIRMATIVE))
+    if not q.answer:
+        q.set_answer(*gen_answer(_AFFIRMATIVE))
 
     return True
