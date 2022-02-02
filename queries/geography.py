@@ -99,8 +99,8 @@ QGeoCapitalQuery →
     | QGeoWhatIs "höfuðstaður" QGeoSubject_ef
 
 QGeoCountryQuery →
-    "í" "hvaða" "landi" "er" "borgin"? QGeoSubject_nf
-    | "í" "hvaða" "ríki" "er" "borgin"? QGeoSubject_nf
+    "í" "hvaða" "landi" "er" QGeoCityOrTown? QGeoSubject_nf
+    | "í" "hvaða" "ríki" "er" QGeoCityOrTown? QGeoSubject_nf
 
 QGeoContinentQuery →
     "í" "hvaða" "heimsálfu" "er" QGeoCountryOrCity? QGeoSubject_nf
@@ -111,9 +111,14 @@ QGeoLocationDescQuery →
     QGeoWhereIs QGeoCountryOrCity? QGeoSubject_nf
 
 QGeoCountryOrCity →
-    "landið" | "ríkið" | "borgin" | "bærinn" | "kaupstaðurinn"
+    "landið" | "ríkið" | QGeoCityOrTown
 
 $score(+100) QGeoCountryOrCity
+
+QGeoCityOrTown →
+    "borgin" | "bærinn" | "kaupstaðurinn"
+
+$score(+100) QGeoCityOrTown
 
 QGeoWhatIs →
     "hver" "er" | "hvað" "er" | "hvað" "heitir" | 0

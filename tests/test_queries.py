@@ -632,6 +632,9 @@ def test_geography(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "hvar er borgin tókýó"}, "Geography")
     assert "Japan" in json["answer"]
 
+    json = qmcall(client, {"q": "í hvaða landi er borgin osló"}, "Geography")
+    assert "Noregi" in json["answer"]
+
 
 def test_ja(client: FlaskClient) -> None:
     """Ja.is module"""
