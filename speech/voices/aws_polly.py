@@ -39,7 +39,7 @@ from . import generate_data_uri
 
 NAME = "Amazon Polly"
 VOICES = frozenset(("Karl", "Dora"))
-
+AUDIO_FORMATS = frozenset(("mp3", "pcm"))
 
 # The AWS Polly API access keys
 # You must obtain your own keys if you want to use this code

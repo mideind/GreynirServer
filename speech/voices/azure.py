@@ -3,7 +3,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    Icelandic-language text to speech via Tiro's text to speech API.
+    Icelandic-language text to speech via the MS Azure Speech API.
 
 """
 
@@ -31,22 +31,22 @@ from . import generate_data_uri, strip_markup, mimetype4audiofmt
 import requests
 
 
-NAME = "Tiro"
-VOICES = frozenset(("Alfur", "Dilja"))
+NAME = "Azure"
+VOICES = frozenset(("Gudrun", "Gunnar"))
 AUDIO_FORMATS = frozenset(("mp3", "pcm"))
 
 
 _TIRO_TTS_URL = "https://tts.tiro.is/v0/speech"
 
 
-def _tiro_synthesized_text_data(
+def _azure_synthesized_text_data(
     text: str,
     text_format: str,
     audio_format: str,
     voice_id: str,
     speed: float = 1.0,
 ) -> Optional[bytes]:
-    """Feeds text to Tiro's TTS API and returns audio data received from server."""
+    """Feeds text to Auzre Speech API and returns audio data received from server."""
 
     # No proper support for SSML yet in Tiro's API
     text = strip_markup(text)
@@ -73,14 +73,14 @@ def _tiro_synthesized_text_data(
         logging.error(f"Error communicating with Tiro API at {_TIRO_TTS_URL}: {e}")
 
 
-def _tiro_synthesized_text_url(
+def _azure_synthesized_text_url(
     text: str,
     text_format: str,
     audio_format: str,
     voice_id: str,
     speed: float = 1.0,
 ) -> Optional[str]:
-    """Returns Tiro (data) URL for speech-synthesised text."""
+    """Returns data URL for speech-synthesised text."""
 
     data = _tiro_synthesized_text_data(**locals())
     if not data:
@@ -102,7 +102,7 @@ def text_to_audio_data(
 ) -> Optional[bytes]:
     """Returns audio data for speech-synthesised text."""
     # Pass all arguments on to another function
-    return _tiro_synthesized_text_data(**locals())
+    return _azure_synthesized_text_data(**locals())
 
 
 def text_to_audio_url(
@@ -114,4 +114,4 @@ def text_to_audio_url(
 ) -> Optional[str]:
     """Returns URL to audio of speech-synthesised text."""
     # Pass all arguments on to another function
-    return _tiro_synthesized_text_url(**locals())
+    return _azure_synthesized_text_url(**locals())
