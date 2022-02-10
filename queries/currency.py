@@ -34,9 +34,9 @@ import random
 import logging
 
 from query import Query, QueryStateDict
-from queries import query_json_api, iceformat_float, sing_or_plur, gen_answer
+from queries import query_json_api, iceformat_float, gen_answer, is_plural
 from settings import Settings
-from tree import Result, Node, TerminalNode, NonterminalNode
+from tree import Result, Node, NonterminalNode
 from queries.num import float_to_text
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
@@ -517,17 +517,20 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             val = _query_exchange_rate(result.currencies[0], "ISK")
             if val is None:
                 val = 1.0
-            suffix = "krónur"
+            suffix = "krónur" if is_plural(val) else "króna"
         elif result.op == "convert":
             # 'Hvað eru 100 evrur margar krónur?'
             suffix = result.currency  # 'krónur'
-            verb = "eru"
+            verb = "eru" if is_plural(result.amount) else "er"
             target_currency = result.currencies[1]
             val = _query_exchange_rate(result.currencies[0], result.currencies[1])
             val = val * result.amount if val else None
-            if target_currency == "ISK" and val is not None:
-                # For ISK, round to whole numbers
-                val = round(val, 0)
+            if val:
+                if target_currency == "ISK":
+                    # For ISK, round to whole numbers
+                    val = round(val, 0)
+                else:
+                    val = round(val, 2)
         else:
             raise Exception("Unknown operator: {0}".format(result.op))
 
@@ -537,12 +540,15 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             voice_answer = "{0} {1} {2}{3}.".format(
                 result.desc,
                 verb,
+                # This needs to be fixed, we need to determine currency gender
                 float_to_text(val, case="þf", gender="kvk", comma_null=False),
                 (" " + suffix) if suffix else "",
             ).capitalize()
             voice_answer = _clean_voice_answer(voice_answer)
             q.set_answer(response, answer, voice_answer)
         else:
+            # FIXME: This error could occur under circumstances where something
+            # other than currency lookup failed. Refactor.
             # Ekki tókst að fletta upp gengi
             q.set_answer(*gen_answer("Ekki tókst að fletta upp gengi gjaldmiðla"))
 
