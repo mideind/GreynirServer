@@ -22,21 +22,56 @@
 
 """
 
-from typing import Optional
+from typing import Optional, Tuple
 
+import os
 import logging
+import json
 
 from . import generate_data_uri, strip_markup, mimetype4audiofmt
 
-import requests
+import azure.cognitiveservices.speech as speechsdk
 
 
 NAME = "Azure"
 VOICES = frozenset(("Gudrun", "Gunnar"))
-AUDIO_FORMATS = frozenset(("mp3", "pcm"))
+VOICE_TO_ID = {"Gudrun": "is-IS-GudrunNeural", "Gunnar": "is-IS-GunnarNeural"}
+AUDIO_FORMATS = frozenset(("mp3"))
 
 
-_TIRO_TTS_URL = "https://tts.tiro.is/v0/speech"
+# The Azure Speech API access key
+# You must obtain your own key if you want to use this code
+# JSON format is the following:
+# {
+#     "key": ""my_key,
+#     "region": "my_region",
+# }
+#
+_AZURE_KEYFILE_NAME = "AzureSpeechServerKey.json"
+_AZURE_API_KEY_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "..", "resources", _AZURE_KEYFILE_NAME
+)
+_AZURE_API_KEY: str = ""
+_AZURE_API_REGION: str = ""
+
+
+def _azure_api_key() -> Tuple:
+    """Lazy-load API key and region from JSON and return as tuple."""
+    global _AZURE_API_KEY
+    global _AZURE_API_REGION
+
+    if _AZURE_API_KEY and _AZURE_API_REGION:
+        return (_AZURE_API_KEY, _AZURE_API_REGION)
+
+    try:
+        with open(_AZURE_API_KEY_PATH) as json_file:
+            js = json.load(json_file)
+            _AZURE_API_KEY = js["key"]
+            _AZURE_API_REGION = js["region"]
+    except FileNotFoundError:
+        logging.warning("Unable to read Azure Speech API credentials")
+
+    return (_AZURE_API_KEY, _AZURE_API_REGION)
 
 
 def _azure_synthesized_text_data(
@@ -46,31 +81,32 @@ def _azure_synthesized_text_data(
     voice_id: str,
     speed: float = 1.0,
 ) -> Optional[bytes]:
-    """Feeds text to Auzre Speech API and returns audio data received from server."""
+    """Feeds text to Azure Speech API and returns audio data received from server."""
 
-    # No proper support for SSML yet in Tiro's API
+    # Text only for now, although Azure supports SSML
     text = strip_markup(text)
     text_format = "text"
 
-    jdict = {
-        "Engine": "standard",
-        "LanguageCode": "is-IS",
-        "OutputFormat": audio_format,
-        # "SampleRate": "22050",
-        "Text": text,
-        "TextType": "text",
-        "VoiceId": voice_id,
-    }
-
     try:
-        r = requests.post(_TIRO_TTS_URL, json=jdict)
-        if r.status_code != 200:
-            raise Exception(
-                f"Received HTTP status code {r.status_code} from {NAME} server"
-            )
-        return r.content
+        # Configure speech synthesis
+        (key, region) = _azure_api_key()
+        speech_config = speechsdk.SpeechConfig(subscription=key, region=region)
+        speech_config.speech_synthesis_voice_name = VOICE_TO_ID[voice_id]
+        # We only support MP3 for now, although the API supports other formats
+        fmt = speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
+        speech_config.set_speech_synthesis_output_format(fmt)
+
+        # Init synthesizer and feed it with text
+        synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config)
+        result = synthesizer.speak_text(text)
+
+        # Read audio from stream into buffer and return it
+        stream = speechsdk.AudioDataStream(result)
+        audio_buffer = bytes(500000)  # 500 KB buffer
+        stream.read_data(audio_buffer)
+        return audio_buffer
     except Exception as e:
-        logging.error(f"Error communicating with Tiro API at {_TIRO_TTS_URL}: {e}")
+        logging.error(f"Error communicating with Azure Speech API: {e}")
 
 
 def _azure_synthesized_text_url(
@@ -82,7 +118,7 @@ def _azure_synthesized_text_url(
 ) -> Optional[str]:
     """Returns data URL for speech-synthesised text."""
 
-    data = _tiro_synthesized_text_data(**locals())
+    data = _azure_synthesized_text_data(**locals())
     if not data:
         return None
 
