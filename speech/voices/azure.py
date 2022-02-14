@@ -100,11 +100,16 @@ def _azure_synthesized_text_data(
         synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config)
         result = synthesizer.speak_text(text)
 
-        # Read audio from stream into buffer and return it
+        # Read audio from stream into buffer, append to bytearray containing total audio data
         stream = speechsdk.AudioDataStream(result)
-        audio_buffer = bytes(500000)  # 500 KB buffer
-        stream.read_data(audio_buffer)
-        return audio_buffer
+        audio_data = bytearray()
+        audio_buffer = bytes(32000)  # 32 KB buffer
+        filled_size = stream.read_data(audio_buffer)
+        while filled_size > 0:
+            audio_data += audio_buffer[:filled_size]
+            filled_size = stream.read_data(audio_buffer)
+
+        return audio_data
     except Exception as e:
         logging.error(f"Error communicating with Azure Speech API: {e}")
 
