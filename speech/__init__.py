@@ -112,6 +112,9 @@ def text_to_audio_data(
     speed: float = 1.0,
 ) -> bytes:
     """Returns audio data for speech-synthesised text."""
+    # Fall back to default voice if voice_id param invalid
+    if voice_id not in SUPPORTED_VOICES:
+        voice_id = DEFAULT_VOICE
     # Create a copy of all function arguments
     args = locals().copy()
     # Find the module that provides this voice
@@ -131,6 +134,9 @@ def text_to_audio_url(
     speed: float = 1.0,
 ) -> str:
     """Returns URL to audio of speech-synthesised text."""
+    # Fall back to default voice if voice_id param invalid
+    if voice_id not in SUPPORTED_VOICES:
+        voice_id = DEFAULT_VOICE
     # Create a copy of all function arguments
     args = locals().copy()
     # Find the module that provides this voice
