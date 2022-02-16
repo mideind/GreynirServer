@@ -39,13 +39,13 @@ from . import generate_data_uri
 
 NAME = "Amazon Polly"
 VOICES = frozenset(("Karl", "Dora"))
-
+AUDIO_FORMATS = frozenset(("mp3", "pcm"))
 
 # The AWS Polly API access keys
 # You must obtain your own keys if you want to use this code
 # JSON format is the following:
 # {
-#     "aws_access_key_id": ""my_key,
+#     "aws_access_key_id": "my_key",
 #     "aws_secret_access_key": "my_secret",
 #     "region_name": "my_region"
 # }
@@ -71,7 +71,7 @@ def _initialize_aws_client() -> Optional[boto3.Session]:
                 with open(_AWS_API_KEYS_PATH) as json_file:
                     aws_config = json.load(json_file)
             except FileNotFoundError:
-                logging.warning("Unable to read AWS Polly keys")
+                logging.warning("Unable to read AWS Polly credentials")
                 return None
             _api_client = boto3.Session(**aws_config).client("polly")
         # Return client instance

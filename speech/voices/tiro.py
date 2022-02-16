@@ -33,6 +33,7 @@ import requests
 
 NAME = "Tiro"
 VOICES = frozenset(("Alfur", "Dilja"))
+AUDIO_FORMATS = frozenset(("mp3", "pcm"))
 
 
 _TIRO_TTS_URL = "https://tts.tiro.is/v0/speech"

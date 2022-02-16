@@ -78,10 +78,7 @@ from tree import Tree, TreeStateDict, Node
 # from nertokenizer import recognize_entities
 from images import get_image_url
 from processor import modules_in_dir
-
-
-# Latitude, longitude
-LocationType = Tuple[float, float]
+from geo import LatLonTuple
 
 # Query response
 ResponseDict = Dict[str, Any]
@@ -334,7 +331,7 @@ class Query:
         query: str,
         voice: bool,
         auto_uppercase: bool,
-        location: Optional[LocationType],
+        location: Optional[LatLonTuple],
         client_id: Optional[str],
         client_type: Optional[str],
         client_version: Optional[str],
@@ -773,7 +770,7 @@ class Query:
         self._source = s
 
     @property
-    def location(self) -> Optional[LocationType]:
+    def location(self) -> Optional[LatLonTuple]:
         """The client location, if known, as a (lat, lon) tuple"""
         return self._location
 
@@ -1138,7 +1135,7 @@ def process_query(
     voice: bool,
     *,
     auto_uppercase: bool = False,
-    location: Optional[LocationType] = None,
+    location: Optional[LatLonTuple] = None,
     remote_addr: Optional[str] = None,
     client_id: Optional[str] = None,
     client_type: Optional[str] = None,

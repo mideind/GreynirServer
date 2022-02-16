@@ -25,3 +25,4 @@ rjsmin>=1.1.0
 odfpy>=1.4.1
 pdfminer.six>=20201018
 python-youtube>=0.8.1
+azure-cognitiveservices-speech>=1.19.0

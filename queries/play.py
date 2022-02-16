@@ -365,18 +365,17 @@ def handle_plain_text(q: Query) -> bool:
     handler_fn = HARDCODED_Q2H.get(ql)
     if handler_fn:
         handler_fn(ql, q, None)
-        return True
+    else:
+        # Check if query matches regexes supported by this module
+        matches = None
+        for rx, fn in REGEX_Q2H.items():
+            matches = re.search(rx, ql)
+            if matches:
+                fn(ql, q, matches)
+                break
 
-    # Check if query matches regexes supported by this module
-    matches = None
-    for rx, fn in REGEX_Q2H.items():
-        matches = re.search(rx, ql)
-        if matches:
-            fn(ql, q, matches)
-            break
-
-    if not matches:
-        return False
+        if not matches:
+            return False
 
     # OK, this is a query we've recognized and handled
     q.set_qtype(_PLAY_QTYPE)
