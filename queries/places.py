@@ -36,8 +36,9 @@ import random
 from datetime import datetime
 
 from reynir import NounPhrase
+from iceaddr import nearest_addr, nearest_placenames
 
-from geo import in_iceland, iceprep_for_street
+from geo import in_iceland, iceprep_for_street, LatLonTuple
 from query import Query, QueryStateDict
 from queries import (
     gen_answer,
@@ -48,7 +49,7 @@ from queries import (
 from queries.num import numbers_to_text
 from tree import Result, Node
 
-from . import LatLonTuple, AnswerTuple
+from . import AnswerTuple
 
 
 _PLACES_QTYPE = "Places"
@@ -88,6 +89,7 @@ QPlaces →
 
 QPlacesQuery →
     QPlacesOpeningHoursNow | QPlacesIsOpen | QPlacesIsClosed | QPlacesAddress
+    | QPlacesClosestAddress | QPlacesClosestPlacename
 
 QPlacesOpeningHoursNow →
     QPlacesOpeningHours QPlToday?
@@ -138,6 +140,21 @@ QPlacesAddress →
     | QPlacesPreposition "hvaða" "götu" "er" QPlacesSubject_nf
     | QPlacesPreposition "hvaða" "stræti" "er" QPlacesSubject_nf
 
+QPlacesClosestAddress →
+    "hvað" "er" "næsta" "heimilisfang" QPlacesCloseBy?
+    | "hvað" "er" "næsta" "heimilisfangið" QPlacesCloseBy?
+    | "hvert" "er" "næsta" "heimilisfang" QPlacesCloseBy?
+    | "hvert" "er" "næsta" "heimilisfangið" QPlacesCloseBy?
+
+$score(+500) QPlacesClosestAddress
+
+QPlacesClosestPlacename →
+    "næsta" "örnefni"
+    | "hvað" "er" "næsta" "örnefni" QPlacesCloseBy?
+    | "hvað" "er" "næsta" "örnefnið" QPlacesCloseBy?
+    | "hvert" "er" "næsta" "örnefni" QPlacesCloseBy?
+    | "hvert" "er" "næsta" "örnefnið" QPlacesCloseBy?
+
 QPlacesPrepAndSubject →
     QPlacesPrepWithÞgf QPlacesSubject_þgf
     | QPlacesPrepWithÞf QPlacesSubject_þf
@@ -167,6 +184,9 @@ QPlNow →
 
 QPlToday →
     "núna"? "í" "dag" | "núna"? "í_kvöld" # | "núna"? 'í_dag'
+
+QPlacesCloseBy →
+    "í" "grenndinni" | "nálægt" "mér"? | "nálægt" "okkur"
 
 $score(+35) QPlacesQuery
 
@@ -201,6 +221,14 @@ def QPlacesAddress(node: Node, params: QueryStateDict, result: Result) -> None:
     result["qkey"] = "PlaceAddress"
 
 
+def QPlacesClosestAddress(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "ClosestAddress"
+
+
+def QPlacesClosestPlacename(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "ClosestPlacename"
+
+
 def QPlacesSubject(node: Node, params: QueryStateDict, result: Result) -> None:
     result["subject_nom"] = _fix_placename(result._nominative)
 
@@ -232,7 +260,7 @@ def _top_candidate(cand: List) -> Optional[Dict]:
     return None
 
 
-def answ_address(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
+def answ_address(placename: str, loc: Optional[LatLonTuple], qtype: str) -> AnswerTuple:
     """Generate answer to a question concerning the address of a place."""
     # Look up placename in places API
     res = query_places_api(
@@ -274,7 +302,9 @@ def answ_address(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
     return response, answer, voice
 
 
-def answ_openhours(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
+def answ_openhours(
+    placename: str, loc: Optional[LatLonTuple], qtype: str
+) -> AnswerTuple:
     """Generate answer to a question concerning the opening hours of a place."""
     # Look up placename in places API
     res = query_places_api(
@@ -375,11 +405,36 @@ def answ_openhours(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
     return response, answer, voice
 
 
+def _answ_closest_address(
+    placename: str, loc: Optional[LatLonTuple], qtype: str
+) -> AnswerTuple:
+    if not loc:
+        return gen_answer("Ég veit ekki hvar þú ert.")
+    addrs = nearest_addr(loc[0], loc[1])
+    print("BLABLABLA")
+    print(addrs)
+    answ = "Jamm"
+    voice = answ
+    response = dict(answer=answ)
+    return response, answ, voice
+
+
+def _answ_closest_placename(
+    placename: str, loc: Optional[LatLonTuple], qtype: str
+) -> AnswerTuple:
+    answ = "Jamm"
+    voice = answ
+    response = dict(answer=answ)
+    return response, answ, voice
+
+
 _HANDLER_MAP = {
     "OpeningHours": answ_openhours,
     "IsOpen": answ_openhours,
     "IsClosed": answ_openhours,
     "PlaceAddress": answ_address,
+    "ClosestAddress": _answ_closest_address,
+    "ClosestPlacename": _answ_closest_placename,
 }
 
 
