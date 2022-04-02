@@ -5,7 +5,7 @@
 
     Parser test module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -46,24 +46,29 @@ psycopg2ext.register_type(psycopg2ext.UNICODEARRAY)
 
 class Test_DB:
 
-    """ Encapsulates a database of test sentences and results """
+    """Encapsulates a database of test sentences and results"""
 
-    MAXINT = 2 ** 31 - 1 # Maximum for PostgreSQL integer type
+    MAXINT = 2**31 - 1  # Maximum for PostgreSQL integer type
 
     def __init__(self):
-        """ Initialize DB connection instance """
-        self._conn = None # Connection
-        self._c = None # Cursor
+        """Initialize DB connection instance"""
+        self._conn = None  # Connection
+        self._c = None  # Cursor
 
     @classmethod
     def open_db(cls):
-        """ Return an open instance of the database on the default host """
+        """Return an open instance of the database on the default host"""
         return cls().open(Settings.DB_HOSTNAME)
 
     def open(self, host):
-        """ Open and initialize a database connection """
-        self._conn = psycopg2.connect(dbname="test", user="reynir", password="reynir",
-            host=host, client_encoding="utf8")
+        """Open and initialize a database connection"""
+        self._conn = psycopg2.connect(
+            dbname="test",
+            user="reynir",
+            password="reynir",
+            host=host,
+            client_encoding="utf8",
+        )
         if not self._conn:
             raise Exception("Unable to open connection to database at host " + host)
         # Ask for automatic commit after all operations
@@ -73,51 +78,64 @@ class Test_DB:
         return None if self._c is None else self
 
     def close(self):
-        """ Close the DB connection and the associated cursor """
+        """Close the DB connection and the associated cursor"""
         self._c.close()
         self._conn.close()
         self._c = self._conn = None
 
     def create_sentence_table(self):
-        """ Create a fresh test sentence table if it doesn't already exist """
+        """Create a fresh test sentence table if it doesn't already exist"""
         assert self._c is not None
-        self._c.execute("CREATE TABLE sentences (id serial PRIMARY KEY, sentence varchar, numtrees int, best int, target int);")
+        self._c.execute(
+            "CREATE TABLE sentences (id serial PRIMARY KEY, sentence varchar, numtrees int, best int, target int);"
+        )
         return True
 
-    def add_sentence(self, sentence, numtrees = 0, best = -1, target = 1):
-        """ Add a sentence to the test sentence table """
+    def add_sentence(self, sentence, numtrees=0, best=-1, target=1):
+        """Add a sentence to the test sentence table"""
         assert self._c is not None
-        self._c.execute("INSERT INTO sentences (sentence, numtrees, best, target) VALUES (%s, %s, %s, %s);",
-            [ sentence, min(numtrees, self.MAXINT), min(best, self.MAXINT), target ])
+        self._c.execute(
+            "INSERT INTO sentences (sentence, numtrees, best, target) VALUES (%s, %s, %s, %s);",
+            [sentence, min(numtrees, self.MAXINT), min(best, self.MAXINT), target],
+        )
         return True
 
-    def update_sentence(self, identity, sentence, numtrees = 0, best = -1, target = 1):
-        """ Update a sentence and its statistics in the table """
+    def update_sentence(self, identity, sentence, numtrees=0, best=-1, target=1):
+        """Update a sentence and its statistics in the table"""
         assert self._c is not None
-        self._c.execute("UPDATE sentences SET (sentence, numtrees, best, target) = (%s, %s, %s, %s) WHERE id = %s;",
-            [ sentence, min(numtrees, self.MAXINT), min(best, self.MAXINT), target, identity ])
+        self._c.execute(
+            "UPDATE sentences SET (sentence, numtrees, best, target) = (%s, %s, %s, %s) WHERE id = %s;",
+            [
+                sentence,
+                min(numtrees, self.MAXINT),
+                min(best, self.MAXINT),
+                target,
+                identity,
+            ],
+        )
         return True
 
     def delete_sentence(self, identity):
-        """ Delete a sentence from the table """
+        """Delete a sentence from the table"""
         assert self._c is not None
-        self._c.execute("DELETE FROM sentences WHERE id = %s;", [ identity ])
+        self._c.execute("DELETE FROM sentences WHERE id = %s;", [identity])
         return True
 
     def sentences(self):
-        """ Return a list of all test sentences in the database """
+        """Return a list of all test sentences in the database"""
         assert self._c is not None
-        m = [ ]
+        m = []
         try:
-            self._c.execute("SELECT id, sentence, numtrees, best, target FROM sentences ORDER BY id;")
+            self._c.execute(
+                "SELECT id, sentence, numtrees, best, target FROM sentences ORDER BY id;"
+            )
             t = self._c.fetchall()
-            m = [ dict(
-                    identity = r[0],
-                    sentence = r[1],
-                    numtrees = r[2],
-                    best = r[3],
-                    target = r[4])
-                for r in t]
+            m = [
+                dict(
+                    identity=r[0], sentence=r[1], numtrees=r[2], best=r[3], target=r[4]
+                )
+                for r in t
+            ]
         except psycopg2.DataError as e:
             # Fall through with empty m
             pass
@@ -135,32 +153,32 @@ def test1():
 
     # Hard-coded test case - grammar not read from file
 
-    E = NT ('E')
-    T = NT ('T')
-    P = NT ('P')
-    plus = TERM ('+')
-    mult = TERM ('*')
-    ident = TERM ('ident')
+    E = NT("E")
+    T = NT("T")
+    P = NT("P")
+    plus = TERM("+")
+    mult = TERM("*")
+    ident = TERM("ident")
 
     g = {
-        E: [Production(rhs=[E,plus,T]), Production(rhs=[T])],
-        T: [Production(rhs=[T,mult,P]), Production(rhs=[P])],
+        E: [Production(rhs=[E, plus, T]), Production(rhs=[T])],
+        T: [Production(rhs=[T, mult, P]), Production(rhs=[P])],
         P: [Production(rhs=[ident])],
     }
 
     p = Parser(g, E)
     s = [
-        Token('ident', 'a'),
-        Token('*', '*'),
-        Token('ident', 'b'),
-        Token('+', '+'),
-        Token('ident', 'c'),
-        Token('*', '*'),
-        Token('ident', 'd'),
-        Token('+', '+'),
-        Token('ident', 'e'),
-        Token('+', '+'),
-        Token('ident', 'f')
+        Token("ident", "a"),
+        Token("*", "*"),
+        Token("ident", "b"),
+        Token("+", "+"),
+        Token("ident", "c"),
+        Token("*", "*"),
+        Token("ident", "d"),
+        Token("+", "+"),
+        Token("ident", "e"),
+        Token("+", "+"),
+        Token("ident", "f"),
     ]
 
     forest = p.go(s)
@@ -171,7 +189,7 @@ def test1():
 
 
 def run_test(fast_p):
-    """ Run a test parse on all sentences in the test table """
+    """Run a test parse on all sentences in the test table"""
 
     with closing(Test_DB.open_db()) as db:
 
@@ -180,7 +198,7 @@ def run_test(fast_p):
         for s in slist:
 
             txt = s["sentence"]
-            target = s["target"] # The ideal number of parse trees (1 or 0)
+            target = s["target"]  # The ideal number of parse trees (1 or 0)
 
             tokens = tokenize(txt)
 
@@ -188,13 +206,13 @@ def run_test(fast_p):
             err = ""
 
             # Run the all-Python parser
-            #try:
+            # try:
             #    t0 = time.time()
             #    forest = p.go(tlist)
-            #except ParseError as e:
+            # except ParseError as e:
             #    err = "{0}".format(e)
             #    forest = None
-            #finally:
+            # finally:
             #    t1 = time.time()
 
             # ParseForestPrinter.print_forest(p.grammar, forest, detailed = True)
@@ -213,8 +231,12 @@ def run_test(fast_p):
             num2 = 0 if forest2 is None else Fast_Parser.num_combinations(forest2)
 
             if Settings.DEBUG:
-                #print("Python: Parsed in {0:.4f} seconds, {1} combinations".format(t1 - t0, num))
-                print("C++:    Parsed in {0:.4f} seconds, {1} combinations".format(tf1 - tf0, num2))
+                # print("Python: Parsed in {0:.4f} seconds, {1} combinations".format(t1 - t0, num))
+                print(
+                    "C++:    Parsed in {0:.4f} seconds, {1} combinations".format(
+                        tf1 - tf0, num2
+                    )
+                )
 
             best = s["best"]
             if best <= 0 or abs(target - num2) < abs(target - best):
@@ -225,17 +247,19 @@ def run_test(fast_p):
             db.update_sentence(s["identity"], s["sentence"], num2, best, target)
 
             yield dict(
-                identity = s["identity"],
-                sentence = txt,
-                numtrees = num2,
-                best = best,
-                target = target,
-                parse_time = tf1 - tf0,
-                err = "" if target == 0 else err, # Don't bother showing errors that are expected
-                forest = forest2
+                identity=s["identity"],
+                sentence=txt,
+                numtrees=num2,
+                best=best,
+                target=target,
+                parse_time=tf1 - tf0,
+                err=""
+                if target == 0
+                else err,  # Don't bother showing errors that are expected
+                forest=forest2,
             )
 
-            #break # !!! DEBUG: only do one loop
+            # break # !!! DEBUG: only do one loop
 
 
 def test3():
@@ -244,12 +268,15 @@ def test3():
 
     # p = BIN_Parser(verbose = False) # Don't emit diagnostic messages
 
-    with Fast_Parser(verbose = False) as fast_p:
+    with Fast_Parser(verbose=False) as fast_p:
 
         g = fast_p.grammar
 
-        print("Greynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
-            .format(g.num_nonterminals, g.num_terminals, g.num_productions))
+        print(
+            "Greynir.grammar has {0} nonterminals, {1} terminals, {2} productions".format(
+                g.num_nonterminals, g.num_terminals, g.num_productions
+            )
+        )
 
         # g.follow_set(g.root)
         # return
@@ -258,7 +285,7 @@ def test3():
         # print("\n" + str(g))
 
         def create_sentence_table():
-            """ Only used to create a test fresh sentence table if one doesn't exist """
+            """Only used to create a test fresh sentence table if one doesn't exist"""
             with closing(Test_DB.open_db()) as db:
 
                 try:
@@ -276,13 +303,13 @@ def test3():
                         "Stóru bláu könnunni mun hafa verið fleygt í ruslið",
                         "Már Guðmundsson segir margskonar misskilnings gæta hjá Hannesi Hólmsteini",
                         "Már Guðmundsson seðlabankastjóri Íslands segir þetta við Morgunblaðið í dag.",
-                        "Það er náttúrlega einungis í samfélögum sem eiga við býsna stór vandamál að stríða " + \
-                            "að ný stjórnmálaöfl geta snögglega sveiflast upp í þriðjungs fylgi.",
+                        "Það er náttúrlega einungis í samfélögum sem eiga við býsna stór vandamál að stríða "
+                        + "að ný stjórnmálaöfl geta snögglega sveiflast upp í þriðjungs fylgi.",
                         "Áætlaður kostnaður verkefnisins var tíu milljónir króna og áætluð verklok eru í byrjun september næstkomandi.",
                         "Pakkinn snerist um að ábyrgjast innlán og skuldabréfaútgáfu danskra fjármálafyrirtækja.",
                         "Kynningarfundurinn sem ég hélt í dag fjallaði um lausnina á þessum vanda.",
                         "Kynningarfundurinn sem haldinn var í dag fjallaði um lausnina á þessum vanda.",
-                        "Það sakamál sé til meðferðar við Héraðsdóm Suðurlands."
+                        "Það sakamál sé til meðferðar við Héraðsdóm Suðurlands.",
                     ]
 
                     for t in TEXTS:
@@ -297,8 +324,11 @@ def test3():
 
         for test in run_test(fast_p):
 
-            print("\n'{0}'\n{1} parse trees found in {2:.3f} seconds\n"
-                .format(test["sentence"], test["numtrees"], test["parse_time"]))
+            print(
+                "\n'{0}'\n{1} parse trees found in {2:.3f} seconds\n".format(
+                    test["sentence"], test["numtrees"], test["parse_time"]
+                )
+            )
 
             if test["numtrees"] > 0:
                 # ParseForestPrinter.print_forest(test["forest"])
@@ -328,9 +358,9 @@ if __name__ == "__main__":
     import cProfile as profile
     import pstats
 
-    filename = 'Reynir.profile'
+    filename = "Reynir.profile"
 
-    profile.run('test3()', filename)
+    profile.run("test3()", filename)
 
     stats = pstats.Stats(filename)
 
@@ -338,6 +368,6 @@ if __name__ == "__main__":
     stats.strip_dirs()
 
     # Sort the statistics by the total time spent in the function itself
-    stats.sort_stats('tottime')
+    stats.sort_stats("tottime")
 
-    stats.print_stats(100) # Print 100 most significant lines
+    stats.print_stats(100)  # Print 100 most significant lines

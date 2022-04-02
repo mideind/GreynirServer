@@ -4,7 +4,7 @@
 
     Places query response module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -223,7 +223,7 @@ def _parse_coords(place: Dict) -> Optional[LatLonTuple]:
 
 
 def _top_candidate(cand: List) -> Optional[Dict]:
-    """ Return first place in Iceland in Google Places Search API results. """
+    """Return first place in Iceland in Google Places Search API results."""
     for place in cand:
         coords = _parse_coords(place)
         if coords and in_iceland(coords):
@@ -232,7 +232,7 @@ def _top_candidate(cand: List) -> Optional[Dict]:
 
 
 def answ_address(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
-    """ Generate answer to a question concerning the address of a place. """
+    """Generate answer to a question concerning the address of a place."""
     # Look up placename in places API
     res = query_places_api(
         placename, userloc=loc, fields="formatted_address,name,geometry"
@@ -274,7 +274,7 @@ def answ_address(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
 
 
 def answ_openhours(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
-    """ Generate answer to a question concerning the opening hours of a place. """
+    """Generate answer to a question concerning the opening hours of a place."""
     # Look up placename in places API
     res = query_places_api(
         placename,
@@ -383,7 +383,7 @@ _HANDLER_MAP = {
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result and "subject_nom" in result:
         # Successfully matched a query type

@@ -3,7 +3,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ from settings import Settings, ConfigError
 from db import SessionContext
 from db.models import Query, QueryLog
 
+
 def main():
 
     try:
@@ -55,6 +56,7 @@ def main():
             if i % 1000 == 0:
                 session.commit()
         session.commit()
+
 
 if __name__ == "__main__":
     main()

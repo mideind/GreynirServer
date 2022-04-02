@@ -4,7 +4,7 @@
 
     High-level wrappers for checking grammar and spelling
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -35,16 +35,16 @@ import reynir_correct
 
 class RecognitionPipeline(reynir_correct.CorrectionPipeline):
 
-    """ Derived class that adds a named entity recognition pass
-        to the GreynirCorrect tokenization pipeline """
+    """Derived class that adds a named entity recognition pass
+    to the GreynirCorrect tokenization pipeline"""
 
     def __init__(self, text: StringIterable) -> None:
         super().__init__(text)
 
     def recognize_entities(self, stream: Iterator[Tok]) -> Iterator[Tok]:
-        """ Recognize named entities using the nertokenizer module,
-            but construct tokens using the Correct_TOK class from
-            reynir_correct """
+        """Recognize named entities using the nertokenizer module,
+        but construct tokens using the Correct_TOK class from
+        reynir_correct"""
         return nertokenizer.recognize_entities(
             stream, token_ctor=reynir_correct.Correct_TOK
         )
@@ -52,25 +52,25 @@ class RecognitionPipeline(reynir_correct.CorrectionPipeline):
 
 class NERCorrect(reynir_correct.GreynirCorrect):
 
-    """ Derived class to override the default tokenization of
-        GreynirCorrect to perform named entity recognition """
+    """Derived class to override the default tokenization of
+    GreynirCorrect to perform named entity recognition"""
 
     def __init__(self, **options: Any) -> None:
         super().__init__(**options)
 
     def tokenize(self, text: StringIterable) -> Iterator[Tok]:
-        """ Use the recognizing & correcting tokenizer instead
-            of the normal one """
+        """Use the recognizing & correcting tokenizer instead
+        of the normal one"""
         pipeline = RecognitionPipeline(text)
         return pipeline.tokenize()
 
 
 def check_grammar(text: str, *, progress_func: ProgressFunc = None):
-    """ Check the grammar and spelling of the given text and return
-        a list of annotated paragraphs, containing sentences, containing
-        tokens. The progress_func, if given, will be called periodically
-        during processing to indicate progress, with a ratio parameter
-        which is a float in the range 0.0..1.0. """
+    """Check the grammar and spelling of the given text and return
+    a list of annotated paragraphs, containing sentences, containing
+    tokens. The progress_func, if given, will be called periodically
+    during processing to indicate progress, with a ratio parameter
+    which is a float in the range 0.0..1.0."""
 
     result = reynir_correct.check_with_custom_parser(
         text,
@@ -80,8 +80,8 @@ def check_grammar(text: str, *, progress_func: ProgressFunc = None):
     )
 
     def encode_sentence(sent: reynir_correct.AnnotatedSentence):
-        """ Map a reynir._Sentence object to a raw sentence dictionary
-            expected by the web UI """
+        """Map a reynir._Sentence object to a raw sentence dictionary
+        expected by the web UI"""
         if sent.tree is None:
             # Not parsed: use the raw token list
             tokens = [dict(k=d.kind, x=d.txt) for d in sent.tokens]

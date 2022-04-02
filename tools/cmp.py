@@ -6,7 +6,7 @@
 
     POS tagging accuracy measurement tool
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
     Original author: Hulda Óladóttir
 
        This program is free software: you can redistribute it and/or modify
@@ -55,7 +55,7 @@ from contextlib import contextmanager
 basepath, _ = os.path.split(os.path.realpath(__file__))
 _UTILS = os.sep + "tools"
 if basepath.endswith(_UTILS):
-    basepath = basepath[0:-len(_UTILS)]
+    basepath = basepath[0 : -len(_UTILS)]
     sys.path.append(basepath)
 
 from reynir import Abbreviations
@@ -78,7 +78,7 @@ USE_LOCAL_TAGGER = False
 if TAGGER.lower() == "local":
     # Use in-process tagger
     USE_LOCAL_TAGGER = True
-    USE_IFD_TAGGER = False # !!! TODO: Currently can't use the IFD tagger locally
+    USE_IFD_TAGGER = False  # !!! TODO: Currently can't use the IFD tagger locally
 else:
     if TAGGER == "greynir.is":
         # Use the main Greynir server, explicitly over HTTPS
@@ -90,7 +90,7 @@ else:
         POS_PATH = "http://" + TAGGER + "/postag.api/v1"
 
 # The directory where the IFD corpus files are located
-IFD_DIR = "ifd" 
+IFD_DIR = "ifd"
 
 
 # GREINARMERKI = {"!", "(", ")", ",", "-", ".", "...", "/", ":", ";", "?", "[", "]", "«", "»"} # Öll greinarmerki sem koma fyrir í OTB
@@ -98,17 +98,19 @@ VINSTRI_GREINARMERKI = "([„«#$€<"
 MIÐJA_GREINARMERKI = '"*&+=@©|—'
 HÆGRI_GREINARMERKI = ".,:;)]!%?“»”’…°>–"
 EKKI_GREINARMERKI = "-/'~‘\\"
-GREINARMERKI = VINSTRI_GREINARMERKI + MIÐJA_GREINARMERKI + HÆGRI_GREINARMERKI + EKKI_GREINARMERKI
+GREINARMERKI = (
+    VINSTRI_GREINARMERKI + MIÐJA_GREINARMERKI + HÆGRI_GREINARMERKI + EKKI_GREINARMERKI
+)
 FLOKKAR = {
-    "PERCENT": "tp", 
-    "NUMBER": "to", 
-    "YEAR": "to", 
-    "ORDINAL": "to", 
+    "PERCENT": "tp",
+    "NUMBER": "to",
+    "YEAR": "to",
+    "ORDINAL": "to",
     "DATE": "to",
     "TIME": "to",
     "TIMESTAMP": "to",
-    "ENTITY": "e"
-    }
+    "ENTITY": "e",
+}
 BÍN_MAP = {
     "NFET": "en",
     "NFETgr": "eng",
@@ -177,14 +179,14 @@ BÍN_MAP = {
     "ÞT": "þ",
     "FH": "f",
     "VH": "v",
-    "OSKH": "v", # Óskháttur, varpast í vh.
+    "OSKH": "v",  # Óskháttur, varpast í vh.
     "SAGNB": "s",
     "SAGNB2": "s",
     "NH": "n",
     "BH": "b",
     "LH": "l",
     "LHÞT": "þ",
-    "ST": "e", # Stýfður boðháttur, sendi í eintölu
+    "ST": "e",  # Stýfður boðháttur, sendi í eintölu
     "ST2": "e",
     "GM": "g",
     "MM": "m",
@@ -193,7 +195,7 @@ BÍN_MAP = {
     "ÞGF": "þ",
     "EF": "e",
     "SB": "s",
-    "VB": "v"
+    "VB": "v",
 }
 GrToOTB = {
     "kvk": "v",
@@ -204,25 +206,95 @@ GrToOTB = {
     "þgf": "þ",
     "ef": "e",
     "et": "e",
-    "ft": "f"
+    "ft": "f",
 }
 OTB_einfaldað = {
-    "ct": "c", # Tilvísunartengingar flokkaðar með almennum tengingum
-    "ta": "to", # Eitt mark fyrir tölufasta
-    "aþm": "am", # Atviksorð í miðstigi sem stjórnar falli; höndlað sem forsetning
-    "aþe": "ae" # Atviksorð í efsta stigi sem stjórnar falli; höndlað sem forsetning
+    "ct": "c",  # Tilvísunartengingar flokkaðar með almennum tengingum
+    "ta": "to",  # Eitt mark fyrir tölufasta
+    "aþm": "am",  # Atviksorð í miðstigi sem stjórnar falli; höndlað sem forsetning
+    "aþe": "ae",  # Atviksorð í efsta stigi sem stjórnar falli; höndlað sem forsetning
 }
 # Listi af orðum sem geta bæði verið atviksorð og forsetningar. Í einföldun fá þau sama markið, "af".
 EO = {
-    "af", "austan", "að", "bakvið", "eftir", "fjarri", "fjær", "fjærst", "fram", "framar", "framhjá", "framúr", 
-    "fremur", "frá", "fyrir", "gagnvart", "gegn", "gegnum", "handan", "hjá", "inn", "innan", "inní", "jafnframt", 
-    "jafnhliða", "kringum", "lengi", "með", "meðal", "milli", "mót", "móti", "neðan", "niðrí", "niður", "norðan", 
-    "nálægt", "nær", "nærri", "næst", "ofan", "ofaná", "ofar", "samhliða", "samsíða", "samtímis", "snemma", "sunnan", 
-    "síðla", "til", "um", "undan", "undir", "upp", "uppá", "uppí", "uppúr", "utan", "vegna", "vestan", "við", 
-    "víðsfjarri", "yfir", "á", "án", "ásamt", "í", "óháð", "ólíkt", "úr", "út", "útaf", "útfrá", "útundan", "útá", "útí"
+    "af",
+    "austan",
+    "að",
+    "bakvið",
+    "eftir",
+    "fjarri",
+    "fjær",
+    "fjærst",
+    "fram",
+    "framar",
+    "framhjá",
+    "framúr",
+    "fremur",
+    "frá",
+    "fyrir",
+    "gagnvart",
+    "gegn",
+    "gegnum",
+    "handan",
+    "hjá",
+    "inn",
+    "innan",
+    "inní",
+    "jafnframt",
+    "jafnhliða",
+    "kringum",
+    "lengi",
+    "með",
+    "meðal",
+    "milli",
+    "mót",
+    "móti",
+    "neðan",
+    "niðrí",
+    "niður",
+    "norðan",
+    "nálægt",
+    "nær",
+    "nærri",
+    "næst",
+    "ofan",
+    "ofaná",
+    "ofar",
+    "samhliða",
+    "samsíða",
+    "samtímis",
+    "snemma",
+    "sunnan",
+    "síðla",
+    "til",
+    "um",
+    "undan",
+    "undir",
+    "upp",
+    "uppá",
+    "uppí",
+    "uppúr",
+    "utan",
+    "vegna",
+    "vestan",
+    "við",
+    "víðsfjarri",
+    "yfir",
+    "á",
+    "án",
+    "ásamt",
+    "í",
+    "óháð",
+    "ólíkt",
+    "úr",
+    "út",
+    "útaf",
+    "útfrá",
+    "útundan",
+    "útá",
+    "útí",
 }
 
-ÓRLEM = { # Óreglulegar lemmur úr IFD, allir möguleikar eru gefnir í gildinu.
+ÓRLEM = {  # Óreglulegar lemmur úr IFD, allir möguleikar eru gefnir í gildinu.
     "barsmíð(i)": ["barsmíð", "barsmíði"],
     "dollar(i)": ["dollar", "dollari"],
     "eigin(n)": ["eigin", "eiginn"],
@@ -254,67 +326,68 @@ EO = {
     "Vigursystkin(i)": ["Vigursystkin", "Vigursystkini"],
     "éta/eta": ["éta", "eta"],
     "óbrennishólmi/-ur": ["óbrennishólmi", "óbrennishólmur"],
-    "foreldri": ["foreldri", "foreldrar"]
+    "foreldri": ["foreldri", "foreldrar"],
 }
 
 # Skammstafanir í OTB sem hafa verið slitnar í sundur. Gildi er leiðrétt skammstöfun
-SKST_LEIÐRÉTTAR = { 
-    "a. m. k." : "a.m.k.", # að minnsta kosti
-    "e. t. v." : "e.t.v.", # ef til vill
-    "F. Í." : "F.Í.", # Ferðafélag Íslands
-    "f. Kr." : "f.Kr.", # fyrir Krist
-    "m. a." : "m.a.", # meðal annars
-    "millj. kr." : "millj.kr.", #milljónir króna
-    "o. fl." : "o.fl.", # og fleiri/fleira
-    "o. s. frv." : "o.s.frv.", # og svo framvegis
-    "o. þ. h." : "o.þ.h.", #og þess háttar
-    "o. þ. u. l." : "o.þ.u.l.", # og því um líkt
-    "s. s." : "s.s.", # svo sem
-    "t. a. m." : "t.a.m.", # til að mynda
-    "t. d." : "t.d.", # til dæmis
-    "u. þ. b." : "u.þ.b.", # um það bil
-    "m y. s." : "m y.s.", # metrar yfir sjávarmáli
-    "þ. e. a. s." : "þ.e.a.s.", # það er að segja
-    #þ.e. er sleppt hér, tekið sérstaklega fyrir síðar til að koma í veg fyrir rugling við "þ. e. a. s."
+SKST_LEIÐRÉTTAR = {
+    "a. m. k.": "a.m.k.",  # að minnsta kosti
+    "e. t. v.": "e.t.v.",  # ef til vill
+    "F. Í.": "F.Í.",  # Ferðafélag Íslands
+    "f. Kr.": "f.Kr.",  # fyrir Krist
+    "m. a.": "m.a.",  # meðal annars
+    "millj. kr.": "millj.kr.",  # milljónir króna
+    "o. fl.": "o.fl.",  # og fleiri/fleira
+    "o. s. frv.": "o.s.frv.",  # og svo framvegis
+    "o. þ. h.": "o.þ.h.",  # og þess háttar
+    "o. þ. u. l.": "o.þ.u.l.",  # og því um líkt
+    "s. s.": "s.s.",  # svo sem
+    "t. a. m.": "t.a.m.",  # til að mynda
+    "t. d.": "t.d.",  # til dæmis
+    "u. þ. b.": "u.þ.b.",  # um það bil
+    "m y. s.": "m y.s.",  # metrar yfir sjávarmáli
+    "þ. e. a. s.": "þ.e.a.s.",  # það er að segja
+    # þ.e. er sleppt hér, tekið sérstaklega fyrir síðar til að koma í veg fyrir rugling við "þ. e. a. s."
 }
 
 SKST_LENGD = {
-    "a.m.k." : 3,
-    "e.t.v." : 3,
-    "F.Í." : 2,
-    "f.Kr." : 2,
-    "m.a." : 2,
-    "millj.kr." : 2,
-    "o.fl." : 2,
-    "o.s.frv." : 3,
-    "o.þ.h." : 3,
-    "o.þ.u.l." : 4,
-    "s.s." : 2,
-    "t.a.m." : 3,
-    "t.d." : 2,
-    "u.þ.b." : 3,
-    "y.s." : 2,     # Engin þörf á að sleppa "m"
-    "þ.e." : 2,
-    "þ.e.a.s." : 4,
+    "a.m.k.": 3,
+    "e.t.v.": 3,
+    "F.Í.": 2,
+    "f.Kr.": 2,
+    "m.a.": 2,
+    "millj.kr.": 2,
+    "o.fl.": 2,
+    "o.s.frv.": 3,
+    "o.þ.h.": 3,
+    "o.þ.u.l.": 4,
+    "s.s.": 2,
+    "t.a.m.": 3,
+    "t.d.": 2,
+    "u.þ.b.": 3,
+    "y.s.": 2,  # Engin þörf á að sleppa "m"
+    "þ.e.": 2,
+    "þ.e.a.s.": 4,
 }
- 
+
+
 class Corpus(IFD_Corpus):
 
-    """ Override the IFD_Corpus class to enumerate the IFD files
-        with verbose output """
+    """Override the IFD_Corpus class to enumerate the IFD files
+    with verbose output"""
 
     def __init__(self):
-        super().__init__(ifd_dir = IFD_DIR)
+        super().__init__(ifd_dir=IFD_DIR)
 
     def starting_file(self, filename, count, num_files):
-        """ Output a progress header when starting to read from a file """
+        """Output a progress header when starting to read from a file"""
         print("Skjal {} af {}".format(count, num_files))
         print("*******************", filename, "**************************")
 
 
 class Tagger:
 
-    """ A utility class that wraps local POS tagging functionality. """
+    """A utility class that wraps local POS tagging functionality."""
 
     def __init__(self):
         self._parser = None
@@ -322,10 +395,16 @@ class Tagger:
         self._tagger = None
 
     def tag(self, text):
-        """ Parse and POS-tag the given text, returning a dict """
-        assert self._parser is not None, "Call Tagger.tag() inside 'with Tagger.session()'!"
-        assert self._session is not None, "Call Tagger.tag() inside 'with Tagger.session()'!"
-        pgs, stats, register = TreeUtility.raw_tag_text(self._parser, self._session, text)
+        """Parse and POS-tag the given text, returning a dict"""
+        assert (
+            self._parser is not None
+        ), "Call Tagger.tag() inside 'with Tagger.session()'!"
+        assert (
+            self._session is not None
+        ), "Call Tagger.tag() inside 'with Tagger.session()'!"
+        pgs, stats, register = TreeUtility.raw_tag_text(
+            self._parser, self._session, text
+        )
         # Amalgamate the result into a single list of sentences
         if pgs:
             # Only process the first paragraph, if there are many of them
@@ -347,19 +426,21 @@ class Tagger:
                     ifd_tagset = str(IFD_Tagset(t))
                     if ifd_tagset:
                         t["i"] = ifd_tagset
-        return dict(result = pgs, stats = stats, register = register)
+        return dict(result=pgs, stats=stats, register=register)
 
     @contextmanager
     def _create_session(self):
-        """ Wrapper to make sure we have a fresh database session and a parser object
-            to work with in a tagging session - and that they are properly cleaned up
-            after use """
+        """Wrapper to make sure we have a fresh database session and a parser object
+        to work with in a tagging session - and that they are properly cleaned up
+        after use"""
         if self._session is not None:
             # Already within a session: weird case, but allow it anyway
             assert self._parser is not None
             yield self
         else:
-            with SessionContext(commit = True, read_only = True) as session, Fast_Parser() as parser:
+            with SessionContext(
+                commit=True, read_only=True
+            ) as session, Fast_Parser() as parser:
                 self._session = session
                 self._parser = parser
                 try:
@@ -373,26 +454,34 @@ class Tagger:
     def session(cls):
         return cls()._create_session()
 
-class Comparison():
 
+class Comparison:
     def __init__(self):
-        self.ógreindar_setningar = 0 # Geymir fjölda setninga sem ekki tókst að greina
-        self.réttar_setningar = 0 # Setningar þar sem öll mörk og allar lemmur eru réttar
-        self.rangar_setningar = 0 # Setningar þar sem a.m.k. eitt rangt mark eða ein röng lemma fannst
-        self.orð_vantar = 0 # Geymir heildarfjölda orða í setningum sem ekki tókst að greina
-        self.rétt_orð = 0 # Bæði mark og lemma rétt
-        self.röng_orð = 0 # Annaðhvort mark eða lemma rangt eða bæði
-        self.LR = 0 # Réttar lemmur
-        self.LW = 0 # Rangar lemmur
-        self.MR = 0 # Rétt mörk
-        self.MP = 0 # Hlutrétt mörk (rangur orðflokkur en rétt annað)
-        self.MW = 0 # Röng mörk
-        self.GR = 0 # Rétt greinarmerki (kemur inn í útreikninga fyrir lemmur og mörk)
-        self.GW = 0 # Röng greinarmerki. Þau geta ekki verið hlutrétt
-        self.M_confmat = {} # Lykill er (x,y), x = mark frá Greyni, y = mark frá OTB. Gildi er tíðnin. TODO útfæra confusion matrix f. niðurstöður
+        self.ógreindar_setningar = 0  # Geymir fjölda setninga sem ekki tókst að greina
+        self.réttar_setningar = (
+            0  # Setningar þar sem öll mörk og allar lemmur eru réttar
+        )
+        self.rangar_setningar = (
+            0  # Setningar þar sem a.m.k. eitt rangt mark eða ein röng lemma fannst
+        )
+        self.orð_vantar = (
+            0  # Geymir heildarfjölda orða í setningum sem ekki tókst að greina
+        )
+        self.rétt_orð = 0  # Bæði mark og lemma rétt
+        self.röng_orð = 0  # Annaðhvort mark eða lemma rangt eða bæði
+        self.LR = 0  # Réttar lemmur
+        self.LW = 0  # Rangar lemmur
+        self.MR = 0  # Rétt mörk
+        self.MP = 0  # Hlutrétt mörk (rangur orðflokkur en rétt annað)
+        self.MW = 0  # Röng mörk
+        self.GR = 0  # Rétt greinarmerki (kemur inn í útreikninga fyrir lemmur og mörk)
+        self.GW = 0  # Röng greinarmerki. Þau geta ekki verið hlutrétt
+        self.M_confmat = (
+            {}
+        )  # Lykill er (x,y), x = mark frá Greyni, y = mark frá OTB. Gildi er tíðnin. TODO útfæra confusion matrix f. niðurstöður
         self.setnf = 0
-        self.stikk = None # Úttaksskrá
-        self.CANNOT_PARSE = 0 # Number of sentences postag.api can't parse and sends to ifdtag.api (if postag.api is selected)
+        self.stikk = None  # Úttaksskrá
+        self.CANNOT_PARSE = 0  # Number of sentences postag.api can't parse and sends to ifdtag.api (if postag.api is selected)
 
     def úrvinnsla_stikkprufa(self, tagger, sent):
         stikk = self.stikk
@@ -404,44 +493,58 @@ class Comparison():
             all_words, setning = self.json_lestur(orðalisti)
         else:
             all_words, setning = self.tag_lestur(tagger, orðalisti)
-        if not all_words: # Ekkert svar fékkst fyrir setningu
+        if not all_words:  # Ekkert svar fékkst fyrir setningu
             return
         # Tekst að greina setninguna?
         if self.error(all_words):
             return
-        i = 0 # Index fyrir orðalistann.
-        stikk.write(str(self.setnf)+". "+setning+"\n")
+        i = 0  # Index fyrir orðalistann.
+        stikk.write(str(self.setnf) + ". " + setning + "\n")
         stikk.flush()
-        for word in all_words: # Komin á dict frá Greyni með öllum flokkunum.
+        for word in all_words:  # Komin á dict frá Greyni með öllum flokkunum.
 
-            if i < len(orðalisti) and not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
+            if (
+                i < len(orðalisti) and not orðalisti[i]
+            ):  # Tómur hnútur fremst/aftast í setningu
                 i += 1
             if i >= len(orðalisti):
                 break
 
             skst = word["x"]
-            if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega # NÝTT
+            if (
+                word["x"] == "-" and orðalisti[i] != "-"
+            ):  # Ef bandstrikið er greint sérstaklega # NÝTT
                 stikk.write("Fann bandstrik, fer í næsta orð\n")
                 stikk.flush()
                 continue
-            elif not lemmur_OTB[i]: # Greinarmerki
+            elif not lemmur_OTB[i]:  # Greinarmerki
                 stikk.write("Fann greinarmerki: {}\n".format(mörk_OTB[i]))
                 stikk.flush()
                 rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
             elif orðalisti[i].endswith("-"):
                 print("Fann svona orð, greini samt: {}".format(orðalisti[i]))
-                rétt_setning = rétt_setning & self.skrif_stikkprufa(word, lemmur_OTB[i], mörk_OTB[i], i) # Bæði og mark og lemma rétt
+                rétt_setning = rétt_setning & self.skrif_stikkprufa(
+                    word, lemmur_OTB[i], mörk_OTB[i], i
+                )  # Bæði og mark og lemma rétt
                 i += 1
                 continue
-            elif skst in SKST_LENGD: # Leiðréttar skammstafanir, þurfa sérmeðhöndlun # NÝTT
+            elif (
+                skst in SKST_LENGD
+            ):  # Leiðréttar skammstafanir, þurfa sérmeðhöndlun # NÝTT
                 stikk.write("Fann endurhæfða skammstöfun: {}\n".format(skst))
                 stikk.flush()
                 if Abbreviations.has_meaning(skst):
                     stikk.write("\tFann skst í Abbreviations\n")
                     stikk.flush()
-                    rétt_setning = rétt_setning & self.margorða_stikkprufa(word, lemmur_OTB, mörk_OTB, i, Abbreviations.get_meaning(skst))
+                    rétt_setning = rétt_setning & self.margorða_stikkprufa(
+                        word, lemmur_OTB, mörk_OTB, i, Abbreviations.get_meaning(skst)
+                    )
                 else:
-                    stikk.write("\tFann ekki skst í Abbreviations ---{}---\n".format(SKST_ÚTSKRIFAÐAR[skst]))
+                    stikk.write(
+                        "\tFann ekki skst í Abbreviations ---{}---\n".format(
+                            SKST_ÚTSKRIFAÐAR[skst]
+                        )
+                    )
                     stikk.flush()
                 i += SKST_LENGD[skst]
                 if i >= (len(orðalisti) - 1):
@@ -451,16 +554,24 @@ class Comparison():
                 continue
             else:
                 orð = word["x"]
-                lengd = max(len(orð.split(" ")), len(orð.split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
-                if lengd > 1: # Fleiri en eitt orð í streng Greynis
+                lengd = max(
+                    len(orð.split(" ")), len(orð.split("-"))
+                )  # TODO breyta ef stuðningur við orð með bandstriki er útfærður.
+                if lengd > 1:  # Fleiri en eitt orð í streng Greynis
                     stikk.write("Fann margorða eind í Greyni: {}\n".format(word["x"]))
                     stikk.flush()
-                    if StaticPhrases.has_details(word["x"].lower()): # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
+                    if StaticPhrases.has_details(
+                        word["x"].lower()
+                    ):  # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
                         stikk.write("Fann í StaticPhrases\n")
                         stikk.flush()
-                        rétt_setning = rétt_setning & self.margorða_stikkprufa(word, lemmur_OTB, mörk_OTB, i, None)
+                        rétt_setning = rétt_setning & self.margorða_stikkprufa(
+                            word, lemmur_OTB, mörk_OTB, i, None
+                        )
                         i += lengd
-                        if i >= (len(orðalisti) - 1): #Getur gerst ef síðasta orð í streng
+                        if i >= (
+                            len(orðalisti) - 1
+                        ):  # Getur gerst ef síðasta orð í streng
                             stikk.write("Síðasta orð í streng, hætti\n")
                             stikk.flush()
                             break
@@ -468,24 +579,42 @@ class Comparison():
                     else:
                         stikk.write("Fann ekki í MARGORÐA\n")
                         stikk.flush()
-                    i = i + lengd -1 # Enda á síðasta orði í frasa
-                    if i >= (len(orðalisti) - 1): #Getur gerst ef síðasta orð í streng
+                    i = i + lengd - 1  # Enda á síðasta orði í frasa
+                    if i >= (len(orðalisti) - 1):  # Getur gerst ef síðasta orð í streng
                         stikk.write("Síðasta orð í streng, hætti\n")
                         stikk.flush()
                         break
-                elif not orðalisti[i].endswith(word["x"]): # orði skipt upp í Greyni en ekki OTB
-                    stikk.write("Orði skipt upp í Greyni ({}) en ekki OTB ({})\n".format(word["x"], orðalisti[i]))
+                elif not orðalisti[i].endswith(
+                    word["x"]
+                ):  # orði skipt upp í Greyni en ekki OTB
+                    stikk.write(
+                        "Orði skipt upp í Greyni ({}) en ekki OTB ({})\n".format(
+                            word["x"], orðalisti[i]
+                        )
+                    )
                     stikk.flush()
-                    continue #Hægir mikið á öllu, e-r betri leið?
-                if ("k" in word and (word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN")) \
-                    or ("t" in word and word["t"] == "no"):
+                    continue  # Hægir mikið á öllu, e-r betri leið?
+                if (
+                    "k" in word
+                    and (word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN")
+                ) or ("t" in word and word["t"] == "no"):
                     # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
                     i += 1
-                    print("Eitthvað skrýtið á ferðinni. {}  -  {}\n".format(word["k"], word["x"]))
-                    stikk.write("Eitthvað skrýtið á ferðinni. {}  -  {}\n".format(word["k"], word["x"]))
+                    print(
+                        "Eitthvað skrýtið á ferðinni. {}  -  {}\n".format(
+                            word["k"], word["x"]
+                        )
+                    )
+                    stikk.write(
+                        "Eitthvað skrýtið á ferðinni. {}  -  {}\n".format(
+                            word["k"], word["x"]
+                        )
+                    )
                     stikk.flush()
                     continue
-                rétt_setning = rétt_setning & self.skrif_stikkprufa(word, lemmur_OTB[i], mörk_OTB[i], i) # Bæði og mark og lemma rétt
+                rétt_setning = rétt_setning & self.skrif_stikkprufa(
+                    word, lemmur_OTB[i], mörk_OTB[i], i
+                )  # Bæði og mark og lemma rétt
             stikk.write("\t\tEyk við i og held áfram!\n")
             stikk.flush()
             i += 1
@@ -503,55 +632,83 @@ class Comparison():
             all_words, setning = self.json_lestur(orðalisti)
         else:
             all_words, setning = self.tag_lestur(tagger, orðalisti)
-        if not all_words: # Ekkert svar fékkst fyrir setningu
+        if not all_words:  # Ekkert svar fékkst fyrir setningu
             return
         # Tekst að greina setninguna?
         if self.error(all_words):
             return
-        i = 0 # Index fyrir orðalistann.
-        for word in all_words: # Komin á dict frá Greyni með öllum flokkunum.
-            if i < len(orðalisti) and not orðalisti[i]: # Tómur hnútur fremst/aftast í setningu
+        i = 0  # Index fyrir orðalistann.
+        for word in all_words:  # Komin á dict frá Greyni með öllum flokkunum.
+            if (
+                i < len(orðalisti) and not orðalisti[i]
+            ):  # Tómur hnútur fremst/aftast í setningu
                 i += 1
             if i >= len(orðalisti):
                 break
 
-            if word["x"] == "Eiríkur Tse" or word["x"] == "Vincent Peale": # Ljót sértilvik þar sem OTB og Greynir skipta í tóka á ólíkan máta.
+            if (
+                word["x"] == "Eiríkur Tse" or word["x"] == "Vincent Peale"
+            ):  # Ljót sértilvik þar sem OTB og Greynir skipta í tóka á ólíkan máta.
                 i += 1
                 continue
-            if word["x"] == "-" and orðalisti[i] != "-": # Ef bandstrikið er greint sérstaklega
+            if (
+                word["x"] == "-" and orðalisti[i] != "-"
+            ):  # Ef bandstrikið er greint sérstaklega
                 continue
             skst = word["x"]
-            if not lemmur_OTB[i]: # Greinarmerki
+            if not lemmur_OTB[i]:  # Greinarmerki
                 rétt_setning = rétt_setning & self.sbrGreinarmerki(mörk_OTB[i], word)
             elif orðalisti[i].endswith("-"):
                 print("Fann svona orð, greini samt: {}".format(orðalisti[i]))
-                rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i], i) # Bæði og mark og lemma rétt
+                rétt_setning = rétt_setning & self.skrif_allt(
+                    word, lemmur_OTB[i], mörk_OTB[i], i
+                )  # Bæði og mark og lemma rétt
                 i += 1
                 continue
-            elif skst in SKST_LENGD: # Leiðréttar skammstafanir, þurfa sérmeðhöndlun # NÝTT
+            elif (
+                skst in SKST_LENGD
+            ):  # Leiðréttar skammstafanir, þurfa sérmeðhöndlun # NÝTT
                 if Abbreviations.has_meaning(skst):
-                    rétt_setning = rétt_setning & self.margorða_allt(word, lemmur_OTB, mörk_OTB, i, Abbreviations.get_meaning(skst))
+                    rétt_setning = rétt_setning & self.margorða_allt(
+                        word, lemmur_OTB, mörk_OTB, i, Abbreviations.get_meaning(skst)
+                    )
                 i += SKST_LENGD[skst]
                 if i >= (len(orðalisti) - 1):
                     break
                 continue
             else:
-                lengd = max(len(word["x"].split(" ")), len(word["x"].split("-"))) #TODO breyta ef stuðningur við orð með bandstriki er útfærður.
-                if lengd > 1: # Fleiri en eitt orð í streng Greynis # TODO breyta þegar set dict með MWE inn
-                    if StaticPhrases.has_details(word["x"].lower()): # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
-                        rétt_setning = rétt_setning & self.margorða_allt(word, lemmur_OTB, mörk_OTB, i, None)
+                lengd = max(
+                    len(word["x"].split(" ")), len(word["x"].split("-"))
+                )  # TODO breyta ef stuðningur við orð með bandstriki er útfærður.
+                if (
+                    lengd > 1
+                ):  # Fleiri en eitt orð í streng Greynis # TODO breyta þegar set dict með MWE inn
+                    if StaticPhrases.has_details(
+                        word["x"].lower()
+                    ):  # Margorða frasi, fæ mörk úr orðabók, lemmur líka.
+                        rétt_setning = rétt_setning & self.margorða_allt(
+                            word, lemmur_OTB, mörk_OTB, i, None
+                        )
                         i += lengd
                         continue
-                    i = i + lengd - 1 # Enda á síðasta orði í frasa # TODO taka þetta út?
-                elif not orðalisti[i].endswith(word["x"]): # orði skipt upp í Greyni en ekki OTB
-                    continue #Hægir mikið á öllu, e-r betri leið?
-                if ("k" in word and (word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN")) \
-                    or ("t" in word and word["t"] == "no"):
-                    #print("Eitthvað skrýtið á ferðinni. {}\n\t{}\n".format(setning, word["x"]))
+                    i = (
+                        i + lengd - 1
+                    )  # Enda á síðasta orði í frasa # TODO taka þetta út?
+                elif not orðalisti[i].endswith(
+                    word["x"]
+                ):  # orði skipt upp í Greyni en ekki OTB
+                    continue  # Hægir mikið á öllu, e-r betri leið?
+                if (
+                    "k" in word
+                    and (word["k"] == "PUNCTUATION" or word["k"] == "UNKNOWN")
+                ) or ("t" in word and word["t"] == "no"):
+                    # print("Eitthvað skrýtið á ferðinni. {}\n\t{}\n".format(setning, word["x"]))
                     # Einstaka tilvik. PUNCTUATION hér er t.d. bandstrik sem OTB heldur í orðum en Greynir greinir sem stakt orð
                     i += 1
                     continue
-                rétt_setning = rétt_setning & self.skrif_allt(word, lemmur_OTB[i], mörk_OTB[i], i) # Bæði og mark og lemma rétt
+                rétt_setning = rétt_setning & self.skrif_allt(
+                    word, lemmur_OTB[i], mörk_OTB[i], i
+                )  # Bæði og mark og lemma rétt
             i += 1
         if rétt_setning:
             self.réttar_setningar += 1
@@ -570,14 +727,16 @@ class Comparison():
             lemmur_Gr = StaticPhrases.lemmas(wx)
         öll_orð = wx.replace("-", " ").split()
         allt = zip(öll_orð, lemmur_Gr, mörk_Gr)
-        rétt = True # Finnst eitthvað rangt í liðnum?
+        rétt = True  # Finnst eitthvað rangt í liðnum?
         for orð, lemma_Gr, mark_Gr in allt:
             lemma_bool = True
             mark_bool = True
             lemma_OTB = lemmur_OTB[i]
             mark_OTB = mörk_OTB[i]
-            stikk.write(orð+"\n")
-            stikk.write("\tLemma OTB: '{}'\tLemma Gr: '{}'\n".format(lemma_OTB, lemma_Gr))
+            stikk.write(orð + "\n")
+            stikk.write(
+                "\tLemma OTB: '{}'\tLemma Gr: '{}'\n".format(lemma_OTB, lemma_Gr)
+            )
             stikk.flush()
             if lemma_Gr == lemma_OTB:
                 self.LR += 1
@@ -592,11 +751,13 @@ class Comparison():
                 stikk.flush()
             stikk.write("\tMark OTB: '{}'\tMark GR: '{}'\n".format(mark_OTB, mark_Gr))
             stikk.flush()
-            if orð in EO and mark_Gr[0] == "a": # Getur verið bæði forsetning og atviksorð
-                if mark_OTB != "cn": #nafnháttarmerki
+            if (
+                orð in EO and mark_Gr[0] == "a"
+            ):  # Getur verið bæði forsetning og atviksorð
+                if mark_OTB != "cn":  # nafnháttarmerki
                     mark_OTB = "af"
                 mark_Gr = "af"
-            if mark_Gr and mark_OTB and mark_Gr[0] == mark_OTB[0]: # Sami orðflokkur
+            if mark_Gr and mark_OTB and mark_Gr[0] == mark_OTB[0]:  # Sami orðflokkur
                 if mark_Gr == mark_OTB:
                     self.MR += 1
                     stikk.write("\tRétt mark\n")
@@ -612,7 +773,7 @@ class Comparison():
                 stikk.write("\tRangt mark\n")
                 stikk.flush()
             i += 1
-            if lemma_bool and mark_bool: # Bæði mark og lemma rétt
+            if lemma_bool and mark_bool:  # Bæði mark og lemma rétt
                 self.rétt_orð += 1
             else:
                 self.röng_orð += 1
@@ -628,9 +789,9 @@ class Comparison():
             mörk_Gr = StaticPhrases.tags(wx)
             lemmur_Gr = StaticPhrases.lemmas(wx)
         öll_orð = wx.replace("-", " ").split()
-        #print(word["x"])
+        # print(word["x"])
         allt = zip(öll_orð, lemmur_Gr, mörk_Gr)
-        rétt = True # Finnst eitthvað rangt í liðnum?
+        rétt = True  # Finnst eitthvað rangt í liðnum?
         for orð, lemma_Gr, mark_Gr in allt:
             lemma_bool = True
             mark_bool = True
@@ -643,11 +804,13 @@ class Comparison():
                 self.LW += 1
                 lemma_bool = False
                 rétt = False
-            if orð in EO and mark_Gr[0] == "a": # Getur verið bæði forsetning og atviksorð
-                if mark_OTB != "cn": #nafnháttarmerki
+            if (
+                orð in EO and mark_Gr[0] == "a"
+            ):  # Getur verið bæði forsetning og atviksorð
+                if mark_OTB != "cn":  # nafnháttarmerki
                     mark_OTB = "af"
                 mark_Gr = "af"
-            if mark_Gr and mark_OTB and mark_Gr[0] == mark_OTB[0]: # Sami orðflokkur
+            if mark_Gr and mark_OTB and mark_Gr[0] == mark_OTB[0]:  # Sami orðflokkur
                 if mark_Gr == mark_OTB:
                     self.MR += 1
                 else:
@@ -657,24 +820,30 @@ class Comparison():
                 self.MW += 1
                 mark_bool = False
             i += 1
-            if lemma_bool and mark_bool: # Bæði mark og lemma rétt
+            if lemma_bool and mark_bool:  # Bæði mark og lemma rétt
                 self.rétt_orð += 1
             else:
                 self.röng_orð += 1
         return rétt
- 
+
     def skrif_stikkprufa(self, word, lemma_OTB, mark_OTB, i):
-        #Samanburður fer fram hér, safna tvenndum fyrir mörk í orðabók ásamt tíðni fyrir confusion matrix - TODO confmat
+        # Samanburður fer fram hér, safna tvenndum fyrir mörk í orðabók ásamt tíðni fyrir confusion matrix - TODO confmat
         # Safna í allar tölfræðibreyturnar
         stikk = self.stikk
         assert stikk is not None
-        stikk.write(word["x"]+"\n")
+        stikk.write(word["x"] + "\n")
         stikk.flush()
         if "s" in word:
-            stikk.write("\tLemma OTB: '{}'\tLemma Gr: '{}'\n".format(lemma_OTB, word["s"]))
+            stikk.write(
+                "\tLemma OTB: '{}'\tLemma Gr: '{}'\n".format(lemma_OTB, word["s"])
+            )
             stikk.flush()
         else:
-            stikk.write("\tLemma OTB: '{}'\tLemma Gr: '{}'\n".format(lemma_OTB, word["x"].lower()))
+            stikk.write(
+                "\tLemma OTB: '{}'\tLemma Gr: '{}'\n".format(
+                    lemma_OTB, word["x"].lower()
+                )
+            )
             stikk.flush()
         lemma_bool = self.sbrlemma(lemma_OTB, word)
         if lemma_bool:
@@ -683,7 +852,9 @@ class Comparison():
         else:
             stikk.write("\tRöng lemma\n")
             stikk.flush()
-        mark_skil, mark_Gr = self.sbrmark(mark_OTB, word, i) # 0 = Rangt, 1 = Rétt, 2 = Hlutrétt
+        mark_skil, mark_Gr = self.sbrmark(
+            mark_OTB, word, i
+        )  # 0 = Rangt, 1 = Rétt, 2 = Hlutrétt
         stikk.write("\tMark OTB: '{}'\tMark GR: '{}'\n".format(mark_OTB, mark_Gr))
         stikk.flush()
         if mark_skil == 0:
@@ -707,10 +878,12 @@ class Comparison():
             return False
 
     def skrif_allt(self, word, lemma_OTB, mark_OTB, i):
-        #Samanburður fer fram hér, safna tvenndum fyrir mörk í orðabók ásamt tíðni fyrir confusion matrix - TODO confmat
+        # Samanburður fer fram hér, safna tvenndum fyrir mörk í orðabók ásamt tíðni fyrir confusion matrix - TODO confmat
         # Safna í allar tölfræðibreyturnar
         lemma_bool = self.sbrlemma(lemma_OTB, word)
-        mark_skil, mark_Gr = self.sbrmark(mark_OTB, word, i) # 0 = Rangt, 1 = Rétt, 2 = Hlutrétt
+        mark_skil, mark_Gr = self.sbrmark(
+            mark_OTB, word, i
+        )  # 0 = Rangt, 1 = Rétt, 2 = Hlutrétt
         if lemma_bool and mark_skil > 0:
             self.rétt_orð += 1
             return True
@@ -721,164 +894,188 @@ class Comparison():
     def vörpun(self, word):
         # Skilar orðflokki og frekari greiningu.
         # k = tegund, x = upprunalegt orð, s = orðstofn, c = orðflokkur, b = beygingarform, t = lauf, v = gildi, f = flokkur í BÍN
-        greining = []   # Geymir vörpun á marki orðsins sem er sambærileg marki í OTB
+        greining = []  # Geymir vörpun á marki orðsins sem er sambærileg marki í OTB
         # Varpa í réttan orðflokk
-        if word["k"] in FLOKKAR: 
+        if word["k"] in FLOKKAR:
             return FLOKKAR[word["k"]]
         elif "CURRENCY" in word["k"]:
-            # greining = orðfl.+kyn+tala+fall+sérnafn  
-            uppl = word["t"].split("_") # [0]: orðfl, [1]: tala [2]: fall, [3]: kyn
-            greining.append("n") # orðflokkur
+            # greining = orðfl.+kyn+tala+fall+sérnafn
+            uppl = word["t"].split("_")  # [0]: orðfl, [1]: tala [2]: fall, [3]: kyn
+            greining.append("n")  # orðflokkur
             # TODO breyta í BÍN mörk! Hvað kemur þar fram?
             if "gr" in uppl:
-                uppl.remove("gr") #TODO get tekið út þegar samræmi mörkin. Sértilvik.
-            greining.append(GrToOTB[uppl[3]]) # kyn
-            greining.append(GrToOTB[uppl[1]]) # tala
-            greining.append(GrToOTB[uppl[2]]) # fall
-            greining.append("-e") # sérnafn
+                uppl.remove("gr")  # TODO get tekið út þegar samræmi mörkin. Sértilvik.
+            greining.append(GrToOTB[uppl[3]])  # kyn
+            greining.append(GrToOTB[uppl[1]])  # tala
+            greining.append(GrToOTB[uppl[2]])  # fall
+            greining.append("-e")  # sérnafn
             return "".join(greining)
         elif "PERSON" in word["k"]:
             # TODO hvað sýnir BÍN?
-            greining.append("n") # orðflokkur
-            uppl = word["t"].split("_") # [0]: person, [1]: fall, [2]: kyn
+            greining.append("n")  # orðflokkur
+            uppl = word["t"].split("_")  # [0]: person, [1]: fall, [2]: kyn
             if "g" in word:
                 kyn = word["g"]
             elif len(uppl) > 2:
                 kyn = uppl[2]
             else:
-                kyn = None # !!! Nota eitthvað kyn sem sjálfgefið?
+                kyn = None  # !!! Nota eitthvað kyn sem sjálfgefið?
             if kyn is not None:
                 greining.append(GrToOTB[kyn])
-            greining.append("e") # tala - G.r.f. eintölu
-            greining.append(GrToOTB[uppl[1]]) # fall
-            greining.append("-e") # G.r.f. engum greini
+            greining.append("e")  # tala - G.r.f. eintölu
+            greining.append(GrToOTB[uppl[1]])  # fall
+            greining.append("-e")  # G.r.f. engum greini
             return "".join(greining)
-        elif "t" in word and "sérnafn" in word["t"]: # Samræma sérnöfnin í Greyni
+        elif "t" in word and "sérnafn" in word["t"]:  # Samræma sérnöfnin í Greyni
             return "nxxn-e"
         if "c" in word:
-            tegund = word["c"] #Sýnir orðflokk, á eftir að varpa í rétt.
+            tegund = word["c"]  # Sýnir orðflokk, á eftir að varpa í rétt.
         else:
-            if "t" not in word: # Skrýtnar skammstafanir, TODO ætti að lagast þegar fleiri skammstöfunum hefur verið bætt við Main.conf
+            if (
+                "t" not in word
+            ):  # Skrýtnar skammstafanir, TODO ætti að lagast þegar fleiri skammstöfunum hefur verið bætt við Main.conf
                 return "x"
-            if word["t"].split("_")[0] == "no": # Ekkert BÍN-mark. Stafsetningarvillur og annað
-                #print("Hvað gerist hér??", word["t"], word["x"]) 
+            if (
+                word["t"].split("_")[0] == "no"
+            ):  # Ekkert BÍN-mark. Stafsetningarvillur og annað
+                # print("Hvað gerist hér??", word["t"], word["x"])
                 tegund = word["t"].split("_")[-1]
                 if "b" in word:
                     print("\tb:", word["b"])
-            else:   # Ætti ekki að koma fyrir
-                print("???", word["x"], word["k"], word["t"]) 
+            else:  # Ætti ekki að koma fyrir
+                print("???", word["x"], word["k"], word["t"])
                 if "b" in word:
                     print("b:", word["b"])
-        if tegund in { "kvk","kk","hk" }: # Nafnorð
-            greining.append("n") # orðflokkur
+        if tegund in {"kvk", "kk", "hk"}:  # Nafnorð
+            greining.append("n")  # orðflokkur
             # greining = orðfl.+kyn+tala+fall(+greinir)(+sérnafn)
-            greining.append(GrToOTB[tegund]) #kyn
-            if "b" not in word or word["b"] == "-": # Skammstöfun, einstakir stafir, ...? Fæ uppl. frá Greyni
-                uppl = word["t"].split("_") # [0]: orðfl, [1]: tala, [2]: fall, [3] kyn
+            greining.append(GrToOTB[tegund])  # kyn
+            if (
+                "b" not in word or word["b"] == "-"
+            ):  # Skammstöfun, einstakir stafir, ...? Fæ uppl. frá Greyni
+                uppl = word["t"].split("_")  # [0]: orðfl, [1]: tala, [2]: fall, [3] kyn
                 if len(uppl) < 3:
-                    return "x" # Aðrar skammstafanir
-                greining.append(GrToOTB[uppl[1]]) # tala
-                greining.append(GrToOTB[uppl[2]]) # fall
+                    return "x"  # Aðrar skammstafanir
+                greining.append(GrToOTB[uppl[1]])  # tala
+                greining.append(GrToOTB[uppl[2]])  # fall
                 return "".join(greining)
-            greining.append(BÍN_MAP[word["b"]])  #tala+fall
-            if ("f" in word and "örn" in word["f"] or "lönd" in word["f"] or "ism" in word["f"] or "föð" in word["f"] or "móð" in word["f"] or "göt" in word["f"]) or ("s" in word and word["s"][0].isupper()): # örnefni, lönd, mannanöfn, götuheiti, orð með stórum staf...
+            greining.append(BÍN_MAP[word["b"]])  # tala+fall
+            if (
+                "f" in word
+                and "örn" in word["f"]
+                or "lönd" in word["f"]
+                or "ism" in word["f"]
+                or "föð" in word["f"]
+                or "móð" in word["f"]
+                or "göt" in word["f"]
+            ) or (
+                "s" in word and word["s"][0].isupper()
+            ):  # örnefni, lönd, mannanöfn, götuheiti, orð með stórum staf...
                 if "b" in word and "gr" in word["b"]:
                     greining.append("e")
                 else:
                     greining.append("-e")
             greining = "".join(greining)
-        elif tegund == "lo": # Lýsingarorð
+        elif tegund == "lo":  # Lýsingarorð
             greining.append("l")
-            #greining = orðfl+kyn+tala+fall+beyging+stig
-            formdeildir = word["b"].split("-") # [0]: stig+beyging, [1]: kyn, [2]: fall+tala
-            if len(formdeildir) == 2: #Raðtala; [0]: kyn, [1]: fall+tala
+            # greining = orðfl+kyn+tala+fall+beyging+stig
+            formdeildir = word["b"].split(
+                "-"
+            )  # [0]: stig+beyging, [1]: kyn, [2]: fall+tala
+            if len(formdeildir) == 2:  # Raðtala; [0]: kyn, [1]: fall+tala
                 greining.extend(self.kyntalafall(formdeildir))
                 greining.append("vf")
                 return "".join(greining)
-            greining.append(BÍN_MAP[formdeildir[1]]) # kyn
-            greining.append(BÍN_MAP[formdeildir[2].strip()]) # meiru, fleiru, fleirum
-            greining.append(BÍN_MAP[formdeildir[0]]) # stig + beyging
+            greining.append(BÍN_MAP[formdeildir[1]])  # kyn
+            greining.append(BÍN_MAP[formdeildir[2].strip()])  # meiru, fleiru, fleirum
+            greining.append(BÍN_MAP[formdeildir[0]])  # stig + beyging
             greining = "".join(greining)
-        elif tegund == "fn": # Fornöfn
+        elif tegund == "fn":  # Fornöfn
             # ábfn., óákv.ábfn., efn., óákv.fn., spfn.
             # greining = orðfl+undirflokkur+kyn+tala+fall
             greining.append(self.undirflokkun(word))
-            formdeildir = word["b"].replace("fn_", "").replace("-", "_").split("_") # [0]: kyn, [1]: fall+tala
+            formdeildir = (
+                word["b"].replace("fn_", "").replace("-", "_").split("_")
+            )  # [0]: kyn, [1]: fall+tala
             greining.extend(self.kyntalafall(formdeildir))
             greining = "".join(greining)
-        elif tegund == "pfn": #persónufornöfn
+        elif tegund == "pfn":  # persónufornöfn
             # greining = orðfl+undirfl+kyn/persóna+tala+fall
-            greining.append(self.pk(word)) # orðfl.+ndirfkyn/persóna
-            greining.append(BÍN_MAP[word["b"]]) # tala+fall
+            greining.append(self.pk(word))  # orðfl.+ndirfkyn/persóna
+            greining.append(BÍN_MAP[word["b"]])  # tala+fall
             greining = "".join(greining)
-        elif tegund == "abfn": # Afturbeygð fornöfn
-            greining.append("fpxe") # OTB greinir sem pfn. með kyni. Ég hef ekki.
-            greining.append(BÍN_MAP[word["b"]]) # fall
+        elif tegund == "abfn":  # Afturbeygð fornöfn
+            greining.append("fpxe")  # OTB greinir sem pfn. með kyni. Ég hef ekki.
+            greining.append(BÍN_MAP[word["b"]])  # fall
             greining = "".join(greining)
-        elif tegund == "gr": # Greinir
-            #greining = orðfl+kyn+tala+fall
+        elif tegund == "gr":  # Greinir
+            # greining = orðfl+kyn+tala+fall
             # TODO skoða reglur
             greining.append("g")
-            formdeildir = word["b"].split("_") # [0]]: kyn, [1]: fall+tala
+            formdeildir = word["b"].split("_")  # [0]]: kyn, [1]: fall+tala
             greining.extend(self.kyntalafall(formdeildir))
             greining = "".join(greining)
-        elif tegund == "to": # Önnur töluorð
+        elif tegund == "to":  # Önnur töluorð
             greining.append("tf")
             # greining = orðfl+kyn+tala+fall
-            formdeildir = word["b"].split("_") # [0]]: kyn, [1]: fall+tala
+            formdeildir = word["b"].split("_")  # [0]]: kyn, [1]: fall+tala
             greining.extend(self.kyntalafall(formdeildir))
             greining = "".join(greining)
-        elif tegund == "so": # Sagnorð
-            greining.append("s") # orðflokkur
-            formdeildir = word["b"].split("-") 
-            if formdeildir[0] == "LHÞT": #lh.þt.
+        elif tegund == "so":  # Sagnorð
+            greining.append("s")  # orðflokkur
+            formdeildir = word["b"].split("-")
+            if formdeildir[0] == "LHÞT":  # lh.þt.
                 # greining = orðfl+háttur+mynd+kyn+tala+fall
                 # lh.þt.: [0]: háttur+tíð, [1]: beyging, [2]: kyn, [3]: fall+tala
-                greining.append("þg") # háttur og mynd, TODO fæ hvergi fram frá Greyni. Germynd er default.
-                greining.append(BÍN_MAP[formdeildir[2]]) # kyn
-                greining.append(BÍN_MAP[formdeildir[3]]) # tala+fall
+                greining.append(
+                    "þg"
+                )  # háttur og mynd, TODO fæ hvergi fram frá Greyni. Germynd er default.
+                greining.append(BÍN_MAP[formdeildir[2]])  # kyn
+                greining.append(BÍN_MAP[formdeildir[3]])  # tala+fall
                 greining = "".join(greining)
-            elif formdeildir[0] == "LH": #lh.nt.
+            elif formdeildir[0] == "LH":  # lh.nt.
                 # greining = orðfl+háttur+mynd
                 # lh.nt.: [0]: háttur, [1]: tíð
-                greining = "slg" #TODO mynd kemur hvergi fram, set g í staðinn. "m" er alger undantekning.
-            elif "SAGNB" in formdeildir[1]: # sagnbót. Bæði SAGNB og SAGNB2
+                greining = "slg"  # TODO mynd kemur hvergi fram, set g í staðinn. "m" er alger undantekning.
+            elif "SAGNB" in formdeildir[1]:  # sagnbót. Bæði SAGNB og SAGNB2
                 # greining = orðfl+háttur+mynd
                 # sagnb.: [0]: mynd, [1]: háttur
-                greining.extend(self.hátturmynd(formdeildir)) # háttur+mynd
+                greining.extend(self.hátturmynd(formdeildir))  # háttur+mynd
                 greining = "".join(greining)
-            elif formdeildir[1] == "NH": #nh.
+            elif formdeildir[1] == "NH":  # nh.
                 # greining = orðfl+háttur+mynd(+"--þ" ef þátíð)
                 # nh.: [0]: mynd, [1]: háttur, [2]: tíð ef til staðar(mundu, vildu, ...)
-                greining.extend(self.hátturmynd(formdeildir)) # háttur+mynd
-                if len(formdeildir) == 3: #þátíð
+                greining.extend(self.hátturmynd(formdeildir))  # háttur+mynd
+                if len(formdeildir) == 3:  # þátíð
                     greining.append("--þ")
                 greining = "".join(greining)
-            elif formdeildir[1] == "BH": #bh.
+            elif formdeildir[1] == "BH":  # bh.
                 # greining = orðfl+háttur+mynd+persóna+tala+tíð
                 # bh.: [0]: mynd, [1]: háttur, [2]: tala/stýfður
-                greining.extend(self.hátturmynd(formdeildir)) # háttur+mynd
-                greining.append("2en") # TODO persóna, tala og tíð koma hvergi fram í BÍN eða Greyni. Default er 1.p.et.nt. = 1en
+                greining.extend(self.hátturmynd(formdeildir))  # háttur+mynd
+                greining.append(
+                    "2en"
+                )  # TODO persóna, tala og tíð koma hvergi fram í BÍN eða Greyni. Default er 1.p.et.nt. = 1en
                 greining = "".join(greining)
-            elif formdeildir[0] == "OP": # ópersónulegar sagnir
+            elif formdeildir[0] == "OP":  # ópersónulegar sagnir
                 # fh. og vh.: [0]: "OP" [1]: mynd, [2]: háttur, [3]: tíð, [4]: persóna, [5]: tala
-                #greining = orðfl+háttur+mynd+persóna+tala+tíð
-                greining.append(BÍN_MAP[formdeildir[2]]) # háttur
-                greining.append(BÍN_MAP[formdeildir[1]]) # mynd
-                greining.append("3") # persóna, alltaf 3. persóna
-                greining.append(BÍN_MAP[formdeildir[5]]) # tala
-                greining.append(BÍN_MAP[formdeildir[3]]) # tíð
+                # greining = orðfl+háttur+mynd+persóna+tala+tíð
+                greining.append(BÍN_MAP[formdeildir[2]])  # háttur
+                greining.append(BÍN_MAP[formdeildir[1]])  # mynd
+                greining.append("3")  # persóna, alltaf 3. persóna
+                greining.append(BÍN_MAP[formdeildir[5]])  # tala
+                greining.append(BÍN_MAP[formdeildir[3]])  # tíð
                 greining = "".join(greining)
-            else: #fh. og vh. eða skammstafaðar sagnir
+            else:  # fh. og vh. eða skammstafaðar sagnir
                 # greining = orðfl+háttur+mynd+persóna+tala+tíð
                 # fh. og vh.: [0]: mynd, [1]: háttur, [2]: tíð, [3]: persóna, [4]: tala
                 # Ath. óskháttur varpast í vh.
-                if word["b"] == "-" and word["t"] == "so": #Undantekningartilvik
+                if word["b"] == "-" and word["t"] == "so":  # Undantekningartilvik
                     return "sxxxxx"
-                greining.extend(self.hátturmynd(formdeildir)) # háttur+mynd
-                greining.append(BÍN_MAP[formdeildir[3]]) # persóna
-                greining.append(BÍN_MAP[formdeildir[4]]) # tala
-                greining.append(BÍN_MAP[formdeildir[2]]) # tíð
+                greining.extend(self.hátturmynd(formdeildir))  # háttur+mynd
+                greining.append(BÍN_MAP[formdeildir[3]])  # persóna
+                greining.append(BÍN_MAP[formdeildir[4]])  # tala
+                greining.append(BÍN_MAP[formdeildir[2]])  # tíð
                 greining = "".join(greining)
         elif tegund == "ao":
             greining = "aa"
@@ -893,10 +1090,12 @@ class Comparison():
         elif tegund == "fs":
             greining.append("a")
             formdeildir = word["t"].split("_")
-            if len(formdeildir) == 1: #vantar stýringu, get tekið út þegar hef samræmt Greynismörk - # TODO útfæra fyrir hvert og eitt núna
+            if (
+                len(formdeildir) == 1
+            ):  # vantar stýringu, get tekið út þegar hef samræmt Greynismörk - # TODO útfæra fyrir hvert og eitt núna
                 greining.append("x")
             else:
-                greining.append(GrToOTB[formdeildir[1]]) #stýring
+                greining.append(GrToOTB[formdeildir[1]])  # stýring
             greining = "".join(greining)
         elif tegund == "st":
             return "c"
@@ -904,35 +1103,37 @@ class Comparison():
             return "ct"
         elif tegund == "nhm":
             return "cn"
-        elif tegund == "töl": # TODO hvert er samband þessara töluorða við önnur töluorð?
+        elif (
+            tegund == "töl"
+        ):  # TODO hvert er samband þessara töluorða við önnur töluorð?
             return "to"
         elif tegund == "uh":
             return "au"
         else:
-            #print("Finn ekki greiningu:", tegund, word["k"], word["t"], word["x"])
-            #if "b" in word:
-                #print(word["b"])
+            # print("Finn ekki greiningu:", tegund, word["k"], word["t"], word["x"])
+            # if "b" in word:
+            # print(word["b"])
             pass
         return greining
 
     def setningabygging(self, orðalisti):
         setning = []
-        bil = True # Bil á undan núverandi staki
+        bil = True  # Bil á undan núverandi staki
         for item in orðalisti:
-            if not item: # Tómur hnútur fremst/aftast í setningu
+            if not item:  # Tómur hnútur fremst/aftast í setningu
                 continue
-            elif item in VINSTRI_GREINARMERKI: # Ekkert bil á eftir
+            elif item in VINSTRI_GREINARMERKI:  # Ekkert bil á eftir
                 if bil:
                     setning.append(" ")
                 setning.append(item)
-                bil = False # Ekkert bil á eftir þessu
-            elif item in MIÐJA_GREINARMERKI: # Hvorki bil á undan né á eftir
+                bil = False  # Ekkert bil á eftir þessu
+            elif item in MIÐJA_GREINARMERKI:  # Hvorki bil á undan né á eftir
                 setning.append(item)
                 bil = False
-            elif item in HÆGRI_GREINARMERKI: # Ekki bil á undan
+            elif item in HÆGRI_GREINARMERKI:  # Ekki bil á undan
                 setning.append(item)
                 bil = True
-            else: # Venjulegt orð, bil á undan og á eftir nema annað komi til
+            else:  # Venjulegt orð, bil á undan og á eftir nema annað komi til
                 if bil:
                     setning.append(" ")
                 setning.append(item)
@@ -941,21 +1142,21 @@ class Comparison():
         for item in SKST_LEIÐRÉTTAR:
             if item in setning_sameinuð:
                 setning_sameinuð = setning_sameinuð.replace(item, SKST_LEIÐRÉTTAR[item])
-        if "þ. e." in setning_sameinuð: # Til að rugla ekki saman við "þ.e.a.s."
+        if "þ. e." in setning_sameinuð:  # Til að rugla ekki saman við "þ.e.a.s."
             setning_sameinuð = setning_sameinuð.replace("þ. e.", "þ.e.")
         return setning_sameinuð
- 
+
     def sbrlemma(self, lemma_OTB, word):
-        #Fyllir út í self.tíðnibreytur
-        #print("LEMMA OTB: {}".format(lemma_OTB))
+        # Fyllir út í self.tíðnibreytur
+        # print("LEMMA OTB: {}".format(lemma_OTB))
         lemma_OTB = lemma_OTB.lower()
         if "s" in word:
             lemma_Gr = word["s"].replace("-", "").lower()
         else:
             lemma_Gr = word["x"].replace("-", "").lower()
-        if lemma_Gr == "sami": # Sértilvik, BÍN skiptir í sundur
+        if lemma_Gr == "sami":  # Sértilvik, BÍN skiptir í sundur
             lemma_Gr = "samur"
-        if lemma_OTB in ÓRLEM: # Óregluleg lemma, býður upp á marga möguleika
+        if lemma_OTB in ÓRLEM:  # Óregluleg lemma, býður upp á marga möguleika
             if lemma_Gr in ÓRLEM[lemma_OTB]:
                 self.LR += 1
                 return True
@@ -971,99 +1172,104 @@ class Comparison():
 
     def sbrmark(self, mark_OTB, word, i):
         # Fyllir út í self.tíðnibreytur fyrir mörkunarárangur
-        #mark_Gr_eldra = self.vörpun(word)
+        # mark_Gr_eldra = self.vörpun(word)
 
         mark_Gr = word["i"] if "i" in word else str(IFD_Tagset(word))
         stofn_Gr = (word["s"] if "s" in word else word["x"]).lower()
-        #print("{0:20} {1:20} {2:10}  {d1} {3:10}  {d2} {4:10}".format(word.get("x", ""), word.get("s", ""),
+        # print("{0:20} {1:20} {2:10}  {d1} {3:10}  {d2} {4:10}".format(word.get("x", ""), word.get("s", ""),
         #    mark_OTB, mark_Gr_eldra, mark_Gr,
         #    d1="*" if mark_Gr_eldra != mark_OTB else " ",
         #    d2="*" if mark_Gr != mark_OTB else " "))
 
-        #if mark_OTB in OTB_einfaldað: # ct, ta, aþe, aþm - Afbrigði 10, 17 og 20 í einföldun
+        # if mark_OTB in OTB_einfaldað: # ct, ta, aþe, aþm - Afbrigði 10, 17 og 20 í einföldun
         #    mark_OTB = OTB_einfaldað[mark_OTB]
-        #if mark_Gr in OTB_einfaldað:
+        # if mark_Gr in OTB_einfaldað:
         #    mark_Gr = OTB_einfaldað[mark_Gr]
 
-        if mark_OTB == "ct":    # Afbrigði 17
+        if mark_OTB == "ct":  # Afbrigði 17
             mark_OTB = "c"
         if mark_Gr == "ct":
             mark_Gr = "c"
 
-        if mark_OTB.startswith("n") and mark_OTB.endswith(("m", "s", "ö")): # undirflokkun sérnafna - Afbrigði 8
+        if mark_OTB.startswith("n") and mark_OTB.endswith(
+            ("m", "s", "ö")
+        ):  # undirflokkun sérnafna - Afbrigði 8
             mark_OTB = mark_OTB[:-1] + "e"
         if mark_Gr.startswith("n"):
-            if mark_Gr.endswith(("m", "s", "ö")): # undirflokkun sérnafna
+            if mark_Gr.endswith(("m", "s", "ö")):  # undirflokkun sérnafna
                 mark_Gr = mark_Gr[:-1] + "e"
-            elif i > 0 and word["x"][0].isupper(): # Nafnorð með stórum staf í miðri setningu sögð sérnöfn
+            elif (
+                i > 0 and word["x"][0].isupper()
+            ):  # Nafnorð með stórum staf í miðri setningu sögð sérnöfn
                 # Ath. tekur ekki tillit til greinarmerkja í upphafi setningar, sbr. "- Samning X"
-                #print("Fann nýtt sérnafn - {} - {}".format(word["x"], i))
+                # print("Fann nýtt sérnafn - {} - {}".format(word["x"], i))
                 if mark_Gr.endswith("g"):
                     mark_Gr = mark_Gr + "e"
                 else:
                     mark_Gr = mark_Gr + "-e"
-        #if mark_OTB.startswith("s"): # Afbrigði 13 í einföldun
+        # if mark_OTB.startswith("s"): # Afbrigði 13 í einföldun
         #    mark_OTB = mark_OTB[:1] + mark_OTB[2:]
-        #if mark_Gr.startswith("s"):
+        # if mark_Gr.startswith("s"):
         #    mark_Gr = mark_Gr[:1] + mark_Gr[2:]
 
-        #if mark_OTB.startswith("l"): # Afbrigði 15 í einföldun
+        # if mark_OTB.startswith("l"): # Afbrigði 15 í einföldun
         #    mark_OTB = mark_OTB[:4] + mark_OTB[5:]
-        #if mark_Gr.startswith("l"):
+        # if mark_Gr.startswith("l"):
         #    mark_Gr = mark_Gr[:4] + mark_Gr[5:]
 
-        if stofn_Gr in EO and mark_Gr[0] == "a": # Afbrigði 19 í einföldun
+        if stofn_Gr in EO and mark_Gr[0] == "a":  # Afbrigði 19 í einföldun
             mark_Gr = "af"
             if mark_OTB.startswith("a") or mark_OTB.startswith("f"):
                 mark_OTB = "af"
 
-        if stofn_Gr in {"sig", "sér", "sín"} and mark_Gr.startswith("fp"): # afbrigði 25 í einföldun
+        if stofn_Gr in {"sig", "sér", "sín"} and mark_Gr.startswith(
+            "fp"
+        ):  # afbrigði 25 í einföldun
             if mark_OTB.startswith("fp"):
                 mark_OTB = mark_OTB[:2] + mark_OTB[4:]
             mark_Gr = mark_Gr[:2] + mark_Gr[4:]
-        
+
         if word["x"].lower() in self.SAMFALL and mark_Gr.startswith(("fp", "fa")):
             if mark_OTB.startswith(("fp", "fa")):
                 mark_OTB = "fm" + mark_OTB[2:]
-            mark_Gr = "fm" + mark_Gr[2:]            
-        #if word["x"].lower() in self.SAMFALL and (stofn_Gr in self.BÆÐI): # Samfall 'sá' og pfn - Afbrigði 5
-        #    mark_Gr = "fm" + mark_Gr[2:]            
+            mark_Gr = "fm" + mark_Gr[2:]
+        # if word["x"].lower() in self.SAMFALL and (stofn_Gr in self.BÆÐI): # Samfall 'sá' og pfn - Afbrigði 5
+        #    mark_Gr = "fm" + mark_Gr[2:]
         #    mark_OTB = "fm" + mark_OTB[2:]
 
-        #if mark_Gr.startswith("f"): # Sleppa undirflokkun fornafna - Afbrigði 7
+        # if mark_Gr.startswith("f"): # Sleppa undirflokkun fornafna - Afbrigði 7
         #    mark_Gr = mark_Gr[:1] + mark_Gr[2:]
-        #if mark_OTB.startswith("f"):
+        # if mark_OTB.startswith("f"):
         #    mark_OTB = mark_OTB[:1] + mark_OTB[2:]
-        
-        #föll = {"ao", "aþ", "ae"}   # Afbrigði 21
-        #if mark_Gr in föll:
+
+        # föll = {"ao", "aþ", "ae"}   # Afbrigði 21
+        # if mark_Gr in föll:
         #    mark_Gr = "a"
-        #if mark_OTB in föll:
+        # if mark_OTB in föll:
         #    mark_OTB = "a"
-        
+
         einnannar = {"einn": "p", "annar": "r"}
         if stofn_Gr in einnannar:  # Afbrigði 22-24B
-            if mark_OTB.startswith("l"): # greint sem lýsingarorð
+            if mark_OTB.startswith("l"):  # greint sem lýsingarorð
                 mark_OTB = einnannar[stofn_Gr] + mark_OTB[1] + mark_OTB[2] + mark_OTB[3]
             elif mark_OTB.startswith("f") or mark_OTB.startswith("tf"):
                 mark_OTB = einnannar[stofn_Gr] + mark_OTB[2:]
 
-            if mark_Gr.startswith("l"): # greint sem lýsingarorð
+            if mark_Gr.startswith("l"):  # greint sem lýsingarorð
                 mark_Gr = einnannar[stofn_Gr] + mark_Gr[1] + mark_Gr[2] + mark_Gr[3]
             elif mark_Gr.startswith("f") or mark_Gr.startswith("tf"):
                 mark_Gr = einnannar[stofn_Gr] + mark_Gr[2:]
 
-        if stofn_Gr is "fyrstur": # OTB kallar það efsta stig, Greynir kallar frumstig.
+        if stofn_Gr is "fyrstur":  # OTB kallar það efsta stig, Greynir kallar frumstig.
             if mark_OTB.startswith("l") and mark_OTB.endswith("e"):
                 mark_OTB = mark_OTB[:-1] + "e"
 
-
-        #tvennd = (mark_Gr, mark_OTB) # TODO setja aftur inn ef útfæri confusion matrix
-        #if tvennd in self.M_confmat:
-            #self.M_confmat[tvennd] += 1
-        #else:
-            ##self.M_confmat[tvennd] = 1
-        if mark_Gr and mark_OTB and mark_Gr[0] == mark_OTB[0]: #Sami orðflokkur
+        # tvennd = (mark_Gr, mark_OTB) # TODO setja aftur inn ef útfæri confusion matrix
+        # if tvennd in self.M_confmat:
+        # self.M_confmat[tvennd] += 1
+        # else:
+        ##self.M_confmat[tvennd] = 1
+        if mark_Gr and mark_OTB and mark_Gr[0] == mark_OTB[0]:  # Sami orðflokkur
             # Athuga hvort annað í markinu sé rétt
             if mark_Gr == mark_OTB:
                 self.MR += 1
@@ -1081,7 +1287,7 @@ class Comparison():
         elif "x" in word:
             lemma_Gr = word["x"]
         else:
-            #print("Lemma finnst ekki: {}".format(*word))
+            # print("Lemma finnst ekki: {}".format(*word))
             self.GW += 1
             return False
         lemma_Gr = lemma_Gr.replace("—", "-").replace("…", "...")
@@ -1109,9 +1315,9 @@ class Comparison():
         "þú": "2",
         "hann": "k",
         "hún": "v",
-        "það": "h" ,
+        "það": "h",
         "þér": "2",
-        "vér": "1"
+        "vér": "1",
     }
 
     def pk(self, word):
@@ -1119,8 +1325,8 @@ class Comparison():
         if "s" in word:
             return "fp" + self.PK[word["s"]]
         else:
-            return "fp" + self.PK[word["x"].lower()] # Ætti ekki að gerast
-  
+            return "fp" + self.PK[word["x"].lower()]  # Ætti ekki að gerast
+
     FL = {
         "sá": "fa",
         "þessi": "fa",
@@ -1128,7 +1334,7 @@ class Comparison():
         "slíkur": "fb",
         "sjálfur": "fb",
         "samur": "fb",
-        "sami": "fb", # ætti að vera samur
+        "sami": "fb",  # ætti að vera samur
         "þvílíkur": "fb",
         "minn": "fe",
         "þinn": "fe",
@@ -1145,7 +1351,7 @@ class Comparison():
         "sumur": "fo",
         "enginn": "fo",
         "margur": "fo",
-        "flestir": "fo", # æti að vera margur
+        "flestir": "fo",  # æti að vera margur
         "einn": "fo",
         "annar": "fo",
         "neinn": "fo",
@@ -1156,9 +1362,9 @@ class Comparison():
         "hver": "fs",
         "hvor": "fs",
         "hvaða": "fs",
-        "hvílíkur": "fs"
+        "hvílíkur": "fs",
     }
-    SAMFALL = { # Beygingarmyndir sem tilheyra bæði 'sá' og pfn.
+    SAMFALL = {  # Beygingarmyndir sem tilheyra bæði 'sá' og pfn.
         "það",
         "því",
         "þess",
@@ -1167,9 +1373,9 @@ class Comparison():
         "þá",
         "þær",
         "þeim",
-        "þeirra"
+        "þeirra",
     }
-    BÆÐI = { "sá", "það" }
+    BÆÐI = {"sá", "það"}
 
     def undirflokkun(self, word):
         if word["x"].lower() in self.SAMFALL and (word["s"] in self.BÆÐI):
@@ -1179,17 +1385,17 @@ class Comparison():
         return "fx"
 
     def json_lestur(self, orðalisti):
-        """ Invoke a remote tagger over HTTP/HTTPS """
+        """Invoke a remote tagger over HTTP/HTTPS"""
         setning = self.setningabygging(orðalisti)
         setning_slóð = quote(setning.strip())
         if USE_IFD_TAGGER:
             fullpath = IFD_PATH + "?t=" + setning_slóð
         else:
             fullpath = POS_PATH + "?t=" + setning_slóð
-        #senda inn í httpkall og breyta í json-hlut
+        # senda inn í httpkall og breyta í json-hlut
         try:
             with urllib.request.urlopen(fullpath) as response:
-                string = response.read().decode('utf-8')
+                string = response.read().decode("utf-8")
         except urllib.error.HTTPError as e:
             print("Error {0} requesting URL {1}, skipping...".format(e, fullpath))
             return [], ""
@@ -1201,12 +1407,16 @@ class Comparison():
             convert_from_ifd = True
         elif any("err" in d for d in all_words):
             # POS tagger: error found, fall back to the IFD tagger
-            print("Error from postag.api: falling back to ifdtag.api for sentence\n   '{0}'".format(setning))
+            print(
+                "Error from postag.api: falling back to ifdtag.api for sentence\n   '{0}'".format(
+                    setning
+                )
+            )
             self.CANNOT_PARSE += 1
             fullpath = IFD_PATH + "?t=" + setning_slóð
             try:
                 with urllib.request.urlopen(fullpath) as response:
-                    string = response.read().decode('utf-8')
+                    string = response.read().decode("utf-8")
             except urllib.error.HTTPError as e:
                 print("Error {0} requesting URL {1}, skipping...".format(e, fullpath))
                 return [], ""
@@ -1218,29 +1428,29 @@ class Comparison():
             # Convert ifdtag.api output to a format roughly compatible with postag.api
             converted = []
             for word, tag in all_words:
-                if tag.isalnum() or ('-' in tag and tag != '-'): # Allow nken-s, etc.
+                if tag.isalnum() or ("-" in tag and tag != "-"):  # Allow nken-s, etc.
                     # This is a proper IFD mark
-                    converted.append(dict(x = word, i = tag, k = "WORD"))
+                    converted.append(dict(x=word, i=tag, k="WORD"))
                 else:
                     # This is punctuation
-                    converted.append(dict(x = word, k = "PUNCTUATION"))
+                    converted.append(dict(x=word, k="PUNCTUATION"))
             all_words = converted
 
         return all_words, setning
- 
+
     def tag_lestur(self, tagger, orðalisti):
-        """ Invoke a local tagger """
+        """Invoke a local tagger"""
         setning = self.setningabygging(orðalisti)
         d = tagger.tag(setning.strip())
         all_words = d["result"][0]
         return all_words, setning
 
     def OTB_lestur(self, sent):
-        return tuple(zip(*sent)) # Orð, mörk, lemmur
-        #mörk_OTB = [word.get("type") for word in sent.iter()]
-        #lemmur_OTB = [word.get("lemma") for word in sent.iter()]
-        #orðalisti = [word.text.strip() for word in sent.iter()]
-        #return mörk_OTB, lemmur_OTB, orðalisti
+        return tuple(zip(*sent))  # Orð, mörk, lemmur
+        # mörk_OTB = [word.get("type") for word in sent.iter()]
+        # lemmur_OTB = [word.get("lemma") for word in sent.iter()]
+        # orðalisti = [word.text.strip() for word in sent.iter()]
+        # return mörk_OTB, lemmur_OTB, orðalisti
 
     def error(self, all_words):
         if USE_IFD_TAGGER:
@@ -1249,14 +1459,16 @@ class Comparison():
         error = any("err" in y for y in all_words)
         if error:
             self.ógreindar_setningar += 1
-            self.orð_vantar = self.orð_vantar + len(all_words) # Ath. þetta tekur greinarmerkin með.
+            self.orð_vantar = self.orð_vantar + len(
+                all_words
+            )  # Ath. þetta tekur greinarmerkin með.
             return True
         return False
 
     def prenta(self):
         # Prenta fyrst tíðni
         # Svo reikna nákvæmni, heimt, F-mælingu
-        #Setningar
+        # Setningar
         print("")
         print("******************** NIÐURSTÖÐUR **********************")
         if POS_PATH:
@@ -1268,10 +1480,12 @@ class Comparison():
         if self.réttar_setningar == 0:
             SA = 0
         else:
-            SA = self.réttar_setningar / (self.réttar_setningar + self.rangar_setningar + self.ógreindar_setningar) # Accuracy
+            SA = self.réttar_setningar / (
+                self.réttar_setningar + self.rangar_setningar + self.ógreindar_setningar
+            )  # Accuracy
         print("Nákvæmni (accuracy): {:.4f}".format(SA))
         print("")
-        #Orð
+        # Orð
         print("Rétt orð:", self.rétt_orð)
         print("Röng orð:", self.röng_orð)
         print("Orð vantar:", self.orð_vantar)
@@ -1281,16 +1495,16 @@ class Comparison():
             OA = self.rétt_orð / (self.rétt_orð + self.röng_orð + self.orð_vantar)
         print("Nákvæmni (accuracy): {:.4f}".format(OA))
         print("")
-        #Lemmur
+        # Lemmur
         print("Réttar lemmur:", self.LR)
         print("Rangar lemmur:", self.LW)
         if self.LR == 0:
             LA = 0
         else:
-            LA = self.LR / (self.LR + self.LW + self.orð_vantar) # Nákvæmni (accuracy)
+            LA = self.LR / (self.LR + self.LW + self.orð_vantar)  # Nákvæmni (accuracy)
         print("Nákvæmni (accuracy): {:.4f}".format(LA))
         print("")
-        #Mörk
+        # Mörk
         print("Rétt mörk:", self.MR)
         print("Hlutrétt mörk (réttur orðflokkur):", self.MP)
         print("Röng mörk:", self.MW)
@@ -1315,7 +1529,9 @@ class Comparison():
         if (self.rétt_orð + self.GR) == 0:
             GOA = 0
         else:
-            GOA = (self.rétt_orð + self.GR) / (self.rétt_orð + self.GR + self.GW + self.röng_orð + self.orð_vantar)
+            GOA = (self.rétt_orð + self.GR) / (
+                self.rétt_orð + self.GR + self.GW + self.röng_orð + self.orð_vantar
+            )
         print("Nákvæmni (accuracy): {:.4f}".format(GOA))
         print("")
         # Lemmur
@@ -1324,7 +1540,9 @@ class Comparison():
         if (self.LR + self.GR) == 0:
             GLA = 0
         else:
-            GLA = (self.LR + self.GR) / (self.LR + self.GR + self.LW + self.GW + self.orð_vantar)
+            GLA = (self.LR + self.GR) / (
+                self.LR + self.GR + self.LW + self.GW + self.orð_vantar
+            )
         print("Nákvæmni (accuracy): {:.4f}".format(GLA))
         print("")
         # Mörk
@@ -1334,14 +1552,18 @@ class Comparison():
         if self.MR == 0:
             GMA, GMPA = 0, 0
         else:
-            GMA = (self.MR + self.GR) / (self.MR + self.MP + self.GR + self.GW + self.MW + self.orð_vantar)
-            GMPA = (self.MR + self.GR + self.MP) / (self.MR + self.MP + self.GR + self.GW + self.MW + self.orð_vantar)
+            GMA = (self.MR + self.GR) / (
+                self.MR + self.MP + self.GR + self.GW + self.MW + self.orð_vantar
+            )
+            GMPA = (self.MR + self.GR + self.MP) / (
+                self.MR + self.MP + self.GR + self.GW + self.MW + self.orð_vantar
+            )
         print("Nákvæmni (accuracy): {:.4f}\tMeð hlutréttu: {:.4f}".format(GMA, GMPA))
         print("*******************************************************")
 
-    def start(self, process_func, filter_func = None, skip_func = None):
+    def start(self, process_func, filter_func=None, skip_func=None):
         corpus = Corpus()
-        sentences = corpus.raw_sentence_stream(filter_func = filter_func, skip = skip_func)
+        sentences = corpus.raw_sentence_stream(filter_func=filter_func, skip=skip_func)
         if USE_LOCAL_TAGGER:
             # Call the Greynir POS tagger directly in-process
             with Tagger.session() as tagger:
@@ -1352,28 +1574,28 @@ class Comparison():
             for sent in sentences:
                 process_func(None, sent)
         self.prenta()
-   
+
     def start_stikkprufa(self):
         úrtak = 50
         with open("stikkprufa.txt", "w") as stikk:
             self.stikk = stikk
-            self.start(self.úrvinnsla_stikkprufa, skip_func = lambda n: n % úrtak != 0)
+            self.start(self.úrvinnsla_stikkprufa, skip_func=lambda n: n % úrtak != 0)
             self.stikk = None
-   
+
     def start_allt(self):
         self.start(self.úrvinnsla)
 
     def start_fyllimengi(self):
         úrtak = 50
-        self.start(self.úrvinnsla, skip_func = lambda n: n % úrtak == 0)
+        self.start(self.úrvinnsla, skip_func=lambda n: n % úrtak == 0)
+
 
 def start_flokkar():
     corpus = Corpus()
 
     def _run_flokkar(tagger):
-
         def _run_flokkur(filter_func, description):
-            sents = corpus.raw_sentence_stream(filter_func = filter_func)
+            sents = corpus.raw_sentence_stream(filter_func=filter_func)
             comp = Comparison()
             for sent in sents:
                 comp.úrvinnsla(tagger, sent)
@@ -1389,10 +1611,20 @@ def start_flokkar():
         _run_flokkur(f, "ævisögur")
 
         # Fræðslutextar - hugvísindi
-        f = lambda x: x.startswith("A4") and x[2] in {"A", "B", "C", "D", "E", "F", "G", "H", "J"}
+        f = lambda x: x.startswith("A4") and x[2] in {
+            "A",
+            "B",
+            "C",
+            "D",
+            "E",
+            "F",
+            "G",
+            "H",
+            "J",
+        }
         _run_flokkur(f, "fræðslutexta - hugvísindi")
 
-        #Fræðslutextar - raunvísindi
+        # Fræðslutextar - raunvísindi
         f = lambda x: x.startswith("A4") and x[2] in {"K", "M", "N", "O", "Q", "R", "S"}
         _run_flokkur(f, "fræðslutexta - raunvísindi")
 
@@ -1407,12 +1639,13 @@ def start_flokkar():
         _run_flokkar(None)
 
 
-
 if __name__ == "__main__":
     Settings.read("config/Greynir.conf")
-    print("\nCMP.PY Copyright (C) 2017 Miðeind ehf.\n"
-        "Mæling á mörkunarárangri Greynis með íslenska orðtíðnisafnið IFD sem viðmið\n")
-    #for thing in StaticPhrases.DETAILS:
+    print(
+        "\nCMP.PY Copyright (C) 2017 Miðeind ehf.\n"
+        "Mæling á mörkunarárangri Greynis með íslenska orðtíðnisafnið IFD sem viðmið\n"
+    )
+    # for thing in StaticPhrases.DETAILS:
     #    print(StaticPhrases.DETAILS[thing])
     if USE_IFD_TAGGER:
         print("Þjónustan ifdtag.api verður notuð til að marka texta")
@@ -1422,20 +1655,26 @@ if __name__ == "__main__":
         print("Vefslóð mörkunarþjóns er {}".format(POS_PATH))
     else:
         print("Staðbundið forritasafn verður notað til mörkunar")
-    response = input("\nHvað viltu prófa? Stikkprufu (S), allan texta (A), allt nema stikkprufu (R) eða allt eftir flokkum (F)?\n").lower()
+    response = input(
+        "\nHvað viltu prófa? Stikkprufu (S), allan texta (A), allt nema stikkprufu (R) eða allt eftir flokkum (F)?\n"
+    ).lower()
     byrjun = timer()
-    if response == "s": # Stikkprufa
+    if response == "s":  # Stikkprufa
         comp = Comparison()
         comp.start_stikkprufa()
-    elif response == "a": # Allan texta
+    elif response == "a":  # Allan texta
         comp = Comparison()
         comp.start_allt()
-    elif response == "r": # Allt nema stikkprufa
+    elif response == "r":  # Allt nema stikkprufa
         comp = Comparison()
         comp.start_fyllimengi()
-    elif response == "f": # Niðurstöðum skipt eftir flokkum
+    elif response == "f":  # Niðurstöðum skipt eftir flokkum
         start_flokkar()
     lok = timer()
     liðið = lok - byrjun
     print("")
-    print("Keyrslan tók {:.1f} sekúndur, eða {:.1f} mínútur.".format(liðið, (liðið / 60.0)))
+    print(
+        "Keyrslan tók {:.1f} sekúndur, eða {:.1f} mínútur.".format(
+            liðið, (liðið / 60.0)
+        )
+    )

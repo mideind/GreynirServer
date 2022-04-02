@@ -6,7 +6,7 @@
 
     Trigrams module
 
-    Copyright (C) 2021 Miðeind ehf
+    Copyright (C) 2022 Miðeind ehf
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ import os
 import sys
 from itertools import islice, tee
 from random import randint
-import collections 
+import collections
 
 
 # Hack to make this Python program executable from the tools subdirectory
@@ -49,15 +49,15 @@ from db.models import Article, Trigram
 from tree import TreeTokenList, TerminalDescriptor
 
 
-CHANGING = set() # A set of all words we need to change
-REPLACING = collections.defaultdict(str)    # fACE_SK.txt
-DELETING = set()                            # d.txt
-DOUBLING = collections.defaultdict(str)     # fMW.txt
+CHANGING = set()  # A set of all words we need to change
+REPLACING = collections.defaultdict(str)  # fACE_SK.txt
+DELETING = set()  # d.txt
+DOUBLING = collections.defaultdict(str)  # fMW.txt
 
 
 def dump_tokens(limit):
-    """ Iterate through parsed articles and print a list
-        of tokens and their matched terminals """
+    """Iterate through parsed articles and print a list
+    of tokens and their matched terminals"""
 
     dtd = dict()
     with GreynirBin.get_db() as db, SessionContext(commit=True) as session:
@@ -73,8 +73,9 @@ def dump_tokens(limit):
             q = q[0:limit]
         for a in q:
             print(
-                "\nARTICLE\nHeading: '{0.heading}'\nURL: {0.url}\nTimestamp: {0.timestamp}"
-                .format(a)
+                "\nARTICLE\nHeading: '{0.heading}'\nURL: {0.url}\nTimestamp: {0.timestamp}".format(
+                    a
+                )
             )
             tree = TreeTokenList()
             tree.load(a.tree)
@@ -96,11 +97,11 @@ def dump_tokens(limit):
 
 
 def make_trigrams(limit, output_tsv=False):
-    """ Iterate through parsed articles and extract trigrams from
-        successfully parsed sentences. If output_tsv is True, the
-        trigrams are output to a tab-separated text file. Otherwise,
-        they are 'upserted' into the trigrams table of the
-        scraper database. """
+    """Iterate through parsed articles and extract trigrams from
+    successfully parsed sentences. If output_tsv is True, the
+    trigrams are output to a tab-separated text file. Otherwise,
+    they are 'upserted' into the trigrams table of the
+    scraper database."""
 
     with SessionContext(commit=False) as session:
 
@@ -114,23 +115,26 @@ def make_trigrams(limit, output_tsv=False):
 
         # Fill correction data structures
         def fill_corrections():
-            """ Fills global data structures for correcting tokens """
-            with open(os.path.join(basepath, "resources", "fACE_SK.txt"), 'r') as myfile:
+            """Fills global data structures for correcting tokens"""
+            with open(
+                os.path.join(basepath, "resources", "fACE_SK.txt"), "r"
+            ) as myfile:
                 for line in myfile:
                     content = line.strip().split("\t")
-                    REPLACING["\""+content[0]+"\""] = "\""+content[1]+"\""
-                    CHANGING.add("\""+content[0]+"\"")
-            with open(os.path.join(basepath, "resources", "d.txt"), 'r') as myfile:
+                    REPLACING['"' + content[0] + '"'] = '"' + content[1] + '"'
+                    CHANGING.add('"' + content[0] + '"')
+            with open(os.path.join(basepath, "resources", "d.txt"), "r") as myfile:
                 for line in myfile:
-                    DELETING.add("\""+line.strip()+"\"")
-                    CHANGING.add("\""+line.strip()+"\"")
-            with open(os.path.join(basepath, "resources", "fMW.txt"), 'r') as myfile:
+                    DELETING.add('"' + line.strip() + '"')
+                    CHANGING.add('"' + line.strip() + '"')
+            with open(os.path.join(basepath, "resources", "fMW.txt"), "r") as myfile:
                 for line in myfile:
                     content = line.strip().split("\t")
-                    corr = content[1].replace(" ", "\" \"")
-                    corr = "\""+corr+"\""
-                    DOUBLING["\""+content[0]+"\""] = corr
-                    CHANGING.add("\""+content[0]+"\"")
+                    corr = content[1].replace(" ", '" "')
+                    corr = '"' + corr + '"'
+                    DOUBLING['"' + content[0] + '"'] = corr
+                    CHANGING.add('"' + content[0] + '"')
+
         fill_corrections()
         # Iterate through the articles
         q = (
@@ -144,9 +148,9 @@ def make_trigrams(limit, output_tsv=False):
             q = q[0:limit]
 
         def tokens(q):
-            """ Generator for token stream """
+            """Generator for token stream"""
             for a in q:
-                #print("Processing article from {0.timestamp}: {0.url}".format(a))
+                # print("Processing article from {0.timestamp}: {0.url}".format(a))
                 tree = TreeTokenList()
                 tree.load(a.tree)
                 for _, toklist in tree.token_lists():
@@ -158,11 +162,17 @@ def make_trigrams(limit, output_tsv=False):
                             if t.token in CHANGING:
                                 # We take a closer look
                                 # We assume multi-word tokens don´t need to be changed
-                                if t.token in REPLACING: # Words we simply need to replace
+                                if (
+                                    t.token in REPLACING
+                                ):  # Words we simply need to replace
                                     yield REPLACING[t.token]
-                                elif t.token in DELETING: # Words that don't belong in trigrams
+                                elif (
+                                    t.token in DELETING
+                                ):  # Words that don't belong in trigrams
                                     pass
-                                elif t.token in DOUBLING: # Words incorrectly in one token
+                                elif (
+                                    t.token in DOUBLING
+                                ):  # Words incorrectly in one token
                                     for each in DOUBLING[t.token].split(" "):
                                         yield each
                             else:
@@ -192,8 +202,7 @@ def make_trigrams(limit, output_tsv=False):
                                 cnt = 0
                     except DatabaseError as ex:
                         print(
-                            "*** Exception {0} on trigram {1}, skipped"
-                            .format(ex, tg)
+                            "*** Exception {0} on trigram {1}, skipped".format(ex, tg)
                         )
         finally:
             if output_tsv:
@@ -203,11 +212,11 @@ def make_trigrams(limit, output_tsv=False):
 
 
 def create_trigrams_csv():
-    """ Read a text file generated by uniq -c < trigrams.sorted.tsv > trigrams.uniq.tsv
-        and create a corresponding csv file for bulk load into PostgreSQL """
+    """Read a text file generated by uniq -c < trigrams.sorted.tsv > trigrams.uniq.tsv
+    and create a corresponding csv file for bulk load into PostgreSQL"""
 
     def csv(s):
-        """ Convert a string to CSV format, with double quotes and escaping """
+        """Convert a string to CSV format, with double quotes and escaping"""
         return '"' + s.replace('"', '""') + '"'
 
     ix = 0
@@ -237,7 +246,7 @@ def create_trigrams_csv():
 
 
 def spin_trigrams(num):
-    """ Spin random sentences out of trigrams """
+    """Spin random sentences out of trigrams"""
 
     with SessionContext(commit=True) as session:
         print("Loading first candidates")
@@ -272,7 +281,7 @@ def spin_trigrams(num):
                         q = session.execute(
                             "select t3, frequency from trigrams "
                             "where t1=:t1 and t2=:t2 order by frequency desc",
-                            dict(t1=t1, t2=t2)
+                            dict(t1=t1, t2=t2),
                         )
                         candidates = q.fetchall()
                         break
@@ -293,9 +302,9 @@ def main():
         print("Configuration error: {0}".format(e))
         quit()
 
-    #make_trigrams(limit=None, output_tsv=True)
+    # make_trigrams(limit=None, output_tsv=True)
 
-    #create_trigrams_csv()
+    # create_trigrams_csv()
 
     # dump_tokens(limit = 10)
 

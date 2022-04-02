@@ -1,7 +1,7 @@
 """
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -58,10 +58,10 @@ class MalformedDocumentError(Exception):
 
 
 class Document(abc.ABC):
-    """ Abstract base class for documents. """
+    """Abstract base class for documents."""
 
     def __init__(self, path_or_bytes: Union[str, bytes]):
-        """ Accepts either a file path or bytes object """
+        """Accepts either a file path or bytes object"""
         if isinstance(path_or_bytes, str):
             # It's a file path
             with open(path_or_bytes, "rb") as file:
@@ -80,7 +80,7 @@ class Document(abc.ABC):
 
     @abc.abstractmethod
     def extract_text(self) -> str:
-        """ All subclasses must implement this method """
+        """All subclasses must implement this method"""
         raise NotImplementedError
 
     def write_to_file(self, path: str):
@@ -89,14 +89,14 @@ class Document(abc.ABC):
 
 
 class PlainTextDocument(Document):
-    """ Plain text document """
+    """Plain text document"""
 
     def extract_text(self) -> str:
         return self.data.decode(DEFAULT_TEXT_ENCODING)
 
 
 class HTMLDocument(Document):
-    """ HTML document """
+    """HTML document"""
 
     @staticmethod
     def _remove_header_prefixes(text: str) -> str:
@@ -127,7 +127,7 @@ class HTMLDocument(Document):
 
 
 class RTFDocument(Document):
-    """ Rich text document """
+    """Rich text document"""
 
     def extract_text(self) -> str:
         txt = self.data.decode(DEFAULT_TEXT_ENCODING)
@@ -139,7 +139,7 @@ class RTFDocument(Document):
 
 
 class PDFDocument(Document):
-    """ Adobe PDF document """
+    """Adobe PDF document"""
 
     def extract_text(self) -> str:
         output_string = StringIO()
@@ -160,7 +160,7 @@ class PDFDocument(Document):
 
 
 class DocxDocument(Document):
-    """ Microsoft docx document """
+    """Microsoft docx document"""
 
     DOCXML_PATH = "word/document.xml"
     WORD_NAMESPACE = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
@@ -200,11 +200,13 @@ class DocxDocument(Document):
 
 
 class ODTDocument(Document):
-    """ OpenDocument format. """
+    """OpenDocument format."""
 
     def extract_text(self) -> str:
         textdoc: Any = load_odf(BytesIO(self.data))
-        paragraphs: List[Any] = textdoc.getElementsByType(odf_text.P)  # Find all paragraphs
+        paragraphs: List[Any] = textdoc.getElementsByType(
+            odf_text.P
+        )  # Find all paragraphs
         ptexts = [teletype.extractText(p) for p in paragraphs]
         return "\n\n".join(ptexts)
 

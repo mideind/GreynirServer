@@ -5,7 +5,7 @@
 
     Neural Network Query Client
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -37,8 +37,8 @@ from settings import Settings
 
 class ApiClient:
 
-    """ A client that connects to the HTTP REST interface of
-        a tensorflow model server (using plaintext) """
+    """A client that connects to the HTTP REST interface of
+    a tensorflow model server (using plaintext)"""
 
     # Class defaults that can be overridden in constructor
     port: Optional[Union[int, str]] = None
@@ -65,7 +65,7 @@ class ApiClient:
         self._set_url()
 
     def _set_url(self) -> None:
-        """ Format url for remote service based on instance attributes """
+        """Format url for remote service based on instance attributes"""
         self._url = "http{https_char}://{host}:{port}/{action}".format(
             https_char="s" if self.https else "",
             host=self.host,
@@ -74,12 +74,12 @@ class ApiClient:
         )
 
     def validate(self, request):
-        """ Takes in a Flask request object and checks data attributes against
-            self.required fields and populates default fields if needed.
+        """Takes in a Flask request object and checks data attributes against
+        self.required fields and populates default fields if needed.
 
-            Returns tuple of type (Boolean, dict), where the first value indicates
-            whether the input was valid and the second is the (possibly)
-            modified data.
+        Returns tuple of type (Boolean, dict), where the first value indicates
+        whether the input was valid and the second is the (possibly)
+        modified data.
         """
         data = json.loads(request.data)
         required_diff = set(self.required_fields).difference(data.keys())
@@ -93,23 +93,23 @@ class ApiClient:
         return (True, data)
 
     def parse_for_remote(self, data):
-        """ Modifies data to comply with the remote server input format """
+        """Modifies data to comply with the remote server input format"""
         return {"pgs": data["contents"]}
 
     def get(self, data):
-        """ Handler for GET requests """
+        """Handler for GET requests"""
         assert self._url is not None
         response = requests.get(self._url, json.dumps(data), headers=self.headers)
         return json.loads(response.text)
 
     def post(self, data):
-        """ Handler for POST requests """
+        """Handler for POST requests"""
         assert self._url is not None
         response = requests.post(self._url, json.dumps(data), headers=self.headers)
         return response.text
 
     def dispatch(self, request):
-        """ Dispatches to GET or POST based on incoming request method """
+        """Dispatches to GET or POST based on incoming request method"""
         valid, data = self.validate(request)
         if not valid:
             return abort(400, data)

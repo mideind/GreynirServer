@@ -1,7 +1,7 @@
 """
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -31,10 +31,10 @@ def prep_text_for_tokenizer(text: str) -> str:
 
 
 def index_text(text: str) -> Tuple[Dict[int, List[int]], Dict[int, str]]:
-    """ Segments contiguous (Icelandic) text into paragraphs and sentences
-        and returns:
-            dictionary of sentence indices to sentences
-            dictionary of paragraph index to constituent sentence indices"""
+    """Segments contiguous (Icelandic) text into paragraphs and sentences
+    and returns:
+        dictionary of sentence indices to sentences
+        dictionary of paragraph index to constituent sentence indices"""
     text = prep_text_for_tokenizer(text)
     tok_stream = bintokenizer.tokenize(text)
 
@@ -58,8 +58,8 @@ def index_text(text: str) -> Tuple[Dict[int, List[int]], Dict[int, str]]:
 
 
 def split_text(text: str) -> List[List[str]]:
-    """ Segments contiguous (Icelandic) text into paragraphs and sentences
-        and returns a list of lists
+    """Segments contiguous (Icelandic) text into paragraphs and sentences
+    and returns a list of lists
     """
     text = prep_text_for_tokenizer(text)
     tok_stream = bintokenizer.tokenize(text)

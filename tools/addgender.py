@@ -5,7 +5,7 @@
 
     Utility program to populate the gender column of the persons table
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -36,13 +36,15 @@ except ConfigError as e:
     print("Configuration error: {0}".format(e))
     quit()
 
-with SessionContext(commit = True) as session, GreynirBin.get_db() as bdb:
+with SessionContext(commit=True) as session, GreynirBin.get_db() as bdb:
 
     # Iterate through the persons
-    q = session.query(Person) \
-        .filter((Person.gender == None) | (Person.gender == 'hk')) \
-        .order_by(Person.name) \
+    q = (
+        session.query(Person)
+        .filter((Person.gender == None) | (Person.gender == "hk"))
+        .order_by(Person.name)
         .yield_per(200)
+    )
 
     lastname = ""
 
@@ -52,5 +54,3 @@ with SessionContext(commit = True) as session, GreynirBin.get_db() as bdb:
         if p.name != lastname:
             print("{0} {1}".format(p.gender, p.name))
             lastname = p.name
-
-

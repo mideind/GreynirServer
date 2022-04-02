@@ -4,7 +4,7 @@
 
     Smarthome control query response module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -261,7 +261,7 @@ _COLOR_NAME_TO_CIE: Mapping[str, float] = {
 
 
 def parse_num(num_str: str) -> Optional[float]:
-    """ Parse Icelandic number string to float or int """
+    """Parse Icelandic number string to float or int"""
     num = None
     try:
         # Handle numbers w. Icelandic decimal places ("17,2")
@@ -286,7 +286,7 @@ def parse_num(num_str: str) -> Optional[float]:
 
 
 def add_num(num, result):
-    """ Add a number to accumulated number args """
+    """Add a number to accumulated number args"""
     if "numbers" not in result:
         result.numbers = []
     if isinstance(num, str):
@@ -296,8 +296,8 @@ def add_num(num, result):
 
 
 def terminal_num(t):
-    """ Extract numerical value from terminal token's auxiliary info,
-        which is attached as a json-encoded array """
+    """Extract numerical value from terminal token's auxiliary info,
+    which is attached as a json-encoded array"""
     if t and t._node.aux:
         aux = json.loads(t._node.aux)
         if isinstance(aux, int) or isinstance(aux, float):
@@ -306,7 +306,7 @@ def terminal_num(t):
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q = state["query"]
 
     if "qtype" not in result:

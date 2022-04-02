@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -954,17 +954,17 @@ def test_sunpos(client: FlaskClient) -> None:
 
     json = qmcall(client, {"q": "hvenær reis sólin í dag?"}, "SunPosition")
     assert re.match(
-        fr"^Sólin (rís|reis) um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+        rf"^Sólin (rís|reis) um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
     )
     json = qmcall(client, {"q": "hvenær sest sólin í kvöld?"}, "SunPosition")
     assert re.match(
-        fr"^Sólin (sest|settist) um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+        rf"^Sólin (sest|settist) um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
     )
     json = qmcall(
         client, {"q": "hvenær verður sólarlag á Norðfirði í kvöld?"}, "SunPosition"
     )
     assert re.match(
-        fr"^Sólin (sest|settist) um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+        rf"^Sólin (sest|settist) um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
     )
     json = qmcall(
         client,
@@ -1001,41 +1001,41 @@ def test_sunpos(client: FlaskClient) -> None:
     # )
     json = qmcall(client, {"q": "hvenær var miðnætti í nótt?"}, "SunPosition")
     assert re.match(
-        fr"^Miðnætti var um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+        rf"^Miðnætti var um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
     )
     json = qmcall(client, {"q": "hvenær verður miðnætti í kvöld?"}, "SunPosition")
     assert re.match(
-        fr"^Miðnætti verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+        rf"^Miðnætti verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
     )
     json = qmcall(
         client, {"q": "hvenær verður dögun í Keflavík á morgun?"}, "SunPosition"
     )
     assert re.match(
-        fr"^Það verður ekki dögun {timings}\.$", json["answer"]
-    ) or re.match(fr"^Dögun verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"])
+        rf"^Það verður ekki dögun {timings}\.$", json["answer"]
+    ) or re.match(rf"^Dögun verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"])
     json = qmcall(
         client, {"q": "klukkan hvað verður birting á Akureyri á morgun?"}, "SunPosition"
     )
     assert re.match(
-        fr"^Það verður ekki birting {timings}\.$", json["answer"]
+        rf"^Það verður ekki birting {timings}\.$", json["answer"]
     ) or re.match(
-        fr"^Birting verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+        rf"^Birting verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
     )
     json = qmcall(client, {"q": "hvenær er hádegi á morgun á Ísafirði?"}, "SunPosition")
     assert re.match(
-        fr"^Hádegi verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+        rf"^Hádegi verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
     )
     json = qmcall(
         client, {"q": "hvenær varð myrkur í gær á Egilsstöðum?"}, "SunPosition"
     )
     assert re.match(r"^Það varð ekki myrkur.*\.$", json["answer"]) or re.match(
-        fr"^Myrkur var um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+        rf"^Myrkur var um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
     )
     json = qmcall(
         client, {"q": "klukkan hvað varð dagsetur í gær á Reykjanesi?"}, "SunPosition"
     )
     assert re.match(r"^Það varð ekki dagsetur.*\.$", json["answer"]) or re.match(
-        fr"^Dagsetur var um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+        rf"^Dagsetur var um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
     )
 
 

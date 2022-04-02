@@ -4,7 +4,7 @@
 
     Scraper database queries
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -45,22 +45,22 @@ class _BaseQuery:
         pass
 
     def execute_q(self, session: Session, q: str, **kwargs: Any) -> Iterable[Any]:
-        """ Execute the given query and return the result from fetchall() """
+        """Execute the given query and return the result from fetchall()"""
         return cast(Iterable[Any], cast(Any, session).execute(q, kwargs).fetchall())
 
     def execute(self, session: Session, **kwargs: Any) -> Iterable[Any]:
-        """ Execute the default query and return the result from fetchall() """
+        """Execute the default query and return the result from fetchall()"""
         return cast(
             Iterable[Any], cast(Any, session).execute(self._Q, kwargs).fetchall()
         )
 
     def scalar(self, session: Session, **kwargs: Any) -> Union[int, float]:
-        """ Execute the query and return the result from scalar() """
+        """Execute the query and return the result from scalar()"""
         return cast(Union[int, float], cast(Any, session).scalar(self._Q, kwargs))
 
 
 class GenderQuery(_BaseQuery):
-    """ A query for gender representation in the persons table """
+    """A query for gender representation in the persons table"""
 
     _Q = """
         select domain,
@@ -80,7 +80,7 @@ class GenderQuery(_BaseQuery):
 
 
 class StatsQuery(_BaseQuery):
-    """ A query for statistics on articles """
+    """A query for statistics on articles"""
 
     _Q = """
         select r.domain,
@@ -124,7 +124,7 @@ class ChartsQuery(_BaseQuery):
 
 
 class QueriesQuery(_BaseQuery):
-    """ Statistics on the number of queries received over a given time period. """
+    """Statistics on the number of queries received over a given time period."""
 
     _Q = """
         select count(queries.id) from queries
@@ -144,7 +144,7 @@ class QueriesQuery(_BaseQuery):
 
 
 class QueryTypesQuery(_BaseQuery):
-    """ Stats on the most frequent query types over a given time period. """
+    """Stats on the most frequent query types over a given time period."""
 
     _Q = """
         select count(queries.id), queries.qtype from queries
@@ -255,7 +255,7 @@ class TermTopicsQuery(_BaseQuery):
 
 
 class ArticleCountQuery(_BaseQuery):
-    """ A query yielding the number of articles containing any of the given word stems """
+    """A query yielding the number of articles containing any of the given word stems"""
 
     _Q = """
         select count(*)
@@ -310,7 +310,7 @@ class ArticleListQuery(_BaseQuery):
     def articles(
         cls, stem: str, limit: int = 20, enclosing_session: Optional[Session] = None
     ) -> Iterable[ArticleListItem]:
-        """ Return a list of the newest articles containing the given stem. """
+        """Return a list of the newest articles containing the given stem."""
         r: Iterable[ArticleListItem] = []
         with SessionContext(session=enclosing_session, commit=True) as session:
             if stem == stem.lower():

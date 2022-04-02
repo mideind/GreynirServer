@@ -3,7 +3,7 @@
 """
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -33,8 +33,8 @@ from nn.nnclient import ParsingClient, TranslateClient
 @routes.route("/nnparse.api", methods=["GET", "POST"])
 @routes.route("/nnparse.api/v<int:version>", methods=["GET", "POST"])
 def nnparse_api(version=1):
-    """ Analyze text manually entered by the user, by passing the request
-        to a neural network server and returning its result back """
+    """Analyze text manually entered by the user, by passing the request
+    to a neural network server and returning its result back"""
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
@@ -61,8 +61,8 @@ def nnparse_api(version=1):
 @routes.route("/nntranslate.api", methods=["GET", "POST"])
 @routes.route("/nntranslate.api/v<int:version>", methods=["GET", "POST"])
 def nntranslate_api(version=1):
-    """ Translate text manually entered by the user, by passing the request
-        to a neural network server and returning its result back """
+    """Translate text manually entered by the user, by passing the request
+    to a neural network server and returning its result back"""
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
@@ -94,5 +94,6 @@ def nntranslate_api(version=1):
 @routes.route("/nn/translate.api/v<int:version>", methods=["GET", "POST"])
 def translate_api(version=1):
     from nn.client import TranslationApiClient
+
     tc = TranslationApiClient()
     return tc.dispatch(request)

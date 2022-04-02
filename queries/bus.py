@@ -4,7 +4,7 @@
 
     Bus schedule query module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
     Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
@@ -409,44 +409,44 @@ QBusNumberWord →
 
 
 def QBusNearestStop(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Nearest stop query """
+    """Nearest stop query"""
     result.qtype = "NearestStop"
     # No query key in this case
     result.qkey = ""
 
 
 def QBusStop(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Save the word that was used to describe a bus stop """
+    """Save the word that was used to describe a bus stop"""
     result.stop_word = _WRONG_STOP_WORDS.get(result._nominative, result._nominative)
 
 
 def QBusStopName(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Save the bus stop name """
+    """Save the bus stop name"""
     result.stop_name = result._nominative
 
 
 def QBusStopThere(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ A reference to a bus stop mentioned earlier """
+    """A reference to a bus stop mentioned earlier"""
     result.stop_name = "þar"
 
 
 def QBusStopToThere(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ A reference to a bus stop mentioned earlier """
+    """A reference to a bus stop mentioned earlier"""
     result.stop_name = "þangað"
 
 
 def EfLiður(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Don't change the case of possessive clauses """
+    """Don't change the case of possessive clauses"""
     result._nominative = result._text
 
 
 def FsMeðFallstjórn(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Don't change the case of prepositional clauses """
+    """Don't change the case of prepositional clauses"""
     result._nominative = result._text
 
 
 def QBusNoun(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Save the noun used to refer to a bus """
+    """Save the noun used to refer to a bus"""
     # Use singular, indefinite form
     # Hack: if the QBusNoun is a literal string, the _canonical logic
     # is not able to cast it to nominative case. Do it here by brute force. """
@@ -458,7 +458,7 @@ def QBusNoun(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QBusArrivalTime(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Bus arrival time query """
+    """Bus arrival time query"""
     # Set the query type
     result.qtype = "ArrivalTime"
     if "bus_number" in result:
@@ -469,7 +469,7 @@ def QBusArrivalTime(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QBusAnyArrivalTime(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Bus arrival time query """
+    """Bus arrival time query"""
     # Set the query type
     result.qtype = "ArrivalTime"
     # Set the query key to 'Any'
@@ -477,7 +477,7 @@ def QBusAnyArrivalTime(node: Node, params: QueryStateDict, result: Result) -> No
 
 
 def QBusWhich(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Buses on which routes stop at a given stop """
+    """Buses on which routes stop at a given stop"""
     # Set the query type
     result.qtype = "WhichRoute"
     if "stop_name" in result:
@@ -570,7 +570,7 @@ def QBusNumber(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QBusNumberWord(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Obtain the bus number as an integer from word or number terminals. """
+    """Obtain the bus number as an integer from word or number terminals."""
     # Use the nominative, singular, indefinite form
     number = result._canonical
     try:
@@ -608,14 +608,14 @@ def _filter_func(mm: Iterable[BinEntry]) -> List[BinEntry]:
 
 @lru_cache(maxsize=None)
 def to_accusative(np: str) -> str:
-    """ Return the noun phrase after casting it from nominative to accusative case """
+    """Return the noun phrase after casting it from nominative to accusative case"""
     np = straeto.BusStop.voice(np)
     return query.to_accusative(np, filter_func=_filter_func)
 
 
 @lru_cache(maxsize=None)
 def to_dative(np: str) -> str:
-    """ Return the noun phrase after casting it from nominative to dative case """
+    """Return the noun phrase after casting it from nominative to dative case"""
     np = straeto.BusStop.voice(np)
     return query.to_dative(np, filter_func=_filter_func)
 
@@ -635,7 +635,7 @@ def voice_distance(d: float) -> str:
 
 
 def hms_fmt(hms: Tuple[int, int, int]) -> str:
-    """ Format a (h, m, s) tuple to a HH:MM string """
+    """Format a (h, m, s) tuple to a HH:MM string"""
     h, m, s = hms
     if s >= 30:
         # Round upwards
@@ -654,12 +654,12 @@ def hms_fmt(hms: Tuple[int, int, int]) -> str:
 
 
 def hms_diff(hms1: Tuple, hms2: Tuple) -> int:
-    """ Return (hms1 - hms2) in minutes, where both are (h, m, s) tuples """
+    """Return (hms1 - hms2) in minutes, where both are (h, m, s) tuples"""
     return (hms1[0] - hms2[0]) * 60 + (hms1[1] - hms2[1])
 
 
 def query_nearest_stop(query: Query, session: Session, result: Result) -> AnswerTuple:
-    """ A query for the stop closest to the user """
+    """A query for the stop closest to the user"""
     # Retrieve the client location
     location = query.location
     if location is None:
@@ -696,7 +696,7 @@ def query_nearest_stop(query: Query, session: Session, result: Result) -> Answer
 
 
 def query_arrival_time(query: Query, session: Session, result: Result):
-    """ Answers a query for the arrival time of a bus """
+    """Answers a query for the arrival time of a bus"""
 
     # Examples:
     # 'Hvenær kemur strætó númer 12?'
@@ -928,7 +928,7 @@ def query_arrival_time(query: Query, session: Session, result: Result):
     query.set_beautified_query(bq)
 
     def assemble(x):
-        """ Intelligently join answer string components. """
+        """Intelligently join answer string components."""
         return (" ".join(x) + ".").replace(" .", ".").replace(" ,", ",")
 
     voice_answer = assemble(va)
@@ -938,7 +938,7 @@ def query_arrival_time(query: Query, session: Session, result: Result):
 
 
 def query_which_route(query: Query, session: Session, result: Result):
-    """ Which routes stop at a given bus stop """
+    """Which routes stop at a given bus stop"""
     stop_name = cast(str, result.stop_name)  # 'Einarsnes', 'Fiskislóð'...
 
     if stop_name in {"þar", "þangað"}:
@@ -1007,7 +1007,7 @@ _QFUNC = {
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" in result:
         # Successfully matched a query type

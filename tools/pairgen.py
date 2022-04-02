@@ -6,7 +6,7 @@
 
     Text and parse tree pair generator
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ from datetime import datetime
 basepath, _ = os.path.split(os.path.realpath(__file__))
 _TOOLS = os.sep + "tools"
 if basepath.endswith(_TOOLS):
-    basepath = basepath[0:-len(_TOOLS)]
+    basepath = basepath[0 : -len(_TOOLS)]
     sys.path.append(basepath)
 
 from settings import Settings
@@ -48,12 +48,12 @@ OUTFILE_TRAIN = "parsing_train.pairs"
 
 
 def gen_simple_trees(criteria, stats):
-    """ Generate simplified parse trees from articles matching the criteria """
+    """Generate simplified parse trees from articles matching the criteria"""
     for a in Article.articles(criteria):
         if not a.root_domain or "raduneyti" in a.root_domain:
             # Skip ministry websites due to amount of chaff found there
             continue
-        tree = Tree(url = a.url, authority = a.authority)
+        tree = Tree(url=a.url, authority=a.authority)
         # Note the parse timestamp
         stats["parsed"] = a.parsed
         tree.load(a.tree)
@@ -62,14 +62,33 @@ def gen_simple_trees(criteria, stats):
 
 
 def gen_flat_trees(generator):
-    """ Generate (text, flat tree) tuples that we want to include
-        in the file being generated """
+    """Generate (text, flat tree) tuples that we want to include
+    in the file being generated"""
     # Exclude sentences containing English words
-    STOP_WORDS = frozenset([
-        "the", "a", "is", "each", "year", "our", "on", "in",
-        "and", "this", "that", "s", "t", "don't", "isn't", "big",
-        "cheese", "steak", "email", "search"
-    ])
+    STOP_WORDS = frozenset(
+        [
+            "the",
+            "a",
+            "is",
+            "each",
+            "year",
+            "our",
+            "on",
+            "in",
+            "and",
+            "this",
+            "that",
+            "s",
+            "t",
+            "don't",
+            "isn't",
+            "big",
+            "cheese",
+            "steak",
+            "email",
+            "search",
+        ]
+    )
     for stree, score, length in generator:
         flat, text = stree.flat_with_all_variants, stree.text
         tokens = text.split()
@@ -83,7 +102,7 @@ def gen_flat_trees(generator):
 
 
 def write_file(outfile, generator, size, scores):
-    """ Generate an output file from articles that match the criteria """
+    """Generate an output file from articles that match the criteria"""
     written = 0
     with open(outfile, "w") as f:
         for text, flat, score, length in gen_flat_trees(generator):
@@ -98,9 +117,11 @@ def write_file(outfile, generator, size, scores):
     return written
 
 
-def write_shuffled_files(outfile_dev, outfile_train, generator, dev_size, train_size, scores):
-    """ Generate a randomly shuffled output file from articles that
-        match the criteria. Note that the shuffle is done in memory. """
+def write_shuffled_files(
+    outfile_dev, outfile_train, generator, dev_size, train_size, scores
+):
+    """Generate a randomly shuffled output file from articles that
+    match the criteria. Note that the shuffle is done in memory."""
     written = 0
     lines = []
     size = dev_size + train_size
@@ -122,8 +143,10 @@ def write_shuffled_files(outfile_dev, outfile_train, generator, dev_size, train_
         print(f"Shuffling {written} lines from the source corpus")
         random.shuffle(lines)
         dev_set = lines[0:dev_size]
-        train_set = lines[dev_size:dev_size + train_size]
-        print(f"Final dev set is {len(dev_set)} lines, train set is {len(train_set)} lines")
+        train_set = lines[dev_size : dev_size + train_size]
+        print(
+            f"Final dev set is {len(dev_set)} lines, train set is {len(train_set)} lines"
+        )
         if dev_set:
             print(f"Writing dev set to {outfile_dev}")
             with open(outfile_dev, "w") as f:
@@ -154,30 +177,36 @@ def main(dev_size, train_size, shuffle, scores, parse_date_gt=None):
 
     # Generate the parse trees from visible roots only,
     # in descending order by time of parse
-    stats = { "parsed" : datetime.utcnow() }
+    stats = {"parsed": datetime.utcnow()}
 
-    criteria = { "order_by_parse" : True, "visible" : True }
+    criteria = {"order_by_parse": True, "visible": True}
     if parse_date_gt is not None:
-        criteria['parse_date_gt'] = parse_date_gt
+        criteria["parse_date_gt"] = parse_date_gt
 
     gen = gen_simple_trees(criteria, stats)
 
     if shuffle:
 
         # Write both sets
-        written = write_shuffled_files(OUTFILE_DEV, OUTFILE_TRAIN, gen, dev_size, train_size, scores)
+        written = write_shuffled_files(
+            OUTFILE_DEV, OUTFILE_TRAIN, gen, dev_size, train_size, scores
+        )
 
     else:
 
         # Development set
         if dev_size:
-            print(f"\nWriting {dev_size} {'shuffled ' if shuffle else ''}sentences to {OUTFILE_DEV}")
+            print(
+                f"\nWriting {dev_size} {'shuffled ' if shuffle else ''}sentences to {OUTFILE_DEV}"
+            )
             written = write_file(OUTFILE_DEV, gen, dev_size, scores)
             print(f"{written} sentences written")
 
         # Training set
         if train_size:
-            print(f"\nWriting {train_size} {'shuffled ' if shuffle else ''}sentences to {OUTFILE_TRAIN}")
+            print(
+                f"\nWriting {train_size} {'shuffled ' if shuffle else ''}sentences to {OUTFILE_TRAIN}"
+            )
             written = write_file(OUTFILE_TRAIN, gen, train_size, scores)
             print(f"{written} sentences written")
 
@@ -190,25 +219,49 @@ if __name__ == "__main__":
 
     import argparse
 
-    parser = argparse.ArgumentParser(description='Generates training data files')
-    parser.add_argument('--dev', dest='DEV_SIZE', type=int,
-        help="number of sentences in the development set (default 20,000)", default=20000)
-    parser.add_argument('--train', dest='TRAIN_SIZE', type=int,
-        help="number of sentences in the training set (default 1,500,000)", default=1500000)
-    parser.add_argument('--noshuffle', dest='NO_SHUFFLE', action="store_true",
-        help="do not shuffle output", default=False)
-    parser.add_argument('--scores', dest='SCORES', action="store_true",
-        help="include sentence scores", default=False)
-    parser.add_argument('--parse_date_gt', dest='PARSE_DATE_GT', type=str,
-                        help="Cutoff date for parsed field, format YYYY-MM-DD.", default=None)
+    parser = argparse.ArgumentParser(description="Generates training data files")
+    parser.add_argument(
+        "--dev",
+        dest="DEV_SIZE",
+        type=int,
+        help="number of sentences in the development set (default 20,000)",
+        default=20000,
+    )
+    parser.add_argument(
+        "--train",
+        dest="TRAIN_SIZE",
+        type=int,
+        help="number of sentences in the training set (default 1,500,000)",
+        default=1500000,
+    )
+    parser.add_argument(
+        "--noshuffle",
+        dest="NO_SHUFFLE",
+        action="store_true",
+        help="do not shuffle output",
+        default=False,
+    )
+    parser.add_argument(
+        "--scores",
+        dest="SCORES",
+        action="store_true",
+        help="include sentence scores",
+        default=False,
+    )
+    parser.add_argument(
+        "--parse_date_gt",
+        dest="PARSE_DATE_GT",
+        type=str,
+        help="Cutoff date for parsed field, format YYYY-MM-DD.",
+        default=None,
+    )
 
     args = parser.parse_args()
 
     main(
-        dev_size = args.DEV_SIZE,
-        train_size = args.TRAIN_SIZE,
-        shuffle = not args.NO_SHUFFLE,
-        scores = args.SCORES,
-        parse_date_gt = args.PARSE_DATE_GT
+        dev_size=args.DEV_SIZE,
+        train_size=args.TRAIN_SIZE,
+        shuffle=not args.NO_SHUFFLE,
+        scores=args.SCORES,
+        parse_date_gt=args.PARSE_DATE_GT,
     )
-

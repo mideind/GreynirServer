@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -52,8 +52,8 @@ def fetch_articles(
     author=None,
     enclosing_session=None,
 ):
-    """ Return a list of articles in chronologically reversed order.
-        Articles can be filtered by start date, location, country, root etc. """
+    """Return a list of articles in chronologically reversed order.
+    Articles can be filtered by start date, location, country, root etc."""
     toplist = []
 
     with SessionContext(read_only=True, session=enclosing_session) as session:
@@ -93,10 +93,14 @@ def fetch_articles(
         if topic:
             q = q.join(ArticleTopic).join(Topic).filter(Topic.identifier == topic)
 
-        q = q.order_by(desc(cast(Column, Article.timestamp))).offset(offset).limit(limit)
+        q = (
+            q.order_by(desc(cast(Column, Article.timestamp)))
+            .offset(offset)
+            .limit(limit)
+        )
 
         class ArticleDisplay:
-            """ Utility class to carry information about an article to the web template """
+            """Utility class to carry information about an article to the web template"""
 
             def __init__(
                 self,
@@ -122,8 +126,8 @@ def fetch_articles(
 
             @property
             def width(self):
-                """ The ratio of parsed sentences to the total number of sentences,
-                    expressed as a percentage string """
+                """The ratio of parsed sentences to the total number of sentences,
+                expressed as a percentage string"""
                 if self.num_sentences == 0:
                     return "0%"
                 return "{0}%".format((100 * self.num_parsed) // self.num_sentences)
@@ -168,7 +172,7 @@ def fetch_articles(
 @routes.route("/news")
 @max_age(seconds=60)
 def news() -> Union[Response, str]:
-    """ Handler for a page with a list of articles + pagination """
+    """Handler for a page with a list of articles + pagination"""
     topic = request.args.get("topic")
     root = request.args.get("root")
     author = request.args.get("author")
@@ -233,7 +237,7 @@ ARTICLES_LIST_MAXITEMS = 50
 
 @routes.route("/articles", methods=["GET"])
 def articles_list():
-    """ Returns rendered HTML article list as a JSON payload """
+    """Returns rendered HTML article list as a JSON payload"""
     locname = request.args.get("locname")
     country = request.args.get("country")
     period = request.args.get("period")

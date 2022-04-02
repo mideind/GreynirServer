@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -124,18 +124,18 @@ _NUM_NEUT_TO_DECL: _DeclensionMapping = {
 }
 
 _LARGE_NUMBERS: Tuple[Tuple[int, str, str], ...] = (
-    (10 ** 48, "oktilljón", "kvk"),
-    (10 ** 42, "septilljón", "kvk"),
-    (10 ** 36, "sextilljón", "kvk"),
-    (10 ** 30, "kvintilljón", "kvk"),
-    (10 ** 27, "kvaðrilljarð", "kk"),
-    (10 ** 24, "kvaðrilljón", "kvk"),
-    (10 ** 21, "trilljarð", "kk"),
-    (10 ** 18, "trilljón", "kvk"),
-    (10 ** 15, "billjarð", "kk"),
-    (10 ** 12, "billjón", "kvk"),
-    (10 ** 9, "milljarð", "kk"),
-    (10 ** 6, "milljón", "kvk"),
+    (10**48, "oktilljón", "kvk"),
+    (10**42, "septilljón", "kvk"),
+    (10**36, "sextilljón", "kvk"),
+    (10**30, "kvintilljón", "kvk"),
+    (10**27, "kvaðrilljarð", "kk"),
+    (10**24, "kvaðrilljón", "kvk"),
+    (10**21, "trilljarð", "kk"),
+    (10**18, "trilljón", "kvk"),
+    (10**15, "billjarð", "kk"),
+    (10**12, "billjón", "kvk"),
+    (10**9, "milljarð", "kk"),
+    (10**6, "milljón", "kvk"),
 )
 
 

@@ -4,7 +4,7 @@
 
     Built-in query module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
     Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
@@ -343,7 +343,7 @@ _MAX_MENTIONS = 5
 
 
 def append_answers(rd: RegisterType, q, prop_func: Callable) -> None:
-    """ Iterate over query results and add them to the result dictionary rd """
+    """Iterate over query results and add them to the result dictionary rd"""
     for p in q:
         s = correct_spaces(prop_func(p))
         ai = dict(
@@ -459,7 +459,7 @@ def append_names(rd: RegisterType, q, prop_func) -> None:
 
 
 def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
-    """ Create a response list from the result dictionary rd """
+    """Create a response list from the result dictionary rd"""
     # rd is { result: { article_id : article_descriptor } }
     # where article_descriptor is a dict
 
@@ -471,21 +471,21 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
     # * Longer results are better than shorter ones
 
     def contained(needle: str, haystack: str) -> bool:
-        """ Return True if whole needles are contained in the haystack """
+        """Return True if whole needles are contained in the haystack"""
         return (" " + needle.lower() + " ") in (" " + haystack.lower() + " ")
 
     def sort_articles(articles):
-        """ Sort the individual article URLs so that the newest one appears first """
+        """Sort the individual article URLs so that the newest one appears first"""
         return sorted(articles.values(), key=lambda x: x["timestamp"], reverse=True)
 
     def length_weight(result: str) -> float:
-        """ Longer results are better than shorter ones, but only to a point """
+        """Longer results are better than shorter ones, but only to a point"""
         return min(math.e * math.log(len(result)), 10.0)
 
     now = datetime.utcnow()
 
     def mention_weight(articles) -> float:
-        """ Newer mentions are better than older ones """
+        """Newer mentions are better than older ones"""
         w = 0.0
         newest_mentions = sort_articles(articles)[0:_MAX_MENTIONS]
         for a in newest_mentions:
@@ -519,7 +519,7 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
     len_rl = len(rl)
 
     def is_ex(s):
-        """ Does the given result contain an 'ex' prefix? """
+        """Does the given result contain an 'ex' prefix?"""
         return any(
             contained(x, s)
             for x in ("fyrrverandi", "fv.", "fráfarandi", "áður", "þáverandi", "fyrrum")
@@ -574,7 +574,7 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
 
 
 def prepare_response(q, prop_func):
-    """ Prepare and return a simple (one-query) response """
+    """Prepare and return a simple (one-query) response"""
     rd: RegisterType = defaultdict(dict)
     append_answers(rd, q, prop_func)
     return make_response_list(rd)
@@ -622,7 +622,7 @@ def add_entity_to_register(
 def add_name_to_register(
     name: str, register: RegisterType, session: Session, all_names: bool = False
 ) -> None:
-    """ Add the name and the 'best' title to the given name register dictionary """
+    """Add the name and the 'best' title to the given name register dictionary"""
     if name in register:
         # Already have a title for this exact name; don't bother
         return
@@ -652,7 +652,7 @@ def create_name_register(
 
 
 def _query_person_titles(session: Session, name: str):
-    """ Return a list of all titles for a person """
+    """Return a list of all titles for a person"""
     # This list should never become very long, so we don't
     # apply a limit here
     rd: RegisterType = defaultdict(dict)
@@ -726,7 +726,7 @@ def _query_article_list(session, name: str):
 
 
 def query_person(query: Query, session: Session, name: str) -> AnswerTuple:
-    """ A query for a person by name """
+    """A query for a person by name"""
     response: Dict[str, Any] = dict(answers=[], sources=[])
     if name in {"hann", "hún", "hán", "það"}:
         # Using a personal pronoun: check whether we can infer
@@ -807,7 +807,7 @@ _DONT_LIKE_TITLE = (
 
 
 def query_person_title(session, name: str) -> Tuple[str, Optional[str]]:
-    """ Return the most likely title for a person """
+    """Return the most likely title for a person"""
 
     def we_dont_like(answer: str) -> bool:
         """Return False if we don't like this title and
@@ -830,7 +830,7 @@ def query_person_title(session, name: str) -> Tuple[str, Optional[str]]:
 
 
 def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
-    """ A query for a person by title """
+    """A query for a person by title"""
     # !!! Consider doing a LIKE '%title%', not just LIKE 'title%'
     # We impose a LIMIT of 1024 on each query result,
     # since the query may return many names (for instance 'Hver er formaður?'),
@@ -899,7 +899,7 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
 
 
 def _query_entity_definitions(session: Session, name: str) -> List[Dict[str, Any]]:
-    """ A query for definitions of an entity by name """
+    """A query for definitions of an entity by name"""
     # Note: the comparison below between name_lc and name
     # is automatically case-insensitive, so name.lower() is not required
     q = (
@@ -923,7 +923,7 @@ def _query_entity_definitions(session: Session, name: str) -> List[Dict[str, Any
 
 
 def query_entity(query: Query, session: Session, name: str) -> AnswerTuple:
-    """ A query for an entity by name """
+    """A query for an entity by name"""
     titles = _query_entity_definitions(session, name)
     articles = _query_article_list(session, name)
     response: ResponseDict = dict(answers=titles, sources=articles)
@@ -956,7 +956,7 @@ def query_entity(query: Query, session: Session, name: str) -> AnswerTuple:
 
 
 def query_entity_def(session, name: str) -> str:
-    """ Return a single (best) definition of an entity """
+    """Return a single (best) definition of an entity"""
     rl = _query_entity_definitions(session, name)
     return correct_spaces(rl[0]["answer"]) if rl else ""
 
@@ -964,7 +964,7 @@ def query_entity_def(session, name: str) -> str:
 def query_company(
     query: Query, session: Session, name: str
 ) -> Tuple[List[Dict[str, Any]], str, str]:
-    """ A query for an company in the entities table """
+    """A query for an company in the entities table"""
     # Create a query name by cutting off periods at the end
     # (hf. -> hf) and adding a percent pattern match at the end
     qname = name.strip()
@@ -998,7 +998,7 @@ def query_company(
 
 
 def query_word(query: Query, session: Session, stem: str) -> AnswerTuple:
-    """ A query for words related to the given stem """
+    """A query for words related to the given stem"""
     # Count the articles where the stem occurs
     acnt = ArticleCountQuery.count(stem, enclosing_session=session)
     if acnt:
@@ -1022,7 +1022,7 @@ def query_word(query: Query, session: Session, stem: str) -> AnswerTuple:
 
 
 def launch_search(query: Query, session: Session, qkey: str) -> AnswerTuple:
-    """ Launch a search with the given search terms """
+    """Launch a search with the given search terms"""
     toklist = query.token_list
     assert toklist is not None
     pgs, _ = TreeUtility.raw_tag_toklist(toklist)  # root=_QUERY_ROOT
@@ -1069,7 +1069,7 @@ def launch_search(query: Query, session: Session, qkey: str) -> AnswerTuple:
 
 
 def repeat_query(query: Query, session: Session, qkey: str) -> AnswerTuple:
-    """ Request to repeat the result of the last query """
+    """Request to repeat the result of the last query"""
     last = query.last_answer()
     if last is None:
         answer = "Ekkert nýlegt svar."
@@ -1102,7 +1102,7 @@ _Q_ONLY_VOICE = frozenset(("Repeat",))
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
@@ -1149,7 +1149,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
 
 def QPerson(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Person query """
+    """Person query"""
     result.qtype = "Person"
     if "mannsnafn" in result:
         result.qkey = result.mannsnafn
@@ -1162,7 +1162,7 @@ def QPerson(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QPersonPronoun(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Persónufornafn: hann, hún, það """
+    """Persónufornafn: hann, hún, það"""
     result.persónufornafn = result._nominative
 
 
@@ -1193,23 +1193,23 @@ def QSearch(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QRepeat(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Request to repeat the last query answer """
+    """Request to repeat the last query answer"""
     result.qkey = ""
     result.qtype = "Repeat"
 
 
 def Sérnafn(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Sérnafn, stutt eða langt """
+    """Sérnafn, stutt eða langt"""
     result.sérnafn = result._nominative
 
 
 def Fyrirtæki(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Fyrirtækisnafn, þ.e. sérnafn + ehf./hf./Inc. o.s.frv. """
+    """Fyrirtækisnafn, þ.e. sérnafn + ehf./hf./Inc. o.s.frv."""
     result.fyrirtæki = result._nominative
 
 
 def Mannsnafn(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Hreint mannsnafn, þ.e. án ávarps og titils """
+    """Hreint mannsnafn, þ.e. án ávarps og titils"""
     result.mannsnafn = result._nominative
 
 
@@ -1233,7 +1233,7 @@ def QEntityKey(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QTitleKey(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Titill """
+    """Titill"""
     result.titill = result._nominative
 
 

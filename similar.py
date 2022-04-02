@@ -5,7 +5,7 @@
 
     Similarity query client
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ except ImportError:
 
 
 def _SocketClient(address):
-    """ Return a connection object connected to the socket given by `address` """
+    """Return a connection object connected to the socket given by `address`"""
     sock = cast(Any, socket)
     with closing(sock.socket(sock.AF_INET)) as s:
         s.setblocking(True)
@@ -71,7 +71,7 @@ def _SocketClient(address):
 
 
 def _Client(address, authkey=None):
-    """ Returns a connection to the address of a `Listener` """
+    """Returns a connection to the address of a `Listener`"""
     c = _SocketClient(address)
     if authkey is not None:
         if not isinstance(authkey, bytes):
@@ -83,8 +83,8 @@ def _Client(address, authkey=None):
 
 class SimilarityClient:
 
-    """ A client that interacts with the similarity server over a
-        TCP socket, typically on port 5001 """
+    """A client that interacts with the similarity server over a
+    TCP socket, typically on port 5001"""
 
     BASE_PATH = os.path.dirname(os.path.realpath(__file__))
     KEY_FILE = os.path.join(BASE_PATH, "resources", "SimilarityServerKey.txt")
@@ -93,7 +93,7 @@ class SimilarityClient:
         self._conn = None
 
     def _connect(self):
-        """ Connect to a similarity server, with authentication """
+        """Connect to a similarity server, with authentication"""
         if self._conn is not None:
             # Already connected
             return
@@ -125,9 +125,9 @@ class SimilarityClient:
             # Leave self._conn set to None
 
     def _retry_list(self, **kwargs):
-        """ Connect to the server and send it a request, retrying if the
-            server has closed the connection in the meantime. Return a
-            dict with a result list or an empty list if no connection. """
+        """Connect to the server and send it a request, retrying if the
+        server has closed the connection in the meantime. Return a
+        dict with a result list or an empty list if no connection."""
         retries = 0
         while retries < 2:
             self._connect()
@@ -143,8 +143,8 @@ class SimilarityClient:
         return dict(articles=[])
 
     def _retry_cmd(self, **kwargs):
-        """ Connect to the server and send it a command, retrying if the
-            server has closed the connection in the meantime. """
+        """Connect to the server and send it a command, retrying if the
+        server has closed the connection in the meantime."""
         retries = 0
         while retries < 2:
             self._connect()
@@ -161,29 +161,29 @@ class SimilarityClient:
                 continue
 
     def list_similar_to_article(self, article_id, n=10):
-        """ Returns a dict containing a list of (article_id, similarity) tuples """
+        """Returns a dict containing a list of (article_id, similarity) tuples"""
         return self._retry_list(cmd="similar", id=article_id, n=n)
 
     def list_similar_to_topic(self, topic_vector, n=10):
-        """ Returns a dict containing a list of (article_id, similarity) tuples """
+        """Returns a dict containing a list of (article_id, similarity) tuples"""
         return self._retry_list(cmd="similar", topic=topic_vector, n=n)
 
     def list_similar_to_terms(self, terms, n=10):
-        """ The terms are a list of (stem, category) tuples.
-            Returns a dict where the articles key contains a
-            list of (article_id, similarity) tuples """
+        """The terms are a list of (stem, category) tuples.
+        Returns a dict where the articles key contains a
+        list of (article_id, similarity) tuples"""
         return self._retry_list(cmd="similar", terms=terms, n=n)
 
     def refresh_topics(self):
-        """ Cause the server to refresh article topic vectors from the database """
+        """Cause the server to refresh article topic vectors from the database"""
         self._retry_cmd(cmd="refresh")
 
     def reload_topics(self):
-        """ Cause the server to reload article topic vectors from the database """
+        """Cause the server to reload article topic vectors from the database"""
         self._retry_cmd(cmd="reload")
 
     def close(self):
-        """ Close a client connection """
+        """Close a client connection"""
         if self._conn is not None:
             self._conn.close()
             self._conn = None

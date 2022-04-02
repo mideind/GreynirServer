@@ -4,7 +4,7 @@
 
     News query response module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -121,7 +121,7 @@ _NEWS_CACHE_TTL = 300  # seconds, ttl = 5 mins
 
 @cachetools.cached(cachetools.TTLCache(1, _NEWS_CACHE_TTL))
 def _get_news_data(max_items: int = 8) -> Optional[List[Dict]]:
-    """ Fetch news headline data from RÚV, preprocess it. """
+    """Fetch news headline data from RÚV, preprocess it."""
     res = query_json_api(_NEWS_API)
     if not isinstance(res, dict) or "nodes" not in res or not len(res["nodes"]):
         return None
@@ -143,7 +143,7 @@ _BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
 
 
 def top_news_answer() -> Optional[AnswerTuple]:
-    """ Answer query about top news. """
+    """Answer query about top news."""
     headlines = _get_news_data()
     if not headlines:
         return None
@@ -161,7 +161,7 @@ def top_news_answer() -> Optional[AnswerTuple]:
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" in result:
         try:

@@ -7,7 +7,7 @@
 
     POS tagger training program
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ import time
 basepath, _ = os.path.split(os.path.realpath(__file__))
 _TOOLS = os.sep + "tools"
 if basepath.endswith(_TOOLS):
-    basepath = basepath[0:-len(_TOOLS)]
+    basepath = basepath[0 : -len(_TOOLS)]
     sys.path.append(basepath)
 
 from bindb import GreynirBin
@@ -50,7 +50,7 @@ _TNT_MODEL_FILE = os.path.join(basepath, "config", "TnT-model.pickle")
 
 
 @contextmanager
-def timeit(description = "Timing"):
+def timeit(description="Timing"):
     print("{0}: starting".format(description))
     t0 = time.time()
     yield
@@ -59,26 +59,28 @@ def timeit(description = "Timing"):
 
 
 def train_tagger():
-    """ Train the TnT tagger and store its model in a pickle file """
+    """Train the TnT tagger and store its model in a pickle file"""
 
     # Number of training and test sentences
-    TRAINING_SET = 0 # 25000
+    TRAINING_SET = 0  # 25000
     TEST_SET = 400
-    BEAM_SIZE = 250 # A higher number does not seem to yield improved results
+    BEAM_SIZE = 250  # A higher number does not seem to yield improved results
 
-    tnt_tagger = TnT(N = BEAM_SIZE, C = True)
+    tnt_tagger = TnT(N=BEAM_SIZE, C=True)
     if TRAINING_SET:
         with timeit(f"Train TnT tagger on {TRAINING_SET} sentences from articles"):
             # Get a sentence stream from parsed articles
             # Number of sentences, size of training set
-            sentence_stream = Article.sentence_stream(limit = TRAINING_SET, skip = TEST_SET)
+            sentence_stream = Article.sentence_stream(limit=TRAINING_SET, skip=TEST_SET)
             word_tag_stream = IFD_Tagset.word_tag_stream(sentence_stream)
             tnt_tagger.train(word_tag_stream)
     with timeit(f"Train TnT tagger on IFD training set"):
         # Get a sentence stream from parsed articles
         # Number of sentences, size of training set
         sample_ratio = 50
-        word_tag_stream = IFD_Corpus().word_tag_stream(skip = lambda n: n % sample_ratio == 0)
+        word_tag_stream = IFD_Corpus().word_tag_stream(
+            skip=lambda n: n % sample_ratio == 0
+        )
         tnt_tagger.train(word_tag_stream)
     with timeit(f"Store TnT model trained on {tnt_tagger.count} sentences"):
         tnt_tagger.store(_TNT_MODEL_FILE)

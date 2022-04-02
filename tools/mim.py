@@ -4,7 +4,7 @@
 
     MIM corpus test module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -37,15 +37,16 @@ from settings import Settings, ConfigError
 
 # Constants
 
-NS = 'http://www.tei-c.org/ns/1.0'
+NS = "http://www.tei-c.org/ns/1.0"
 LEN_NS_PREFIX = len(NS) + 2
 
 # Namespace dictionary for the XML parser
-ns = { 'mim': NS }
+ns = {"mim": NS}
 
 LEFT_SPACE = "([$«"
 RIGHT_SPACE = ".,:;!?%)]»"
 MID_SPACE = "#&=<>|"
+
 
 def find_pos_tags(forest):
 
@@ -53,25 +54,25 @@ def find_pos_tags(forest):
 
     class TerminalFinder(ParseForestNavigator):
 
-        """ Subclass to navigate a parse forest and populate the set
-            of terminals that match each token """
+        """Subclass to navigate a parse forest and populate the set
+        of terminals that match each token"""
 
         def visit_token(self, level, node):
-            """ At token node """
+            """At token node"""
             assert node.terminal is not None
             pos_tags[node.start] = (node.token, node.terminal)
             return None
 
     TerminalFinder().go(forest)
 
-    #for key, val in sorted(pos_tags.items()):
+    # for key, val in sorted(pos_tags.items()):
     #    print("{0}: {1} -> {2}".format(key, val[0], val[1]))
 
     return pos_tags
 
 
 def parse_tokens(toklist, mim_tags, fast_p):
-    """ Parse the given token list and return a result dict """
+    """Parse the given token list and return a result dict"""
 
     # Count sentences
     num_sent = 0
@@ -95,8 +96,8 @@ def parse_tokens(toklist, mim_tags, fast_p):
             if slen:
                 # Parse the accumulated sentence
                 err_index = None
-                num = 0 # Number of tree combinations in forest
-                score = 0 # Reducer score of the best parse tree
+                num = 0  # Number of tree combinations in forest
+                score = 0  # Reducer score of the best parse tree
 
                 try:
                     # Progress indicator: sentence count
@@ -129,7 +130,9 @@ def parse_tokens(toklist, mim_tags, fast_p):
                     total_tokens += slen
                 # Mark the sentence beginning with the number of parses
                 # and the index of the offending token, if an error occurred
-                toklist[sent_begin] = TOK.Begin_Sentence(num_parses = num, err_index = err_index)
+                toklist[sent_begin] = TOK.Begin_Sentence(
+                    num_parses=num, err_index=err_index
+                )
         elif t[0] == TOK.P_BEGIN:
             pass
         elif t[0] == TOK.P_END:
@@ -138,57 +141,65 @@ def parse_tokens(toklist, mim_tags, fast_p):
             sent.append(t)
             # Check whether the token streams are in sync
             if tag_ix < ntags and t[1] != mim_tags[tag_ix][1]:
-                #print("Warning: mismatch between MIM token '{0}' and Greynir token '{1}'".format(mim_tags[tag_ix][1], t[1]))
+                # print("Warning: mismatch between MIM token '{0}' and Greynir token '{1}'".format(mim_tags[tag_ix][1], t[1]))
                 # Attempt to sync again by finding the Greynir token in the MIM tag stream
                 gap = 1
                 MAX_LOOKAHEAD = 4
-                while gap < MAX_LOOKAHEAD and (tag_ix + gap) < ntags and mim_tags[tag_ix + gap][1] != t[1]:
+                while (
+                    gap < MAX_LOOKAHEAD
+                    and (tag_ix + gap) < ntags
+                    and mim_tags[tag_ix + gap][1] != t[1]
+                ):
                     gap += 1
                 if gap < MAX_LOOKAHEAD:
                     # Found the Greynir token ahead
-                    #print("Re-synced by skipping ahead by {0} tokens".format(gap))
+                    # print("Re-synced by skipping ahead by {0} tokens".format(gap))
                     tag_ix += gap
             if tag_ix < ntags:
                 tag_ix += 1
 
     return dict(
-        tokens = toklist,
-        tok_num = len(toklist),
-        num_sent = num_sent,
-        num_parsed_sent = num_parsed_sent,
-        avg_ambig_factor = (total_ambig / total_tokens) if total_tokens > 0 else 1.0
+        tokens=toklist,
+        tok_num=len(toklist),
+        num_sent=num_sent,
+        num_parsed_sent=num_parsed_sent,
+        avg_ambig_factor=(total_ambig / total_tokens) if total_tokens > 0 else 1.0,
     )
 
 
 def parse_paragraph(parag, mim_tags, fast_p):
-    """ Parse a single paragraph in free text form and compare to MIM POS tags """
+    """Parse a single paragraph in free text form and compare to MIM POS tags"""
 
     tokens = tokenize(parag)
     tlist = list(tokens)
     result = parse_tokens(tlist, mim_tags, fast_p)
-    print("{0}\n--> {1} sentences, {2} parsed".format(parag, result["num_sent"], result["num_parsed_sent"]))
+    print(
+        "{0}\n--> {1} sentences, {2} parsed".format(
+            parag, result["num_sent"], result["num_parsed_sent"]
+        )
+    )
 
 
 def parse_xml_file(fpath, fast_p):
-    """ Parses a single XML file """
+    """Parses a single XML file"""
 
     tree = ET.parse(fpath)
     root = tree.getroot()
-    text = root.find('mim:text', ns)
-    s = text.findall('.//mim:s',ns)
+    text = root.find("mim:text", ns)
+    s = text.findall(".//mim:s", ns)
     # Person name being accumulated
     acc_ty = ""
     acc_name = ""
 
     for sent in s:
-        print("\nFile {0} paragraph {1}".format(fpath, sent.attrib['n']))
+        print("\nFile {0} paragraph {1}".format(fpath, sent.attrib["n"]))
         stext = []
         mim_tags = []
         last_was_word = False
         for child in sent:
             tag = child.tag[LEN_NS_PREFIX:]
             ty = child.attrib["type"]
-            #print("{0}: '{2}' {1}".format(tag, child.attrib, child.text))
+            # print("{0}: '{2}' {1}".format(tag, child.attrib, child.text))
             if tag == "w":
                 if last_was_word:
                     stext.append(" " + child.text)
@@ -233,9 +244,9 @@ def parse_xml_file(fpath, fast_p):
 
 
 def parse_directory(dirpath, fast_p):
-    """ Parses all XML files in a directory """
+    """Parses all XML files in a directory"""
     print("*** Parsing directory {0}".format(dirpath))
-    if dirpath != 'mim/raduneyti':
+    if dirpath != "mim/raduneyti":
         return
     for f in listdir(dirpath):
         fpath = join(dirpath, f)
@@ -244,7 +255,7 @@ def parse_directory(dirpath, fast_p):
 
 
 def parse_directories(rootpath, fast_p):
-    """ Visit all subdirectories within a directory """
+    """Visit all subdirectories within a directory"""
     for d in listdir(rootpath):
         dpath = join(rootpath, d)
         if isdir(dpath):
@@ -262,17 +273,22 @@ if __name__ == "__main__":
         print("Configuration error: {0}".format(e))
         quit()
 
-    print("Running Greynir with debug={0}, host={1}, db_hostname={2}"
-        .format(Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME))
+    print(
+        "Running Greynir with debug={0}, host={1}, db_hostname={2}".format(
+            Settings.DEBUG, Settings.HOST, Settings.DB_HOSTNAME
+        )
+    )
 
-    with Fast_Parser(verbose = False) as fast_p:
+    with Fast_Parser(verbose=False) as fast_p:
 
         g = fast_p.grammar
 
-        print("Greynir.grammar has {0} nonterminals, {1} terminals, {2} productions"
-            .format(g.num_nonterminals, g.num_terminals, g.num_productions))
+        print(
+            "Greynir.grammar has {0} nonterminals, {1} terminals, {2} productions".format(
+                g.num_nonterminals, g.num_terminals, g.num_productions
+            )
+        )
 
         # Attempt to parse all XML files in subdirectories within mim/
 
         parse_directories("mim", fast_p)
-

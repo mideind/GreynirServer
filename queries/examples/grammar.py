@@ -4,7 +4,7 @@
 
     Example of a grammar query processor module.
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -41,8 +41,8 @@ TOPIC_LEMMAS = ["prufa"]
 
 
 def help_text(lemma: str) -> str:
-    """ Help text to return when query.py is unable to parse a query but
-        one of the above lemmas is found in it """
+    """Help text to return when query.py is unable to parse a query but
+    one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(("Er þetta prufa", "Gæti þetta verið prufa"))
     )
@@ -84,7 +84,7 @@ def QGrammarExampleNotTest(node, params, result):
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q = state["query"]
     if "qtype" in result and "qkey" in result and result.qtype == "GrammarTest":
         # Successfully matched this query type, we're handling it...

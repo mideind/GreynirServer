@@ -4,7 +4,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ if basepath.endswith(_TOOLS):
     sys.path.append(basepath)
 
 from settings import Settings, ConfigError
+
 # from article import Article
 from db import SessionContext
 from db.models import Article as ArticleModel

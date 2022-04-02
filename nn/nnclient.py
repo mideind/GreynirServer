@@ -5,7 +5,7 @@
 
     Neural Network Query Client
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -43,8 +43,8 @@ from reynir import bintokenizer
 
 
 class NnClient:
-    """ A client that connects to the HTTP REST interface of
-        a tensorflow model server (using plaintext) """
+    """A client that connects to the HTTP REST interface of
+    a tensorflow model server (using plaintext)"""
 
     port = None  # type: Optional[int]
     host = None  # type: Optional[str]
@@ -52,17 +52,17 @@ class NnClient:
 
     @classmethod
     def request_sentence(cls, text):
-        """ Request neural network output for a single sentence """
+        """Request neural network output for a single sentence"""
         raise NotImplementedError
 
     @classmethod
     def request_text(cls, text):
-        """ Request neural network output for contiguous text """
+        """Request neural network output for contiguous text"""
         raise NotImplementedError
 
     @classmethod
     def _request(cls, pgs, data=None):
-        """ Send serialized request to remote model server """
+        """Send serialized request to remote model server"""
         url = "http://{host}:{port}/{verb}.api".format(
             host=cls.host, port=cls.port, verb=cls.verb
         )
@@ -88,21 +88,21 @@ class NnClient:
 
     @classmethod
     def _process_response(cls, instance, sent):
-        """ Process the response from a single sentence.
-            Abstract method """
+        """Process the response from a single sentence.
+        Abstract method"""
         raise NotImplementedError
 
     @classmethod
     def _normalize_text(cls, sent):
-        """ Preprocess text and normalize for neural network input
-            Abstract method """
+        """Preprocess text and normalize for neural network input
+        Abstract method"""
         raise NotImplementedError
 
 
 class TranslateClient(NnClient):
-    """ A client that connects to an HTTP RESTful interface of
-        middleware server for a tensorflow model server (using plaintext) that returns
-        an English translation of Icelandic text """
+    """A client that connects to an HTTP RESTful interface of
+    middleware server for a tensorflow model server (using plaintext) that returns
+    an English translation of Icelandic text"""
 
     port = Settings.NN_TRANSLATION_PORT
     host = Settings.NN_TRANSLATION_HOST
@@ -110,7 +110,7 @@ class TranslateClient(NnClient):
 
     @classmethod
     def _process_response(cls, instance, sent):
-        """ Process the response from a single sentence """
+        """Process the response from a single sentence"""
         result = dict(
             inputs=sent, outputs=instance["outputs"], scores=float(instance["scores"])
         )
@@ -118,12 +118,12 @@ class TranslateClient(NnClient):
 
     @classmethod
     def _normalize_text(cls, text):
-        """ Preprocess text and normalize for translation network """
+        """Preprocess text and normalize for translation network"""
         return text
 
     @classmethod
     def request_sentence(cls, text, src_lang=None, tgt_lang=None):
-        """ Request neural network output for a single sentence """
+        """Request neural network output for a single sentence"""
         if "\n" in text:
             single_sentence = text.split("\n")[0]
         else:
@@ -137,7 +137,7 @@ class TranslateClient(NnClient):
 
     @classmethod
     def request_text(cls, text, src_lang=None, tgt_lang=None):
-        """ Preprocess, segment and normalize text for translation network """
+        """Preprocess, segment and normalize text for translation network"""
         pg_map, sent_map = index_text(text)
         sents = list(sent_map.values())
         data = dict(src_lang=src_lang, tgt_lang=tgt_lang)
@@ -148,9 +148,9 @@ class TranslateClient(NnClient):
 
     @classmethod
     def request_segmented(cls, sent_map, src_lang=None, tgt_lang=None, verbatim=False):
-        """ Translate presegmented sentences
-            args:
-                sent_map: either a list of sentences or a dict[key] of sentences"""
+        """Translate presegmented sentences
+        args:
+            sent_map: either a list of sentences or a dict[key] of sentences"""
         data = dict(src_lang=src_lang, tgt_lang=tgt_lang)
         if isinstance(sent_map, dict):
             sents = (
@@ -174,9 +174,9 @@ class TranslateClient(NnClient):
 
 
 class ParsingClient(NnClient):
-    """ A client that connects to an HTTP RESTful interface of
-        middleware server for a tensorflow model server (using plaintext) that returns
-        a parse tree of Icelandic text """
+    """A client that connects to an HTTP RESTful interface of
+    middleware server for a tensorflow model server (using plaintext) that returns
+    a parse tree of Icelandic text"""
 
     port = Settings.NN_PARSING_PORT
     host = Settings.NN_PARSING_HOST
@@ -184,7 +184,7 @@ class ParsingClient(NnClient):
 
     @classmethod
     def _process_response(cls, instance, sent):
-        """ Process the response from a single sentence """
+        """Process the response from a single sentence"""
         try:
             instance["scores"] = max(float(score) for score in instance["scores"])
         except TypeError:
@@ -194,8 +194,8 @@ class ParsingClient(NnClient):
 
     @classmethod
     def _instances_to_ptrees(cls, insts, sents):
-        """ Transforms list of result dicts of flat parse trees
-            into a list of dicts of parsed tree structures """
+        """Transforms list of result dicts of flat parse trees
+        into a list of dicts of parsed tree structures"""
         for (inst, sent) in zip(insts, sents):
             parse_toks = inst["outputs"]
             tree, p_result = nntree.parse_tree_with_text(parse_toks, sent)
@@ -214,8 +214,8 @@ class ParsingClient(NnClient):
                     print("Output: {parse_toks}".format(parse_toks=parse_toks))
 
     @classmethod
-    def request_text(cls, text: str, flat: bool=False):
-        """ Request neural network output for contiguous text """
+    def request_text(cls, text: str, flat: bool = False):
+        """Request neural network output for contiguous text"""
         sents = cls._normalize_text(text)
         results = cls._request(sents)
         if not flat:
@@ -223,8 +223,8 @@ class ParsingClient(NnClient):
         return results
 
     @classmethod
-    def request_sentence(cls, text: str, flat: bool=False):
-        """ Request neural network output for a single sentence """
+    def request_sentence(cls, text: str, flat: bool = False):
+        """Request neural network output for a single sentence"""
         if "\n" in text:
             single_sentence = text.split("\n")[0]
         else:
@@ -241,7 +241,7 @@ class ParsingClient(NnClient):
 
     @classmethod
     def _normalize_text(cls, text: str) -> List[str]:
-        """ Preprocess text and normalize for parsing network """
+        """Preprocess text and normalize for parsing network"""
         pgs = text.split("\n")
         normalized_pgs = [
             [
@@ -257,7 +257,7 @@ class ParsingClient(NnClient):
     def _normalize_sentence(
         cls, single_sentence: bintokenizer.StringIterable
     ) -> List[str]:
-        """ Preprocess text and normalize for parsing network """
+        """Preprocess text and normalize for parsing network"""
         return [
             tok.txt
             for tok in bintokenizer.tokenize(single_sentence)

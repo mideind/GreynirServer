@@ -4,7 +4,7 @@
 
     POS tagger module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -41,7 +41,19 @@
 
 """
 
-from typing import Callable, Dict, List, Optional, Sequence, TextIO, Tuple, Iterable, Iterator, Union, cast
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    TextIO,
+    Tuple,
+    Iterable,
+    Iterator,
+    Union,
+    cast,
+)
 
 import math
 import os
@@ -54,7 +66,12 @@ from reynir.binparser import canonicalize_token
 from reynir.bintokenizer import TokenDict
 from reynir.ifdtagger import IFD_Tagset
 from reynir.settings import Prepositions
-from tokenizer.definitions import BIN_Tuple, BIN_TupleList, PersonNameList, PersonNameTuple
+from tokenizer.definitions import (
+    BIN_Tuple,
+    BIN_TupleList,
+    PersonNameList,
+    PersonNameTuple,
+)
 from tokenizer.tokenizer import Tok
 
 from treeutil import TreeUtility
@@ -62,8 +79,8 @@ from treeutil import TreeUtility
 
 class IFD_Corpus:
 
-    """ A utility class to access the IFD corpus of XML files, by default
-        assumed to be located in the `ifd` directory. """
+    """A utility class to access the IFD corpus of XML files, by default
+    assumed to be located in the `ifd` directory."""
 
     def __init__(self, ifd_dir: str = "ifd") -> None:
         self._ifd_full_dir = os.path.join(os.getcwd(), ifd_dir)
@@ -77,7 +94,7 @@ class IFD_Corpus:
     def number_of_files(
         self, filter_func: Optional[Callable[[str], bool]] = None
     ) -> int:
-        """ Return the number of files in the corpus after filtering by filter_func, if given """
+        """Return the number of files in the corpus after filtering by filter_func, if given"""
         return sum(
             (1 if filter_func is None or filter_func(x) else 0) for x in self._xml_files
         )
@@ -85,21 +102,21 @@ class IFD_Corpus:
     def file_name_stream(
         self, filter_func: Optional[Callable[[str], bool]] = None
     ) -> Iterable[str]:
-        """ Generator of file names, including paths, eventually filtered by the filter_func """
+        """Generator of file names, including paths, eventually filtered by the filter_func"""
         for each in self._xml_files:
             if filter_func is None or filter_func(each):
                 filename = os.path.join(self._ifd_full_dir, each)
                 yield filename
 
     def starting_file(self, filename: str, count: int, num_files: int) -> None:
-        """ Called when xml_stream() starts to read from a new file """
+        """Called when xml_stream() starts to read from a new file"""
         # Override in derived classes to provide a progress report, if desired
         pass
 
     def xml_stream(
         self, filter_func: Optional[Callable[[str], bool]] = None
     ) -> Iterable[ET.Element]:
-        """ Generator of a stream of XML document roots, eventually filtered by the filter_func """
+        """Generator of a stream of XML document roots, eventually filtered by the filter_func"""
         num_files = self.number_of_files(filter_func)
         cnt = 0
         for each in self.file_name_stream(filter_func):
@@ -117,8 +134,8 @@ class IFD_Corpus:
         skip: Optional[int] = None,
         filter_func: Optional[Callable[[str], bool]] = None,
     ) -> Iterable[List[Tuple[str, str, str]]]:
-        """ Generator of sentences from the IFD XML files.
-            Each sentence consists of (word, tag, lemma) triples. """
+        """Generator of sentences from the IFD XML files.
+        Each sentence consists of (word, tag, lemma) triples."""
         count = 0
         skipped = 0
         for root in self.xml_stream(filter_func=filter_func):
@@ -148,8 +165,8 @@ class IFD_Corpus:
         skip: Optional[int] = None,
         filter_func: Optional[Callable[[str], bool]] = None,
     ) -> Iterable[List[str]]:
-        """ Generator of sentences from the IFD XML files.
-            Each sentence is a list of words. """
+        """Generator of sentences from the IFD XML files.
+        Each sentence is a list of words."""
         for sent in self.raw_sentence_stream(limit, skip, filter_func):
             yield [w for (w, _, _) in sent]
 
@@ -159,17 +176,17 @@ class IFD_Corpus:
         skip: Optional[int] = None,
         filter_func: Optional[Callable[[str], bool]] = None,
     ) -> Iterable[List[Tuple[str, str]]]:
-        """ Generator of sentences from the IFD XML files.
-            Each sentence consists of (word, tag) pairs. """
+        """Generator of sentences from the IFD XML files.
+        Each sentence consists of (word, tag) pairs."""
         for sent in self.raw_sentence_stream(limit, skip, filter_func):
             yield [(w, t) for (w, t, _) in sent]
 
 
 class NgramCounter:
 
-    """ A container for the dictionary of known n-grams along with their
-        counts. The container can store and load itself from a compact
-        text file. """
+    """A container for the dictionary of known n-grams along with their
+    counts. The container can store and load itself from a compact
+    text file."""
 
     def __init__(self) -> None:
         self._d = defaultdict(int)  # type: Dict[Tuple[str, ...], int]
@@ -185,7 +202,7 @@ class NgramCounter:
         return self._d.get(ngram, 0)
 
     def store(self, f: TextIO) -> None:
-        """ Store the ngram dictionary in a compact text format """
+        """Store the ngram dictionary in a compact text format"""
         d = self._d
         vocab = dict()  # type: Dict[str, int]
         # First, store the vocabulary (the distinct ngram tags)
@@ -221,17 +238,17 @@ class NgramCounter:
 
 class NgramTagger:
 
-    """ A class to assign Icelandic Frequency Dictionary (IFD) tags
-        to sentences consisting of 'raw' tokens coming out of the
-        tokenizer. A parse tree is not required, so the class can
-        also tag sentences for which there is no parse. The tagging
-        is based on n-gram and lemma statistics harvested from
-        the Greynir article database. """
+    """A class to assign Icelandic Frequency Dictionary (IFD) tags
+    to sentences consisting of 'raw' tokens coming out of the
+    tokenizer. A parse tree is not required, so the class can
+    also tag sentences for which there is no parse. The tagging
+    is based on n-gram and lemma statistics harvested from
+    the Greynir article database."""
 
     CASE_TO_TAG = {"þf": "ao", "þgf": "aþ", "ef": "ae"}
 
-    def __init__(self, n: int=3, verbose: bool=False) -> None:
-        """ n indicates the n-gram size, i.e. 3 for trigrams, etc. """
+    def __init__(self, n: int = 3, verbose: bool = False) -> None:
+        """n indicates the n-gram size, i.e. 3 for trigrams, etc."""
         self.n = n
         self._verbose = verbose
         self.EMPTY = tuple([""] * n)
@@ -244,22 +261,22 @@ class NgramTagger:
         )  # type: Dict[str, Dict[str, int]]
 
     def lemma_tags(self, lemma: str) -> Dict[str, int]:
-        """ Return a dict of tags and counts for this lemma """
+        """Return a dict of tags and counts for this lemma"""
         return self.lemma_cnt.get(lemma, dict())
 
     def lemma_count(self, lemma: str) -> int:
-        """ Return the total occurrence count for a lemma """
+        """Return the total occurrence count for a lemma"""
         d = self.lemma_cnt.get(lemma)
         return 0 if d is None else sum(d.values())
 
     def train(self, sentence_stream: Iterable[Iterable[TokenDict]]):
-        """ Iterate through a token stream harvested from parsed articles
-            and extract tag trigrams """
+        """Iterate through a token stream harvested from parsed articles
+        and extract tag trigrams"""
 
         n = self.n
 
         def tag_stream(sentence_stream: Iterable[Iterable[TokenDict]]) -> Iterator[str]:
-            """ Generator for tag stream from a token stream """
+            """Generator for tag stream from a token stream"""
             for sent in sentence_stream:
                 if not sent:
                     continue
@@ -280,7 +297,7 @@ class NgramTagger:
                     yield ""
 
         def ngrams(iterable: Iterable[str]) -> Iterable[Tuple[str, ...]]:
-            """ Python magic to generate ngram tuples from an iterable input """
+            """Python magic to generate ngram tuples from an iterable input"""
             return zip(
                 *((islice(seq, i, None) for i, seq in enumerate(tee(iterable, n))))
             )
@@ -313,15 +330,15 @@ class NgramTagger:
         return self
 
     def store_model(self):
-        """ Store the model in a pickle file """
+        """Store the model in a pickle file"""
         if self.cnt.size:
             # Don't store an empty count
             with open("ngram-{0}-model.txt".format(self.n), "w") as f:
                 f.write(str(len(self.lemma_cnt)) + "\n")
 
                 def lemma_strings():
-                    """ Generator to convert each lemma_cnt item to a string
-                        of the form lemma; tag; count; tag; count; tag; count... """
+                    """Generator to convert each lemma_cnt item to a string
+                    of the form lemma; tag; count; tag; count; tag; count..."""
                     for lemma, tags in self.lemma_cnt.items():
                         yield "{0};{1}\n".format(
                             lemma,
@@ -332,7 +349,7 @@ class NgramTagger:
                 self.cnt.store(f)
 
     def load_model(self):
-        """ Load the model from a pickle file """
+        """Load the model from a pickle file"""
         with open("ngram-{0}-model.txt".format(self.n), "r") as f:
             cnt = int(f.readline()[:-1])
             self.lemma_cnt = dict()
@@ -347,15 +364,17 @@ class NgramTagger:
             self.cnt.load(f)
 
     def show_model(self):
-        """ Dump the tag count statistics """
+        """Dump the tag count statistics"""
         print("\nLemmas are {0}".format(len(self.lemma_cnt)))
         print("\nCount contains {0} distinct {1}-grams".format(self.cnt.size, self.n))
         print("\n")
 
-    def _most_likely(self, tokens: Sequence[List[Tuple[str, float]]]) -> Tuple[float, List[str]]:
-        """ Find the most likely tag sequence through the possible tags of each token.
-            The tokens are represented by a list of tagset lists, where each tagset list
-            entry is a (tag, lexical probability) tuple. """
+    def _most_likely(
+        self, tokens: Sequence[List[Tuple[str, float]]]
+    ) -> Tuple[float, List[str]]:
+        """Find the most likely tag sequence through the possible tags of each token.
+        The tokens are represented by a list of tagset lists, where each tagset list
+        entry is a (tag, lexical probability) tuple."""
         cnt = self.cnt
         n = self.n
         history = self.EMPTY
@@ -364,9 +383,9 @@ class NgramTagger:
         len_tokens = len(tokens)
 
         def fwd_prob(ix: int, history: Tuple[str, ...], fwd: int) -> Tuple[int, float]:
-            """ Find the most probable tag from the tagset at position `ix`,
-                using the history for 'backwards' probability - as well as
-                looking forward up to `n - 1` tokens """
+            """Find the most probable tag from the tagset at position `ix`,
+            using the history for 'backwards' probability - as well as
+            looking forward up to `n - 1` tokens"""
             if self._verbose:
                 indent = "  " * (fwd + 1)
             else:
@@ -488,7 +507,7 @@ class NgramTagger:
     _CONJ_REF = frozenset(["sem", "er"])
 
     def tag_single_token(self, token: Tok) -> Optional[List[Tuple[str, float]]]:
-        """ Return a tagset, with probabilities, for a single token """
+        """Return a tagset, with probabilities, for a single token"""
 
         def ifd_tag(kind: int, txt: str, m: BIN_Tuple) -> str:
             i = IFD_Tagset(
@@ -517,7 +536,9 @@ class NgramTagger:
             )
             return str(i)
 
-        def ifd_taglist_person(txt: str, val: PersonNameList) -> List[Tuple[str, float]]:
+        def ifd_taglist_person(
+            txt: str, val: PersonNameList
+        ) -> List[Tuple[str, float]]:
             s = set(ifd_tag_person(txt, p) for p in val)
             # We simply assume that all possible tags for
             # a person name are equally likely
@@ -588,9 +609,9 @@ class NgramTagger:
         return taglist
 
     def tag(self, toklist_or_text: Union[str, List[Tok]]) -> List[TokenDict]:
-        """ Assign IFD tags to the given toklist, putting the tag in the
-            "i" field of each non-punctuation token. If a string is passed,
-            tokenize it first. Return the toklist so modified. """
+        """Assign IFD tags to the given toklist, putting the tag in the
+        "i" field of each non-punctuation token. If a string is passed,
+        tokenize it first. Return the toklist so modified."""
         toklist: List[Tok]
         if isinstance(toklist_or_text, str):
             toklist = list(tokenize(toklist_or_text))
@@ -613,7 +634,7 @@ class NgramTagger:
             return []
 
         def gen_tokens() -> Iterable[TokenDict]:
-            """ Generate a Greynir token sequence from a tagging result """
+            """Generate a Greynir token sequence from a tagging result"""
             ix = 0
             for t in toklist:
                 if not t.txt:

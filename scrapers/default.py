@@ -4,7 +4,7 @@
 
     Default scraping helpers module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -76,7 +76,7 @@ MONTHS_ABBR: Sequence[str] = [
 
 
 class Metadata:
-    """ The metadata returned by the helper.get_metadata() function """
+    """The metadata returned by the helper.get_metadata() function"""
 
     def __init__(
         self,
@@ -99,7 +99,7 @@ class Metadata:
 
 
 class ScrapeHelper:
-    """ Generic scraping helper base class """
+    """Generic scraping helper base class"""
 
     def __init__(self, root):
         self._domain = root.domain
@@ -110,21 +110,21 @@ class ScrapeHelper:
         self._feeds = []
 
     def make_soup(self, doc: str) -> Optional[BeautifulSoup]:
-        """ Make a soup object from a document """
+        """Make a soup object from a document"""
         soup = BeautifulSoup(doc, _HTML_PARSER)
         return None if (soup is None or soup.html is None) else soup
 
     def skip_url(self, url: str) -> bool:
-        """ Return True if this URL should not be scraped """
+        """Return True if this URL should not be scraped"""
         return False  # Scrape all URLs by default
 
     def skip_rss_entry(self, entry):
-        """ Return True if URL in RSS feed entry should be skipped """
+        """Return True if URL in RSS feed entry should be skipped"""
         return False
 
     @staticmethod
     def unescape(s: str) -> str:
-        """ Unescape headings that may contain Unicode characters """
+        """Unescape headings that may contain Unicode characters"""
 
         def replacer(matchobj: Match[str]) -> str:
             m = matchobj.group(1)
@@ -135,7 +135,7 @@ class ScrapeHelper:
         return re.sub(r"\\u([0-9a-fA-F]{4})", replacer, s) if s else ""
 
     def get_metadata(self, soup: BeautifulSoup) -> Metadata:
-        """ Analyze the article HTML soup and return metadata """
+        """Analyze the article HTML soup and return metadata"""
         return Metadata(
             heading=None,
             author=self.author,
@@ -146,7 +146,7 @@ class ScrapeHelper:
 
     @staticmethod
     def _get_body(soup: BeautifulSoup):
-        """ Can be overridden in subclasses in special situations """
+        """Can be overridden in subclasses in special situations"""
         return soup.html.body
 
     def get_content(self, soup: BeautifulSoup):
@@ -169,7 +169,7 @@ class ScrapeHelper:
 
     @property
     def root_id(self) -> str:
-        """ Return the root id corresponding to this domain """
+        """Return the root id corresponding to this domain"""
         return self._root_id
 
     @property
@@ -178,7 +178,7 @@ class ScrapeHelper:
 
     @property
     def icon(self) -> str:
-        """ Return the name of an icon file for this root """
+        """Return the name of an icon file for this root"""
         return self._domain + ".png"
 
     @property
@@ -195,17 +195,17 @@ class ScrapeHelper:
 
     @property
     def scr_module(self) -> str:
-        """ Return the name of the module for this scraping helper class """
+        """Return the name of the module for this scraping helper class"""
         return MODULE_NAME
 
     @property
     def scr_class(self) -> str:
-        """ Return the name of this scraping helper class """
+        """Return the name of this scraping helper class"""
         return self.__class__.__name__
 
     @property
     def scr_version(self) -> str:
-        """ Return the version of this scraping helper class """
+        """Return the version of this scraping helper class"""
         # If no VERSION attribute in the class, return a default '1.0'
         return getattr(self.__class__, "VERSION", "1.0")
 
@@ -237,18 +237,18 @@ class ScrapeHelper:
     def meta_property_filter(
         tag: Tag, prop_val: Union[str, Iterable[str]], prop_attr: str = "property"
     ) -> bool:
-        """ Filter function for meta properties in HTML documents """
+        """Filter function for meta properties in HTML documents"""
         # By default, catch <meta property='prop_val' content='X'>
         return ScrapeHelper.general_filter(tag, "meta", prop_attr, prop_val)
 
     @staticmethod
     def div_class_filter(tag: Tag, cls: Union[str, Iterable[str]]) -> bool:
-        """ Filter function for divs in HTML documents, selected by class """
+        """Filter function for divs in HTML documents, selected by class"""
         return ScrapeHelper.general_filter(tag, "div", "class", cls)
 
     @staticmethod
     def div_id_filter(tag: Tag, div_id: Union[str, Iterable[str]]) -> bool:
-        """ Filter function for divs in HTML documents, selected by id """
+        """Filter function for divs in HTML documents, selected by id"""
         return ScrapeHelper.general_filter(tag, "div", "id", div_id)
 
     @staticmethod
@@ -277,14 +277,14 @@ class ScrapeHelper:
     def tag_prop_val(
         soup: BeautifulSoup, tag: Tag, prop: str, val: Union[str, Iterable[str]]
     ):
-        """ Find a tag of a given type with an attribute having the specified value """
+        """Find a tag of a given type with an attribute having the specified value"""
         if not soup:
             return None
         return soup.find(lambda t: ScrapeHelper.general_filter(t, tag, prop, val))
 
     @staticmethod
     def tag_class(soup: BeautifulSoup, tag: Tag, cls: Union[str, Iterable[str]]):
-        """ Find a tag of a given type with a particular class """
+        """Find a tag of a given type with a particular class"""
         return ScrapeHelper.tag_prop_val(soup, tag, "class", cls)
 
     @staticmethod
@@ -301,7 +301,7 @@ class ScrapeHelper:
 
     @staticmethod
     def nested_tag(soup: BeautifulSoup, *argv: Any):
-        """ Find a tag within a nested hierarchy of tags """
+        """Find a tag within a nested hierarchy of tags"""
         for next_tag in argv:
             if not soup:
                 return None
@@ -310,7 +310,7 @@ class ScrapeHelper:
 
     @staticmethod
     def div_id(soup: BeautifulSoup, div_id: str):
-        """ Find a div with a particular id """
+        """Find a div with a particular id"""
         if not soup or not div_id:
             return None
         f = lambda tag: ScrapeHelper.div_id_filter(tag, div_id)
@@ -332,7 +332,7 @@ class ScrapeHelper:
 
     @staticmethod
     def del_div_class(soup: BeautifulSoup, *argv: Any):
-        """ Delete all occurrences of the specified div.class """
+        """Delete all occurrences of the specified div.class"""
         if soup is None:
             return
         while True:
@@ -343,7 +343,7 @@ class ScrapeHelper:
 
     @staticmethod
     def del_tag(soup: BeautifulSoup, tag_name: str):
-        """ Delete all occurrences of the specified tag """
+        """Delete all occurrences of the specified tag"""
         if soup is None:
             return
         while True:
@@ -364,14 +364,14 @@ class ScrapeHelper:
 
 
 class KjarninnScraper(ScrapeHelper):
-    """ Scraping helper for Kjarninn.is """
+    """Scraping helper for Kjarninn.is"""
 
     def __init__(self, root):
         super().__init__(root)
         self._feeds = ["https://kjarninn.is/feed/"]
 
     def skip_url(self, url: str) -> bool:
-        """ Return True if this URL should not be scraped """
+        """Return True if this URL should not be scraped"""
         s = urlparse.urlsplit(url)
         if s.path and s.path.startswith("/tag/"):
             return True
@@ -380,7 +380,7 @@ class KjarninnScraper(ScrapeHelper):
         return False  # Scrape all other URLs by default
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
@@ -420,7 +420,7 @@ class KjarninnScraper(ScrapeHelper):
 
     # noinspection PyMethodMayBeStatic
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         article = soup_body.find("article")
         if not article:
             article = ScrapeHelper.div_class(soup_body, "article-body")
@@ -461,7 +461,7 @@ class KjarninnScraper(ScrapeHelper):
 
 
 class RuvScraper(ScrapeHelper):
-    """ Scraping helper for RUV.is """
+    """Scraping helper for RUV.is"""
 
     def __init__(self, root):
         super().__init__(root)
@@ -469,7 +469,7 @@ class RuvScraper(ScrapeHelper):
         # self._feeds = ["http://www.ruv.is/rss/frettir"]
 
     def skip_url(self, url):
-        """ Return True if this URL should not be scraped """
+        """Return True if this URL should not be scraped"""
         s = urlparse.urlsplit(url)
         p = s.path
         # Only scrape urls with the right path prefix
@@ -478,7 +478,7 @@ class RuvScraper(ScrapeHelper):
         return True
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
@@ -509,7 +509,7 @@ class RuvScraper(ScrapeHelper):
 
     # noinspection PyMethodMayBeStatic
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(
             soup_body, ("region", "region-two-66-33-first"), "region-inner"
         )
@@ -548,7 +548,7 @@ class RuvScraper(ScrapeHelper):
 
 
 class MblScraper(ScrapeHelper):
-    """ Scraping helper for Mbl.is """
+    """Scraping helper for Mbl.is"""
 
     _SKIP_PREFIXES = [
         "/fasteignir/",
@@ -585,7 +585,7 @@ class MblScraper(ScrapeHelper):
         ]
 
     def skip_url(self, url):
-        """ Return True if this URL should not be scraped """
+        """Return True if this URL should not be scraped"""
         s = urlparse.urlsplit(url)
         path = s.path
         if path:
@@ -599,7 +599,7 @@ class MblScraper(ScrapeHelper):
         return False  # Scrape all URLs by default
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
 
         url = ScrapeHelper.meta_property(soup, "og:url") or ""
@@ -695,7 +695,7 @@ class MblScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         # 'New style' as of May 23, 2016
         soup = ScrapeHelper.div_class(soup_body, "main-layout")
         if soup is None:
@@ -769,7 +769,7 @@ class MblScraper(ScrapeHelper):
 
 
 class VisirScraper(ScrapeHelper):
-    """ Scraping helper for Visir.is """
+    """Scraping helper for Visir.is"""
 
     _SKIP_PREFIXES = [
         "/english/",
@@ -786,7 +786,7 @@ class VisirScraper(ScrapeHelper):
         self._feeds = ["http://www.visir.is/rss/allt"]
 
     def skip_url(self, url):
-        """ Return True if this URL should not be scraped """
+        """Return True if this URL should not be scraped"""
         s = urlparse.urlsplit(url)
         if s.netloc.startswith("fasteignir.") or s.netloc.startswith("albumm."):
             # Skip fasteignir.visir.is and albumm.visir.is
@@ -803,7 +803,7 @@ class VisirScraper(ScrapeHelper):
         return False
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
 
         url = ScrapeHelper.meta_property(soup, "og:url") or ""
@@ -896,7 +896,7 @@ class VisirScraper(ScrapeHelper):
         return soup
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
 
         # We shouldn't even try to extract text from the live sport event pages
         liveheader = ScrapeHelper.div_id(soup_body, "livefeed-sporthead")
@@ -929,13 +929,13 @@ class VisirScraper(ScrapeHelper):
 
 class EyjanScraper(ScrapeHelper):
 
-    """ Scraping helper for Eyjan.pressan.is """
+    """Scraping helper for Eyjan.pressan.is"""
 
     def __init__(self, root):
         super().__init__(root)
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
@@ -974,7 +974,7 @@ class EyjanScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         # Delete div.container-fluid tags from the content
         article = ScrapeHelper.div_class(soup_body, "article-full")
         if article is None:
@@ -1002,13 +1002,13 @@ class EyjanScraper(ScrapeHelper):
 
 
 class StjornlagaradScraper(ScrapeHelper):
-    """ Scraping helper for stjornlagarad.is """
+    """Scraping helper for stjornlagarad.is"""
 
     def __init__(self, root):
         super().__init__(root)
 
     def skip_url(self, url):
-        """ Return True if this URL should not be scraped """
+        """Return True if this URL should not be scraped"""
         s = urlparse.urlsplit(url)
         if not s.path:
             return True
@@ -1022,7 +1022,7 @@ class StjornlagaradScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         # Delete div#header
         soup = ScrapeHelper.div_id(soup_body, "header")
         if soup is not None:
@@ -1039,13 +1039,13 @@ class StjornlagaradScraper(ScrapeHelper):
 
 
 class StjornarradScraper(ScrapeHelper):
-    """ Scraping helper for the webs of Icelandic ministries """
+    """Scraping helper for the webs of Icelandic ministries"""
 
     def __init__(self, root):
         super().__init__(root)
 
     def skip_url(self, url):
-        """ Return True if this URL should not be scraped """
+        """Return True if this URL should not be scraped"""
         s = urlparse.urlsplit(url)
         if not s.path or not s.path.startswith("/efst-a-baugi/frettir/stok-frett"):
             return True
@@ -1072,7 +1072,7 @@ class StjornarradScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         soup = ScrapeHelper.nested_tag(soup_body, "main", "article", "section")
         if soup is None:
             soup = ScrapeHelper.div_class(soup_body, "pgmain", "article", "boxbody")
@@ -1101,14 +1101,14 @@ class StjornarradScraper(ScrapeHelper):
 
 
 class KvennabladidScraper(ScrapeHelper):
-    """ Scraping helper for Kvennabladid.is """
+    """Scraping helper for Kvennabladid.is"""
 
     def __init__(self, root):
         super().__init__(root)
         self._feeds = ["https://kvennabladid.is/feed/"]
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
@@ -1153,7 +1153,7 @@ class KvennabladidScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         article = ScrapeHelper.div_class(soup_body, "blog-content")
         # Delete all captions
         ScrapeHelper.del_div_class(article, "wp-caption")
@@ -1162,13 +1162,13 @@ class KvennabladidScraper(ScrapeHelper):
 
 
 class AlthingiScraper(ScrapeHelper):
-    """ Scraping helper for althingi.is """
+    """Scraping helper for althingi.is"""
 
     def __init__(self, root):
         super().__init__(root)
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
@@ -1192,13 +1192,13 @@ class AlthingiScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         article = ScrapeHelper.div_class(soup_body, "pgmain", "news", "boxbody")
         return article
 
 
 class StundinScraper(ScrapeHelper):
-    """ Scraping helper for stundin.is """
+    """Scraping helper for stundin.is"""
 
     def __init__(self, root):
         super().__init__(root)
@@ -1206,7 +1206,7 @@ class StundinScraper(ScrapeHelper):
         self._feeds = ["https://stundin.is/rss/free/"]
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
 
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
@@ -1247,7 +1247,7 @@ class StundinScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         article = ScrapeHelper.div_class(soup_body, "article__body__text")
 
         # Delete these elements
@@ -1261,14 +1261,14 @@ class StundinScraper(ScrapeHelper):
 
 
 class HringbrautScraper(ScrapeHelper):
-    """ Scraping helper for hringbraut.is """
+    """Scraping helper for hringbraut.is"""
 
     def __init__(self, root):
         super().__init__(root)
         self._feeds = ["http://www.hringbraut.is/frettir/feed/"]
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
 
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
@@ -1313,7 +1313,7 @@ class HringbrautScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "entryContent")
 
         # Many hringbraut.is articles end with a "Sjá nánar" paragraph
@@ -1332,7 +1332,7 @@ class HringbrautScraper(ScrapeHelper):
 
 
 class FrettabladidScraper(ScrapeHelper):
-    """ Scraping helper for frettabladid.is """
+    """Scraping helper for frettabladid.is"""
 
     _ALLOWED_PREFIXES = [
         "/frettir/",
@@ -1365,7 +1365,7 @@ class FrettabladidScraper(ScrapeHelper):
         self._feeds = ["https://www.frettabladid.is/rss/"]
 
     def skip_url(self, url):
-        """ Return True if this URL should not be scraped """
+        """Return True if this URL should not be scraped"""
         s = urlparse.urlsplit(url)
         if not s.path:
             return True
@@ -1388,7 +1388,7 @@ class FrettabladidScraper(ScrapeHelper):
         return True  # Skip all other URLs by default
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
 
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
@@ -1451,7 +1451,7 @@ class FrettabladidScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "article-body")
         # Some sports event pages don't have an article__body
         if not content:
@@ -1501,7 +1501,7 @@ class FrettabladidScraper(ScrapeHelper):
 
 
 class HagstofanScraper(ScrapeHelper):
-    """ Scraping helper for hagstofa.is """
+    """Scraping helper for hagstofa.is"""
 
     def __init__(self, root):
         super().__init__(root)
@@ -1515,7 +1515,7 @@ class HagstofanScraper(ScrapeHelper):
         return r.text
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
 
         # Author
@@ -1560,7 +1560,7 @@ class HagstofanScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         content = soup_body.article
         # For some reason, Hagstofan's RSS feed sometimes includes
         # non-news statistics pages with a non-standard format
@@ -1598,14 +1598,14 @@ class HagstofanScraper(ScrapeHelper):
 
 
 class DVScraper(ScrapeHelper):
-    """ Scraping helper for hagstofa.is """
+    """Scraping helper for hagstofa.is"""
 
     def __init__(self, root):
         super().__init__(root)
         self._feeds = ["https://www.dv.is/feed/", "https://pressan.dv.is/feed/"]
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
 
         # Author
@@ -1648,7 +1648,7 @@ class DVScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "textinn")
         if not content:
             return BeautifulSoup("", _HTML_PARSER)  # Return empty soup.
@@ -1667,14 +1667,14 @@ class DVScraper(ScrapeHelper):
 
 
 class BBScraper(ScrapeHelper):
-    """ Scraping helper for bb.is """
+    """Scraping helper for bb.is"""
 
     def __init__(self, root):
         super().__init__(root)
         self._feeds = ["http://www.bb.is/feed/"]
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
 
         # Author
@@ -1714,7 +1714,7 @@ class BBScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "td-post-content")
         if content is None:
             return None
@@ -1736,14 +1736,14 @@ class BBScraper(ScrapeHelper):
 
 
 class LemurinnScraper(ScrapeHelper):
-    """ Scraping helper for lemurinn.is """
+    """Scraping helper for lemurinn.is"""
 
     def __init__(self, root):
         super().__init__(root)
         self._feeds = ["https://lemurinn.is/feed/"]
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
 
         # Extract the heading from the OpenGraph og:title meta property
@@ -1781,21 +1781,21 @@ class LemurinnScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "post-content")
 
         return content
 
 
 class MannlifScraper(ScrapeHelper):
-    """ Scraping helper for man.is """
+    """Scraping helper for man.is"""
 
     def __init__(self, root):
         super().__init__(root)
         self._feeds = ["https://www.mannlif.is/feed/"]
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
 
         # Extract the heading from the OpenGraph og:title meta property
@@ -1839,7 +1839,7 @@ class MannlifScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "tdb_single_content")
         ScrapeHelper.del_div_class(content, "td-a-ad")
         ScrapeHelper.del_tag(content, "figure")
@@ -1847,7 +1847,7 @@ class MannlifScraper(ScrapeHelper):
 
 
 class VisindavefurScraper(ScrapeHelper):
-    """ Scraping helper for visindavefur.hi.is """
+    """Scraping helper for visindavefur.hi.is"""
 
     def __init__(self, root):
         super().__init__(root)
@@ -1855,7 +1855,7 @@ class VisindavefurScraper(ScrapeHelper):
         # self._feeds = ["https://visindavefur.is/visindavefur.rss"]
 
     def skip_url(self, url):
-        """ Return True if this URL should not be scraped """
+        """Return True if this URL should not be scraped"""
         s = urlparse.urlsplit(url)
         p = s.path
         # Only scrape urls with the right path prefix
@@ -1864,7 +1864,7 @@ class VisindavefurScraper(ScrapeHelper):
         return True
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
 
         # Extract the heading from the OpenGraph og:title meta property
@@ -1913,7 +1913,7 @@ class VisindavefurScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         for p in soup_body.find_all("p", {"class": "br"}):
             p.replace_with(Tag(soup_body, name="br"))
         content = soup_body.find("section", {"class": "article-text"})
@@ -1926,7 +1926,7 @@ class VisindavefurScraper(ScrapeHelper):
 
 
 class SedlabankinnScraper(ScrapeHelper):
-    """ Scraping helper for sedlabanki.is """
+    """Scraping helper for sedlabanki.is"""
 
     def __init__(self, root):
         super().__init__(root)
@@ -1935,7 +1935,7 @@ class SedlabankinnScraper(ScrapeHelper):
         ]
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
 
         # Extract the heading from the OpenGraph og:title meta property
@@ -1961,7 +1961,7 @@ class SedlabankinnScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "media-body")
         if content is None:
             return None
@@ -1976,14 +1976,14 @@ class SedlabankinnScraper(ScrapeHelper):
 
 
 class BaendabladidScraper(ScrapeHelper):
-    """ Scraping helper for bbl.is """
+    """Scraping helper for bbl.is"""
 
     def __init__(self, root):
         super().__init__(root)
         self._feeds = ["https://www.bbl.is/rss/"]
 
     def get_metadata(self, soup):
-        """ Analyze the article soup and return metadata """
+        """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
 
         # Extract the heading from the OpenGraph og:title meta property
@@ -2001,7 +2001,7 @@ class BaendabladidScraper(ScrapeHelper):
         return metadata
 
     def _get_content(self, soup_body):
-        """ Find the article content (main text) in the soup """
+        """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "article-text")
         assert content is not None
         ScrapeHelper.del_div_class(content, "mb-4")
@@ -2014,4 +2014,40 @@ class BaendabladidScraper(ScrapeHelper):
 
         for span in content.find_all("span", {"class": "date"}):
             span.decompose()
+        return content
+
+
+class VidskiptabladidScraper(ScrapeHelper):
+    """Scraping helper for vb.is"""
+
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["https://www.vb.is/rss/"]
+
+    def get_metadata(self, soup):
+        """Analyze the article soup and return metadata"""
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = heading.split(" - Viðskiptablaðið")[0]
+
+        # Author
+        author = ScrapeHelper.div_class(soup, "author")
+        if author is not None:
+            author = author.text
+        else:
+            author = "Ritstjórn Viðskiptablaðsins"
+
+        timestamp = datetime.utcnow()
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """Find the article content (main text) in the soup"""
+        content = ScrapeHelper.div_class(soup_body, "entry_content_text")
         return content
