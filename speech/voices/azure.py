@@ -34,9 +34,10 @@ import azure.cognitiveservices.speech as speechsdk
 
 
 NAME = "Azure"
-VOICES = frozenset(("Gudrun", "Gunnar"))
-VOICE_TO_ID = {"Gudrun": "is-IS-GudrunNeural", "Gunnar": "is-IS-GunnarNeural"}
 AUDIO_FORMATS = frozenset(("mp3"))
+VOICES = frozenset(("Gudrun", "Gunnar"))
+_VOICE_TO_ID = {"Gudrun": "is-IS-GudrunNeural", "Gunnar": "is-IS-GunnarNeural"}
+_DEFAULT_VOICE_ID = "is-IS-GudrunNeural"
 
 
 # The Azure Speech API access key
@@ -91,7 +92,9 @@ def _azure_synthesized_text_data(
         # Configure speech synthesis
         (key, region) = _azure_api_key()
         speech_config = speechsdk.SpeechConfig(subscription=key, region=region)
-        speech_config.speech_synthesis_voice_name = VOICE_TO_ID[voice_id]
+        speech_config.speech_synthesis_voice_name = (
+            _VOICE_TO_ID.get(voice_id) or _DEFAULT_VOICE_ID
+        )
         # We only support MP3 for now, although the API supports other formats
         fmt = speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
         speech_config.set_speech_synthesis_output_format(fmt)

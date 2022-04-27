@@ -205,14 +205,6 @@ def QPlacesAddress(node: Node, params: QueryStateDict, result: Result) -> None:
     result["qkey"] = "PlaceAddress"
 
 
-def QPlacesClosestAddress(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "ClosestAddress"
-
-
-def QPlacesClosestPlacename(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "ClosestPlacename"
-
-
 def QPlacesSubject(node: Node, params: QueryStateDict, result: Result) -> None:
     result["subject_nom"] = _fix_placename(result._nominative)
 
