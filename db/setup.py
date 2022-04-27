@@ -244,7 +244,7 @@ ROOTS = [
         "https://vb.is/",
         "vb.is",
         "Viðskiptablaðið",
-        0.5,
+        0.8,
         "scrapers.default",
         "VidskiptabladidScraper",
         True,
