@@ -379,7 +379,7 @@ def handle_plain_text(q: Query) -> bool:
 
     # OK, this is a query we've recognized and handled
     q.set_qtype(_PLAY_QTYPE)
-    if not q.answer:
+    if not q.answer():
         q.set_answer(*gen_answer(_AFFIRMATIVE))
 
     return True

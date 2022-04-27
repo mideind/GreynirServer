@@ -89,7 +89,6 @@ QPlaces →
 
 QPlacesQuery →
     QPlacesOpeningHoursNow | QPlacesIsOpen | QPlacesIsClosed | QPlacesAddress
-    | QPlacesClosestAddress | QPlacesClosestPlacename
 
 QPlacesOpeningHoursNow →
     QPlacesOpeningHours QPlToday?
@@ -139,21 +138,6 @@ QPlacesAddress →
     | "hvar" "er" QPlacesSubject_nf "staðsettur"
     | QPlacesPreposition "hvaða" "götu" "er" QPlacesSubject_nf
     | QPlacesPreposition "hvaða" "stræti" "er" QPlacesSubject_nf
-
-QPlacesClosestAddress →
-    "hvað" "er" "næsta" "heimilisfang" QPlacesCloseBy?
-    | "hvað" "er" "næsta" "heimilisfangið" QPlacesCloseBy?
-    | "hvert" "er" "næsta" "heimilisfang" QPlacesCloseBy?
-    | "hvert" "er" "næsta" "heimilisfangið" QPlacesCloseBy?
-
-$score(+500) QPlacesClosestAddress
-
-QPlacesClosestPlacename →
-    "næsta" "örnefni"
-    | "hvað" "er" "næsta" "örnefni" QPlacesCloseBy?
-    | "hvað" "er" "næsta" "örnefnið" QPlacesCloseBy?
-    | "hvert" "er" "næsta" "örnefni" QPlacesCloseBy?
-    | "hvert" "er" "næsta" "örnefnið" QPlacesCloseBy?
 
 QPlacesPrepAndSubject →
     QPlacesPrepWithÞgf QPlacesSubject_þgf
@@ -405,36 +389,11 @@ def answ_openhours(
     return response, answer, voice
 
 
-def _answ_closest_address(
-    placename: str, loc: Optional[LatLonTuple], qtype: str
-) -> AnswerTuple:
-    if not loc:
-        return gen_answer("Ég veit ekki hvar þú ert.")
-    addrs = nearest_addr(loc[0], loc[1])
-    print("BLABLABLA")
-    print(addrs)
-    answ = "Jamm"
-    voice = answ
-    response = dict(answer=answ)
-    return response, answ, voice
-
-
-def _answ_closest_placename(
-    placename: str, loc: Optional[LatLonTuple], qtype: str
-) -> AnswerTuple:
-    answ = "Jamm"
-    voice = answ
-    response = dict(answer=answ)
-    return response, answ, voice
-
-
 _HANDLER_MAP = {
     "OpeningHours": answ_openhours,
     "IsOpen": answ_openhours,
     "IsClosed": answ_openhours,
     "PlaceAddress": answ_address,
-    "ClosestAddress": _answ_closest_address,
-    "ClosestPlacename": _answ_closest_placename,
 }
 
 
