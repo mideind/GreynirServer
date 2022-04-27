@@ -5,7 +5,7 @@
 
     Scraper module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
     Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
@@ -60,7 +60,7 @@ import feedparser  # type: ignore
 
 class ArticleDescr:
 
-    """ Unit of work descriptor that is shipped between processes """
+    """Unit of work descriptor that is shipped between processes"""
 
     def __init__(self, seq, root, url):
         self.seq = seq  # Sequence number
@@ -70,7 +70,7 @@ class ArticleDescr:
 
 class Scraper:
 
-    """ The worker class that scrapes the known roots """
+    """The worker class that scrapes the known roots"""
 
     def __init__(self):
 
@@ -121,7 +121,7 @@ class Scraper:
         return fetch_set
 
     def scrape_root(self, root, helper):
-        """ Scrape a root URL """
+        """Scrape a root URL"""
 
         t0 = time.time()
 
@@ -166,7 +166,7 @@ class Scraper:
         )
 
     def scrape_article(self, url, helper):
-        """ Scrape a single article, retrieving its HTML and metadata """
+        """Scrape a single article, retrieving its HTML and metadata"""
 
         if helper.skip_url(url):
             logging.info("Skipping article {0}".format(url))
@@ -187,7 +187,7 @@ class Scraper:
         logging.info("Scraping completed in {0:.2f} seconds".format(t1 - t0))
 
     def parse_article(self, seq, url, helper):
-        """ Parse a single article """
+        """Parse a single article"""
 
         logging.info("[{1}] Parsing article {0}".format(url, seq))
         t0 = time.time()
@@ -267,7 +267,7 @@ class Scraper:
         return True
 
     def go(self, reparse=False, limit=0, urls=None, uuid=None, numprocs=None):
-        """ Run a scraping pass from all roots in the scraping database """
+        """Run a scraping pass from all roots in the scraping database"""
         version = Article.parser_version()
         cnt = 0
 
@@ -284,7 +284,7 @@ class Scraper:
                 # Go through the roots and scrape them, inserting into the articles table
 
                 def iter_roots():
-                    """ Iterate the roots to be scraped """
+                    """Iterate the roots to be scraped"""
                     for r in session.query(Root).filter(Root.scrape == True).all():
                         yield r
 
@@ -303,7 +303,7 @@ class Scraper:
 
                 # noinspection PyComparisonWithNone
                 def iter_unscraped_articles():
-                    """ Go through any unscraped articles and scrape them """
+                    """Go through any unscraped articles and scrape them"""
                     # Note that the query(ArticleRow) below cannot be directly changed
                     # to query(ArticleRow.root, ArticleRow.url) since
                     # ArticleRow.root is a joined subrecord
@@ -332,7 +332,7 @@ class Scraper:
 
             # noinspection PyComparisonWithNone
             def iter_unparsed_articles(reparse, limit):
-                """ Go through articles to be parsed """
+                """Go through articles to be parsed"""
                 # Fetch 100 rows at a time
                 # Note that the query(ArticleRow) below cannot be directly changed
                 # to query(ArticleRow.root, ArticleRow.url) since
@@ -341,9 +341,9 @@ class Scraper:
                 if reparse:
                     # Reparse articles that were originally parsed with an older
                     # grammar and/or parser version
-                    q = q.filter(cast(str, ArticleRow.parser_version) < version).order_by(
-                        ArticleRow.parsed
-                    )
+                    q = q.filter(
+                        cast(str, ArticleRow.parser_version) < version
+                    ).order_by(ArticleRow.parsed)
                 else:
                     # Only parse articles that have no parse tree
                     q = q.filter(ArticleRow.tree == None)
@@ -355,7 +355,7 @@ class Scraper:
                     yield ArticleDescr(seq, a.root, a.url)
 
             def iter_urls(urls):
-                """ Iterate through the text file whose name is given in urls """
+                """Iterate through the text file whose name is given in urls"""
                 seq = 0
                 with open(urls, "r") as f:
                     for url in f:
@@ -372,7 +372,7 @@ class Scraper:
                                 seq += 1
 
             def iter_uuid(uuid):
-                """ Reparse a single article having the given UUID """
+                """Reparse a single article having the given UUID"""
                 a = (
                     session.query(ArticleRow)
                     .filter(ArticleRow.id == uuid)
@@ -433,7 +433,7 @@ class Scraper:
 
     @staticmethod
     def stats():
-        """ Return statistics from the scraping database """
+        """Return statistics from the scraping database"""
 
         # pylint: disable=no-member
         db = SessionContext.db
@@ -561,7 +561,7 @@ class Usage(Exception):
 
 
 def main(argv=None):
-    """ Guido van Rossum's pattern for a Python main function """
+    """Guido van Rossum's pattern for a Python main function"""
 
     if argv is None:
         argv = sys.argv

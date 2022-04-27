@@ -4,7 +4,7 @@
 
     Processor module to extract entity names & definitions
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -381,7 +381,7 @@ ALLOWED_PARTS = frozenset(
 
 
 def article_begin(state):
-    """ Called at the beginning of article processing """
+    """Called at the beginning of article processing"""
     session = state["session"]  # Database session
     url = state["url"]  # URL of the article being processed
     # Delete all existing entities for this article
@@ -392,12 +392,12 @@ def article_begin(state):
 
 
 def article_end(state):
-    """ Called at the end of article processing """
+    """Called at the end of article processing"""
     pass
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called at the end of sentence processing """
+    """Called at the end of sentence processing"""
 
     if "entities" not in result:
         # Nothing to do
@@ -483,7 +483,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             continue
 
         def def_ok(definition: str) -> bool:
-            """ Returns True if a definition meets basic sanity criteria """
+            """Returns True if a definition meets basic sanity criteria"""
             if definition.lower() in NOT_DEFINITIONS:
                 return False
             # Check for a match with a number string, eventually followed by a % sign
@@ -492,7 +492,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             return True
 
         def name_ok(entity: str) -> bool:
-            """ Returns True if an entity name meets basic sanity criteria """
+            """Returns True if an entity name meets basic sanity criteria"""
             if entity.lower() in NOT_ENTITIES or entity in Abbreviations.DICT:
                 # Don't redefine abbreviations
                 return False
@@ -523,7 +523,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
 
 def visit(state, node):
-    """ Determine whether to visit a particular node """
+    """Determine whether to visit a particular node"""
     # We don't visit Skilyrðissetning or any of its children
     # because we know any assertions in there are conditional
     return not node.has_nt_base("Skilyrðissetning")
@@ -546,7 +546,7 @@ def EfLiður(node, params, result):
 
 
 def EfLiðurForskeyti(node, params, result):
-    """ Ekki láta sérnafn lifa í gegn um eignarfallslið """
+    """Ekki láta sérnafn lifa í gegn um eignarfallslið"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
     # Ekki breyta eignarfallsliðum í nefnifall
     result._nominative = result._text
@@ -569,29 +569,29 @@ def AtviksliðurEinkunn(node, params, result):
 
 
 def FsMeðFallstjórn(node, params, result):
-    """ Ekki láta sérnafn lifa í gegn um forsetningarlið """
+    """Ekki láta sérnafn lifa í gegn um forsetningarlið"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
     # Ekki breyta forsetningarliðum í nefnifall
     result._nominative = result._text
 
 
 def TilvísunarsetningMeðKommu(node, params, result):
-    """ '...sem Jón í Múla taldi gott fé' - ekki breyta í nefnifall """
+    """'...sem Jón í Múla taldi gott fé' - ekki breyta í nefnifall"""
     result._nominative = result._text
 
 
 def SetningÁnF(node, params, result):
-    """ Ekki láta sérnafn lifa í gegn um setningu án frumlags """
+    """Ekki láta sérnafn lifa í gegn um setningu án frumlags"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
 
 
 def SetningSo(node, params, result):
-    """ Ekki láta sérnafn lifa í gegn um setningu sem hefst á sögn """
+    """Ekki láta sérnafn lifa í gegn um setningu sem hefst á sögn"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
 
 
 def Sérnafn(node, params, result):
-    """ Sérnafn, stutt eða langt """
+    """Sérnafn, stutt eða langt"""
     result.sérnafn = result._text
     result.sérnafn_nom = result._nominative
     result.sérnafn_eind_nom = result._nominative
@@ -599,12 +599,12 @@ def Sérnafn(node, params, result):
 
 
 def Nafn(node, params, result):
-    """ Við viljum ekki láta laufið Nafn skilgreina nafn á einingu (entity) """
+    """Við viljum ekki láta laufið Nafn skilgreina nafn á einingu (entity)"""
     result.nafn_flag = True
 
 
 def SérnafnEðaManneskja(node, params, result):
-    """ Sérnafn eða mannsnafn, eða flóknari nafnliður (Nafn) """
+    """Sérnafn eða mannsnafn, eða flóknari nafnliður (Nafn)"""
     if "nafn_flag" in result:
         # Flóknari nafnliður: notum hann ekki sem nafn á Entity
         result.del_attribs(("sérnafn", "sérnafn_nom", "nafn_flag"))
@@ -619,14 +619,14 @@ def SérnafnEðaManneskja(node, params, result):
 
 
 def Fyrirtæki(node, params, result):
-    """ Fyrirtækisnafn, þ.e. sérnafn + ehf./hf./Inc. o.s.frv. """
+    """Fyrirtækisnafn, þ.e. sérnafn + ehf./hf./Inc. o.s.frv."""
     result.sérnafn = result._text
     result.sérnafn_nom = result._nominative
     result.fyrirtæki = result._text
 
 
 def SvigaInnihaldFsRuna(node, params, result):
-    """ Svigainnihald sem er bara forsetningarruna er ekki brúklegt sem skilgreining """
+    """Svigainnihald sem er bara forsetningarruna er ekki brúklegt sem skilgreining"""
     result._text = ""
     result._nominative = ""
 
@@ -688,13 +688,13 @@ def NlKjarni(node, params, result):
 
 
 def Skst(node, params, result):
-    """ Ekki láta 'fyrirtækið Apple-búðin' skila 'Apple er fyrirtæki' """
+    """Ekki láta 'fyrirtækið Apple-búðin' skila 'Apple er fyrirtæki'"""
     result.del_attribs("sérnafn")
     result.del_attribs("sérnafn_nom")
 
 
 def Fyrirbæri(node, params, result):
-    """ Bæta Fyrirbæri við sem sérnafni ef það uppfyllir skilyrði þar um """
+    """Bæta Fyrirbæri við sem sérnafni ef það uppfyllir skilyrði þar um"""
     if "sérnafn" in result or "entities" in result or "sviga_innihald" in result:
         return
     txt = result._text
@@ -706,7 +706,7 @@ def Fyrirbæri(node, params, result):
 
 
 def NlEind(node, params, result):
-    """ Ef sérnafn og sviga_innihald eru rétt undir NlEind þá er það skilgreining """
+    """Ef sérnafn og sviga_innihald eru rétt undir NlEind þá er það skilgreining"""
 
     if (
         len(params) == 2
@@ -755,7 +755,7 @@ def NlEind(node, params, result):
 
 
 def SamstættFall(node, params, result):
-    """ 'Danska byggingavörukeðjan Bygma' """
+    """'Danska byggingavörukeðjan Bygma'"""
 
     assert len(params) >= 2
 
@@ -811,12 +811,12 @@ def SamstættFall(node, params, result):
 
 
 def ÓsamstættFall(node, params, result):
-    """ '(Ég versla við) herrafataverslunina Smekkmaður' """
+    """'(Ég versla við) herrafataverslunina Smekkmaður'"""
     SamstættFall(node, params, result)
 
 
 def Skilgreining(node, params, result):
-    """ 'bandarísku sjóðirnir' """
+    """'bandarísku sjóðirnir'"""
     result.skilgreining = result._canonical  # bandarískur sjóður
 
 
@@ -832,7 +832,7 @@ def FyrirbæriMeðGreini(node, params, result):
 
 
 def Setning(node, params, result):
-    """ Meðhöndla setningar á forminu 'sérnafn fsliðir* er-sögn eitthvað' """
+    """Meðhöndla setningar á forminu 'sérnafn fsliðir* er-sögn eitthvað'"""
 
     if not node.has_variant("p3"):
         # Only bother with third-person sentences

@@ -6,7 +6,7 @@
 
     Similarity query server
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ from builder import ReynirCorpus
 
 
 class InternalError(RuntimeError):
-    """ Exception thrown from within the server, causing it to terminate """
+    """Exception thrown from within the server, causing it to terminate"""
 
     def __init__(self, s):
         super().__init__(s)
@@ -92,10 +92,10 @@ class InternalError(RuntimeError):
 
 class SimilarityServer:
 
-    """ A class that manages an in-memory dictionary of articles
-        and their topic vectors, and allows similarity queries of that
-        dictionary. The dictionary is refreshed upon request from the
-        articles database table.
+    """A class that manages an in-memory dictionary of articles
+    and their topic vectors, and allows similarity queries of that
+    dictionary. The dictionary is refreshed upon request from the
+    articles database table.
     """
 
     def __init__(self):
@@ -106,7 +106,7 @@ class SimilarityServer:
         self._corpus = None
 
     def _load_topics(self):
-        """ Load all article topics into the self._atopics dictionary """
+        """Load all article topics into the self._atopics dictionary"""
         self._atopics = {}
         with SessionContext(commit=True, read_only=True) as session:
             print("Starting load of all article topic vectors")
@@ -139,18 +139,18 @@ class SimilarityServer:
             )
 
     def article_topic(self, article_id):
-        """ Return the topic vector of the article having the given uuid,
-            or None if no such article exists """
+        """Return the topic vector of the article having the given uuid,
+        or None if no such article exists"""
         return self._atopics.get(article_id)
 
     def reload_topics(self):
-        """ Reload all article topic vectors from the database """
+        """Reload all article topic vectors from the database"""
         with self._lock:
             # Can't serve queries while we're doing this
             self._load_topics()
 
     def refresh_topics(self):
-        """ Load any new article topics into the _atopics dict """
+        """Load any new article topics into the _atopics dict"""
         with self._lock:
             with SessionContext(commit=True, read_only=True) as session:
                 # Do the next refresh from this time point
@@ -185,7 +185,7 @@ class SimilarityServer:
                 )
 
     def _iter_similarities(self, vector):
-        """ Generator of (id, similarity) tuples for all articles to the given vector """
+        """Generator of (id, similarity) tuples for all articles to the given vector"""
         base = np.array(vector)
         norm_base = np.dot(base, base)  # This is faster than linalg.norm()
         if norm_base < 1.0e-6:
@@ -193,7 +193,7 @@ class SimilarityServer:
             return
 
         def cosine_similarity(v):
-            """ Compute cosine similarity of v1 to v2: (v1 dot v2)/(|v1|*|v2|) """
+            """Compute cosine similarity of v1 to v2: (v1 dot v2)/(|v1|*|v2|)"""
             norm_v = np.dot(v, v)  # This is faster than linalg.norm()
             dot_product = np.dot(v, base)
             return float(dot_product / math.sqrt(norm_v * norm_base))
@@ -214,8 +214,8 @@ class SimilarityServer:
                 pass
 
     def find_similar(self, n, vector):
-        """ Return the N articles with the highest similarity score to the given vector,
-            as a list of tuples (article_uuid, similarity) """
+        """Return the N articles with the highest similarity score to the given vector,
+        as a list of tuples (article_uuid, similarity)"""
         if vector is None or len(vector) == 0 or all(e == 0.0 for e in vector):
             return []
         with self._lock:
@@ -224,7 +224,7 @@ class SimilarityServer:
             )
 
     def run(self, host, port):
-        """ Run a similarity server serving requests that come in at the given port """
+        """Run a similarity server serving requests that come in at the given port"""
         address = (host, port)  # Family is deduced to be 'AF_INET'
         # Load the secret password that clients must use to authenticate themselves
         try:
@@ -264,10 +264,10 @@ class SimilarityServer:
                     sys.stdout.flush()
 
     def _command_loop(self, conn):
-        """ Run a command loop for this server inside a client thread """
+        """Run a command loop for this server inside a client thread"""
 
         class ClientError(RuntimeError):
-            """ Local exception class for handling erroneous requests from clients """
+            """Local exception class for handling erroneous requests from clients"""
 
             def __init__(self, request):
                 super().__init__("Invalid request received: {0!r}".format(request))

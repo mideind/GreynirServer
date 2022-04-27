@@ -4,7 +4,7 @@
     Special scraping module for preloaded local data
     used for entiment analysis experiment
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ from sqlalchemy import (
     String,
     DateTime,
 )
+
 # Provide access to modules in the parent directory
 # sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
@@ -51,14 +52,14 @@ Base = declarative_base()
 
 class Reykjanes_DB:
 
-    """ Wrapper around the SQLAlchemy connection, engine and session """
+    """Wrapper around the SQLAlchemy connection, engine and session"""
 
     DB_HOSTNAME = os.environ.get("GREYNIR_DB_HOST", "localhost")
     DB_PORT = os.environ.get("GREYNIR_DB_PORT", "5432")  # Default PostgreSQL port
 
     def __init__(self):
 
-        """ Initialize the SQLAlchemy connection with the scraper database """
+        """Initialize the SQLAlchemy connection with the scraper database"""
 
         # Assemble the right connection string for CPython/psycopg2 vs.
         # PyPy/psycopg2cffi, respectively
@@ -71,17 +72,16 @@ class Reykjanes_DB:
         self._Session = sessionmaker(bind=self._engine)
 
     def execute(self, sql, **kwargs):
-        """ Execute raw SQL directly on the engine """
+        """Execute raw SQL directly on the engine"""
         return self._engine.execute(sql, **kwargs)
 
     @property
     def session(self):
-        """ Returns a freshly created Session instance from the sessionmaker """
+        """Returns a freshly created Session instance from the sessionmaker"""
         return self._Session()
 
 
 class classproperty:
-
     def __init__(self, f: Callable[[Type["SessionContext"]], Reykjanes_DB]) -> None:
         self.f = f
 
@@ -91,7 +91,7 @@ class classproperty:
 
 class SessionContext:
 
-    """ Context manager for database sessions """
+    """Context manager for database sessions"""
 
     # Singleton instance of Reykjanes_DB
     _db: Optional[Reykjanes_DB] = None
@@ -104,10 +104,12 @@ class SessionContext:
 
     @classmethod
     def cleanup(cls) -> None:
-        """ Clean up the reference to the singleton Scraper_DB instance """
+        """Clean up the reference to the singleton Scraper_DB instance"""
         cls._db = None
 
-    def __init__(self, session: Optional["Session"]=None, commit: bool=False) -> None:
+    def __init__(
+        self, session: Optional["Session"] = None, commit: bool = False
+    ) -> None:
 
         if session is None:
             # Create a new session that will be automatically committed
@@ -122,13 +124,13 @@ class SessionContext:
             self._commit = False
 
     def __enter__(self):
-        """ Python context manager protocol """
+        """Python context manager protocol"""
         # Return the wrapped database session
         return self._session
 
     # noinspection PyUnusedLocal
     def __exit__(self, exc_type, exc_value, traceback):
-        """ Python context manager protocol """
+        """Python context manager protocol"""
         if self._new_session:
             if self._commit:
                 if exc_type is None:
@@ -143,7 +145,7 @@ class SessionContext:
 
 class Doc(Base):
 
-    """ Represents a document in the Reykjanes database """
+    """Represents a document in the Reykjanes database"""
 
     __tablename__ = "docs"
 
@@ -164,7 +166,7 @@ class Doc(Base):
 
 class ReykjanesScraper(ScrapeHelper):
 
-    """ Generic scraping helper base class """
+    """Generic scraping helper base class"""
 
     _SENTIMENT_DICT = {-1: "Neikvæð", 0: "Hlutlaus", 1: "Jákvæð"}
 
@@ -172,7 +174,7 @@ class ReykjanesScraper(ScrapeHelper):
         super().__init__(root)
 
     def fetch_url(self, url):
-        """ Load the requested document from the database """
+        """Load the requested document from the database"""
         s = urlparse.urlsplit(url)
         docid = dict(urlparse.parse_qsl(s.query)).get("id")
         with SessionContext(commit=True) as session:
@@ -187,7 +189,7 @@ class ReykjanesScraper(ScrapeHelper):
                 )
 
             def clean(txt):
-                """ Do basic clean-up of the raw text """
+                """Do basic clean-up of the raw text"""
                 return (
                     txt.replace("\u0084", "„")
                     .replace("\u0093", "“")
@@ -208,11 +210,11 @@ class ReykjanesScraper(ScrapeHelper):
             )
 
     def make_soup(self, doc):
-        """ Make a soup object from a document """
+        """Make a soup object from a document"""
         return super().make_soup(doc)
 
     def get_metadata(self, soup):
-        """ Analyze the article HTML soup and return metadata """
+        """Analyze the article HTML soup and return metadata"""
         metadata = super().get_metadata(soup)
         metadata.heading = (
             soup.html.head.title.string if soup.html.head.title else "Fyrirsögn"
@@ -235,10 +237,10 @@ class ReykjanesScraper(ScrapeHelper):
         return metadata
 
     def get_content(self, soup):
-        """ Find the actual article content within an HTML soup and return its parent node """
+        """Find the actual article content within an HTML soup and return its parent node"""
         return soup
 
     @property
     def scr_module(self):
-        """ Return the name of the module for this scraping helper class """
+        """Return the name of the module for this scraping helper class"""
         return MODULE_NAME

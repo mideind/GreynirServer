@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -44,8 +44,8 @@ _MAX_TIME_WINDOW = 100.0
 
 class _Secret:
 
-    """ A wrapper for private and public key data used
-        in communications with SalesCloud """
+    """A wrapper for private and public key data used
+    in communications with SalesCloud"""
 
     _SC_SECRET_KEY: Optional[bytes] = None
     _SC_PUBLIC_KEY: Optional[str] = None
@@ -55,7 +55,7 @@ class _Secret:
 
     @classmethod
     def load(cls) -> None:
-        """ Fetch secret key and client UUID from a file """
+        """Fetch secret key and client UUID from a file"""
         try:
             with open("resources/salescloud_key.bin", "r", encoding="utf-8") as f:
                 cls._SC_SECRET_KEY = f.readline().strip().encode("ascii")
@@ -67,7 +67,7 @@ class _Secret:
 
     @property
     def key(self) -> bytes:
-        """ Return the secret key value, which is a bytes object """
+        """Return the secret key value, which is a bytes object"""
         if not self._SC_SECRET_KEY:
             _Secret.load()
         assert self._SC_SECRET_KEY is not None
@@ -75,7 +75,7 @@ class _Secret:
 
     @property
     def public_key(self) -> str:
-        """ Return Greynir's public key """
+        """Return Greynir's public key"""
         if not self._SC_PUBLIC_KEY:
             _Secret.load()
         assert self._SC_PUBLIC_KEY is not None
@@ -88,9 +88,9 @@ _SECRET = _Secret()
 def validate_request(
     method, url, payload, xsc_date, xsc_key, xsc_digest, max_time=_MAX_TIME_WINDOW
 ):
-    """ Validate an incoming request against our secret key. All parameters
-        are assumed to be strings (str) except payload and xsc_digest,
-        which are bytes. """
+    """Validate an incoming request against our secret key. All parameters
+    are assumed to be strings (str) except payload and xsc_digest,
+    which are bytes."""
 
     # Sanity check
     if not all((method, url, payload, xsc_date, xsc_key, xsc_digest)):
@@ -132,7 +132,7 @@ def validate_request(
 
 
 def handle_request(request):
-    """ Handle a SalesCloud request, extracting its contents """
+    """Handle a SalesCloud request, extracting its contents"""
     # Validate the request
     if request.headers.get("User-Agent") != "SalesCloud":
         return dict(success=False, reason="Unknown user agent"), 403  # Forbidden
@@ -168,7 +168,7 @@ def handle_request(request):
 
 @routes.route("/salescloud/nyskraning", methods=["POST"])
 def sales_create():
-    """ Webhook handler for SalesCloud """
+    """Webhook handler for SalesCloud"""
     j, status = handle_request(request)
     if status != 200:
         return better_jsonify(**cast(Dict[str, Any], j)), status
@@ -193,7 +193,7 @@ def sales_create():
 
 @routes.route("/salescloud/breyting", methods=["POST"])
 def sales_modify():
-    """ Webhook handler for SalesCloud """
+    """Webhook handler for SalesCloud"""
     j, status = handle_request(request)
     if status != 200:
         return better_jsonify(**cast(Dict[str, Any], j)), status

@@ -4,7 +4,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -108,7 +108,7 @@ BIGSET = set()
 
 
 def sieve(ix, stree):
-    """ Judge which sentences make sense for each subcorpora """
+    """Judge which sentences make sense for each subcorpora"""
     text = stree.text
     tokens = text.split()
     code = "silver"  # Default value
@@ -271,10 +271,7 @@ def main(num_sent, parse_date_gt, outfile, count, rand):
         if arts % 100 == 0:
             print("{} articles done".format(arts))
         arts += 1
-        if (
-            not art.root_domain
-            or "lemurinn" in art.root_domain
-        ):
+        if not art.root_domain or "lemurinn" in art.root_domain:
             # print("\t1")
             continue
         trees = None

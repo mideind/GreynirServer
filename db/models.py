@@ -4,7 +4,7 @@
 
     Scraper database models
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -71,7 +71,7 @@ setattr(Base, "table", classmethod(lambda cls: cls.__table__))
 
 
 class Root(Base):
-    """ Represents a scraper root, i.e. a base domain and root URL """
+    """Represents a scraper root, i.e. a base domain and root URL"""
 
     __tablename__ = "roots"
 
@@ -188,7 +188,7 @@ class Article(Base):
 
 
 class Person(Base):
-    """ Represents a person """
+    """Represents a person"""
 
     __tablename__ = "persons"
 
@@ -233,7 +233,7 @@ class Person(Base):
 
 
 class Entity(Base):
-    """ Represents a named entity """
+    """Represents a named entity"""
 
     __tablename__ = "entities"
 
@@ -284,7 +284,7 @@ class Entity(Base):
 
 
 class Location(Base):
-    """ Represents a location """
+    """Represents a location"""
 
     __tablename__ = "locations"
 
@@ -341,7 +341,7 @@ class Location(Base):
 
 
 class Word(Base):
-    """ Represents a word occurring in an article """
+    """Represents a word occurring in an article"""
 
     __tablename__ = "words"
 
@@ -377,7 +377,7 @@ class Word(Base):
 
 
 class Topic(Base):
-    """ Represents a topic for an article """
+    """Represents a topic for an article"""
 
     __tablename__ = "topics"
 
@@ -408,7 +408,7 @@ class Topic(Base):
 
 
 class ArticleTopic(Base):
-    """ Represents an article having a topic, a 1:N relationship """
+    """Represents an article having a topic, a 1:N relationship"""
 
     __tablename__ = "atopics"
 
@@ -440,7 +440,7 @@ class ArticleTopic(Base):
 
 
 class Trigram(Base):
-    """ Represents a trigram of tokens from a parsed sentence """
+    """Represents a trigram of tokens from a parsed sentence"""
 
     __tablename__ = "trigrams"
 
@@ -470,7 +470,7 @@ class Trigram(Base):
 
     @staticmethod
     def upsert(session: Session, t1: str, t2: str, t3: str):
-        """ Insert a trigram, or increment the frequency count if already present """
+        """Insert a trigram, or increment the frequency count if already present"""
         # The following code uses "upsert" functionality (INSERT...ON CONFLICT...DO UPDATE)
         # that was introduced in PostgreSQL 9.5. This means that the upsert runs on the
         # server side and is atomic, either an insert of a new trigram or an update of
@@ -486,7 +486,7 @@ class Trigram(Base):
 
     @staticmethod
     def delete_all(session: Session):
-        """ Delete all trigrams """
+        """Delete all trigrams"""
         cast(Any, session).execute("delete from trigrams;")
 
     def __repr__(self):
@@ -520,7 +520,7 @@ class Link(Base):
 
 
 class BlacklistedLink(Base):
-    """ Represents a link blacklisted for a particular key """
+    """Represents a link blacklisted for a particular key"""
 
     __tablename__ = "blacklist"
 
@@ -545,7 +545,7 @@ class BlacklistedLink(Base):
 
 
 class Query(Base):
-    """ Represents a logged incoming query with its answer and client data. """
+    """Represents a logged incoming query with its answer and client data."""
 
     __tablename__ = "queries"
 
@@ -656,7 +656,7 @@ class Query(Base):
 
 
 class QueryLog(Base):
-    """ Represents a fully anonymized, logged query and its answer. """
+    """Represents a fully anonymized, logged query and its answer."""
 
     __tablename__ = "querylog"
 
@@ -691,7 +691,7 @@ class QueryLog(Base):
 
     @staticmethod
     def from_Query(q: Query):
-        """ Create QueryLog object from Query object. """
+        """Create QueryLog object from Query object."""
         return QueryLog(
             timestamp=q.timestamp,
             interpretations=q.interpretations,
@@ -711,7 +711,7 @@ class QueryLog(Base):
 
 
 class QueryData(Base):
-    """ Represents client data saved from a processed query. """
+    """Represents client data saved from a processed query."""
 
     __tablename__ = "querydata"
 
@@ -738,7 +738,7 @@ class QueryData(Base):
 
 
 class Feedback(Base):
-    """ Represents a feedback form submission. """
+    """Represents a feedback form submission."""
 
     __tablename__ = "feedback"
 

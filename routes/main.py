@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -79,7 +79,7 @@ PARSEFAIL_MAX = 250
 @routes.route("/")
 @max_age(seconds=60)
 def main():
-    """ Handler for the main (index) page """
+    """Handler for the main (index) page"""
     txt = request.args.get("txt")
     if txt:
         txt = txt.strip()
@@ -91,7 +91,7 @@ def main():
 
 @routes.route("/analysis")
 def analysis():
-    """ Handler for a page with grammatical analysis of user-entered text """
+    """Handler for a page with grammatical analysis of user-entered text"""
     txt = request.args.get("txt", "")[0:MAX_TEXT_LENGTH_VIA_URL]
     return render_template("analysis.html", title="Málgreining", default_text=txt)
 
@@ -117,7 +117,7 @@ MAX_SIM_ARTICLES = 10  # Display at most 10 similarity matches
 
 @routes.route("/similar", methods=["GET", "POST"])
 def similar() -> Response:
-    """ Return rendered HTML list of articles similar to a given article, given a UUID """
+    """Return rendered HTML list of articles similar to a given article, given a UUID"""
     resp: Dict[str, Any] = dict(err=True)
 
     # Parse query args
@@ -195,7 +195,7 @@ def page() -> Union[Response, str]:
 
 @routes.route("/treegrid", methods=["GET"])
 def tree_grid():
-    """ Show a simplified parse tree for a single sentence """
+    """Show a simplified parse tree for a single sentence"""
 
     txt = request.args.get("txt", "")
     tree = None
@@ -243,7 +243,7 @@ def tree_grid():
         return _build_tbl(0, 0, [root])
 
     def _normalize_tbl(tbl, width):
-        """ Fill out the table with blanks so that it is square """
+        """Fill out the table with blanks so that it is square"""
         for row in tbl:
             rw = sum(t[0] for t in row)
             # Right-pad as required
@@ -305,7 +305,7 @@ def tree_grid():
 
 @routes.route("/parsefail")
 def parsefail():
-    """ Handler for a page showing recent sentences where parsing failed """
+    """Handler for a page showing recent sentences where parsing failed"""
 
     num = request.args.get("num", PARSEFAIL_DEFAULT)
     try:
@@ -353,28 +353,28 @@ def parsefail():
 @routes.route("/apidoc")
 @max_age(seconds=10 * 60)
 def apidoc():
-    """ Handler for an API documentation page """
+    """Handler for an API documentation page"""
     return render_template("apidoc.html", title="Forritaskil (API)")
 
 
 @routes.route("/buy")
 @max_age(seconds=10 * 60)
 def buy():
-    """ Handler for a subscription purchase page """
+    """Handler for a subscription purchase page"""
     return render_template("buy.html", title="Afnot")
 
 
 @routes.route("/terms")
 @max_age(seconds=10 * 60)
 def terms():
-    """ Handler for terms & conditions page """
+    """Handler for terms & conditions page"""
     return render_template("terms.html", title="Skilmálar")
 
 
 @routes.route("/about")
 @max_age(seconds=10 * 60)
 def about():
-    """ Handler for the 'About' page """
+    """Handler for the 'About' page"""
     try:
         parser_version = reynir.version.__version__
         tokenizer_version = tokenizer.version.__version__
@@ -400,7 +400,7 @@ def about():
 
 @routes.route("/reportimage", methods=["POST"])
 def reportimage():
-    """ Notification that a (person) image is wrong or broken """
+    """Notification that a (person) image is wrong or broken"""
     resp: Dict[str, Any] = dict(found_new=False)
 
     name = request.form.get("name")
@@ -422,7 +422,7 @@ def reportimage():
 
 @routes.route("/image", methods=["GET"])
 def image():
-    """ Get image for (person) name """
+    """Get image for (person) name"""
     resp: Dict[str, Union[bool, Img]] = dict(found=False)
 
     name = request.args.get("name")
@@ -443,7 +443,7 @@ def image():
 @routes.route("/suggest", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="suggest", query_string=True)
 def suggest(limit=10):
-    """ Return suggestions for query field autocompletion """
+    """Return suggestions for query field autocompletion"""
     limit = request.args.get("limit", limit)
     txt = request.args.get("q", "").strip()
 
@@ -495,6 +495,6 @@ def suggest(limit=10):
 @routes.route("/translate")
 @restricted
 def translate():
-    """ Handler for a page with machine translation of user-entered text """
+    """Handler for a page with machine translation of user-entered text"""
     txt = request.args.get("txt", "")[0:MAX_TEXT_LENGTH_VIA_URL]
     return render_template("translate.html", title="Vélþýðing", default_text=txt)

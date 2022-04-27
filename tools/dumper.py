@@ -5,7 +5,7 @@
 
     Dumper module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -49,24 +49,23 @@ OUTPUT_FILE = "reynir_dump.txt"
 
 class Dumper:
 
-    """ The worker class that processes parsed articles """
+    """The worker class that processes parsed articles"""
 
     def __init__(self):
         pass
 
-
     class AbortSentence(RuntimeError):
-        """ Signal that we want to abort the current sentence,
-            i.e. not to write it to the output """
+        """Signal that we want to abort the current sentence,
+        i.e. not to write it to the output"""
+
         pass
 
-
     def dump(self, tokens_json, file):
-        """ Dump the sentences of a single article to a text file,
-            one sentence per line """
+        """Dump the sentences of a single article to a text file,
+        one sentence per line"""
         tokens = json.loads(tokens_json)
-        skip_punctuation = frozenset(( '„', '“', '”' ))
-        abort_punctuation = frozenset(( '…', '|', '#', '@' ))
+        skip_punctuation = frozenset(("„", "“", "”"))
+        abort_punctuation = frozenset(("…", "|", "#", "@"))
         for p in tokens:
             for sent in p:
                 try:
@@ -146,31 +145,38 @@ class Dumper:
                                         if terminal.startswith("sérnafn"):
                                             out.append(text.replace(" ", "_") + "/s")
                                         else:
-                                            out.append(text.replace(" ", "_") + "/" + terminal.split("_")[0])
+                                            out.append(
+                                                text.replace(" ", "_")
+                                                + "/"
+                                                + terminal.split("_")[0]
+                                            )
                                     else:
                                         # print("No meaning associated with {0}".format(t))
                                         out.append(text.replace(" ", "_") + "/x")
                                 else:
-                                    out.append(text.replace(" ", "_") + "/" + m[1])  # Add word category
+                                    out.append(
+                                        text.replace(" ", "_") + "/" + m[1]
+                                    )  # Add word category
                                 wcnt += 1
                     if out and not err:
                         line = " ".join(out)
                         if line != "." and not line.startswith("mbl.is/unk /"):
-                            print(line, file = file)
+                            print(line, file=file)
                 except Dumper.AbortSentence:
                     # If a sentence contains particular 'stop tokens',
                     # don't write it to the result file
                     pass
 
-
     def go(self, output: str, limit: int) -> None:
-        """ Process already parsed articles from the database """
+        """Process already parsed articles from the database"""
 
         db = Scraper_DB()
         with closing(db.session) as session, open(output, "w") as file:
 
-            """ Go through parsed articles and process them """
-            q: Query[Article] = cast(Any, session).query(Article.tokens).filter(Article.tree != None)
+            """Go through parsed articles and process them"""
+            q: Query[Article] = (
+                cast(Any, session).query(Article.tokens).filter(Article.tree != None)
+            )
             if limit > 0:
                 q = q[0:limit]
             else:
@@ -184,7 +190,7 @@ class Dumper:
             print("Dumped {0} articles".format(cnt), end=chr(13))
 
 
-def process_articles(limit = 0):
+def process_articles(limit=0):
 
     print("------ Greynir starting dump -------")
     print("Output file: {0}".format(OUTPUT_FILE))
@@ -195,7 +201,7 @@ def process_articles(limit = 0):
 
     t0 = time.time()
 
-    Dumper().go(output = OUTPUT_FILE, limit = limit)
+    Dumper().go(output=OUTPUT_FILE, limit=limit)
 
     t1 = time.time()
 
@@ -206,7 +212,6 @@ def process_articles(limit = 0):
 
 
 class Usage(Exception):
-
     def __init__(self, msg):
         self.msg = msg
 
@@ -227,18 +232,18 @@ __doc__ = """
 
 """
 
-def main(argv = None):
-    """ Guido van Rossum's pattern for a Python main function """
+
+def main(argv=None):
+    """Guido van Rossum's pattern for a Python main function"""
 
     if argv is None:
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hl:o:",
-                ["help", "limit=", "output="])
+            opts, args = getopt.getopt(argv[1:], "hl:o:", ["help", "limit=", "output="])
         except getopt.error as msg:
-             raise Usage(msg)
-        limit = 10 # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
+            raise Usage(msg)
+        limit = 10  # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
         # Process options
         for o, a in opts:
             if o in ("-h", "--help"):
@@ -268,14 +273,14 @@ def main(argv = None):
             # Don't run the processor in debug mode
             Settings.DEBUG = False
         except ConfigError as e:
-            print("Configuration error: {0}".format(e), file = sys.stderr)
+            print("Configuration error: {0}".format(e), file=sys.stderr)
             return 2
 
-        process_articles(limit = limit)
+        process_articles(limit=limit)
 
     except Usage as err:
-        print(err.msg, file = sys.stderr)
-        print("For help use --help", file = sys.stderr)
+        print(err.msg, file=sys.stderr)
+        print("For help use --help", file=sys.stderr)
         return 2
 
     # Completed with no error

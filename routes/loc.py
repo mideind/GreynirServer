@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -56,8 +56,8 @@ GMAPS_PLACE_URL = "https://www.google.com/maps/place/{0}?hl=is"
 
 
 def top_locations(limit=_TOP_LOC_LENGTH, kind=None, days=_TOP_LOC_PERIOD):
-    """ Return a list of recent locations along with the list of
-        articles in which they are mentioned. """
+    """Return a list of recent locations along with the list of
+    articles in which they are mentioned."""
 
     with SessionContext(read_only=True) as session:
         q = (
@@ -122,7 +122,7 @@ def top_locations(limit=_TOP_LOC_LENGTH, kind=None, days=_TOP_LOC_PERIOD):
 
 
 def icemap_markers(days=_TOP_LOC_PERIOD):
-    """ Return a list of recent Icelandic locations and their coordinates. """
+    """Return a list of recent Icelandic locations and their coordinates."""
     with SessionContext(read_only=True) as session:
         q = (
             session.query(Location.name, Location.latitude, Location.longitude)
@@ -146,7 +146,7 @@ def icemap_markers(days=_TOP_LOC_PERIOD):
 
 
 def world_map_data(days=_TOP_LOC_PERIOD):
-    """ Return data for world map. List of country iso codes with article count. """
+    """Return data for world map. List of country iso codes with article count."""
     with SessionContext(read_only=True) as session:
         q = (
             session.query(Location.country, dbfunc.count(Location.id))
@@ -169,7 +169,7 @@ def world_map_data(days=_TOP_LOC_PERIOD):
 @cache.cached(timeout=30 * 60, key_prefix="locations", query_string=True)
 @max_age(seconds=30 * 60)
 def locations():
-    """ Render locations page. """
+    """Render locations page."""
     kind = request.args.get("kind")
     kind = kind if kind in LOCATION_TAXONOMY else None
 
@@ -185,7 +185,7 @@ def locations():
 @routes.route("/locations_icemap", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="icemap", query_string=True)
 def locations_icemap():
-    """ Render Icelandic map locations page. """
+    """Render Icelandic map locations page."""
     period = request.args.get("period", "")
     days = days_from_period_arg(period, _TOP_LOC_PERIOD)
     markers = icemap_markers(days=days)
@@ -201,7 +201,7 @@ def locations_icemap():
 @routes.route("/locations_worldmap", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="worldmap", query_string=True)
 def locations_worldmap():
-    """ Render world map locations page. """
+    """Render world map locations page."""
     period = request.args.get("period", "")
     days = days_from_period_arg(period, _TOP_LOC_PERIOD)
 
@@ -220,7 +220,7 @@ def locations_worldmap():
 @routes.route("/staticmap", methods=["GET"])
 @cache.cached(timeout=60 * 60 * 24, key_prefix="staticmap", query_string=True)
 def staticmap():
-    """ Proxy for Google Static Maps API. """
+    """Proxy for Google Static Maps API."""
     try:
         lat = float(request.args.get("lat", "0.0"))
         lon = float(request.args.get("lon", "0.0"))
@@ -243,7 +243,7 @@ ZOOM_FOR_LOC_KIND = {"street": 11, "address": 12, "placename": 5, "country": 2}
 @routes.route("/locinfo", methods=["GET"])
 @cache.cached(timeout=60 * 60 * 24, key_prefix="locinfo", query_string=True)
 def locinfo():
-    """ Return info about a location as JSON. """
+    """Return info about a location as JSON."""
     resp: Dict[str, Union[None, str, bool]] = dict(found=False)
 
     name = request.args.get("name")
@@ -276,6 +276,8 @@ def locinfo():
         resp["map"] = "/static/img/maps/regions/" + name + ".png"
     # Continent
     elif resp["country"] is None and resp["continent"] in ISO_TO_CONTINENT:
-        resp["map"] = "/static/img/maps/continents/" + cast(str, resp["continent"]) + ".png"
+        resp["map"] = (
+            "/static/img/maps/continents/" + cast(str, resp["continent"]) + ".png"
+        )
 
     return better_jsonify(**resp)

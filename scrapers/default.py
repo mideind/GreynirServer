@@ -4,7 +4,7 @@
 
     Default scraping helpers module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -2013,4 +2013,40 @@ class BaendabladidScraper(ScrapeHelper):
 
         for span in content.find_all("span", {"class": "date"}):
             span.decompose()
+        return content
+
+
+class VidskiptabladidScraper(ScrapeHelper):
+    """Scraping helper for vb.is"""
+
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["https://www.vb.is/rss/"]
+
+    def get_metadata(self, soup):
+        """Analyze the article soup and return metadata"""
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading = heading.split(" - Viðskiptablaðið")[0]
+
+        # Author
+        author = ScrapeHelper.div_class(soup, "author")
+        if author is not None:
+            author = author.text
+        else:
+            author = "Ritstjórn Viðskiptablaðsins"
+
+        timestamp = datetime.utcnow()
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """Find the article content (main text) in the soup"""
+        content = ScrapeHelper.div_class(soup_body, "entry_content_text")
         return content

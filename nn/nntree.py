@@ -4,7 +4,7 @@
 
     Neural Network Parsing Utilities
 
-    Copyright (C) 2021 Miðeind ehf
+    Copyright (C) 2022 Miðeind ehf
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -96,7 +96,7 @@ def flat_matching_nonterminal(string):
 
 class Node:
 
-    """ Generic tree implementation """
+    """Generic tree implementation"""
 
     def __init__(self, name, is_terminal=False, data=None):
         self.name = name
@@ -123,8 +123,8 @@ class Node:
         return simpletree.SimpleTree([[self.to_dict()]])
 
     def to_postfix(self):
-        """ Export tree to postfix ordering
-            with node-labels as keys """
+        """Export tree to postfix ordering
+        with node-labels as keys"""
         result = []
         for child in self.children:
             result.extend(child.to_postfix())
@@ -145,25 +145,25 @@ class Node:
         return "".join(result)
 
     def _pprint(self, _prefix="  ", depth=0):
-        """ Inner function for pretty printing tree """
+        """Inner function for pretty printing tree"""
         print("{}{}".format(_prefix * depth, self.__str__()))
         for c in self.children:
             c._pprint(_prefix=_prefix, depth=depth + 1)
 
     def pprint(self, indent=4):
-        """ Pretty print tree """
+        """Pretty print tree"""
         self._pprint(_prefix=" " * indent)
 
     def width(self):
-        """ Returns number of leaf nodes,
-            assumes a correctly formed tree """
+        """Returns number of leaf nodes,
+        assumes a correctly formed tree"""
         if self.children:
             return sum(c.width() for c in self.children)
         return 1
 
     def height(self):
-        """ Returns height of tree,
-            assumes a correctly formed tree """
+        """Returns height of tree,
+        assumes a correctly formed tree"""
         if not self.children:
             return 1
         return 1 + max(c.height() for c in self.children)
@@ -181,9 +181,9 @@ class Node:
 
 
 class ParseResult(IntEnum):
-    """ Result types for the parsing of flat parse trees that are returned by
-        the NMT parsing model and the corresponding natural language source text
-        into a (non) flat parse tree """
+    """Result types for the parsing of flat parse trees that are returned by
+    the NMT parsing model and the corresponding natural language source text
+    into a (non) flat parse tree"""
 
     # Successful parse
     SUCCESS = 0
@@ -204,9 +204,9 @@ class ParseResult(IntEnum):
 
 
 def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
-    """ Parses list of toks (parse_toks) into a legal tree structure or None,
-       If the corresponding tokenized source text is provided, it is
-       included in the tree"""
+    """Parses list of toks (parse_toks) into a legal tree structure or None,
+    If the corresponding tokenized source text is provided, it is
+    included in the tree"""
 
     vprint = logging.debug if verbose else (lambda *ar, **kw: None)
 
@@ -265,7 +265,9 @@ def parse_flat_tree_to_nodes(parse_toks, text_toks=None, verbose=False):
 
         # Empty NONTERMINALS are not allowed
         if not parent.has_children():
-            msg_list = ["{}{}".format(len(stack) * "    ", tok) for tok in parse_toks[idx:]]
+            msg_list = [
+                "{}{}".format(len(stack) * "    ", tok) for tok in parse_toks[idx:]
+            ]
             vprint("\n".join(msg_list))
             vprint("Error: Tried to close empty nonterminal {}".format(tok))
 
@@ -302,26 +304,26 @@ def parse_tree_with_text(flat_tree_str, text):
 
 
 def _json_terminal_node(tok, text="placeholder", token_index=None):
-    """ first can be:
-            abfn
-            ao
-            fn
-            fs
-            gata
-            gr
-            lo
-            no
-            person
-            pfn
-            raðnr
-            sérnafn
-            so
-            so_0
-            so_1
-            so_2
-            tala
-            to
-            töl"""
+    """first can be:
+    abfn
+    ao
+    fn
+    fs
+    gata
+    gr
+    lo
+    no
+    person
+    pfn
+    raðnr
+    sérnafn
+    so
+    so_0
+    so_1
+    so_2
+    tala
+    to
+    töl"""
 
     subtokens = tok.split("_")
     first = subtokens[0].split("_", 1)[0]

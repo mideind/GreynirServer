@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -87,7 +87,7 @@ def max_age(
 
 
 def restricted(f: Callable[..., Any]) -> Callable[..., Any]:
-    """ Decorator to return 403 Forbidden if not running in debug mode """
+    """Decorator to return 403 Forbidden if not running in debug mode"""
 
     @wraps(f)
     def decorated_function(*args: Any, **kwargs: Any):
@@ -99,7 +99,7 @@ def restricted(f: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def bool_from_request(rq: Request, name: str, default: bool = False) -> bool:
-    """ Get a boolean from JSON encoded in a request form """
+    """Get a boolean from JSON encoded in a request form"""
     b = rq.form.get(name)
     if b is None:
         b = rq.args.get(name)
@@ -117,7 +117,7 @@ def days_from_period_arg(arg: str, default: int = 1) -> int:
 
 
 def better_jsonify(**kwargs: Any) -> Response:
-    """ Ensure that the Content-Type header includes 'charset=utf-8' """
+    """Ensure that the Content-Type header includes 'charset=utf-8'"""
     resp: Response = jsonify(**kwargs)
     resp.headers["Content-Type"] = "application/json; charset=utf-8"
     return resp
@@ -163,7 +163,7 @@ _tasks_lock = threading.Lock()
 
 
 def fancy_url_for(*args: Any, **kwargs: Any) -> str:
-    """ url_for() replacement that works even when there is no request context """
+    """url_for() replacement that works even when there is no request context"""
     if "_external" not in kwargs:
         kwargs["_external"] = False
     reqctx = cast(Any, _request_ctx_stack).top
@@ -179,10 +179,10 @@ def fancy_url_for(*args: Any, **kwargs: Any) -> str:
 
 @routes.before_app_first_request
 def before_first_request() -> None:
-    """ Start a background thread that cleans up old tasks """
+    """Start a background thread that cleans up old tasks"""
 
     def clean_old_tasks() -> None:
-        """ This function cleans up old tasks from an in-memory data structure """
+        """This function cleans up old tasks from an in-memory data structure"""
         global _tasks
         while True:
             # Only keep tasks that are running or
@@ -273,7 +273,7 @@ class _RequestProxy:
         self.files = {k: _FileProxy(v) for k, v in rq.files.items()}
 
     def set_progress_func(self, progress_func: ProgressFunc) -> None:
-        """ Set a function to call during processing of asynchronous requests """
+        """Set a function to call during processing of asynchronous requests"""
         self.progress_func = progress_func
 
 
@@ -288,12 +288,12 @@ def async_task(f: Callable[..., Response]) -> Callable[..., Response]:
         task_id = uuid.uuid4().hex
 
         def progress(ratio: float) -> None:
-            """ Function to call from the worker task to indicate progress. """
+            """Function to call from the worker task to indicate progress."""
             # ratio is a float from 0.0 (just started) to 1.0 (finished)
             _tasks[task_id]["progress"] = ratio
 
         def task(app: Any, rq: _RequestProxy) -> None:
-            """ Run the decorated route function in a new thread """
+            """Run the decorated route function in a new thread"""
             this_task = _tasks[task_id]
             # Pretty ugly hack, but no better solution is apparent:
             # Create a fresh Flask RequestContext object, wrapping our

@@ -4,7 +4,7 @@
 
     Date query response module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -719,14 +719,14 @@ def this_or_next_weekday(d: datetime, weekday: int) -> datetime:
 
 
 def dnext(d: datetime) -> datetime:
-    """ Return datetime with year+1 if date was earlier in current year. """
+    """Return datetime with year+1 if date was earlier in current year."""
     if d < datetime.utcnow():
         d = d.replace(year=d.year + 1)
     return d
 
 
 def next_easter() -> datetime:
-    """ Find the date of next easter in the Gregorian calendar. """
+    """Find the date of next easter in the Gregorian calendar."""
     now = datetime.utcnow()
     e = calc_easter(now.year)
     if e < now:
@@ -751,14 +751,14 @@ def calc_easter(year: int) -> datetime:
 
 
 def _date_diff(d1: datetime, d2: datetime, unit: str = "days") -> int:
-    """ Get the time difference between two dates. """
+    """Get the time difference between two dates."""
     delta = d2 - d1
     cnt = getattr(delta, unit)
     return cnt
 
 
 def howlong_answ(q: Query, result: Result) -> None:
-    """ Generate answer to a query about number of days since/until a given date. """
+    """Generate answer to a query about number of days since/until a given date."""
     now = datetime.utcnow()
     target = result["target"]
 
@@ -819,7 +819,7 @@ def howlong_answ(q: Query, result: Result) -> None:
 
 
 def when_answ(q: Query, result: Result) -> None:
-    """ Generate answer to a question of the form "Hvenær er(u) [hátíðardagur]?" etc. """
+    """Generate answer to a question of the form "Hvenær er(u) [hátíðardagur]?" etc."""
     # TODO: Fix this so it includes weekday, e.g.
     # "Sunnudaginn 1. október"
     # Use plural 'eru' for 'páskar', 'jól' etc.
@@ -836,7 +836,7 @@ def when_answ(q: Query, result: Result) -> None:
 
 
 def curr_date_answ(q: Query, result: Result) -> None:
-    """ Generate answer to a question of the form "Hver er dagsetningin [í dag]?" etc. """
+    """Generate answer to a question of the form "Hver er dagsetningin [í dag]?" etc."""
     now = datetime.utcnow()
     date_str = now.strftime("%A %-d. %B %Y")
     answer = date_str.capitalize()
@@ -852,7 +852,7 @@ def curr_date_answ(q: Query, result: Result) -> None:
 
 
 def tomorrow_date_answ(q: Query, result: Result) -> None:
-    """ Generate answer to a question of the form "Hvaða dagur er á morgun?" etc. """
+    """Generate answer to a question of the form "Hvaða dagur er á morgun?" etc."""
     now = datetime.utcnow() + timedelta(days=1)
     date_str = now.strftime("%A %-d. %B %Y")
     answer = date_str.capitalize()
@@ -868,7 +868,7 @@ def tomorrow_date_answ(q: Query, result: Result) -> None:
 
 
 def yesterday_date_answ(q: Query, result: Result) -> None:
-    """ Generate answer to a question of the form "Hvaða dagur var í gær?" etc. """
+    """Generate answer to a question of the form "Hvaða dagur var í gær?" etc."""
     now = datetime.utcnow() - timedelta(days=1)
     date_str = now.strftime("%A %-d. %B %Y")
     answer = date_str.capitalize()
@@ -884,7 +884,7 @@ def yesterday_date_answ(q: Query, result: Result) -> None:
 
 
 def days_in_month_answ(q: Query, result: Result) -> None:
-    """ Generate answer to a question of the form "Hvað eru margir dagar í [MÁNUÐI]?" etc. """
+    """Generate answer to a question of the form "Hvað eru margir dagar í [MÁNUÐI]?" etc."""
     ndays = result["days_in_month"]
     t = result["target"]
     mname = t.strftime("%B")
@@ -904,7 +904,7 @@ def days_in_month_answ(q: Query, result: Result) -> None:
 
 
 def year_answ(q: Query, result: Result) -> None:
-    """ Generate answer to a question of the form "Hvaða ár er núna?" etc. """
+    """Generate answer to a question of the form "Hvaða ár er núna?" etc."""
     now = datetime.utcnow()
     y = now.year
     answer = f"{y}."
@@ -916,7 +916,7 @@ def year_answ(q: Query, result: Result) -> None:
 
 
 def leap_answ(q: Query, result: Result) -> None:
-    """ Generate answer to a question of the form "Er hlaupár?" etc. """
+    """Generate answer to a question of the form "Er hlaupár?" etc."""
     now = datetime.utcnow()
     t = result.get("target")
     y = t.year if t else now.year
@@ -943,7 +943,7 @@ _Q2FN_MAP = [
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

@@ -5,7 +5,7 @@
 
     Additional vocabulary utility
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
     Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
@@ -72,7 +72,7 @@ BIN_Tuple = namedtuple(
 
 class Meanings:
 
-    """ Wrapper around list of additional word meanings, initialized from the config file """
+    """Wrapper around list of additional word meanings, initialized from the config file"""
 
     DICT = defaultdict(set)  # Keyed by word form
     ROOT = defaultdict(set)  # Keyed by word root (stem)
@@ -165,7 +165,7 @@ class Meanings:
 
     @staticmethod
     def forms(w):
-        """ Return a list of all possible forms of a particular root (stem) """
+        """Return a list of all possible forms of a particular root (stem)"""
         c = Meanings._cursor
         assert c is not None
         m = None
@@ -183,7 +183,7 @@ class Meanings:
 
     @staticmethod
     def add(stofn, ordmynd, ordfl, fl, beyging):
-        """ Add word meaning to the dictionary. Called from the config file handler. """
+        """Add word meaning to the dictionary. Called from the config file handler."""
         assert ordmynd is not None
         assert ordfl is not None
         if not stofn:
@@ -203,8 +203,8 @@ class Meanings:
 
     @staticmethod
     def add_composite(stofn, ordfl, fl, *, utg=None):
-        """ Add composite word forms by putting a prefix on existing BIN word forms.
-            Called from the config file handler. """
+        """Add composite word forms by putting a prefix on existing BIN word forms.
+        Called from the config file handler."""
         assert stofn is not None
         assert ordfl is not None
         # Handle cases like 'Suður-Ameríku-ríki' correctly
@@ -246,7 +246,7 @@ class Meanings:
 
     @staticmethod
     def add_entry(s):
-        """ Handle additional word meanings in the settings section """
+        """Handle additional word meanings in the settings section"""
         # Format: stofn ordmynd ordfl fl (default ob) beyging (default -)
         a = s.split()
         if len(a) < 2 or len(a) > 5:
@@ -321,9 +321,9 @@ class Meanings:
 
     @staticmethod
     def read_family_names(fname):
-        """ Read config/FamilyNames.conf and create corresponding family
-            name entries in the output file. Family names are identical
-            in all cases, and are listed as having neutral gender. """
+        """Read config/FamilyNames.conf and create corresponding family
+        name entries in the output file. Family names are identical
+        in all cases, and are listed as having neutral gender."""
         with open(fname, "r") as f:
             for s in f:
                 # Ignore comments
@@ -360,8 +360,9 @@ if __name__ == "__main__":
         # Read configuration file
         Settings.read(os.path.join(basepath, "config", "GreynirSimple.conf"))
         print(
-            "Accessing BÍN database at {0}:{1}"
-            .format(Settings.DB_HOSTNAME, Settings.DB_PORT)
+            "Accessing BÍN database at {0}:{1}".format(
+                Settings.DB_HOSTNAME, Settings.DB_PORT
+            )
         )
         Meanings.open_db(Settings.DB_HOSTNAME, Settings.DB_PORT)
         Meanings.read_config(src)
@@ -372,10 +373,7 @@ if __name__ == "__main__":
         quit()
 
     if len(Meanings.DICT) == 0:
-        print(
-            "No vocabulary entries ([meanings] section) found in "
-            "Vocab.conf file"
-        )
+        print("No vocabulary entries ([meanings] section) found in " "Vocab.conf file")
         quit()
 
     with open(fname, "w") as f:

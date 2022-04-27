@@ -4,7 +4,7 @@
 
     Tree module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -142,25 +142,25 @@ class Node(abc.ABC):
         self.child = n
 
     def has_nt_base(self, s: str) -> bool:
-        """ Does the node have the given nonterminal base name? """
+        """Does the node have the given nonterminal base name?"""
         return False
 
     def has_t_base(self, s: str) -> bool:
-        """ Does the node have the given terminal base name? """
+        """Does the node have the given terminal base name?"""
         return False
 
     def has_variant(self, s: str) -> bool:
-        """ Does the node have the given variant? """
+        """Does the node have the given variant?"""
         return False
 
     @property
     def at_start(self) -> bool:
-        """ Return True if this node spans the start of a sentence """
+        """Return True if this node spans the start of a sentence"""
         # This is overridden in TerminalNode
         return False if self.child is None else self.child.at_start
 
     def child_has_nt_base(self, s: str) -> bool:
-        """ Does the node have a single child with the given nonterminal base name? """
+        """Does the node have a single child with the given nonterminal base name?"""
         ch = self.child
         if ch is None:
             # No child
@@ -171,7 +171,7 @@ class Node(abc.ABC):
         return ch.has_nt_base(s)
 
     def children(self, test_f: Optional[FilterFunction] = None) -> Iterator["Node"]:
-        """ Yield all children of this node (that pass a test function, if given) """
+        """Yield all children of this node (that pass a test function, if given)"""
         c = self.child
         while c:
             if test_f is None or test_f(c):
@@ -179,7 +179,7 @@ class Node(abc.ABC):
             c = c.nxt
 
     def first_child(self, test_f: FilterFunction) -> OptionalNode:
-        """ Return the first child of this node that matches a test function, or None """
+        """Return the first child of this node that matches a test function, or None"""
         c = self.child
         while c is not None:
             if test_f(c):
@@ -207,7 +207,7 @@ class Node(abc.ABC):
 
     @abc.abstractmethod
     def string_self(self) -> str:
-        """ String representation of the name of this node """
+        """String representation of the name of this node"""
         raise NotImplementedError  # Should be overridden
 
     @abc.abstractmethod
@@ -232,18 +232,18 @@ class Node(abc.ABC):
 
     @property
     def contained_number(self) -> Optional[float]:
-        """ Return the number contained within the tree node, if any """
+        """Return the number contained within the tree node, if any"""
         # This is implemented for TerminalNodes associated with number tokens
         return None
 
     @property
     def contained_amount(self) -> Optional[Tuple[float, str]]:
-        """ Return the amount contained within the tree node, if any """
+        """Return the amount contained within the tree node, if any"""
         # This is implemented for TerminalNodes associated with amount tokens
         return None
 
     def string_rep(self, indent: str) -> str:
-        """ Indented representation of this node """
+        """Indented representation of this node"""
         s = indent + self.string_self()
         if self.child is not None:
             s += " (\n" + self.child.string_rep(indent + "  ") + "\n" + indent + ")"
@@ -256,7 +256,7 @@ class Node(abc.ABC):
         raise NotImplementedError
 
     def build_simple_tree(self, builder: Any) -> None:
-        """ Default action: recursively build the child nodes """
+        """Default action: recursively build the child nodes"""
         for child in self.children():
             child.build_simple_tree(builder)
 
@@ -313,7 +313,7 @@ class Result:
         )
 
     def __setattr__(self, key: str, val: Any) -> None:
-        """ Fancy attribute setter using our own dict for instance attributes """
+        """Fancy attribute setter using our own dict for instance attributes"""
         if key == "__dict__" or key == "dict" or key in self.__dict__:
             # Relay to Python's default attribute resolution mechanism
             super().__setattr__(key, val)
@@ -322,7 +322,7 @@ class Result:
             self.dict[key] = val
 
     def __getattr__(self, key: str) -> Any:
-        """ Fancy attribute getter with special cases for _root and _nominative """
+        """Fancy attribute getter with special cases for _root and _nominative"""
         # Note: this is only called for attributes that are not found by 'normal' means
         d = self.dict
         if key in d:
@@ -372,17 +372,17 @@ class Result:
         return self.dict.get(key, default)
 
     def attribs(self) -> Iterator[Tuple[str, Any]]:
-        """ Enumerate all attributes, and values, of this result object """
+        """Enumerate all attributes, and values, of this result object"""
         yield from self.dict.items()
 
     def user_attribs(self) -> Iterator[Tuple[str, Any]]:
-        """ Enumerate all user-defined attributes and values of this result object """
+        """Enumerate all user-defined attributes and values of this result object"""
         for key, val in self.dict.items():
             if isinstance(key, str) and not key.startswith("_") and not callable(val):
                 yield (key, val)
 
     def copy_from(self, p: "Result") -> None:
-        """ Copy all user attributes from p into this result """
+        """Copy all user attributes from p into this result"""
         if p is self or p is None:
             return
         d = self.dict
@@ -410,7 +410,7 @@ class Result:
                     d[key] = dict(val, **left)
 
     def del_attribs(self, alist: Union[str, Iterable[str]]) -> None:
-        """ Delete the attribs in alist from the result object """
+        """Delete the attribs in alist from the result object"""
         if isinstance(alist, str):
             alist = (alist,)
         d = self.dict
@@ -443,7 +443,7 @@ class Result:
                     yield (c, p)
 
     def find_child(self, **kwargs: Any) -> Optional["Result"]:
-        """ Find a child parameter meeting the criteria given in kwargs """
+        """Find a child parameter meeting the criteria given in kwargs"""
 
         def test_f(c: Node) -> bool:
             for key, val in kwargs.items():
@@ -459,7 +459,7 @@ class Result:
         return None
 
     def all_children(self, **kwargs: Any) -> ParamList:
-        """ Return all child parameters meeting the criteria given in kwargs """
+        """Return all child parameters meeting the criteria given in kwargs"""
 
         def test_f(c: Node) -> bool:
             for key, val in kwargs.items():
@@ -471,7 +471,7 @@ class Result:
         return [p for _, p in self.enum_children(test_f)]
 
     def find_descendant(self, **kwargs: Any) -> Optional["Result"]:
-        """ Find a descendant parameter meeting the criteria given in kwargs """
+        """Find a descendant parameter meeting the criteria given in kwargs"""
 
         def test_f(c: Node) -> bool:
             for key, val in kwargs.items():
@@ -488,19 +488,19 @@ class Result:
 
     @property
     def at_start(self) -> bool:
-        """ Return True if the associated node spans the start of the sentence """
+        """Return True if the associated node spans the start of the sentence"""
         return self._node.at_start
 
     def has_nt_base(self, s: str) -> bool:
-        """ Does the associated node have the given nonterminal base name? """
+        """Does the associated node have the given nonterminal base name?"""
         return self._node.has_nt_base(s)
 
     def has_t_base(self, s: str) -> bool:
-        """ Does the associated node have the given terminal base name? """
+        """Does the associated node have the given terminal base name?"""
         return self._node.has_t_base(s)
 
     def has_variant(self, s: str) -> bool:
-        """ Does the associated node have the given variant? """
+        """Does the associated node have the given variant?"""
         return self._node.has_variant(s)
 
 
@@ -622,15 +622,15 @@ class TerminalDescriptor:
         return self._clean_cat
 
     def has_t_base(self, s: str) -> bool:
-        """ Does the node have the given terminal base name? """
+        """Does the node have the given terminal base name?"""
         return self.cat == s
 
     def has_variant(self, s: str) -> bool:
-        """ Does the node have the given variant? """
+        """Does the node have the given variant?"""
         return s in self.variants
 
     def _bin_filter(self, m: BIN_Tuple, case_override: Optional[str] = None) -> bool:
-        """ Return True if the BIN meaning in m matches the variants for this terminal """
+        """Return True if the BIN meaning in m matches the variants for this terminal"""
         if self.bin_cat is not None and m.ordfl not in self.bin_cat:
             return False
         if self.gender is not None:
@@ -723,7 +723,7 @@ class TerminalDescriptor:
         return True
 
     def stem(self, bindb: GreynirBin, word: str, at_start: bool = False) -> str:
-        """ Returns the stem of a word matching this terminal """
+        """Returns the stem of a word matching this terminal"""
         if self.is_literal or self.is_stem:
             # A literal or stem terminal only matches a word if it has the given stem
             w = self.cat[1:-1]
@@ -742,7 +742,7 @@ class TerminalDescriptor:
 
 
 def _root_lookup(text: str, at_start: bool, terminal: str) -> str:
-    """ Look up the root of a word that isn't found in the cache """
+    """Look up the root of a word that isn't found in the cache"""
     mm: Optional[BIN_Tuple] = None
     with GreynirBin.get_db() as bin_db:
         w, m = bin_db.lookup_g(text, at_start)
@@ -761,7 +761,7 @@ def _root_lookup(text: str, at_start: bool, terminal: str) -> str:
 
 class TerminalNode(Node):
 
-    """ A Node corresponding to a terminal """
+    """A Node corresponding to a terminal"""
 
     # Undeclinable terminal categories
     _NOT_DECLINABLE = frozenset(
@@ -822,15 +822,15 @@ class TerminalNode(Node):
 
     @property
     def at_start(self) -> bool:
-        """ Return True if the associated node spans the start of the sentence """
+        """Return True if the associated node spans the start of the sentence"""
         return self._at_start
 
     def has_t_base(self, s: str) -> bool:
-        """ Does the node have the given terminal base name? """
+        """Does the node have the given terminal base name?"""
         return self.td.has_t_base(s)
 
     def has_variant(self, s: str) -> bool:
-        """ Does the node have the given variant? """
+        """Does the node have the given variant?"""
         return self.td.has_variant(s)
 
     def contained_text(self) -> str:
@@ -840,7 +840,7 @@ class TerminalNode(Node):
 
     @property
     def contained_number(self) -> Optional[float]:
-        """ Return a number from the associated token, if any """
+        """Return a number from the associated token, if any"""
         if self.tokentype != "NUMBER":
             return None
         if self._aux is None:
@@ -881,7 +881,7 @@ class TerminalNode(Node):
         return cast(int, self._aux)
 
     def _root(self, bin_db: GreynirBin) -> str:
-        """ Look up the root of the word associated with this terminal """
+        """Look up the root of the word associated with this terminal"""
         # Lookup the token in the BIN database
         if (not self.is_word) or self.is_literal:
             return self.text
@@ -955,7 +955,7 @@ class TerminalNode(Node):
         return w
 
     def _nominative(self, bin_db: GreynirBin) -> str:
-        """ Look up the nominative form of the word associated with this terminal """
+        """Look up the nominative form of the word associated with this terminal"""
         # Lookup the token in the BIN database
         if (not self.is_word) or self.td.case_nf or not self.is_declinable:
             # Not a word, already nominative or not declinable: return it as-is
@@ -964,14 +964,14 @@ class TerminalNode(Node):
             assert False
 
         def replace_beyging(b: str, by_case: str = "NF") -> str:
-            """ Change a beyging string to specify a different case """
+            """Change a beyging string to specify a different case"""
             for case in ("NF", "ÞF", "ÞGF", "EF"):
                 if case != by_case and case in b:
                     return b.replace(case, by_case)
             return b
 
         def sort_by_gr(m: BinMeaning) -> int:
-            """ Sort meanings having a definite article (greinir) after those that do not """
+            """Sort meanings having a definite article (greinir) after those that do not"""
             return 1 if "gr" in m.mark else 0
 
         # If this terminal doesn't have a 'gr' variant, prefer meanings in nominative
@@ -1070,7 +1070,7 @@ class TerminalNode(Node):
         return w
 
     def root(self, state: TreeStateDict, params: ParamList) -> str:
-        """ Calculate the root form (stem) of this node's text """
+        """Calculate the root form (stem) of this node's text"""
         if self.root_cache is None:
             # Not already cached: look up in database
             bin_db = state.get("bin_db")
@@ -1079,7 +1079,7 @@ class TerminalNode(Node):
         return self.root_cache
 
     def nominative(self, state: TreeStateDict, params: ParamList) -> str:
-        """ Calculate the nominative form of this node's text """
+        """Calculate the nominative form of this node's text"""
         if self.nominative_cache is None:
             # Not already cached: look up in database
             bin_db = state.get("bin_db")
@@ -1088,7 +1088,7 @@ class TerminalNode(Node):
         return self.nominative_cache
 
     def indefinite(self, state: TreeStateDict, params: ParamList) -> str:
-        """ Calculate the nominative, indefinite form of this node's text """
+        """Calculate the nominative, indefinite form of this node's text"""
         if self.indefinite_cache is None:
             # Not already cached: look up in database
             bin_db = state.get("bin_db")
@@ -1097,7 +1097,7 @@ class TerminalNode(Node):
         return self.indefinite_cache
 
     def canonical(self, state: TreeStateDict, params: ParamList) -> str:
-        """ Calculate the singular, nominative, indefinite form of this node's text """
+        """Calculate the singular, nominative, indefinite form of this node's text"""
         if self.canonical_cache is None:
             # Not already cached: look up in database
             bin_db = state.get("bin_db")
@@ -1109,7 +1109,7 @@ class TerminalNode(Node):
         return self.td.terminal + " <" + self.token + ">"
 
     def process(self, state: TreeStateDict, params: ParamList) -> Result:
-        """ Prepare a result object to be passed up to enclosing nonterminals """
+        """Prepare a result object to be passed up to enclosing nonterminals"""
         assert not params  # A terminal node should not have parameters
         result = Result(self, state, [])  # No params
         result._terminal = self.td.terminal
@@ -1119,7 +1119,7 @@ class TerminalNode(Node):
         return result
 
     def build_simple_tree(self, builder: Any) -> None:
-        """ Create a terminal node in a simple tree for this TerminalNode """
+        """Create a terminal node in a simple tree for this TerminalNode"""
         d: Dict[str, Any] = dict(x=self.text, k=self.tokentype)
         if self.tokentype != "PUNCTUATION":
             # Terminal
@@ -1152,7 +1152,7 @@ class TerminalNode(Node):
 
 class PersonNode(TerminalNode):
 
-    """ Specialized TerminalNode for person terminals """
+    """Specialized TerminalNode for person terminals"""
 
     def __init__(
         self,
@@ -1179,7 +1179,7 @@ class PersonNode(TerminalNode):
         ]
 
     def _root(self, bin_db: GreynirBin) -> str:
-        """ Calculate the root (canonical) form of this person name """
+        """Calculate the root (canonical) form of this person name"""
         # If we already have a full name coming from the tokenizer, use it
         # (full name meaning that it includes the patronym/matronym even
         # if it was not present in the original token)
@@ -1224,19 +1224,19 @@ class PersonNode(TerminalNode):
         return " ".join(name)
 
     def _nominative(self, bin_db: GreynirBin) -> str:
-        """ The nominative is identical to the root """
+        """The nominative is identical to the root"""
         return self._root(bin_db)
 
     def _indefinite(self, bin_db: GreynirBin) -> str:
-        """ The indefinite is identical to the nominative """
+        """The indefinite is identical to the nominative"""
         return self._nominative(bin_db)
 
     def _canonical(self, bin_db: GreynirBin) -> str:
-        """ The canonical is identical to the nominative """
+        """The canonical is identical to the nominative"""
         return self._nominative(bin_db)
 
     def build_simple_tree(self, builder: Any) -> None:
-        """ Create a terminal node in a simple tree for this PersonNode """
+        """Create a terminal node in a simple tree for this PersonNode"""
         d = dict(x=self.text, k=self.tokentype)
         # Category = gender
         d["c"] = self.td.gender or self.td.cat
@@ -1249,7 +1249,7 @@ class PersonNode(TerminalNode):
 
 class NonterminalNode(Node):
 
-    """ A Node corresponding to a nonterminal """
+    """A Node corresponding to a nonterminal"""
 
     def __init__(self, nonterminal: str) -> None:
         super().__init__()
@@ -1268,7 +1268,7 @@ class NonterminalNode(Node):
 
     @property
     def text(self) -> str:
-        """ A nonterminal node has no text of its own """
+        """A nonterminal node has no text of its own"""
         return ""
 
     def contained_text(self) -> str:
@@ -1277,11 +1277,11 @@ class NonterminalNode(Node):
         return " ".join(d.text for d in self.descendants() if d.text)
 
     def has_nt_base(self, s: str) -> bool:
-        """ Does the node have the given nonterminal base name? """
+        """Does the node have the given nonterminal base name?"""
         return self.nt_base == s
 
     def has_variant(self, s: str) -> bool:
-        """ Does the node have the given variant? """
+        """Does the node have the given variant?"""
         return s in self.variants
 
     def string_self(self) -> str:
@@ -1312,7 +1312,7 @@ class NonterminalNode(Node):
         return " ".join(p._canonical for p in params if p is not None and p._canonical)
 
     def process(self, state: TreeStateDict, params: ParamList) -> Result:
-        """ Apply any requested processing to this node """
+        """Apply any requested processing to this node"""
         result = Result(self, state, params)
         result._nonterminal = self.nt
         # Calculate the combined text rep of the results of the children
@@ -1352,7 +1352,7 @@ class NonterminalNode(Node):
 
 class TreeBase:
 
-    """ A tree corresponding to a single parsed article """
+    """A tree corresponding to a single parsed article"""
 
     # A map of terminal types to node constructors
     _TC = {"person": PersonNode}
@@ -1366,30 +1366,30 @@ class TreeBase:
         self.at_start = False  # First token of sentence?
 
     def __getitem__(self, n: int) -> Optional[Node]:
-        """ Allow indexing to get sentence roots from the tree """
+        """Allow indexing to get sentence roots from the tree"""
         return self.s[n]
 
     def __contains__(self, n: int) -> bool:
-        """ Allow query of sentence indices """
+        """Allow query of sentence indices"""
         return n in self.s
 
     def sentences(self) -> Iterator[Tuple[int, Optional[Node]]]:
-        """ Enumerate the sentences in this tree """
+        """Enumerate the sentences in this tree"""
         for ix, sent in self.s.items():
             yield ix, sent
 
     def score(self, n: int) -> int:
-        """ Return the score of the sentence with index n, or 0 if unknown """
+        """Return the score of the sentence with index n, or 0 if unknown"""
         return self.scores.get(n, 0)
 
     def length(self, n: int) -> int:
-        """ Return the length of the sentence with index n, in tokens, or 0 if unknown """
+        """Return the length of the sentence with index n, in tokens, or 0 if unknown"""
         return self.lengths.get(n, 0)
 
     def simple_trees(
         self, nt_map=None, id_map=None, terminal_map=None
     ) -> Iterator[Tuple[int, SimpleTree]]:
-        """ Generate simple trees out of the sentences in this tree """
+        """Generate simple trees out of the sentences in this tree"""
         # Hack to allow nodes to access the BIN database
         with GreynirBin.get_db() as bin_db:
             state = dict(bin_db=bin_db)
@@ -1401,7 +1401,7 @@ class TreeBase:
                     yield ix, builder.tree
 
     def push(self, n: int, node: Node) -> None:
-        """ Add a node into the tree at the right level """
+        """Add a node into the tree at the right level"""
         assert self.stack is not None
         if n == len(self.stack):
             # First child of parent
@@ -1419,29 +1419,29 @@ class TreeBase:
                 self.stack = self.stack[0 : n + 1]
 
     def handle_R(self, n: int) -> None:
-        """ Greynir version info """
+        """Greynir version info"""
         pass
 
     def handle_C(self, n: int) -> None:
-        """ Sentence score """
+        """Sentence score"""
         assert self.n is not None
         assert self.n not in self.scores
         self.scores[self.n] = n
 
     def handle_L(self, n: int) -> None:
-        """ Sentence length """
+        """Sentence length"""
         assert self.n is not None
         assert self.n not in self.lengths
         self.lengths[self.n] = n
 
     def handle_S(self, n: int) -> None:
-        """ Start of sentence """
+        """Start of sentence"""
         self.n = n
         self.stack = []
         self.at_start = True
 
     def handle_Q(self, n: int) -> None:
-        """ End of sentence """
+        """End of sentence"""
         # Store the root of the sentence tree at the appropriate index
         # in the dictionary
         assert self.n is not None
@@ -1452,19 +1452,19 @@ class TreeBase:
         self.n = None
 
     def handle_E(self, n: int) -> None:
-        """ End of sentence with error """
+        """End of sentence with error"""
         # Nothing stored
         assert self.n not in self.s
         self.stack = None
         self.n = None
 
     def handle_P(self, n: int) -> None:
-        """ Epsilon node: leave the parent nonterminal childless """
+        """Epsilon node: leave the parent nonterminal childless"""
         pass
 
     @staticmethod
     def _parse_T(s: str) -> TreeToken:
-        """ Parse a T (Terminal) descriptor """
+        """Parse a T (Terminal) descriptor"""
         # The string s contains:
         # terminal "token" [TOKENTYPE] [auxiliary-json]
 
@@ -1515,7 +1515,7 @@ class TreeBase:
         return TreeToken(terminal, augmented_terminal, token, tokentype, aux, cat)
 
     def handle_T(self, n: int, s: str) -> None:
-        """ Terminal """
+        """Terminal"""
         terminal, augmented_terminal, token, tokentype, aux, cat = self._parse_T(s)
         constructor = self._TC.get(cat, TerminalNode)
         self.push(
@@ -1527,11 +1527,11 @@ class TreeBase:
         self.at_start = False
 
     def handle_N(self, n: int, nonterminal: str) -> None:
-        """ Nonterminal """
+        """Nonterminal"""
         self.push(n, NonterminalNode(nonterminal))
 
     def load(self, txt: str) -> None:
-        """ Loads a tree from the text format stored by the scraper """
+        """Loads a tree from the text format stored by the scraper"""
         for line in txt.split("\n"):
             if not line:
                 continue
@@ -1552,7 +1552,7 @@ class TreeBase:
 
 class Tree(TreeBase):
 
-    """ A processable tree corresponding to a single parsed article """
+    """A processable tree corresponding to a single parsed article"""
 
     def __init__(self, url: str = "", authority: float = 1.0) -> None:
         super().__init__()
@@ -1560,7 +1560,7 @@ class Tree(TreeBase):
         self.authority = authority
 
     def visit_children(self, state: TreeStateDict, node: Node) -> Optional[Result]:
-        """ Visit the children of node, obtain results from them and pass them to the node """
+        """Visit the children of node, obtain results from them and pass them to the node"""
         # First check whether the processor has a visit() method
         visit = state.get("_visit")
         if visit is not None and not visit(state, node):
@@ -1572,7 +1572,7 @@ class Tree(TreeBase):
         )
 
     def process_sentence(self, state: TreeStateDict, tree: Node) -> None:
-        """ Process a single sentence tree """
+        """Process a single sentence tree"""
         result = self.visit_children(state, tree)
         # Sentence processing completed:
         # Invoke a function called 'sentence(state, result)',
@@ -1582,7 +1582,7 @@ class Tree(TreeBase):
             sentence(state, result)
 
     def process_trees(self, state: TreeStateDict) -> None:
-        """ Overridable inner loop for processing the sentence trees in an article """
+        """Overridable inner loop for processing the sentence trees in an article"""
         # For each sentence in turn, do a depth-first traversal,
         # visiting each parent node after visiting its children
         for index, tree in self.s.items():
@@ -1660,15 +1660,15 @@ class TreeGist(TreeBase):
         self._err_index: Dict[int, int] = dict()
 
     def err_index(self, n: int) -> Optional[int]:
-        """ Return the error token index for an unparsed sentence, if any, or None """
+        """Return the error token index for an unparsed sentence, if any, or None"""
         return self._err_index.get(n)
 
     def push(self, n: int, node: Node) -> None:
-        """ This should not be invoked for a gist """
+        """This should not be invoked for a gist"""
         assert False
 
     def handle_Q(self, n: int) -> None:
-        """ End of sentence """
+        """End of sentence"""
         # Simply note that the sentence is present without storing it
         assert self.n is not None
         assert self.n not in self.s
@@ -1677,32 +1677,32 @@ class TreeGist(TreeBase):
         self.n = None
 
     def handle_E(self, n: int) -> None:
-        """ End of sentence with error """
+        """End of sentence with error"""
         super().handle_E(n)
         assert self.n is not None
         self._err_index[self.n] = n  # Note the index of the error token
 
     def handle_T(self, n: int, s: str) -> None:
-        """ Terminal """
+        """Terminal"""
         # No need to store anything for gists
         pass
 
     def handle_N(self, n: int, nonterminal: str) -> None:
-        """ Nonterminal """
+        """Nonterminal"""
         # No need to store anything for gists
         pass
 
 
 class TreeTokenList(TreeBase):
 
-    """ A tree that allows easy iteration of its token/terminal matches """
+    """A tree that allows easy iteration of its token/terminal matches"""
 
     def __init__(self) -> None:
         super().__init__()
         self.result: Dict[int, List[TreeToken]] = dict()
 
     def handle_Q(self, n: int) -> None:
-        """ End of sentence """
+        """End of sentence"""
         assert self.n is not None
         assert self.n not in self.result
         if self.stack:
@@ -1711,17 +1711,17 @@ class TreeTokenList(TreeBase):
         self.n = None
 
     def handle_T(self, n: int, s: str) -> None:
-        """ Terminal """
+        """Terminal"""
         t = self._parse_T(s)
         # Append to token list for current sentence
         assert self.stack is not None
         cast(List[TreeToken], self.stack).append(TreeToken(*t))
 
     def handle_N(self, n: int, nonterminal: str) -> None:
-        """ Nonterminal """
+        """Nonterminal"""
         # No action required for token lists
         pass
 
     def token_lists(self) -> Iterator[Tuple[int, List[TreeToken]]]:
-        """ Enumerate the resulting token lists """
+        """Enumerate the resulting token lists"""
         yield from self.result.items()

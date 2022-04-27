@@ -4,7 +4,7 @@
 
     Petrol query response module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -236,7 +236,7 @@ _PETROL_CACHE_TTL = 3600  # seconds, ttl 1 hour
 
 @cachetools.cached(cachetools.TTLCache(1, _PETROL_CACHE_TTL))
 def _get_petrol_station_data() -> Optional[List]:
-    """ Fetch list of petrol stations w. prices from apis.is (Gasvaktin) """
+    """Fetch list of petrol stations w. prices from apis.is (Gasvaktin)"""
     pd = query_json_api(_PETROL_API)
     if not isinstance(pd, dict) or "results" not in pd:
         return None
@@ -250,7 +250,7 @@ def _get_petrol_station_data() -> Optional[List]:
 
 
 def _stations_with_distance(loc: Optional[LatLonTuple]) -> Optional[List]:
-    """ Return list of petrol stations w. added distance data. """
+    """Return list of petrol stations w. added distance data."""
     pd = _get_petrol_station_data()
     if not pd:
         return None
@@ -264,7 +264,7 @@ def _stations_with_distance(loc: Optional[LatLonTuple]) -> Optional[List]:
 
 
 def _closest_petrol_station(loc: LatLonTuple) -> Optional[Dict]:
-    """ Find petrol station closest to the given location. """
+    """Find petrol station closest to the given location."""
     stations = _stations_with_distance(loc)
     if not stations:
         return None
@@ -374,7 +374,7 @@ def _answ_for_petrol_query(q: Query, result: Result) -> AnswerTuple:
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type

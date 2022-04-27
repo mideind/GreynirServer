@@ -3,7 +3,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -52,23 +52,23 @@ import processors.persons as persons  # noqa
 
 
 def test_processors():
-    """ Try to import all tree/token processors by instantiating Processor object """
+    """Try to import all tree/token processors by instantiating Processor object"""
     _ = Processor(processor_directory="processors")
 
 
 class SessionShim:
-    """ Shim (wrapper) that fakes an SQLAlchemy session class """
+    """Shim (wrapper) that fakes an SQLAlchemy session class"""
 
     def __init__(self):
         # Accumulate rows that are added to the session
         self.defs = set()
 
     def execute(self, command):
-        """ Shim out SQLAlchemy execute() calls """
+        """Shim out SQLAlchemy execute() calls"""
         pass
 
     def add(self, row):
-        """ Shim out SQLAlchemy add() calls """
+        """Shim out SQLAlchemy add() calls"""
         raise NotImplementedError
 
     def check(self, t):
@@ -290,7 +290,7 @@ def test_locations():
 
 
 if __name__ == "__main__":
-    """ Run tests via command line invocation. """
+    """Run tests via command line invocation."""
     test_entities()
     test_persons()
     test_locations()

@@ -1,7 +1,7 @@
 """
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -153,7 +153,7 @@ STREETNAME_BLACKLIST = frozenset(("Mark", "Á", "Sjáland", "Hús", "Húsið"))
 
 
 def article_begin(state):
-    """ Called at the beginning of article processing """
+    """Called at the beginning of article processing"""
 
     session = state["session"]  # Database session
     url = state["url"]  # URL of the article being processed
@@ -166,7 +166,7 @@ def article_begin(state):
 
 
 def article_end(state):
-    """ Called at the end of article processing """
+    """Called at the end of article processing"""
 
     locs = state.get("locations")
     if not locs:

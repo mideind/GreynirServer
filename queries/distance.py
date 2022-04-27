@@ -4,7 +4,7 @@
 
     Distance query response module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -196,7 +196,7 @@ _HOME_LOC = frozenset(
 
 
 def _addr2nom(address: str) -> str:
-    """ Convert location name to nominative form. """
+    """Convert location name to nominative form."""
     if address is None or address == "":
         return address
     try:
@@ -359,7 +359,7 @@ _UNKNOWN_LOC_RESP = "Ég veit ekki hvar þú ert, og get því ekki reiknað út
 
 
 def handle_plain_text(q: Query) -> bool:
-    """ Handle a plain text query. """
+    """Handle a plain text query."""
     ql = q.query_lower.rstrip("?")
 
     matches: Optional[Match[str]] = None

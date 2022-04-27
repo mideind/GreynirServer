@@ -4,7 +4,7 @@
 
     Example of a plain text query processor module.
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -32,12 +32,12 @@ from datetime import datetime, timedelta
 
 
 def handle_plain_text(q) -> bool:
-    """ Handle a plain text query, contained in the q parameter
-        which is an instance of the query.Query class.
-        Returns True if the query was handled, and in that case
-        the appropriate properties on the Query instance have
-        been set, such as the answer and the query type (qtype).
-        If the query is not recognized, returns False. """
+    """Handle a plain text query, contained in the q parameter
+    which is an instance of the query.Query class.
+    Returns True if the query was handled, and in that case
+    the appropriate properties on the Query instance have
+    been set, such as the answer and the query type (qtype).
+    If the query is not recognized, returns False."""
     ql = q.query_lower.rstrip("?")
 
     if ql == "er þetta prufa":

@@ -4,7 +4,7 @@
 
     Processor module to extract attributes of objects
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@ PROCESSOR_TYPE = "tree"
 
 
 def article_begin(state):
-    """ Called at the beginning of article processing """
+    """Called at the beginning of article processing"""
 
     # session = state["session"] # Database session
     # url = state["url"] # URL of the article being processed
@@ -64,12 +64,12 @@ def article_begin(state):
 
 
 def article_end(state):
-    """ Called at the end of article processing """
+    """Called at the end of article processing"""
     pass
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called at the end of sentence processing """
+    """Called at the end of sentence processing"""
 
     session = state["session"]  # Database session
     url = state["url"]  # URL of the article being processed
@@ -99,7 +99,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
 
 def FsLiður(node, params, result):
-    """ Ekki breyta forsetningarliðum í nefnifall """
+    """Ekki breyta forsetningarliðum í nefnifall"""
     result._nominative = result._text
     # Ekki leyfa eignarfallsliðum að lifa í gegn um forsetningarliði á
     # leið upp tréð
@@ -107,23 +107,23 @@ def FsLiður(node, params, result):
 
 
 def EfLiður(node, params, result):
-    """ Eignarfallsliður eftir nafnlið """
+    """Eignarfallsliður eftir nafnlið"""
     result.ef_nom = result._nominative
     result.ef_text = result._text
 
 
 def Tengiliður(node, params, result):
-    """ Tengiliður ("sem" setning) """
+    """Tengiliður ("sem" setning)"""
     result.del_attribs(("ef_nom", "ef_text"))
 
 
 def SvigaInnihald(node, params, result):
-    """ Tengiliður ("sem" setning) """
+    """Tengiliður ("sem" setning)"""
     result.del_attribs(("ef_nom", "ef_text"))
 
 
 def Setning(node, params, result):
-    """ Meðhöndla setningar á forminu 'eitthvað einhvers fsliðir* er-sögn eitthvað' """
+    """Meðhöndla setningar á forminu 'eitthvað einhvers fsliðir* er-sögn eitthvað'"""
 
     # return # !!! TODO - DEBUG
 
