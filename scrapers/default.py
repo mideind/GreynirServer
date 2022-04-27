@@ -2034,11 +2034,34 @@ class VidskiptabladidScraper(ScrapeHelper):
         # Author
         author = ScrapeHelper.div_class(soup, "author")
         if author is not None:
-            author = author.text
+            author = author.text.strip()
         else:
             author = "Ritstjórn Viðskiptablaðsins"
 
         timestamp = datetime.utcnow()
+
+        header = soup.find("div", {"class": "newsheader"})
+        date_span = header.find("span", {"class": "date"}) if header else None
+        if date_span:
+            date = ScrapeHelper.tag_prop_val(soup, "span", "class", "date")
+            datestr = date.get_text().strip()
+            # Parse date
+            try:
+                # Example: "17. janúar 2019 14:30"
+                (mday, m, y, hm) = datestr.split()
+                (hour, mins) = hm.split(":")
+                mday = mday.replace(".", "")
+                month = MONTHS.index(m) + 1
+
+                timestamp = datetime(
+                    year=int(y),
+                    month=int(month),
+                    day=int(mday),
+                    hour=int(hour),
+                    minute=int(mins),
+                )
+            except Exception as e:
+                logging.warning(f"Exception obtaining date of vb.is article: {e}")
 
         metadata.heading = heading
         metadata.author = author
