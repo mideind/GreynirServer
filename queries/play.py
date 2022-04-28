@@ -51,6 +51,8 @@ def yt_api() -> Api:
     global _YT_API
     if not _YT_API:
         _YT_API = Api(api_key=read_api_key("GoogleServerKey"))
+    if not _YT_API:
+        logging.error("Unable to instantiate YouTube API client")
     return _YT_API
 
 
@@ -67,6 +69,8 @@ _YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v={0}"
 def find_youtube_videos(q: str, limit: int = 1) -> List[str]:
     """Find video URLs for a given a search string via the YouTube API."""
     vids = []
+    if not q:
+        return vids
     try:
         r = search_youtube(q, limit=limit)
         if r is None or r.items is None:
@@ -168,7 +172,7 @@ _NO_MUSIC_FOUND = "Engin tónlist fannst."
 
 def _play_music_by_artist(qs: str, q: Query, matches: Optional[Match[str]]) -> Any:
     """Play a song (any song) by a given artist"""
-    artist = matches.group(1)
+    artist = matches.group(1) if matches else ""
     q.set_key(artist)
 
     r = find_youtube_videos(artist)
@@ -180,9 +184,9 @@ def _play_music_by_artist(qs: str, q: Query, matches: Optional[Match[str]]) -> A
 
 def _play_song_by_artist(qs: str, q: Query, matches: Optional[Match[str]]) -> Any:
     """Play a particular, named song by a given artist"""
-    song = matches.group(1)
-    artist = matches.group(2)
-    searchstr = f"{song} {artist}"
+    song = matches.group(1) if matches else ""
+    artist = matches.group(2) if matches else ""
+    searchstr = f"{song} {artist}".strip()
     q.set_key(searchstr)
 
     r = find_youtube_videos(searchstr)
@@ -202,12 +206,14 @@ _FILMS = [
 ]
 
 
-def _play_film(qs: str, q: Query) -> Any:
+def _play_film(qs: str, q: Query, matches: Optional[Match[str]]) -> Any:
     """Play a randomly selected out-of-copyright film on YouTube."""
     url = "https://www.youtube.com/watch?v=FC6jFoYm3xs"  # Nosferatu, 1922
     urls = find_youtube_videos(choice(_FILMS), limit=1)
     if urls:
         url = urls[0]
+    else:
+        q.set_answer(*gen_answer("Ekki tókst að finna kvikmynd"))
     q.set_url(url)
 
 
@@ -261,6 +267,8 @@ HARDCODED_Q2H = {
     "sýndu bíómynd": _play_film,
     "sýndu mér kvikmynd": _play_film,
     "sýndu mér bíómynd": _play_film,
+    "sýndu mér einhverja kvikmynd": _play_film,
+    "sýndu mér einhverja bíómynd": _play_film,
 }
 
 _VERB = "|".join(
@@ -318,11 +326,11 @@ REGEX_Q2H = OrderedDict(
             _VERB, _ADJ, _POST
         ): _play_music,
         # Jazz
-        r"^(?:{0})\s?(?:{1})?\s(djass|jazz|jass|djasstónlist|djasslag)\s?(?:{2})?$".format(
+        r"^(?:{0})\s?(?:{1})?\s(djass|jazz|jass|djasstónlist|djasslag|djass lag)\s?(?:{2})?$".format(
             _VERB, _ADJ, _POST
         ): _play_jazz,
         # Blues
-        r"^(?:{0})\s?(?:{1})?\s(blús|blúsinn|blústónlist|blúslag)\s?(?:{2})?$".format(
+        r"^(?:{0})\s?(?:{1})?\s(blús|blúsinn|blústónlist|blúslag|blús lag)\s?(?:{2})?$".format(
             _VERB, _ADJ, _POST
         ): _play_blues,
         # Rock
@@ -357,22 +365,21 @@ def handle_plain_text(q: Query) -> bool:
     handler_fn = HARDCODED_Q2H.get(ql)
     if handler_fn:
         handler_fn(ql, q, None)
-        return True
+    else:
+        # Check if query matches regexes supported by this module
+        matches = None
+        for rx, fn in REGEX_Q2H.items():
+            matches = re.search(rx, ql)
+            if matches:
+                fn(ql, q, matches)
+                break
 
-    # Check if query matches regexes supported by this module
-    matches = None
-    for rx, fn in REGEX_Q2H.items():
-        matches = re.search(rx, ql)
-        if matches:
-            fn(ql, q, matches)
-            break
-
-    if not matches:
-        return False
+        if not matches:
+            return False
 
     # OK, this is a query we've recognized and handled
     q.set_qtype(_PLAY_QTYPE)
-    # if not q.answer:
-    q.set_answer(*gen_answer(_AFFIRMATIVE))
+    if not q.answer():
+        q.set_answer(*gen_answer(_AFFIRMATIVE))
 
     return True

@@ -25,8 +25,6 @@ from typing import Any, Dict, List, Tuple, cast, Counter as CounterType
 
 from . import routes, max_age, cache, restricted, days_from_period_arg
 
-import json
-from pprint import pprint
 from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 from itertools import permutations

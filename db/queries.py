@@ -84,12 +84,13 @@ class StatsQuery(_BaseQuery):
 
     _Q = """
         select r.domain,
+            r.scrape as enabled,
             sum(1) as art,
             coalesce(sum(a.num_sentences),0) as sent,
             coalesce(sum(a.num_parsed),0) as parsed
             from articles as a, roots as r
             where a.root_id = r.id and r.visible
-            group by r.domain
+            group by r.domain, r.scrape
             order by r.domain;
         """
 

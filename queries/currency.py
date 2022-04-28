@@ -34,10 +34,10 @@ import random
 import logging
 
 from query import Query, QueryStateDict
-from queries import query_json_api, iceformat_float, sing_or_plur, gen_answer
+from queries import query_json_api, iceformat_float, gen_answer, is_plural
 from settings import Settings
-from tree import Result, Node, TerminalNode, NonterminalNode
-
+from tree import Result, Node, NonterminalNode
+from queries.num import float_to_text
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS: Sequence[str] = [
@@ -488,6 +488,13 @@ def _query_exchange_rate(curr1: str, curr2: str) -> Optional[float]:
     return None
 
 
+def _clean_voice_answer(s: str) -> str:
+    """Clean up potential errors in speech recognised text."""
+    s = s.replace("slot í", "slotí")
+    s = s.replace(" dollars ", " Bandaríkjadals ")
+    return s
+
+
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
@@ -510,31 +517,38 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             val = _query_exchange_rate(result.currencies[0], "ISK")
             if val is None:
                 val = 1.0
-            suffix = sing_or_plur(val, "krónur", "króna")
+            suffix = "krónur" if is_plural(val) else "króna"
         elif result.op == "convert":
             # 'Hvað eru 100 evrur margar krónur?'
             suffix = result.currency  # 'krónur'
-            verb = "eru"
+            verb = "eru" if is_plural(result.amount) else "er"
             target_currency = result.currencies[1]
             val = _query_exchange_rate(result.currencies[0], result.currencies[1])
             val = val * result.amount if val else None
-            if target_currency == "ISK" and val is not None:
-                # For ISK, round to whole numbers
-                val = round(val, 0)
+            if val:
+                if target_currency == "ISK":
+                    # For ISK, round to whole numbers
+                    val = round(val, 0)
+                else:
+                    val = round(val, 2)
         else:
             raise Exception("Unknown operator: {0}".format(result.op))
 
         if val:
             answer = iceformat_float(val)
             response = dict(answer=answer)
-            voice_answer = "{0} {3} {1}{2}.".format(
-                result.desc, answer, (" " + suffix) if suffix else "", verb
+            voice_answer = "{0} {1} {2}{3}.".format(
+                result.desc,
+                verb,
+                # FIXME: We need to determine currency gender
+                float_to_text(val, case="þf", gender="kvk", comma_null=False),
+                (" " + suffix) if suffix else "",
             ).capitalize()
-            # Clean up voice answer
-            voice_answer = voice_answer.replace("slot í", "slotí")
-            voice_answer = voice_answer.replace(" dollars ", " Bandaríkjadals ")
+            voice_answer = _clean_voice_answer(voice_answer)
             q.set_answer(response, answer, voice_answer)
         else:
+            # FIXME: This error could occur under circumstances where something
+            # other than currency lookup failed. Refactor.
             # Ekki tókst að fletta upp gengi
             q.set_answer(*gen_answer("Ekki tókst að fletta upp gengi gjaldmiðla"))
 

@@ -36,8 +36,9 @@ import random
 from datetime import datetime
 
 from reynir import NounPhrase
+from iceaddr import nearest_addr, nearest_placenames
 
-from geo import in_iceland, iceprep_for_street
+from geo import in_iceland, iceprep_for_street, LatLonTuple
 from query import Query, QueryStateDict
 from queries import (
     gen_answer,
@@ -48,7 +49,7 @@ from queries import (
 from queries.num import numbers_to_text
 from tree import Result, Node
 
-from . import LatLonTuple, AnswerTuple
+from . import AnswerTuple
 
 
 _PLACES_QTYPE = "Places"
@@ -119,18 +120,19 @@ QPlacesOpeningHours →
     | "hvenær" "er" QPlacesSubject_nf QPlOpen
 
 QPlacesIsOpen →
-    "er" "opið" QPlacesPrepAndSubject QPlNow?
-    | "er" QPlacesSubject_nf QPlOpen QPlNow?
+    "er"? "opið" QPlacesPrepAndSubject QPlNow?
+    | "er"? QPlacesSubject_nf QPlOpen QPlNow?
 
 QPlacesIsClosed →
-    "er" "lokað" QPlacesPrepAndSubject QPlNow?
-    | "er" QPlacesSubject_nf QPlClosed QPlNow?
+    "er"? "lokað" QPlacesPrepAndSubject QPlNow?
+    | "er"? QPlacesSubject_nf QPlClosed QPlNow?
+
+QPlacesWhatIs →
+    "hvert" "er" | "hvað" "er"
 
 QPlacesAddress →
-    "hvert" "er" "heimilisfangið" QPlacesPrepAndSubject
-    | "hvað" "er" "heimilisfangið" QPlacesPrepAndSubject
-    | "hvert" "er" "heimilisfang" QPlacesSubject_ef
-    | "hvað" "er" "heimilisfang" QPlacesSubject_ef
+    QPlacesWhatIs? "heimilisfangið" QPlacesPrepAndSubject
+    | QPlacesWhatIs? "heimilisfang" QPlacesSubject_ef
     | "hvar" "er" QPlacesSubject_nf "til" "húsa"
     | "hvar" "er" QPlacesSubject_nf "staðsett"
     | "hvar" "er" QPlacesSubject_nf "staðsettur"
@@ -166,6 +168,9 @@ QPlNow →
 
 QPlToday →
     "núna"? "í" "dag" | "núna"? "í_kvöld" # | "núna"? 'í_dag'
+
+QPlacesCloseBy →
+    "í" "grenndinni" | "nálægt" "mér"? | "nálægt" "okkur"
 
 $score(+35) QPlacesQuery
 
@@ -231,7 +236,7 @@ def _top_candidate(cand: List) -> Optional[Dict]:
     return None
 
 
-def answ_address(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
+def answ_address(placename: str, loc: Optional[LatLonTuple], qtype: str) -> AnswerTuple:
     """Generate answer to a question concerning the address of a place."""
     # Look up placename in places API
     res = query_places_api(
@@ -273,7 +278,9 @@ def answ_address(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
     return response, answer, voice
 
 
-def answ_openhours(placename: str, loc: LatLonTuple, qtype: str) -> AnswerTuple:
+def answ_openhours(
+    placename: str, loc: Optional[LatLonTuple], qtype: str
+) -> AnswerTuple:
     """Generate answer to a question concerning the opening hours of a place."""
     # Look up placename in places API
     res = query_places_api(

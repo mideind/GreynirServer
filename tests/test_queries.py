@@ -632,6 +632,9 @@ def test_geography(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "hvar er borgin tókýó"}, "Geography")
     assert "Japan" in json["answer"]
 
+    json = qmcall(client, {"q": "í hvaða landi er borgin osló"}, "Geography")
+    assert "Noregi" in json["answer"]
+
 
 def test_ja(client: FlaskClient) -> None:
     """Ja.is module"""
@@ -642,17 +645,6 @@ def test_ja(client: FlaskClient) -> None:
     json = qmcall(
         client,
         {"q": "hver er síminn hjá Sveinbirni Þórðarsyni?", "voice": True},
-        "PhoneNum4Name",
-    )
-    assert "6992422" in json["answer"]
-    assert "sex níu níu tveir fjórir tveir tveir" in json["voice"]
-
-    json = qmcall(
-        client,
-        {
-            "q": "hvert er símanúmerið hjá Sveinbirni Þórðarsyni á Öldugötu?",
-            "voice": True,
-        },
         "PhoneNum4Name",
     )
     assert "6992422" in json["answer"]
@@ -762,11 +754,13 @@ def test_places(client: FlaskClient) -> None:
         and "opinn" in json["answer"]
     )
 
-    json = qmcall(client, {"q": "Hvað er opið lengi í Melabúðinni"}, "Places")
+    json = qmcall(
+        client, {"q": "Hvað er opið lengi í Melabúðinni", "voice": True}, "Places"
+    )
     assert (
         "answer" in json
         and "voice" in json
-        and "Melabúðin" in json["answer"]
+        and "Melabúðin" in json["voice"]
         and "opin" in json["voice"]
     )
 

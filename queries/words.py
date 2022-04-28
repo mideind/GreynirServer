@@ -32,7 +32,7 @@
 # TODO: Handle numbers ("3" should be spelled as "þrír" etc.)
 # TODO "Hvaða orð rímar við X"
 
-from typing import Iterable, Optional, Tuple
+from typing import Optional, Tuple, List
 
 import re
 import logging
@@ -186,7 +186,7 @@ def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
 
     # Piece together SSML for speech synthesis
     v = spell_out(word)
-    vlist: list = list(v)
+    vlist: List[str] = v.split()
     jfmt = '<break time="{0}s"/>'.format(_LETTER_INTERVAL)
     voice = "Orðið {0} er stafað á eftirfarandi hátt: {1} {2}".format(
         icequote(word), jfmt, jfmt.join(vlist)

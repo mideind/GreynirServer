@@ -25,6 +25,7 @@
 
 # TODO: "Hvaða þættir eru á rúv?"
 # TODO: Channels provided by Síminn
+# TODO: "Rás tveir" vandamál, ætti að vera "Rás tvö"
 
 from typing import List, Dict, Optional, Tuple, Any, cast
 from typing_extensions import TypedDict
