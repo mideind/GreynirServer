@@ -22,7 +22,7 @@
 
 """
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 import os
 import logging
@@ -56,7 +56,7 @@ _AZURE_API_KEY = ""
 _AZURE_API_REGION = ""
 
 
-def _azure_api_key() -> Tuple:
+def _azure_api_key() -> Tuple[str, str]:
     """Lazy-load API key and region from JSON and return as tuple."""
     global _AZURE_API_KEY
     global _AZURE_API_REGION
@@ -75,7 +75,7 @@ def _azure_api_key() -> Tuple:
     return (_AZURE_API_KEY, _AZURE_API_REGION)
 
 
-def _azure_synthesized_text_data(
+def text_to_audio_data(
     text: str,
     text_format: str,
     audio_format: str,
@@ -95,7 +95,7 @@ def _azure_synthesized_text_data(
         speech_config.speech_synthesis_voice_name = (
             _VOICE_TO_ID.get(voice_id) or _DEFAULT_VOICE_ID
         )
-        # We only support MP3 for now, although the API supports other formats
+        # We only support MP3 for now although the API supports other formats
         fmt = speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
         speech_config.set_speech_synthesis_output_format(fmt)
 
@@ -103,21 +103,21 @@ def _azure_synthesized_text_data(
         synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config)
         result = synthesizer.speak_text(text)
 
-        # Read audio from stream into buffer, append to bytearray containing total audio data
+        # Read audio from stream
         stream = speechsdk.AudioDataStream(result)
-        audio_data = bytearray()
+        buf_list: List[bytes] = []
         audio_buffer = bytes(32000)  # 32 KB buffer
         filled_size = stream.read_data(audio_buffer)
         while filled_size > 0:
-            audio_data += audio_buffer[:filled_size]
+            buf_list.append(audio_buffer[:filled_size])
             filled_size = stream.read_data(audio_buffer)
 
-        return audio_data
+        return b"".join(buf_list)
     except Exception as e:
         logging.error(f"Error communicating with Azure Speech API: {e}")
 
 
-def _azure_synthesized_text_url(
+def text_to_audio_url(
     text: str,
     text_format: str,
     audio_format: str,
@@ -126,7 +126,7 @@ def _azure_synthesized_text_url(
 ) -> Optional[str]:
     """Returns data URL for speech-synthesised text."""
 
-    data = _azure_synthesized_text_data(**locals())
+    data = text_to_audio_data(**locals())
     if not data:
         return None
 
@@ -135,7 +135,3 @@ def _azure_synthesized_text_url(
     data_uri = generate_data_uri(data, mime_type=mime_type)
 
     return data_uri
-
-
-text_to_audio_data = _azure_synthesized_text_data
-text_to_audio_url = _azure_synthesized_text_url
