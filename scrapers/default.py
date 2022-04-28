@@ -2030,6 +2030,8 @@ class VidskiptabladidScraper(ScrapeHelper):
         # Extract the heading from the OpenGraph og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         heading = heading.split(" - Viðskiptablaðið")[0]
+        if heading.startswith("Viðskiptablaðið - "):
+            heading = heading[len("Viðskiptablaðið - ") :]
 
         # Author
         author = ScrapeHelper.div_class(soup, "author")
