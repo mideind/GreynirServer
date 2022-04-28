@@ -441,7 +441,7 @@ function populateQueryResult(r) {
                });
             }
 
-      if (r.open_url !== null) {
+      if (r.open_url !== null && r.open_url !== undefined) {
          window.open(r.open_url, '_blank');
       }
    }
