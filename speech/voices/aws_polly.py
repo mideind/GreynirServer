@@ -70,8 +70,8 @@ def _initialize_aws_client() -> Optional[boto3.Session]:
             try:
                 with open(_AWS_API_KEYS_PATH) as json_file:
                     aws_config = json.load(json_file)
-            except FileNotFoundError:
-                logging.warning("Unable to read AWS Polly credentials")
+            except Exception as e:
+                logging.warning(f"Unable to read AWS Polly credentials: {e}")
                 return None
             _api_client = boto3.Session(**aws_config).client("polly")
         # Return client instance

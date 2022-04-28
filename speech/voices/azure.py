@@ -52,8 +52,8 @@ _AZURE_KEYFILE_NAME = "AzureSpeechServerKey.json"
 _AZURE_API_KEY_PATH = os.path.join(
     os.path.dirname(__file__), "..", "..", "resources", _AZURE_KEYFILE_NAME
 )
-_AZURE_API_KEY: str = ""
-_AZURE_API_REGION: str = ""
+_AZURE_API_KEY = ""
+_AZURE_API_REGION = ""
 
 
 def _azure_api_key() -> Tuple:
@@ -69,8 +69,8 @@ def _azure_api_key() -> Tuple:
             js = json.load(json_file)
             _AZURE_API_KEY = js["key"]
             _AZURE_API_REGION = js["region"]
-    except FileNotFoundError:
-        logging.warning("Unable to read Azure Speech API credentials")
+    except Exception as e:
+        logging.warning(f"Unable to read Azure Speech API credentials: {e}")
 
     return (_AZURE_API_KEY, _AZURE_API_REGION)
 
@@ -137,25 +137,5 @@ def _azure_synthesized_text_url(
     return data_uri
 
 
-def text_to_audio_data(
-    text: str,
-    text_format: str,
-    audio_format: str,
-    voice_id: str,
-    speed: float,
-) -> Optional[bytes]:
-    """Returns audio data for speech-synthesised text."""
-    # Pass all arguments on to another function
-    return _azure_synthesized_text_data(**locals())
-
-
-def text_to_audio_url(
-    text: str,
-    text_format: str,
-    audio_format: str,
-    voice_id: str,
-    speed: float,
-) -> Optional[str]:
-    """Returns URL to audio of speech-synthesised text."""
-    # Pass all arguments on to another function
-    return _azure_synthesized_text_url(**locals())
+text_to_audio_data = _azure_synthesized_text_data
+text_to_audio_url = _azure_synthesized_text_url

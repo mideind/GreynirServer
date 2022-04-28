@@ -540,7 +540,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             voice_answer = "{0} {1} {2}{3}.".format(
                 result.desc,
                 verb,
-                # This needs to be fixed, we need to determine currency gender
+                # FIXME: We need to determine currency gender
                 float_to_text(val, case="þf", gender="kvk", comma_null=False),
                 (" " + suffix) if suffix else "",
             ).capitalize()
