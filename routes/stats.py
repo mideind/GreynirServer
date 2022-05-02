@@ -67,6 +67,7 @@ _SOURCE_ROOT_COLORS = {
     "Mannlíf": "#ffcc00",  # Gula pressan ;)
     "Hagstofan": "#828282",
     "Bændablaðið": "#41938A",
+    "Viðskiptablaðið": "#00ffff",
 }
 
 
