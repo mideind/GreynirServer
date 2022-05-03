@@ -43,20 +43,17 @@ from article import Article as ArticleProxy
 from query import process_query
 from query import Query as QueryObject
 from doc import SUPPORTED_DOC_MIMETYPES, Document
-from speech import text_to_audio_url
+from speech import (
+    text_to_audio_url,
+    DEFAULT_VOICE,
+    SUPPORTED_VOICES,
+    RECOMMENDED_VOICES,
+)
 from util import read_api_key
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH
 from . import async_task
-
-
-# Maximum number of query string variants
-_MAX_QUERY_VARIANTS = 10
-# Maximum length of each query string
-_MAX_QUERY_LENGTH = 512
-# Synthetic location for use in testing
-_MIDEIND_LOCATION = (64.156896, -21.951200)  # Fiskislóð 31, 101 Reykjavík
 
 
 @routes.route("/ifdtag.api", methods=["GET", "POST"])
@@ -353,6 +350,14 @@ def reparse_api(version: int = 1) -> Response:
     return better_jsonify(valid=True, result=tokens, register=register, stats=stats)
 
 
+# Maximum number of query string variants
+_MAX_QUERY_VARIANTS = 10
+# Maximum length of each query string
+_MAX_QUERY_LENGTH = 512
+# Synthetic location for use in testing
+_MIDEIND_LOCATION = (64.156896, -21.951200)  # Fiskislóð 31, 101 Reykjavík
+
+
 @routes.route("/query.api", methods=["GET", "POST"])
 @routes.route("/query.api/v<int:version>", methods=["GET", "POST"])
 def query_api(version: int = 1) -> Response:
@@ -378,10 +383,10 @@ def query_api(version: int = 1) -> Response:
     except ValueError:
         voice_speed = 1.0
 
-    # If test is set to True (which is only possible in a debug setting), we
+    # If test is set to True, we
     # (1) add a synthetic location, if not given; and
     # (2) bypass the cache
-    test = Settings.DEBUG and bool_from_request(request, "test")
+    test = bool_from_request(request, "test")
 
     # Obtain the client's location, if present
     slat: Optional[str] = request.values.get("latitude")
@@ -564,6 +569,21 @@ def speech_api(version: int = 1) -> Response:
     reply["err"] = False
 
     return better_jsonify(**reply)
+
+
+@routes.route("/voices.api", methods=["GET", "POST"])
+@routes.route("/voices.api/v<int:version>", methods=["GET", "POST"])
+def voices_api(version: int = 1) -> Response:
+    """Returns list of supported speech synthesis voices as JSON."""
+
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, reason="Unsupported version")
+
+    return better_jsonify(
+        default=DEFAULT_VOICE,
+        supported=list(SUPPORTED_VOICES),
+        recommended=list(RECOMMENDED_VOICES),
+    )
 
 
 @routes.route("/feedback.api", methods=["POST"])

@@ -83,7 +83,8 @@ def load_voice_modules() -> Dict[str, ModuleType]:
 
 
 VOICE_TO_MODULE = load_voice_modules()
-SUPPORTED_VOICES = set(VOICE_TO_MODULE.keys())
+SUPPORTED_VOICES = frozenset(VOICE_TO_MODULE.keys())
+RECOMMENDED_VOICES = frozenset(("Dora", "Karl"))
 
 
 def _sanitize_args(args: Dict[str, Any]) -> Dict[str, Any]:
