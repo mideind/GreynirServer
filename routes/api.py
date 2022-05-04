@@ -581,8 +581,8 @@ def voices_api(version: int = 1) -> Response:
 
     return better_jsonify(
         default=DEFAULT_VOICE,
-        supported=list(SUPPORTED_VOICES),
-        recommended=list(RECOMMENDED_VOICES),
+        supported=sorted(list(SUPPORTED_VOICES)),
+        recommended=sorted(list(RECOMMENDED_VOICES)),
     )
 
 

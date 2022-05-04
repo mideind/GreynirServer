@@ -151,6 +151,16 @@ def test_ifdtag_api(client: FlaskClient):
     # assert len(resp.json["result"][0]) == 5
 
 
+def test_voices_api(client: FlaskClient):
+    resp = client.get(r"/voices.api")
+    assert resp.status_code == 200
+    assert resp.content_type == "application/json; charset=utf-8"
+    assert resp.json
+    assert "default" in resp.json
+    assert "supported" in resp.json
+    assert "recommended" in resp.json
+
+
 _KEY_RESTRICTED_ROUTES = frozenset(
     (
         # "/query_history.api",  # Disabled for now until clients are updated w. API key
