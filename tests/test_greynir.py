@@ -96,11 +96,12 @@ def test_routes(client: FlaskClient):
         route = str(rule)
         if rule.arguments or route in SKIP_ROUTES:
             continue
-        for m in [t for t in rule.methods if t in REQ_METHODS]:
-            # Make request for each method supported by route
-            method = getattr(client, m.lower())
-            resp = method(route)
-            assert resp.status in ("200 OK", "202 ACCEPTED")
+        if rule.methods:
+            for m in [t for t in rule.methods if t in REQ_METHODS]:
+                # Make request for each method supported by route
+                method = getattr(client, m.lower())
+                resp = method(route)
+                assert resp.status in ("200 OK", "202 ACCEPTED")
 
 
 API_CONTENT_TYPE = "application/json"
@@ -149,6 +150,17 @@ def test_ifdtag_api(client: FlaskClient):
     # assert "result" in resp.json
     # assert len(resp.json["result"]) == 1
     # assert len(resp.json["result"][0]) == 5
+
+
+def test_voices_api(client: FlaskClient):
+    resp = client.get("/voices.api")
+    assert resp.status_code == 200
+    assert resp.content_type == "application/json; charset=utf-8"
+    assert resp.json
+    assert "valid" in resp.json and resp.json["valid"] == True
+    assert "default" in resp.json
+    assert "supported" in resp.json
+    assert "recommended" in resp.json
 
 
 _KEY_RESTRICTED_ROUTES = frozenset(
