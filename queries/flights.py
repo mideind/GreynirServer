@@ -23,7 +23,6 @@
 
 """
 # TODO: Fetch more than one flight using "flight_count", maybe not needed though
-# TODO: Spell out flight number using spell_out fn, e.g. "FI432" -> "eff i fjórir þrír tveir"
 
 from typing import List, Dict, Optional
 from typing_extensions import TypedDict
@@ -38,7 +37,7 @@ from query import Query, QueryStateDict
 from queries import query_json_api, is_plural, spell_out
 from tree import Result, Node
 from settings import changedlocale
-from queries.num import numbers_to_ordinal, numbers_to_text
+from queries.num import digits_to_text, numbers_to_ordinal, numbers_to_text
 
 from reynir import NounPhrase
 from geo import capitalize_placename, iceprep_for_placename, icelandic_city_name
@@ -214,7 +213,7 @@ _ISAVIA_FLIGHTS_URL = (
 _FLIGHTS_CACHE_TTL = 600  # seconds, ttl = 10 mins
 
 # Cache for flights either departing or arriving
-_FLIGHT_CACHE: cachetools.TTLCache = cachetools.TTLCache(
+_FLIGHT_CACHE: cachetools.TTLCache = cachetools.TTLCache(  # type: ignore
     maxsize=2, ttl=_FLIGHTS_CACHE_TTL
 )
 
@@ -310,29 +309,22 @@ def _filter_flight_data(
             or _attribute_airport_match(flight, "AltDisplayName", airport)
         ):
             # Use estimated time instead of scheduled if available
-            if flight.get("Estimated") is not None:
-                # Change +00:00 UTC offset to +0000 for %z tag
-                flight_time_str = re.sub(
-                    r"([-+]\d{2}):(\d{2})(?:(\d{2}))?$",
-                    r"\1\2\3",
-                    str(flight["Estimated"]),
-                )
-                flight_time = datetime.strptime(flight_time_str, "%Y-%m-%dT%H:%M:%S%z")
+            flight_time_str = flight.get("Estimated") or flight.get("Scheduled")
 
-            elif flight.get("Scheduled") is not None:
-                flight_time_str = re.sub(
-                    r"([-+]\d{2}):(\d{2})(?:(\d{2}))?$",
-                    r"\1\2\3",
-                    str(flight["Scheduled"]),
-                )
-                flight_time = datetime.strptime(flight_time_str, "%Y-%m-%dT%H:%M:%S%z")
+            if not flight_time_str:
+                continue  # Failed, no time found (either None or "")
 
-            else:
-                continue  # Failed, no time found
+            # Change +00:00 UTC offset to +0000 for %z tag
+            flight_time_str = re.sub(
+                r"([-+]\d{2}):(\d{2})(?:(\d{2}))?$",
+                r"\1\2\3",
+                flight_time_str,
+            )
+
+            flight_time = datetime.strptime(flight_time_str, "%Y-%m-%dT%H:%M:%S%z")
 
             # Make sure flight isn't in the past
             if flight_time and flight_time >= now:
-
                 # Create copy of dictionary and
                 # add flight_time and api_airport attributes
                 flight_copy: FlightType = {
@@ -371,6 +363,10 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
     voice_lines: List[str] = []
 
     for flight in flights:
+        flight_number = flight.get("No")
+        if flight_number is None:
+            continue  # Invalid flight number
+
         airport = icelandic_city_name(
             capitalize_placename(flight.get("DisplayName", ""))
         )
@@ -380,23 +376,25 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
 
         flight_dt = flight.get("flight_time")
         if flight_dt is None or airport == "" or api_airport == "":
-            continue
+            continue  # Invalid time or locations
+
         flight_date_str = flight_dt.strftime("%-d. %B")
         flight_time_str = flight_dt.strftime("%H:%M")
+
+        flight_status = flight.get("Status")  # Whether flight is cancelled or not
 
         if flight.get("Departure"):
             airport = NounPhrase(airport).genitive or airport
             api_airport = NounPhrase(api_airport).dative or api_airport
 
             # Catch cancelled flights
-            if (
-                isinstance(flight.get("Status"), str)
-                and "aflýst" in str(flight["Status"]).lower()
-            ):
-                line = f"Flugi {flight.get('No')} frá {api_airport} til {airport} er aflýst."
+            if flight_status and "aflýst" in flight_status.lower():
+                line = (
+                    f"Flugi {flight_number} frá {api_airport} til {airport} er aflýst."
+                )
             else:
                 line = (
-                    f"Flug {flight.get('No')} til {airport} "
+                    f"Flug {flight_number} til {airport} "
                     f"flýgur frá {api_airport} {flight_date_str} "
                     f"klukkan {flight_time_str} að staðartíma."
                 )
@@ -405,20 +403,23 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
             prep = iceprep_for_placename(api_airport)
             api_airport = NounPhrase(api_airport).dative or api_airport
 
-            if (
-                isinstance(flight.get("Status"), str)
-                and "aflýst" in str(flight["Status"]).lower()
-            ):
-                line = f"Flugi {flight.get('No')} frá {airport} til {api_airport} er aflýst."
+            if flight_status and "aflýst" in flight_status.lower():
+                line = (
+                    f"Flugi {flight_number} frá {airport} til {api_airport} er aflýst."
+                )
             else:
                 line = (
-                    f"Flug {flight.get('No')} frá {airport} "
+                    f"Flug {flight_number} frá {airport} "
                     f"lendir {prep} {api_airport} {flight_date_str} "
                     f"klukkan {flight_time_str} að staðartíma."
                 )
 
+        # Spell out flight number (GS209 -> gé ess tveir núll níu)
+        voice_flight_number = digits_to_text(spell_out(flight_number))
+        voice_line = line.replace(flight_number, voice_flight_number)
+
         # Convert date ordinals to text for voice ("5. ágúst" -> "fimmta ágúst")
-        voice_line = numbers_to_ordinal(line, case="þf", gender="kk")
+        voice_line = numbers_to_ordinal(voice_line, case="þf", gender="kk")
 
         answers.append(line)
         voice_lines.append(voice_line)
