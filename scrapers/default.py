@@ -2021,7 +2021,7 @@ class VidskiptabladidScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
-        self._feeds = ["https://www.vb.is/rss/"]
+        self._feeds = ["https://vb.is/rss/"]
 
     def get_metadata(self, soup):
         """Analyze the article soup and return metadata"""
@@ -2029,9 +2029,10 @@ class VidskiptabladidScraper(ScrapeHelper):
 
         # Extract the heading from the OpenGraph og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
-        heading = heading.split(" - Viðskiptablaðið")[0]
-        if heading.startswith("Viðskiptablaðið - "):
-            heading = heading[len("Viðskiptablaðið - ") :]
+        heading = heading.split("- Viðskiptablaðið")[0]
+        if heading.startswith("Viðskiptablaðið -"):
+            heading = heading[len("Viðskiptablaðið -") :]
+        heading.strip()
 
         # Author
         author = ScrapeHelper.div_class(soup, "author")
@@ -2042,13 +2043,20 @@ class VidskiptabladidScraper(ScrapeHelper):
 
         timestamp = datetime.utcnow()
 
-        header = soup.find("div", {"class": "newsheader"})
-        date_span = header.find("span", {"class": "date"}) if header else None
-        if date_span:
-            date = ScrapeHelper.tag_prop_val(soup, "span", "class", "date")
-            datestr = date.get_text().strip()
-            # Parse date
-            try:
+        try:
+            datestr = None
+            div = soup.find("div", {"class": "article-pubdate"})
+            cat = div.find("span", {"class": "category"})
+            if cat:
+                cat.decompose()
+            auth = div.find("span", {"class": "float-end"})
+            if auth:
+                auth.decompose()
+
+            datestr = div.text.strip()
+
+            if datestr:
+                # Parse date
                 # Example: "17. janúar 2019 14:30"
                 (mday, m, y, hm) = datestr.split()
                 (hour, mins) = hm.split(":")
@@ -2062,8 +2070,8 @@ class VidskiptabladidScraper(ScrapeHelper):
                     hour=int(hour),
                     minute=int(mins),
                 )
-            except Exception as e:
-                logging.warning(f"Exception obtaining date of vb.is article: {e}")
+        except Exception as e:
+            logging.warning(f"Exception obtaining date of vb.is article: {e}")
 
         metadata.heading = heading
         metadata.author = author
@@ -2073,5 +2081,7 @@ class VidskiptabladidScraper(ScrapeHelper):
 
     def _get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
-        content = ScrapeHelper.div_class(soup_body, "entry_content_text")
+        content = ScrapeHelper.div_class(soup_body, "article-body")
+        if not content:
+            content = ScrapeHelper.div_class(soup_body, "entry_content_text")
         return content
