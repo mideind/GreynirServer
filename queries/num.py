@@ -283,7 +283,7 @@ def numbers_to_text(
     and whether to add "eitt" before "hundrað".
     """
 
-    def convert(m: Match) -> str:
+    def convert(m: Match[str]) -> str:
         match = m.group(0)
         n = int(match)
         return number_to_text(n, case=case, gender=gender, one_hundred=one_hundred)
@@ -373,7 +373,7 @@ def floats_to_text(
     and whether to add "eitt" before "hundrað".
     """
 
-    def convert(m: Match) -> str:
+    def convert(m: Match[str]) -> str:
         match = m.group(0)
         n = float(match.replace(".", "").replace(",", "."))
         return float_to_text(
@@ -428,7 +428,7 @@ def years_to_text(
     Can also be supplied with custom pattern to match years with shorter length than 4.
     """
 
-    def convert(m: Match) -> str:
+    def convert(m: Match[str]) -> str:
         match = m.group(0)
         n = int(match)
         return year_to_text(n, after_christ=after_christ)
@@ -692,7 +692,7 @@ def numbers_to_ordinal(
     Extra arguments specify case, gender and number.
     """
 
-    def convert(m: Match) -> str:
+    def convert(m: Match[str]) -> str:
         match = m.group(0)
         n = int(match.strip("."))
         return number_to_ordinal(n, case=case, gender=gender, number=number)
@@ -724,7 +724,7 @@ def digits_to_text(s: str, *, regex: str = r"\b\d+") -> str:
         "Síminn minn er 581-2345" -> "Síminn minn er fimm átta einn-tveir þrír fjórir fimm"
     """
 
-    def convert(m: Match) -> str:
+    def convert(m: Match[str]) -> str:
         match = m.group(0).replace("-", "")
         return "".join(
             _DIGITS_TO_KK[letter] + " " if letter.isdecimal() else letter
