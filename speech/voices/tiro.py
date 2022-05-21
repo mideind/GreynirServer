@@ -32,7 +32,7 @@ import requests
 
 
 NAME = "Tiro"
-VOICES = frozenset(("Alfur", "Dilja"))
+VOICES = frozenset(("Alfur", "Dilja", "Bjartur", "Rosa", "Alfur_v2", "Dilja_v2"))
 AUDIO_FORMATS = frozenset(("mp3", "pcm"))
 
 

@@ -164,7 +164,8 @@ def main() -> None:
         sys.exit(0)
 
     # Download
-    print(f"Downloading URL {url[:300]}")
+    urldesc = url if not _is_data_uri(url) else "data URI"
+    print(f"Downloading {urldesc}")
     data: Optional[bytes] = _fetch_audio_bytes(url)
     if not data:
         die("Unable to fetch audio data.")
