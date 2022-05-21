@@ -2084,4 +2084,7 @@ class VidskiptabladidScraper(ScrapeHelper):
         content = ScrapeHelper.div_class(soup_body, "article-body")
         if not content:
             content = ScrapeHelper.div_class(soup_body, "entry_content_text")
+        lock = ScrapeHelper.div_class(content, "article-lock")
+        if lock:
+            lock.decompose()
         return content
