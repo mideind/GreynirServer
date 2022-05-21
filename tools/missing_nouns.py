@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 """
-    Read tokens for all articles in database, look for nouns
-    and check if they could be found in vocabulary. If not,
+    Read tokens of all articles in the database, look for nouns
+    and check if they can be found in vocabulary. If not,
     add them to a dictionary and spit it out.
 """
 
@@ -12,7 +12,7 @@ from collections import defaultdict
 from pprint import pprint
 
 # Look for modules in parent directory
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
+sys.path.insert(1, os.path.join(sys.path[0], ".."))
 
 from db import SessionContext, desc
 from db.models import Article

@@ -2611,14 +2611,6 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "getur þú skipt um rödd": _YES,
     "geturðu skipt um röddu": _YES,
     "getur þú skipt um röddu": _YES,
-    # Cheating, I know. But I'm never in the news and it just doesn't
-    # sit right with me that I should remain incognito :) - Sveinbjörn 04/10/2019
-    "hver er sveinbjörn þórðarson": {
-        "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig."
-    },
-    "hver er sveinbjörn": {
-        "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig."
-    },
 }
 
 
