@@ -72,13 +72,13 @@ Query →
 QRandom → QRandomQuery '?'?
 
 QRandomQuery →
-    QRandomDiceRoll | QRandomBetween | QRandomHeadsOrTails
+    QRandomDieRoll | QRandomMultipleDiceRoll| QRandomBetween | QRandomHeadsOrTails
 
 QRandomHeadsOrTails →
     "fiskur" "eða" "skjaldarmerki" | "skjaldarmerki" "eða" "fiskur"
     | "kastaðu" "upp"? "peningi" | "kastaðu" "upp"? "pening" | "kastaðu" "upp"? "krónu"
 
-QRandomDiceRoll →
+QRandomDieRoll →
     "kastaðu" QRandomDiceSides? QRandomDie QRandomForMe?
     | "kastaðu" QRandomForMe? QRandomDiceSides? QRandomDie
     | "kasta" QRandomDiceSides? QRandomDie QRandomForMe?
@@ -87,6 +87,14 @@ QRandomDiceRoll →
     | "geturðu" "kastað" QRandomForMe? QRandomDiceSides? QRandomDie
     | "kastaðu" "upp" "á" "teningnum" QRandomForMe?
     | "kastaðu" "upp" "á" "teningi" QRandomForMe?
+
+QRandomMultipleDiceRoll →
+    "kastaðu" QRandNumber "teningum" QRandomForMe?
+    | "kastaðu" QRandomForMe? QRandNumber "teningum"
+    | "kasta" QRandNumber "teningum" QRandomForMe?
+    | "nennirðu" "að" "kasta" QRandNumber "teningum" QRandomForMe?
+    | "geturðu" "kastað" QRandNumber "teningum" QRandomForMe?
+    | "geturðu" "kastað" QRandomForMe? QRandNumber "teningum"
 
 QRandomForMe →
     "fyrir" "mig"
@@ -156,6 +164,10 @@ def QRandNumber(node: Node, params: QueryStateDict, result: Result) -> None:
         add_num(terminal_num(d), result)
     else:
         add_num(result._nominative, result)
+
+
+def gen_multiple_die_rolls_answer(q: Query, result):
+    pass
 
 
 def gen_random_answer(q: Query, result):
