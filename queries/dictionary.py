@@ -56,6 +56,8 @@ QDictWordQuery →
     | QDictWhatWhich "er" QDictDefinition "á" "orðinu" QDictSubjectNom QDictInDictionary?
     | "flettu" "upp" "orðinu" QDictSubjectNom QDictInDictionary?
     | "flettu" "orðinu" QDictSubjectNom "upp" QDictInDictionary?
+    | "fletta" "upp" "orðinu" QDictSubjectNom QDictInDictionary?
+    | "fletta" "orðinu" QDictSubjectNom "upp" QDictInDictionary?
     | QDictCanYou "flett" "upp" "orðinu" QDictSubjectNom QDictInDictionary?
     | "hvernig" "skilgreinir" QDictDict "orðið" QDictSubjectNom
     | "hvernig" "er" "orðið" QDictSubjectNom "skilgreint" QDictInDictionary?
