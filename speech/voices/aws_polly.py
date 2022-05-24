@@ -34,8 +34,6 @@ import cachetools  # type: ignore
 import boto3  # type: ignore
 from botocore.exceptions import ClientError  # type: ignore
 
-from . import generate_data_uri
-
 
 NAME = "Amazon Polly"
 VOICES = frozenset(("Karl", "Dora"))
