@@ -49,7 +49,7 @@ from speech import (
     SUPPORTED_VOICES,
     RECOMMENDED_VOICES,
 )
-from util import read_api_key
+from util import read_api_key, icelandic_asciify
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH
@@ -376,7 +376,7 @@ def query_api(version: int = 1) -> Response:
     # If voice is set, return a voice-friendly string
     voice = bool_from_request(request, "voice")
     # Request a particular voice
-    voice_id: str = request.values.get("voice_id", "Dora")
+    voice_id: str = icelandic_asciify(request.values.get("voice_id", "Dora"))
     # Request a particular voice speed
     try:
         voice_speed = float(request.values.get("voice_speed", 1.0))
@@ -529,7 +529,7 @@ def query_history_api(version: int = 1) -> Response:
 @routes.route("/speech.api", methods=["GET", "POST"])
 @routes.route("/speech.api/v<int:version>", methods=["GET", "POST"])
 def speech_api(version: int = 1) -> Response:
-    """Send in text, receive URL to speech-synthesised audio file."""
+    """Send in text, receive URL to speech synthesised audio file."""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -550,7 +550,7 @@ def speech_api(version: int = 1) -> Response:
     fmt = request.values.get("format", "ssml")
     if fmt not in ["text", "ssml"]:
         fmt = "ssml"
-    voice_id = request.values.get("voice_id", "Dora")
+    voice_id = icelandic_asciify(request.values.get("voice_id", "Dora"))
     speed = request.values.get("voice_speed", 1.0)
     if not isinstance(speed, float):
         try:
