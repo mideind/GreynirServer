@@ -250,7 +250,18 @@ def FsMeðFallstjórn(node: Node, params: QueryStateDict, result: Result) -> Non
     """Don't change the case of prepositional clauses"""
     result._nominative = result._text
 
-_MULTIPLE_MEANINGS_RE = re.compile(r"(hefur ýmsar merkingar:|getur átt við:)\s+")
+
+_DISAMBIG_INDICATORS = [
+    "hefur ýmsar merkingar:",
+    "getur átt við",
+    "getur átt við:",
+    "getur átt við eftirfarandi:",
+    "getur vísað til:",
+]
+
+
+_MULTIPLE_MEANINGS_RE = re.compile(r"({})\s+".format("|".join(_DISAMBIG_INDICATORS)))
+
 
 def _clean_answer(answer: str) -> str:
     # Check if answer is a multiple meaning answer
@@ -281,8 +292,10 @@ def _clean_answer(answer: str) -> str:
     a = a.replace("[heimild vantar]", "")
     return a
 
+
 _BREAK_LENGTH = 0.5  # Seconds
 _BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
+
 
 def _clean_voice_answer(answer: str) -> str:
     a = answer.replace(" m.a. ", " meðal annars ")
