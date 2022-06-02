@@ -250,10 +250,17 @@ def FsMeðFallstjórn(node: Node, params: QueryStateDict, result: Result) -> Non
     """Don't change the case of prepositional clauses"""
     result._nominative = result._text
 
+_MULTIPLE_MEANINGS_RE = re.compile(r"(hefur ýmsar merkingar:|getur átt við:)\s+")
 
 def _clean_answer(answer: str) -> str:
-    # Split on newline, use only first paragraph
-    a = answer.split("\n")[0].strip()
+    # Check if answer is a multiple meaning answer
+    multiple_meanings = _MULTIPLE_MEANINGS_RE.search(answer) is not None
+    if multiple_meanings:
+        # Answer is list of multiple meanings
+        a = re.sub("\n+", "\n", answer)
+    else:
+        # Split on newline, use only first paragraph
+        a = answer.split("\n")[0].strip()
     # Get rid of "Getur líka átt við" leading sentence
     # TODO: Fix me
     if a.startswith("Getur líka átt"):
@@ -262,7 +269,10 @@ def _clean_answer(answer: str) -> str:
     a = re.sub(r"\([^)]+\)", " ", a)
     # Fix any whitespace formatting issues created by
     # removing text within parentheses
-    a = re.sub(r"\s+", " ", a)
+    if multiple_meanings:
+        a = re.sub(r" +", " ", a)
+    else:
+        a = re.sub(r"\s+", " ", a)
     a = re.sub(r"\s\.$", ".", a)
     a = re.sub(r"\s,\s", ", ", a)
     a = re.sub(r"\s\.\s", ". ", a)
@@ -271,11 +281,18 @@ def _clean_answer(answer: str) -> str:
     a = a.replace("[heimild vantar]", "")
     return a
 
+_BREAK_LENGTH = 0.5  # Seconds
+_BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
 
 def _clean_voice_answer(answer: str) -> str:
     a = answer.replace(" m.a. ", " meðal annars ")
     a = a.replace(" þ.e. ", " það er ")
     a = a.replace(" t.d. ", " til dæmis ")
+    if _MULTIPLE_MEANINGS_RE.search(answer) is not None:
+        # Short voice break between each meaning
+        a = a.replace("\n", _BREAK_SSML)
+        # Remove first voice break (before the list of meanings)
+        a = a.replace(_BREAK_SSML, " ", 1)
     return a
 
 
