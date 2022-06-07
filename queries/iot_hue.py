@@ -55,6 +55,7 @@ def help_text(lemma: str) -> str:
     )
 
 
+
 _COLORS = {
     "gulur": [],
     "rauður": [],
@@ -151,6 +152,7 @@ QIoTGroupNamePhrase ->
 
 QIoTGroupName ->
     Nl
+
 
 """
 
