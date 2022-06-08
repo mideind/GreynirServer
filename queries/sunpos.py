@@ -541,7 +541,7 @@ def _answer_city_solar_data(
             is_will_was = "var"
 
         degrees = cast(Union[int, float], data[city][closest_date][sun_pos])
-        answer = f"Sólarhæð um hádegi {when} {is_will_was} um {sing_or_plur(degrees, 'gráða', 'gráður')}."
+        answer = f"Sólarhæð um hádegi {when} {is_will_was} um {sing_or_plur(float(degrees), 'gráða', 'gráður')}."
 
     else:
         time: Optional[datetime.time] = cast(
@@ -594,7 +594,7 @@ def _answer_city_solar_data(
     # Convert date ordinals to text for voice
     voice = numbers_to_ordinal(answer, case="þf", gender="kk")
     # Convert degrees to text for voice when asking about height of sun
-    voice = floats_to_text(voice, gender="kvk")
+    voice = floats_to_text(voice, gender="kvk", regex=r"(?<= )(\d?\d?\d\.)*\d+(,\d+)?(?= )", comma_null=False)
     return {"answer": answer, "voice": voice}, answer, voice
 
 
