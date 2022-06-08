@@ -76,7 +76,13 @@ Query →
 QIoT → QIoTQuery '?'?
 
 QIoTQuery →
-    QIoTTurnOn | QIoTTurnOff | QIoTSetColor | QIoTIncreaseBrightness | QIoTDecreaseBrightness
+    QIoTTurnOn 
+    | QIoTTurnOff 
+    | QIoTSetColor 
+    | QIoTIncreaseBrightness 
+    | QIoTDecreaseBrightness 
+    # | QIoTMaxBrightness 
+    # | QIoTMinBrightness
 
 QIoTTurnOn ->
     "kveiktu" QIoTLightPhrase
@@ -90,8 +96,7 @@ QIoTSetColor ->
     | "gerðu" QIoTColorNamePhrase QIoTGroupNamePhrase?
     | "breyttu" QIoTColorLightPhrase í QIoTColorNamePhrase
     | "breyttu" QIoTColorLight í QIoTColorNamePhrase QIoTGroupNamePhrase?
-    | "settu" QIoTColorNamePhrase QIoTColorLightPhrase
-    
+    | "settu" QIoTColorNamePhrase QIoTColorLightPhrase    
 
 QIoTIncreaseBrightness ->
     QIoTIncrease QIoTBrightness QIoTLightPhrase?
@@ -100,6 +105,12 @@ QIoTIncreaseBrightness ->
 QIoTDecreaseBrightness ->
     QIoTDecrease QIoTBrightness QIoTLightPhrase?
     | "gerðu" QIoTLightPhrase QIoTDarker
+
+# QIoTMaxBrightness ->
+#     "stilltu" QIoTLightPhrase 
+
+# QIoTMinBrightness ->
+#     "stilltu" QIoTLightPhrase
 
 QIoTBrighter ->
     "bjartara"
@@ -118,18 +129,21 @@ QIoTDecrease ->
     | "minnkaðu"
 
 QIoTBrightness ->
-    "birtu" | "birtustig" | "birtuna" | "birtustigið"
+    'birta'
+    | 'birtustigið'
+    | QIoTLight
 
 QIoTColorLightPhrase ->
     QIoTColorLight QIoTGroupNamePhrase?
+    | QIoTGroupNamePhrase
 
 QIoTColorLight ->
-    QIoTColor? "á"? "í"? QIoTLight
+    QIoTColor? QIoTLight
     | QIoTColor
 
 QIoTLightPhrase ->
-    "á"? "í"? QIoTLight QIoTGroupNamePhrase?
-    | "á"? "í"? QIoTGroupNamePhrase
+    QIoTLight QIoTGroupNamePhrase?
+    | QIoTGroupNamePhrase
 
 # tried making this 'ljós:no' to avoid ambiguity, but all queries failed as a result
 QIoTLight ->
@@ -150,11 +164,28 @@ QIoTColorNamePhrase ->
     | QIoTColorName QIoTColor?
 
 QIoTGroupNamePhrase ->
-    "í" QIoTGroupName
-    | "á" QIoTGroupName
+    QIoTLocationPreposition QIoTGroupName
 
+#The Nl, noun phrase, is too greedy, e.g. parsing "ljósin í eldhúsinu" as the group name.
+# But no, noun, is too strict, e.g. "herbergið hans Loga" could be a user-made group name. 
 QIoTGroupName ->
     no
+
+QIoTLocationPreposition ->
+    QIoTLocationPrepositionFirstPart? QIoTLocationPrepositionSecondPart
+
+# The latter proverbs are grammatically incorrect, but common errors, both in speech and transcription.
+# The list provided is taken from StefnuAtv in Greynir.grammar. That includes "aftur:ao", which is not applicable here.
+QIoTLocationPrepositionFirstPart ->
+    StaðarAtv
+    | "fram:ao"
+    | "inn:ao"
+    | "niður:ao"
+    | "upp:ao"
+    | "út:ao"
+
+QIoTLocationPrepositionSecondPart ->
+    "á" | "í"
 
 """
 
@@ -186,9 +217,10 @@ def QIoTSetColor(node: Node, params: QueryStateDict, result: Result) -> None:
     print(color_hue)
     if color_hue is not None:
         if "hue_obj" not in result:
-            result["hue_obj"] = {"hue": int(color_hue)}
+            result["hue_obj"] = {"on": True, "hue": int(color_hue)}
         else:
             result["hue_obj"]["hue"] = int(color_hue)
+            result["hue_obj"]["on"] = True
 
 
 def QIoTIncreaseBrightness(node: Node, params: QueryStateDict, result: Result) -> None:
