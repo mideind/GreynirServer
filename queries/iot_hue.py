@@ -120,6 +120,7 @@ QIoTDarker ->
     "dimmara"
     | "dekkra"
 
+
 QIoTIncrease ->
     "hækkaðu"
     | "auktu"
