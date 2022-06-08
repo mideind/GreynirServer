@@ -944,39 +944,31 @@ def test_stats(client: FlaskClient) -> None:
 def test_sunpos(client: FlaskClient) -> None:
     """Solar position module"""
 
-    timings = r"((á|í) morgun|í dag|í kvöld|í nótt|í gær)"
-
     json = qmcall(client, {"q": "hvenær reis sólin í dag?"}, "SunPosition")
-    assert re.match(
-        rf"^Sólin (rís|reis) um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
-    )
+    assert re.match(r"^Sólin .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
     json = qmcall(client, {"q": "hvenær sest sólin í kvöld?"}, "SunPosition")
-    assert re.match(
-        rf"^Sólin (sest|settist) um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
-    )
+    assert re.match(r"^Sólin .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
     json = qmcall(
         client, {"q": "hvenær verður sólarlag á Norðfirði í kvöld?"}, "SunPosition"
     )
-    assert re.match(
-        rf"^Sólin (sest|settist) um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
-    )
+    assert re.match(r"^Sólin .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
     json = qmcall(
         client,
         {"q": "hver er sólarhæð í Reykjavík í dag?", "voice": True},
         "SunPosition",
     )
     assert re.match(
-        r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráð(a|ur)\.$",
+        r"^Sólarhæð um hádegi í dag .* um \d+(,\d+)? gráð(a|ur)\.$",
         json["answer"],
     )
-    assert not re.findall(r"\d+", json["voice"])
+    assert not re.findall(r"\d+", json["voice"])  # No numbers in voice string
     json = qmcall(
         client,
         {"q": "hver er hæð sólar í Reykjavík í dag?", "voice": True},
         "SunPosition",
     )
     assert re.match(
-        r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráð(a|ur)\.$",
+        r"^Sólarhæð um hádegi í dag .* um \d+(,\d+)? gráð(a|ur)\.$",
         json["answer"],
     )
     assert not re.findall(r"\d+", json["voice"])
@@ -984,7 +976,7 @@ def test_sunpos(client: FlaskClient) -> None:
         client, {"q": "hver er hæð sólarinnar í dag?", "voice": True}, "SunPosition"
     )
     assert re.match(
-        r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráð(a|ur)\.$",
+        r"^Sólarhæð um hádegi í dag .* um \d+(,\d+)? gráð(a|ur)\.$",
         json["answer"],
     )
     assert not re.findall(r"\d+", json["voice"])
@@ -994,42 +986,34 @@ def test_sunpos(client: FlaskClient) -> None:
     #     json["answer"],
     # )
     json = qmcall(client, {"q": "hvenær var miðnætti í nótt?"}, "SunPosition")
-    assert re.match(
-        rf"^Miðnætti var um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
-    )
+    assert re.match(r"^Miðnætti .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
     json = qmcall(client, {"q": "hvenær verður miðnætti í kvöld?"}, "SunPosition")
-    assert re.match(
-        rf"^Miðnætti verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
-    )
+    assert re.match(r"^Miðnætti .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
     json = qmcall(
         client, {"q": "hvenær verður dögun í Keflavík á morgun?"}, "SunPosition"
     )
-    assert re.match(
-        rf"^Það verður ekki dögun {timings}\.$", json["answer"]
-    ) or re.match(rf"^Dögun verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"])
+    assert re.match(r"^Það verður ekki dögun .*\.$", json["answer"]) or re.match(
+        r"^Dögun .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
+    )
     json = qmcall(
         client, {"q": "klukkan hvað verður birting á Akureyri á morgun?"}, "SunPosition"
     )
-    assert re.match(
-        rf"^Það verður ekki birting {timings}\.$", json["answer"]
-    ) or re.match(
-        rf"^Birting verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+    assert re.match(r"^Það verður ekki birting .*\.$", json["answer"]) or re.match(
+        r"^Birting .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
     )
     json = qmcall(client, {"q": "hvenær er hádegi á morgun á Ísafirði?"}, "SunPosition")
-    assert re.match(
-        rf"^Hádegi verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
-    )
+    assert re.match(r"^Hádegi .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
     json = qmcall(
         client, {"q": "hvenær varð myrkur í gær á Egilsstöðum?"}, "SunPosition"
     )
     assert re.match(r"^Það varð ekki myrkur.*\.$", json["answer"]) or re.match(
-        rf"^Myrkur var um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+        r"^Myrkur .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
     )
     json = qmcall(
         client, {"q": "klukkan hvað varð dagsetur í gær á Reykjanesi?"}, "SunPosition"
     )
     assert re.match(r"^Það varð ekki dagsetur.*\.$", json["answer"]) or re.match(
-        rf"^Dagsetur var um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+        r"^Dagsetur .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
     )
 
 
