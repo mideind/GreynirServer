@@ -1542,9 +1542,15 @@ def test_numbers() -> None:
     )
     assert number_to_neutral(241000000000) == "tvö hundruð fjörutíu og einn milljarður"
     assert number_to_neutral(100000000) == "eitt hundrað milljónir"
+    assert number_to_neutral(1000001000) == "einn milljarður og eitt þúsund"
+    assert number_to_neutral(1000000011) == "einn milljarður og ellefu"
     assert number_to_neutral(1001000000) == "einn milljarður og ein milljón"
     assert number_to_neutral(1002000000) == "einn milljarður og tvær milljónir"
     assert number_to_neutral(200000000000) == "tvö hundruð milljarðar"
+    assert (
+        number_to_text(1000200200)
+        == "einn milljarður tvö hundruð þúsund og tvö hundruð"
+    )
     assert (
         number_to_neutral(10000000000000000000000000000000000000000000000000000000)
         == "tíu milljónir oktilljóna"
@@ -1562,6 +1568,16 @@ def test_numbers() -> None:
         number_to_neutral(2000000000000000000000000000000000100000000000000)
         == "tvær oktilljónir og eitt hundrað billjónir"
     )
+    assert number_to_text(320) == "þrjú hundruð og tuttugu"
+    assert number_to_text(320000) == "þrjú hundruð og tuttugu þúsund"
+    assert (
+        number_to_text(3202020202020)
+        == "þrjár billjónir tvö hundruð og tveir milljarðar tuttugu milljónir tvö hundruð og tvö þúsund og tuttugu"
+    )
+    assert (
+        number_to_text(320202020)
+        == "þrjú hundruð og tuttugu milljónir tvö hundruð og tvö þúsund og tuttugu"
+    )
 
     assert number_to_text(101, gender="kk") == "hundrað og einn"
     assert number_to_text(-102, gender="kvk") == "mínus hundrað og tvær"
@@ -1571,6 +1587,10 @@ def test_numbers() -> None:
     )
     assert number_to_text(5, gender="kk") == "fimm"
     assert number_to_text(10001, gender="kvk") == "tíu þúsund og ein"
+    assert (
+        number_to_text(113305, gender="kk")
+        == "eitt hundrað og þrettán þúsund þrjú hundruð og fimm"
+    )
     assert number_to_text(400567, gender="hk") == number_to_neutral(400567)
     assert (
         number_to_text(-11220024, gender="kvk")

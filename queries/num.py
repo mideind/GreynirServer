@@ -22,7 +22,7 @@
 
 """
 
-from typing import FrozenSet, Mapping, List, Tuple, Match
+from typing import Mapping, List, Tuple, Match, Callable
 import re
 
 
@@ -58,46 +58,6 @@ _TENS_NEUTRAL: Mapping[int, str] = {
     80: "áttatíu",
     90: "níutíu",
 }
-
-_PREPEND_OG: FrozenSet[str] = frozenset(
-    (
-        "eitt",
-        "tvö",
-        "þrjú",
-        "fjögur",
-        "einn",
-        "tveir",
-        "þrír",
-        "fjórir",
-        "ein",
-        "tvær",
-        "þrjár",
-        "fjórar",
-        "fimm",
-        "sex",
-        "sjö",
-        "átta",
-        "níu",
-        "tíu",
-        "ellefu",
-        "tólf",
-        "þrettán",
-        "fjórtán",
-        "fimmtán",
-        "sextán",
-        "sautján",
-        "átján",
-        "nítján",
-        "tuttugu",
-        "þrjátíu",
-        "fjörutíu",
-        "fimmtíu",
-        "sextíu",
-        "sjötíu",
-        "áttatíu",
-        "níutíu",
-    )
-)
 
 _DeclensionMapping = Mapping[str, Mapping[str, Mapping[str, str]]]
 _NUM_NEUT_TO_DECL: _DeclensionMapping = {
@@ -152,6 +112,7 @@ def number_to_neutral(n: int = 0, *, one_hundred: bool = False) -> str:
         return "núll"
 
     text: List[str] = []
+    # Make n positive while creating written number string
     minus: str = ""
     if n < 0:
         minus = "mínus "
@@ -159,6 +120,11 @@ def number_to_neutral(n: int = 0, *, one_hundred: bool = False) -> str:
 
     MILLION = 1000000
     THOUSAND = 1000
+
+    # Helper function to check whether a number should be prefixed with "og"
+    should_prepend_og: Callable[[int], bool] = (
+        lambda x: x > 0 and int(str(x).rstrip("0")) < 20
+    )
 
     # Very large numbers
     while n >= MILLION:
@@ -186,6 +152,8 @@ def number_to_neutral(n: int = 0, *, one_hundred: bool = False) -> str:
             text[-1] = _NUM_NEUT_TO_DECL[last][gender]["nf"]
 
         text.append(isl_num)
+        if should_prepend_og(n):
+            text.append("og")
 
     if THOUSAND <= n < MILLION:
         thousands, n = divmod(n, THOUSAND)
@@ -194,8 +162,11 @@ def number_to_neutral(n: int = 0, *, one_hundred: bool = False) -> str:
             text.extend(number_to_neutral(thousands, one_hundred=True).split())
         elif thousands == 1:
             text.append("eitt")
+
         # Singular/Plural form of "þúsund" is the same
         text.append("þúsund")
+        if should_prepend_og(n):
+            text.append("og")
 
     if 100 <= n < THOUSAND:
         hundreds, n = divmod(n, 100)
@@ -214,6 +185,9 @@ def number_to_neutral(n: int = 0, *, one_hundred: bool = False) -> str:
                 text.append("eitt")
             text.append("hundrað")
 
+        if should_prepend_og(n):
+            text.append("og")
+
     if 20 <= n < 100:
         tens, digit = divmod(n, 10)
         tens *= 10
@@ -227,18 +201,6 @@ def number_to_neutral(n: int = 0, *, one_hundred: bool = False) -> str:
     if 0 < n < 20:
         text.append(_SUB_20_NEUTRAL[n])
         n = 0
-
-    # Fix missing "og"
-    if len(text) >= 2 and "og" not in text:
-        i = len(text) - 1
-
-        # Find place in sentence where "og" fits
-        while i > 0 and text[i] not in _PREPEND_OG:
-            i -= 1
-
-        # Add "og" if not at front of text
-        if i > 0:
-            text.insert(i, "og")
 
     # Fix e.g. "milljónir milljarðar" -> "milljónir milljarða"
     number_string: str = minus + re.sub(
