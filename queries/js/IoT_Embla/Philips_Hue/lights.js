@@ -1,5 +1,4 @@
-var BRIDGE_IP = "192.168.1.68";
-var USERNAME = "q2jNarhGHO9izO0xZZXcoww5GYANGi6mZyJYgMdL";
+
 
 function changeBrightness() {
     var sliderValue = document.getElementById("brightness_slider").value;
@@ -10,8 +9,8 @@ function changeBrightness() {
         body: JSON.stringify({ bri: Number(sliderValue)})
     })
         .then((resp) => resp.json())
-        .then((j) => {
-            console.log(j);
+        .then((obj) => {
+            console.log(obj);
         })
         .catch((err) => {
             console.log("an error occurred!");
@@ -35,8 +34,8 @@ function changeColor() {
             body: JSON.stringify({ xy: colorValue })
         })
             .then((resp) => resp.json())
-            .then((j) => {
-                console.log(j);
+            .then((obj) => {
+                console.log(obj);
             })
             .catch((err) => {
                 console.log("an error occurred!");
@@ -46,12 +45,12 @@ function changeColor() {
 }  
 
 
-function getAllLights(hub_ip = "192.168.1.68", username = "q2jNarhGHO9izO0xZZXcoww5GYANGi6mZyJYgMdL") {
+function getAllLights(hub_ip = BRIDGE_IP, username = USERNAME) {
     return fetch(`http://${hub_ip}/api/${username}/lights`)
         .then((resp) => resp.json())
 }
 
-function getAllGroups(hub_ip = "192.168.1.68", username = "q2jNarhGHO9izO0xZZXcoww5GYANGi6mZyJYgMdL") {
+function getAllGroups(hub_ip = BRIDGE_IP, username = USERNAME) {
     return fetch(`http://${hub_ip}/api/${username}/groups`)
         .then((resp) => resp.json())
 }
