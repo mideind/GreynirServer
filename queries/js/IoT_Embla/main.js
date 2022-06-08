@@ -1,5 +1,5 @@
-const BRIDGE_IP = "192.168.1.68";
-const USERNAME = "q2jNarhGHO9izO0xZZXcoww5GYANGi6mZyJYgMdL";
+var BRIDGE_IP = "192.168.1.68";
+var USERNAME = "q2jNarhGHO9izO0xZZXcoww5GYANGi6mZyJYgMdL";
 
 function light_show() {
     fetch(`http://${BRIDGE_IP}/api/${USERNAME}/lights/1/state`, {

@@ -1,3 +1,5 @@
+var BRIDGE_IP = "192.168.1.68";
+var USERNAME = "q2jNarhGHO9izO0xZZXcoww5GYANGi6mZyJYgMdL";
 
 function changeBrightness() {
     var sliderValue = document.getElementById("brightness_slider").value;
