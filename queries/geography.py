@@ -4,7 +4,7 @@
 
     Geography query response module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -99,8 +99,8 @@ QGeoCapitalQuery →
     | QGeoWhatIs "höfuðstaður" QGeoSubject_ef
 
 QGeoCountryQuery →
-    "í" "hvaða" "landi" "er" "borgin"? QGeoSubject_nf
-    | "í" "hvaða" "ríki" "er" "borgin"? QGeoSubject_nf
+    "í" "hvaða" "landi" "er" QGeoCityOrTown? QGeoSubject_nf
+    | "í" "hvaða" "ríki" "er" QGeoCityOrTown? QGeoSubject_nf
 
 QGeoContinentQuery →
     "í" "hvaða" "heimsálfu" "er" QGeoCountryOrCity? QGeoSubject_nf
@@ -111,9 +111,14 @@ QGeoLocationDescQuery →
     QGeoWhereIs QGeoCountryOrCity? QGeoSubject_nf
 
 QGeoCountryOrCity →
-    "landið" | "ríkið" | "borgin" | "bærinn" | "kaupstaðurinn"
+    "landið" | "ríkið" | QGeoCityOrTown
 
 $score(+100) QGeoCountryOrCity
+
+QGeoCityOrTown →
+    "borgin" | "bærinn" | "kaupstaðurinn"
+
+$score(+100) QGeoCityOrTown
 
 QGeoWhatIs →
     "hver" "er" | "hvað" "er" | "hvað" "heitir" | 0
@@ -221,7 +226,7 @@ def QGeoSubject(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def _capital_query(country: str, q: Query):
-    """ Generate answer to question concerning a country capital. """
+    """Generate answer to question concerning a country capital."""
 
     # Get country code
     cc = isocode_for_country_name(country)
@@ -363,7 +368,7 @@ _HANDLERS = {
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
 
     handled = False
@@ -379,8 +384,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             fn = _HANDLERS[result.geo_qtype]
             handled = fn(result.subject, q)
         except Exception as e:
-            logging.warning("Exception answering geography query: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception answering geography query: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
             return
 
     if handled:

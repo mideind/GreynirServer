@@ -3,7 +3,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -164,7 +164,8 @@ def main() -> None:
         sys.exit(0)
 
     # Download
-    print(f"Downloading URL {url[:300]}")
+    urldesc = "data URI" if _is_data_uri(url) else url
+    print(f"Fetching {urldesc}")
     data: Optional[bytes] = _fetch_audio_bytes(url)
     if not data:
         die("Unable to fetch audio data.")

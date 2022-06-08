@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -144,11 +144,11 @@ _UNITS = {
     "fermetri": ("m²", 1.0),
     "fersentímetri": ("m²", 1.0e-4),
     "ferkílómetri": ("m²", 1.0e6),
-    "ferfet": ("m²", 0.305 ** 2),
-    "fermíla": ("m²", 1609.0 ** 2),
-    "hektari": ("m²", 100.0 ** 2),
-    "fertomma": ("m²", 2.54e-2 ** 2),
-    "ferþumlungur": ("m²", 2.54e-2 ** 2),
+    "ferfet": ("m²", 0.305**2),
+    "fermíla": ("m²", 1609.0**2),
+    "hektari": ("m²", 100.0**2),
+    "fertomma": ("m²", 2.54e-2**2),
+    "ferþumlungur": ("m²", 2.54e-2**2),
     "ekra": ("m²", 4047.0),
     # Time (standard unit is second)
     "árþúsund": ("s", 3600.0 * 24 * 365.25 * 1000),

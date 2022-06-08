@@ -4,7 +4,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -185,6 +185,7 @@ KNOWNNONTERMINALS = [
     "URL",
 ]
 
+
 def is_icelandic(sent):
     # Code mostly copied from annotate() in checker.py in GreynirCorrect
     words_in_bin = 0
@@ -205,13 +206,16 @@ def is_icelandic(sent):
         return False
     return True
 
+
 def is_acceptable_article(art):
     if not art.root_domain or "lemurinn" in art.root_domain:
         return False
     return True
 
+
 # Min num tokens in sentence
 MIN_SENT_LENGTH = 5
+
 
 def is_acceptable_sentence_tree(stree):
     # Generate hash of normalized sentence text and add
@@ -219,7 +223,7 @@ def is_acceptable_sentence_tree(stree):
     text = stree.text
     norm = normalize(text)
     if not norm:
-       return False
+        return False
 
     md5sum = hashlib.md5(norm.encode("utf-8")).hexdigest()
 
@@ -251,6 +255,7 @@ def is_acceptable_sentence_tree(stree):
     # print(text)
     return True
 
+
 def is_heading_sentence_tree(stree):
     text = stree.text
     if not stree.match("S0 >> VP"):
@@ -258,6 +263,7 @@ def is_heading_sentence_tree(stree):
     if text[-1] not in definitions.END_OF_SENTENCE:
         return True
     return False
+
 
 def gen_anno_tree(article, index, stree):
     # Create Annotald tree for sentence
@@ -273,6 +279,7 @@ def gen_anno_tree(article, index, stree):
     nltk_tree = simpleTree2NLTK(stree)
     return AnnoTree("", [meta_node, nltk_tree])
 
+
 def old_info(stree):
 
     # TODO halda utan um þær fötur sem eru ekki fullar
@@ -284,7 +291,7 @@ def old_info(stree):
     # Má geyma þær fötur sem eru ekki fullar í set()
     # Þá er fljótt hægt að tékka if bucketset, and set(stree.nonterminal)&bucketset
     # Þarf bara að pæla hvernig tek ákveðið stak úr menginu þegar sú fata fyllist.
-    # Byrja svo ekki að tékka á fötunum fyrr en eftir 500þ setningar, 
+    # Byrja svo ekki að tékka á fötunum fyrr en eftir 500þ setningar,
     # ætti ekki að vera mikið um ófullar fötur.
     p = True
     for nonterm in stree.nonterminals:
@@ -302,6 +309,7 @@ def old_info(stree):
 
     return p
 
+
 def full_buckets():
     for nonterm in NONTERMDICT:
         if NONTERMDICT[nonterm] < 100:
@@ -311,23 +319,27 @@ def full_buckets():
             return False
     return True
 
+
 def initialize_buckets():
-    """ Assign values to known phrases and leaves """
+    """Assign values to known phrases and leaves"""
     for every in KNOWNNONTERMINALS:
         NONTERMDICT[every] = 0
 
     for each in KNOWNTERMINALS:
         TERMDICT[each] = 0
 
+
 def first_threshold(total_sent):
     if total_sent >= NUM_SENT:
         return True
     return False
 
+
 def last_threshold(total_sent):
     if total_sent >= LIMIT:
         return True
     return False
+
 
 def normalize(text):
     # Generalize information in sentence to ensure unique sentences in set
@@ -339,9 +351,10 @@ def normalize(text):
     text = text.replace(" ", "")
     return text
 
-NUM_SENT = 500000 #500000
-LIMIT = 2000000 #2000000     # Absolute limit of corpus size
-BATCH_SIZE = 1000 #1000
+
+NUM_SENT = 500000  # 500000
+LIMIT = 2000000  # 2000000     # Absolute limit of corpus size
+BATCH_SIZE = 1000  # 1000
 OUT_FILENAME = "silver.txt"
 SEPARATOR = "\n\n"
 
@@ -369,7 +382,7 @@ def main():
     accumulated = []
 
     for art in Article.articles({"random": True}):
-        #if total_sent % 1001 == 1:
+        # if total_sent % 1001 == 1:
         #    print(total_sent)
         if not is_acceptable_article(art):
             total_arts_skipped += 1
@@ -429,7 +442,7 @@ def main():
             print(f"{total_sent} sentences accumulated")
             print(f"\t{total_sent_skipped} sentences skipped")
 
-        if last_threshold(total_sent) or total_sent+total_sent_skipped > 12000000:
+        if last_threshold(total_sent) or total_sent + total_sent_skipped > 12000000:
             # Stop if we've checked 12M total sentences
             break
         elif first_threshold(total_sent) and full_buckets():
@@ -447,6 +460,7 @@ def main():
 
         for each in TERMDICT:
             stats.write(f"{each}:  {TERMDICT[each]}\n")
+
 
 if __name__ == "__main__":
     main()

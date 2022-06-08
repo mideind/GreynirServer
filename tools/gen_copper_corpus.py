@@ -4,7 +4,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -60,7 +60,6 @@ from annotald.reynir_utils import simpleTree2NLTK  # noqa
 from annotald.annotree import AnnoTree  # noqa
 
 
-
 def is_icelandic(sent):
     # Code mostly copied from annotate() in checker.py in GreynirCorrect
     words_in_bin = 0
@@ -81,13 +80,16 @@ def is_icelandic(sent):
         return False
     return True
 
+
 def is_acceptable_article(art):
     if not art.root_domain or "lemurinn" in art.root_domain:
         return False
     return True
 
+
 # Min num tokens in sentence
 MIN_SENT_LENGTH = 5
+
 
 def is_acceptable_sentence_tree(stree):
 
@@ -105,8 +107,10 @@ def is_acceptable_sentence_tree(stree):
 
     return True
 
+
 def is_short(stree):
     return len(stree.text.split()) < MIN_SENT_LENGTH
+
 
 def is_heading_sentence_tree(stree):
     text = stree.text
@@ -115,6 +119,7 @@ def is_heading_sentence_tree(stree):
     if text[-1] not in definitions.END_OF_SENTENCE:
         return True
     return False
+
 
 def gen_anno_tree(article, index, stree):
     # Create Annotald tree for sentence
@@ -203,9 +208,8 @@ def main():
             gc.collect()
             print(f"{total_sent} sentences accumulated")
             print(f"\t{total_sent_skipped} sentences skipped")
-        if total_sent+total_sent_skipped > 14000000:
+        if total_sent + total_sent_skipped > 14000000:
             break
-
 
     # All done
     file.close()
@@ -214,6 +218,7 @@ def main():
         stats.write(f"Total articles skipped: {total_arts_skipped}\n")
         stats.write(f"Total sentences: {total_sent}\n")
         stats.write(f"Total sentences skipped: {total_sent_skipped}\n")
+
 
 if __name__ == "__main__":
     main()

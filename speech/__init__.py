@@ -3,7 +3,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -83,7 +83,8 @@ def load_voice_modules() -> Dict[str, ModuleType]:
 
 
 VOICE_TO_MODULE = load_voice_modules()
-SUPPORTED_VOICES = set(VOICE_TO_MODULE.keys())
+SUPPORTED_VOICES = frozenset(VOICE_TO_MODULE.keys())
+RECOMMENDED_VOICES = frozenset(("Dora", "Karl"))
 
 
 def _sanitize_args(args: Dict[str, Any]) -> Dict[str, Any]:
@@ -112,6 +113,9 @@ def text_to_audio_data(
     speed: float = 1.0,
 ) -> bytes:
     """Returns audio data for speech-synthesised text."""
+    # Fall back to default voice if voice_id param invalid
+    if voice_id not in SUPPORTED_VOICES:
+        voice_id = DEFAULT_VOICE
     # Create a copy of all function arguments
     args = locals().copy()
     # Find the module that provides this voice
@@ -131,6 +135,9 @@ def text_to_audio_url(
     speed: float = 1.0,
 ) -> str:
     """Returns URL to audio of speech-synthesised text."""
+    # Fall back to default voice if voice_id param invalid
+    if voice_id not in SUPPORTED_VOICES:
+        voice_id = DEFAULT_VOICE
     # Create a copy of all function arguments
     args = locals().copy()
     # Find the module that provides this voice

@@ -4,7 +4,7 @@
 
     Settings module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ from threading import Lock
 
 
 # The sorting locale used by default in the changedlocale function
-_DEFAULT_SORT_LOCALE = ('IS_is', 'UTF-8')
+_DEFAULT_SORT_LOCALE = ("IS_is", "UTF-8")
 # A set of all valid argument cases
 _ALL_CASES = frozenset(("nf", "þf", "þgf", "ef"))
 _ALL_GENDERS = frozenset(("kk", "kvk", "hk"))
@@ -52,7 +52,7 @@ _ALL_GENDERS = frozenset(("kk", "kvk", "hk"))
 
 class ConfigError(Exception):
 
-    """ Exception class for configuration errors """
+    """Exception class for configuration errors"""
 
     def __init__(self, s):
         Exception.__init__(self, s)
@@ -60,13 +60,13 @@ class ConfigError(Exception):
         self.line = 0
 
     def set_pos(self, fname, line):
-        """ Set file name and line information, if not already set """
+        """Set file name and line information, if not already set"""
         if not self.fname:
             self.fname = fname
             self.line = line
 
     def __str__(self):
-        """ Return a string representation of this exception """
+        """Return a string representation of this exception"""
         s = Exception.__str__(self)
         if not self.fname:
             return s
@@ -74,9 +74,9 @@ class ConfigError(Exception):
 
 
 class LineReader:
-    """ Read lines from a text file, recognizing $include directives """
+    """Read lines from a text file, recognizing $include directives"""
 
-    def __init__(self, fname, outer_fname = None, outer_line = 0):
+    def __init__(self, fname, outer_fname=None, outer_line=0):
         self._fname = fname
         self._line = 0
         self._outer_fname = outer_fname
@@ -89,7 +89,7 @@ class LineReader:
         return self._line
 
     def lines(self):
-        """ Generator yielding lines from a text file """
+        """Generator yielding lines from a text file"""
         self._line = 0
         try:
             with codecs.open(self._fname, "r", "utf-8") as inp:
@@ -98,7 +98,7 @@ class LineReader:
                     self._line += 1
                     # Check for include directive: $include filename.txt
                     if s.startswith("$") and s.lower().startswith("$include "):
-                        iname = s.split(maxsplit = 1)[1].strip()
+                        iname = s.split(maxsplit=1)[1].strip()
                         # Do some path magic to allow the included path
                         # to be relative to the current file path, or a
                         # fresh (absolute) path by itself
@@ -118,52 +118,59 @@ class LineReader:
         except (IOError, OSError):
             if self._outer_fname:
                 # This is an include file within an outer config file
-                c = ConfigError("Error while opening or reading include file '{0}'".format(self._fname))
+                c = ConfigError(
+                    "Error while opening or reading include file '{0}'".format(
+                        self._fname
+                    )
+                )
                 c.set_pos(self._outer_fname, self._outer_line)
             else:
                 # This is an outermost config file
-                c = ConfigError("Error while opening or reading config file '{0}'".format(self._fname))
+                c = ConfigError(
+                    "Error while opening or reading config file '{0}'".format(
+                        self._fname
+                    )
+                )
             raise c
 
 
 class NoIndexWords:
 
-    """ Wrapper around set of word stems and categories that should
-        not be indexed """
+    """Wrapper around set of word stems and categories that should
+    not be indexed"""
 
-    SET = set() # Set of (stem, cat) tuples
-    _CAT = "so" # Default category
+    SET = set()  # Set of (stem, cat) tuples
+    _CAT = "so"  # Default category
 
     # The word categories that are indexed in the words table
-    CATEGORIES_TO_INDEX = frozenset((
-        "kk", "kvk", "hk", "person_kk", "person_kvk", "entity",
-        "lo", "so"
-    ))
+    CATEGORIES_TO_INDEX = frozenset(
+        ("kk", "kvk", "hk", "person_kk", "person_kvk", "entity", "lo", "so")
+    )
 
     @staticmethod
     def set_cat(cat):
-        """ Set the category for the following word stems """
+        """Set the category for the following word stems"""
         NoIndexWords._CAT = cat
 
     @staticmethod
     def add(stem):
-        """ Add a word stem and its category. Called from the config file handler. """
+        """Add a word stem and its category. Called from the config file handler."""
         NoIndexWords.SET.add((stem, NoIndexWords._CAT))
 
 
 class Topics:
 
-    """ Wrapper around topics, represented as a dict (name: set) """
+    """Wrapper around topics, represented as a dict (name: set)"""
 
-    DICT = defaultdict(set) # Dict of topic name: set
-    ID = dict() # Dict of identifier: topic name
-    THRESHOLD = dict() # Dict of identifier: threshold (as a float)
+    DICT = defaultdict(set)  # Dict of topic name: set
+    ID = dict()  # Dict of identifier: topic name
+    THRESHOLD = dict()  # Dict of identifier: threshold (as a float)
     _name = None
 
     @staticmethod
     def set_name(name):
-        """ Set the topic name for the words that follow """
-        a = name.split('|')
+        """Set the topic name for the words that follow"""
+        a = name.split("|")
         Topics._name = tname = a[0].strip()
         identifier = a[1].strip() if len(a) > 1 else None
         if identifier is not None and not identifier.isidentifier():
@@ -177,100 +184,127 @@ class Topics:
 
     @staticmethod
     def add(word):
-        """ Add a word stem and its category. Called from the config file handler. """
+        """Add a word stem and its category. Called from the config file handler."""
         if Topics._name is None:
-            raise ConfigError("Must set topic name (topic = X) before specifying topic words")
-        if '/' not in word:
-            raise ConfigError("Topic words must include a slash '/' and a word category")
-        cat = word.split('/', maxsplit = 1)[1]
-        if cat not in { "kk", "kvk", "hk", "lo", "so", "entity", "person", "person_kk", "person_kvk" }:
-            raise ConfigError("Topic words must be nouns, verbs, adjectives, entities or persons")
+            raise ConfigError(
+                "Must set topic name (topic = X) before specifying topic words"
+            )
+        if "/" not in word:
+            raise ConfigError(
+                "Topic words must include a slash '/' and a word category"
+            )
+        cat = word.split("/", maxsplit=1)[1]
+        if cat not in {
+            "kk",
+            "kvk",
+            "hk",
+            "lo",
+            "so",
+            "entity",
+            "person",
+            "person_kk",
+            "person_kvk",
+        }:
+            raise ConfigError(
+                "Topic words must be nouns, verbs, adjectives, entities or persons"
+            )
         # Add to topic set, after replacing spaces with underscores
         Topics.DICT[Topics._name].add(word.replace(" ", "_"))
 
 
 # Magic stuff to change locale context temporarily
 
+
 @contextmanager
-def changedlocale(new_locale = None):
-    """ Change locale for collation temporarily within a context (with-statement) """
+def changedlocale(new_locale=None):
+    """Change locale for collation temporarily within a context (with-statement)"""
     # The newone locale parameter should be a tuple: ('is_IS', 'UTF-8')
     old_locale = locale.getlocale(locale.LC_COLLATE)
     try:
         locale.setlocale(locale.LC_COLLATE, new_locale or _DEFAULT_SORT_LOCALE)
-        yield locale.strxfrm # Function to transform string for sorting
+        yield locale.strxfrm  # Function to transform string for sorting
     finally:
         locale.setlocale(locale.LC_COLLATE, old_locale)
 
-def sort_strings(strings, loc = None):
-    """ Sort a list of strings using the specified locale's collation order """
+
+def sort_strings(strings, loc=None):
+    """Sort a list of strings using the specified locale's collation order"""
     # Change locale temporarily for the sort
     with changedlocale(loc) as strxfrm:
-        return sorted(strings, key = strxfrm)
+        return sorted(strings, key=strxfrm)
 
 
 # Global settings
 
+
 class Settings:
 
     # Postgres SQL database server hostname and port
-    DB_HOSTNAME = os.environ.get('GREYNIR_DB_HOST', 'localhost')
-    DB_PORT = os.environ.get('GREYNIR_DB_PORT', '5432') # Default PostgreSQL port
+    DB_HOSTNAME = os.environ.get("GREYNIR_DB_HOST", "localhost")
+    DB_PORT = os.environ.get("GREYNIR_DB_PORT", "5432")  # Default PostgreSQL port
     DB_USERNAME = os.environ.get("GREYNIR_DB_USERNAME", "reynir")
     DB_PASSWORD = os.environ.get("GREYNIR_DB_PASSWORD", "reynir")
 
     try:
         DB_PORT = int(DB_PORT)
     except ValueError:
-        raise ConfigError("Invalid environment variable value: DB_PORT = {0}".format(DB_PORT))
+        raise ConfigError(
+            "Invalid environment variable value: DB_PORT = {0}".format(DB_PORT)
+        )
 
     # Flask server host and port
-    HOST = os.environ.get('GREYNIR_HOST', 'localhost')
-    PORT = os.environ.get('GREYNIR_PORT', '5000')
+    HOST = os.environ.get("GREYNIR_HOST", "localhost")
+    PORT = os.environ.get("GREYNIR_PORT", "5000")
     try:
         PORT = int(PORT)
     except ValueError:
-        raise ConfigError("Invalid environment variable value: GREYNIR_PORT = {0}".format(PORT))
+        raise ConfigError(
+            "Invalid environment variable value: GREYNIR_PORT = {0}".format(PORT)
+        )
 
     # Flask debug parameter
     DEBUG = False
 
     # Similarity server
-    SIMSERVER_HOST = os.environ.get('SIMSERVER_HOST', 'localhost')
-    SIMSERVER_PORT = os.environ.get('SIMSERVER_PORT', '5001')
+    SIMSERVER_HOST = os.environ.get("SIMSERVER_HOST", "localhost")
+    SIMSERVER_PORT = os.environ.get("SIMSERVER_PORT", "5001")
     try:
         SIMSERVER_PORT = int(SIMSERVER_PORT)
     except ValueError:
-        raise ConfigError("Invalid environment variable value: SIMSERVER_PORT = {0}".format(SIMSERVER_PORT))
+        raise ConfigError(
+            "Invalid environment variable value: SIMSERVER_PORT = {0}".format(
+                SIMSERVER_PORT
+            )
+        )
 
     # Configuration settings from the Greynir.conf file
 
     @staticmethod
     def _handle_settings(s):
-        """ Handle config parameters in the settings section """
-        a = s.lower().split('=', maxsplit=1)
+        """Handle config parameters in the settings section"""
+        a = s.lower().split("=", maxsplit=1)
         par = a[0].strip().lower()
         val = a[1].strip()
-        if val.lower() == 'none':
+        if val.lower() == "none":
             val = None
-        elif val.lower() == 'true':
+        elif val.lower() == "true":
             val = True
-        elif val.lower() == 'false':
+        elif val.lower() == "false":
             val = False
         try:
-            if par == 'db_hostname':
+            if par == "db_hostname":
                 Settings.DB_HOSTNAME = val
-            elif par == 'db_port':
+            elif par == "db_port":
                 Settings.DB_PORT = int(val)
-            elif par == 'host':
+            elif par == "host":
                 Settings.HOST = val
-            elif par == 'port':
+            elif par == "port":
                 Settings.PORT = int(val)
-            elif par == 'simserver_host':
+            elif par == "simserver_host":
                 Settings.SIMSERVER_HOST = val
-            elif par == 'simserver_port':
+            elif par == "simserver_port":
                 Settings.SIMSERVER_PORT = int(val)
-            elif par == 'debug':
+            elif par == "debug":
                 Settings.DEBUG = bool(val)
             else:
                 raise ConfigError("Unknown configuration parameter '{0}'".format(par))
@@ -279,13 +313,13 @@ class Settings:
 
     @staticmethod
     def _handle_noindex_words(s):
-        """ Handle no index instructions in the settings section """
+        """Handle no index instructions in the settings section"""
         # Format: category = [cat] followed by word stem list
-        a = s.lower().split("=", maxsplit = 1)
+        a = s.lower().split("=", maxsplit=1)
         par = a[0].strip()
         if len(a) == 2:
             val = a[1].strip()
-            if par == 'category':
+            if par == "category":
                 NoIndexWords.set_cat(val)
             else:
                 raise ConfigError("Unknown setting '{0}' in noindex_words".format(par))
@@ -295,13 +329,13 @@ class Settings:
 
     @staticmethod
     def _handle_topics(s):
-        """ Handle topic specifications """
+        """Handle topic specifications"""
         # Format: name = [topic name] followed by word stem list in the form word/cat
-        a = s.split("=", maxsplit = 1)
+        a = s.split("=", maxsplit=1)
         par = a[0].strip()
         if len(a) == 2:
             val = a[1].strip()
-            if par.lower() == 'topic':
+            if par.lower() == "topic":
                 Topics.set_name(val)
             else:
                 raise ConfigError("Unknown setting '{0}' in topics".format(par))
@@ -311,28 +345,28 @@ class Settings:
 
     @staticmethod
     def read(fname):
-        """ Read configuration file """
+        """Read configuration file"""
 
         CONFIG_HANDLERS = {
-            "settings" : Settings._handle_settings,
-            "noindex_words" : Settings._handle_noindex_words,
-            "topics" : Settings._handle_topics
+            "settings": Settings._handle_settings,
+            "noindex_words": Settings._handle_noindex_words,
+            "topics": Settings._handle_topics,
         }
-        handler = None # Current section handler
+        handler = None  # Current section handler
 
         rdr = None
         try:
             rdr = LineReader(fname)
             for s in rdr.lines():
                 # Ignore comments
-                ix = s.find('#')
+                ix = s.find("#")
                 if ix >= 0:
                     s = s[0:ix]
                 s = s.strip()
                 if not s:
                     # Blank line: ignore
                     continue
-                if s[0] == '[' and s[-1] == ']':
+                if s[0] == "[" and s[-1] == "]":
                     # New section
                     section = s[1:-1].strip().lower()
                     if section in CONFIG_HANDLERS:

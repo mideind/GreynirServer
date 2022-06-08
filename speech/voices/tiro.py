@@ -3,7 +3,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -32,7 +32,8 @@ import requests
 
 
 NAME = "Tiro"
-VOICES = frozenset(("Alfur", "Dilja"))
+VOICES = frozenset(("Alfur", "Dilja", "Bjartur", "Rosa", "Alfur_v2", "Dilja_v2"))
+AUDIO_FORMATS = frozenset(("mp3", "pcm"))
 
 
 _TIRO_TTS_URL = "https://tts.tiro.is/v0/speech"

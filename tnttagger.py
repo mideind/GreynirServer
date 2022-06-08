@@ -5,7 +5,7 @@
 
     TnT Tagger module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -71,7 +71,7 @@ StateList = List[Tuple[float, List[Tuple[str, bool]]]]
 
 
 @contextmanager
-def timeit(description: str="Timing"):
+def timeit(description: str = "Timing"):
     t0 = time.time()
     yield
     t1 = time.time()
@@ -80,31 +80,31 @@ def timeit(description: str="Timing"):
 
 class FreqDist(DefaultDict[str, int]):
 
-    """ A frequency distribution for the outcomes of an experiment.  A
-        frequency distribution records the number of times each outcome of
-        an experiment has occurred. """
+    """A frequency distribution for the outcomes of an experiment.  A
+    frequency distribution records the number of times each outcome of
+    an experiment has occurred."""
 
     def __init__(
-        self, cls: Type[Any]=int
+        self, cls: Type[Any] = int
     ):  # Note: the cls parameter seems to be required for pickling to work
-        """ Construct a new frequency distribution.  If ``samples`` is
-            given, then the frequency distribution will be initialized
-            with the count of each object in ``samples``; otherwise, it
-            will be initialized to be empty. """
+        """Construct a new frequency distribution.  If ``samples`` is
+        given, then the frequency distribution will be initialized
+        with the count of each object in ``samples``; otherwise, it
+        will be initialized to be empty."""
         super().__init__(cls)
 
     def N(self) -> int:
-        """ Return the total number of sample outcomes that have been
-            recorded by this FreqDist. """
+        """Return the total number of sample outcomes that have been
+        recorded by this FreqDist."""
         return sum(self.values())
 
     def freeze_N(self) -> None:
-        """ Set N permanently to its current value, avoiding multiple recalculations """
+        """Set N permanently to its current value, avoiding multiple recalculations"""
         n = self.N()
         setattr(self, "N", lambda: n)
 
     def freq(self, sample: str) -> float:
-        """ Return the frequency of a given sample. """
+        """Return the frequency of a given sample."""
         n = self.N()
         if n == 0:
             return 0
@@ -112,21 +112,21 @@ class FreqDist(DefaultDict[str, int]):
 
 
 class ConditionalFreqDist(defaultdict):
-    """ A collection of frequency distributions for a single experiment
-        run under different conditions. """
+    """A collection of frequency distributions for a single experiment
+    run under different conditions."""
 
     def __init__(
         self, cls=FreqDist
     ) -> None:  # Note: the cls parameter seems to be required for pickling to work
-        """ Construct a new empty conditional frequency distribution. """
+        """Construct a new empty conditional frequency distribution."""
         super().__init__(cls)
 
     def N(self) -> int:
-        """ Return the total number of sample outcomes """
+        """Return the total number of sample outcomes"""
         return sum(fdist.N() for fdist in self.values())
 
     def freeze_N(self) -> None:
-        """ Freeze the total number of sample outcomes at the current value """
+        """Freeze the total number of sample outcomes at the current value"""
         for fdist in self.values():
             fdist.freeze_N()
         n = self.N()
@@ -134,12 +134,11 @@ class ConditionalFreqDist(defaultdict):
 
 
 class UnknownWordTagger:
-
     def __init__(self):
         self._ngram_tagger = NgramTagger()
 
     def tagset(self, word, at_sentence_start=False):
-        """ Return a list of (probability, tag) tuples for the given word """
+        """Return a list of (probability, tag) tuples for the given word"""
         toklist = list(parse_tokens(" ".join(word)))
         token = toklist[0]
         w = word[0]
@@ -153,8 +152,8 @@ class UnknownWordTagger:
         return self._ngram_tagger.tag_single_token(token)
 
     def tag(self, word, at_sentence_start=False):
-        """ Return a list with a single (word, tag) tuple for the given
-            word list, containing a single word """
+        """Return a list with a single (word, tag) tuple for the given
+        word list, containing a single word"""
         taglist = self.tagset(word, at_sentence_start)
         w = word[0]
         if taglist:
@@ -195,7 +194,7 @@ class TnT:
     gain in the accuracy of the results.
     """
 
-    def __init__(self, N: int=1000, C: bool=False) -> None:
+    def __init__(self, N: int = 1000, C: bool = False) -> None:
         """
         Construct a TnT statistical tagger. Tagger must be trained
         before being used to tag input.
@@ -237,25 +236,25 @@ class TnT:
         self.known = 0
 
     def __getstate__(self):
-        """ Obtain the state of this object to be pickled """
+        """Obtain the state of this object to be pickled"""
         state = self.__dict__.copy()
         del state["_unk"]
         return state
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
-        """ Restore the state of this object from a pickle """
+        """Restore the state of this object from a pickle"""
         self.__dict__.update(state)
         self._unk = UnknownWordTagger()
 
     def _freeze_N(self) -> None:
-        """ Make sure all contained FreqDicts are 'frozen' """
+        """Make sure all contained FreqDicts are 'frozen'"""
         self._uni.freeze_N()
         self._bi.freeze_N()
         self._tri.freeze_N()
         self._wd.freeze_N()
 
     def _finish_training(self) -> None:
-        """ Freeze the current frequency counts and compute lambdas """
+        """Freeze the current frequency counts and compute lambdas"""
         if self._training:
             self._freeze_N()
             self._compute_lambda()
@@ -267,14 +266,14 @@ class TnT:
         return self._count
 
     def store(self, filename: str) -> None:
-        """ Store a previously trained model in a file """
+        """Store a previously trained model in a file"""
         self._finish_training()
         with open(filename, "wb") as file:
             pickle.dump(self, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     @staticmethod
     def load(filename: str) -> Optional["TnT"]:
-        """ Load a previously trained and stored model from file """
+        """Load a previously trained and stored model from file"""
         try:
             with open(filename, "rb") as file:
                 tagger = pickle.load(file)
@@ -510,7 +509,7 @@ _XLT = {"—": "-", "–": "-"}
 
 
 def ifd_tag(text: str) -> List[List[str]]:
-    """ Tokenize the given text and use a global singleton TnT tagger to tag it """
+    """Tokenize the given text and use a global singleton TnT tagger to tag it"""
     global _TAGGER
     if _TAGGER is None:
         # Load the tagger from a pickle the first time it's used
@@ -524,7 +523,7 @@ def ifd_tag(text: str) -> List[List[str]]:
     result: List[List[str]] = []
 
     def xlt(txt: str) -> str:
-        """ Translate the token text as required before tagging it """
+        """Translate the token text as required before tagging it"""
         if txt[0] == "[" and txt[-1] == "]":
             # Abbreviation enclosed in square brackets: remove'em
             return txt[1:-1]

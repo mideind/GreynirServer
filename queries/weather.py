@@ -4,7 +4,7 @@
 
     Weather query response module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -454,7 +454,7 @@ def _curr_observations(query: Query, result: Result):
             res = observation_for_station(_RVK_STATION_ID)  # Default to Reykjavík
             result.subject = "Í Reykjavík"
     except Exception as e:
-        logging.warning("Failed to fetch weather info: {0}".format(str(e)))
+        logging.warning(f"Failed to fetch weather info: {e}")
         return None
 
     # Verify that response from server is sane

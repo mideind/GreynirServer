@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -25,8 +25,6 @@ from typing import Any, Dict, List, Tuple, cast, Counter as CounterType
 
 from . import routes, max_age, cache, restricted, days_from_period_arg
 
-import json
-from pprint import pprint
 from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 from itertools import permutations
@@ -52,7 +50,7 @@ _TOP_PERSONS_PERIOD = 1  # in days
 
 
 def recent_persons(limit=_RECENT_PERSONS_LENGTH):
-    """ Return a list of names and titles appearing recently in the news """
+    """Return a list of names and titles appearing recently in the news"""
     toplist: Dict[str, Tuple[str, str, str, str]] = dict()
 
     with SessionContext(read_only=True) as session:
@@ -109,7 +107,7 @@ def recent_persons(limit=_RECENT_PERSONS_LENGTH):
 def top_persons(
     limit: int = _TOP_PERSONS_LENGTH, days: int = _TOP_PERSONS_PERIOD
 ) -> List[Dict[str, Any]]:
-    """ Return a list of person names appearing most frequently in recent articles. """
+    """Return a list of person names appearing most frequently in recent articles."""
     personlist: List[Dict[str, Any]] = []
 
     with SessionContext(read_only=True) as session:
@@ -156,7 +154,7 @@ _DEFAULT_NUM_PERSONS_GRAPH = 50
 
 
 def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
-    """ Get and prepare data for people graph """
+    """Get and prepare data for people graph"""
     with SessionContext(read_only=True) as session:
         # Find all persons mentioned in articles that
         # have at least two names (i.e. match whitespace)
@@ -215,7 +213,7 @@ def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
 @cache.cached(timeout=10 * 60, key_prefix="people", query_string=True)
 @max_age(seconds=10 * 60)
 def people_recent():
-    """ Page with a list of people recently appearing in articles """
+    """Page with a list of people recently appearing in articles"""
     return render_template(
         "people/recent.html", title="Fólk - Nýlegt", persons=recent_persons()
     )
@@ -225,7 +223,7 @@ def people_recent():
 @cache.cached(timeout=30 * 60, key_prefix="people_top", query_string=True)
 @max_age(seconds=10 * 60)
 def people_top():
-    """ Page showing people most frequently mentioned in recent articles """
+    """Page showing people most frequently mentioned in recent articles"""
     period = request.args.get("period", "")
     days = days_from_period_arg(period, _TOP_PERSONS_PERIOD)
     persons = top_persons(days=days)
@@ -239,8 +237,8 @@ def people_top():
 @restricted
 @max_age(seconds=10 * 60)
 def people_graph():
-    """ Page with a weighted, force directed graph of relations 
-        between people via mentions in articles. """
+    """Page with a weighted, force directed graph of relations
+    between people via mentions in articles."""
     return render_template("people/graph.html", graph_data=graph_data())
 
 
@@ -248,5 +246,5 @@ def people_graph():
 @restricted
 @max_age(seconds=10 * 60)
 def people_timeline():
-    """ Person timeline page. """
+    """Person timeline page."""
     return render_template("people/timeline.html")

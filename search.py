@@ -4,7 +4,7 @@
 
     Search module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
     Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
@@ -37,25 +37,25 @@ from similar import SimilarityClient
 
 class Search:
 
-    """ This class wraps search queries to the similarity server
-        via the similarity client. """
+    """This class wraps search queries to the similarity server
+    via the similarity client."""
 
     # Similarity query client
     similarity_client: Optional[SimilarityClient] = None
 
     def __init__(self) -> None:
-        """ This class is normally not instantiated """
+        """This class is normally not instantiated"""
         pass
 
     @classmethod
     def _connect(cls):
-        """ Ensure that the client is connected, if possible """
+        """Ensure that the client is connected, if possible"""
         if cls.similarity_client is None:
             cls.similarity_client = SimilarityClient()
 
     @classmethod
     def list_similar_to_article(cls, session, uuid, n):
-        """ List n articles that are similar to the article with the given id """
+        """List n articles that are similar to the article with the given id"""
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
         assert cls.similarity_client is not None
@@ -66,7 +66,7 @@ class Search:
 
     @classmethod
     def list_similar_to_topic(cls, session, topic_vector, n):
-        """ List n articles that are similar to the given topic vector """
+        """List n articles that are similar to the given topic vector"""
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
         assert cls.similarity_client is not None
@@ -77,8 +77,8 @@ class Search:
 
     @classmethod
     def list_similar_to_terms(cls, session, terms, n):
-        """ List n articles that are similar to the given terms. The
-            terms are expected to be a list of (stem, category) tuples. """
+        """List n articles that are similar to the given terms. The
+        terms are expected to be a list of (stem, category) tuples."""
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
         assert cls.similarity_client is not None
@@ -91,7 +91,7 @@ class Search:
 
     @classmethod
     def list_articles(cls, session, result, n):
-        """ Convert similarity result tuples into article descriptors """
+        """Convert similarity result tuples into article descriptors"""
         similar: List[Dict[str, Any]] = []
         for sid, similarity in result:
             if similarity > 0.9999:
@@ -106,8 +106,8 @@ class Search:
                 spercent = 100.0 * similarity
 
                 def is_probably_same_as(last):
-                    """ Return True if the current article is probably different from
-                        the one already described in the last object """
+                    """Return True if the current article is probably different from
+                    the one already described in the last object"""
                     if last["domain"] != sa.root.domain:
                         # Another root domain: can't be the same content
                         return False
@@ -134,8 +134,8 @@ class Search:
                     return False
 
                 def gen_similar():
-                    """ Generate the entries in the result list that are probably
-                        the same as the one we are considering """
+                    """Generate the entries in the result list that are probably
+                    the same as the one we are considering"""
                     for ix, p in enumerate(similar):
                         if is_probably_same_as(p):
                             yield (ix, p)

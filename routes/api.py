@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -43,20 +43,17 @@ from article import Article as ArticleProxy
 from query import process_query
 from query import Query as QueryObject
 from doc import SUPPORTED_DOC_MIMETYPES, Document
-from speech import text_to_audio_url
-from util import read_api_key
+from speech import (
+    text_to_audio_url,
+    DEFAULT_VOICE,
+    SUPPORTED_VOICES,
+    RECOMMENDED_VOICES,
+)
+from util import read_api_key, icelandic_asciify
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH
 from . import async_task
-
-
-# Maximum number of query string variants
-_MAX_QUERY_VARIANTS = 10
-# Maximum length of each query string
-_MAX_QUERY_LENGTH = 512
-# Synthetic location for use in testing
-_MIDEIND_LOCATION = (64.156896, -21.951200)  # Fiskislóð 31, 101 Reykjavík
 
 
 @routes.route("/ifdtag.api", methods=["GET", "POST"])
@@ -110,7 +107,9 @@ def correct_api(version: int = 1) -> Response:
         # file is a Werkzeug FileStorage object
         mimetype = file.content_type
         if mimetype not in SUPPORTED_DOC_MIMETYPES:
-            return better_jsonify(valid=False, reason="File type not supported")
+            return better_jsonify(
+                valid=False, reason=f"File type not supported: {mimetype}"
+            )
 
         # Create document object from file and extract text
         try:
@@ -351,6 +350,14 @@ def reparse_api(version: int = 1) -> Response:
     return better_jsonify(valid=True, result=tokens, register=register, stats=stats)
 
 
+# Maximum number of query string variants
+_MAX_QUERY_VARIANTS = 10
+# Maximum length of each query string
+_MAX_QUERY_LENGTH = 512
+# Synthetic location for use in testing
+_MIDEIND_LOCATION = (64.156896, -21.951200)  # Fiskislóð 31, 101 Reykjavík
+
+
 @routes.route("/query.api", methods=["GET", "POST"])
 @routes.route("/query.api/v<int:version>", methods=["GET", "POST"])
 def query_api(version: int = 1) -> Response:
@@ -369,17 +376,17 @@ def query_api(version: int = 1) -> Response:
     # If voice is set, return a voice-friendly string
     voice = bool_from_request(request, "voice")
     # Request a particular voice
-    voice_id: str = request.values.get("voice_id", "Dora")
+    voice_id: str = icelandic_asciify(request.values.get("voice_id", "Dora"))
     # Request a particular voice speed
     try:
         voice_speed = float(request.values.get("voice_speed", 1.0))
     except ValueError:
         voice_speed = 1.0
 
-    # If test is set to True (which is only possible in a debug setting), we
+    # If test is set to True, we
     # (1) add a synthetic location, if not given; and
     # (2) bypass the cache
-    test = Settings.DEBUG and bool_from_request(request, "test")
+    test = bool_from_request(request, "test")
 
     # Obtain the client's location, if present
     slat: Optional[str] = request.values.get("latitude")
@@ -522,7 +529,7 @@ def query_history_api(version: int = 1) -> Response:
 @routes.route("/speech.api", methods=["GET", "POST"])
 @routes.route("/speech.api/v<int:version>", methods=["GET", "POST"])
 def speech_api(version: int = 1) -> Response:
-    """Send in text, receive URL to speech-synthesised audio file."""
+    """Send in text, receive URL to speech synthesised audio file."""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
@@ -543,7 +550,7 @@ def speech_api(version: int = 1) -> Response:
     fmt = request.values.get("format", "ssml")
     if fmt not in ["text", "ssml"]:
         fmt = "ssml"
-    voice_id = request.values.get("voice_id", "Dora")
+    voice_id = icelandic_asciify(request.values.get("voice_id", "Dora"))
     speed = request.values.get("voice_speed", 1.0)
     if not isinstance(speed, float):
         try:
@@ -562,6 +569,22 @@ def speech_api(version: int = 1) -> Response:
     reply["err"] = False
 
     return better_jsonify(**reply)
+
+
+@routes.route("/voices.api", methods=["GET", "POST"])
+@routes.route("/voices.api/v<int:version>", methods=["GET", "POST"])
+def voices_api(version: int = 1) -> Response:
+    """Returns list of supported speech synthesis voices as JSON."""
+
+    if not (1 <= version <= 1):
+        return better_jsonify(valid=False, reason="Unsupported version")
+
+    return better_jsonify(
+        valid=True,
+        default=DEFAULT_VOICE,
+        supported=sorted(list(SUPPORTED_VOICES)),
+        recommended=sorted(list(RECOMMENDED_VOICES)),
+    )
 
 
 @routes.route("/feedback.api", methods=["POST"])
@@ -659,3 +682,37 @@ def register_query_data_api(version: int = 1) -> Response:
         return better_jsonify(valid=True, msg="Query data registered")
 
     return better_jsonify(valid=False, errmsg="Error registering query data.")
+
+
+_WAV_MIMETYPES = frozenset(("audio/wav", "audio/x-wav"))
+
+
+@routes.route("/upload_speech_audio.api", methods=["POST"])
+@routes.route("/upload_speech_audio.api/v<int:version>", methods=["POST"])
+def upload_speech_audio(version: int = 1) -> Response:
+    """Receives uploaded speech audio for a query."""
+
+    # This is disabled for now
+    return better_jsonify(valid=False, errmsg="Not implemented")
+
+    # This code is currently here only for debugging/development purposes
+    # if not (1 <= version <= 1):
+    #     return better_jsonify(valid=False, errmsg="Unsupported version")
+
+    # file = request.files.get("file")
+    # if file is not None:
+    #     # file is a Werkzeug FileStorage object
+    #     mimetype = file.content_type
+    #     if mimetype not in _WAV_MIMETYPES:
+    #         return better_jsonify(
+    #             valid=False, reason=f"File type not supported: {mimetype}"
+    #         )
+    #     try:
+    #         with open("/tmp/myfile.wav", "wb") as f:
+    #             # Writing data to a file
+    #             f.write(file.read())
+    #     except Exception as e:
+    #         logging.warning("Exception in upload_speech_audio(): {0}".format(e))
+    #         return better_jsonify(valid=False, reason="Error reading file")
+
+    # return better_jsonify(valid=True, msg="Audio data received")

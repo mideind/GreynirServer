@@ -4,7 +4,7 @@
 
     TV & radio schedule query response module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 
 # TODO: "Hvaða þættir eru á rúv?"
 # TODO: Channels provided by Síminn
+# TODO: "Rás tveir" vandamál, ætti að vera "Rás tvö"
 
 from typing import List, Dict, Optional, Tuple, Any, cast
 from typing_extensions import TypedDict
@@ -397,7 +398,7 @@ def QSchThisEvening(node: Node, params: ParamList, result: Result) -> None:
     now = datetime.datetime.now()
     evening = datetime.time(20, 0)
     result["qdate"] = now.date()
-    result["qtime"] = evening if now.time() < evening else now
+    result["qtime"] = evening if now.time() < evening else now.time()
     result["PM"] = True
 
 
@@ -422,7 +423,7 @@ def QSchYesterdayEvening(node: Node, params: ParamList, result: Result) -> None:
 
 
 def QSchNow(node: Node, params: ParamList, result: Result) -> None:
-    now = datetime.datetime.today()
+    now = datetime.datetime.now()
     result["qdate"] = now.date()
     result["qtime"] = now.time()
 
@@ -434,7 +435,7 @@ _STATION_ENDPOINTS = {
 }
 
 # Schedule cache (keep for one day)
-_SCHED_CACHE: cachetools.TTLCache = cachetools.TTLCache(maxsize=15, ttl=86400)
+_SCHED_CACHE: cachetools.TTLCache = cachetools.TTLCache(maxsize=15, ttl=86400)  # type: ignore
 
 # Type for schedules
 _SchedType = List[Dict[str, Any]]
@@ -461,7 +462,7 @@ _NO_DESCRIPTION_SET = frozenset(
 )
 
 
-def _extract_ruv_schedule(response: dict) -> _SchedType:
+def _extract_ruv_schedule(response: Dict[str, Any]) -> _SchedType:
     """Safely extract schedule from RÚV API response."""
     if "error" in response.get("schedule", ""):
         return []
@@ -483,14 +484,14 @@ def _query_schedule_api(channel: str, station: str, date: datetime.date) -> _Sch
         return []
     else:
         url: str = _STATION_ENDPOINTS[station].format(channel, date.isoformat())
-    response = cast(Optional[List], query_json_api(url))
+    response = query_json_api(url)
 
     if response is None:
         return []
 
     sched: _SchedType
     if station == _RUV:
-        sched = _extract_ruv_schedule(cast(dict, response))
+        sched = _extract_ruv_schedule(cast(Dict[str, Any], response))
     else:
         # Other stations respond with list of dicts
         sched = cast(_SchedType, response)
@@ -873,8 +874,8 @@ def _get_schedule_answer(result: Result) -> _AnswerDict:
             expire_time=qdt,
         )
 
-    curr_prog: Optional[dict]
-    next_prog: Optional[dict]
+    curr_prog: Optional[Dict[str, Any]]
+    next_prog: Optional[Dict[str, Any]]
     curr_prog, next_prog = _get_current_and_next_program(sched, station, qdt, get_next)
 
     with changedlocale(category="LC_TIME"):
@@ -904,7 +905,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
             q.set_key(r["station"] + " - " + r["channel"])
             q.set_source(r["station"])
-            q.set_beautified_query(q._beautified_query.replace("rúv", _RUV))
+            q.set_beautified_query(q.beautified_query.replace("rúv", _RUV))
 
             q.set_expires(r["expire_time"])
             q.set_answer(r["response"], r["answer"], r["voice"])

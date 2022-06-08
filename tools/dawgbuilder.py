@@ -4,7 +4,7 @@
 
     DAWG dictionary builder
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
     DawgBuilder implements a Directed Acyclic Word Graph (DAWG)
     to store a large set of words in an efficient structure
@@ -131,24 +131,24 @@ ILLEGAL_CHARS = frozenset(("_", "|", ":", "/", ".", "2", "3"))
 
 class _DawgNode:
 
-    """ A _DawgNode is a node in a Directed Acyclic Word Graph (DAWG).
-        It contains:
-            * a node identifier (a simple unique sequence number);
-            * a dictionary of edges (children) where each entry has a prefix
-                (following letter(s)) together with its child _DawgNode;
-            * and a Bool (final) indicating whether this node in the graph
-                also marks the end of a legal word.
+    """A _DawgNode is a node in a Directed Acyclic Word Graph (DAWG).
+    It contains:
+        * a node identifier (a simple unique sequence number);
+        * a dictionary of edges (children) where each entry has a prefix
+            (following letter(s)) together with its child _DawgNode;
+        * and a Bool (final) indicating whether this node in the graph
+            also marks the end of a legal word.
 
-        A _DawgNode has a string representation which can be hashed to
-        determine whether it is identical to a previously encountered node,
-        i.e. whether it has the same final flag and the same edges with
-        prefixes leading to the same child nodes. This assumes
-        that the child nodes have already been subjected to the same
-        test, i.e. whether they are identical to previously encountered
-        nodes and, in that case, modified to point to the previous, identical
-        subgraph. Each graph layer can thus depend on the (shallow) comparisons
-        made in previous layers and deep comparisons are not necessary. This
-        is an important optimization when building the graph.
+    A _DawgNode has a string representation which can be hashed to
+    determine whether it is identical to a previously encountered node,
+    i.e. whether it has the same final flag and the same edges with
+    prefixes leading to the same child nodes. This assumes
+    that the child nodes have already been subjected to the same
+    test, i.e. whether they are identical to previously encountered
+    nodes and, in that case, modified to point to the previous, identical
+    subgraph. Each graph layer can thus depend on the (shallow) comparisons
+    made in previous layers and deep comparisons are not necessary. This
+    is an important optimization when building the graph.
 
     """
 
@@ -158,13 +158,13 @@ class _DawgNode:
 
     @staticmethod
     def sort_by_prefix(l):
-        """ Return a list of (prefix, node) tuples sorted by prefix """
+        """Return a list of (prefix, node) tuples sorted by prefix"""
         return sorted(l, key=lambda x: KEY_FUNC(x[0]))
 
     @staticmethod
     def stringify_edges(edges):
-        """ Utility function to create a compact descriptor string and
-            hashable key for node edges """
+        """Utility function to create a compact descriptor string and
+        hashable key for node edges"""
         parts = [
             prefix + ":" + ("0" if node is None else str(node.id))
             for prefix, node in _DawgNode.sort_by_prefix(edges.items())
@@ -180,7 +180,7 @@ class _DawgNode:
         self._hash = None  # Hash of the final flag and a shallow traversal of the edges
 
     def __str__(self):
-        """ Return a string representation of this node, cached if possible """
+        """Return a string representation of this node, cached if possible"""
         if not self._strng:
             # We don't have a cached string representation: create it
             edges = _DawgNode.stringify_edges(self.edges)
@@ -188,19 +188,19 @@ class _DawgNode:
         return self._strng
 
     def __hash__(self):
-        """ Return a hash of this node, cached if possible """
+        """Return a hash of this node, cached if possible"""
         if self._hash is None:
             # We don't have a cached hash: create it
             self._hash = self.__str__().__hash__()
         return self._hash
 
     def __eq__(self, other):
-        """ Use string equality based on the string representation of nodes """
+        """Use string equality based on the string representation of nodes"""
         return self.__str__() == other.__str__()
 
     def reset_id(self, newid):
-        """ Set a new id number for this node. This forces
-            a reset of the cached data. """
+        """Set a new id number for this node. This forces
+        a reset of the cached data."""
         self.id = newid
         self._strng = None
         self._hash = None
@@ -208,7 +208,7 @@ class _DawgNode:
 
 class _Dawg:
 
-    """ A Directed Acyclic Word Graph """
+    """A Directed Acyclic Word Graph"""
 
     def __init__(self):
         self._lastword = ""
@@ -227,7 +227,7 @@ class _Dawg:
         return self._vocabulary
 
     def _collapse_branch(self, parent, prefix, node):
-        """ Attempt to collapse a single branch of the tree """
+        """Attempt to collapse a single branch of the tree"""
 
         di = node.edges
         assert di is not None
@@ -279,7 +279,7 @@ class _Dawg:
             self._unique_nodes[node] = node
 
     def _collapse(self, edges):
-        """ Collapse and optimize the edges in the parent dict """
+        """Collapse and optimize the edges in the parent dict"""
         # Iterate through the letter position and
         # attempt to collapse all "simple" branches from it
         for letter, node in edges.items():
@@ -287,7 +287,7 @@ class _Dawg:
                 self._collapse_branch(edges, letter, node)
 
     def _collapse_to(self, divergence):
-        """ Collapse the tree backwards from the point of divergence """
+        """Collapse the tree backwards from the point of divergence"""
         j = self._lastlen
         while j > divergence:
             if self._dicts[j]:
@@ -297,14 +297,14 @@ class _Dawg:
             j -= 1
 
     def add_word(self, wrd):
-        """ Add a word to the DAWG.
-            Words are expected to arrive in sorted order.
+        """Add a word to the DAWG.
+        Words are expected to arrive in sorted order.
 
-            As an example, we may have these three words arriving in sequence:
+        As an example, we may have these three words arriving in sequence:
 
-            abbadísar
-            abbadísarinnar  [extends last word by 5 letters]
-            abbadísarstofa  [backtracks from last word by 5 letters]
+        abbadísar
+        abbadísarinnar  [extends last word by 5 letters]
+        abbadísarstofa  [backtracks from last word by 5 letters]
         """
         # Sanity check: make sure the word is not too long
         lenword = len(wrd)
@@ -345,7 +345,7 @@ class _Dawg:
         self._lastlen = lenword
 
     def finish(self):
-        """ Complete the optimization of the tree """
+        """Complete the optimization of the tree"""
         self._collapse_to(0)
         self._lastword = ""
         self._lastlen = 0
@@ -361,7 +361,7 @@ class _Dawg:
                 ix += 1
 
     def _dump_level(self, level, d):
-        """ Dump a level of the tree and continue into sublevels by recursion """
+        """Dump a level of the tree and continue into sublevels by recursion"""
         for ch, nx in d.items():
             s = " " * level + ch
             if nx and nx.final:
@@ -373,8 +373,8 @@ class _Dawg:
                 self._dump_level(level + 1, nx.edges)
 
     def dump(self):
-        """ Write a human-readable text representation of
-            the DAWG to the standard output """
+        """Write a human-readable text representation of
+        the DAWG to the standard output"""
         self._dump_level(0, self._root)
         print(
             "Total of {0} nodes and {1} edges with {2} prefix characters".format(
@@ -392,11 +392,11 @@ class _Dawg:
                     )
 
     def num_unique_nodes(self):
-        """ Count the total number of unique nodes in the graph """
+        """Count the total number of unique nodes in the graph"""
         return len(self._unique_nodes)
 
     def num_edges(self):
-        """ Count the total number of edges between unique nodes in the graph """
+        """Count the total number of edges between unique nodes in the graph"""
         edges = 0
         for n in self._unique_nodes.values():
             if n is not None:
@@ -404,7 +404,7 @@ class _Dawg:
         return edges
 
     def num_edge_chars(self):
-        """ Count the total number of edge prefix letters in the graph """
+        """Count the total number of edge prefix letters in the graph"""
         chars = 0
         for n in self._unique_nodes.values():
             if n is not None:
@@ -416,7 +416,7 @@ class _Dawg:
         return chars
 
     def write_packed(self, packer):
-        """ Write the optimized DAWG to a packer """
+        """Write the optimized DAWG to a packer"""
         packer.start(len(self._root))
         # Start with the root edges
         sortfunc = _DawgNode.sort_by_prefix
@@ -437,7 +437,7 @@ class _Dawg:
         packer.finish()
 
     def write_text(self, stream):
-        """ Write the optimized DAWG to a text stream """
+        """Write the optimized DAWG to a text stream"""
         print("Output graph has {0} nodes".format(len(self._unique_nodes)))
         # We don't have to write node ids since they
         # correspond to line numbers.
@@ -452,7 +452,7 @@ class _Dawg:
 
 class _BinaryDawgPacker:
 
-    """ _BinaryDawgPacker packs the DAWG data to a byte stream. """
+    """_BinaryDawgPacker packs the DAWG data to a byte stream."""
 
     BYTE = struct.Struct("<B")
     UINT32 = struct.Struct("<L")
@@ -480,7 +480,7 @@ class _BinaryDawgPacker:
         self._fixups = defaultdict(list)
 
     def start(self, num_root_edges):
-        """ Write a start record """
+        """Write a start record"""
         # 12 byte signature
         self._stream.write(b"ReynirDawg!\n")
         # Convert the vocabulary to an UTF-8 byte string
@@ -493,7 +493,7 @@ class _BinaryDawgPacker:
         self._stream.write(self.BYTE.pack(num_root_edges))
 
     def node_start(self, ident, final, num_edges):
-        """ Start a new node in the binary buffer """
+        """Start a new node in the binary buffer"""
         stream = self._stream
         pos = stream.tell()
         if ident in self._fixups:
@@ -509,11 +509,11 @@ class _BinaryDawgPacker:
         stream.write(self.BYTE.pack((0x80 if final else 0x00) | (num_edges & 0x7F)))
 
     def node_end(self, ident):
-        """ End a node in the binary buffer """
+        """End a node in the binary buffer"""
         pass
 
     def edge(self, ident, prefix):
-        """ Write an edge into the binary buffer """
+        """Write an edge into the binary buffer"""
         b = bytearray()
         stream = self._stream
         for c in prefix:
@@ -546,12 +546,12 @@ class _BinaryDawgPacker:
             stream.write(self.PLACEHOLDER)
 
     def finish(self):
-        """ Clear the temporary fixup stuff from memory """
+        """Clear the temporary fixup stuff from memory"""
         self._locs = dict()
         assert not self._fixups  # There should be no fixups left
 
     def dump(self):
-        """ Print the stream buffer in hexadecimal format """
+        """Print the stream buffer in hexadecimal format"""
         buf = self._stream.getvalue()
         print("Total of {0} bytes".format(len(buf)))
         s = binascii.hexlify(buf)
@@ -574,19 +574,19 @@ class _BinaryDawgPacker:
 
 class DawgBuilder:
 
-    """ Creates a DAWG from word lists and writes the resulting
-        graph to binary or text files.
+    """Creates a DAWG from word lists and writes the resulting
+    graph to binary or text files.
 
-        The word lists are assumed to be pre-sorted in ascending
-        lexicographic order. They are automatically merged during
-        processing to appear as one aggregated and sorted word list.
+    The word lists are assumed to be pre-sorted in ascending
+    lexicographic order. They are automatically merged during
+    processing to appear as one aggregated and sorted word list.
     """
 
     def __init__(self):
         self._dawg = None
 
     class _InFile(object):
-        """ InFile represents a single sorted input file. """
+        """InFile represents a single sorted input file."""
 
         def __init__(self, relpath, fname):
             self._eof = False
@@ -602,7 +602,7 @@ class DawgBuilder:
             self.read_word()
 
         def read_word(self):
-            """ Read lines until we have a legal word or EOF """
+            """Read lines until we have a legal word or EOF"""
             while True:
                 try:
                     line = next(self._fin)
@@ -618,34 +618,34 @@ class DawgBuilder:
                     return True
 
         def next_word(self):
-            """ Returns the next available word from this input file """
+            """Returns the next available word from this input file"""
             return None if self._eof else self._nxt
 
         def next_key(self):
-            """ Returns the sort key of the next available word
-                from this input file """
+            """Returns the sort key of the next available word
+            from this input file"""
             return None if self._eof else self._key
 
         def has_word(self):
-            """ True if a word is available, or False if EOF has been reached """
+            """True if a word is available, or False if EOF has been reached"""
             return not self._eof
 
         def close(self):
-            """ Close the associated file, if it is still open """
+            """Close the associated file, if it is still open"""
             if self._fin is not None:
                 self._fin.close()
             self._fin = None
 
     class _InFileToBeSorted(_InFile):
-        """ InFileToBeSorted represents an input file
-            that should be pre-sorted in memory """
+        """InFileToBeSorted represents an input file
+        that should be pre-sorted in memory"""
 
         def __init__(self, relpath, fname):
             # Call base class constructor
             super(DawgBuilder._InFileToBeSorted, self).__init__(relpath, fname)
 
         def _init(self):
-            """ Read the entire file and pre-sort it """
+            """Read the entire file and pre-sort it"""
             self._list = []
             self._index = 0
             try:
@@ -675,19 +675,19 @@ class DawgBuilder:
             return True
 
         def close(self):
-            """ Close the associated file, if it is still open """
+            """Close the associated file, if it is still open"""
             pass
 
     def _load(self, relpath, inputs, removals, filter_func):
-        """ Load word lists into the DAWG from one or more static text files,
-            assumed to be located in the relpath subdirectory.
-            The text files should contain one word per line,
-            encoded in UTF-8 format. Lines may end with CR/LF or LF only.
-            Upper or lower case should be consistent throughout.
-            All lower case is preferred. The words should appear in
-            ascending sort order within each file. The input files will
-            be merged in sorted order in the load process. Words found
-            in the removals file will be removed from the output.
+        """Load word lists into the DAWG from one or more static text files,
+        assumed to be located in the relpath subdirectory.
+        The text files should contain one word per line,
+        encoded in UTF-8 format. Lines may end with CR/LF or LF only.
+        Upper or lower case should be consistent throughout.
+        All lower case is preferred. The words should appear in
+        ascending sort order within each file. The input files will
+        be merged in sorted order in the load process. Words found
+        in the removals file will be removed from the output.
         """
         self._dawg = _Dawg()
         # Total number of words read from input files
@@ -796,7 +796,7 @@ class DawgBuilder:
         )
 
     def _output_binary(self, relpath, output):
-        """ Write the DAWG to a flattened binary file with extension '.dawg.bin' """
+        """Write the DAWG to a flattened binary file with extension '.dawg.bin'"""
         assert self._dawg is not None
         fname = os.path.abspath(os.path.join(relpath, output + ".dawg.bin"))
         print("Writing binary file '{0}'...".format(fname))
@@ -811,7 +811,7 @@ class DawgBuilder:
         f.close()
 
     def _output_text(self, relpath, output):
-        """ Write the DAWG to a text file with extension '.dawg.txt' """
+        """Write the DAWG to a text file with extension '.dawg.txt'"""
         assert self._dawg is not None
         fname = os.path.abspath(os.path.join(relpath, output + ".dawg.txt"))
         print("Writing text file '{0}'...".format(fname))
@@ -821,12 +821,12 @@ class DawgBuilder:
     def build(
         self, inputs, output, relpath="resources", filter_func=None, removals=None
     ):
-        """ Build a DAWG from input file(s) and write it to the
-            output file(s) (potentially in multiple formats).
-            The input files are assumed to be individually sorted
-            in correct ascending alphabetical order. They will be
-            merged in parallel into a single sorted stream
-            and added to the DAWG.
+        """Build a DAWG from input file(s) and write it to the
+        output file(s) (potentially in multiple formats).
+        The input files are assumed to be individually sorted
+        in correct ascending alphabetical order. They will be
+        merged in parallel into a single sorted stream
+        and added to the DAWG.
         """
         # inputs is a list of input file names
         # output is an output file name without file type suffix (extension)
@@ -843,7 +843,7 @@ class DawgBuilder:
 
 
 def generate_dawgs():
-    """ Build all required DAWGs """
+    """Build all required DAWGs"""
     print("Starting DAWG build for Greynir")
     resources_path = os.path.join(basepath, "resources")
     db = DawgBuilder()

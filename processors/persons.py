@@ -3,7 +3,7 @@
 
     Tree processor module for extraction of person names and titles
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -185,7 +185,7 @@ DELIMITERS = {" )": " ( ", " ]": " [ ", " -": " - ", " ,": " , ", " .": " , "}
 
 
 def article_begin(state):
-    """ Called at the beginning of article processing """
+    """Called at the beginning of article processing"""
 
     session = state["session"]  # Database session
     url = state["url"]  # URL of the article being processed
@@ -194,12 +194,12 @@ def article_begin(state):
 
 
 def article_end(state):
-    """ Called at the end of article processing """
+    """Called at the end of article processing"""
     pass
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called at the end of sentence processing """
+    """Called at the end of sentence processing"""
 
     session = state["session"]  # Database session
     url = state["url"]  # URL of the article being processed
@@ -222,7 +222,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
 
 def _add_name(result, mannsnafn, titill, kyn):
-    """ Add a name to the resulting name list """
+    """Add a name to the resulting name list"""
     if not titill:
         return False
     if " " not in mannsnafn:
@@ -260,7 +260,7 @@ def _add_name(result, mannsnafn, titill, kyn):
 
 
 def Manneskja(node, params, result):
-    """ Mannsnafn, e.t.v. með titli """
+    """Mannsnafn, e.t.v. með titli"""
     # print("Mannsnafn: {0}".format(result["_text"]))
     result.del_attribs("efliður")
     if (
@@ -289,19 +289,19 @@ def Mannsnafn(node, params, result):
 
 
 def Titill(node, params, result):
-    """ Titill á eftir nafni """
+    """Titill á eftir nafni"""
     # print("Titill: {0}".format(result["_text"]))
     if "ekki_titill" not in result:
         result.titill = result._nominative
 
 
 def KommuTitill(node, params, result):
-    """ Ef titill er afmarkaður með kommum bætum við ekki eignarfallslið aftan á hann """
+    """Ef titill er afmarkaður með kommum bætum við ekki eignarfallslið aftan á hann"""
     result.kommu_titill = True
 
 
 def NlTitill(node, params, result):
-    """ Nafnliður titils """
+    """Nafnliður titils"""
     # Fyrirbyggja að prósenta sé skilin sem titill
     if (
         len(params) == 1
@@ -312,13 +312,13 @@ def NlTitill(node, params, result):
 
 
 def EinnTitill(node, params, result):
-    """ Einn titill af hugsanlega fleirum í lista """
+    """Einn titill af hugsanlega fleirum í lista"""
     if "ekki_titill" not in result:
         result.titlar = [result._nominative]
 
 
 def EfLiður(node, params, result):
-    """ Eignarfallsliður eftir nafnlið """
+    """Eignarfallsliður eftir nafnlið"""
     result.efliður = result._text
     # Leyfa eignarfallslið að standa óbreyttum í titli
     result._nominative = result._text
@@ -343,7 +343,7 @@ def AtviksliðurEinkunn(node, params, result):
 
 
 def FsLiður(node, params, result):
-    """ Forsetningarliður """
+    """Forsetningarliður"""
     # Leyfa forsetningarlið að standa óbreyttum í titli
     result._nominative = result._text
     # Ekki leyfa skýringu eða mannsnafni að fara í gegn um forsetningarlið
@@ -351,39 +351,39 @@ def FsLiður(node, params, result):
 
 
 def Tengisetning(node, params, result):
-    """ Tengisetning ("sem" setning) """
+    """Tengisetning ("sem" setning)"""
     # Ekki leyfa mannsnafni að fara í gegn um tengisetningu
     result.del_attribs(("mannsnafn", "kyn"))
 
 
 def Setning(node, params, result):
-    """ Undirsetning: láta standa óbreytta """
+    """Undirsetning: láta standa óbreytta"""
     result._nominative = result._text
     result.del_attribs(("skýring", "skýring_nafn", "skýring_kyn"))
 
 
 def SetningSo(node, params, result):
-    """ Setning sem byrjar á sögn: eyða út """
+    """Setning sem byrjar á sögn: eyða út"""
     result._text = ""
     result._nominative = ""
     result.del_attribs(("skýring", "skýring_nafn", "skýring_kyn"))
 
 
 def SetningÁnF(node, params, result):
-    """ Ekki fara með skýringu upp úr setningu án frumlags """
+    """Ekki fara með skýringu upp úr setningu án frumlags"""
     result._nominative = result._text
     result.del_attribs(("skýring", "skýring_nafn", "skýring_kyn"))
 
 
 def SvigaInnihaldNl(node, params, result):
-    """ Svigainnihald eða skýring sem er ekki í sama falli og foreldri: eyða út """
+    """Svigainnihald eða skýring sem er ekki í sama falli og foreldri: eyða út"""
     result._text = ""
     result._nominative = ""
     result.del_attribs(("skýring", "skýring_nafn", "skýring_kyn"))
 
 
 def SvigaInnihald(node, params, result):
-    """ Ef innihald sviga er hrein yfirsetning, þá er það líklega ekki titill: eyða út """
+    """Ef innihald sviga er hrein yfirsetning, þá er það líklega ekki titill: eyða út"""
     if node.child_has_nt_base("HreinYfirsetning"):
         result._text = ""
         result._nominative = ""
@@ -394,7 +394,7 @@ def SvigaInnihald(node, params, result):
 
 
 def NlSkýring(node, params, result):
-    """ Skýring nafnliðar (innan sviga eða komma) """
+    """Skýring nafnliðar (innan sviga eða komma)"""
 
     def cut(s):
         if s.startswith(", ") or s.startswith("( "):
@@ -441,7 +441,7 @@ def NlSkýring(node, params, result):
 
 
 def NlEind(node, params, result):
-    """ Nafnliðareind """
+    """Nafnliðareind"""
     mannsnafn = result.get("mannsnafn")
     kyn = result.get("kyn")
     skýring = result.get("skýring")
@@ -452,7 +452,7 @@ def NlEind(node, params, result):
 
 
 def NlKjarni(node, params, result):
-    """ Skoða mannsnöfn með titlum sem kunna að þurfa viðbót úr eignarfallslið """
+    """Skoða mannsnöfn með titlum sem kunna að þurfa viðbót úr eignarfallslið"""
 
     if "_et" in node.nt:
         # Höfum aðeins áhuga á eintölu

@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ from xml.dom import minidom  # type: ignore
 from tzwhere import tzwhere  # type: ignore
 from pytz import country_timezones
 
-from geo import country_name_for_isocode, iceprep_for_cc
+from geo import country_name_for_isocode, iceprep_for_cc, LatLonTuple
 from queries.num import number_to_text, float_to_text
 from reynir import NounPhrase
 from settings import changedlocale
@@ -60,7 +60,6 @@ from util import read_api_key
 
 # Type definitions
 AnswerTuple = Tuple[Dict[str, str], str, str]
-LatLonTuple = Tuple[float, float]
 
 
 MONTH_ABBREV_ORDERED: Sequence[str] = (

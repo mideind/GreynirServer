@@ -4,7 +4,7 @@
 
     Document index builder & topic tagger module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
     Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
@@ -74,20 +74,20 @@ from gensim import corpora, models, matutils
 
 
 def w_from_stem(stem, cat):
-    """ Convert a (stem, cat) tuple to a bag-of-words key """
+    """Convert a (stem, cat) tuple to a bag-of-words key"""
     return stem.lower().replace("-", "").replace(" ", "_") + "/" + cat
 
 
 class CorpusIterator:
 
-    """ Iterate through the Greynir words database, yielding a bag-of-words
-        for each article """
+    """Iterate through the Greynir words database, yielding a bag-of-words
+    for each article"""
 
     def __init__(self, dictionary=None):
         self._dictionary = dictionary
 
     def __iter__(self):
-        """ Iterate through articles (documents) """
+        """Iterate through articles (documents)"""
         print("Starting iteration through corpus from words table")
         if self._dictionary is not None:
             xform = lambda x: self._dictionary.doc2bow(x)
@@ -125,8 +125,8 @@ class CorpusIterator:
 
 class ReynirDictionary(corpora.Dictionary):
 
-    """ Subclass of gensim.corpora.Dictionary that adds a __contains__
-        operator for easy membership check """
+    """Subclass of gensim.corpora.Dictionary that adds a __contains__
+    operator for easy membership check"""
 
     def __init__(self, iterator):
         super().__init__(iterator)
@@ -137,7 +137,7 @@ class ReynirDictionary(corpora.Dictionary):
 
 class ReynirCorpus:
 
-    """ Wraps the document indexing functionality """
+    """Wraps the document indexing functionality"""
 
     # Default number of dimensions in topic vectors
     _DEFAULT_DIMENSIONS = 200
@@ -164,8 +164,8 @@ class ReynirCorpus:
         return self._dimensions
 
     def create_dictionary(self):
-        """ Iterate through the article database
-            and create a fresh Gensim dictionary """
+        """Iterate through the article database
+        and create a fresh Gensim dictionary"""
         ci = CorpusIterator()
         dic = ReynirDictionary(ci)
         # Drop words that only occur only once or twice in the entire set
@@ -174,25 +174,25 @@ class ReynirCorpus:
         self._dictionary = dic
 
     def load_dictionary(self):
-        """ Load a dictionary from a previously prepared file """
+        """Load a dictionary from a previously prepared file"""
         self._dictionary = ReynirDictionary.load(self._DICTIONARY_FILE)
 
     def create_plain_corpus(self):
-        """ Create a plain vector corpus, where each vector represents a
-            document. Each element of the vector contains the count of
-            the corresponding word (as indexed by the dictionary) in
-            the document. """
+        """Create a plain vector corpus, where each vector represents a
+        document. Each element of the vector contains the count of
+        the corresponding word (as indexed by the dictionary) in
+        the document."""
         if self._dictionary is None:
             self.load_dictionary()
         dci = CorpusIterator(dictionary=self._dictionary)
         corpora.MmCorpus.serialize(self._PLAIN_CORPUS_FILE, dci)
 
     def load_plain_corpus(self):
-        """ Load the plain corpus from file """
+        """Load the plain corpus from file"""
         return corpora.MmCorpus(self._PLAIN_CORPUS_FILE)
 
     def create_tfidf_model(self):
-        """ Create a fresh TFIDF model from a dictionary """
+        """Create a fresh TFIDF model from a dictionary"""
         if self._dictionary is None:
             self.load_dictionary()
         tfidf = models.TfidfModel(dictionary=self._dictionary)
@@ -200,11 +200,11 @@ class ReynirCorpus:
         self._tfidf = tfidf
 
     def load_tfidf_model(self):
-        """ Load an already generated TFIDF model """
+        """Load an already generated TFIDF model"""
         self._tfidf = models.TfidfModel.load(self._TFIDF_MODEL_FILE, mmap="r")
 
     def create_tfidf_corpus(self):
-        """ Create a TFIDF corpus from a plain vector corpus """
+        """Create a TFIDF corpus from a plain vector corpus"""
         if self._tfidf is None:
             self.load_tfidf_model()
         corpus = self.load_plain_corpus()
@@ -212,11 +212,11 @@ class ReynirCorpus:
         corpora.MmCorpus.serialize(self._TFIDF_CORPUS_FILE, corpus_tfidf)
 
     def load_tfidf_corpus(self):
-        """ Load a TFIDF corpus from file """
+        """Load a TFIDF corpus from file"""
         return corpora.MmCorpus(self._TFIDF_CORPUS_FILE)
 
     def create_lsi_model(self, **kwargs):
-        """ Create an LSI model from the entire words database table """
+        """Create an LSI model from the entire words database table"""
         corpus_tfidf = self.load_tfidf_corpus()
         if self._dictionary is None:
             self.load_dictionary()
@@ -233,15 +233,15 @@ class ReynirCorpus:
         lsi.save(self._LSI_MODEL_FILE.format(self._dimensions))
 
     def load_lsi_model(self):
-        """ Load a previously generated LSI model """
+        """Load a previously generated LSI model"""
         self._model = models.LsiModel.load(
             self._LSI_MODEL_FILE.format(self._dimensions), mmap="r"
         )
         self._model_name = "lsi"
 
     def create_lda_model(self, **kwargs):
-        """ Create a Latent Dirichlet Allocation (LDA) model from the
-            entire words database table """
+        """Create a Latent Dirichlet Allocation (LDA) model from the
+        entire words database table"""
         corpus_tfidf = self.load_tfidf_corpus()
         if self._dictionary is None:
             self.load_dictionary()
@@ -258,14 +258,14 @@ class ReynirCorpus:
         lda.save(self._LDA_MODEL_FILE.format(self._dimensions))
 
     def load_lda_model(self):
-        """ Load a previously generated LDA model """
+        """Load a previously generated LDA model"""
         self._model = models.LdaMulticore.load(
             self._LDA_MODEL_FILE.format(self._dimensions), mmap="r"
         )
         self._model_name = "lda"
 
     def calculate_topics(self):
-        """ Recalculate the topic vectors in the topics database table """
+        """Recalculate the topic vectors in the topics database table"""
         if self._dictionary is None:
             self.load_dictionary()
         if self._tfidf is None:
@@ -316,7 +316,7 @@ class ReynirCorpus:
                 topic.vector = json.dumps(d)
 
     def load_topics(self):
-        """ Load the topics into a dict of topic vectors by topic id """
+        """Load the topics into a dict of topic vectors by topic id"""
         self._topics = {}
         with SessionContext(commit=True) as session:
             for topic in session.query(Topic).all():
@@ -330,10 +330,10 @@ class ReynirCorpus:
                         )
 
     def get_topic_vector(self, terms):
-        """ Calculate a topic vector corresponding to the given list
-            of search terms, which are assumed to have the form (stem, category).
-            Return the topic vector as well as a list of weights of
-            each search term """
+        """Calculate a topic vector corresponding to the given list
+        of search terms, which are assumed to have the form (stem, category).
+        Return the topic vector as well as a list of weights of
+        each search term"""
         if self._dictionary is None:
             self.load_dictionary()
         if self._tfidf is None:
@@ -370,7 +370,7 @@ class ReynirCorpus:
             for index, (stem, cat) in enumerate(terms):
 
                 def word_lookup_weight(stem, cat):
-                    """ Does this term call for a lookup in the words database table? """
+                    """Does this term call for a lookup in the words database table?"""
                     if cat == "entity" or cat.startswith("person"):
                         # We look up all entity and person names
                         # and give them extra weight
@@ -411,7 +411,7 @@ class ReynirCorpus:
                     # a weight in the final topic vector.
 
                     def clean(stem):
-                        """ Eliminate composite word hyphens from the stem """
+                        """Eliminate composite word hyphens from the stem"""
                         if "- og " in stem or "- eða " in stem:
                             # Leave 'iðnaðar- og viðskiptaráðuneyti' alone
                             return stem
@@ -465,7 +465,7 @@ class ReynirCorpus:
         return topic_vector, term_weights
 
     def assign_article_topics(self, article_id, heading, process_all=False):
-        """ Assign the appropriate topics to the given article in the database """
+        """Assign the appropriate topics to the given article in the database"""
         if self._dictionary is None:
             self.load_dictionary()
         if self._tfidf is None:
@@ -536,7 +536,7 @@ class ReynirCorpus:
                     a.topic_vector = None
 
     def assign_topics(self, limit=None, process_all=False, uuid=None):
-        """ Assign topics to all articles that have no such assignment yet """
+        """Assign topics to all articles that have no such assignment yet"""
         with SessionContext(commit=True) as session:
             # Fetch articles that haven't been indexed (or have been parsed since),
             # and that have at least one associated Word in the words table.
@@ -559,7 +559,7 @@ class ReynirCorpus:
 
 
 def build_model(verbose=False):
-    """ Build a new model from the words (and articles) table """
+    """Build a new model from the words (and articles) table"""
 
     print("------ Greynir starting model build -------")
     ts = "{0}".format(datetime.utcnow())[0:19]
@@ -589,7 +589,7 @@ def build_model(verbose=False):
 
 
 def calculate_topics(verbose=False):
-    """ Recalculate topic vectors from keywords """
+    """Recalculate topic vectors from keywords"""
 
     print("------ Greynir recalculating topic vectors -------")
     rc = ReynirCorpus(verbose=verbose)
@@ -599,8 +599,8 @@ def calculate_topics(verbose=False):
 
 
 def tag_articles(limit, verbose=False, process_all=False, uuid=None):
-    """ Tag all untagged articles or articles that
-        have been parsed since they were tagged """
+    """Tag all untagged articles or articles that
+    have been parsed since they were tagged"""
 
     print("------ Greynir starting tagging -------")
     if uuid:
@@ -627,7 +627,7 @@ def tag_articles(limit, verbose=False, process_all=False, uuid=None):
 
 
 def notify_similarity_server():
-    """ Notify the similarity server - if running - that article tags have been updated """
+    """Notify the similarity server - if running - that article tags have been updated"""
     try:
         client = SimilarityClient()
         client.refresh_topics()

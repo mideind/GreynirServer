@@ -4,7 +4,7 @@
 
     Repeat-after-me query response module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -23,6 +23,8 @@
     text segment be repeated back to him/her.
 
 """
+
+# TODO: Hvað spurði ég þig um síðast? Hvert var síðasta svar þitt? Endurtaktu þetta, o.s.frv.
 
 from query import Query
 from queries import gen_answer, icequote

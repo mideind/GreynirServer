@@ -4,7 +4,7 @@
 
    Greynir front page script
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ function serverQuery(requestUrl, jsonData, successFunc, completeFunc, errorFunc)
       type: "POST",
 
       // The type of data we expect back
-      dataType : "json",
+      dataType: "json",
 
       cache: false,
 
@@ -96,7 +96,7 @@ function initializeSpeech() {
    recognizer.lang = "is-IS";
    recognizer.maxAlternatives = 10;
    // Results of speech recognition
-   recognizer.onresult = function(event) {
+   recognizer.onresult = function (event) {
       var txt = "";
       var first = "";
       for (var i = event.resultIndex; i < event.results.length; i++) {
@@ -121,7 +121,7 @@ function initializeSpeech() {
       analyzeQuery({ q: txt, autouppercase: true }); // Ask for auto-uppercasing
    };
    // Listen for errors
-   recognizer.onerror = function(event) {
+   recognizer.onerror = function (event) {
       var txt = "Hljóðnemi virkar ekki" + (event.message.length ? (" (" + event.message + ")") : "");
       $("#url").val(txt);
       $("#url").attr("placeholder", "");
@@ -210,7 +210,7 @@ function makeSourceList(sources) {
          )
       );
    var $tbody = $table.append($("<tbody>"));
-   $.each(sources, function(i, obj) {
+   $.each(sources, function (i, obj) {
       var $tr = $("<tr class='article'>").attr("data-uuid", obj.uuid).append(
          $("<td>").text(obj.ts.replace("T", " ")),
          $("<td class='heading'>").text(obj.heading)
@@ -237,7 +237,7 @@ function makeSearchList(results) {
          )
       );
    var $tbody = $table.append($("<tbody>"));
-   $.each(results, function(i, obj) {
+   $.each(results, function (i, obj) {
       var $tr = $("<tr class='article'>").attr("data-uuid", obj.uuid)
          .append(
             $("<td class='ts'>").text(obj.ts_text),
@@ -259,7 +259,7 @@ function imgError(img) {
       return;
    }
    // Report broken image to server
-   reportImage(img, "broken", function(i) {
+   reportImage(img, "broken", function (i) {
       $(img).data('err', true);
       if (i) {
          $(img).show();
@@ -269,7 +269,7 @@ function imgError(img) {
 
 function reportImage(img, status, successFunc) {
    // Report image status to server
-   var q = { 
+   var q = {
       name: $(img).attr('title'),
       url: $(img).attr('src'),
       status: status
@@ -277,7 +277,7 @@ function reportImage(img, status, successFunc) {
    $(img).attr('src', '/static/img/placeholder.png');
    serverQuery('/reportimage',
       q,
-      function(r) {
+      function (r) {
          if (r['found_new'] && r['image']) {
             // Server found a new image for us
             $(img).attr('src', r['image'][0]);
@@ -290,14 +290,14 @@ function reportImage(img, status, successFunc) {
       }, // successFunc
       null, // completeFunc
       null // error Func
-      );
+   );
 }
 
 function blacklistImage(img) {
    // User reporting that a person image is wrong
    $("span.imgreport").hide();
-   $(img).stop().animate({ opacity: 0 }, function() {
-      reportImage(img, "wrong", function(i) {
+   $(img).stop().animate({ opacity: 0 }, function () {
+      reportImage(img, "wrong", function (i) {
          if (i) {
             $(img).stop().animate({ opacity: 1.0 });
          } else {
@@ -311,26 +311,26 @@ function blacklistImage(img) {
 function displayImage(p, img_info) {
    // Create and show image and associated elements
    var img = $("<img></img>")
-            .attr("src", img_info.src)
-            .attr("width", img_info.width)
-            .attr("height", img_info.height)
-            .attr("title", img_info.name)
-            .attr("onerror", "imgError(this);");
+      .attr("src", img_info.src)
+      .attr("width", img_info.width)
+      .attr("height", img_info.height)
+      .attr("title", img_info.name)
+      .attr("onerror", "imgError(this);");
    p.append(
       $("<a></a>")
-      .attr("href", img_info.link)
-      .addClass("imglink")
-      .html(img)
+         .attr("href", img_info.link)
+         .addClass("imglink")
+         .html(img)
    )
-   .append(
-      $("<span></span>")
-      .addClass("imgreport")
-      .html(
-         $("<a>Röng mynd?</a>").click(function(){
-            blacklistImage(img);
-         })
-      )
-   );
+      .append(
+         $("<span></span>")
+            .addClass("imgreport")
+            .html(
+               $("<a>Röng mynd?</a>").click(function () {
+                  blacklistImage(img);
+               })
+            )
+      );
    $(p.find('a.imglink, span.imgreport')).mouseenter(function () {
       $("span.imgreport").show();
    });
@@ -369,76 +369,80 @@ function populateQueryResult(r) {
          }
       }
       else
-      if (r.qtype === "Person" || r.qtype === "Entity") {
-         // Title or definition list
-         rlist = r.response.answers;
-         articles = makeSourceList(r.response.sources);
-         key = r.key;
-      }
-      else
-      if (r.qtype !== "Search") {
-         rlist = r.response;
-      }
+         if (r.qtype === "Person" || r.qtype === "Entity") {
+            // Title or definition list
+            rlist = r.response.answers;
+            articles = makeSourceList(r.response.sources);
+            key = r.key;
+         }
+         else
+            if (r.qtype !== "Search") {
+               rlist = r.response;
+            }
       if (r.qtype === "Search" && r.response.answers.length > 0) {
          // Article search by terms
          q = $("<h3 class='query'>");
-         $.each(r.response.weights, function(i, t) {
+         $.each(r.response.weights, function (i, t) {
             q.append($("<span></span>").attr("class", "weight" + (t.w * 10).toFixed(0)).text(t.x));
             q.append(" ");
          });
          searchResult = makeSearchList(r.response.answers);
       }
       else
-      if (rlist !== undefined && rlist.length === undefined && rlist.answer !== undefined) {
-         // We have a single text answer
-         answer = $("<p class='query-empty'></p>")
-            .html("<span class='green glyphicon glyphicon-play'></span>&nbsp;")
-            .append(escapeHtml(rlist.answer));
-      }
-      else
-      if (!rlist || !rlist.length) {
-         answer = $("<p class='query-empty'></p>")
-            .html("<span class='red glyphicon glyphicon-play'></span>&nbsp;Ekkert svar fannst.");
-      }
-      else {
-         $.each(rlist, function(ix, obj) {
-            var li;
-            if (r.qtype === "Word") {
-               if (obj.cat.startsWith("person_")) {
-                  li = $("<li>").html($("<span class='name'></span>").text(obj.stem));
-               }
-               else
-               if (obj.cat.startsWith("entity") || obj.cat.startsWith("sérnafn")) {
-                  li = $("<li>").html($("<span class='entity'></span>").text(obj.stem));
-               }
-               else {
-                  li = $("<li>").text(obj.stem + " ").append($("<small></small>").text(obj.cat));
-               }
+         if (rlist !== undefined && rlist.length === undefined && rlist.answer !== undefined) {
+            // We have a single text answer
+            answer = $("<p class='query-empty'></p>")
+               .html("<span class='green glyphicon glyphicon-play'></span>&nbsp;")
+               .append(escapeHtml(rlist.answer));
+         }
+         else
+            if (!rlist || !rlist.length) {
+               answer = $("<p class='query-empty'></p>")
+                  .html("<span class='red glyphicon glyphicon-play'></span>&nbsp;Ekkert svar fannst.");
             }
             else {
-               if (r.qtype === "Title") {
-                  // For person names, generate a 'name' span
-                  li = $("<li>").html($("<span class='name'></span>").text(obj.answer));
-               }
-               else {
-                  li = $("<li>").text(obj.answer);
-               }
-               var urlList = obj.sources;
-               var artList = li.append($("<span class='art-list'></span>")).children().last();
-               for (var i = 0; i < urlList.length; i++) {
-                  var u = urlList[i];
-                  var img = $("<img width='16' height='16'></img>")
-                     .attr("src", "/static/img/sources/" + u.domain + ".png");
-                  var art_link = $("<span class='art-link'></span>")
-                     .attr("title", u.heading)
-                     .attr("data-uuid", u.uuid)
-                     .attr("data-toggle", "tooltip")
-                     .html(img);
-                  artList.append(art_link);
-               }
+               $.each(rlist, function (ix, obj) {
+                  var li;
+                  if (r.qtype === "Word") {
+                     if (obj.cat.startsWith("person_")) {
+                        li = $("<li>").html($("<span class='name'></span>").text(obj.stem));
+                     }
+                     else
+                        if (obj.cat.startsWith("entity") || obj.cat.startsWith("sérnafn")) {
+                           li = $("<li>").html($("<span class='entity'></span>").text(obj.stem));
+                        }
+                        else {
+                           li = $("<li>").text(obj.stem + " ").append($("<small></small>").text(obj.cat));
+                        }
+                  }
+                  else {
+                     if (r.qtype === "Title") {
+                        // For person names, generate a 'name' span
+                        li = $("<li>").html($("<span class='name'></span>").text(obj.answer));
+                     }
+                     else {
+                        li = $("<li>").text(obj.answer);
+                     }
+                     var urlList = obj.sources;
+                     var artList = li.append($("<span class='art-list'></span>")).children().last();
+                     for (var i = 0; i < urlList.length; i++) {
+                        var u = urlList[i];
+                        var img = $("<img width='16' height='16'></img>")
+                           .attr("src", "/static/img/sources/" + u.domain + ".png");
+                        var art_link = $("<span class='art-link'></span>")
+                           .attr("title", u.heading)
+                           .attr("data-uuid", u.uuid)
+                           .attr("data-toggle", "tooltip")
+                           .html(img);
+                        artList.append(art_link);
+                     }
+                  }
+                  answer.append(li);
+               });
             }
-            answer.append(li);
-         });
+
+      if (r.open_url) {
+         window.open(r.open_url, '_blank');
       }
    }
    else {
@@ -492,7 +496,7 @@ function populateQueryResult(r) {
    // Activate bootstrap tooltips for article icons
    $('[data-toggle="tooltip"]').tooltip({ 'animation': false });
    // Click handler for article icons
-   $("span.art-link").add("tr.article").click(function(ev) {
+   $("span.art-link").add("tr.article").click(function (ev) {
       // Show a source article
       wait(true); // This can take time, if a parse is required
       $("#url").attr("placeholder", "Málgreining í gangi...");
@@ -511,11 +515,11 @@ function clearQueryResult() {
 
 // Actions encoded in URLs
 var urlToFunc = {
-   "q" : _submitQuery
+   "q": _submitQuery
 };
 
 var funcToUrl = {
-   _submitQuery : "q"
+   _submitQuery: "q"
 };
 
 function navToHistory(func, q) {
@@ -582,14 +586,14 @@ function getUrlVars() {
    return vars;
 }
 
-function autoCompleteLookup(q, done)  {
+function autoCompleteLookup(q, done) {
    // Only trigger lookup for certain prefixes
    var none = { 'suggestions': [] };
    var whois = 'hver er ';
    var whatis = 'hvað er ';
    var minqlen = Math.max(whois.length, whatis.length) + 1;
    var valid = (q.toLowerCase().startsWith(whois) || q.toLowerCase().startsWith(whatis)) &&
-               q.length >= minqlen && !q.endsWith('?');
+      q.length >= minqlen && !q.endsWith('?');
    if (!valid) {
       done(none);
       return;
@@ -600,7 +604,7 @@ function autoCompleteLookup(q, done)  {
    }
    // Local caching
    if (autoCompleteLookup.cache === undefined) {
-      autoCompleteLookup.cache = { };
+      autoCompleteLookup.cache = {};
    }
    if (autoCompleteLookup.cache[q] !== undefined) {
       done(autoCompleteLookup.cache[q]);
@@ -611,11 +615,11 @@ function autoCompleteLookup(q, done)  {
       type: 'GET',
       url: "/suggest?q=" + encodeURIComponent(q),
       dataType: "json",
-      success: function(json) {
+      success: function (json) {
          autoCompleteLookup.cache[q] = json; // Save to local cache
          done(json);
       },
-      error: function(ajaxContext) {
+      error: function (ajaxContext) {
          done(none);
       }
    });
@@ -625,7 +629,7 @@ function initMain(jQuery) {
    // Initialization
    // Set up event handlers
    $("#url")
-      .click(function(ev) {
+      .click(function (ev) {
          var start = this.selectionStart;
          var end = this.selectionEnd;
          var len = this.value.length;
@@ -633,7 +637,7 @@ function initMain(jQuery) {
             this.setSelectionRange(0, len);
          }
       })
-      .keydown(function(ev) {
+      .keydown(function (ev) {
          if (ev.which === 13) {
             var q = this.value.trim();
             analyzeQuery({ q: q, autouppercase: false });
@@ -653,7 +657,7 @@ function initMain(jQuery) {
          .removeClass("col-xs-9").removeClass("col-sm-10")
          .addClass("col-xs-7").addClass("col-sm-9");
       // Enable the microphone button to start the speech recognizer
-      $("#microphone").click(function(ev) {
+      $("#microphone").click(function (ev) {
          $("#url").val("");
          $("#url")
             .attr("placeholder", "Talaðu í hljóðnemann! Til dæmis: Hver er seðlabankastjóri?");
@@ -671,14 +675,14 @@ function initMain(jQuery) {
    var rqVars = getUrlVars();
    if (rqVars.f !== undefined && rqVars.q !== undefined) {
       // We seem to have a legit query URL
-      navToHistory(rqVars.f, { q : rqVars.q });
+      navToHistory(rqVars.f, { q: rqVars.q });
    }
 
    // Select all text in the url input field
    $("#url").get(0).setSelectionRange(0, $("#url").val().length);
 
    // Clicking in italic words in the guide
-   $("div.guide-empty i").click(function(ev) {
+   $("div.guide-empty i").click(function (ev) {
       openURL("/?f=q&q=" + encodeURIComponent($(this).text()), ev);
    });
 

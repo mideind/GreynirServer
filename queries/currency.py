@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -34,11 +34,10 @@ import random
 import logging
 
 from query import Query, QueryStateDict
-from queries import query_json_api, iceformat_float, sing_or_plur, gen_answer
-from queries.plugins.text_to_num import *
+from queries import query_json_api, iceformat_float, gen_answer, is_plural
 from settings import Settings
-from tree import Result, Node, TerminalNode, NonterminalNode
-
+from tree import Result, Node, NonterminalNode
+from queries.num import float_to_text
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS: Sequence[str] = [
@@ -332,7 +331,7 @@ QCurAmountConversion →
 
 
 def parse_num(num_str: str) -> Optional[Union[int, float]]:
-    """ Parse Icelandic number string to float or int """
+    """Parse Icelandic number string to float or int"""
     num = None
     try:
         # Handle numbers w. Icelandic decimal places ("17,2")
@@ -351,6 +350,16 @@ def parse_num(num_str: str) -> Optional[Union[int, float]]:
     return num
 
 
+def add_num(num, result) -> None:
+    """Add a number to accumulated number args"""
+    if "numbers" not in result:
+        result.numbers = []
+    if isinstance(num, str):
+        result.numbers.append(parse_num(num))
+    else:
+        result.numbers.append(num)
+
+
 def add_currency(curr: str, result: Result) -> None:
     if "currencies" not in result:
         result.currencies = []
@@ -358,7 +367,7 @@ def add_currency(curr: str, result: Result) -> None:
 
 
 def QCurrency(node: Node, params: QueryStateDict, result: Result) -> None:
-    """ Currency query """
+    """Currency query"""
     result.qtype = "Currency"
     result.qkey = result._canonical
 
@@ -442,7 +451,7 @@ _CURR_CACHE_TTL = 3600  # seconds
 
 @cachetools.cached(cachetools.TTLCache(1, _CURR_CACHE_TTL))
 def _fetch_exchange_rates() -> Optional[Dict[str, float]]:
-    """ Fetch exchange rate data from apis.is and cache it. """
+    """Fetch exchange rate data from apis.is and cache it."""
     res = query_json_api(_CURR_API_URL)
     if not isinstance(res, dict) or "results" not in res:
         logging.warning(
@@ -457,7 +466,7 @@ def _fetch_exchange_rates() -> Optional[Dict[str, float]]:
 
 
 def _query_exchange_rate(curr1: str, curr2: str) -> Optional[float]:
-    """ Returns exchange rate of two ISO 4217 currencies """
+    """Returns exchange rate of two ISO 4217 currencies"""
     # print("Gengi {0} gagnvart {1}".format(curr1, curr2))
 
     # A currency is always worth 1 of itself
@@ -481,8 +490,15 @@ def _query_exchange_rate(curr1: str, curr2: str) -> Optional[float]:
     return None
 
 
+def _clean_voice_answer(s: str) -> str:
+    """Clean up potential errors in speech recognised text."""
+    s = s.replace("slot í", "slotí")
+    s = s.replace(" dollars ", " Bandaríkjadals ")
+    return s
+
+
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" in result and "op" in result:
         # Successfully matched a query type
@@ -503,31 +519,38 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             val = _query_exchange_rate(result.currencies[0], "ISK")
             if val is None:
                 val = 1.0
-            suffix = sing_or_plur(val, "krónur", "króna")
+            suffix = "krónur" if is_plural(val) else "króna"
         elif result.op == "convert":
             # 'Hvað eru 100 evrur margar krónur?'
             suffix = result.currency  # 'krónur'
-            verb = "eru"
+            verb = "eru" if is_plural(result.amount) else "er"
             target_currency = result.currencies[1]
             val = _query_exchange_rate(result.currencies[0], result.currencies[1])
             val = val * result.amount if val else None
-            if target_currency == "ISK" and val is not None:
-                # For ISK, round to whole numbers
-                val = round(val, 0)
+            if val:
+                if target_currency == "ISK":
+                    # For ISK, round to whole numbers
+                    val = round(val, 0)
+                else:
+                    val = round(val, 2)
         else:
             raise Exception("Unknown operator: {0}".format(result.op))
 
         if val:
             answer = iceformat_float(val)
             response = dict(answer=answer)
-            voice_answer = "{0} {3} {1}{2}.".format(
-                result.desc, answer, (" " + suffix) if suffix else "", verb
+            voice_answer = "{0} {1} {2}{3}.".format(
+                result.desc,
+                verb,
+                # FIXME: We need to determine currency gender
+                float_to_text(val, case="þf", gender="kvk", comma_null=False),
+                (" " + suffix) if suffix else "",
             ).capitalize()
-            # Clean up voice answer
-            voice_answer = voice_answer.replace("slot í", "slotí")
-            voice_answer = voice_answer.replace(" dollars ", " Bandaríkjadals ")
+            voice_answer = _clean_voice_answer(voice_answer)
             q.set_answer(response, answer, voice_answer)
         else:
+            # FIXME: This error could occur under circumstances where something
+            # other than currency lookup failed. Refactor.
             # Ekki tókst að fletta upp gengi
             q.set_answer(*gen_answer("Ekki tókst að fletta upp gengi gjaldmiðla"))
 

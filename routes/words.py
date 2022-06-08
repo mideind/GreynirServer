@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -43,13 +43,13 @@ from db.queries import WordFrequencyQuery
 
 @routes.route("/words")
 def words():
-    """ Handler for word frequency page. """
+    """Handler for word frequency page."""
     return render_template("words/freq.html", title="Orð")
 
 
 @routes.route("/words_trends")
 def words_trends():
-    """ Handler for word trends page. """
+    """Handler for word trends page."""
     return render_template("words/trends.html", title="Orð")
 
 
@@ -102,8 +102,8 @@ _LINE_COLORS = frozenset(
 def _str2words(
     wstr: str, separate_on_whitespace: bool = False
 ) -> Optional[List[Tuple[str, str]]]:
-    """ Parse string of the form 'w1:cat1, w2:cat2, ...' into a list
-        of word/category tuples. """
+    """Parse string of the form 'w1:cat1, w2:cat2, ...' into a list
+    of word/category tuples."""
     if not wstr:
         return None
     ws = wstr.strip()
@@ -121,20 +121,20 @@ def _str2words(
 
 
 def _words2str(words):
-    """ Create comma-separated string from (word,cat) tuple list,
-        e.g. "[(a,b),(c,d)] -> "a:b, c:d". """
+    """Create comma-separated string from (word,cat) tuple list,
+    e.g. "[(a,b),(c,d)] -> "a:b, c:d"."""
     return ", ".join([":".join(w[:2]) if len(w) >= 2 else w[0] for w in words])
 
 
 def _desc4word(wc):
-    """ Create a human-friendly description string for a word/category tuple. """
+    """Create a human-friendly description string for a word/category tuple."""
     return "{0} ({1})".format(wc[0], CAT_DESC.get(wc[1]))
 
 
 @routes.route("/wordfreq", methods=["GET", "POST"])
 @cache.cached(timeout=60 * 60 * 4, key_prefix="wordfreq", query_string=True)
 def wordfreq():
-    """ Return word frequency chart data for a given time period. """
+    """Return word frequency chart data for a given time period."""
     resp: Dict[str, Any] = dict(err=True)
     # Create datetime objects from query string args
     try:
@@ -247,14 +247,17 @@ def wordfreq():
         for w in words:
             # Look up frequency of word for the given period
             (wd, cat) = w
-            res = WordFrequencyQuery.frequency(
-                wd,
-                cat,
-                date_from,
-                date_to,
-                timeunit=timeunit,
-                enclosing_session=session,
-            ) or []
+            res = (
+                WordFrequencyQuery.frequency(
+                    wd,
+                    cat,
+                    date_from,
+                    date_to,
+                    timeunit=timeunit,
+                    enclosing_session=session,
+                )
+                or []
+            )
             # Generate data and config for chart
             label = "{0} ({1})".format(wd, CAT_DESC.get(cat))
             ds: Dict[str, Any] = dict(label=label, fill=False, lineTension=0)
@@ -273,7 +276,7 @@ def wordfreq():
 
 @routes.route("/wordfreq_details", methods=["GET", "POST"])
 def wordfreq_details():
-    """ Return list of articles containing certain words over a given period. """
+    """Return list of articles containing certain words over a given period."""
     resp: Dict[str, Any] = dict(err=True)
 
     words = _str2words(request.args.get("words") or "")

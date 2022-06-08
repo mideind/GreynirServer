@@ -4,7 +4,7 @@
 
     Counting query response module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -157,7 +157,7 @@ def _gen_count(q: Query, result: Result):
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """ Called when sentence processing is complete """
+    """Called when sentence processing is complete"""
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type

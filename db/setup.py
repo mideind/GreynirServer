@@ -4,7 +4,7 @@
 
     Scraper database initialization module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -238,6 +238,15 @@ ROOTS = [
         0.5,
         "scrapers.default",
         "BaendabladidScraper",
+        True,
+    ),
+    (
+        "https://vb.is/",
+        "vb.is",
+        "Viðskiptablaðið",
+        0.8,
+        "scrapers.default",
+        "VidskiptabladidScraper",
         True,
     ),
 ]

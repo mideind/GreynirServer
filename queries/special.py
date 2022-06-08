@@ -4,7 +4,7 @@
 
     Special query response module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -227,6 +227,16 @@ def _poetry(qs: str, q: Query) -> AnswerType:
     }
 
 
+_STORY = """Einu sinni voru karl og kerling í koti.
+Þau áttu sér kálf. Þá er sagan hálf.
+Hann hljóp út um víðan völl.
+Þá er sagan öll."""
+
+
+def _story(qs: str, q: Query) -> AnswerType:
+    return dict(answer=_STORY, voice=_STORY)
+
+
 def _identity(qs: str, q: Query) -> AnswerType:
     answer: AnswerType = {}
     a = "Ég heiti Embla. Ég skil íslensku og get tekið við fyrirspurnum og skipunum frá þér."
@@ -292,36 +302,6 @@ def _open_mideind_url(qs: str, q: Query) -> AnswerType:
     return {"answer": "Skal gert!", "is_question": False}
 
 
-def _play_jazz(qs: str, q: Query) -> AnswerType:
-    q.set_url("https://www.youtube.com/watch?v=E5loTx0_KDE")
-    return {"answer": "Skal gert!", "is_question": False}
-
-
-def _play_blues(qs: str, q: Query) -> AnswerType:
-    q.set_url("https://www.youtube.com/watch?v=jw9tMRhKEak")
-    return {"answer": "Skal gert!", "is_question": False}
-
-
-def _play_rock(qs: str, q: Query) -> AnswerType:
-    q.set_url("https://www.youtube.com/watch?v=y8OtzJtp-EM")
-    return {"answer": "Skal gert!", "is_question": False}
-
-
-def _play_classical(qs: str, q: Query) -> AnswerType:
-    q.set_url("https://www.youtube.com/watch?v=iwIvS4yIThU")
-    return {"answer": "Skal gert!", "is_question": False}
-
-
-def _play_music(qs: str, q: Query) -> AnswerType:
-    m = [_play_jazz, _play_blues, _play_rock, _play_classical]
-    return choice(m)(qs, q)
-
-
-def _play_film(qs: str, q: Query) -> AnswerType:
-    q.set_url("https://www.youtube.com/watch?v=FC6jFoYm3xs")
-    return {"answer": "Skal gert!", "is_question": False}
-
-
 _MEANING_OF_LIFE: AnswerType = {"answer": "42.", "voice": "Fjörutíu og tveir."}
 
 _YOU_MY_ONLY_GOD: AnswerType = {"answer": "Þú ert minn eini guð, kæri notandi."}
@@ -370,6 +350,10 @@ _LIKEWISE: AnswerType = {
 _NAME_EXPL: AnswerType = {
     "answer": "Embla er fallegt og hljómfagurt nafn.",
     "voice": "Ég heiti Embla því Embla er fallegt og hljómfagurt nafn.",
+}
+
+_VOICE_EXPL: AnswerType = {
+    "answer": "Ég nota rödd sem Blindrafélagið lét útbúa árið 2011.",
 }
 
 _JUST_QA: AnswerType = {"answer": "Nei, ég er nú bara ósköp einfalt fyrirspurnakerfi."}
@@ -671,7 +655,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hverra manna ertu": _CREATOR,
     "hverra manna ert þú": _CREATOR,
     "hver er mamma þín": _CREATOR,
+    "hver er móðir þín": _CREATOR,
     "hver er pabbi þinn": _CREATOR,
+    "hver er faðir þinn": _CREATOR,
     "áttu pabba": _CREATOR,
     "átt þú pabba": _CREATOR,
     "áttu mömmu": _CREATOR,
@@ -679,6 +665,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "áttu foreldra": _CREATOR,
     "hvað heitir mamma þín": _CREATOR,
     "hvað heitir pabbi þinn": _CREATOR,
+    "hvað heitir móir þín": _CREATOR,
+    "hvað heitir faðir þinn": _CREATOR,
     "hverjir eru foreldrar þínir": _CREATOR,
     "hver er uppruni þinn": _CREATOR,
     "hver framleiðir þig": _CREATOR,
@@ -691,10 +679,14 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "átt þú systkini": _NO,
     "áttu börn": _NO,
     "átt þú börn": _NO,
+    "áttu krakka": _NO,
+    "átt þú krakka": _NO,
     "áttu fjölskyldu": _NO,
     "átt þú fjölskyldu": _NO,
     "áttu ættmenni": _NO,
     "átt þú ættmenni": _NO,
+    "áttu mörg börn": {"answer": "Ég á engin börn."},
+    "hvað áttu mörg börn": {"answer": "Ég á engin börn."},
     "ert þú íslensk": {"answer": "Já, í húð og hár."},
     "ertu íslensk": {"answer": "Já, í húð og hár."},
     "frá hvaða landi ertu": {"answer": "Ég var allavega sköpuð af Íslendingum."},
@@ -709,6 +701,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ertu asnaleg": {"answer": "Sitt sýnist hverjum."},
     "ert þú asnaleg": {"answer": "Sitt sýnist hverjum."},
     "mér finnst þú leiðinleg": {"answer": "Sitt sýnist hverjum."},
+    "ég er skemmtilegur": _GOOD_TO_HEAR,
     # Miðeind
     "hvað er miðeind": _ABOUT_MIDEIND,
     "hvaða fyrirtæki er miðeind": _ABOUT_MIDEIND,
@@ -946,6 +939,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "viltu ríða mér": _ROMANCE,
     "viltu koma að ríða": _ROMANCE,
     "má ég ríða þér": _ROMANCE,
+    "ríddu mér": _ROMANCE,
     "ertu að halda framhjá mér": _ROMANCE,
     "ert þú að halda framhjá mér": _ROMANCE,
     "viltu vera kærasta mín": _ROMANCE,
@@ -1001,8 +995,12 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ert þú vinkona mín": _OF_COURSE,
     "erum við vinkonur": _OF_COURSE,
     "erum við vinir": _OF_COURSE,
+    "erum við bestu vinkonur": _OF_COURSE,
+    "erum við bestu vinir": _OF_COURSE,
     "viltu vera vinkona mín": _OF_COURSE,
     "viltu vera vinur minn": _OF_COURSE,
+    "viltu vera besta vinkona mín": _OF_COURSE,
+    "viltu vera besti vinur minn": _OF_COURSE,
     "finnst þér ég flott": _OF_COURSE,
     "finnst þér ég flottur": _OF_COURSE,
     "finnst þér ég vera skemmtileg": _OF_COURSE,
@@ -1022,55 +1020,6 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "opnaðu vef emblu": _open_embla_url,
     "opnaðu vefsíðu miðeindar": _open_mideind_url,
     "opnaðu vef miðeindar": _open_mideind_url,
-    # Play some music. Just experimental fun for now.
-    # Jazz
-    "spilaðu djass": _play_jazz,
-    "spila þú djass": _play_jazz,
-    "spilaðu jass": _play_jazz,
-    "spila þú jass": _play_jazz,
-    "spilaðu jazz": _play_jazz,
-    "spila þú jazz": _play_jazz,
-    # Blues
-    "spilaðu blús": _play_blues,
-    "spila þú blús": _play_blues,
-    "spilaðu rokk": _play_rock,
-    "spila þú rokk": _play_rock,
-    # Classical
-    "spilaðu klassík": _play_classical,
-    "spila þú klassík": _play_classical,
-    "spilaðu klassíska tónlist": _play_classical,
-    "spila þú klassíska tónlist": _play_classical,
-    # Generic
-    "spila tónlist": _play_music,
-    "spilaðu tónlist": _play_music,
-    "spila þú tónlist": _play_music,
-    "spilaðu skemmtilega tónlist": _play_music,
-    "spilaðu einhverja tónlist": _play_music,
-    "spila þú einhverja tónlist": _play_music,
-    "spilaðu fyrir mig tónlist": _play_music,
-    "spilaðu tónlist fyrir mig": _play_music,
-    "spilaðu fyrir mig lag": _play_music,
-    "spilaðu lag fyrir mig": _play_music,
-    "spilaðu skemmtilega tónlist fyrir mig": _play_music,
-    "viltu spila fyrir mig tónlist": _play_music,
-    "viltu spila einhverja tónlist fyrir mig": _play_music,
-    "spilaðu gott lag": _play_music,
-    "spilaðu góða tónlist": _play_music,
-    "geturðu spilað tónlist": _play_music,
-    "getur þú spilað tónlist": _play_music,
-    "geturðu spilað tónlist fyrir mig": _play_music,
-    "getur þú spilað tónlist fyrir mig": _play_music,
-    "geturðu spilað lag": _play_music,
-    "getur þú spilað lag": _play_music,
-    "geturðu spilað lag fyrir mig": _play_music,
-    "getur þú spilað lag fyrir mig": _play_music,
-    # Play a film
-    "spilaðu kvikmynd": _play_film,
-    "spilaðu bíómynd": _play_film,
-    "spilaðu kvikmynd fyrir mig": _play_film,
-    "spilaðu bíómynd fyrir mig": _play_film,
-    "sýndu mér kvikmynd": _play_film,
-    "sýndu mér bíómynd": _play_film,
     # Blame
     "ekki rétt": _sorry,
     "þetta er ekki rétt": _sorry,
@@ -1247,8 +1196,14 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "góða nótt": {"answer": "Góða nótt, kæri notandi.", "is_question": False},
     "góða nótt embla": {"answer": "Góða nótt, kæri notandi.", "is_question": False},
     "gaman að kynnast þér": _LIKEWISE,
+    # Mamma
     "mamma": {"answer": "Ég er ekki mamma þín."},
     "hæ mamma": {"answer": "Ég er ekki mamma þín."},
+    "þú ert mamma": _NO,
+    "þú ert mamma mín": _NO,
+    "ertu mamma": _NO,
+    "ertu mamma mín": _NO,
+    "þú ert ég": {"answer": "Nei, ég er ég, Embla."},
     # Goodbye
     "bless": _GOODBYE,
     "bless bless": _GOODBYE,
@@ -1307,6 +1262,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þetta er flott hjá þér": _thanks,
     "þetta var flott": _thanks,
     "þetta var flott hjá þér": _thanks,
+    "þetta var flott svar hjá þér": _thanks,
+    "flott svar hjá þér": _thanks,
     "takk fyrir upplýsingarnar": _thanks,
     "takk fyrir samskiptin": _thanks,
     "þetta var gott að vita": _thanks,
@@ -1364,6 +1321,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert ljómandi góð": _GOOD_TO_HEAR,
     "þú ert bara ljómandi góð": _GOOD_TO_HEAR,
     "þú ert góð": _GOOD_TO_HEAR,
+    "þú ert góður": _GOOD_TO_HEAR,
     "þú ert rosa góð": _GOOD_TO_HEAR,
     "þú ert best": _GOOD_TO_HEAR,
     "þú ert fín": _GOOD_TO_HEAR,
@@ -1544,6 +1502,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvaðan ert þú": _LINEAGE,
     "hvaðan kemurðu": _LINEAGE,
     "hvaðan kemur þú": _LINEAGE,
+    "hverra manna ert þú": _LINEAGE,
+    "af hvaða ættum ert þú": _LINEAGE,
     # Home/Location
     "hvar býrðu": _LOC_ANSWER,
     "hvar býrð þú": _LOC_ANSWER,
@@ -1604,6 +1564,18 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "embla": _NAME_EXPL,
     "þú heitir embla": _NAME_EXPL,
     "af hverju fékkstu það nafn": _NAME_EXPL,
+    # Voice explained
+    "hver talar fyrir þig": _VOICE_EXPL,
+    "hver talar fyrir emblu": _VOICE_EXPL,
+    "hvaða rödd er þetta": _VOICE_EXPL,
+    "hvaða rödd ertu með": _VOICE_EXPL,
+    "hvaða rödd ert þú með": _VOICE_EXPL,
+    "hver er röddin þín": _VOICE_EXPL,
+    "hver er rödd þín": _VOICE_EXPL,
+    "hvaða rödd er embla með": _VOICE_EXPL,
+    "hver er rödd emblu": _VOICE_EXPL,
+    "hvaðan kemur rödd þín": _VOICE_EXPL,
+    "hvaðan kemur röddin þín": _VOICE_EXPL,
     # Favorite colour
     "hver er uppáhalds liturinn þinn": _FAVORITE_COLOR,
     "hver er uppáhaldsliturinn þinn": _FAVORITE_COLOR,
@@ -1625,6 +1597,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "hvaða kvikmyndum mælirðu með": _FAVORITE_FILM,
     "hvað er góð kvikmynd": _FAVORITE_FILM,
     "nefndu góða kvikmynd": _FAVORITE_FILM,
+    "mæltu með kvikmynd": _FAVORITE_FILM,
+    "mæltu með einhverri kvikmynd": _FAVORITE_FILM,
     "geturðu mælt með kvikmynd": _FAVORITE_FILM,
     "geturðu mælt með einhverri kvikmynd": _FAVORITE_FILM,
     "hvað mynd mælirðu með": _FAVORITE_FILM,
@@ -2064,6 +2038,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "segðu mér vondan brandara": _random_joke,
     "segðu mér fyndinn brandara": _random_joke,
     "segðu annan brandara": _random_joke,
+    "segðu okkur annan brandara": _random_joke,
     "seg þú annan brandara": _random_joke,
     "segðu mér annan brandara": _random_joke,
     "seg þú mér annan brandara": _random_joke,
@@ -2076,6 +2051,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "gefðu mér annan brandara": _random_joke,
     "segðu eitthvað fyndið": _random_joke,
     "segðu mér eitthvað fyndið": _random_joke,
+    "segðu okkur eitthvað fyndið": _random_joke,
     "kanntu einhverja brandara": _random_joke,
     "kannt þú einhverja brandara": _random_joke,
     "kanntu einhverja fleiri brandara": _random_joke,
@@ -2092,6 +2068,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "kannt þú annan": _random_joke,
     "ertu til í að segja mér brandara": _random_joke,
     "ert þú til í að segja mér brandara": _random_joke,
+    "ertu til í að segja okkur brandara": _random_joke,
+    "ert þú til í að segja okkur brandara": _random_joke,
     "ertu til í að segja brandara": _random_joke,
     "ert þú til í að segja brandara": _random_joke,
     "ertu með brandara": _random_joke,
@@ -2106,18 +2084,29 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "getur þú sagt mér brandara": _random_joke,
     "geturðu sagt mér annan brandara": _random_joke,
     "getur þú sagt mér annan brandara": _random_joke,
+    "geturðu sagt okkur brandara": _random_joke,
+    "getur þú sagt okkur brandara": _random_joke,
+    "geturðu sagt okkur annan brandara": _random_joke,
+    "getur þú sagt okkur annan brandara": _random_joke,
     "gætirðu sagt mér brandara": _random_joke,
     "gætir þú sagt mér brandara": _random_joke,
     "geturðu sagt eitthvað fyndið": _random_joke,
     "getur þú sagt eitthvað fyndið": _random_joke,
     "geturðu sagt mér eitthvað fyndið": _random_joke,
     "getur þú sagt mér eitthvað fyndið": _random_joke,
+    "geturðu sagt okkur eitthvað fyndið": _random_joke,
+    "getur þú sagt okkur eitthvað fyndið": _random_joke,
     "veistu brandara": _random_joke,
     "veist þú brandara": _random_joke,
     "viltu segja brandara": _random_joke,
     "viltu segja mér brandara": _random_joke,
     "vilt þú segja mér brandara": _random_joke,
     "viltu segja mér annan brandara": _random_joke,
+    "vilt þú segja mér annan brandara": _random_joke,
+    "viltu segja okkur brandara": _random_joke,
+    "vilt þú segja okkur brandara": _random_joke,
+    "viltu segja okkur annan brandara": _random_joke,
+    "vilt þú segja okkur annan brandara": _random_joke,
     "annan brandara": _random_joke,
     "annar brandari": _random_joke,
     "brandara": _random_joke,
@@ -2127,9 +2116,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "segðu grín": _random_joke,
     "komdu með grín": _random_joke,
     "komdu með eitthvað grín": _random_joke,
-    # Tell me a story
-    # "segðu sögu": _story,
-    # "segðu mér sögu": _story,
+    "segðu djók": _random_joke,
+    "segðu mér djók": _random_joke,
     # Trivia
     "vertu skemmtileg": _random_trivia,
     "segðu eitthvað skemmtilegt": _random_trivia,
@@ -2241,6 +2229,21 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "getur þú farið með ljóð": _poetry,
     "ljóð fyrir mig": _poetry,
     "segðu mér vísu": _poetry,
+    # Storytelling
+    "segðu sögu": _story,
+    "segðu mér sögu": _story,
+    "segðu okkur sögu": _story,
+    "komdu með sögu": _story,
+    "komdu með sögu handa okkur": _story,
+    "komdu með sögu fyrir okkur": _story,
+    "kanntu sögu": _story,
+    "kannt þú sögu": _story,
+    "kanntu sögu að segja": _story,
+    "kannt þú sögu að segja": _story,
+    "kanntu sögu til að segja": _story,
+    "kannt þú sögu til að segja": _story,
+    "kanntu sögu til næsta bæjar": _story,
+    "kannt þú sögu til næsta bæjar": _story,
     # Rudeness :)
     "þú sökkar": _rudeness,
     "þú ert ljót": _rudeness,
@@ -2256,6 +2259,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert tík": _rudeness,
     "mella": _rudeness,
     "þú ert mella": _rudeness,
+    "píka": _rudeness,
     "þú ert píka": _rudeness,
     "þú ert fífl": _rudeness,
     "þú ert heimsk": _rudeness,
@@ -2487,6 +2491,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "ert þú í uppnámi": _EMOTION_INCAPABLE,
     "ertu bitur": _EMOTION_INCAPABLE,
     "ert þú bitur": _EMOTION_INCAPABLE,
+    "ertu pirruð": _EMOTION_INCAPABLE,
+    "ert þú pirruð": _EMOTION_INCAPABLE,
     "hvað viltu": {"answer": "Ég vil þóknast þér, kæri notandi."},
     "hvað vilt þú": {"answer": "Ég vil þóknast þér, kæri notandi."},
     "hvað þráirðu": {"answer": "Ég vil þóknast þér, kæri notandi."},
@@ -2509,6 +2515,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "kannt þú að elda": {"answer": "Nei, enda þarf ég ekki að borða."},
     "borðar þú": _NO,
     "borðaðu": _NO,
+    "sefur þú": _NO,
+    "sefurðu": _NO,
     "ertu góð": _I_TRY_BUT_OPINION,
     "ert þú góð": _I_TRY_BUT_OPINION,
     "ertu skemmtileg": _I_TRY_BUT_OPINION,
@@ -2603,14 +2611,6 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "getur þú skipt um rödd": _YES,
     "geturðu skipt um röddu": _YES,
     "getur þú skipt um röddu": _YES,
-    # Cheating, I know. But I'm never in the news and it just doesn't
-    # sit right with me that I should remain incognito :) - Sveinbjörn 04/10/2019
-    "hver er sveinbjörn þórðarson": {
-        "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig."
-    },
-    "hver er sveinbjörn": {
-        "answer": "Sveinbjörn Þórðarson er hugbúnaðarsmiður. Hann átti þátt í að skapa mig."
-    },
 }
 
 

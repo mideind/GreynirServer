@@ -4,7 +4,7 @@
 
     Image retrieval module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ QUERY_TIMEOUT = 4.0
 
 
 def _server_query(url: str, q: Dict[str, Union[int, str]]) -> Optional[bytes]:
-    """ Query a server via HTTP GET with a URL-encoded query string obtained q """
+    """Query a server via HTTP GET with a URL-encoded query string obtained q"""
     doc = None
     if len(q):
         url += "?" + urllib.parse.urlencode(q)
@@ -88,15 +88,16 @@ _CACHE_EXPIRATION_DAYS = 30
 _NUM_IMG_URLS = 6
 
 # The returned image descriptor tuple
-Img = NamedTuple("Img",
+Img = NamedTuple(
+    "Img",
     [
         ("src", str),
         ("width", int),
         ("height", int),
         ("link", str),
         ("origin", str),
-        ("name", str)
-    ]
+        ("name", str),
+    ],
 )
 
 
@@ -109,7 +110,7 @@ def get_image_url(
     enclosing_session: Optional[Session] = None,
     cache_only: bool = False,
 ) -> Optional[Img]:
-    """ Use Google Custom Search API to obtain an image corresponding to a (person) name """
+    """Use Google Custom Search API to obtain an image corresponding to a (person) name"""
     jdoc = None
     ctype = _CTYPE + size
 
@@ -194,7 +195,7 @@ def get_image_url(
 
 
 def blacklist_image_url(name: str, url: str) -> Optional[Img]:
-    """ Blacklist image URL for a given key """
+    """Blacklist image URL for a given key"""
 
     with SessionContext(commit=True) as session:
         # Verify that URL exists in DB
@@ -215,7 +216,7 @@ def blacklist_image_url(name: str, url: str) -> Optional[Img]:
 
 
 def update_broken_image_url(name: str, url: str) -> Optional[Img]:
-    """ Refetch image URL for name if broken """
+    """Refetch image URL for name if broken"""
 
     with SessionContext() as session:
         # Verify that URL exists in DB
@@ -232,7 +233,7 @@ def update_broken_image_url(name: str, url: str) -> Optional[Img]:
 
 
 def check_image_url(url: str) -> bool:
-    """ Check if image exists at URL by sending HEAD request """
+    """Check if image exists at URL by sending HEAD request"""
     req = urllib.request.Request(url, method="HEAD")
     try:
         response = urllib.request.urlopen(req, timeout=2.0)
@@ -246,7 +247,7 @@ def check_image_url(url: str) -> bool:
 def _blacklisted_urls_for_key(
     key: str, enclosing_session: Optional[Session] = None
 ) -> List[str]:
-    """ Fetch blacklisted urls for a given key """
+    """Fetch blacklisted urls for a given key"""
     with SessionContext(commit=True, session=enclosing_session) as session:
         q = (
             session.query(BlacklistedLink.url)
@@ -258,10 +259,8 @@ def _blacklisted_urls_for_key(
     return []  # Satisfy Pylance
 
 
-def _get_cached_entry(
-    name: str, url: str, enclosing_session: Optional[Session] = None
-):
-    """ Fetch cached entry by key and url """
+def _get_cached_entry(name: str, url: str, enclosing_session: Optional[Session] = None):
+    """Fetch cached entry by key and url"""
     with SessionContext(commit=True, session=enclosing_session) as session:
         # TODO: content column should be converted to jsonb
         # from varchar to query faster & more intelligently
@@ -278,7 +277,7 @@ def _purge_single(
     ctype: Optional[str] = None,
     enclosing_session: Optional[Session] = None,
 ) -> None:
-    """ Remove cache entry """
+    """Remove cache entry"""
     with SessionContext(commit=True, session=enclosing_session) as session:
         filters = [Link.key == key]
         if ctype:
@@ -288,7 +287,7 @@ def _purge_single(
 
 
 def _purge():
-    """ Remove all cache entries """
+    """Remove all cache entries"""
     if input("Purge all cached data? (y/n): ").lower().startswith("y"):
         with SessionContext(commit=True) as session:
             session.query(Link).delete()
@@ -309,7 +308,7 @@ def get_staticmap_image(
     width: int = 180,
     height: int = 180,
 ) -> Optional[BytesIO]:
-    """ Request image from Google Static Maps API, return image data as bytes """
+    """Request image from Google Static Maps API, return image data as bytes"""
     key = read_api_key("GoogleServerKey")
     if not key:
         return None
@@ -331,7 +330,7 @@ def get_staticmap_image(
 
 
 def _test():
-    """ Test image lookup """
+    """Test image lookup"""
     print("Testing...")
     print("Bjarni Benediktsson")
     img = get_image_url("Bjarni Benediktsson")

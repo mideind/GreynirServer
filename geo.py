@@ -1,7 +1,7 @@
 """
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -436,7 +436,7 @@ def _load_us_state_coords() -> Dict[str, List[float]]:
 
 
 def coords_for_us_state_code(code: str) -> Optional[LatLonTuple]:
-    """ Return the coordinates of a US state given the two-char state code. """
+    """Return the coordinates of a US state given the two-char state code."""
     assert len(code) == 2
     state_coords = _load_us_state_coords().get(code)
     if state_coords is not None:
@@ -462,7 +462,7 @@ COUNTRY_DATA_JSONPATH = os.path.join(
 
 
 def _load_country_data() -> Dict[str, Dict[str, Any]]:
-    """ Load country coordinates and ISO country code data from JSON file. """
+    """Load country coordinates and ISO country code data from JSON file."""
     global COUNTRY_DATA
     if COUNTRY_DATA is None:
         with open(COUNTRY_DATA_JSONPATH) as f:
@@ -472,7 +472,7 @@ def _load_country_data() -> Dict[str, Dict[str, Any]]:
 
 
 def continent_for_country(iso_code: str) -> Optional[str]:
-    """ Return two-char continent code, given a two-char country code. """
+    """Return two-char continent code, given a two-char country code."""
     assert len(iso_code) == 2
     iso_code = iso_code.upper()
     data = _load_country_data()  # Lazy-load
@@ -482,7 +482,7 @@ def continent_for_country(iso_code: str) -> Optional[str]:
 
 
 def coords_for_country(iso_code: str) -> Optional[LatLonTuple]:
-    """ Return coordinates for a given country code. """
+    """Return coordinates for a given country code."""
     assert len(iso_code) == 2
     iso_code = iso_code.upper()
     # Lazy-loaded
@@ -527,7 +527,7 @@ def coords_for_street_name(
 
 
 def coords_from_addr_info(info: Optional[Dict[str, float]]) -> Optional[LatLonTuple]:
-    """ Get coordinates from the address dict provided by iceaddr package. """
+    """Get coordinates from the address dict provided by iceaddr package."""
     if info is not None and "lat_wgs84" in info and "long_wgs84" in info:
         return (info["lat_wgs84"], info["long_wgs84"])
     return None
@@ -536,7 +536,7 @@ def coords_from_addr_info(info: Optional[Dict[str, float]]) -> Optional[LatLonTu
 def country_name_for_isocode(
     iso_code: str, lang: str = ICELANDIC_LANG_ISOCODE
 ) -> Optional[str]:
-    """ Return country name for an ISO 3166-1 alpha-2 code. """
+    """Return country name for an ISO 3166-1 alpha-2 code."""
     assert len(iso_code) == 2
     assert len(lang) == 2
     iso_code = iso_code.upper()
@@ -601,7 +601,7 @@ def icelandic_addr_info(
 
 
 def parse_address_string(addrstr: str) -> Dict[str, Any]:
-    """ Break Icelandic address string down to its components. """
+    """Break Icelandic address string down to its components."""
     addr: Dict[str, Any] = {"street": addrstr}
 
     comp = addrstr.split()
@@ -852,7 +852,7 @@ ICELAND_COORDS = (64.9957538607, -18.5739616708)
 
 
 def in_iceland(loc: LatLonTuple, km_radius: float = 300.0) -> bool:
-    """ Check if coordinates are within or very close to Iceland. """
+    """Check if coordinates are within or very close to Iceland."""
     return distance(loc, ICELAND_COORDS) <= km_radius
 
 
@@ -860,12 +860,12 @@ RVK_COORDS = (64.133097, -21.898145)
 
 
 def near_capital_region(loc: LatLonTuple, km_radius: int = 30) -> bool:
-    """ Returns true if location coordinates are within X km of central Rvk """
+    """Returns true if location coordinates are within X km of central Rvk"""
     return distance(loc, RVK_COORDS) < km_radius
 
 
 if __name__ == "__main__":
-    """ Test location info lookup via command line. """
+    """Test location info lookup via command line."""
     name = sys.argv[1] if len(sys.argv) > 1 else None
     kind = sys.argv[2] if len(sys.argv) > 2 else None
 

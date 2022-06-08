@@ -3,7 +3,7 @@
 
     Settings module
 
-    Copyright (C) 2021 Miðeind ehf.
+    Copyright (C) 2022 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -41,21 +41,21 @@ from reynir.basics import changedlocale, sort_strings, ConfigError, LineReader
 
 class UndeclinableAdjectives:
 
-    """ Wrapper around list of undeclinable adjectives """
+    """Wrapper around list of undeclinable adjectives"""
 
     # Set of adjectives
     ADJECTIVES: Set[str] = set()
 
     @classmethod
     def add(cls, wrd):
-        """ Add an adjective """
+        """Add an adjective"""
         cls.ADJECTIVES.add(wrd)
 
 
 class NoIndexWords:
 
-    """ Wrapper around set of word stems and categories that should
-        not be indexed """
+    """Wrapper around set of word stems and categories that should
+    not be indexed"""
 
     SET: Set[Tuple[str, str]] = set()
     _CAT = "so"  # Default category
@@ -67,18 +67,18 @@ class NoIndexWords:
 
     @staticmethod
     def set_cat(cat):
-        """ Set the category for the following word stems """
+        """Set the category for the following word stems"""
         NoIndexWords._CAT = cat
 
     @staticmethod
     def add(stem):
-        """ Add a word stem and its category. Called from the config file handler. """
+        """Add a word stem and its category. Called from the config file handler."""
         NoIndexWords.SET.add((stem, NoIndexWords._CAT))
 
 
 class Settings:
 
-    """ Global settings """
+    """Global settings"""
 
     _lock = threading.Lock()
     loaded = False
@@ -171,7 +171,7 @@ class Settings:
 
     @staticmethod
     def _handle_settings(s: str) -> None:
-        """ Handle config parameters in the settings section """
+        """Handle config parameters in the settings section"""
         a = s.lower().split("=", maxsplit=1)
         par = a[0].strip().lower()
         sval = a[1].strip()
@@ -210,7 +210,7 @@ class Settings:
 
     @staticmethod
     def _handle_undeclinable_adjectives(s: str) -> None:
-        """ Handle list of undeclinable adjectives """
+        """Handle list of undeclinable adjectives"""
         s = s.lower().strip()
         if not s.isalpha():
             raise ConfigError(
@@ -220,7 +220,7 @@ class Settings:
 
     @staticmethod
     def _handle_noindex_words(s: str) -> None:
-        """ Handle no index instructions in the settings section """
+        """Handle no index instructions in the settings section"""
         # Format: category = [cat] followed by word stem list
         a = s.lower().split("=", maxsplit=1)
         par = a[0].strip()
@@ -236,7 +236,7 @@ class Settings:
 
     @staticmethod
     def read(fname: str) -> None:
-        """ Read configuration file """
+        """Read configuration file"""
 
         with Settings._lock:
 
