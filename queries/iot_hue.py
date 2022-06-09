@@ -82,6 +82,9 @@ QUERY_NONTERMINALS = {"QIoT"}
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = f"""
 
+# Todo: add "láttu", "hafðu", "litaðu" functionality.
+# Todo: make the objects of sentences more modular, so that the same structure doesn't need to be written for each action
+
 Query →
     QIoT
 
@@ -93,66 +96,203 @@ QIoTQuery →
     | QIoTSetColor 
     | QIoTIncreaseBrightness 
     | QIoTDecreaseBrightness 
-    # | QIoTMaxBrightness 
-    # | QIoTMinBrightness
+    | QIoTMaxBrightness 
+    | QIoTMinBrightness
+    | QIoTSetScene
 
 QIoTTurnOn ->
     "kveiktu" QIoTLightPhrase
+    | "kveiktu" "á" QIoTLightPhrase
 
 QIoTTurnOff ->
-    "slökktu" QIoTLightPhrase 
+    "slökktu" QIoTLightPhrase
+    | "slökktu" "á" QIoTLightPhrase
 
 QIoTSetColor ->
-    "gerðu" QIoTColorLightPhrase QIoTColorNamePhrase
-    | "gerðu" QIoTLight QIoTColorNamePhrase QIoTGroupNamePhrase?
-    | "gerðu" QIoTColorNamePhrase QIoTGroupNamePhrase?
-    | "breyttu" QIoTColorLightPhrase í QIoTColorNamePhrase
-    | "breyttu" QIoTColorLight í QIoTColorNamePhrase QIoTGroupNamePhrase?
-    | "settu" QIoTColorNamePhrase QIoTColorLightPhrase    
+    QIoTMakeVerb? QIoTMakeColorObject
+    | QIoTSetVerb QIoTSetColorObject
+    | QIoTChangeVerb QIoTChangeColorObject
 
+QIoTMakeColorObject ->
+    QIoTColorLightPhrase "að"? QIoTColorNamePhrase
+    | QIoTColorLight "að"? QIoTColorNamePhrase QIoTGroupNamePhrase?
+    | QIoTColorNamePhrase QIoTGroupNamePhrase?
+    | QIoTColorNamePhrase QIoTLocationPreposition QIoTLightPhrase
+
+QIoTSetColorObject ->
+    QIoTColorLightPhrase "á" QIoTColorNamePhrase
+    | QIoTColorLight "á" QIoTColorNamePhrase QIoTGroupNamePhrase?
+    | "á"? QIoTColorNamePhrase QIoTGroupNamePhrase?
+    | "á"? QIoTColorNamePhrase QIoTLocationPreposition QIoTLightPhrase  
+
+QIoTChangeColorObject ->
+    QIoTColorLightPhrase "í" QIoTColorNamePhrase
+    | QIoTColorLight "í" QIoTColorNamePhrase QIoTGroupNamePhrase?
+    | "í" QIoTColorNamePhrase QIoTGroupNamePhrase?
+    | "í" QIoTColorNamePhrase QIoTLocationPreposition QIoTLightPhrase
+
+# Need to add "gerðu minni birtu" functionality.
 QIoTIncreaseBrightness ->
     QIoTIncrease QIoTBrightness QIoTLightPhrase?
-    | "gerðu" QIoTLightPhrase  QIoTBrighter
+    | QIoTMakeVerb? QIoTMakeBrighterObject
+    # | QIoTSetVerb QIoTSetBrightObject
+
+QIoTMakeBrighterObject -> 
+    QIoTBrightnessLightPhrase QIoTBrighterPhrase
+    | QIoTBrightnessLight QIoTMoreOrBrighter QIoTGroupNamePhrase?
+    | QIoTMoreBrightness QIoTGroupNamePhrase?
+    | QIoTMoreBrightness QIoTLocationPreposition QIoTLightPhrase
+
+# QIoTSetBrightObject ->
+#     QIoTColorLightPhrase "á" QIoTColorNamePhrase
+#     | QIoTColorLight "á" QIoTColorNamePhrase QIoTGroupNamePhrase?
+#     | "á"? QIoTColorNamePhrase QIoTGroupNamePhrase?
+#     | "á"? QIoTColorNamePhrase QIoTLocationPreposition QIoTLightPhrase  
 
 QIoTDecreaseBrightness ->
     QIoTDecrease QIoTBrightness QIoTLightPhrase?
-    | "gerðu" QIoTLightPhrase QIoTDarker
+    | QIoTMakeVerb? QIoTMakeDarkerObject
 
-# QIoTMaxBrightness ->
-#     "stilltu" QIoTLightPhrase 
+QIoTMakeDarkerObject -> 
+    QIoTBrightnessLightPhrase QIoTDarkerPhrase
+    | QIoTBrightnessLight QIoTLessOrDarker QIoTGroupNamePhrase?
+    | QIoTLessOrDarker QIoTGroupNamePhrase?
+    | QIoTLessOrDarker QIoTLocationPreposition QIoTLightPhrase
 
-# QIoTMinBrightness ->
-#     "stilltu" QIoTLightPhrase
+QIoTMaxBrightness ->
+    # ?QIoTMakeVerb QIoTMakeBrightestObject
+    QIoTSetVerb QIoTSetBrightestObject 
 
-QIoTBrighter ->
-    "bjartara"
-    | "ljósara"
+# QIoTMakeBrightestObject -> 
+#     QIoTBrightnessLightPhrase QIoTMoreOrBrighter
+#     | QIoTBrightnessLight QIoTMoreOrBrighter QIoTGroupNamePhrase?
+#     | QIoTMoreBrightness QIoTGroupNamePhrase?
+#     | QIoTMoreBrightness QIoTLocationPreposition QIoTLightPhrase
 
-QIoTDarker ->
-    "dimmara"
-    | "dekkra"
+QIoTSetBrightestObject ->
+    QIoTBrightnessLightPhrase "á" QIoTMostOrBrightest
+    | QIoTBrightnessLight "á" QIoTMostOrHighest QIoTGroupNamePhrase?
+    | "á"? QIoTBrightestPhrase QIoTGroupNamePhrase?
+    | "á"? QIoTBrightestPhrase QIoTLocationPreposition QIoTLightPhrase  
 
+QIoTMinBrightness ->
+    # ?QIoTMakeVerb QIoTMakeBrightestObject
+    QIoTSetVerb QIoTSetDarkestObject 
 
-QIoTIncrease ->
-    "hækkaðu"
-    | "auktu"
+# QIoTMakeDarkestObject -> 
+#     QIoTBrightnessLightPhrase QIoTMoreOrBrighter
+#     | QIoTBrightnessLight QIoTMoreOrBrighter QIoTGroupNamePhrase?
+#     | QIoTMoreBrightness QIoTGroupNamePhrase?
+#     | QIoTMoreBrightness QIoTLocationPreposition QIoTLightPhrase
 
-QIoTDecrease ->
-    "lækkaðu"
-    | "minnkaðu"
+QIoTSetDarkestObject ->
+    QIoTBrightnessLightPhrase "á" QIoTLeastOrDarkest
+    | QIoTBrightnessLight "á" QIoTLeastOrLowest QIoTGroupNamePhrase?
+    | "á"? QIoTDarkestPhrase QIoTGroupNamePhrase?
+    | "á"? QIoTDarkestPhrase QIoTLocationPreposition QIoTLightPhrase  
 
-QIoTBrightness ->
-    'birta'
-    | 'birtustigið'
-    | QIoTLight
+QIoTSetScene ->
+    QIoTMakeVerb QIoTMakeSceneObject
+    | QIoTSetVerb QIoTSetSceneObject
+    | QIoTChangeVerb QIoTChangeSceneObject
+
+QIoTMakeSceneObject ->
+    QIoTSceneLightPhrase "að"? QIoTSceneNamePhrase
+    | QIoTScene "að"? QIoTSceneNamePhrase QIoTGroupNamePhrase?
+    | QIoTSceneNamePhrase QIoTGroupNamePhrase?
+    | QIoTSceneNamePhrase QIoTLocationPreposition QIoTLightPhrase
+
+QIoTSetSceneObject ->
+    QIoTSceneLightPhrase "á" QIoTSceneNamePhrase
+    | QIoTScene "á" QIoTSceneNamePhrase QIoTGroupNamePhrase?
+    | "á"? QIoTSceneNamePhrase QIoTGroupNamePhrase?
+    | "á"? QIoTSceneNamePhrase QIoTLocationPreposition QIoTLightPhrase  
+
+QIoTChangeSceneObject ->
+    QIoTSceneLightPhrase "í" QIoTSceneNamePhrase
+    | QIoTScene "í" QIoTSceneNamePhrase QIoTGroupNamePhrase?
+    | "í" QIoTSceneNamePhrase QIoTGroupNamePhrase?
+    | "í" QIoTSceneNamePhrase QIoTLocationPreposition QIoTLightPhrase
+
+QIoTLeastOrDarkest ->
+    QIoTLeastOrLowest
+    | QIoTDarkestPhrase
+
+QIoTLeastOrLowest ->
+    QIoTLeast
+    | QIoTLowest
+
+QIoTDarkestPhrase ->
+    QIoTDarkest
+    | QIoTLeastOrLowest QIoTBrightness
+    | QIoTMostOrHighest QIoTDarkness
+
+QIoTMostOrBrightest ->
+    QIoTMostOrHighest
+    | QIoTBrightestPhrase
+
+QIoTMostOrHighest ->
+    QIoTMost
+    | QIoTHighest
+
+QIoTBrightestPhrase ->
+    QIoTBrightest
+    | QIoTMostOrHighest QIoTBrightness
+    | QIoTLeastOrLowest QIoTDarkness
+
+QIoTMoreBrightness ->
+    QIoTMoreOrHigher QIoTBrightness
+    | QIoTBrighterPhrase
+
+QIoTMoreOrHigher ->
+    'mikill:lo'_mst
+    | 'hár:lo'_mst
+
+QIoTMoreOrBrighter ->
+    QIoTMore
+    | QIoTBrighterPhrase
+
+QIoTBrighterPhrase ->
+    QIoTBrighter
+    | QIoTMore QIoTBright
+    | QIoTLess QIoTDark
+
+QIoTLessOrDarker ->
+    QIoTDarker
+    | QIoTLess
+    | QIoTLess QIoTBright
+    | QIoTMore QIoTDark
+
+QIoTLessOrDarker ->
+    QIoTLess
+    | QIoTDarkerPhrase
+
+QIoTDarkerPhrase ->
+    QIoTDarker
+    | QIoTMore QIoTDark
+    | QIoTLess QIoTBright
+
+QIoTBrightnessLightPhrase ->
+    QIoTBrightnessLight QIoTGroupNamePhrase?
+    | QIoTGroupName
+
+QIoTBrightnessLight ->
+    QIoTBrightness? QIoTLight
+    | QIoTBrightness "á" QIoTLight
+    | QIoTBrightness
 
 QIoTColorLightPhrase ->
     QIoTColorLight QIoTGroupNamePhrase?
-    | QIoTGroupNamePhrase
+    | QIoTGroupName
 
+# Separate cases for "lit ljóssins" and "litinn á ljósinu", to be precise. But it is not ideal as is
 QIoTColorLight ->
     QIoTColor? QIoTLight
+    | QIoTColor "á" QIoTLight
     | QIoTColor
+
+QIoTSceneLightPhrase ->
+    QIoTScene QIoTGroupNamePhrase
 
 QIoTLightPhrase ->
     QIoTLight QIoTGroupNamePhrase?
@@ -160,10 +300,8 @@ QIoTLightPhrase ->
 
 # tried making this 'ljós:no' to avoid ambiguity, but all queries failed as a result
 QIoTLight ->
-    'ljós'
-
-QIoTColor ->
-    'litur'
+    QIoTLightWord
+    | QIoTLightName
 
 QIoTColorName ->
     {" | ".join(f"'{color}:lo'" for color in _COLORS.keys())}
@@ -171,17 +309,25 @@ QIoTColorName ->
 QIoTColorNamePhrase ->
     QIoTColor? QIoTColorName
     | QIoTColorName QIoTColor?
+    | QIoTColorName QIoTLight?
 
-QIoTColorNamePhrase ->
-    QIoTColor? QIoTColorName
-    | QIoTColorName QIoTColor?
+QIoTSceneName ->
+    no
+
+QIoTSceneNamePhrase ->
+    QIoTScene? QIoTSceneName
+    | QIoTSceneName QIoTScene?
+    | QIoTSceneName QIoTLight?
 
 QIoTGroupNamePhrase ->
     QIoTLocationPreposition QIoTGroupName
 
-#The Nl, noun phrase, is too greedy, e.g. parsing "ljósin í eldhúsinu" as the group name.
+# The Nl, noun phrase, is too greedy, e.g. parsing "ljósin í eldhúsinu" as the group name.
 # But no, noun, is too strict, e.g. "herbergið hans Loga" could be a user-made group name. 
 QIoTGroupName ->
+    no
+
+QIoTLightName ->
     no
 
 QIoTLocationPreposition ->
@@ -200,6 +346,105 @@ QIoTLocationPrepositionFirstPart ->
 QIoTLocationPrepositionSecondPart ->
     "á" | "í"
 
+QIoTBright ->
+    'bjartur:lo'_fst 
+    | 'ljós:lo'_fst
+    | "Bjart"
+    | "bjart"
+
+QIoTDarkest ->
+    'dimmur:lo'_evb
+    | 'dimmur:lo'_esb
+    | 'dökkur:lo'_evb
+    | 'dökkur:lo'_esb
+
+QIoTLeast ->
+    'lítill:lo'_evb
+    | 'lítill:lo'_esb
+    | 'lítið:ao'_est
+
+QIoTLowest ->
+    'lágur:lo'_evb
+    | 'lágur:lo'_esb
+
+QIoTBrightest ->
+    'bjartur:lo'_evb
+    | 'bjartur:lo'_esb
+    | 'ljós:lo'_evb
+    | 'ljós:lo'_esb
+
+QIoTMost ->
+    'mikill:lo'_evb
+    | 'mikill:lo'_esb
+    | 'mikið:ao'_est
+
+QIoTHighest ->
+    'hár:lo'_evb
+    | 'hár:lo'_esb
+
+QIoTBrighter ->
+    'bjartur:lo'_mst
+    | 'ljós:lo'_mst
+
+QIoTDark ->
+    'dimmur:lo'_fst 
+    | 'dökkur:lo'_fst
+
+QIoTDarker ->
+    'dimmur:lo'_mst
+    | 'dökkur:lo'_mst
+
+QIoTLessOrLower ->
+    'lítill:lo'_mst
+    | 'lágur:lo'_mst
+
+QIoTIncrease ->
+    'hækka:so'_bh
+    | 'auka:so'_bh
+
+QIoTDecrease ->
+    'lækka:so'_bh
+    | 'minnka:so'_bh
+
+QIoTMore ->
+    "meiri"
+    | "meira"
+
+QIoTLess ->
+    "minni"
+    | "minna"
+
+QIoTSetVerb ->
+    'setja:so'_bh
+    | 'stilla:so'_bh
+
+QIoTMakeVerb ->
+    'gera:so'_bh
+
+QIoTChangeVerb ->
+    'breyta:so'_bh
+
+QIoTLightWord ->
+    'ljós'
+    | 'lýsing'
+
+QIoTColor ->
+    'litur'
+    | 'litblær'
+    | 'blær'
+
+QIoTScene ->
+    'sena'
+    | 'stemning'
+    | 'stemming'
+    | 'stemmning'
+
+QIoTDarkness ->
+    'myrkur'
+
+QIoTBrightness ->
+    'birta'
+    | 'birtustig'
 """
 
 
@@ -252,14 +497,50 @@ def QIoTDecreaseBrightness(node: Node, params: QueryStateDict, result: Result) -
         result["hue_obj"]["bri_inc"] = -64
 
 
+def QIoTMaxBrightness(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.action = "decrease_brightness"
+    if "hue_obj" not in result:
+        result["hue_obj"] = {"bri": 255}
+    else:
+        result["hue_obj"]["bri"] = 255
+
+
+def QIoTMinBrightness(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.action = "decrease_brightness"
+    if "hue_obj" not in result:
+        result["hue_obj"] = {"bri": 0}
+    else:
+        result["hue_obj"]["bri"] = 0
+
+
+def QIoTSetScene(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.action = "set_scene"
+    scene_name = result.get("scene_name", None)
+    print(scene_name)
+    if scene_name is not None:
+        if "hue_obj" not in result:
+            result["hue_obj"] = {"on": True, "scene": scene_name}
+        else:
+            result["hue_obj"]["scene"] = scene_name
+            result["hue_obj"]["on"] = True
+
+
 def QIoTColorName(node: Node, params: QueryStateDict, result: Result) -> None:
     result["color_name"] = (
         node.first_child(lambda x: True).string_self().strip("'").split(":")[0]
     )
 
 
+def QIoTSceneName(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["scene_name"] = result._indefinite
+
+
 def QIoTGroupName(node: Node, params: QueryStateDict, result: Result) -> None:
     result["group_name"] = result._indefinite
+
+
+def QIoTLightName(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["light_name"] = result._indefinite
 
 
 # Convert color name into hue
@@ -307,9 +588,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     q.set_qtype(result.qtype)
 
     try:
-        group_name = result.get("group_name", "")
+        # kalla í javascripts stuff
+        light_or_group_name = result.get("light_name", result.get("group_name", ""))        
         color_name = result.get("color_name", "")
-        print("GROUP NAME:", group_name)
+        print("GROUP NAME:", light_or_group_name)
         print("COLOR NAME:", color_name)
         print(result.hue_obj)
         q.set_answer(
@@ -329,7 +611,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             + read_jsfile("IoT_Embla/Philips_Hue/lights.js")
             + read_jsfile("IoT_Embla/Philips_Hue/set_lights.js")
         )
-        js += f"syncSetLights('{group_name}', '{json.dumps(result.hue_obj)}');"
+        js += f"syncSetLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
         q.set_command(js)
     except Exception as e:
         logging.warning("Exception while processing random query: {0}".format(e))

@@ -55,6 +55,11 @@ function getAllGroups(hub_ip = BRIDGE_IP, username = USERNAME) {
         .then((resp) => resp.json());
 }
 
+function getAllScenes(hub_ip = "192.168.1.68", username = "q2jNarhGHO9izO0xZZXcoww5GYANGi6mZyJYgMdL") {
+    return fetch(`http://${hub_ip}/api/${username}/scenes`)
+        .then((resp) => resp.json())
+}
+
 function getCurrentState(id) {
     return fetch(`http://${BRIDGE_IP}/api/${USERNAME}/lights/${id}`)
         .then((resp) => resp.json());
