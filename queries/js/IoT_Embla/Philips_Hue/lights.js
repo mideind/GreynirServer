@@ -1,9 +1,9 @@
-
+"use strict";
 
 function changeBrightness() {
-    var sliderValue = document.getElementById("brightness_slider").value;
+    let sliderValue = document.getElementById("brightness_slider").value;
     console.log(sliderValue);
-    
+
     fetch(`http://${BRIDGE_IP}/api/${USERNAME}/lights/1/state`, {
         method: "PUT",
         body: JSON.stringify({ bri: Number(sliderValue)})
@@ -18,8 +18,8 @@ function changeBrightness() {
 }
 
 function changeColor() {
-    xValue = Number(document.getElementById("color_x").value)
-    yValue = Number(document.getElementById("color_y").value)
+    let xValue = Number(document.getElementById("color_x").value);
+    let yValue = Number(document.getElementById("color_y").value);
     console.log(xValue, yValue);
 
     if(xValue === undefined || yValue === undefined || xValue > 1 || xValue < 0 || yValue > 1 || yValue < 0) {
@@ -27,7 +27,7 @@ function changeColor() {
     }
     else {
         document.getElementById("color_error").innerHTML = "";
-        colorValue = [Number(xValue), Number(yValue)]
+        let colorValue = [Number(xValue), Number(yValue)]
         console.log(colorValue);
         fetch(`http://${BRIDGE_IP}/api/${USERNAME}/lights/1/state`, {
             method: "PUT",
@@ -42,31 +42,30 @@ function changeColor() {
             });
     }
 
-}  
+}
 
 
 function getAllLights(hub_ip = BRIDGE_IP, username = USERNAME) {
     return fetch(`http://${hub_ip}/api/${username}/lights`)
-        .then((resp) => resp.json())
+        .then((resp) => resp.json());
 }
 
 function getAllGroups(hub_ip = BRIDGE_IP, username = USERNAME) {
     return fetch(`http://${hub_ip}/api/${username}/groups`)
-        .then((resp) => resp.json())
+        .then((resp) => resp.json());
 }
 
 function getCurrentState(id) {
     return fetch(`http://${BRIDGE_IP}/api/${USERNAME}/lights/${id}`)
-        .then((resp) => resp.json())
+        .then((resp) => resp.json());
 }
-
 
 async function test(){
     console.log(getAllGroups())
     var lights = await getAllLights();
     var groups = await getAllGroups();
-    console.log("lights:", lights)
-    console.log("groups:", groups)
+    console.log("lights:", lights);
+    console.log("groups:", groups);
 }
 
 

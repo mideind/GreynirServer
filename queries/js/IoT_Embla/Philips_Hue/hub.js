@@ -10,7 +10,7 @@ async function findHub() {
     return fetch(`https://discovery.meethue.com`)
         .then((resp) => resp.json())
         .then((obj) => {
-            console.log(obj)
+            console.log(obj);
             return(obj);
         })
         .catch((err) => {
@@ -19,7 +19,7 @@ async function findHub() {
 }
 
 async function createNewDeveloper(ipAddress) {
-    console.log("create new developer")
+    console.log("create new developer");
     const body = JSON.stringify({
         'devicetype': 'mideind_hue_communication#smartdevice'
     });
@@ -29,7 +29,7 @@ async function createNewDeveloper(ipAddress) {
     })
         .then((resp) => resp.json())
         .then((obj) => {
-            return(obj);
+            return(obj[0]);
         })
         .catch((err) => {
             console.log(err);
@@ -38,7 +38,7 @@ async function createNewDeveloper(ipAddress) {
 
 
 async function storeDevice(data, requestURL) {
-    console.log("store device")
+    console.log("store device");
     return fetch(`http://${requestURL}/register_query_data.api`, {
         method: "POST",
         body: JSON.stringify(data),
@@ -57,13 +57,13 @@ async function storeDevice(data, requestURL) {
 
 // clientID = "82AD3C91-7DA2-4502-BB17-075CEC090B14", requestURL = "192.168.1.68")
 async function connectHub(clientID, requestURL) {
-    console.log("connect hub")
+    console.log("connect hub");
     let deviceInfo = await findHub();
-    console.log("device info: ", deviceInfo.internalipaddress)
+    console.log("device info: ", deviceInfo);
 
     try {
         let username = await createNewDeveloper(deviceInfo.internalipaddress);
-        console.log("username: ",username)
+        console.log("username: ",username);
         if (!username.success) {
             return 'Ýttu á \'Philips\' takkann á tengiboxinu og reyndu aftur';
         }
@@ -83,7 +83,7 @@ async function connectHub(clientID, requestURL) {
         };
 
         const result = await storeDevice(data, requestURL);
-        console.log("result: ", result)
+        console.log("result: ", result);
         return 'Tenging við snjalltæki tókst';
     } catch(error) {
         console.log(error);
