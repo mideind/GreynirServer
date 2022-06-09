@@ -38,7 +38,7 @@ QYuleLadId/fall →
     | QYuleLadName/fall
 
 QYuleLadName/fall →
-    {0}
+    {yulelad_names}
 
 QYuleSuffix →
     "til" "byggða"

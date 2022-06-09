@@ -139,8 +139,9 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QYuleQuery"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = read_grammar_file("yulelads").format(
-    " | ".join("'{0}'/fall".format(name) for name in _YULE_LADS_BY_NAME.keys())
+GRAMMAR = read_grammar_file(
+    "yulelads",
+    yulelad_names=" | ".join("'{0}'/fall".format(name) for name in _YULE_LADS_BY_NAME.keys())
 )
 
 
