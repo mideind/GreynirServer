@@ -43,7 +43,7 @@ const books = [
   })
   
   // 3. Now search!
-  console.log(fuse.search('steve'))
+  // console.log(fuse.search('steve'))
 //   console.log(fuseLights.search('lita'))
   
   // Output:
