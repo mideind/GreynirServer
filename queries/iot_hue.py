@@ -23,15 +23,27 @@
 
 """
 
+
 from typing import Dict, Mapping, Optional, cast
+from typing_extensions import TypedDict
 
 import logging
 import random
 import json
+import flask
 
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_jsfile
 from tree import Result, Node
+
+
+class SmartLights(TypedDict):
+    selected_light: str
+    philips_hue: Dict[str, str]
+
+
+class DeviceData(TypedDict):
+    smartlights: SmartLights
 
 
 _IoT_QTYPE = "IoT"
@@ -551,12 +563,33 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
+    host = flask.request.host
+    smartdevice_type = "smartlights"
+
+    # Fetch relevant data from the device_data table to perform an action on the lights
+    device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
+
+    selected_light: Optional[str] = None
+    hue_credentials: Optional[Dict[str, str]] = None
+    if device_data is not None and smartdevice_type in device_data:
+        dev = device_data[smartdevice_type]
+        assert dev is not None
+        selected_light = dev.get("selected_light")
+        hue_credentials = dev.get("philips_hue")
+        bridge_ip = hue_credentials.get("ipAddress")
+        username = hue_credentials.get("username")
+
+    if not device_data or not hue_credentials:
+        answer = "Snjalltæki hafa ekki verið sett upp"
+        q.set_answer(*gen_answer(answer))
+        return
+
     # Successfully matched a query type
     q.set_qtype(result.qtype)
 
     try:
         # kalla í javascripts stuff
-        light_or_group_name = result.get("light_name", result.get("group_name", ""))
+        light_or_group_name = result.get("light_name", result.get("group_name", ""))        
         color_name = result.get("color_name", "")
         print("GROUP NAME:", light_or_group_name)
         print("COLOR NAME:", color_name)
@@ -573,12 +606,13 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 # + str(result.hue_obj.get("hue", "enginn litur"))
             )
         )
-        js = read_jsfile("IoT_Embla/Philips_Hue/lights.js") + read_jsfile(
-            "IoT_Embla/Philips_Hue/set_lights.js"
+        js = (
+            f"var BRIDGE_IP = '{bridge_ip}';var USERNAME = '{username}';"
+            + read_jsfile("IoT_Embla/Philips_Hue/lights.js")
+            + read_jsfile("IoT_Embla/Philips_Hue/set_lights.js")
         )
         js += f"syncSetLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
         q.set_command(js)
-        # print(js)
     except Exception as e:
         logging.warning("Exception while processing random query: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))
