@@ -57,7 +57,7 @@ async function setLights(query, state){
     }
     // Send data to API
     let url = idObject.url
-    console.log(state)
+    console.log(state, url)
     fetch(`http://${BRIDGE_IP}/api/${USERNAME}/${url}`, {
         method: "PUT",
         body: state,
