@@ -565,9 +565,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     host = flask.request.host
     smartdevice_type = "smartlights"
-
+    print("client id", q.client_id)
     # Fetch relevant data from the device_data table to perform an action on the lights
     device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
+    print(device_data)
 
     selected_light: Optional[str] = None
     hue_credentials: Optional[Dict[str, str]] = None

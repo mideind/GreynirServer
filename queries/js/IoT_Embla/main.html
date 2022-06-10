@@ -10,7 +10,8 @@
         <script src="./Philips_Hue/hub.js"></script>
         <script src="./Philips_Hue/scenes.js"></script>
         <script src="./Philips_Hue/set_lights.js"></script>
-        <script src="./Philips_Hue/fuse_test.js"></script>
+        <script src="./Philips_Hue/fuse_search.js"></script>
+        
     </head>
     <body style='margin: 50px 150px'>
         <main role="main">
@@ -35,23 +36,36 @@
             </div>
 
             <div class="get_all_lights_and_groups">
-                <button type="submit" onclick="test();">Get all lights and groups</button>
+                <button type="submit" onclick="getAllLightsAndGroupsFromHTML();">Get all lights and groups</button>
             </div>
             <div class="connect_hub_div">
                 <button type="submit" onclick="findHub();">Find hub</button>
-                <button type="submit" onclick="connectHub();">Test connect hub</button>
+                <button type="submit" onclick="syncConnectHub();">Test connect hub</button>
             </div>
             <div class="get_all_scenes">
                 <button type="submit" onclick="getAllScenes();">Get all scenes</button>
             </div>
             <div class="setLightsDiv">
                 <p style="font-family:'Courier New', Courier, monospace">Brightness increase/decrease</p>
-                <label for="queryInput" style="font-family: Arial, Helvetica, sans-serif">Query</label>
-                <input type="text" size="10" id="queryInput">
+                <!-- <label for="queryInput" style="font-family: Arial, Helvetica, sans-serif">Query</label>
+                <input type="text" size="10" id="queryInput"> -->
                 <label for="brightness" style="font-family: Arial, Helvetica, sans-serif" size="50">Brightness (increase/decrease)</label>
                 <input type="text" size="20" id="brightnessInput">
                 <button type="submit" onclick="setLightsFromHTML();">Set light</button>
                 <p id="color_error" style="color:red; font-family: Arial, Helvetica, sans-serif"></p>
+            </div>
+            <div class="sceneTestDiv">
+                <button type="submit" onclick="epliSceneTest();">Test "epli" scene</button>
+            </div>
+            <br>
+            <div class="queryTestDiv">
+                <label for="queryInput" style="font-family: Arial, Helvetica, sans-serif" size="50">Query</label>
+                <input type="text" size="10" id="queryInput">
+                <label for="boolInput" style="font-family: Arial, Helvetica, sans-serif" size="50">true / false</label>
+                <input type="text" size="10" id="boolInput">
+                <label for="sceneInput" style="font-family: Arial, Helvetica, sans-serif" size="50">scene</label>
+                <input type="text" size="10" id="sceneInput">
+                <button type="submit" onclick="queryTest();">Query test</button>
             </div>
 
             

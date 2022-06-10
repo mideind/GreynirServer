@@ -48,12 +48,12 @@ function changeColor() {
 function getAllLights(hub_ip = BRIDGE_IP, username = USERNAME) {
     return fetch(`http://${hub_ip}/api/${username}/lights`)
         .then((resp) => resp.json());
-}
+};
 
 function getAllGroups(hub_ip = BRIDGE_IP, username = USERNAME) {
     return fetch(`http://${hub_ip}/api/${username}/groups`)
         .then((resp) => resp.json());
-}
+};
 
 function getAllScenes(hub_ip = "192.168.1.68", username = "q2jNarhGHO9izO0xZZXcoww5GYANGi6mZyJYgMdL") {
     return fetch(`http://${hub_ip}/api/${username}/scenes`)
@@ -63,14 +63,13 @@ function getAllScenes(hub_ip = "192.168.1.68", username = "q2jNarhGHO9izO0xZZXco
 function getCurrentState(id) {
     return fetch(`http://${BRIDGE_IP}/api/${USERNAME}/lights/${id}`)
         .then((resp) => resp.json());
-}
+};
 
-async function test(){
-    console.log(getAllGroups())
+async function getAllLightsAndGroupsFromHTML(){
     var lights = await getAllLights();
     var groups = await getAllGroups();
     console.log("lights:", lights);
     console.log("groups:", groups);
-}
+};
 
 
