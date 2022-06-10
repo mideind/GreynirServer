@@ -1,12 +1,12 @@
 "use strict";
 
 async function findHub() {
-    let hubObj = new Object()
-    hubObj.id = "ecb5fafffe1be1a4"
-    hubObj.internalipaddress = "192.168.1.68"
-    hubObj.port = "443"
-    console.log(hubObj)
-    return hubObj
+    // let hubObj = new Object()
+    // hubObj.id = "ecb5fafffe1be1a4"
+    // hubObj.internalipaddress = "192.168.1.68"
+    // hubObj.port = "443"
+    // console.log(hubObj)
+    // return hubObj
     return fetch(`https://discovery.meethue.com`)
         .then((resp) => resp.json())
         .then((obj) => {
@@ -16,7 +16,7 @@ async function findHub() {
         .catch((err) => {
             console.log("No smart device found!");
         });
-}
+};
 
 async function createNewDeveloper(ipAddress) {
     console.log("create new developer");
@@ -34,7 +34,7 @@ async function createNewDeveloper(ipAddress) {
         .catch((err) => {
             console.log(err);
         });
-}
+};
 
 
 async function storeDevice(data, requestURL) {
@@ -53,7 +53,7 @@ async function storeDevice(data, requestURL) {
         .catch((err) => {
             console.log("Error while storing user");
         });
-}
+};
 
 // clientID = "82AD3C91-7DA2-4502-BB17-075CEC090B14", requestURL = "192.168.1.68")
 async function connectHub(clientID, requestURL) {
@@ -90,9 +90,11 @@ async function connectHub(clientID, requestURL) {
         console.log(error);
         return 'Ekki tókst að tengja snjalltæki';
     }
-}
+};
 
-function syncConnectHub(clientID, requestURL) {
-    connectHub(clientID, requestURL);
+function syncConnectHub() {
+    let clientID = 'AB8C8D7E-20F5-4772-BD69-313EA9DAFBD8'
+    let requestURl = '192.168.1.70:5000'
+    connectHub(clientID, requestURl);
     return "blabla";
-}
+};

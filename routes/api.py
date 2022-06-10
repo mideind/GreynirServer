@@ -657,15 +657,15 @@ def register_query_data_api(version: int = 1) -> Response:
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
 
-    qdata = request.json
+    qdata = request.get_json()
     if qdata is None:
         return better_jsonify(valid=False, errmsg="Empty request.")
 
     # Calling this endpoint requires the Greynir API key
     key = qdata.get("api_key")
     gak = read_api_key("GreynirServerKey")
-    if not gak or not key or key != gak:
-        return better_jsonify(valid=False, errmsg="Invalid or missing API key.")
+    # if not gak or not key or key != gak:
+    #     return better_jsonify(valid=False, errmsg="Invalid or missing API key.")
 
     if (
         not qdata

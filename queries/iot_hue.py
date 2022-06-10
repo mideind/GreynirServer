@@ -34,6 +34,7 @@ from typing_extensions import TypedDict
 import logging
 import random
 import json
+import flask
 
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_jsfile
