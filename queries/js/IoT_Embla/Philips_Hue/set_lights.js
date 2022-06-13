@@ -1,8 +1,8 @@
 "use strict";
 
 // Constants to be used when setting lights from HTML
-var BRIDGE_IP = "192.168.1.68";
-var USERNAME = "q2jNarhGHO9izO0xZZXcoww5GYANGi6mZyJYgMdL";
+// var BRIDGE_IP = "192.168.1.68";
+// var USERNAME = "p3obluiXT13IbHMpp4X63ZvZnpNRdbqqMt723gy2";
 
 // TODO: Implement a hotfix for Ikea Tradfri bulbs, since it can only take one argument at a time
 /* Gets a target for the given query and sets the state of the target to the given state using a fetch request.
@@ -29,6 +29,7 @@ function setLights(query, state) {
         }
         // Get the target object for the given query
         let targetObject = getTargetObject(query, allLights, allGroups);
+        console.log("targetObject: ", targetObject);
         if (targetObject === undefined) {
             return "Ekki tókst að finna ljós";
         }
@@ -111,6 +112,7 @@ function queryTestFromHTML() {
     let query = document.getElementById("queryInput").value;
     let bool = document.getElementById("boolInput").value;
     let scene = document.getElementById("sceneInput").value;
+    console.log(query);
     if (scene === "") {
         setLights(query, `{"on": ${bool}}`);
     } else {

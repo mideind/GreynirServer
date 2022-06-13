@@ -573,34 +573,42 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
-    # host = str(flask.request.host)
-    # smartdevice_type = "smartlights"
-    # client_id = str(q.client_id)
+    host = str(flask.request.host)
+    print("host: ", host)
+    smartdevice_type = "smartlights"
+    client_id = str(q.client_id)
+    print("client_id:", client_id)
 
-    # # Fetch relevant data from the device_data table to perform an action on the lights
-    # device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
-    # print(device_data)
+    # Fetch relevant data from the device_data table to perform an action on the lights
+    device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
+    print("device data :", device_data)
 
-    # selected_light: Optional[str] = None
-    # hue_credentials: Optional[Dict[str, str]] = None
-    # if device_data is not None and smartdevice_type in device_data:
-    #     dev = device_data[smartdevice_type]
-    #     assert dev is not None
-    #     selected_light = dev.get("selected_light")
-    #     hue_credentials = dev.get("philips_hue")
-    #     bridge_ip = hue_credentials.get("ipAddress")
-    #     username = hue_credentials.get("username")
+    selected_light: Optional[str] = None
+    hue_credentials: Optional[Dict[str, str]] = None
+    
 
-    # if not device_data or not hue_credentials:
+    if device_data is not None and smartdevice_type in device_data:
+        dev = device_data[smartdevice_type]
+        assert dev is not None
+        selected_light = dev.get("selected_light")
+        hue_credentials = dev.get("philips_hue")
+        bridge_ip = hue_credentials.get("ipAddress")
+        username = hue_credentials.get("username")
+        
 
-    #     js = read_jsfile("IoT_Embla/Philips_Hue/hub.js")
-    #     js += f"syncConnectHub('{host}','{client_id}');"
-    #     q.set_answer(*gen_answer("blabla"))
-    #     q.set_command(js)
-    #     return
+    if not device_data or not hue_credentials:
+
+        js = read_jsfile("IoT_Embla/Philips_Hue/hub.js")
+        js += f"syncConnectHub('{client_id}','{host}');"
+        q.set_answer(*gen_answer("Reyndi að búa til user"))
+        q.set_command(js)
+        return
 
     # Successfully matched a query type
-
+    print("bridge_ip: ", bridge_ip)
+    print("username: ", username)
+    print("selected light :", selected_light)
+    print("hue credentials :", hue_credentials)
     q.set_qtype(result.qtype)
 
     try:
@@ -624,14 +632,16 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         )
         js = (
             read_jsfile("IoT_Embla/fuse.js")
-            + f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'q2jNarhGHO9izO0xZZXcoww5GYANGi6mZyJYgMdL';"
+            + f"var BRIDGE_IP = '{bridge_ip}';var USERNAME = '{username}';"
             + read_jsfile("IoT_Embla/Philips_Hue/fuse_search.js")
             + read_jsfile("IoT_Embla/Philips_Hue/lights.js")
             + read_jsfile("IoT_Embla/Philips_Hue/set_lights.js")
         )
-        js += f"syncSetLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
+        js += f"setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
         q.set_command(js)
     except Exception as e:
         logging.warning("Exception while processing random query: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))
         raise
+
+    # f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'p3obluiXT13IbHMpp4X63ZvZnpNRdbqqMt723gy2';"

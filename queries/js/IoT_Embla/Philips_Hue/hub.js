@@ -1,12 +1,14 @@
 "use strict";
 
 async function findHub() {
-    // let hubObj = new Object()
-    // hubObj.id = "ecb5fafffe1be1a4"
-    // hubObj.internalipaddress = "192.168.1.68"
-    // hubObj.port = "443"
-    // console.log(hubObj)
-    // return hubObj
+    // let hubArr = [];
+    // let hubObj = new Object();
+    // hubObj.id = "ecb5fafffe1be1a4";
+    // hubObj.internalipaddress = "192.168.1.68";
+    // hubObj.port = "443";
+    // console.log(hubObj);
+    // hubArr.push(hubObj);
+    // return hubArr[0];
     return fetch(`https://discovery.meethue.com`)
         .then((resp) => resp.json())
         .then((obj) => {
@@ -91,9 +93,14 @@ async function connectHub(clientID, requestURL) {
     }
 }
 
-function syncConnectHub() {
-    let clientID = "AB8C8D7E-20F5-4772-BD69-313EA9DAFBD8";
-    let requestURl = "192.168.1.69:5000";
-    connectHub(clientID, requestURl);
-    return "blabla";
+function syncConnectHub(clientID, requestURL) {
+    connectHub(clientID, requestURL);
+    return clientID;
+}
+
+function syncConnectHubFromHTML() {
+    let clientID = "82AD3C91-7DA2-4502-BB17-075CEC090B14";
+    let requestURL = "192.168.1.69:5000";
+    connectHub(clientID, requestURL);
+    return clientID;
 }

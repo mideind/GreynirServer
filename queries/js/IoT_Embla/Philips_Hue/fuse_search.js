@@ -2,6 +2,7 @@ function philipsFuzzySearch(query, data) {
     var newData = Object.keys(data).map(function (key) {
         return { ID: key, info: data[key] };
     });
+    console.log("new data: ", newData);
     var fuse = new Fuse(newData, {
         keys: ["info", "info.name"],
         shouldSort: true,
