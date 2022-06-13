@@ -619,7 +619,9 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             )
         )
         js = (
-            f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'q2jNarhGHO9izO0xZZXcoww5GYANGi6mZyJYgMdL';"
+            read_jsfile("IoT_Embla/fuse.js")
+            + f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'q2jNarhGHO9izO0xZZXcoww5GYANGi6mZyJYgMdL';"
+            + read_jsfile("IoT_Embla/Philips_Hue/fuse_search.js")
             + read_jsfile("IoT_Embla/Philips_Hue/lights.js")
             + read_jsfile("IoT_Embla/Philips_Hue/set_lights.js")
         )
