@@ -1,4 +1,4 @@
-async function philipsFuzzySearch(query, data) {
+function philipsFuzzySearch(query, data) {
     var newData = Object.keys(data).map(function(key) {
       return { ID: key, info: data[key]};
     });

@@ -94,7 +94,7 @@ async function connectHub(clientID, requestURL) {
 
 function syncConnectHub() {
     let clientID = 'AB8C8D7E-20F5-4772-BD69-313EA9DAFBD8'
-    let requestURl = '192.168.1.70:5000'
+    let requestURl = '192.168.1.69:5000'
     connectHub(clientID, requestURl);
     return "blabla";
 };
