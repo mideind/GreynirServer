@@ -987,39 +987,31 @@ def test_stats(client: FlaskClient) -> None:
 def test_sunpos(client: FlaskClient) -> None:
     """Solar position module"""
 
-    timings = r"((á|í) morgun|í dag|í kvöld|í nótt|í gær)"
-
     json = qmcall(client, {"q": "hvenær reis sólin í dag?"}, "SunPosition")
-    assert re.match(
-        rf"^Sólin (rís|reis) um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
-    )
+    assert re.match(r"^Sólin .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
     json = qmcall(client, {"q": "hvenær sest sólin í kvöld?"}, "SunPosition")
-    assert re.match(
-        rf"^Sólin (sest|settist) um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
-    )
+    assert re.match(r"^Sólin .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
     json = qmcall(
         client, {"q": "hvenær verður sólarlag á Norðfirði í kvöld?"}, "SunPosition"
     )
-    assert re.match(
-        rf"^Sólin (sest|settist) um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
-    )
+    assert re.match(r"^Sólin .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
     json = qmcall(
         client,
         {"q": "hver er sólarhæð í Reykjavík í dag?", "voice": True},
         "SunPosition",
     )
     assert re.match(
-        r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráð(a|ur)\.$",
+        r"^Sólarhæð um hádegi í dag .* um \d+(,\d+)? gráð(a|ur)\.$",
         json["answer"],
     )
-    assert not re.findall(r"\d+", json["voice"])
+    assert not re.findall(r"\d+", json["voice"])  # No numbers in voice string
     json = qmcall(
         client,
         {"q": "hver er hæð sólar í Reykjavík í dag?", "voice": True},
         "SunPosition",
     )
     assert re.match(
-        r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráð(a|ur)\.$",
+        r"^Sólarhæð um hádegi í dag .* um \d+(,\d+)? gráð(a|ur)\.$",
         json["answer"],
     )
     assert not re.findall(r"\d+", json["voice"])
@@ -1027,7 +1019,7 @@ def test_sunpos(client: FlaskClient) -> None:
         client, {"q": "hver er hæð sólarinnar í dag?", "voice": True}, "SunPosition"
     )
     assert re.match(
-        r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráð(a|ur)\.$",
+        r"^Sólarhæð um hádegi í dag .* um \d+(,\d+)? gráð(a|ur)\.$",
         json["answer"],
     )
     assert not re.findall(r"\d+", json["voice"])
@@ -1037,42 +1029,34 @@ def test_sunpos(client: FlaskClient) -> None:
     #     json["answer"],
     # )
     json = qmcall(client, {"q": "hvenær var miðnætti í nótt?"}, "SunPosition")
-    assert re.match(
-        rf"^Miðnætti var um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
-    )
+    assert re.match(r"^Miðnætti .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
     json = qmcall(client, {"q": "hvenær verður miðnætti í kvöld?"}, "SunPosition")
-    assert re.match(
-        rf"^Miðnætti verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
-    )
+    assert re.match(r"^Miðnætti .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
     json = qmcall(
         client, {"q": "hvenær verður dögun í Keflavík á morgun?"}, "SunPosition"
     )
-    assert re.match(
-        rf"^Það verður ekki dögun {timings}\.$", json["answer"]
-    ) or re.match(rf"^Dögun verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"])
+    assert re.match(r"^Það verður ekki dögun .*\.$", json["answer"]) or re.match(
+        r"^Dögun .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
+    )
     json = qmcall(
         client, {"q": "klukkan hvað verður birting á Akureyri á morgun?"}, "SunPosition"
     )
-    assert re.match(
-        rf"^Það verður ekki birting {timings}\.$", json["answer"]
-    ) or re.match(
-        rf"^Birting verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+    assert re.match(r"^Það verður ekki birting .*\.$", json["answer"]) or re.match(
+        r"^Birting .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
     )
     json = qmcall(client, {"q": "hvenær er hádegi á morgun á Ísafirði?"}, "SunPosition")
-    assert re.match(
-        rf"^Hádegi verður um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
-    )
+    assert re.match(r"^Hádegi .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
     json = qmcall(
         client, {"q": "hvenær varð myrkur í gær á Egilsstöðum?"}, "SunPosition"
     )
     assert re.match(r"^Það varð ekki myrkur.*\.$", json["answer"]) or re.match(
-        rf"^Myrkur var um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+        r"^Myrkur .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
     )
     json = qmcall(
         client, {"q": "klukkan hvað varð dagsetur í gær á Reykjanesi?"}, "SunPosition"
     )
     assert re.match(r"^Það varð ekki dagsetur.*\.$", json["answer"]) or re.match(
-        rf"^Dagsetur var um klukkan \d?\d:\d\d {timings}\.$", json["answer"]
+        r"^Dagsetur .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
     )
 
 
@@ -1585,9 +1569,15 @@ def test_numbers() -> None:
     )
     assert number_to_neutral(241000000000) == "tvö hundruð fjörutíu og einn milljarður"
     assert number_to_neutral(100000000) == "eitt hundrað milljónir"
+    assert number_to_neutral(1000001000) == "einn milljarður og eitt þúsund"
+    assert number_to_neutral(1000000011) == "einn milljarður og ellefu"
     assert number_to_neutral(1001000000) == "einn milljarður og ein milljón"
     assert number_to_neutral(1002000000) == "einn milljarður og tvær milljónir"
     assert number_to_neutral(200000000000) == "tvö hundruð milljarðar"
+    assert (
+        number_to_text(1000200200)
+        == "einn milljarður tvö hundruð þúsund og tvö hundruð"
+    )
     assert (
         number_to_neutral(10000000000000000000000000000000000000000000000000000000)
         == "tíu milljónir oktilljóna"
@@ -1605,6 +1595,16 @@ def test_numbers() -> None:
         number_to_neutral(2000000000000000000000000000000000100000000000000)
         == "tvær oktilljónir og eitt hundrað billjónir"
     )
+    assert number_to_text(320) == "þrjú hundruð og tuttugu"
+    assert number_to_text(320000) == "þrjú hundruð og tuttugu þúsund"
+    assert (
+        number_to_text(3202020202020)
+        == "þrjár billjónir tvö hundruð og tveir milljarðar tuttugu milljónir tvö hundruð og tvö þúsund og tuttugu"
+    )
+    assert (
+        number_to_text(320202020)
+        == "þrjú hundruð og tuttugu milljónir tvö hundruð og tvö þúsund og tuttugu"
+    )
 
     assert number_to_text(101, gender="kk") == "hundrað og einn"
     assert number_to_text(-102, gender="kvk") == "mínus hundrað og tvær"
@@ -1614,6 +1614,10 @@ def test_numbers() -> None:
     )
     assert number_to_text(5, gender="kk") == "fimm"
     assert number_to_text(10001, gender="kvk") == "tíu þúsund og ein"
+    assert (
+        number_to_text(113305, gender="kk")
+        == "eitt hundrað og þrettán þúsund þrjú hundruð og fimm"
+    )
     assert number_to_text(400567, gender="hk") == number_to_neutral(400567)
     assert (
         number_to_text(-11220024, gender="kvk")

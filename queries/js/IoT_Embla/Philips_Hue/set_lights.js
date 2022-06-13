@@ -25,16 +25,37 @@ function getTargetObject(query, allLights, allGroups) {
     //vantar e.k. error
 };
 
+    console.log("lightResult :", lightsResult);
+    console.log("groupsResult :", groupsResult);
+    if (lightsResult != null) {
+        returnObject = {
+            id: lightsResult.ID,
+            type: "light",
+            url: `lights/${lightsResult.ID}/state`,
+        };
+        console.log("returnObject: ", returnObject);
+    } else if (groupsResult != null) {
+        console.log("groupresult test");
+        returnObject = {
+            id: groupsResult.ID,
+            type: "group",
+            url: `groups/${groupsResult.ID}/action`,
+        };
+        console.log("returnObject: ", returnObject);
+    }
+    console.log("returnObject: ", returnObject);
+    return returnObject;
+    //vantar e.k. error
+}
 
 async function getSceneID(scene_name, allScenes){
     let scenesResult = philipsFuzzySearch(scene_name, allScenes);
     if (scenesResult != null) {
         return scenesResult.ID;
-    }
-    else {
+    } else {
         return;
     }
-};
+}
 
 /* Gets a target for the given query and sets the state of the target to the given state using a fetch request
 *  @param query - the query to find the target
@@ -104,32 +125,31 @@ async function setLights(query, state){
 function setLightsFromHTML() {
     let query = document.getElementById("queryInput").value;
     let stateObject = new Object();
-    stateObject.bri_inc = Number(document.getElementById("brightnessInput").value);
+    stateObject.bri_inc = Number(
+        document.getElementById("brightnessInput").value
+    );
     stateObject = JSON.stringify(stateObject);
     setLights(query, stateObject);
-};
-
+}
 
 function syncSetLights(query, state) {
     setLights(query, state);
-    return query;
-};
-
+    // while (output === undefined) {}
+    return output;
+}
 
 
 function epliSceneTest() {
-    setLights('eldhús', '{"on": true, "scene": "epli"}');
-};
-
+    setLights("eldhús", '{"on": true, "scene": "epli"}');
+}
 
 function queryTest() {
-    let query = document.getElementById('queryInput').value;
+    let query = document.getElementById("queryInput").value;
     let bool = document.getElementById("boolInput").value;
     let scene = document.getElementById("sceneInput").value;
     if (scene === "") {
         syncSetLights(query, `{"on": ${bool}}`);
-    }
-    else{
+    } else {
         syncSetLights(query, `{"scene": "${scene}"}`);
     }
 };

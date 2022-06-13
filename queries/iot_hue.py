@@ -23,6 +23,10 @@
 
 """
 
+# TODO: add "láttu", "hafðu", "litaðu", "kveiktu" functionality.
+# TODO: make the objects of sentences more modular, so that the same structure doesn't need to be written for each action
+# TODO: ditto the previous comment. make the initial non-terminals general and go into specifics at the terminal level instead.
+# TODO: substituion klósett, baðherbergi hugmyndÆ senda lista i javascript og profa i röð
 
 from typing import Dict, Mapping, Optional, cast
 from typing_extensions import TypedDict
@@ -48,14 +52,18 @@ class DeviceData(TypedDict):
 
 _IoT_QTYPE = "IoT"
 
-TOPIC_LEMMAS = ["ljós", "kveikja"]
+TOPIC_LEMMAS = ["ljós", "kveikja", "litur", "birta"]
 
 
 def help_text(lemma: str) -> str:
     """Help text to return when query.py is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég skil þig ef þú segir til dæmis: {0}.".format(
-        random.choice(("Málfræðin þín er í bullinu",))
+        random.choice(("Kveiktu á ljósunum inni í eldhúsi.",
+        "Slökktu á leslampanum.",
+        "Breyttu lit lýsingarinnar í stofunni í bláan.",
+        "Gerðu ljósið í borðstofunni bjartara.",
+        "Stilltu á bjartasta niðri í kjallara."))
     )
 
 
@@ -81,9 +89,6 @@ QUERY_NONTERMINALS = {"QIoT"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = f"""
-
-# Todo: add "láttu", "hafðu", "litaðu" functionality.
-# Todo: make the objects of sentences more modular, so that the same structure doesn't need to be written for each action
 
 Query →
     QIoT
@@ -199,7 +204,7 @@ QIoTSetScene ->
 QIoTMakeSceneObject ->
     QIoTSceneLightPhrase "að"? QIoTSceneNamePhrase
     | QIoTScene "að"? QIoTSceneNamePhrase QIoTGroupNamePhrase?
-    | QIoTSceneNamePhrase QIoTGroupNamePhrase?
+    | QIoTSceneNamePhrase QIoTGroupNamePhrase
     | QIoTSceneNamePhrase QIoTLocationPreposition QIoTLightPhrase
 
 QIoTSetSceneObject ->
@@ -484,9 +489,10 @@ def QIoTSetColor(node: Node, params: QueryStateDict, result: Result) -> None:
 def QIoTIncreaseBrightness(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "increase_brightness"
     if "hue_obj" not in result:
-        result["hue_obj"] = {"bri_inc": 64}
+        result["hue_obj"] = {"on": True, "bri_inc": 64}
     else:
         result["hue_obj"]["bri_inc"] = 64
+        result["hue_obj"]["on"] = True
 
 
 def QIoTDecreaseBrightness(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -563,29 +569,34 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
-    host = flask.request.host
-    smartdevice_type = "smartlights"
-    print("client id", q.client_id)
-    # Fetch relevant data from the device_data table to perform an action on the lights
-    device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
-    print(device_data)
+    # host = str(flask.request.host)
+    # smartdevice_type = "smartlights"
+    # client_id = str(q.client_id)
 
-    selected_light: Optional[str] = None
-    hue_credentials: Optional[Dict[str, str]] = None
-    if device_data is not None and smartdevice_type in device_data:
-        dev = device_data[smartdevice_type]
-        assert dev is not None
-        selected_light = dev.get("selected_light")
-        hue_credentials = dev.get("philips_hue")
-        bridge_ip = hue_credentials.get("ipAddress")
-        username = hue_credentials.get("username")
+    # # Fetch relevant data from the device_data table to perform an action on the lights
+    # device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
+    # print(device_data)
 
-    if not device_data or not hue_credentials:
-        answer = "Snjalltæki hafa ekki verið sett upp"
-        q.set_answer(*gen_answer(answer))
-        return
+    # selected_light: Optional[str] = None
+    # hue_credentials: Optional[Dict[str, str]] = None
+    # if device_data is not None and smartdevice_type in device_data:
+    #     dev = device_data[smartdevice_type]
+    #     assert dev is not None
+    #     selected_light = dev.get("selected_light")
+    #     hue_credentials = dev.get("philips_hue")
+    #     bridge_ip = hue_credentials.get("ipAddress")
+    #     username = hue_credentials.get("username")
+
+    # if not device_data or not hue_credentials:
+        
+    #     js = read_jsfile("IoT_Embla/Philips_Hue/hub.js")
+    #     js += f"syncConnectHub('{host}','{client_id}');"
+    #     q.set_answer(*gen_answer("blabla"))
+    #     q.set_command(js)
+    #     return
 
     # Successfully matched a query type
+
     q.set_qtype(result.qtype)
 
     try:
@@ -608,7 +619,9 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             )
         )
         js = (
-            f"var BRIDGE_IP = '{bridge_ip}';var USERNAME = '{username}';"
+            read_jsfile("IoT_Embla/fuse.js")
+            + f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'q2jNarhGHO9izO0xZZXcoww5GYANGi6mZyJYgMdL';"
+            + read_jsfile("IoT_Embla/Philips_Hue/fuse_search.js")
             + read_jsfile("IoT_Embla/Philips_Hue/lights.js")
             + read_jsfile("IoT_Embla/Philips_Hue/set_lights.js")
         )
