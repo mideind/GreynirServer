@@ -50,11 +50,13 @@ function changeColor() {
     }
 }
 
+
 async function getAllLights(hub_ip = BRIDGE_IP, username = USERNAME) {
     return fetch(`http://${hub_ip}/api/${username}/lights`).then((resp) =>
         resp.json()
     );
 }
+
 
 async function getAllGroups(hub_ip = BRIDGE_IP, username = USERNAME) {
     return fetch(`http://${hub_ip}/api/${username}/groups`).then((resp) =>
