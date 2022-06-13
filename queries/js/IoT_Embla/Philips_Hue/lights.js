@@ -50,19 +50,21 @@ function changeColor() {
     }
 }
 
-function getAllLights(hub_ip = BRIDGE_IP, username = USERNAME) {
+
+async function getAllLights(hub_ip = BRIDGE_IP, username = USERNAME) {
     return fetch(`http://${hub_ip}/api/${username}/lights`).then((resp) =>
         resp.json()
     );
 }
 
-function getAllGroups(hub_ip = BRIDGE_IP, username = USERNAME) {
+
+async function getAllGroups(hub_ip = BRIDGE_IP, username = USERNAME) {
     return fetch(`http://${hub_ip}/api/${username}/groups`).then((resp) =>
         resp.json()
     );
 }
 
-function getAllScenes(
+async function getAllScenes(
     hub_ip = "192.168.1.68",
     username = "q2jNarhGHO9izO0xZZXcoww5GYANGi6mZyJYgMdL"
 ) {
