@@ -59,11 +59,15 @@ def help_text(lemma: str) -> str:
     """Help text to return when query.py is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég skil þig ef þú segir til dæmis: {0}.".format(
-        random.choice(("Kveiktu á ljósunum inni í eldhúsi.",
-        "Slökktu á leslampanum.",
-        "Breyttu lit lýsingarinnar í stofunni í bláan.",
-        "Gerðu ljósið í borðstofunni bjartara.",
-        "Stilltu á bjartasta niðri í kjallara."))
+        random.choice(
+            (
+                "Kveiktu á ljósunum inni í eldhúsi.",
+                "Slökktu á leslampanum.",
+                "Breyttu lit lýsingarinnar í stofunni í bláan.",
+                "Gerðu ljósið í borðstofunni bjartara.",
+                "Stilltu á bjartasta niðri í kjallara.",
+            )
+        )
     )
 
 
@@ -588,7 +592,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     #     username = hue_credentials.get("username")
 
     # if not device_data or not hue_credentials:
-        
+
     #     js = read_jsfile("IoT_Embla/Philips_Hue/hub.js")
     #     js += f"syncConnectHub('{host}','{client_id}');"
     #     q.set_answer(*gen_answer("blabla"))
@@ -601,7 +605,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     try:
         # kalla í javascripts stuff
-        light_or_group_name = result.get("light_name", result.get("group_name", ""))        
+        light_or_group_name = result.get("light_name", result.get("group_name", ""))
         color_name = result.get("color_name", "")
         print("GROUP NAME:", light_or_group_name)
         print("COLOR NAME:", color_name)
