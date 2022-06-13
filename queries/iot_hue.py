@@ -27,6 +27,8 @@
 # TODO: make the objects of sentences more modular, so that the same structure doesn't need to be written for each action
 # TODO: ditto the previous comment. make the initial non-terminals general and go into specifics at the terminal level instead.
 # TODO: substituion klósett, baðherbergi hugmyndÆ senda lista i javascript og profa i röð
+# TODO: Embla stores old javascript code cached which has caused errors
+# TODO: Cut down javascript sent to Embla  
 
 from typing import Dict, Mapping, Optional, cast
 from typing_extensions import TypedDict
@@ -152,11 +154,11 @@ QIoTMakeBrighterObject ->
     | QIoTMoreBrightness QIoTGroupNamePhrase?
     | QIoTMoreBrightness QIoTLocationPreposition QIoTLightPhrase
 
-# QIoTSetBrightObject ->
-#     QIoTColorLightPhrase "á" QIoTColorNamePhrase
-#     | QIoTColorLight "á" QIoTColorNamePhrase QIoTGroupNamePhrase?
-#     | "á"? QIoTColorNamePhrase QIoTGroupNamePhrase?
-#     | "á"? QIoTColorNamePhrase QIoTLocationPreposition QIoTLightPhrase  
+QIoTSetBrightObject ->
+    QIoTColorLightPhrase "á" QIoTColorNamePhrase
+    | QIoTColorLight "á" QIoTColorNamePhrase QIoTGroupNamePhrase?
+    | "á"? QIoTColorNamePhrase QIoTGroupNamePhrase?
+    | "á"? QIoTColorNamePhrase QIoTLocationPreposition QIoTLightPhrase  
 
 QIoTDecreaseBrightness ->
     QIoTDecrease QIoTBrightness QIoTLightPhrase?
