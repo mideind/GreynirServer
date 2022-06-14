@@ -1,4 +1,3 @@
-
 # A plug-in query grammar always starts with the following,
 # adding one or more query productions to the Query nonterminal
 
@@ -146,4 +145,3 @@ QArPiQuery →
     | "hvað" "eru" "margir" "tölustafir" "í" "tölunni"? "pí"
     | "hvað" "hefur" "talan"? "pí" "marga" "aukastafi"
     | "hversu" "marga" "aukastafi" "hefur" "talan"? "pí"
-

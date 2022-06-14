@@ -1,0 +1,97 @@
+Query →
+    QGeo
+
+QGeo → QGeoQuery '?'?
+
+QGeoQuery →
+    QGeoCapitalQuery
+    | QGeoCountryQuery
+    | QGeoContinentQuery
+    | QGeoLocationDescQuery
+
+QGeoCapitalQuery →
+    # "hvað/hver er höfuðborgin í/á Spáni?"
+    QGeoWhatIs "höfuðborgin" QGeoPreposition QGeoSubject_þgf
+    # "hvað/hver er höfuðborg Spánar?"
+    | QGeoWhatIs "höfuðborg" QGeoSubject_ef
+    # "hvað/hver er höfuðstaður Spánar?"
+    | QGeoWhatIs "höfuðstaður" QGeoSubject_ef
+
+QGeoCountryQuery →
+    "í" "hvaða" "landi" "er" QGeoCityOrTown? QGeoSubject_nf
+    | "í" "hvaða" "ríki" "er" QGeoCityOrTown? QGeoSubject_nf
+
+QGeoContinentQuery →
+    "í" "hvaða" "heimsálfu" "er" QGeoCountryOrCity? QGeoSubject_nf
+    | "hvar" "í" "heiminum" "er" QGeoCountryOrCity? QGeoSubject_nf
+
+QGeoLocationDescQuery →
+    # Hvar er borgin Tókýó / Hvar er landið Kambódía?
+    QGeoWhereIs QGeoCountryOrCity? QGeoSubject_nf
+
+QGeoCountryOrCity →
+    "landið" | "ríkið" | QGeoCityOrTown
+
+$score(+100) QGeoCountryOrCity
+
+QGeoCityOrTown →
+    "borgin" | "bærinn" | "kaupstaðurinn"
+
+$score(+100) QGeoCityOrTown
+
+QGeoWhatIs →
+    "hver" "er" | "hvað" "er" | "hvað" "heitir" | 0
+
+QGeoWhereIs →
+    "hvar" "er"
+    | "hvar" "eru"
+    | "hvar" "í" "heiminum" "er"
+    | "hvar" "í" "heiminum" "eru"
+    | "hvar" "á" "jörðinni" "er"
+    | "hvar" "á" "jörðinni" "eru"
+    | "hvar" "á" "plánetunni" "er"
+    | "hvar" "á" "plánetunni" "eru"
+    | "hvar" "á" "hnettinum" "er"
+    | "hvar" "á" "hnettinum" "eru"
+
+QGeoPreposition →
+    "í" | "á"
+
+QGeoSubject/fall →
+    Nl/fall
+
+QGeoSubject_nf →
+    # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
+    "kostaríka"
+    # The grammar seems to have a hard time with these
+    | "norður" "kórea"
+    | "nýja" "sjáland"
+    | "norður" "makedónía"
+    | "hvíta" "rússland" | "hvíta-rússland"
+    | "sameinuðu" "arabísku" "furstadæmin"
+    | "seychelles" "eyjar"
+
+QGeoSubject_þgf →
+    # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
+    "kostaríku"
+    | "norður" "kóreu"
+    | "nýja" "sjálandi"
+    | "norður" "makedóníu"
+    | "hvíta" "rússlandi" | "hvíta-rússlandi"
+    | "sameinuðu" "arabísku" "furstadæmunum"
+    | "seychelles" "eyjum"
+
+QGeoSubject_ef →
+    # Hardcoded special case, otherwise identified as adj. "kostaríkur" :)
+    "kostaríku"
+    | "norður" "kóreu"
+    | "nýja" "sjálands"
+    | "norður" "makedóníu"
+    | "hvíta" "rússlands" | "hvíta-rússlands"
+    | "sameinuðu" "arabísku" "furstadæmanna"
+    | "seychelles" "eyja"
+
+$score(+10) QGeoSubject/fall
+$score(-100) QGeoLocationDescQuery
+
+$score(+35) QGeo

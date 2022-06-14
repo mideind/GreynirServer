@@ -34,6 +34,7 @@ from queries import (
     country_desc,
     nom2dat,
     cap_first,
+    read_grammar_file,
 )
 from queries.num import numbers_to_text
 from tree import Result, Node
@@ -58,76 +59,7 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QUserLocation"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QUserLocation
-
-QUserLocation → QUserLocationQuery '?'?
-
-QUserLocationQuery →
-    QUserLocationCurrent | QUserLocationPostcode | QUserLocationCountry
-
-QUserLocationCurrent →
-    "hvar" "er" "ég" QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
-    | "hvar" QULocInTheWorld "er" "ég" QULocEiginlega? QULocLocated? QULocNow?
-    | "hvað" "er" "ég" QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
-    | "veistu" "hvar" "ég" "er" QULocEiginlega? QULocInTheWorld? QULocNow?
-    | "veist" "þú" "hvar" "ég" "er" QULocEiginlega? QULocInTheWorld? QULocNow?
-    | "hver" "er" "staðsetning" "mín"? QULocEiginlega? QULocInTheWorld? QULocNow?
-    | "hver" "er" "staðsetningin" "mín"? QULocEiginlega? QULocInTheWorld? QULocNow?
-    | "hvar" "erum" "við" QULocEiginlega? QULocLocatedFemAndPlural? QULocInTheWorld? QULocNow?
-    | "staðsetning" "mín"? QULocInTheWorld? QULocNow?
-    | QULocWhichStreet QULocEiginlega? QULocLocated? QULocInTheWorld? QULocNow?
-
-QUserLocationPostcode →
-    "í" "hvaða" "póstnúmeri" "er" "ég" QULocEiginlega? QULocLocated? QULocNow?
-    | "hvaða" "póstnúmeri" "er" "ég" QULocEiginlega? QULocLocated? "í" QULocNow?
-    | "í" "hvaða" "póstnúmeri" "erum" "við" QULocEiginlega? QULocLocated? QULocNow?
-    | "hvaða" "póstnúmeri" "erum" "við" QULocEiginlega? QULocLocated? "í" QULocNow?
-
-QUserLocationCountry →
-    QULocPreposition "hvaða" "landi" "er" "ég" QULocLocated? QULocNow?
-    | QULocPreposition "hvaða" "landi" "erum" "við" QULocLocated? QULocNow?
-    | "hvaða" "landi" "er" "ég" QULocLocated? QULocPreposition QULocNow?
-    | "hvaða" "landi" "erum" "við" QULocLocated? QULocPreposition QULocNow?
-
-QULocWhichStreet →
-    QULocPreposition "hvaða" "götu" "er" "ég" QULocLocated? QULocNow?
-    | QULocPreposition "hvaða" "götu" "erum" "við" QULocLocated? QULocNow?
-
-QULocPreposition →
-    "á" | "í"
-
-QULocEiginlega →
-    "eiginlega"
-
-QULocLocated →
-    "staddur" | "staðsettur" | "niðurkominn" | "niður" "kominn" | QULocLocatedFemAndPlural
-
-QULocLocatedFemAndPlural →
-    "stödd" | "staðsett" | "niðurkomin" | "niður" "komin"
-
-QULocInTheWorld →
-    "í" "heiminum"
-    | "í" "veröldinni"
-    | "á" "hnettinum"
-    | "á" "jörðinni"
-    | "á" "landinu"
-    | "á" "Íslandi"
-    | "á" "yfirborði" "jarðar"
-    | "á" "jarðkringlunni"
-
-QULocNow →
-    "nákvæmlega"? QULocNowGeneric
-
-QULocNowGeneric →
-    "nú" | "akkúrat"? "núna" | "eins" "og" "stendur" | "sem" "stendur"
-    | "í" "augnablikinu" | "á" "þessari" "stundu" | "hér" "og" "nú"
-
-$score(+35) QUserLocation
-
-"""
+GRAMMAR = read_grammar_file("userloc")
 
 
 def QUserLocationQuery(node: Node, params: QueryStateDict, result: Result) -> None:

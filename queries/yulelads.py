@@ -33,6 +33,7 @@ from tree import Result, Node, TerminalNode
 from queries import read_grammar_file
 from queries.num import numbers_to_ordinal
 
+
 def help_text(lemma: str) -> str:
     """Help text to return when query.py is unable to parse a query but
     one of the above lemmas is found in it"""
@@ -141,7 +142,9 @@ QUERY_NONTERMINALS = {"QYuleQuery"}
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = read_grammar_file(
     "yulelads",
-    yulelad_names=" | ".join("'{0}'/fall".format(name) for name in _YULE_LADS_BY_NAME.keys())
+    yulelad_names=" | ".join(
+        "'{0}'/fall".format(name) for name in _YULE_LADS_BY_NAME.keys()
+    ),
 )
 
 

@@ -22,7 +22,8 @@
     This module handles queries relating to air travel.
 
 """
-# TODO: Fetch more than one flight using "flight_count", maybe not needed though
+# TODO: Map country to capital city, e.g. "Svíþjóð" -> "Stokkhólmur"
+# TODO: Fetch more than one flight using "flight_count"?
 
 from typing import List, Dict, Optional
 from typing_extensions import TypedDict
@@ -34,7 +35,7 @@ import cachetools
 from datetime import datetime, timedelta, timezone
 
 from query import Query, QueryStateDict
-from queries import query_json_api, is_plural, spell_out
+from queries import query_json_api, is_plural, read_grammar_file, spell_out
 from tree import Result, Node
 from settings import changedlocale
 from queries.num import digits_to_text, numbers_to_ordinal, numbers_to_text
@@ -78,85 +79,7 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QFlights"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QFlights
-
-QFlights → QFlightsQuery '?'?
-
-QFlightsQuery →
-    QFlightsArrivalQuery
-    | QFlightsDepartureQuery
-
-QFlightsArrivalQuery →
-    # Arrivals at Icelandic airports, e.g.
-    # Hver er lendingartími næstu vélar í Reykjavík
-    # Hvenær kemur næsta flug til Keflavíkur frá Kaupmannahöfn
-    QFlightsWhenArr QFlightsNextPlane QFlightsPathDesc
-
-QFlightsWhenArr →
-    QFlightsWhen "lendir"
-    | QFlightsWhen "kemur"
-    | QFlightsWhen "mætir"
-    | "hver" "er" "lendingartími"
-    | "hver" "er" "lendingartíminn" "fyrir"
-
-QFlightsDepartureQuery →
-    # Departures from Icelandic airports, e.g.
-    # Hver er brottfarartími næstu vélar til London
-    # Hvenær flýgur næsta vél af stað frá Keflavík til Köben
-    QFlightsWhenDepNextPlane QFlightsPathDesc
-
-QFlightsAfStað → "af" "stað"
-
-QFlightsWhenDepNextPlane →
-    QFlightsWhen "leggur" QFlightsNextPlane QFlightsAfStað
-    | QFlightsWhenDep QFlightsNextPlane QFlightsAfStað?
-
-QFlightsNextPlane →
-    "næsta" QFlightsPlane/fall
-    | "næstu" QFlightsPlane/fall
-
-QFlightsWhenDep →
-    QFlightsWhen "fer"
-    | QFlightsWhen "er"
-    | QFlightsWhen "flýgur"
-    | "hver" "er" "brottfarartími"
-    | "hver" "er" "brottfarartíminn" "fyrir"
-
-QFlightsWhen →
-    "hvenær" | "klukkan" "hvað"
-
-QFlightsPlane/fall ->
-    'flug:hk'_et/fall
-    | 'flugvél:kvk'_et/fall
-    | 'vél:kvk'_et/fall
-
-QFlightsPathDesc →
-    # At least one endpoint of the flight (in any order), e.g.
-    # frá Keflavík til Reykjavíkur
-    # til Akureyrar
-    QFlightsPrepLoc QFlightsPrepLoc
-    > QFlightsPrepLoc
-
-QFlightsPrepLoc →
-    "til" QFlightsArrLoc_ef
-    | "frá" QFlightsDepLoc_þgf
-    | "í" QFlightsArrLoc_þgf
-    | "á" QFlightsArrLoc_þgf
-    | "á" QFlightsArrLoc_þf
-
-QFlightsArrLoc/fall →
-    Nl/fall
-
-QFlightsDepLoc/fall →
-    Nl/fall
-
-$tag(keep) QFlightsArrLoc/fall
-$tag(keep) QFlightsDepLoc/fall
-
-"""
+GRAMMAR = read_grammar_file("flights")
 
 _LOCATION_ABBREV_MAP = {
     "köben": "kaupmannahöfn",

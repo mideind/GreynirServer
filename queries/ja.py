@@ -35,7 +35,7 @@ from datetime import datetime, timedelta
 from reynir import NounPhrase
 from reynir.bindb import GreynirBin
 
-from . import query_json_api, gen_answer, icequote
+from queries import query_json_api, gen_answer, icequote, read_grammar_file
 from queries.num import numbers_to_text, digits_to_text
 
 from query import AnswerTuple, Query, QueryStateDict
@@ -54,60 +54,7 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QJaQuery"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QJaQuery '?'?
-
-QJaQuery →
-    QJaPhoneNumQuery
-
-QJaPhoneNumQuery →
-    QJaName4PhoneNumQuery | QJaPhoneNum4NameQuery
-
-QJaPhoneNum4NameQuery →
-    # "Hver er síminn hjá Jóni Jónssyni?"
-    QJaWhatWhich "er" QJaTheNumber_nf "hjá" QJaSubject
-    # "Hvaða síma er Jón Jónsson með?"
-    | "hvaða" QJaTheNumber_þf "er" QJaSubject "með"
-    # Flettu upp númerinu hjá Jóni Jónssyni?
-    | "flettu" "upp" QJaTheNumber_þgf "hjá" QJaSubject
-    # Hver er sími Jóns Jónssonar?
-    # | QJaWhatWhich "er" QJaTheNumber_nf QJaSubject
-
-QJaName4PhoneNumQuery →
-    "hver" "er" "með" QJaTheNumber_þf QJaPhoneNum QJaInPhonebook?
-    | "hverjir" "eru" "með" QJaTheNumber_þf QJaPhoneNum QJaInPhonebook?
-    | "flettu" "upp" QJaTheNumber_þgf QJaPhoneNum QJaInPhonebook?
-    | "flettu" "upp" QJaPhoneNum QJaInPhonebook
-    | "hver" "er" "í" "síma" QJaPhoneNum
-
-QJaThemÞgf →
-    "hann" | "hana" | "þau" | "þá" | "þær" | "það" "númer"? | "þetta" "númer"?
-
-QJaInPhonebook →
-    "í" "símaskránni" | "á" "já" "punktur" "is"
-
-QJaPhoneNum →
-    Nl
-
-QJaSubject →
-    Nl
-
-QJaTheNumber/fall →
-    'númer:hk'/fall
-    | 'símanúmer:hk'/fall
-    | 'sími:kk'/fall
-
-QJaWhatWhich →
-    "hvert" | "hvað" | "hver"
-
-$score(+35) QJaQuery
-
-$tag(keep) QJaPhoneNum
-$tag(keep) QJaSubject
-
-"""
+GRAMMAR = read_grammar_file("ja")
 
 
 def QJaSubject(node: Node, params: QueryStateDict, result: Result) -> None:
