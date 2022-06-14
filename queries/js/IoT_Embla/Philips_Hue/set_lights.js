@@ -1,8 +1,8 @@
 "use strict";
 
 // Constants to be used when setting lights from HTML
-// var BRIDGE_IP = "192.168.1.68";
-// var USERNAME = "MQH9DVv1lhgaOKN67uVox4fWNc9iu3j5g7MmdDUr";
+var BRIDGE_IP = "192.168.1.68";
+var USERNAME = "MQH9DVv1lhgaOKN67uVox4fWNc9iu3j5g7MmdDUr";
 
 // TODO: Implement a hotfix for Ikea Tradfri bulbs, since it can only take one argument at a time
 
@@ -66,8 +66,8 @@ function setLights(query, state) {
 
 /** Finds a matching light or group and returns an object with the ID, name and url for the target
  * @param {String} query - the query to find the target e.g. "eldhús"
- * @param {Array} allLights - an object of all lights from the API
- * @param {Array} allGroups - an object of all groups from the API
+ * @param {Object} allLights - an object of all lights from the API
+ * @param {Object} allGroups - an object of all groups from the API
  */
 function getTargetObject(query, allLights, allGroups) {
     let targetObject, selection, url;
@@ -75,31 +75,32 @@ function getTargetObject(query, allLights, allGroups) {
     let groupsResult = philipsFuzzySearch(query, allGroups);
 
     if (lightsResult != null && groupsResult != null) {
-        // Found a match for a light group and a light
-        selection =
+        // Found a match for a light group and a light+
+        targetObject =
             lightsResult.score < groupsResult.score // Select the light with the highest score
-                ? lightsResult
-                : groupsResult;
-        url =
-            selection === lightsResult // Set url based on selection
-                ? `lights/${lightsResult.result.ID}/state`
-                : `groups/${groupsResult.result.ID}/action`;
+                ? {
+                      id: lightsResult.result.ID,
+                      url: `lights/${lightsResult.result.ID}/state`,
+                  }
+                : {
+                      id: groupsResult.result.ID,
+                      url: `groups/${groupsResult.result.ID}/action`,
+                  };
     } else if (lightsResult != null && groupsResult == null) {
         // Found a match for a single light
-        selection = lightsResult;
-        url = `lights/${selection.result.ID}/state`;
+        targetObject = {
+            id: lightsResult.result.ID,
+            url: `lights/${lightsResult.result.ID}/state`,
+        };
     } else if (groupsResult != null && lightsResult == null) {
         // Found a match for a light group
-        selection = groupsResult;
-        url = `groups/${selection.result.ID}/action`;
+        targetObject = {
+            id: groupsResult.result.ID,
+            url: `groups/${groupsResult.result.ID}/action`,
+        };
     } else {
         return;
     }
-
-    targetObject = {
-        id: selection.result.ID,
-        url: url,
-    };
     return targetObject;
 }
 
