@@ -39,7 +39,7 @@ import json
 import flask
 
 from query import Query, QueryStateDict, AnswerTuple
-from queries import gen_answer, read_jsfile
+from queries import gen_answer, read_jsfile, read_grammar_file
 from tree import Result, Node
 
 
@@ -94,6 +94,8 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QIoT"}
 
 # The context-free grammar for the queries recognized by this plug-in module
+# GRAMMAR = read_grammar_file("iot_hue")
+
 GRAMMAR = f"""
 
 Query →

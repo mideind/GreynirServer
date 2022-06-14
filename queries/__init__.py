@@ -672,3 +672,35 @@ def read_jsfile(filename: str) -> str:
     fpath = os.path.join(basepath, "js", filename)
     with open(fpath, mode="r") as file:
         return cast(str, jsmin(file.read()))
+    
+
+def read_grammar_file(filename: str, **format_kwargs: str) -> str:
+    """
+    Read and return a grammar file from the 'grammars' folder.
+    Optionally specify keyword arguments for str.format() call
+    """
+    basepath, _ = os.path.split(os.path.realpath(__file__))
+    fpath = os.path.join(basepath, "grammars", filename + ".grammar")
+
+    grammar = ""
+    with open(fpath, mode="r") as file:
+        grammar = file.read()
+    if len(format_kwargs) > 0:
+        grammar = grammar.format(**format_kwargs)
+    return grammar
+
+
+def join_grammar_files(folder: str) -> str:
+    """
+    Given a folder name, return a string containing
+    the contents of all '.grammar' files within the folder
+    """
+    basepath, _ = os.path.split(os.path.realpath(__file__))
+    fpath = os.path.join(basepath, folder)
+
+    grammar: List[str] = []
+    for fname in os.listdir(fpath):
+        if fname.endswith(".grammar"):
+            with open(os.path.join(fpath, fname), mode="r") as file:
+                grammar.append(file.read())
+    return "\n".join(grammar)
