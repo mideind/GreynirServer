@@ -195,7 +195,8 @@ QIoTNewSetting/fall ->
     | QIoTNewBrightness/fall
     | QIoTNewScene/fall
 
-QIoTHuldaColor/fall ->
-    QIoTColorName/fall
-
-QIoT
+QIoTHuldaBrightness/fall ->
+    QIoTMore/fall
+    | QIoTLess/fall
+    | QIoTBrighter/fall
+    | QIoTDarker/fall
