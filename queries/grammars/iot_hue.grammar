@@ -63,21 +63,21 @@ QIoTTurnRest ->
     | QIoTHvar QIoTAHverju
 
 QIoTHvad ->
-    QIoTLightSubjectNf
-    | QIoTColorSubjectNf
-    | QIoTBrightnessSubjectNf
-    | QIoTSceneSubjectNf
-    | QIoTGroupNameSubjectNf #styður bara "gerðu eldhúsið rautt" og "gerðu eldhúsið bjartara", t.d.
+    QIoTLightSubject/nf
+    | QIoTColorSubject/nf
+    | QIoTBrightnessSubject/nf
+    | QIoTSceneSubject/nf
+    | QIoTGroupNameSubject/nf #á bara að styðja "gerðu eldhúsið rautt", "gerðu eldhúsið rómó" "gerðu eldhúsið bjartara", t.d.
 
-# TODO: Decide whether LightSubjectÞgf should be accepted
+# TODO: Decide whether LightSubject/þgf should be accepted
 QIoTHverju ->
-    QIoTLightSubjectÞgf
-    | QIoTColorSubjectÞgf
-    | QIoTBrightnessSubjectÞgf
-    | QIoTSceneSubjectÞgf
+    QIoTLightSubject/þgf
+    | QIoTColorSubject/þgf
+    | QIoTBrightnessSubject/þgf
+    | QIoTSceneSubject/þgf
 
 QIoTHvar ->
-    QIoTLocationPreposition QIoTGroupNameÞgf
+    QIoTLocationPreposition QIoTGroupName/þgf
 
 QIoTHvernigMake ->
     QIoTAnnadAndlag # gerðu litinn rauðan í eldhúsinu EÐA gerðu birtuna meiri í eldhúsinu
@@ -101,33 +101,22 @@ QIoTBe ->
 QIoTBecome ->
     "verða"
 
-QIoTLightSubjectNf ->
-    QIoTLightNf
+QIoTLightSubject/fall ->
+    QIoTLight/fall
 
-QIoTLightSubjectÞgf ->
-    QIoTLightÞgf
+QIoTColorSubject/fall ->
+    QIoTColorWord/fall QIoTLight/ef?
+    | QIoTColorWord/fall "á" QIoTLight/þgf
 
-QIoTColorSubjectNf ->
-    QIoTColorWordNf QIoTLightEf?
-    | QIoTColorWordNf "á" QIoTLightÞgf
+QIoTBrightnessSubject/fall ->
+    QIoTBrightnessWord/fall QIoTLight/ef?
+    | QIoTBrightnessWord/fall "á" QIoTLight/þgf
 
-QIoTColorSubjectÞgf ->
-    QIoTColorWordÞgf QIoTLightEf?
-    | QIoTColorWordÞgf "á" QIoTLightÞgf
+QIoTSceneSubject/fall ->
+    QIoTSceneWord/fall
 
-QIoTBrightnessSubjectNf ->
-    QIoTBrightnessWordNf QIoTLightEf?
-    | QIoTBrightnessWordNf "á" QIoTLightÞgf
-
-QIoTBrightnessSubjectÞgf ->
-    QIoTBrightnessWordÞgf QIoTLightEf?
-    | QIoTBrightnessWordÞgf "á" QIoTLightÞgf
-
-QIoTSceneSubjectNf ->
-    QIoTSceneWordNf
-
-QIoTGroupNameSubjectNf ->
-    QIoTGroupNameNf
+QIoTGroupNameSubject/fall ->
+    QIoTGroupName/fall
 
 QIoTLocationPreposition ->
     QIoTLocationPrepositionFirstPart? QIoTLocationPrepositionSecondPart
@@ -145,20 +134,28 @@ QIoTLocationPrepositionFirstPart ->
 QIoTLocationPrepositionSecondPart ->
     "á" | "í"
 
-QIoTGroupNameNf ->
-    no_nf
+QIoTGroupName/fall ->
+    no/fall
 
-QIoTGroupNameÞgf ->
-    no_þgf
+QIoTLightName/fall ->
+    no/fall
+
+QIoTColorName/fall ->
+    {" | ".join(f"'{color}:lo'/fall" for color in _COLORS.keys())}
 
 QIoTAnnadAndlag ->
-    QIoTNewSettingNf
+    QIoTNewSetting/nf
+    | QIoTSpyrjaHuldu/nf
 
 QIoTAdHverju ->
-    "að" QIoTNewSettingÞgf
+    "að" QIoTNewSetting/þgf
 
 QIoTAHvad ->
-    "á" QIoTNewSettingÞf
+    "á" QIoTNewSetting/þf
+
+QIoTAHverju ->
+    "á" QIoTLight/þgf
+    | "á" QIoTNewSetting/þgf
 
 QIoTSomethingOrSomehow ->
     QIoTAnnadAndlag
@@ -171,15 +168,34 @@ QIoTLight/fall ->
     QIoTLightName/fall
     | QIoTLightWord/fall
 
-QIoTLightÞgf ->
-    QIoTLightNameÞgf
-    | QIoTLightWordÞgf
-
-QIoTLightEf ->
-    QIoTLightNameEf
-    | QIoTLightWordEf
-
 QIoTColorWord/fall ->
     'litur'/fall
-    | 'litblær'_nf
-    | 'blær'_nf
+    | 'litblær'/fall
+    | 'blær'/fall
+
+QIoTBrightnessWord/fall ->
+    'birta'/fall
+    | 'birtustig'/fall
+
+QIoTSceneWord/fall ->
+    'sena'/fall
+    | 'stemning'/fall
+    | 'stemming'/fall
+    | 'stemmning'/fall
+
+# Need to ask Hulda how this works.
+QIoTSpyrjaHuldu/fall ->
+    # QIoTHuldaColor/fall
+    QIoTHuldaBrightness/fall
+    # | QIoTHuldaScene/fall
+
+# Do I need a "new light state" non-terminal?
+QIoTNewSetting/fall ->
+    QIoTNewColor/fall
+    | QIoTNewBrightness/fall
+    | QIoTNewScene/fall
+
+QIoTHuldaColor/fall ->
+    QIoTColorName/fall
+
+QIoT
