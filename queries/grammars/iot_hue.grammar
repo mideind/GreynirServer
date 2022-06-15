@@ -153,6 +153,9 @@ QIoTAdHverju ->
 QIoTAHvad ->
     "á" QIoTNewSetting/þf
 
+QIoTIHvad ->
+    "í" QIoTNewSetting/þf
+
 QIoTAHverju ->
     "á" QIoTLight/þgf
     | "á" QIoTNewSetting/þgf
@@ -167,6 +170,12 @@ QIotSomehow ->
 QIoTLight/fall ->
     QIoTLightName/fall
     | QIoTLightWord/fall
+
+# Should 'birta' be included
+QIoTLightWord/fall ->
+    'ljós'/fall
+    | 'lýsing'/fall
+    | 'birta'/fall
 
 QIoTColorWord/fall ->
     'litur'/fall
@@ -200,3 +209,8 @@ QIoTHuldaBrightness/fall ->
     | QIoTLess/fall
     | QIoTBrighter/fall
     | QIoTDarker/fall
+
+#Unsure about /fall after QIoTColorName
+QIoTNewColor/fall ->
+    QIoTColorWord/fall QIoTColorName
+    | 
