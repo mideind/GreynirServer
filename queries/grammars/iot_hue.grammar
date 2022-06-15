@@ -1,0 +1,185 @@
+Query →
+    QIoT
+
+QIoT → QIoTQuery '?'?
+
+QIoTQuery ->
+    QIoTMakeVerb QIoTMakeRest
+    | QIoTSetVerb QIoTSetRest
+    | QIoTChangeVerb QIoTChangeRest
+    | QIoTLetVerb QIoTLetRest
+    | QIoTTurnVerb QIoTTurnRest
+
+QIoTMakeVerb ->
+    'gera:so'_bh
+
+QIoTSetVerb ->
+    'setja:so'_bh
+    | 'stilla:so'_bh
+
+QIoTChangeVerb ->
+    'breyta:so'_bh
+
+QIoTLetVerb ->
+    'láta:so'_bh
+
+QIoTMakeRest ->
+    QIoTHvad QIoTHvar QIoTHvernigMake
+    | QIoTHvad QIoTHvernigMake QIoTHvar
+    | QIoTHvar QIoTHvad QIoTHvernigMake
+    | QIoTHvar QIoTHvernigMake QIoTHvad
+    | QIoTHvernigMake QIoTHvad QIoTHvar
+    | QIoTHvernigMake QIoTHvar QIoTHvad
+
+# TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
+QIoTSetRest ->
+    QIoTHvad QIoTHvar QIoTHvernigSet
+    | QIoTHvad QIoTHvernigSet QIoTHvar
+    | QIoTHvar QIoTHvad QIoTHvernigSet
+    | QIoTHvar QIoTHvernigSet QIoTHvad
+    | QIoTHvernigSet QIoTHvad QIoTHvar
+    | QIoTHvernigSet QIoTHvar QIoTHvad
+
+QIoTChangeRest ->
+    QIoTHverju QIoTHvar QIoTHvernigChange
+    | QIoTHverju QIoTHvernigChange QIoTHvar
+    | QIoTHvar QIoTHverju QIoTHvernigChange
+    | QIoTHvar QIoTHvernigChange QIoTHverju
+    | QIoTHvernigChange QIoTHverju QIoTHvar
+    | QIoTHvernigChange QIoTHvar QIoTHverju
+
+QIoTLetRest ->
+    QIoTHvad QIoTHvar QIoTHvernigLet
+    | QIoTHvad QIoTHvernigLet QIoTHvar
+    | QIoTHvar QIoTHvad QIoTHvernigLet
+    | QIoTHvar QIoTHvernigLet QIoTHvad
+    | QIoTHvernigLet QIoTHvad QIoTHvar
+    | QIoTHvernigLet QIoTHvar QIoTHvad
+
+QIoTTurnRest ->
+    QIoTLightObject QIoTHvar
+    | QIoTHvar QIoTLightObject
+    | QIoTAHverju QIoTHvar
+    | QIoTHvar QIoTAHverju
+
+QIoTHvad ->
+    QIoTLightSubjectNf
+    | QIoTColorSubjectNf
+    | QIoTBrightnessSubjectNf
+    | QIoTSceneSubjectNf
+    | QIoTGroupNameSubjectNf #styður bara "gerðu eldhúsið rautt" og "gerðu eldhúsið bjartara", t.d.
+
+# TODO: Decide whether LightSubjectÞgf should be accepted
+QIoTHverju ->
+    QIoTLightSubjectÞgf
+    | QIoTColorSubjectÞgf
+    | QIoTBrightnessSubjectÞgf
+    | QIoTSceneSubjectÞgf
+
+QIoTHvar ->
+    QIoTLocationPreposition QIoTGroupNameÞgf
+
+QIoTHvernigMake ->
+    QIoTAnnadAndlag # gerðu litinn rauðan í eldhúsinu EÐA gerðu birtuna meiri í eldhúsinu
+    | QIoTAdHverju # gerðu litinn að rauðum í eldhúsinu
+
+QIoTHvernigSet ->
+    QIoTAHvad
+
+QIoTHvernigChange ->
+    QIoTIHvad
+
+QIoTHvernigLet ->
+    QIoTBecome QIoTSomethingOrSomehow
+    | QIoTBe QIoTSomehow
+
+# I think these verbs only appear in these forms. 
+# In which case these terminals should be deleted and a direct reference should be made in the relevant non-terminals.
+QIoTBe ->
+    "vera"
+
+QIoTBecome ->
+    "verða"
+
+QIoTLightSubjectNf ->
+    QIoTLightNf
+
+QIoTLightSubjectÞgf ->
+    QIoTLightÞgf
+
+QIoTColorSubjectNf ->
+    QIoTColorWordNf QIoTLightEf?
+    | QIoTColorWordNf "á" QIoTLightÞgf
+
+QIoTColorSubjectÞgf ->
+    QIoTColorWordÞgf QIoTLightEf?
+    | QIoTColorWordÞgf "á" QIoTLightÞgf
+
+QIoTBrightnessSubjectNf ->
+    QIoTBrightnessWordNf QIoTLightEf?
+    | QIoTBrightnessWordNf "á" QIoTLightÞgf
+
+QIoTBrightnessSubjectÞgf ->
+    QIoTBrightnessWordÞgf QIoTLightEf?
+    | QIoTBrightnessWordÞgf "á" QIoTLightÞgf
+
+QIoTSceneSubjectNf ->
+    QIoTSceneWordNf
+
+QIoTGroupNameSubjectNf ->
+    QIoTGroupNameNf
+
+QIoTLocationPreposition ->
+    QIoTLocationPrepositionFirstPart? QIoTLocationPrepositionSecondPart
+
+# The latter proverbs are grammatically incorrect, but common errors, both in speech and transcription.
+# The list provided is taken from StefnuAtv in Greynir.grammar. That includes "aftur:ao", which is not applicable here.
+QIoTLocationPrepositionFirstPart ->
+    StaðarAtv
+    | "fram:ao"
+    | "inn:ao"
+    | "niður:ao"
+    | "upp:ao"
+    | "út:ao"
+
+QIoTLocationPrepositionSecondPart ->
+    "á" | "í"
+
+QIoTGroupNameNf ->
+    no_nf
+
+QIoTGroupNameÞgf ->
+    no_þgf
+
+QIoTAnnadAndlag ->
+    QIoTNewSettingNf
+
+QIoTAdHverju ->
+    "að" QIoTNewSettingÞgf
+
+QIoTAHvad ->
+    "á" QIoTNewSettingÞf
+
+QIoTSomethingOrSomehow ->
+    QIoTAnnadAndlag
+    | QIoTAdHverju
+
+QIotSomehow ->
+    QIoTAnnadAndlag
+
+QIoTLight/fall ->
+    QIoTLightName/fall
+    | QIoTLightWord/fall
+
+QIoTLightÞgf ->
+    QIoTLightNameÞgf
+    | QIoTLightWordÞgf
+
+QIoTLightEf ->
+    QIoTLightNameEf
+    | QIoTLightWordEf
+
+QIoTColorWord/fall ->
+    'litur'/fall
+    | 'litblær'_nf
+    | 'blær'_nf
