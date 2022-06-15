@@ -1,14 +1,14 @@
 "use strict";
 
 async function findHub() {
-    let hubArr = [];
-    let hubObj = new Object();
-    hubObj.id = "ecb5fafffe1be1a4";
-    hubObj.internalipaddress = "192.168.1.68";
-    hubObj.port = "443";
-    console.log(hubObj);
-    hubArr.push(hubObj);
-    return hubArr[0];
+    // let hubArr = [];
+    // let hubObj = new Object();
+    // hubObj.id = "ecb5fafffe1be1a4";
+    // hubObj.internalipaddress = "192.168.1.68";
+    // hubObj.port = "443";
+    // console.log(hubObj);
+    // hubArr.push(hubObj);
+    // return hubArr[0];
     return fetch(`https://discovery.meethue.com`)
         .then((resp) => resp.json())
         .then((obj) => {
