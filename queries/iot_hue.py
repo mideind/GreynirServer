@@ -99,7 +99,12 @@ GRAMMAR = f"""
 Query →
     QIoT
 
-QIoT → QIoTQuery '?'?
+QIoT → 
+    QIoTQuery '?'?
+    | QIoTConnectLights '?'?
+
+QIoTConnectLights →
+    "tengdu" "ljósin"
 
 QIoTQuery →
     QIoTTurnOn 
@@ -554,6 +559,10 @@ def QIoTGroupName(node: Node, params: QueryStateDict, result: Result) -> None:
 def QIoTLightName(node: Node, params: QueryStateDict, result: Result) -> None:
     result["light_name"] = result._indefinite
 
+def QIoTConnectLights(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qtype = "connect_lights"
+    result.action = "connect_lights"
+
 
 # Convert color name into hue
 # Taken from home.py
@@ -575,8 +584,23 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
-    host = str(flask.request.host)
-    print("host: ", host)
+    if result.qtype == "connect_lights":
+        host = str(flask.request.host)
+        print("host: ", host)
+        smartdevice_type = "smartlights"
+        client_id = str(q.client_id)
+        print("client_id:", client_id)
+        js = read_jsfile("IoT_Embla/Philips_Hue/hub.js")
+        js += f"syncConnectHub('{client_id}','{host}');"
+        answer = "Philips Hue miðstöðin hefur verið tengd"
+        voice_answer = answer
+        response = dict(answer=answer)
+        q.set_answer(response, answer, voice_answer)
+        q.set_command(js)
+
+        return
+
+
     smartdevice_type = "smartlights"
     client_id = str(q.client_id)
     print("client_id:", client_id)
@@ -588,7 +612,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     selected_light: Optional[str] = None
     hue_credentials: Optional[Dict[str, str]] = None
     
-
+    
     if device_data is not None and smartdevice_type in device_data:
         dev = device_data[smartdevice_type]
         assert dev is not None
@@ -599,11 +623,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         
 
     if not device_data or not hue_credentials:
-
-        js = read_jsfile("IoT_Embla/Philips_Hue/hub.js")
-        js += f"syncConnectHub('{client_id}','{host}');"
-        q.set_answer(*gen_answer("Reyndi að búa til user"))
-        q.set_command(js)
+        answer = "Philips Hue hefur ekki verið tengt"
+        q.set_answer(*gen_answer(answer))
         return
 
     # Successfully matched a query type
