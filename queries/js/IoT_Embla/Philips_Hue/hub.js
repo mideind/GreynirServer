@@ -95,7 +95,7 @@ async function connectHub(clientID, requestURL) {
 
 function syncConnectHub(clientID, requestURL) {
     connectHub(clientID, requestURL);
-    return clientID;
+    return "Philips Hue miðstöðin hefur verið tengd";
 }
 
 function syncConnectHubFromHTML() {

@@ -1,8 +1,8 @@
 "use strict";
 
 // Constants to be used when setting lights from HTML
-var BRIDGE_IP = "192.168.1.68";
-var USERNAME = "MQH9DVv1lhgaOKN67uVox4fWNc9iu3j5g7MmdDUr";
+// var BRIDGE_IP = "192.168.1.68";
+// var USERNAME = "MQH9DVv1lhgaOKN67uVox4fWNc9iu3j5g7MmdDUr";
 
 // TODO: Implement a hotfix for Ikea Tradfri bulbs, since it can only take one argument at a time
 
