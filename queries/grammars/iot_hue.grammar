@@ -1,7 +1,15 @@
+/þgf = þgf
+/ef = ef
+
 Query →
     QIoT
 
-QIoT → QIoTQuery '?'?
+QIoT → 
+    QIoTQuery '?'? 
+    | QIoTConnectLights '?'?
+
+QIoTConnectLights →
+    "tengdu" "ljósin"
 
 QIoTQuery ->
     QIoTMakeVerb QIoTMakeRest
@@ -9,6 +17,7 @@ QIoTQuery ->
     | QIoTChangeVerb QIoTChangeRest
     | QIoTLetVerb QIoTLetRest
     | QIoTTurnVerb QIoTTurnRest
+    | QIoTIncreaseOrDecreaseVerb QIoTIncreaseOrDecreaseRest
 
 QIoTMakeVerb ->
     'gera:so'_bh
@@ -23,38 +32,53 @@ QIoTChangeVerb ->
 QIoTLetVerb ->
     'láta:so'_bh
 
+QIoTTurnVerb ->
+    'kveikja:so'_bh
+
+QIoTIncreaseOrDecreaseVerb ->
+    QIoTIncreaseVerb
+    | QIoTDecreaseVerb
+
+QIoTIncreaseVerb ->
+    'hækka:so'_bh
+    | 'auka:so'_bh
+
+QIoTDecreaseVerb ->
+    'lækka:so'_bh
+    | 'minnka:so'_bh
+
 QIoTMakeRest ->
-    QIoTHvad QIoTHvar QIoTHvernigMake
-    | QIoTHvad QIoTHvernigMake QIoTHvar
-    | QIoTHvar QIoTHvad QIoTHvernigMake
-    | QIoTHvar QIoTHvernigMake QIoTHvad
-    | QIoTHvernigMake QIoTHvad QIoTHvar
-    | QIoTHvernigMake QIoTHvar QIoTHvad
+    QIoTSubject/þf QIoTHvar QIoTHvernigMake
+    | QIoTSubject/þf QIoTHvernigMake QIoTHvar
+    | QIoTHvar QIoTSubject/þf QIoTHvernigMake
+    | QIoTHvar QIoTHvernigMake QIoTSubject/þf
+    | QIoTHvernigMake QIoTSubject/þf QIoTHvar
+    | QIoTHvernigMake QIoTHvar QIoTSubject/þf
 
 # TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
 QIoTSetRest ->
-    QIoTHvad QIoTHvar QIoTHvernigSet
-    | QIoTHvad QIoTHvernigSet QIoTHvar
-    | QIoTHvar QIoTHvad QIoTHvernigSet
-    | QIoTHvar QIoTHvernigSet QIoTHvad
-    | QIoTHvernigSet QIoTHvad QIoTHvar
-    | QIoTHvernigSet QIoTHvar QIoTHvad
+    QIoTSubject/þf QIoTHvar QIoTHvernigSet
+    | QIoTSubject/þf QIoTHvernigSet QIoTHvar
+    | QIoTHvar QIoTSubject/þf QIoTHvernigSet
+    | QIoTHvar QIoTHvernigSet QIoTSubject/þf
+    | QIoTHvernigSet QIoTSubject/þf QIoTHvar
+    | QIoTHvernigSet QIoTHvar QIoTSubject/þf
 
 QIoTChangeRest ->
-    QIoTHverju QIoTHvar QIoTHvernigChange
-    | QIoTHverju QIoTHvernigChange QIoTHvar
-    | QIoTHvar QIoTHverju QIoTHvernigChange
-    | QIoTHvar QIoTHvernigChange QIoTHverju
-    | QIoTHvernigChange QIoTHverju QIoTHvar
-    | QIoTHvernigChange QIoTHvar QIoTHverju
+    QIoTSubjectOne/þgf QIoTHvar QIoTHvernigChange
+    | QIoTSubjectOne/þgf QIoTHvernigChange QIoTHvar
+    | QIoTHvar QIoTSubjectOne/þgf QIoTHvernigChange
+    | QIoTHvar QIoTHvernigChange QIoTSubjectOne/þgf
+    | QIoTHvernigChange QIoTSubjectOne/þgf QIoTHvar
+    | QIoTHvernigChange QIoTHvar QIoTSubjectOne/þgf
 
 QIoTLetRest ->
-    QIoTHvad QIoTHvar QIoTHvernigLet
-    | QIoTHvad QIoTHvernigLet QIoTHvar
-    | QIoTHvar QIoTHvad QIoTHvernigLet
-    | QIoTHvar QIoTHvernigLet QIoTHvad
-    | QIoTHvernigLet QIoTHvad QIoTHvar
-    | QIoTHvernigLet QIoTHvar QIoTHvad
+    QIoTSubject/þf QIoTHvar QIoTHvernigLet
+    | QIoTSubject/þf QIoTHvernigLet QIoTHvar
+    | QIoTHvar QIoTSubject/þf QIoTHvernigLet
+    | QIoTHvar QIoTHvernigLet QIoTSubject/þf
+    | QIoTHvernigLet QIoTSubject/þf QIoTHvar
+    | QIoTHvernigLet QIoTHvar QIoTSubject/þf
 
 QIoTTurnRest ->
     QIoTLightObject QIoTHvar
@@ -62,19 +86,24 @@ QIoTTurnRest ->
     | QIoTAHverju QIoTHvar
     | QIoTHvar QIoTAHverju
 
-QIoTHvad ->
-    QIoTLightSubject/nf
-    | QIoTColorSubject/nf
-    | QIoTBrightnessSubject/nf
-    | QIoTSceneSubject/nf
-    | QIoTGroupNameSubject/nf #á bara að styðja "gerðu eldhúsið rautt", "gerðu eldhúsið rómó" "gerðu eldhúsið bjartara", t.d.
+# TODO: Make the subject categorization cleaner
+QIoTIncreaseOrDecreaseRest ->
+    QIoTLightSubject/þgf QIoTHvar
+    | QIoTBrightnessSubject/þgf QIoTHvar
+
+QIoTSubject/fall ->
+    QIoTSubjectOne/fall
+    | QIoTSubjectTwo/fall
 
 # TODO: Decide whether LightSubject/þgf should be accepted
-QIoTHverju ->
-    QIoTLightSubject/þgf
-    | QIoTColorSubject/þgf
-    | QIoTBrightnessSubject/þgf
-    | QIoTSceneSubject/þgf
+QIoTSubjectOne/fall ->
+    QIoTLightSubject/fall
+    | QIoTColorSubject/fall
+    | QIoTBrightnessSubject/fall
+    | QIoTSceneSubject/fall
+
+QIoTSubjectTwo/fall ->
+    QIoTGroupNameSubject/fall # á bara að styðja "gerðu eldhúsið rautt", "gerðu eldhúsið rómó" "gerðu eldhúsið bjartara", t.d.
 
 QIoTHvar ->
     QIoTLocationPreposition QIoTGroupName/þgf
@@ -205,12 +234,18 @@ QIoTNewSetting/fall ->
     | QIoTNewScene/fall
 
 QIoTHuldaBrightness/fall ->
-    QIoTMore/fall
-    | QIoTLess/fall
-    | QIoTBrighter/fall
-    | QIoTDarker/fall
+    QIoTMoreBrighterOrHigher/fall
+    | QIoTLessDarkerOrLower/fall
 
-#Unsure about /fall after QIoTColorName
+#Unsure about whether to include /fall after QIoTColorName
 QIoTNewColor/fall ->
     QIoTColorWord/fall QIoTColorName
-    | 
+    | QIoTColorName/fall QIoTColorWord/fall?
+
+QIoTNewBrightness/fall ->
+    'sá'/fall? QIoTBrightestOrDarkest/fall
+    | QIoTBrightestOrDarkest/fall QIoTBrightnessOrSettingWord/fall
+
+QIoTNewScene/fall ->
+    QIoTSceneWord/fall QIoTSceneName
+    | QIoTSceneName QIoTSceneWord/fall
