@@ -76,11 +76,11 @@ def help_text(lemma: str) -> str:
     return "Ég skil þig ef þú segir til dæmis: {0}.".format(
         random.choice(
             (
-                "Kveiktu á ljósunum inni í eldhúsi.",
-                "Slökktu á leslampanum.",
-                "Breyttu lit lýsingarinnar í stofunni í bláan.",
-                "Gerðu ljósið í borðstofunni bjartara.",
-                "Stilltu á bjartasta niðri í kjallara.",
+                "Kveiktu á ljósunum inni í eldhúsi",
+                "Slökktu á leslampanum",
+                "Breyttu lit lýsingarinnar í stofunni í bláan",
+                "Gerðu ljósið í borðstofunni bjartara",
+                "Stilltu á bjartasta niðri í kjallara",
             )
         )
     )
@@ -239,16 +239,22 @@ QIoTHvar ->
 QIoTHvernigMake ->
     QIoTAnnadAndlag # gerðu litinn rauðan í eldhúsinu EÐA gerðu birtuna meiri í eldhúsinu
     | QIoTAdHverju # gerðu litinn að rauðum í eldhúsinu
+    | QIoTThannigAd
 
 QIoTHvernigSet ->
     QIoTAHvad
+    | QIoTThannigAd
 
 QIoTHvernigChange ->
     QIoTIHvad
+    | QIoTThannigAd
 
 QIoTHvernigLet ->
     QIoTBecome QIoTSomethingOrSomehow
     | QIoTBe QIoTSomehow
+
+QIoTThannigAd ->
+    "þannig" "að"? pfn_nf QIoTBeOrBecomeSubjunctive QIoTAnnadAndlag
 
 # I think these verbs only appear in these forms. 
 # In which case these terminals should be deleted and a direct reference should be made in the relevant non-terminals.
@@ -257,6 +263,10 @@ QIoTBe ->
 
 QIoTBecome ->
     "verða"
+
+QIoTBeOrBecomeSubjunctive ->
+    "verði"
+    | "sé"
 
 QIoTLightSubject/fall ->
     QIoTLight/fall
@@ -327,6 +337,7 @@ QIoTSomethingOrSomehow ->
 
 QIoTSomehow ->
     QIoTAnnadAndlag
+    | QIoTThannigAd
 
 QIoTLight/fall ->
     QIoTLightName/fall
