@@ -1,0 +1,311 @@
+/þgf = þgf
+/ef = ef
+
+Query →
+    QIoT
+
+QIoT → 
+    QIoTQuery '?'? 
+    | QIoTConnectLights '?'?
+
+QIoTConnectLights →
+    "tengdu" "ljósin"
+
+QIoTQuery ->
+    QIoTMakeVerb QIoTMakeRest
+    | QIoTSetVerb QIoTSetRest
+    | QIoTChangeVerb QIoTChangeRest
+    | QIoTLetVerb QIoTLetRest
+    | QIoTTurnOnVerb QIoTTurnOnRest
+    | QIoTTurnOffVerb QIoTTurnOffRest
+    | QIoTIncreaseOrDecreaseVerb QIoTIncreaseOrDecreaseRest
+
+QIoTMakeVerb ->
+    'gera:so'_bh
+
+QIoTSetVerb ->
+    'setja:so'_bh
+    | 'stilla:so'_bh
+
+QIoTChangeVerb ->
+    'breyta:so'_bh
+
+QIoTLetVerb ->
+    'láta:so'_bh
+
+QIoTTurnOnVerb ->
+    'kveikja:so'_bh
+
+QIoTTurnOffVerb ->
+    'slökkva:so'_bh
+
+QIoTIncreaseOrDecreaseVerb ->
+    QIoTIncreaseVerb
+    | QIoTDecreaseVerb
+
+QIoTIncreaseVerb ->
+    'hækka:so'_bh
+    | 'auka:so'_bh
+
+QIoTDecreaseVerb ->
+    'lækka:so'_bh
+    | 'minnka:so'_bh
+
+QIoTMakeRest ->
+    QIoTSubject/þf QIoTHvar? QIoTHvernigMake
+    | QIoTSubject/þf QIoTHvernigMake QIoTHvar?
+    | QIoTHvar? QIoTSubject/þf QIoTHvernigMake
+    | QIoTHvar? QIoTHvernigMake QIoTSubject/þf
+    | QIoTHvernigMake QIoTSubject/þf QIoTHvar?
+    | QIoTHvernigMake QIoTHvar? QIoTSubject/þf
+
+# TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
+QIoTSetRest ->
+    QIoTSubject/þf QIoTHvar? QIoTHvernigSet
+    | QIoTSubject/þf QIoTHvernigSet QIoTHvar?
+    | QIoTHvar? QIoTSubject/þf QIoTHvernigSet
+    | QIoTHvar? QIoTHvernigSet QIoTSubject/þf
+    | QIoTHvernigSet QIoTSubject/þf QIoTHvar?
+    | QIoTHvernigSet QIoTHvar? QIoTSubject/þf
+
+QIoTChangeRest ->
+    QIoTSubjectOne/þgf QIoTHvar? QIoTHvernigChange
+    | QIoTSubjectOne/þgf QIoTHvernigChange QIoTHvar?
+    | QIoTHvar? QIoTSubjectOne/þgf QIoTHvernigChange
+    | QIoTHvar? QIoTHvernigChange QIoTSubjectOne/þgf
+    | QIoTHvernigChange QIoTSubjectOne/þgf QIoTHvar?
+    | QIoTHvernigChange QIoTHvar? QIoTSubjectOne/þgf
+
+QIoTLetRest ->
+    QIoTSubject/þf QIoTHvar? QIoTHvernigLet
+    | QIoTSubject/þf QIoTHvernigLet QIoTHvar?
+    | QIoTHvar? QIoTSubject/þf QIoTHvernigLet
+    | QIoTHvar? QIoTHvernigLet QIoTSubject/þf
+    | QIoTHvernigLet QIoTSubject/þf QIoTHvar?
+    | QIoTHvernigLet QIoTHvar? QIoTSubject/þf
+
+QIoTTurnOnRest ->
+    QIoTTurnOnLightsRest
+    | QIoTAHverju QIoTHvar?
+    | QIoTHvar? QIoTAHverju
+
+QIoTTurnOnLightsRest ->
+    QIoTLightSubject/þf QIoTHvar?
+    | QIoTHvar? QIoTLightSubject/þf
+
+# Would be good to add "slökktu á rauða litnum" functionality
+QIoTTurnOffRest ->
+    QIoTTurnOffLightsRest
+
+QIoTTurnOffLightsRest ->
+    QIoTLightSubject/þf QIoTHvar?
+    | QIoTHvar? QIoTLightSubject/þf
+
+# TODO: Make the subject categorization cleaner
+QIoTIncreaseOrDecreaseRest ->
+    QIoTLightSubject/þf QIoTHvar?
+    | QIoTBrightnessSubject/þf QIoTHvar?
+
+QIoTSubject/fall ->
+    QIoTSubjectOne/fall
+    | QIoTSubjectTwo/fall
+
+# TODO: Decide whether LightSubject/þgf should be accepted
+QIoTSubjectOne/fall ->
+    QIoTLightSubject/fall
+    | QIoTColorSubject/fall
+    | QIoTBrightnessSubject/fall
+    | QIoTSceneSubject/fall
+
+QIoTSubjectTwo/fall ->
+    QIoTGroupNameSubject/fall # á bara að styðja "gerðu eldhúsið rautt", "gerðu eldhúsið rómó" "gerðu eldhúsið bjartara", t.d.
+
+QIoTHvar ->
+    QIoTLocationPreposition QIoTGroupName/þgf
+
+QIoTHvernigMake ->
+    QIoTAnnadAndlag # gerðu litinn rauðan í eldhúsinu EÐA gerðu birtuna meiri í eldhúsinu
+    | QIoTAdHverju # gerðu litinn að rauðum í eldhúsinu
+
+QIoTHvernigSet ->
+    QIoTAHvad
+
+QIoTHvernigChange ->
+    QIoTIHvad
+
+QIoTHvernigLet ->
+    QIoTBecome QIoTSomethingOrSomehow
+    | QIoTBe QIoTSomehow
+
+# I think these verbs only appear in these forms. 
+# In which case these terminals should be deleted and a direct reference should be made in the relevant non-terminals.
+QIoTBe ->
+    "vera"
+
+QIoTBecome ->
+    "verða"
+
+QIoTLightSubject/fall ->
+    QIoTLight/fall
+
+QIoTColorSubject/fall ->
+    QIoTColorWord/fall QIoTLight/ef?
+    | QIoTColorWord/fall "á" QIoTLight/þgf
+
+QIoTBrightnessSubject/fall ->
+    QIoTBrightnessWord/fall QIoTLight/ef?
+    | QIoTBrightnessWord/fall "á" QIoTLight/þgf
+
+QIoTSceneSubject/fall ->
+    QIoTSceneWord/fall
+
+QIoTGroupNameSubject/fall ->
+    QIoTGroupName/fall
+
+QIoTLocationPreposition ->
+    QIoTLocationPrepositionFirstPart? QIoTLocationPrepositionSecondPart
+
+# The latter proverbs are grammatically incorrect, but common errors, both in speech and transcription.
+# The list provided is taken from StefnuAtv in Greynir.grammar. That includes "aftur:ao", which is not applicable here.
+QIoTLocationPrepositionFirstPart ->
+    StaðarAtv
+    | "fram:ao"
+    | "inn:ao"
+    | "niður:ao"
+    | "upp:ao"
+    | "út:ao"
+
+QIoTLocationPrepositionSecondPart ->
+    "á" | "í"
+
+QIoTGroupName/fall ->
+    no/fall
+
+QIoTLightName/fall ->
+    no/fall
+
+QIoTColorName ->
+    {" | ".join(f"'{color}:lo'" for color in _COLORS.keys())}
+
+QIoTSceneName ->
+    no
+
+QIoTAnnadAndlag ->
+    QIoTNewSetting/nf
+    | QIoTSpyrjaHuldu/nf
+
+QIoTAdHverju ->
+    "að" QIoTNewSetting/þgf
+
+QIoTAHvad ->
+    "á" QIoTNewSetting/þf
+
+QIoTIHvad ->
+    "í" QIoTNewSetting/þf
+
+QIoTAHverju ->
+    "á" QIoTLight/þgf
+    | "á" QIoTNewSetting/þgf
+
+QIoTSomethingOrSomehow ->
+    QIoTAnnadAndlag
+    | QIoTAdHverju
+
+QIoTSomehow ->
+    QIoTAnnadAndlag
+
+QIoTLight/fall ->
+    QIoTLightName/fall
+    | QIoTLightWord/fall
+
+# Should 'birta' be included
+QIoTLightWord/fall ->
+    'ljós'/fall
+    | 'lýsing'/fall
+    | 'birta'/fall
+    | 'Birta'/fall
+
+QIoTColorWord/fall ->
+    'litur'/fall
+    | 'litblær'/fall
+    | 'blær'/fall
+
+QIoTBrightnessWords/fall ->
+    'bjartur'/fall
+    | QIoTBrightnessWord/fall
+
+QIoTBrightnessWord/fall ->
+    'birta'/fall
+    | 'Birta'/fall
+    | 'birtustig'/fall
+
+QIoTSceneWord/fall ->
+    'sena'/fall
+    | 'stemning'/fall
+    | 'stemming'/fall
+    | 'stemmning'/fall
+
+# Need to ask Hulda how this works.
+QIoTSpyrjaHuldu/fall ->
+    # QIoTHuldaColor/fall
+    QIoTHuldaBrightness/fall
+    # | QIoTHuldaScene/fall
+
+# Do I need a "new light state" non-terminal?
+QIoTNewSetting/fall ->
+    QIoTNewColor/fall
+    | QIoTNewBrightness/fall
+    | QIoTNewScene/fall
+
+# Missing "meira dimmt"
+QIoTHuldaBrightness/fall ->
+    QIoTMoreBrighterOrHigher/fall QIoTBrightnessWords/fall?
+    | QIoTLessDarkerOrLower/fall QIoTBrightnessWords/fall?
+
+#Unsure about whether to include /fall after QIoTColorName
+QIoTNewColor/fall ->
+    QIoTColorWord/fall QIoTColorName
+    | QIoTColorName QIoTColorWord/fall?
+
+QIoTNewBrightness/fall ->
+    'sá'/fall? QIoTBrightestOrDarkest/fall
+    | QIoTBrightestOrDarkest/fall QIoTBrightnessOrSettingWord/fall
+
+QIoTNewScene/fall ->
+    QIoTSceneWord/fall QIoTSceneName
+    | QIoTSceneName QIoTSceneWord/fall
+
+QIoTMoreBrighterOrHigher/fall ->
+    'mikill:lo'_mst/fall
+    | 'bjartur:lo'_mst/fall
+    | 'ljós:lo'_mst/fall
+    | 'hár:lo'_mst/fall
+
+QIoTLessDarkerOrLower/fall ->
+    'lítill:lo'_mst/fall
+    | 'dökkur:lo'_mst/fall
+    | 'dimmur:lo'_mst/fall
+    | 'lágur:lo'_mst/fall
+
+QIoTBrightestOrDarkest/fall ->
+    QIoTBrightest/fall
+    | QIoTDarkest/fall
+
+QIoTBrightest/fall ->
+    'bjartur:lo'_evb
+    | 'bjartur:lo'_esb
+    | 'ljós:lo'_evb
+    | 'ljós:lo'_esb
+
+QIoTDarkest/fall ->
+    'dimmur:lo'_evb
+    | 'dimmur:lo'_esb
+    | 'dökkur:lo'_evb
+    | 'dökkur:lo'_esb
+
+QIoTBrightnessOrSettingWord/fall ->
+    QIoTBrightnessWord/fall
+    | QIoTSettingWord/fall
+
+QIoTSettingWord/fall ->
+    'stilling'/fall
