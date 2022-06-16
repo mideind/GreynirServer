@@ -204,7 +204,7 @@ QIoTTurnOnRest ->
 
 QIoTTurnOnLightsRest ->
     QIoTLightSubject/þf QIoTHvar?
-    | QIoTHvar? QIoTLightSubject/þf
+    | QIoTHvar QIoTLightSubject/þf?
 
 # Would be good to add "slökktu á rauða litnum" functionality
 QIoTTurnOffRest ->
@@ -212,7 +212,7 @@ QIoTTurnOffRest ->
 
 QIoTTurnOffLightsRest ->
     QIoTLightSubject/þf QIoTHvar?
-    | QIoTHvar? QIoTLightSubject/þf
+    | QIoTHvar QIoTLightSubject/þf?
 
 # TODO: Make the subject categorization cleaner
 QIoTIncreaseOrDecreaseRest ->
@@ -302,6 +302,7 @@ QIoTColorName ->
 
 QIoTSceneName ->
     no
+    | lo
 
 QIoTAnnadAndlag ->
     QIoTNewSetting/nf
@@ -623,7 +624,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         username = hue_credentials.get("username")
 
     if not device_data or not hue_credentials:
-        answer = "ég var að kveikja ljósin! "
+        answer = "Það vantar að tengja Philips Hub-inn."
         q.set_answer(*gen_answer(answer))
         return
 

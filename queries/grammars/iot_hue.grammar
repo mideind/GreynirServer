@@ -91,7 +91,7 @@ QIoTTurnOnRest ->
 
 QIoTTurnOnLightsRest ->
     QIoTLightSubject/þf QIoTHvar?
-    | QIoTHvar? QIoTLightSubject/þf
+    | QIoTHvar QIoTLightSubject/þf?
 
 # Would be good to add "slökktu á rauða litnum" functionality
 QIoTTurnOffRest ->
@@ -99,7 +99,7 @@ QIoTTurnOffRest ->
 
 QIoTTurnOffLightsRest ->
     QIoTLightSubject/þf QIoTHvar?
-    | QIoTHvar? QIoTLightSubject/þf
+    | QIoTHvar QIoTLightSubject/þf?
 
 # TODO: Make the subject categorization cleaner
 QIoTIncreaseOrDecreaseRest ->
@@ -189,6 +189,7 @@ QIoTColorName ->
 
 QIoTSceneName ->
     no
+    | lo
 
 QIoTAnnadAndlag ->
     QIoTNewSetting/nf
