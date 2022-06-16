@@ -31,6 +31,7 @@
 # TODO: Cut down javascript sent to Embla
 # TODO: Two specified groups or lights.
 # TODO: No specified location
+# TODO: Fix scene issues
 
 from typing import Dict, Mapping, Optional, cast
 from typing_extensions import TypedDict
@@ -385,7 +386,7 @@ QIoTNewBrightness/fall ->
 
 QIoTNewScene/fall ->
     QIoTSceneWord/fall QIoTSceneName
-    | QIoTSceneName QIoTSceneWord/fall
+    | QIoTSceneName QIoTSceneWord/fall?
 
 QIoTMoreBrighterOrHigher/fall ->
     'mikill:lo'_mst/fall
@@ -542,6 +543,7 @@ def QIoTColorName(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QIoTSceneName(node: Node, params: QueryStateDict, result: Result) -> None:
     result["scene_name"] = result._indefinite
+    print(result.get("scene_name", None))
 
 
 def QIoTGroupName(node: Node, params: QueryStateDict, result: Result) -> None:

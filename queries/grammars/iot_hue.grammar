@@ -273,7 +273,7 @@ QIoTNewBrightness/fall ->
 
 QIoTNewScene/fall ->
     QIoTSceneWord/fall QIoTSceneName
-    | QIoTSceneName QIoTSceneWord/fall
+    | QIoTSceneName QIoTSceneWord/fall?
 
 QIoTMoreBrighterOrHigher/fall ->
     'mikill:lo'_mst/fall
