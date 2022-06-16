@@ -31,6 +31,7 @@
 # TODO: Cut down javascript sent to Embla
 # TODO: Two specified groups or lights.
 # TODO: No specified location
+# TODO: Fix scene issues
 
 from typing import Dict, Mapping, Optional, cast
 from typing_extensions import TypedDict
@@ -75,11 +76,11 @@ def help_text(lemma: str) -> str:
     return "Ég skil þig ef þú segir til dæmis: {0}.".format(
         random.choice(
             (
-                "Kveiktu á ljósunum inni í eldhúsi.",
-                "Slökktu á leslampanum.",
-                "Breyttu lit lýsingarinnar í stofunni í bláan.",
-                "Gerðu ljósið í borðstofunni bjartara.",
-                "Stilltu á bjartasta niðri í kjallara.",
+                "Kveiktu á ljósunum inni í eldhúsi",
+                "Slökktu á leslampanum",
+                "Breyttu lit lýsingarinnar í stofunni í bláan",
+                "Gerðu ljósið í borðstofunni bjartara",
+                "Stilltu á bjartasta niðri í kjallara",
             )
         )
     )
@@ -203,7 +204,7 @@ QIoTTurnOnRest ->
 
 QIoTTurnOnLightsRest ->
     QIoTLightSubject/þf QIoTHvar?
-    | QIoTHvar? QIoTLightSubject/þf
+    | QIoTHvar QIoTLightSubject/þf?
 
 # Would be good to add "slökktu á rauða litnum" functionality
 QIoTTurnOffRest ->
@@ -211,7 +212,7 @@ QIoTTurnOffRest ->
 
 QIoTTurnOffLightsRest ->
     QIoTLightSubject/þf QIoTHvar?
-    | QIoTHvar? QIoTLightSubject/þf
+    | QIoTHvar QIoTLightSubject/þf?
 
 # TODO: Make the subject categorization cleaner
 QIoTIncreaseOrDecreaseRest ->
@@ -238,16 +239,22 @@ QIoTHvar ->
 QIoTHvernigMake ->
     QIoTAnnadAndlag # gerðu litinn rauðan í eldhúsinu EÐA gerðu birtuna meiri í eldhúsinu
     | QIoTAdHverju # gerðu litinn að rauðum í eldhúsinu
+    | QIoTThannigAd
 
 QIoTHvernigSet ->
     QIoTAHvad
+    | QIoTThannigAd
 
 QIoTHvernigChange ->
     QIoTIHvad
+    | QIoTThannigAd
 
 QIoTHvernigLet ->
     QIoTBecome QIoTSomethingOrSomehow
     | QIoTBe QIoTSomehow
+
+QIoTThannigAd ->
+    "þannig" "að"? pfn_nf QIoTBeOrBecomeSubjunctive QIoTAnnadAndlag
 
 # I think these verbs only appear in these forms. 
 # In which case these terminals should be deleted and a direct reference should be made in the relevant non-terminals.
@@ -256,6 +263,10 @@ QIoTBe ->
 
 QIoTBecome ->
     "verða"
+
+QIoTBeOrBecomeSubjunctive ->
+    "verði"
+    | "sé"
 
 QIoTLightSubject/fall ->
     QIoTLight/fall
@@ -301,6 +312,7 @@ QIoTColorName ->
 
 QIoTSceneName ->
     no
+    | lo
 
 QIoTAnnadAndlag ->
     QIoTNewSetting/nf
@@ -325,6 +337,7 @@ QIoTSomethingOrSomehow ->
 
 QIoTSomehow ->
     QIoTAnnadAndlag
+    | QIoTThannigAd
 
 QIoTLight/fall ->
     QIoTLightName/fall
@@ -385,7 +398,7 @@ QIoTNewBrightness/fall ->
 
 QIoTNewScene/fall ->
     QIoTSceneWord/fall QIoTSceneName
-    | QIoTSceneName QIoTSceneWord/fall
+    | QIoTSceneName QIoTSceneWord/fall?
 
 QIoTMoreBrighterOrHigher/fall ->
     'mikill:lo'_mst/fall
@@ -542,6 +555,7 @@ def QIoTColorName(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QIoTSceneName(node: Node, params: QueryStateDict, result: Result) -> None:
     result["scene_name"] = result._indefinite
+    print(result.get("scene_name", None))
 
 
 def QIoTGroupName(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -621,7 +635,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         username = hue_credentials.get("username")
 
     if not device_data or not hue_credentials:
-        answer = "ég var að kveikja ljósin! "
+        answer = "Það vantar að tengja Philips Hub-inn."
         q.set_answer(*gen_answer(answer))
         return
 
