@@ -81,8 +81,8 @@ QIoTLetRest ->
     | QIoTHvernigLet QIoTHvar QIoTSubject/þf
 
 QIoTTurnRest ->
-    QIoTLightObject QIoTHvar
-    | QIoTHvar QIoTLightObject
+    QIoTLightSubject/þf QIoTHvar
+    | QIoTHvar QIoTLightSubject/þf
     | QIoTAHverju QIoTHvar
     | QIoTHvar QIoTAHverju
 
@@ -169,8 +169,8 @@ QIoTGroupName/fall ->
 QIoTLightName/fall ->
     no/fall
 
-QIoTColorName/fall ->
-    {" | ".join(f"'{color}:lo'/fall" for color in _COLORS.keys())}
+QIoTColorName ->
+    {" | ".join(f"'{color}:lo'" for color in _COLORS.keys())}
 
 QIoTAnnadAndlag ->
     QIoTNewSetting/nf
@@ -193,7 +193,7 @@ QIoTSomethingOrSomehow ->
     QIoTAnnadAndlag
     | QIoTAdHverju
 
-QIotSomehow ->
+QIoTSomehow ->
     QIoTAnnadAndlag
 
 QIoTLight/fall ->
@@ -210,6 +210,10 @@ QIoTColorWord/fall ->
     'litur'/fall
     | 'litblær'/fall
     | 'blær'/fall
+
+QIoTBrightnessWords/fall ->
+    'bjartur'/fall
+    | QIoTBrightnessWord/fall
 
 QIoTBrightnessWord/fall ->
     'birta'/fall
@@ -233,14 +237,15 @@ QIoTNewSetting/fall ->
     | QIoTNewBrightness/fall
     | QIoTNewScene/fall
 
+# Missing "meira dimmt"
 QIoTHuldaBrightness/fall ->
-    QIoTMoreBrighterOrHigher/fall
-    | QIoTLessDarkerOrLower/fall
+    QIoTMoreBrighterOrHigher/fall QIoTBrightnessWords/fall?
+    | QIoTLessDarkerOrLower/fall QIoTBrightnessWords/fall?
 
 #Unsure about whether to include /fall after QIoTColorName
 QIoTNewColor/fall ->
     QIoTColorWord/fall QIoTColorName
-    | QIoTColorName/fall QIoTColorWord/fall?
+    | QIoTColorName QIoTColorWord/fall?
 
 QIoTNewBrightness/fall ->
     'sá'/fall? QIoTBrightestOrDarkest/fall
@@ -249,3 +254,31 @@ QIoTNewBrightness/fall ->
 QIoTNewScene/fall ->
     QIoTSceneWord/fall QIoTSceneName
     | QIoTSceneName QIoTSceneWord/fall
+
+QIoTMoreBrighterOrHigher/fall ->
+    'mikill:lo'_mst/fall
+    | 'bjartur:lo'_mst/fall
+    | 'ljós:lo'_mst/fall
+    | 'hár:lo'_mst/fall
+
+QIoTLessDarkerOrLower/fall ->
+    'lítill:lo'_mst/fall
+    | 'dökkur:lo'_mst/fall
+    | 'dimmur:lo'_mst/fall
+    | 'lágur:lo'_mst/fall
+
+QIoTBrightestOrDarkest/fall ->
+    QIoTBrightest/fall
+    | QIoTDarkest/fall
+
+QIoTBrightest/fall ->
+    'bjartur:lo'_evb
+    | 'bjartur:lo'_esb
+    | 'ljós:lo'_evb
+    | 'ljós:lo'_esb
+
+QIoTDarkest/fall ->
+    'dimmur:lo'_evb
+    | 'dimmur:lo'_esb
+    | 'dökkur:lo'_evb
+    | 'dökkur:lo'_esb
