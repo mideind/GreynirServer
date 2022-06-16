@@ -16,7 +16,8 @@ QIoTQuery ->
     | QIoTSetVerb QIoTSetRest
     | QIoTChangeVerb QIoTChangeRest
     | QIoTLetVerb QIoTLetRest
-    | QIoTTurnVerb QIoTTurnRest
+    | QIoTTurnOnVerb QIoTTurnOnRest
+    | QIoTTurnOffVerb QIoTTurnOffRest
     | QIoTIncreaseOrDecreaseVerb QIoTIncreaseOrDecreaseRest
 
 QIoTMakeVerb ->
@@ -32,8 +33,11 @@ QIoTChangeVerb ->
 QIoTLetVerb ->
     'láta:so'_bh
 
-QIoTTurnVerb ->
+QIoTTurnOnVerb ->
     'kveikja:so'_bh
+
+QIoTTurnOffVerb ->
+    'slökkva:so'_bh
 
 QIoTIncreaseOrDecreaseVerb ->
     QIoTIncreaseVerb
@@ -48,48 +52,59 @@ QIoTDecreaseVerb ->
     | 'minnka:so'_bh
 
 QIoTMakeRest ->
-    QIoTSubject/þf QIoTHvar QIoTHvernigMake
-    | QIoTSubject/þf QIoTHvernigMake QIoTHvar
-    | QIoTHvar QIoTSubject/þf QIoTHvernigMake
-    | QIoTHvar QIoTHvernigMake QIoTSubject/þf
-    | QIoTHvernigMake QIoTSubject/þf QIoTHvar
-    | QIoTHvernigMake QIoTHvar QIoTSubject/þf
+    QIoTSubject/þf QIoTHvar? QIoTHvernigMake
+    | QIoTSubject/þf QIoTHvernigMake QIoTHvar?
+    | QIoTHvar? QIoTSubject/þf QIoTHvernigMake
+    | QIoTHvar? QIoTHvernigMake QIoTSubject/þf
+    | QIoTHvernigMake QIoTSubject/þf QIoTHvar?
+    | QIoTHvernigMake QIoTHvar? QIoTSubject/þf
 
 # TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
 QIoTSetRest ->
-    QIoTSubject/þf QIoTHvar QIoTHvernigSet
-    | QIoTSubject/þf QIoTHvernigSet QIoTHvar
-    | QIoTHvar QIoTSubject/þf QIoTHvernigSet
-    | QIoTHvar QIoTHvernigSet QIoTSubject/þf
-    | QIoTHvernigSet QIoTSubject/þf QIoTHvar
-    | QIoTHvernigSet QIoTHvar QIoTSubject/þf
+    QIoTSubject/þf QIoTHvar? QIoTHvernigSet
+    | QIoTSubject/þf QIoTHvernigSet QIoTHvar?
+    | QIoTHvar? QIoTSubject/þf QIoTHvernigSet
+    | QIoTHvar? QIoTHvernigSet QIoTSubject/þf
+    | QIoTHvernigSet QIoTSubject/þf QIoTHvar?
+    | QIoTHvernigSet QIoTHvar? QIoTSubject/þf
 
 QIoTChangeRest ->
-    QIoTSubjectOne/þgf QIoTHvar QIoTHvernigChange
-    | QIoTSubjectOne/þgf QIoTHvernigChange QIoTHvar
-    | QIoTHvar QIoTSubjectOne/þgf QIoTHvernigChange
-    | QIoTHvar QIoTHvernigChange QIoTSubjectOne/þgf
-    | QIoTHvernigChange QIoTSubjectOne/þgf QIoTHvar
-    | QIoTHvernigChange QIoTHvar QIoTSubjectOne/þgf
+    QIoTSubjectOne/þgf QIoTHvar? QIoTHvernigChange
+    | QIoTSubjectOne/þgf QIoTHvernigChange QIoTHvar?
+    | QIoTHvar? QIoTSubjectOne/þgf QIoTHvernigChange
+    | QIoTHvar? QIoTHvernigChange QIoTSubjectOne/þgf
+    | QIoTHvernigChange QIoTSubjectOne/þgf QIoTHvar?
+    | QIoTHvernigChange QIoTHvar? QIoTSubjectOne/þgf
 
 QIoTLetRest ->
-    QIoTSubject/þf QIoTHvar QIoTHvernigLet
-    | QIoTSubject/þf QIoTHvernigLet QIoTHvar
-    | QIoTHvar QIoTSubject/þf QIoTHvernigLet
-    | QIoTHvar QIoTHvernigLet QIoTSubject/þf
-    | QIoTHvernigLet QIoTSubject/þf QIoTHvar
-    | QIoTHvernigLet QIoTHvar QIoTSubject/þf
+    QIoTSubject/þf QIoTHvar? QIoTHvernigLet
+    | QIoTSubject/þf QIoTHvernigLet QIoTHvar?
+    | QIoTHvar? QIoTSubject/þf QIoTHvernigLet
+    | QIoTHvar? QIoTHvernigLet QIoTSubject/þf
+    | QIoTHvernigLet QIoTSubject/þf QIoTHvar?
+    | QIoTHvernigLet QIoTHvar? QIoTSubject/þf
 
-QIoTTurnRest ->
-    QIoTLightSubject/þf QIoTHvar
-    | QIoTHvar QIoTLightSubject/þf
-    | QIoTAHverju QIoTHvar
-    | QIoTHvar QIoTAHverju
+QIoTTurnOnRest ->
+    QIoTTurnOnLightsRest
+    | QIoTAHverju QIoTHvar?
+    | QIoTHvar? QIoTAHverju
+
+QIoTTurnOnLightsRest ->
+    QIoTLightSubject/þf QIoTHvar?
+    | QIoTHvar? QIoTLightSubject/þf
+
+# Would be good to add "slökktu á rauða litnum" functionality
+QIoTTurnOffRest ->
+    QIoTTurnOffLightsRest
+
+QIoTTurnOffLightsRest ->
+    QIoTLightSubject/þf QIoTHvar?
+    | QIoTHvar? QIoTLightSubject/þf
 
 # TODO: Make the subject categorization cleaner
 QIoTIncreaseOrDecreaseRest ->
-    QIoTLightSubject/þgf QIoTHvar
-    | QIoTBrightnessSubject/þgf QIoTHvar
+    QIoTLightSubject/þf QIoTHvar?
+    | QIoTBrightnessSubject/þf QIoTHvar?
 
 QIoTSubject/fall ->
     QIoTSubjectOne/fall
@@ -172,6 +187,9 @@ QIoTLightName/fall ->
 QIoTColorName ->
     {" | ".join(f"'{color}:lo'" for color in _COLORS.keys())}
 
+QIoTSceneName ->
+    no
+
 QIoTAnnadAndlag ->
     QIoTNewSetting/nf
     | QIoTSpyrjaHuldu/nf
@@ -205,6 +223,7 @@ QIoTLightWord/fall ->
     'ljós'/fall
     | 'lýsing'/fall
     | 'birta'/fall
+    | 'Birta'/fall
 
 QIoTColorWord/fall ->
     'litur'/fall
@@ -217,6 +236,7 @@ QIoTBrightnessWords/fall ->
 
 QIoTBrightnessWord/fall ->
     'birta'/fall
+    | 'Birta'/fall
     | 'birtustig'/fall
 
 QIoTSceneWord/fall ->
@@ -282,3 +302,10 @@ QIoTDarkest/fall ->
     | 'dimmur:lo'_esb
     | 'dökkur:lo'_evb
     | 'dökkur:lo'_esb
+
+QIoTBrightnessOrSettingWord/fall ->
+    QIoTBrightnessWord/fall
+    | QIoTSettingWord/fall
+
+QIoTSettingWord/fall ->
+    'stilling'/fall

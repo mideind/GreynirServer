@@ -648,9 +648,6 @@ def test_iot(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "stilltu lit ljóssins í eldhúsinu á grænan"}, "IoT")
     assert "ég var að kveikja ljósin! " in json["answer"]
 
-    json = qmcall(client, {"q": "gerðu grænt í eldhúsinu"}, "IoT")
-    assert "ég var að kveikja ljósin! " in json["answer"]
-
     json = qmcall(client, {"q": "kveiktu á ljósunum í eldhúsinu"}, "IoT")
     assert "ég var að kveikja ljósin! " in json["answer"]
 
@@ -669,14 +666,14 @@ def test_iot(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "slökktu ljósið inni í eldhúsi"}, "IoT")
     assert "ég var að kveikja ljósin! " in json["answer"]
 
-    json = qmcall(client, {"q": "gerðu birtuna inni í eldhúsi meira bjarta"}, "IoT")
-    assert "ég var að kveikja ljósin! " in json["answer"]
+    # json = qmcall(client, {"q": "gerðu meiri birtu inni í eldhúsi"}, "IoT")
+    # assert "ég var að kveikja ljósin! " in json["answer"]
 
-    json = qmcall(client, {"q": "gerðu ljósið inni í eldhúsi minna bjart"}, "IoT")
-    assert "ég var að kveikja ljósin! " in json["answer"]
+    # json = qmcall(client, {"q": "gerðu ljósið inni í eldhúsi minna bjart"}, "IoT")
+    # assert "ég var að kveikja ljósin! " in json["answer"]
 
-    json = qmcall(client, {"q": "gerðu meiri birtu inni í eldhúsi"}, "IoT")
-    assert "ég var að kveikja ljósin! " in json["answer"]
+    # json = qmcall(client, {"q": "gerðu grænt í eldhúsinu"}, "IoT")
+    # assert "ég var að kveikja ljósin! " in json["answer"]
 
 
 def test_ja(client: FlaskClient) -> None:
