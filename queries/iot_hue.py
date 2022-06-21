@@ -114,14 +114,10 @@ GRAMMAR = f"""
 /ef = ef
 
 Query →
-    QIoT
+    QIoT '?'?
 
 QIoT → 
-    QIoTQuery '?'? 
-    | QIoTConnectLights '?'?
-
-QIoTConnectLights →
-    "tengdu" "ljósin"
+    QIoTQuery
 
 QIoTQuery ->
     QIoTMakeVerb QIoTMakeRest
@@ -552,11 +548,6 @@ def QIoTLightName(node: Node, params: QueryStateDict, result: Result) -> None:
     result["light_name"] = result._indefinite
 
 
-def QIoTConnectLights(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qtype = "connect_lights"
-    result.action = "connect_lights"
-
-
 # Convert color name into hue
 # Taken from home.py
 _COLOR_NAME_TO_CIE: Mapping[str, float] = {
@@ -585,21 +576,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         return
 
     q.set_qtype(result.qtype)
-    if result.qtype == "connect_lights":
-        host = str(flask.request.host)
-        print("host: ", host)
-        smartdevice_type = "smartlights"
-        client_id = str(q.client_id)
-        print("client_id:", client_id)
-        js = read_jsfile("IoT_Embla/Philips_Hue/hub.js")
-        js += f"syncConnectHub('{client_id}','{host}');"
-        answer = "Philips Hue miðstöðin hefur verið tengd"
-        voice_answer = answer
-        response = dict(answer=answer)
-        q.set_answer(response, answer, voice_answer)
-        q.set_command(js)
-
-        return
 
     smartdevice_type = "smartlights"
     client_id = str(q.client_id)
@@ -610,6 +586,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     print("device data :", device_data)
 
     selected_light: Optional[str] = None
+    print("selected light:", selected_light)
     hue_credentials: Optional[Dict[str, str]] = None
 
     if device_data is not None and smartdevice_type in device_data:
