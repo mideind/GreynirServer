@@ -1,0 +1,23 @@
+# Example YAML file for fruitseller dialogue
+variables:
+    - &Success 1
+    - &Cancel -1
+
+states:
+    - Start:
+          Dialogue Entry: true
+          NextState:
+              OnYes: TakeOrder
+    - TakeOrder:
+          Prompt: "Hvernig ávexti má bjóða þér?"
+          RepeatPrompt: "Pöntunin þín samanstendur af {curr_order}. Verður það eitthvað fleira?"
+          NextState:
+              OnYes: TakeOrder
+              OnNo: "OrderReceived"
+              Cancel: *Cancel
+    - ConfirmOrder:
+          Prompt: "Pöntunin þín er {curr_order}. Viltu staðfesta pöntunina?"
+          NextState:
+              OnYes: *Success
+              OnNo: "TakeOrder"
+              Cancel: *Cancel
