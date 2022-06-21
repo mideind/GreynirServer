@@ -3,6 +3,25 @@ variables:
     - &Success 1
     - &Cancel -1
 
+resources:
+    - Fruits:
+        type: "list"
+        required: true
+        verification_function: "check_fruits"
+        prompt: "Hvaða ávexti má bjóða þér?"
+    - Date:
+        type: "date"
+        required: true
+        verification_function: "check_date"
+        prompt: "Hvenær viltu fá ávextina?"
+
+
+
+
+
+
+
+
 states:
     - Start:
           Dialogue Entry: true

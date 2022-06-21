@@ -1,5 +1,5 @@
 from tree import Result
-from .resource import Resource
+from queries.fruit_seller.resource import Resource
 from reynir import NounPhrase
 from typing import Optional, List
 

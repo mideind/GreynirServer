@@ -1,25 +1,33 @@
+from typing import cast
+
 import logging
+import pickle
+import base64
+
 from query import Query, QueryStateDict
 from tree import Result, Node
 from queries import gen_answer, parse_num
-from fruitstate import FruitStateManager
-import pickle
+from queries.fruit_seller.fruitstate import FruitStateManager
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = {"QFruitStartQuery", "QFruitQuery"}
+QUERY_NONTERMINALS = {"QFruit"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
-Query → QFruitStartQuery | QFruitQuery 
+Query → 
+    QFruit '?'?
+
+QFruit →
+    QFruitStartQuery | QFruitQuery
 
 QFruitStartQuery →
-    "ég" "vill" "kaupa" "ávexti"
-    | "ég" "vil" "kaupa" "ávexti"
+    "ég" "vill" "kaupa"? "ávexti"
+    | "ég" "vil" "kaupa"? "ávexti"
     | "mig" "langar" "að" "kaupa" "ávexti" "hjá"? "þér"?
     | "mig" "langar" "að" "panta" "ávexti" "hjá"? "þér"?
     | "get" "ég" "keypt" "ávexti" "hjá" "þér" '?'?
@@ -79,7 +87,7 @@ QFruitOptionsQuery →
     | "hvaða" "ávexti" "ertu" "með" '?'?
     | "hvaða" "ávextir" "eru" "í" "boði" '?'?
 
-QFruitList →  QNumOfFruit QNumOfFruit*
+QFruitList → QNumOfFruit QNumOfFruit*
 
 QNumOfFruit → QNum? QFruit "og"?
 
@@ -100,11 +108,11 @@ QCancelOrder → "ég" "hætti" "við"
 """
 
 # fruitStateManager = FruitStateManager()
+_START_CONVERSATION_QTYPE = "QFruitStartQuery"
 
 
 def QFruitStartQuery(node: Node, params: QueryStateDict, result: Result):
-    params[0]["_state"]["query"].set_client_data("conversation", "fruit_seller")
-    result.qtype = "QFruitStartQuery"
+    result.qtype = _START_CONVERSATION_QTYPE
 
 
 def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
@@ -154,29 +162,43 @@ def QFruit(node: Node, params: QueryStateDict, result: Result):
         result.fruit = fruit
 
 
-def updateClientData(query, fruitStateManager):
-    d = pickle.dumps(fruitStateManager)
-    query.set_client_data("conversation_data", d)
+def updateClientData(query: Query, fruitStateManager: FruitStateManager):
+    d: str = base64.b64encode(pickle.dumps(fruitStateManager)).decode("utf-8")
+    print("STORING DATA:", d)
+    query.set_client_data("conversation_data", {"obj": d})
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
+    conv_state = q.client_data("conversation")
+    conv_data = q.client_data("conversation_data")
+    qt = result.get("qtype")
+    print(conv_state, conv_data, qt)
     # checka hvort user se i samtali med q.client_data
-    if q.client_data("conversation") != "fruit_seller" or "qtype" not in result:
+    if qt != _START_CONVERSATION_QTYPE and conv_state is None:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
     # Successfully matched a query type
     try:
-        if result.qtype == "QFruitStartQuery":
+        if result.qtype == _START_CONVERSATION_QTYPE:
             fruitStateManager = FruitStateManager()
             fruitStateManager.startFruitOrder()
+            print("i am here 1")
+            q.set_client_data("conversation", {"in_dialogue": "fruit_seller"})
         else:
-            fruitStateManager = pickle.loads(q.client_data("conversation_data"))
+            print("i am here 2")
+            print(conv_data.get("obj"))
+            fruitStateManager = pickle.loads(
+                base64.b64decode(conv_data.get("obj").encode("utf-8"))
+            )
+            print("i am here 3")
             fruitStateManager.stateMethod(result.qtype, result)
+            print("i am here 4")
         updateClientData(q, fruitStateManager)
         ans = fruitStateManager.ans
+        print("i am here 5")
         if result.qtype == "OrderComplete" or result.qtype == "CancelOrder":
             q.set_client_data("conversation", None)
             q.set_client_data("conversation_data", None)
@@ -185,6 +207,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         return
     except Exception as e:
         logging.warning(
-            "Exception {0} while processing date query '{1}'".format(e, q.query)
+            "Exception {0} while processing fruit seller query '{1}'".format(e, q.query)
         )
         q.set_error("E_EXCEPTION: {0}".format(e))
