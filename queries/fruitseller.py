@@ -1,4 +1,4 @@
-from typing import cast
+from typing import Optional, cast
 
 import logging
 import pickle
@@ -19,7 +19,7 @@ QUERY_NONTERMINALS = {"QFruit"}
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
-Query → 
+Query →
     QFruit '?'?
 
 QFruit →
@@ -32,16 +32,16 @@ QFruitStartQuery →
     | "mig" "langar" "að" "panta" "ávexti" "hjá"? "þér"?
     | "get" "ég" "keypt" "ávexti" "hjá" "þér"
 
-QFruitQuery →  
-    QAddFruitQuery 
-    | QRemoveFruitQuery 
-    | QChangeFruitQuery 
+QFruitQuery →
+    QAddFruitQuery
+    | QRemoveFruitQuery
+    | QChangeFruitQuery
     | QFruitOptionsQuery
     | QYes
     | QNo
     | QCancelOrder
 
-QAddFruitQuery → 
+QAddFruitQuery →
     "já"? "má" "ég" "fá" QFruitList
     | "já"? "get" "ég" "fengið" QFruitList
     | "já"? "gæti" "ég" "fengið" QFruitList
@@ -67,7 +67,7 @@ QRemoveFruitQuery →
 QChangeFruitQuery →
     QChangeStart QFruitList QChangeConnector QFruitList
 
-QChangeStart → 
+QChangeStart →
     "breyttu"
     | "ég" "vil" "frekar"
     | "ég" "vill" "frekar"
@@ -76,7 +76,7 @@ QChangeStart →
     | "ég" "vil" "breyta"
     | "ég" "vill" "breyta"
 
-QChangeConnector → 
+QChangeConnector →
     "en" | "í" "staðinn" "fyrir"
 
 QFruitOptionsQuery →
@@ -109,6 +109,7 @@ QCancelOrder → "ég" "hætti" "við"
 
 # fruitStateManager = FruitStateManager()
 _START_CONVERSATION_QTYPE = "QFruitStartQuery"
+_DIALOGUE_NAME = "fruit_seller"
 
 
 def QFruitStartQuery(node: Node, params: QueryStateDict, result: Result):
@@ -164,19 +165,19 @@ def QFruit(node: Node, params: QueryStateDict, result: Result):
 
 def updateClientData(query: Query, fruitStateManager: FruitStateManager):
     d: str = base64.b64encode(pickle.dumps(fruitStateManager)).decode("utf-8")
-    print("STORING DATA:", d)
-    query.set_client_data("conversation_data", {"obj": d})
+    query.set_client_data(_DIALOGUE_NAME, {"state": d})
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
-    conv_state = q.client_data("conversation")
-    conv_data = q.client_data("conversation_data")
+    dialogue_state = q.get_dialogue_state()
     qt = result.get("qtype")
-    print(conv_state, conv_data, qt)
+
     # checka hvort user se i samtali med q.client_data
-    if qt != _START_CONVERSATION_QTYPE and conv_state is None:
+    if qt != _START_CONVERSATION_QTYPE and not (
+        dialogue_state and dialogue_state.get("in_dialogue") == _DIALOGUE_NAME
+    ):
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
@@ -185,23 +186,27 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         if result.qtype == _START_CONVERSATION_QTYPE:
             fruitStateManager = FruitStateManager()
             fruitStateManager.startFruitOrder()
-            print("i am here 1")
-            q.set_client_data("conversation", {"in_dialogue": "fruit_seller"})
+            q.start_dialogue(_DIALOGUE_NAME)
         else:
-            print("i am here 2")
-            print(conv_data.get("obj"))
-            fruitStateManager = pickle.loads(
-                base64.b64decode(conv_data.get("obj").encode("utf-8"))
+            if dialogue_state is None:
+                q.set_error("E_QUERY_NOT_UNDERSTOOD")
+                return
+            fruitmanager_serialized: Optional[str] = cast(
+                Optional[str], dialogue_state.get("obj")
             )
-            print("i am here 3")
+            if not fruitmanager_serialized:
+                q.set_error("E_QUERY_NOT_UNDERSTOOD")
+                return
+            fruitStateManager = pickle.loads(
+                base64.b64decode(fruitmanager_serialized.encode("utf-8"))
+            )
             fruitStateManager.stateMethod(result.qtype, result)
-            print("i am here 4")
+
         updateClientData(q, fruitStateManager)
         ans = fruitStateManager.ans
-        print("i am here 5")
+
         if result.qtype == "OrderComplete" or result.qtype == "CancelOrder":
-            q.set_client_data("conversation", None)
-            q.set_client_data("conversation_data", None)
+            q.end_dialogue()
 
         q.set_answer(*gen_answer(ans))
         return
