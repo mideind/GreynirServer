@@ -30,7 +30,7 @@ QFruitStartQuery →
     | "ég" "vil" "kaupa"? "ávexti"
     | "mig" "langar" "að" "kaupa" "ávexti" "hjá"? "þér"?
     | "mig" "langar" "að" "panta" "ávexti" "hjá"? "þér"?
-    | "get" "ég" "keypt" "ávexti" "hjá" "þér" '?'?
+    | "get" "ég" "keypt" "ávexti" "hjá" "þér"
 
 QFruitQuery →  
     QAddFruitQuery 
@@ -80,12 +80,12 @@ QChangeConnector →
     "en" | "í" "staðinn" "fyrir"
 
 QFruitOptionsQuery →
-    "hvað" "er" "í" "boði" '?'?
-    | "hverjir" "eru" "valmöguleikarnir" '?'?
-    | "hvaða" "valmöguleikar" "eru" "í" "boði" '?'?
-    | "hvaða" "valmöguleikar" "eru" "til" '?'?
-    | "hvaða" "ávexti" "ertu" "með" '?'?
-    | "hvaða" "ávextir" "eru" "í" "boði" '?'?
+    "hvað" "er" "í" "boði"
+    | "hverjir" "eru" "valmöguleikarnir"
+    | "hvaða" "valmöguleikar" "eru" "í" "boði" 
+    | "hvaða" "valmöguleikar" "eru" "til"
+    | "hvaða" "ávexti" "ertu" "með"
+    | "hvaða" "ávextir" "eru" "í" "boði"
 
 QFruitList → QNumOfFruit QNumOfFruit*
 

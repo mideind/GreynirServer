@@ -9,13 +9,13 @@ class Resource:
         self.fulfilled: bool = False
         self.state = None
 
-    def isRequired(self):
+    def isRequired(self) -> bool:
         return self.required
 
-    def getData(self):
+    def getData(self) -> Any:
         return self.data
 
-    def isFulfilled(self):
+    def isFulfilled(self) -> bool:
         return self.fulfilled
 
     def setData(self, data: Any):

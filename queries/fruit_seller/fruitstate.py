@@ -1,54 +1,59 @@
+from typing import Any, Optional, List
+
 from tree import Result
 from queries.fruit_seller.resource import Resource
 from reynir import NounPhrase
-from typing import Optional, List
 
 
 class FruitStateManager:
     def __init__(self):
         self.resources: List[Resource] = []
-        self.fruitState = None
+        self.fruitState: Optional[Resource] = None
         self.ans: Optional[str] = None
 
-    def startFruitOrder(self):
+    def startFruitOrder(self) -> None:
         # Order here is the priority of each resource
         self.resources.append(FruitState(required=True))
         self.resources.append(OrderReceivedState(required=True))
         self.updateState("FruitStart")
 
-    def generateAnswer(self, type):
+    def generateAnswer(self, type: str) -> None:
         if type == "FruitStart":
             self.ans = "Hvaða ávexti má bjóða þér?"
         elif type == "ListFruit":
-            if len(self.fruitState.data) != 0:
-                self.ans = "Komið! Pöntunin samanstendur af "
-                for fruitname in self.fruitState.data.keys():
-                    fruitNumber = self.fruitState.data[fruitname]
-                    if fruitname == "banani":
-                        self.ans += (
-                            "banana "
-                            if (fruitNumber == 1)
-                            else f"{fruitNumber} bönunum "
-                        )
-                    elif fruitname == "appelsína":
-                        self.ans += (
-                            "appelsínu "
-                            if (fruitNumber == 1)
-                            else f"{fruitNumber} appelsínum "
-                        )
-                    elif fruitname == "pera":
-                        self.ans += (
-                            "peru " if (fruitNumber == 1) else f"{fruitNumber} perum "
-                        )
-                    elif fruitname == "epli":
-                        self.ans += (
-                            "epli " if (fruitNumber == 1) else f"{fruitNumber} eplum "
-                        )
-                    else:
-                        self.ans += f"{'' if (fruitNumber == 1) else f'{fruitNumber} '}{NounPhrase(fruitname).dative} "
-                self.ans = self.ans.rstrip() + ". Var það eitthvað fleira?"
+            if self.fruitState is not None:
+                if len(self.fruitState.data) != 0:
+                    self.ans = "Komið! Pöntunin samanstendur af "
+                    for fruitname in self.fruitState.data.keys():
+                        fruitNumber = self.fruitState.data[fruitname]
+                        if fruitname == "banani":
+                            self.ans += (
+                                "banana "
+                                if (fruitNumber == 1)
+                                else f"{fruitNumber} bönunum "
+                            )
+                        elif fruitname == "appelsína":
+                            self.ans += (
+                                "appelsínu "
+                                if (fruitNumber == 1)
+                                else f"{fruitNumber} appelsínum "
+                            )
+                        elif fruitname == "pera":
+                            self.ans += (
+                                "peru " if (fruitNumber == 1) else f"{fruitNumber} perum "
+                            )
+                        elif fruitname == "epli":
+                            self.ans += (
+                                "epli " if (fruitNumber == 1) else f"{fruitNumber} eplum "
+                            )
+                        else:
+                            self.ans += f"{'' if (fruitNumber == 1) else f'{fruitNumber} '}{NounPhrase(fruitname).dative} "
+                    self.ans = self.ans.rstrip() + ". Var það eitthvað fleira?"
+                else:
+                    self.ans = "Komið! Karfan er núna tóm. Hvaða ávexti má bjóða þér?"
             else:
-                self.ans = "Komið! Karfan er núna tóm. Hvaða ávexti má bjóða þér?"
+                self.ans = "Kom upp villa, reyndu aftur."
+
         elif type == "FruitOrderNotFinished":
             self.ans = "Hverju viltu að bæta við pöntunina?"
         elif type == "FruitsFulfilled":
@@ -70,7 +75,7 @@ class FruitStateManager:
         elif type == "NoFruitToRemove":
             self.ans = "Engir ávextir eru í körfunni til að fjarlægja."
 
-    def updateState(self, type):
+    def updateState(self, type: str) -> None:
         for resource in self.resources:
             if resource.required and not resource.fulfilled:
                 if resource.data is None:
@@ -93,27 +98,30 @@ class FruitStateManager:
         self.generateAnswer(type)
         print("Current state: ", self.fruitState.state)
 
-    def stateMethod(self, methodName, result):
+    def stateMethod(self, methodName: str, result: Result):
         try:
-            method = getattr(self.fruitState.state, methodName)
-            if method is not None:
-                (
-                    self.fruitState.data,
-                    self.fruitState.partiallyFulfilled,
-                    self.fruitState.fulfilled,
-                ) = method(result)
-            self.updateState(result.qtype)
+            if self.fruitState is not None:
+                method = getattr(self.fruitState.state, methodName)
+                if method is not None:
+                    (
+                        self.fruitState.data,
+                        self.fruitState.partiallyFulfilled,
+                        self.fruitState.fulfilled,
+                    ) = method(result)
+                self.updateState(result.qtype)
+            else:
+                self.ans = "Kom upp villa, reyndu aftur."
         except Exception as e:
             print("Error: ", e)
             result.qtype = "FruitMethodNotFound"
 
 
 class FruitState(Resource):
-    def __init__(self, required=True):
+    def __init__(self, required: bool = True):
         super().__init__(required)
 
     class DataState:
-        def __init__(self, data, partiallyFulfilled, fulfilled):
+        def __init__(self, data: Any, partiallyFulfilled: bool, fulfilled: bool):
             self.data = data
             self.partiallyFulfilled = partiallyFulfilled
             self.fulfilled = fulfilled
@@ -159,7 +167,7 @@ class FruitState(Resource):
             return (self.data, self.partiallyFulfilled, self.fulfilled)
 
     class PartiallyFulfilledState(DataState):
-        def __init__(self, data, partiallyFulfilled, fulfilled):
+        def __init__(self, data: Any, partiallyFulfilled: bool, fulfilled: bool):
             super().__init__(data, partiallyFulfilled, fulfilled)
 
         # User is happy with the order, switch to confirm state
@@ -174,7 +182,7 @@ class FruitState(Resource):
             return (self.data, self.partiallyFulfilled, self.fulfilled)
 
     class FulfilledState(DataState):
-        def __init__(self, data, partiallyFulfilled, fulfilled):
+        def __init__(self, data: Any, partiallyFulfilled: bool, fulfilled: bool):
             super().__init__(data, partiallyFulfilled, fulfilled)
 
         # The order is correct, say the order is confirmed
@@ -191,7 +199,7 @@ class FruitState(Resource):
 
 
 class OrderReceivedState(FruitState):
-    def __init__(self, required=True):
+    def __init__(self, required: bool = True):
         super().__init__(required)
 
     # User is happy with the order, switch to confirm state
