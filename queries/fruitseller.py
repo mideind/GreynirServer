@@ -1,8 +1,6 @@
 from typing import Optional, cast
 
 import logging
-import pickle
-import base64
 
 from query import Query, QueryStateDict
 from tree import Result, Node
@@ -164,8 +162,9 @@ def QFruit(node: Node, params: QueryStateDict, result: Result):
 
 
 def updateClientData(query: Query, fruitStateManager: DialogueStateManager):
-    d: str = base64.b64encode(pickle.dumps(fruitStateManager)).decode("utf-8")
-    query.set_client_data(_DIALOGUE_NAME, {"state": d})
+    query.set_client_data(
+        _DIALOGUE_NAME, {"state": DialogueStateManager.serialize(fruitStateManager)}
+    )
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
@@ -188,8 +187,9 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         if result.qtype == _START_CONVERSATION_QTYPE:
             fruitStateManager = DialogueStateManager()
             fruitStateManager.initialize_resources(_START_CONVERSATION_QTYPE)
-            dialogue_state.update({"state": fruitStateManager})
-            q.start_dialogue(_DIALOGUE_NAME, dialogue_state)
+            q.start_dialogue(
+                _DIALOGUE_NAME, DialogueStateManager.serialize(fruitStateManager)
+            )
         else:
             if dialogue_state is None:
                 print("Dialogue state is none")
@@ -203,8 +203,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 print("Fruitmanager not serialized")
                 q.set_error("E_QUERY_NOT_UNDERSTOOD")
                 return
-            fruitStateManager = pickle.loads(
-                base64.b64decode(fruitmanager_serialized.encode("utf-8"))
+            fruitStateManager = DialogueStateManager.deserialize(
+                fruitmanager_serialized
             )
             fruitStateManager.stateMethod(result.qtype, result)
 

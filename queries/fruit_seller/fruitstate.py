@@ -1,9 +1,13 @@
 from typing import Any, Optional, List
 
+import pickle
+import base64
+
 from tree import Result
 from queries.fruit_seller.resource import Resource
 from reynir import NounPhrase
 from queries import natlang_seq, sing_or_plur
+
 
 def _list_items(items: Any) -> str:
     item_list: List[str] = []
@@ -13,6 +17,7 @@ def _list_items(items: Any) -> str:
         plural_name: str = NounPhrase(name).dative or name
         item_list.append(sing_or_plur(number, name, plural_name))
     return natlang_seq(item_list)
+
 
 class DialogueStateManager:
     def __init__(self):
@@ -102,12 +107,20 @@ class DialogueStateManager:
             print("Error: ", e)
             result.qtype = "FruitMethodNotFound"
 
+    @classmethod
+    def serialize(cls, instance: "DialogueStateManager") -> str:
+        return base64.b64encode(pickle.dumps(instance)).decode("utf-8")
+
+    @classmethod
+    def deserialize(cls, serialized: str) -> "DialogueStateManager":
+        return pickle.loads(base64.b64decode(serialized.encode("utf-8")))
+
 
 class FruitState(Resource):
     def __init__(self, required: bool = True):
         super().__init__(required)
 
-    #def generate_answer
+    # def generate_answer
 
     class DataState:
         def __init__(self, data: Any, partiallyFulfilled: bool, fulfilled: bool):
