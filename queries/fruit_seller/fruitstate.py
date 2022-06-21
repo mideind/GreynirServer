@@ -3,52 +3,39 @@ from typing import Any, Optional, List
 from tree import Result
 from queries.fruit_seller.resource import Resource
 from reynir import NounPhrase
+from queries import natlang_seq, sing_or_plur
 
+def _list_items(items: Any) -> str:
+    item_list: List[str] = []
+    for name in items.keys():
+        number: int = items[name]
+        # TODO: get general plural form
+        plural_name: str = NounPhrase(name).dative or name
+        item_list.append(sing_or_plur(number, name, plural_name))
+    return natlang_seq(item_list)
 
-class FruitStateManager:
+class DialogueStateManager:
     def __init__(self):
         self.resources: List[Resource] = []
-        self.fruitState: Optional[Resource] = None
+        self.resourceState: Optional[Resource] = None
         self.ans: Optional[str] = None
 
-    def startFruitOrder(self) -> None:
+    def initialize_resources(self, dialogue: str) -> None:
         # Order here is the priority of each resource
+        # TODO: parse yaml, add resources from yaml file
         self.resources.append(FruitState(required=True))
         self.resources.append(OrderReceivedState(required=True))
-        self.updateState("FruitStart")
+        self.updateState(dialogue)
 
     def generateAnswer(self, type: str) -> None:
-        if type == "FruitStart":
+        if type == "QFruitStartQuery":
             self.ans = "Hvaða ávexti má bjóða þér?"
         elif type == "ListFruit":
-            if self.fruitState is not None:
-                if len(self.fruitState.data) != 0:
+            if self.resourceState is not None:
+                if len(self.resourceState.data) != 0:
                     self.ans = "Komið! Pöntunin samanstendur af "
-                    for fruitname in self.fruitState.data.keys():
-                        fruitNumber = self.fruitState.data[fruitname]
-                        if fruitname == "banani":
-                            self.ans += (
-                                "banana "
-                                if (fruitNumber == 1)
-                                else f"{fruitNumber} bönunum "
-                            )
-                        elif fruitname == "appelsína":
-                            self.ans += (
-                                "appelsínu "
-                                if (fruitNumber == 1)
-                                else f"{fruitNumber} appelsínum "
-                            )
-                        elif fruitname == "pera":
-                            self.ans += (
-                                "peru " if (fruitNumber == 1) else f"{fruitNumber} perum "
-                            )
-                        elif fruitname == "epli":
-                            self.ans += (
-                                "epli " if (fruitNumber == 1) else f"{fruitNumber} eplum "
-                            )
-                        else:
-                            self.ans += f"{'' if (fruitNumber == 1) else f'{fruitNumber} '}{NounPhrase(fruitname).dative} "
-                    self.ans = self.ans.rstrip() + ". Var það eitthvað fleira?"
+                    _list_items(self.resourceState.data)
+                    self.ans += ". Var það eitthvað fleira?"
                 else:
                     self.ans = "Komið! Karfan er núna tóm. Hvaða ávexti má bjóða þér?"
             else:
@@ -79,8 +66,8 @@ class FruitStateManager:
         for resource in self.resources:
             if resource.required and not resource.fulfilled:
                 if resource.data is None:
-                    if self.fruitState is not resource:
-                        self.fruitState = resource
+                    if self.resourceState is not resource:
+                        self.resourceState = resource
                     resource.state = resource.DataState(
                         resource.data, resource.partiallyFulfilled, resource.fulfilled
                     )
@@ -96,17 +83,17 @@ class FruitStateManager:
                     )
                     break
         self.generateAnswer(type)
-        print("Current state: ", self.fruitState.state)
+        print("Current state: ", self.resourceState.state)
 
     def stateMethod(self, methodName: str, result: Result):
         try:
-            if self.fruitState is not None:
-                method = getattr(self.fruitState.state, methodName)
+            if self.resourceState is not None:
+                method = getattr(self.resourceState.state, methodName)
                 if method is not None:
                     (
-                        self.fruitState.data,
-                        self.fruitState.partiallyFulfilled,
-                        self.fruitState.fulfilled,
+                        self.resourceState.data,
+                        self.resourceState.partiallyFulfilled,
+                        self.resourceState.fulfilled,
                     ) = method(result)
                 self.updateState(result.qtype)
             else:
@@ -119,6 +106,8 @@ class FruitStateManager:
 class FruitState(Resource):
     def __init__(self, required: bool = True):
         super().__init__(required)
+
+    #def generate_answer
 
     class DataState:
         def __init__(self, data: Any, partiallyFulfilled: bool, fulfilled: bool):

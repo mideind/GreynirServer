@@ -7,7 +7,7 @@ import base64
 from query import Query, QueryStateDict
 from tree import Result, Node
 from queries import gen_answer, parse_num
-from queries.fruit_seller.fruitstate import FruitStateManager
+from queries.fruit_seller.fruitstate import DialogueStateManager
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -163,7 +163,7 @@ def QFruit(node: Node, params: QueryStateDict, result: Result):
         result.fruit = fruit
 
 
-def updateClientData(query: Query, fruitStateManager: FruitStateManager):
+def updateClientData(query: Query, fruitStateManager: DialogueStateManager):
     d: str = base64.b64encode(pickle.dumps(fruitStateManager)).decode("utf-8")
     query.set_client_data(_DIALOGUE_NAME, {"state": d})
 
@@ -171,30 +171,36 @@ def updateClientData(query: Query, fruitStateManager: FruitStateManager):
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
-    dialogue_state = q.get_dialogue_state()
+    dialogue_state = q.get_dialogue_state() or {}
     qt = result.get("qtype")
 
     # checka hvort user se i samtali med q.client_data
     if qt != _START_CONVERSATION_QTYPE and not (
         dialogue_state and dialogue_state.get("in_dialogue") == _DIALOGUE_NAME
     ):
+        print("User not in dialogue")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
     # Successfully matched a query type
     try:
+        print("Qtypy: ", result.qtype)
         if result.qtype == _START_CONVERSATION_QTYPE:
-            fruitStateManager = FruitStateManager()
-            fruitStateManager.startFruitOrder()
-            q.start_dialogue(_DIALOGUE_NAME)
+            fruitStateManager = DialogueStateManager()
+            fruitStateManager.initialize_resources(_START_CONVERSATION_QTYPE)
+            dialogue_state.update({"state": fruitStateManager})
+            q.start_dialogue(_DIALOGUE_NAME, dialogue_state)
         else:
             if dialogue_state is None:
+                print("Dialogue state is none")
                 q.set_error("E_QUERY_NOT_UNDERSTOOD")
                 return
+            print(dialogue_state)
             fruitmanager_serialized: Optional[str] = cast(
-                Optional[str], dialogue_state.get("obj")
+                Optional[str], dialogue_state.get("state")
             )
             if not fruitmanager_serialized:
+                print("Fruitmanager not serialized")
                 q.set_error("E_QUERY_NOT_UNDERSTOOD")
                 return
             fruitStateManager = pickle.loads(

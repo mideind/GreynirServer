@@ -896,9 +896,9 @@ class Query:
         """Fetch the dialogue state for a client"""
         return self.client_data(_DIALOGUE_DATA_KEY)
 
-    def start_dialogue(self, dialogue_name: str) -> None:
+    def start_dialogue(self, dialogue_name: str, data: Dict[str, Any]) -> None:
         """Set the clients state to be in the given dialogue"""
-        self.set_client_data(_DIALOGUE_DATA_KEY, {"in_dialogue": dialogue_name})
+        self.set_client_data(_DIALOGUE_DATA_KEY, {"in_dialogue": dialogue_name, **data})
 
     def end_dialogue(self) -> None:
         """End the client's current dialogue"""
