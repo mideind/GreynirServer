@@ -33,13 +33,14 @@ class DialogueStateManager:
         self.updateState(dialogue)
 
     def generateAnswer(self, type: str) -> None:
+        # TODO: Move answers into each state and get the answer here
         if type == "QFruitStartQuery":
             self.ans = "Hvaða ávexti má bjóða þér?"
         elif type == "ListFruit":
             if self.resourceState is not None:
                 if len(self.resourceState.data) != 0:
                     self.ans = "Komið! Pöntunin samanstendur af "
-                    _list_items(self.resourceState.data)
+                    self.ans += _list_items(self.resourceState.data)
                     self.ans += ". Var það eitthvað fleira?"
                 else:
                     self.ans = "Komið! Karfan er núna tóm. Hvaða ávexti má bjóða þér?"

@@ -12,19 +12,20 @@ from queries.fruit_seller.fruitstate import DialogueStateManager
 HANDLE_TREE = True
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = {"QFruit"}
+QUERY_NONTERMINALS = {"QFruitSeller"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
 Query →
-    QFruit '?'?
+    QFruitSeller '?'?
 
-QFruit →
+QFruitSeller →
     QFruitStartQuery | QFruitQuery
 
 QFruitStartQuery →
-    "ég" "vill" "kaupa"? "ávexti"
+    "ávöxtur"
+    | "ég" "vill" "kaupa"? "ávexti"
     | "ég" "vil" "kaupa"? "ávexti"
     | "mig" "langar" "að" "kaupa" "ávexti" "hjá"? "þér"?
     | "mig" "langar" "að" "panta" "ávexti" "hjá"? "þér"?
@@ -40,7 +41,7 @@ QFruitQuery →
     | QCancelOrder
 
 QAddFruitQuery →
-    "já"? "má" "ég" "fá" QFruitList
+    "já"? "má"? "ég"? "fá"? QFruitList
     | "já"? "get" "ég" "fengið" QFruitList
     | "já"? "gæti" "ég" "fengið" QFruitList
     | "já"? "ég" "vil" "fá" QFruitList
@@ -140,7 +141,7 @@ def QNo(node: Node, params: QueryStateDict, result: Result):
 
 def QNumOfFruit(node: Node, params: QueryStateDict, result: Result):
     if "queryfruits" not in result:
-        result.queryfruits = {}
+        result.queryfruits = dict()
     if "fruitnumber" not in result:
         result.queryfruits[result.fruit] = 1
     else:
@@ -163,7 +164,10 @@ def QFruit(node: Node, params: QueryStateDict, result: Result):
 
 def updateClientData(query: Query, fruitStateManager: DialogueStateManager):
     query.set_client_data(
-        _DIALOGUE_NAME, {"state": DialogueStateManager.serialize(fruitStateManager)}
+        "dialogue", {
+            "in_dialogue": _DIALOGUE_NAME,
+            "state": DialogueStateManager.serialize(fruitStateManager)
+        }
     )
 
 
@@ -177,13 +181,11 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     if qt != _START_CONVERSATION_QTYPE and not (
         dialogue_state and dialogue_state.get("in_dialogue") == _DIALOGUE_NAME
     ):
-        print("User not in dialogue")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
     # Successfully matched a query type
     try:
-        print("Qtypy: ", result.qtype)
         if result.qtype == _START_CONVERSATION_QTYPE:
             fruitStateManager = DialogueStateManager()
             fruitStateManager.initialize_resources(_START_CONVERSATION_QTYPE)
@@ -192,20 +194,18 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             )
         else:
             if dialogue_state is None:
-                print("Dialogue state is none")
                 q.set_error("E_QUERY_NOT_UNDERSTOOD")
                 return
-            print(dialogue_state)
             fruitmanager_serialized: Optional[str] = cast(
                 Optional[str], dialogue_state.get("state")
             )
             if not fruitmanager_serialized:
-                print("Fruitmanager not serialized")
                 q.set_error("E_QUERY_NOT_UNDERSTOOD")
                 return
             fruitStateManager = DialogueStateManager.deserialize(
                 fruitmanager_serialized
             )
+
             fruitStateManager.stateMethod(result.qtype, result)
 
         updateClientData(q, fruitStateManager)
