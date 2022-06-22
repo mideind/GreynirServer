@@ -72,6 +72,7 @@ class ListResource(Resource):
         raise NotImplementedError()
 
     def generate_answer(self) -> str:
+        print("State: ", self.state)
         ans: str = ""
         if self.state is ResourceState.UNFULFILLED:
             if self._repeat_count == 0 or not self.repeatable:
@@ -86,6 +87,8 @@ class ListResource(Resource):
                 ans = (
                     f"{self.confirm_prompt.format(list_items = _list_items(self.data))}"
                 )
+        if self.state is ResourceState.CONFIRMED:
+            ans = "Pöntunin er staðfest."
         return ans
 
 

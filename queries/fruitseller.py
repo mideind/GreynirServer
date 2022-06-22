@@ -138,10 +138,16 @@ def QFruitOptionsQuery(node: Node, params: QueryStateDict, result: Result):
 
 
 def QYes(node: Node, params: QueryStateDict, result: Result):
+    if "callbacks" not in result:
+        result["callbacks"] = []
+    result.callbacks.append(_parse_yes)
     result.qtype = "QYes"
 
 
 def QNo(node: Node, params: QueryStateDict, result: Result):
+    if "callbacks" not in result:
+        result["callbacks"] = []
+    result.callbacks.append(_parse_no)
     result.qtype = "QNo"
 
 
@@ -175,6 +181,10 @@ def _remove_fruit(resource: Resource, result: Result) -> None:
                 if name == fruitname:
                     resource.data.remove([number, name])
                     break
+    if len(resource.data) == 0:
+        resource.state = ResourceState.UNFULFILLED
+    else:
+        resource.state = ResourceState.PARTIALLY_FULFILLED
 
 
 def _add_fruit(resource: Resource, result: Result) -> None:
@@ -184,6 +194,22 @@ def _add_fruit(resource: Resource, result: Result) -> None:
         resource.data.append((number, name))
     resource.state = ResourceState.PARTIALLY_FULFILLED
 
+def _parse_no(resource: Resource, result: Result) -> None:
+    print("No callback")
+    if resource.name == "Fruits":
+        if resource.state == ResourceState.PARTIALLY_FULFILLED:
+            print("State is PARTIALLY_FULFILLED")
+            resource.state = ResourceState.FULFILLED
+            print("State after setting to FULFILLED")
+        elif resource.state == ResourceState.FULFILLED:
+            print("State is FULFILLED")
+            resource.state = ResourceState.PARTIALLY_FULFILLED
+            print("State after setting to PARTIALLY_FULFILLED")
+
+def _parse_yes(resource: Resource, result: Result) -> None:
+    if resource.name == "Fruits":
+        if resource.state == ResourceState.FULFILLED:
+            resource.state = ResourceState.CONFIRMED
 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
