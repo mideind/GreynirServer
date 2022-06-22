@@ -90,9 +90,11 @@ QFruitList → QNumOfFruit QNumOfFruit*
 
 QNumOfFruit → QNum? QFruit "og"?
 
-QNum → 'einn' | 'tveir' | 'þrír' | 'fjórir' | "fimm" | "sex" | "sjö" 
-    | "átta" | "níu" | "tíu" | "ellefu" | "tólf" | "þrettán" | "fjórtán" 
-    | "fimmtán" | "sextán" | "sautján" | "átján" | "nítján"
+QNum →
+    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
+    # töl is an undeclinable number word ('sautján')
+    # tala is a number ('17')
+    to | töl | tala
 
 QFruit → 'banani' | 'epli' | 'pera' | 'appelsína'
 

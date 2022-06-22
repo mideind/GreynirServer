@@ -32,41 +32,11 @@ class DialogueStateManager:
         self.resources.append(OrderReceivedState(required=True))
         self.updateState(dialogue)
 
-    def generateAnswer(self, type: str) -> None:
-        # TODO: Move answers into each state and get the answer here
-        if type == "QFruitStartQuery":
-            self.ans = "Hvaða ávexti má bjóða þér?"
-        elif type == "ListFruit":
-            if self.resourceState is not None:
-                if len(self.resourceState.data) != 0:
-                    self.ans = "Komið! Pöntunin samanstendur af "
-                    self.ans += _list_items(self.resourceState.data)
-                    self.ans += ". Var það eitthvað fleira?"
-                else:
-                    self.ans = "Komið! Karfan er núna tóm. Hvaða ávexti má bjóða þér?"
-            else:
-                self.ans = "Kom upp villa, reyndu aftur."
-
-        elif type == "FruitOrderNotFinished":
-            self.ans = "Hverju viltu að bæta við pöntunina?"
-        elif type == "FruitsFulfilled":
-            self.ans = "Frábært! Á ég að staðfesta pöntunina?"
-        elif type == "FruitMethodNotFound":
-            self.ans = "Ég get ekki tekið við þessari beiðni strax."
-        elif type == "OrderComplete":
-            self.ans = "Frábært, pöntunin er staðfest!"
-        elif type == "OrderWrong":
-            self.ans = "Leitt að heyra, viltu hætta við pöntunina eða breyta henni?"
-        elif type == "CancelOrder":
-            self.ans = "Móttekið. Hætti við pöntunina."
-        elif type == "FruitOptions":
-            self.ans = "Hægt er að panta appelsínur, banana, epli og perur."
-        elif type == "FruitRemoved":
-            self.ans = "Karfan hefur verið uppfærð. Var það eitthvað fleira?"
-        elif type == "NoFruitMatched":
-            self.ans = "Enginn ávöxtur í körfunni passaði við beiðnina á undan."
-        elif type == "NoFruitToRemove":
-            self.ans = "Engir ávextir eru í körfunni til að fjarlægja."
+    def generate_answer(self, type: str) -> None:
+        if self.resourceState is not None:
+            self.ans = self.resourceState.generate_answer(type)
+        else:
+            self.ans = "Kom upp villa, reyndu aftur."
 
     def updateState(self, type: str) -> None:
         for resource in self.resources:
@@ -88,7 +58,7 @@ class DialogueStateManager:
                         resource.data, resource.partiallyFulfilled, resource.fulfilled
                     )
                     break
-        self.generateAnswer(type)
+        self.generate_answer(type)
         print("Current state: ", self.resourceState.state)
 
     def stateMethod(self, methodName: str, result: Result):
@@ -121,7 +91,39 @@ class FruitState(Resource):
     def __init__(self, required: bool = True):
         super().__init__(required)
 
-    # def generate_answer
+    def generate_answer(self, type: str) -> str:
+        ans: str = ""
+        if type == "QFruitStartQuery":
+            ans = "Hvaða ávexti má bjóða þér?"
+        elif type == "ListFruit":
+            if len(self.data) != 0:
+                ans = "Komið! Pöntunin samanstendur af "
+                ans += _list_items(self.data)
+                ans += ". Var það eitthvað fleira?"
+            else:
+                ans = "Komið! Karfan er núna tóm. Hvaða ávexti má bjóða þér?"
+
+        elif type == "FruitOrderNotFinished":
+            ans = "Hverju viltu að bæta við pöntunina?"
+        elif type == "FruitsFulfilled":
+            ans = "Frábært! Á ég að staðfesta pöntunina?"
+        elif type == "FruitMethodNotFound":
+            self.ans = "Ég get ekki tekið við þessari beiðni strax."
+        elif type == "OrderComplete":
+            ans = "Frábært, pöntunin er staðfest!"
+        elif type == "OrderWrong":
+            ans = "Leitt að heyra, viltu hætta við pöntunina eða breyta henni?"
+        elif type == "CancelOrder":
+            ans = "Móttekið. Hætti við pöntunina."
+        elif type == "FruitOptions":
+            ans = "Hægt er að panta appelsínur, banana, epli og perur."
+        elif type == "FruitRemoved":
+            ans = "Karfan hefur verið uppfærð. Var það eitthvað fleira?"
+        elif type == "NoFruitMatched":
+            ans = "Enginn ávöxtur í körfunni passaði við beiðnina á undan."
+        elif type == "NoFruitToRemove":
+            ans = "Engir ávextir eru í körfunni til að fjarlægja."
+        return ans
 
     class DataState:
         def __init__(self, data: Any, partiallyFulfilled: bool, fulfilled: bool):

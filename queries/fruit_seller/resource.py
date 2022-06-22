@@ -9,20 +9,8 @@ class Resource:
         self.fulfilled: bool = False
         self.state = None
 
-    def isRequired(self) -> bool:
-        return self.required
-
-    def getData(self) -> Any:
-        return self.data
-
-    def isFulfilled(self) -> bool:
-        return self.fulfilled
-
-    def setData(self, data: Any):
-        self.data = data
-
-    def setFulfilled(self, fulfilled: bool):
-        self.fulfilled = fulfilled
+    def generate_answer(self, type: str) -> str:
+        return ""
 
 
 """ Three classes implemented for each resource
