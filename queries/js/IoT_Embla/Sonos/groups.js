@@ -1,6 +1,6 @@
 function getGroups() {
     let myHeaders = new Headers();
-    myHeaders.append("Authorization", "Bearer fhFVRX5CX0Zo8pRI7s366IbRRUQ0");
+    myHeaders.append("Authorization", `Bearer ${bearerToken}`);
 
     let requestOptions = {
         method: "GET",
@@ -9,7 +9,7 @@ function getGroups() {
     };
 
     fetch(
-        "https://api.ws.sonos.com/control/api/v1/households/Sonos_2qmmZYj1IfZpziI3yTZT2AdYkP.LzZPKytb_zgm6t3fVIv7/groups",
+        `https://api.ws.sonos.com/control/api/v1/households/${sonosHouseholdID}/groups`,
         requestOptions
     )
         .then((response) => response.text())

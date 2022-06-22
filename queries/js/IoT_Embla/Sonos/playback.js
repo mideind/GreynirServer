@@ -1,7 +1,7 @@
 function togglePlayPause() {
     let myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
-    myHeaders.append("Authorization", "Bearer fhFVRX5CX0Zo8pRI7s366IbRRUQ0");
+    myHeaders.append("Authorization", `Bearer ${bearerToken}`);
     myHeaders.append("Allow-Control-Allow-Origin", "https://api.ws.sonos.com");
 
     let requestOptions = {
@@ -11,7 +11,7 @@ function togglePlayPause() {
     };
 
     fetch(
-        "https://api.ws.sonos.com/control/api/v1/groups/RINCON_542A1B599FF201400:2388243335/playback/togglePlayPause",
+        `https://api.ws.sonos.com/control/api/v1/groups/${sonosGroupID}/playback/togglePlayPause`,
         requestOptions
     )
         .then((response) => response.text())
@@ -19,4 +19,4 @@ function togglePlayPause() {
         .catch((error) => console.log("error", error));
 }
 
-togglePlayPause();
+// togglePlayPause();

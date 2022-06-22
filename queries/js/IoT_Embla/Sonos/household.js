@@ -1,6 +1,6 @@
 function getHousehold() {
     let myHeaders = new Headers();
-    myHeaders.append("Authorization", "Bearer fhFVRX5CX0Zo8pRI7s366IbRRUQ0");
+    myHeaders.append("Authorization", `Bearer ${bearerToken}`);
 
     let requestOptions = {
         method: "GET",
