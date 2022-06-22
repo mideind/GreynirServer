@@ -29,6 +29,9 @@ class Resource:
 
     def next_action(self) -> Any:
         raise NotImplementedError()
+    
+    def generate_answer(self, type: str) -> str:
+        raise NotImplementedError()
 
 
 class ListResource(Resource):
