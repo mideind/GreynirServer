@@ -74,6 +74,7 @@ from reynir.grammar import GrammarError
 from islenska.bindb import BinFilterFunc
 
 from tree import Tree, TreeStateDict, Node
+from queries import DialogueStructureType
 
 # from nertokenizer import recognize_entities
 from images import get_image_url
@@ -89,7 +90,9 @@ ResponseType = Union[ResponseDict, List[ResponseDict]]
 ContextDict = Dict[str, Any]
 
 # Client data
-ClientDataDict = Dict[str, Union[str, int, float, bool, Dict[str, str]]]
+ClientDataDict = Union[
+    Dict[str, Union[str, int, float, bool, Dict[str, str]]], DialogueStructureType
+]
 
 # Answer tuple (corresponds to parameter list of Query.set_answer())
 AnswerTuple = Tuple[ResponseType, str, Optional[str]]
@@ -897,15 +900,13 @@ class Query:
         """Fetch the dialogue state for a client"""
         return self.client_data(DIALOGUE_DATA_KEY)
 
-    def start_dialogue(self, dialogue_name: str, state_manager_serialized: str) -> None:
+    def start_dialogue(self, ds: DialogueStructureType) -> None:
         """Set the clients state to be in the given dialogue"""
-        self.set_client_data(
-            DIALOGUE_DATA_KEY,
-            {"in_dialogue": dialogue_name, "state": state_manager_serialized},
-        )
+        self.set_client_data(DIALOGUE_DATA_KEY, ds)
 
     def end_dialogue(self) -> None:
         """End the client's current dialogue"""
+        # TODO: Remove line from database?
         self.set_client_data(DIALOGUE_DATA_KEY, {})
 
     @staticmethod

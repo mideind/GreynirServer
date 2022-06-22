@@ -1,44 +1,18 @@
-# Example YAML file for fruitseller dialogue
+dialogue_name: "fruitseller"
 variables:
     - &Success 1
     - &Cancel -1
-
 resources:
-    - Fruits:
-        prompt: "Hvaða ávexti má bjóða þér?"
-        resource_nonterminal: "QFruitList"
-        type: "list[str]"
-        required: true
-        repeatable: true
-        # verification_function: "check_fruits"
-        confirmation_prompt: "Pöntunin samanstendur af {curr_order}. Viltu staðfesta pöntunina?"
-        repeat_prompt: "Pöntunin samanstendur af {curr_order}. Verður það eitthvað fleira?"
-        next_states:
-            - QNo: #"verification_prompt"
-                - QYes: "Date"
-                - QNo: "repeat_prompt"
-            - QCancel: *Cancel
-    - Date:
-        type: "date"
-        required: true
-        verification_function: "check_date"
-        prompt: "Hvenær viltu fá ávextina?"
-
-# states:
-#     - Start:
-#           Dialogue Entry: true
-#           NextState:
-#               OnYes: TakeOrder
-#     - TakeOrder:
-#           Prompt: "Hvernig ávexti má bjóða þér?"
-#           RepeatPrompt: "Pöntunin þín samanstendur af {curr_order}. Verður það eitthvað fleira?"
-#           NextState:
-#               OnYes: TakeOrder
-#               OnNo: "OrderReceived"
-#               Cancel: *Cancel
-#     - ConfirmOrder:
-#           Prompt: "Pöntunin þín er {curr_order}. Viltu staðfesta pöntunina?"
-#           NextState:
-#               OnYes: *Success
-#               OnNo: "TakeOrder"
-#               Cancel: *Cancel
+    - name: "Fruits"
+      prompt: "Hvaða ávexti má bjóða þér?"
+      # resource_nonterminal: "QFruitList"
+      type: "ListResource"
+      repeatable: true
+      # verification_function: "check_fruits"
+      confirm_prompt: "Pöntunin samanstendur af {curr_order}. Viltu staðfesta pöntunina?"
+      repeat_prompt: "Pöntunin samanstendur af {curr_order}. Verður það eitthvað fleira?"
+    - name: "Date"
+      type: "DatetimeResource"
+      # verification_function: "check_date"
+      prompt: "Hvenær viltu fá ávextina?"
+      confirm_prompt: "Afhending pöntunar er {dt}. Viltu staðfesta afhendingartímann?"

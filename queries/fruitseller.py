@@ -4,7 +4,7 @@ import logging
 
 from query import DIALOGUE_DATA_KEY, Query, QueryStateDict
 from tree import Result, Node
-from queries import gen_answer, parse_num
+from queries import DialogueStructureType, gen_answer, parse_num
 from queries.fruit_seller.fruitstate import DialogueStateManager
 
 # Indicate that this module wants to handle parse trees for queries,
@@ -108,7 +108,6 @@ QCancelOrder → "ég" "hætti" "við"
 
 """
 
-# fruitStateManager = FruitStateManager()
 _START_CONVERSATION_QTYPE = "QFruitStartQuery"
 _DIALOGUE_NAME = "fruit_seller"
 
@@ -167,10 +166,6 @@ def QFruit(node: Node, params: QueryStateDict, result: Result):
 def updateClientData(query: Query, fruitStateManager: DialogueStateManager):
     query.set_client_data(
         DIALOGUE_DATA_KEY,
-        {
-            "in_dialogue": _DIALOGUE_NAME,
-            "state": DialogueStateManager.serialize(fruitStateManager),
-        },
     )
 
 
@@ -187,12 +182,21 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
-    dsm = DialogueStateManager("fruit_seller/fruitseller.yaml", q.client_data(DIALOGUE_DATA_KEY), result)
-    answer = dsm.generate_answer()
+    dsm = DialogueStateManager(
+        "fruit_seller/fruitseller.yaml",
+        cast(DialogueStructureType, q.client_data(DIALOGUE_DATA_KEY) or {}),
+        result,
+    )
+
+    # answer = dsm.generate_answer()
     # Successfully matched a query type
     try:
         if result.qtype == _START_CONVERSATION_QTYPE:
-            fruitStateManager = DialogueStateManager("fruit_seller/fruitseller.yaml", q.client_data(DIALOGUE_DATA_KEY), result)
+            fruitStateManager = DialogueStateManager(
+                "fruit_seller/fruitseller.yaml",
+                q.client_data(DIALOGUE_DATA_KEY),
+                result,
+            )
             fruitStateManager.initialize_resources(_START_CONVERSATION_QTYPE)
             q.start_dialogue(
                 _DIALOGUE_NAME, DialogueStateManager.serialize(fruitStateManager)

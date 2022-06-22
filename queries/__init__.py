@@ -36,6 +36,7 @@ from typing import (
     Union,
     cast,
 )
+from typing_extensions import TypedDict
 from tree import Node
 
 import logging
@@ -674,13 +675,6 @@ def read_jsfile(filename: str) -> str:
     with open(fpath, mode="r") as file:
         return cast(str, jsmin(file.read()))
 
-def load_yaml_file(filename: str) -> Any:
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    fpath = os.path.join(basepath, filename)
-    obj = None
-    with open(fpath, mode="r") as file:
-        obj = yaml.safe_load(file)
-    return obj
 
 def read_grammar_file(filename: str, **format_kwargs: str) -> str:
     """
@@ -712,3 +706,42 @@ def join_grammar_files(folder: str) -> str:
             with open(os.path.join(fpath, fname), mode="r") as file:
                 grammar.append(file.read())
     return "\n".join(grammar)
+
+
+class ResourceType(TypedDict, total=False):
+    """
+    Representation of a single resource in a dialogue.
+    """
+
+    prompt: str
+    type: str
+    repeat_prompt: Optional[str]
+    required: bool
+    repeatable: bool
+    # verification_function: "check_fruits"
+    confirm_prompt: Optional[str]
+    # next_states: List[Any]
+    # - QNo: #"verification_prompt"
+    #     - QYes: "Date"
+    #     - QNo: "repeat_prompt"
+    # - QCancel: *Cancel
+
+
+class DialogueStructureType(TypedDict):
+    """
+    A dialogue structure is a list of resources used in a dialogue.
+    """
+
+    dialogue_name: str
+    variables: Optional[List[Any]]
+    resources: List[ResourceType]
+
+
+def load_dialogue_structure(filename: str) -> DialogueStructureType:
+    """Loads dialogue structure from YAML file."""
+    basepath, _ = os.path.split(os.path.realpath(__file__))
+    fpath = os.path.join(basepath, filename)
+    obj = None
+    with open(fpath, mode="r") as file:
+        obj = yaml.safe_load(file)
+    return obj

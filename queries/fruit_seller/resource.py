@@ -18,10 +18,13 @@ class ResourceState(Enum):
 
 @dataclass
 class Resource:
+    name: str = ""
     required: bool = True
     data: Any = None
     state: ResourceState = ResourceState.UNFULFILLED
     prompt: str = ""
+    type: str = ""
+    repeatable: bool = False
     repeat_prompt: Optional[str] = None
     confirm_prompt: Optional[str] = None
     cancel_prompt: Optional[str] = None
@@ -41,6 +44,10 @@ class ListResource(Resource):
     def list_available_options(self) -> str:
         raise NotImplementedError()
 
+# TODO:
+# ExactlyOneResource (choose one resource from options)
+# SetResource (a set of resources)?
+# ...
 
 class YesNoResource(Resource):
     data: Optional[bool] = None
