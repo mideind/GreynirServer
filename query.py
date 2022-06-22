@@ -141,7 +141,7 @@ _IGNORED_QUERY_PREFIXES = (
 _IGNORED_PREFIX_RE = r"^({0})\s*".format("|".join(_IGNORED_QUERY_PREFIXES))
 # Auto-capitalization corrections
 _CAPITALIZATION_REPLACEMENTS = (("í Dag", "í dag"),)
-_DIALOGUE_DATA_KEY = "dialogue"
+DIALOGUE_DATA_KEY = "dialogue"
 
 
 def beautify_query(query: str) -> str:
@@ -895,18 +895,18 @@ class Query:
 
     def get_dialogue_state(self) -> Optional[ClientDataDict]:
         """Fetch the dialogue state for a client"""
-        return self.client_data(_DIALOGUE_DATA_KEY)
+        return self.client_data(DIALOGUE_DATA_KEY)
 
     def start_dialogue(self, dialogue_name: str, state_manager_serialized: str) -> None:
         """Set the clients state to be in the given dialogue"""
         self.set_client_data(
-            _DIALOGUE_DATA_KEY,
+            DIALOGUE_DATA_KEY,
             {"in_dialogue": dialogue_name, "state": state_manager_serialized},
         )
 
     def end_dialogue(self) -> None:
         """End the client's current dialogue"""
-        self.set_client_data(_DIALOGUE_DATA_KEY, {})
+        self.set_client_data(DIALOGUE_DATA_KEY, {})
 
     @staticmethod
     def store_query_data(client_id: str, key: str, data: ClientDataDict) -> bool:

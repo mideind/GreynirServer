@@ -4,9 +4,9 @@ import pickle
 import base64
 
 from tree import Result
-from queries.fruit_seller.resource import Resource
+from queries.fruit_seller.resource import ListResource, Resource, ResourceState
 from reynir import NounPhrase
-from queries import natlang_seq, sing_or_plur
+from queries import natlang_seq, sing_or_plur, load_yaml_file
 
 
 def _list_items(items: Any) -> str:
@@ -27,9 +27,12 @@ class DialogueStateManager:
 
     def initialize_resources(self, dialogue: str) -> None:
         # Order here is the priority of each resource
+        obj = load_yaml_file("fruit_seller/fruitseller.yaml")
+        # print(obj["resources"])
         # TODO: parse yaml, add resources from yaml file
-        self.resources.append(FruitState(required=True))
-        self.resources.append(OrderReceivedState(required=True))
+
+        self.resources.append(FruitState(prompt="Hvaða ávexti má bjóða þér?"))
+        self.resources.append(OrderReceivedState())
         self.updateState(dialogue)
 
     def generateAnswer(self, type: str) -> None:
@@ -70,7 +73,7 @@ class DialogueStateManager:
 
     def updateState(self, type: str) -> None:
         for resource in self.resources:
-            if resource.required and not resource.fulfilled:
+            if resource.required and resource.state is not ResourceState.FULFILLED:
                 if resource.data is None:
                     if self.resourceState is not resource:
                         self.resourceState = resource
@@ -117,10 +120,7 @@ class DialogueStateManager:
         return pickle.loads(base64.b64decode(serialized.encode("utf-8")))
 
 
-class FruitState(Resource):
-    def __init__(self, required: bool = True):
-        super().__init__(required)
-
+class FruitState(ListResource):
     # def generate_answer
 
     class DataState:

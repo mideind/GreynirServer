@@ -44,6 +44,7 @@ import json
 import os
 import re
 import locale
+import yaml
 from urllib.parse import urlencode
 from functools import lru_cache
 from xml.dom import minidom  # type: ignore
@@ -672,7 +673,14 @@ def read_jsfile(filename: str) -> str:
     fpath = os.path.join(basepath, "js", filename)
     with open(fpath, mode="r") as file:
         return cast(str, jsmin(file.read()))
-    
+
+def load_yaml_file(filename: str) -> Any:
+    basepath, _ = os.path.split(os.path.realpath(__file__))
+    fpath = os.path.join(basepath, filename)
+    obj = None
+    with open(fpath, mode="r") as file:
+        obj = yaml.safe_load(file)
+    return obj
 
 def read_grammar_file(filename: str, **format_kwargs: str) -> str:
     """

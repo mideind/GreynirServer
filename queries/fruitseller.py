@@ -2,7 +2,7 @@ from typing import Optional, cast
 
 import logging
 
-from query import Query, QueryStateDict
+from query import DIALOGUE_DATA_KEY, Query, QueryStateDict
 from tree import Result, Node
 from queries import gen_answer, parse_num
 from queries.fruit_seller.fruitstate import DialogueStateManager
@@ -164,10 +164,11 @@ def QFruit(node: Node, params: QueryStateDict, result: Result):
 
 def updateClientData(query: Query, fruitStateManager: DialogueStateManager):
     query.set_client_data(
-        "dialogue", {
+        DIALOGUE_DATA_KEY,
+        {
             "in_dialogue": _DIALOGUE_NAME,
-            "state": DialogueStateManager.serialize(fruitStateManager)
-        }
+            "state": DialogueStateManager.serialize(fruitStateManager),
+        },
     )
 
 
