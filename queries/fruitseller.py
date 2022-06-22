@@ -1,4 +1,4 @@
-from typing import Optional, cast
+from typing import List, Literal, Optional, Tuple, cast
 
 import logging
 
@@ -6,6 +6,7 @@ from query import DIALOGUE_DATA_KEY, Query, QueryStateDict
 from tree import Result, Node
 from queries import DialogueStructureType, gen_answer, parse_num
 from queries.fruit_seller.fruitstate import DialogueStateManager
+from queries.fruit_seller.resource import Resource, ResourceState
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -109,18 +110,23 @@ QCancelOrder → "ég" "hætti" "við"
 """
 
 _START_CONVERSATION_QTYPE = "QFruitStartQuery"
-_DIALOGUE_NAME = "fruit_seller"
-
+_DIALOGUE_NAME = "fruitseller"
 
 def QFruitStartQuery(node: Node, params: QueryStateDict, result: Result):
     result.qtype = _START_CONVERSATION_QTYPE
 
 
 def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
+    if "callbacks" not in result:
+        result["callbacks"] = []
+    result.callbacks.append(_add_fruit)
     result.qtype = "QAddFruitQuery"
 
 
 def QRemoveFruitQuery(node: Node, params: QueryStateDict, result: Result):
+    if "callbacks" not in result:
+        result["callbacks"] = []
+    result.callbacks.append(_remove_fruit)
     result.qtype = "QRemoveFruitQuery"
 
 
@@ -142,11 +148,11 @@ def QNo(node: Node, params: QueryStateDict, result: Result):
 
 def QNumOfFruit(node: Node, params: QueryStateDict, result: Result):
     if "queryfruits" not in result:
-        result.queryfruits = dict()
+        result["queryfruits"] = []
     if "fruitnumber" not in result:
-        result.queryfruits[result.fruit] = 1
+        result.queryfruits.append((1, result.fruit))
     else:
-        result.queryfruits[result.fruit] = result.fruitnumber
+        result.queryfruits.append(result.fruitnumber, result.fruit)
 
 
 def QNum(node: Node, params: QueryStateDict, result: Result):
@@ -162,6 +168,21 @@ def QFruit(node: Node, params: QueryStateDict, result: Result):
     if fruit is not None:
         result.fruit = fruit
 
+def _remove_fruit(resource: Resource, result: Result) -> None:
+    if resource.data is not None:
+        for fruitnum, fruitname in result.queryfruits:
+            for number, name in resource.data:
+                if name == fruitname:
+                    resource.data.remove((number, name))
+                    break
+
+def _add_fruit(resource: Resource, result: Result) -> None:
+    if resource.data is None:
+        resource.data = []
+    for number, name in result.queryfruits:
+        resource.data.append((number, name))
+    resource.state = ResourceState.PARTIALLY_FULFILLED
+
 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
@@ -169,36 +190,28 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     dialogue_state = q.get_dialogue_state() or {}
     qt = result.get("qtype")
 
+    print("Dialogue state: ", dialogue_state)
     # checka hvort user se i samtali med q.client_data
     if qt != _START_CONVERSATION_QTYPE and not (
-        dialogue_state and dialogue_state.get("in_dialogue") == _DIALOGUE_NAME
+        dialogue_state and dialogue_state.get("dialogue_name") == _DIALOGUE_NAME
     ):
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
-
+    print("Fyrir dsm")
     dsm = DialogueStateManager("fruit_seller/fruitseller.yaml", q.get_dialogue_state())
-
+    print("Eftir dms")
     # Successfully matched a query type
     try:
         if result.qtype == _START_CONVERSATION_QTYPE:
-            q.set_dialogue_state()
+            q.set_dialogue_state({"dialogue_name": "fruitseller", "resources": [], "variables": None})
         else:
+            print("Í else")
             if dialogue_state is None:
                 q.set_error("E_QUERY_NOT_UNDERSTOOD")
                 return
-            fruitmanager_serialized: Optional[str] = cast(
-                Optional[str], dialogue_state.get("state")
-            )
-            if not fruitmanager_serialized:
-                q.set_error("E_QUERY_NOT_UNDERSTOOD")
-                return
-            fruitStateManager = DialogueStateManager.deserialize(
-                fruitmanager_serialized
-            )
-
-            fruitStateManager.stateMethod(result.qtype, result)
-
-        ans = fruitStateManager.generate_answer()
+        print("fyrir generate")
+        ans = dsm.generate_answer(result)
+        print("eftir generate")
 
         if result.qtype == "OrderComplete" or result.qtype == "CancelOrder":
             q.end_dialogue()

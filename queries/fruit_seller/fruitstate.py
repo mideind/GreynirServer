@@ -45,22 +45,14 @@ class DialogueStateManager:
         self.resourceState: Optional[Resource] = None
         self.ans: Optional[str] = None
 
-    def initialize_resources(self, dialogue: str) -> None:
-        # Order here is the priority of each resource
-        obj = load_dialogue_structure("fruit_seller/fruitseller.yaml")
-        print("Resources: ", obj["resources"])
-        # print(obj["resources"])
-        # TODO: parse yaml, add resources from yaml file
-
-        self.resources.append(FruitState(prompt="Hvaða ávexti má bjóða þér?"))
-        self.resources.append(OrderReceivedState())
-        self.updateState(dialogue)
-
-    def generate_answer(self, type: str) -> None:
-        if self.resourceState is not None:
-            self.ans = self.resourceState.generate_answer(type)
-        else:
-            self.ans = "Kom upp villa, reyndu aftur."
+    def generate_answer(self, result: Result) -> str:
+        for resource in self.resources:
+            if resource.required and resource.state is not ResourceState.CONFIRMED:
+                if "callbacks" in result:
+                    for cb in result.callbacks:
+                        cb(resource, result)
+                return resource.generate_answer()
+        return "Upp kom villa, reyndu aftur."
 
     def updateState(self, type: str) -> None:
         for resource in self.resources:

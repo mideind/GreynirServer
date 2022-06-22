@@ -10,8 +10,8 @@ resources:
       type: "ListResource"
       repeatable: true
       # verification_function: "check_fruits"
-      confirm_prompt: "Pöntunin samanstendur af {curr_order}. Viltu staðfesta pöntunina?"
-      repeat_prompt: "Pöntunin samanstendur af {curr_order}. Verður það eitthvað fleira?"
+      confirm_prompt: "Pöntunin samanstendur af {list_items}. Viltu staðfesta pöntunina?"
+      repeat_prompt: "Pöntunin samanstendur af {list_items}. Verður það eitthvað fleira?"
     - name: "Date"
       type: "DatetimeResource"
       # verification_function: "check_date"
