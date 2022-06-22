@@ -1,9 +1,10 @@
 function togglePlayPause() {
-    var myHeaders = new Headers();
+    let myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
     myHeaders.append("Authorization", "Bearer fhFVRX5CX0Zo8pRI7s366IbRRUQ0");
+    myHeaders.append("Allow-Control-Allow-Origin", "https://api.ws.sonos.com");
 
-    var requestOptions = {
+    let requestOptions = {
         method: "POST",
         headers: myHeaders,
         redirect: "follow",
@@ -17,3 +18,5 @@ function togglePlayPause() {
         .then((result) => console.log(result))
         .catch((error) => console.log("error", error));
 }
+
+togglePlayPause();

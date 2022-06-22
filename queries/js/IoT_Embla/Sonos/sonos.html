@@ -12,38 +12,21 @@
         <main role="main">
             <h1>Testing</h1>
             <button type="submit" onclick="togglePlayPause();">Play/Pause</button>
-            <button type="submit" onclick="setLights(QUERY_EX,STATE_EX)">new</button>
             <p id="demo"></p>
     
             <div class="slidecontainer">
-                <p style="font-family: Arial, Helvetica, sans-serif">Brightness</p>
+                <p style="font-family: Arial, Helvetica, sans-serif">Volume</p>
                 <input type="range" min="0" max="255" value="127.5" class="brightness_slider" id="brightness_slider" onclick="changeBrightness();">
             </div>
 
-            <div class="colorform">
-                <p style="font-family:'Courier New', Courier, monospace">Color</p>
-                <label for="color_x" style="font-family: Arial, Helvetica, sans-serif">X value</label>
-                <input type="text" size="5" id="color_x">
-                <label for="color_y" style="font-family: Arial, Helvetica, sans-serif" size="50">Y value</label>
-                <input type="text" size="5" id="color_y">
-                <button type="submit" onclick="changeColor();">Change color</button>
-                <p id="color_error" style="color:red; font-family: Arial, Helvetica, sans-serif"></p>
+            <div class="get_all_groups">
+                <button type="submit" onclick="getGroups();">Get groups</button>
             </div>
-
-            <div class="get_all_lights_and_groups">
-                <button type="submit" onclick="getAllLightsAndGroupsFromHTML();">Get all lights and groups</button>
+            <div class="find_household">
+                <button type="submit" onclick="getHousehold();">Find household</button>
             </div>
-            <div class="connect_hub_div">
-                <button type="submit" onclick="findHub();">Find hub</button>
-                <button type="submit" onclick="syncConnectHubFromHTML();">Test connect hub</button>
-            </div>
-            <div class="get_all_scenes">
-                <button type="submit" onclick="getAllScenes();">Get all scenes</button>
-            </div>
-            <div class="setLightsDiv">
+            <!-- <div class="setLightsDiv">
                 <p style="font-family:'Courier New', Courier, monospace">Brightness increase/decrease</p>
-                <!-- <label for="queryInput" style="font-family: Arial, Helvetica, sans-serif">Query</label>
-                <input type="text" size="10" id="queryInput"> -->
                 <label for="brightness" style="font-family: Arial, Helvetica, sans-serif" size="50">Brightness (increase/decrease)</label>
                 <input type="text" size="20" id="brightnessInput">
                 <button type="submit" onclick="setLightsFromHTML();">Set light</button>
@@ -61,7 +44,7 @@
                 <label for="sceneInput" style="font-family: Arial, Helvetica, sans-serif" size="50">scene</label>
                 <input type="text" size="10" id="sceneInput">
                 <button type="submit" onclick="queryTestFromHTML();">Query test</button>
-            </div>
+            </div> -->
 
             
         </main>
