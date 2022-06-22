@@ -1,10 +1,8 @@
-from typing import List, Literal, Optional, Tuple, cast
-
 import logging
 
-from query import DIALOGUE_DATA_KEY, Query, QueryStateDict
+from query import Query, QueryStateDict
 from tree import Result, Node
-from queries import DialogueStructureType, gen_answer, parse_num
+from queries import gen_answer, parse_num
 from queries.fruit_seller.fruitstate import DialogueStateManager
 from queries.fruit_seller.resource import Resource, ResourceState
 
@@ -112,6 +110,7 @@ QCancelOrder → "ég" "hætti" "við"
 _START_CONVERSATION_QTYPE = "QFruitStartQuery"
 _DIALOGUE_NAME = "fruitseller"
 
+
 def QFruitStartQuery(node: Node, params: QueryStateDict, result: Result):
     result.qtype = _START_CONVERSATION_QTYPE
 
@@ -150,9 +149,9 @@ def QNumOfFruit(node: Node, params: QueryStateDict, result: Result):
     if "queryfruits" not in result:
         result["queryfruits"] = []
     if "fruitnumber" not in result:
-        result.queryfruits.append((1, result.fruit))
+        result.queryfruits.append([1, result.fruit])
     else:
-        result.queryfruits.append(result.fruitnumber, result.fruit)
+        result.queryfruits.append([result.fruitnumber, result.fruit])
 
 
 def QNum(node: Node, params: QueryStateDict, result: Result):
@@ -168,13 +167,15 @@ def QFruit(node: Node, params: QueryStateDict, result: Result):
     if fruit is not None:
         result.fruit = fruit
 
+
 def _remove_fruit(resource: Resource, result: Result) -> None:
     if resource.data is not None:
-        for fruitnum, fruitname in result.queryfruits:
+        for _, fruitname in result.queryfruits:
             for number, name in resource.data:
                 if name == fruitname:
-                    resource.data.remove((number, name))
+                    resource.data.remove([number, name])
                     break
+
 
 def _add_fruit(resource: Resource, result: Result) -> None:
     if resource.data is None:
@@ -203,7 +204,9 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     # Successfully matched a query type
     try:
         if result.qtype == _START_CONVERSATION_QTYPE:
-            q.set_dialogue_state({"dialogue_name": "fruitseller", "resources": [], "variables": None})
+            q.set_dialogue_state(
+                {"dialogue_name": "fruitseller", "resources": [], "variables": None}
+            )
         else:
             print("Í else")
             if dialogue_state is None:
@@ -212,6 +215,14 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         print("fyrir generate")
         ans = dsm.generate_answer(result)
         print("eftir generate")
+        q.set_dialogue_state(
+            {
+                "dialogue_name": "fruitseller",
+                "resources": [r.__dict__ for r in dsm.resources],
+                "variables": None,
+            }
+        )
+        print("woohoo")
 
         if result.qtype == "OrderComplete" or result.qtype == "CancelOrder":
             q.end_dialogue()

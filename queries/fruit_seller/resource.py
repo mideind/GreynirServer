@@ -1,14 +1,16 @@
-from typing import Any, Union, List, Optional
+from typing import Any, Dict, Union, List, Optional
+from typing_extensions import TypedDict
 
-from enum import Enum, auto
+from enum import IntEnum, auto
 from datetime import datetime
 from dataclasses import dataclass
 
 from reynir import NounPhrase
-from queries import ResourceType, natlang_seq, sing_or_plur
+from queries import natlang_seq, sing_or_plur
 
 BaseResourceTypes = Union[str, int, float, bool, datetime, None]
 ListResourceType = List[BaseResourceTypes]
+
 
 def _list_items(items: Any) -> str:
     item_list: List[str] = []
@@ -18,7 +20,18 @@ def _list_items(items: Any) -> str:
         item_list.append(sing_or_plur(num, name, plural_name))
     return natlang_seq(item_list)
 
-class ResourceState(Enum):
+
+class DialogueStructureType(TypedDict):
+    """
+    A dialogue structure is a list of resources used in a dialogue.
+    """
+
+    dialogue_name: str
+    variables: Optional[List[Any]]
+    resources: List[Dict[Any, Any]]
+
+
+class ResourceState(IntEnum):
     UNFULFILLED = auto()
     PARTIALLY_FULFILLED = auto()
     FULFILLED = auto()
@@ -42,13 +55,14 @@ class Resource:
 
     def next_action(self) -> Any:
         raise NotImplementedError()
-    
+
     def generate_answer(self) -> str:
         raise NotImplementedError()
 
-    def update(self, new_data: Optional[ResourceType]) -> None:
+    def update(self, new_data: Optional["Resource"]) -> None:
         if new_data:
-            self.__dict__.update(new_data)
+            self.__dict__.update(new_data.__dict__)
+
 
 class ListResource(Resource):
     data: ListResourceType = []
@@ -64,17 +78,22 @@ class ListResource(Resource):
                 ans = self.prompt
         if self.state is ResourceState.PARTIALLY_FULFILLED:
             if self.repeat_prompt:
-                ans = f"{self.repeat_prompt.format(list_items = _list_items(self.data))}"
+                ans = (
+                    f"{self.repeat_prompt.format(list_items = _list_items(self.data))}"
+                )
         if self.state is ResourceState.FULFILLED:
             if self.confirm_prompt:
-                ans = f"{self.confirm_prompt.format(list_items = _list_items(self.data))}"
+                ans = (
+                    f"{self.confirm_prompt.format(list_items = _list_items(self.data))}"
+                )
         return ans
-        
+
 
 # TODO:
 # ExactlyOneResource (choose one resource from options)
 # SetResource (a set of resources)?
 # ...
+
 
 class YesNoResource(Resource):
     data: Optional[bool] = None

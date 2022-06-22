@@ -39,7 +39,8 @@ class DialogueStateManager:
             else:
                 newResource = DatetimeResource(**resource)
             if saved_state and i < len(saved_state["resources"]):
-                newResource.update(saved_state["resources"][i])
+                newResource.__dict__.update(saved_state["resources"][i])
+                newResource.state = ResourceState(saved_state["resources"][i]["state"])
             self.resources.append(newResource)
 
         self.resourceState: Optional[Resource] = None

@@ -36,7 +36,6 @@ from typing import (
     Union,
     cast,
 )
-from typing_extensions import TypedDict
 from tree import Node
 
 import logging
@@ -708,39 +707,31 @@ def join_grammar_files(folder: str) -> str:
     return "\n".join(grammar)
 
 
-class ResourceType(TypedDict, total=False):
-    """
-    Representation of a single resource in a dialogue.
-    """
+# class ResourceType(TypedDict, total=False):
+#     """
+#     Representation of a single resource in a dialogue.
+#     """
 
-    name: str
-    prompt: str
-    type: str
-    repeat_prompt: Optional[str]
-    required: bool
-    repeatable: bool
-    # verification_function: "check_fruits"
-    confirm_prompt: Optional[str]
-    data: Any
-    # state: int # TODO: wrong type?
-    cancel_prompt: Optional[str]
-    # next_states: List[Any]
-    # - QNo: #"verification_prompt"
-    #     - QYes: "Date"
-    #     - QNo: "repeat_prompt"
-    # - QCancel: *Cancel
-
-class DialogueStructureType(TypedDict):
-    """
-    A dialogue structure is a list of resources used in a dialogue.
-    """
-
-    dialogue_name: str
-    variables: Optional[List[Any]]
-    resources: List[ResourceType]
+#     name: str
+#     prompt: str
+#     type: str
+#     repeat_prompt: Optional[str]
+#     required: bool
+#     repeatable: bool
+#     # verification_function: "check_fruits"
+#     confirm_prompt: Optional[str]
+#     data: Any
+#     # state: int # TODO: wrong type?
+#     cancel_prompt: Optional[str]
+#     # next_states: List[Any]
+#     # - QNo: #"verification_prompt"
+#     #     - QYes: "Date"
+#     #     - QNo: "repeat_prompt"
+#     # - QCancel: *Cancel
 
 
-def load_dialogue_structure(filename: str) -> DialogueStructureType:
+
+def load_dialogue_structure(filename: str) -> Any:
     """Loads dialogue structure from YAML file."""
     basepath, _ = os.path.split(os.path.realpath(__file__))
     fpath = os.path.join(basepath, filename)
