@@ -163,12 +163,6 @@ def QFruit(node: Node, params: QueryStateDict, result: Result):
         result.fruit = fruit
 
 
-def updateClientData(query: Query, fruitStateManager: DialogueStateManager):
-    query.set_client_data(
-        DIALOGUE_DATA_KEY,
-    )
-
-
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
@@ -182,25 +176,12 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
-    dsm = DialogueStateManager(
-        "fruit_seller/fruitseller.yaml",
-        cast(DialogueStructureType, q.client_data(DIALOGUE_DATA_KEY) or {}),
-        result,
-    )
+    dsm = DialogueStateManager("fruit_seller/fruitseller.yaml", q.get_dialogue_state())
 
-    # answer = dsm.generate_answer()
     # Successfully matched a query type
     try:
         if result.qtype == _START_CONVERSATION_QTYPE:
-            fruitStateManager = DialogueStateManager(
-                "fruit_seller/fruitseller.yaml",
-                q.client_data(DIALOGUE_DATA_KEY),
-                result,
-            )
-            fruitStateManager.initialize_resources(_START_CONVERSATION_QTYPE)
-            q.start_dialogue(
-                _DIALOGUE_NAME, DialogueStateManager.serialize(fruitStateManager)
-            )
+            q.set_dialogue_state()
         else:
             if dialogue_state is None:
                 q.set_error("E_QUERY_NOT_UNDERSTOOD")
@@ -217,8 +198,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
             fruitStateManager.stateMethod(result.qtype, result)
 
-        updateClientData(q, fruitStateManager)
-        ans = fruitStateManager.ans
+        ans = fruitStateManager.generate_answer()
 
         if result.qtype == "OrderComplete" or result.qtype == "CancelOrder":
             q.end_dialogue()

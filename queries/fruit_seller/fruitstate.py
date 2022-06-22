@@ -27,25 +27,19 @@ def _list_items(items: Any) -> str:
 
 class DialogueStateManager:
     def __init__(
-        self, yaml_file: str, saved_state: DialogueStructureType, result: Result
+        self, yaml_file: str, saved_state: Optional[DialogueStructureType] = None
     ):
         obj = load_dialogue_structure(yaml_file)
         print(obj)
         self.resources: List[Resource] = []
         for resource in obj["resources"]:
             newResource: Resource
-            print(resource)
             if resource.get("type") == "ListResource":
                 newResource = ListResource(**resource)
-            else:  # resource["type"] == "date"
+            else:
                 newResource = DatetimeResource(**resource)
-            print(resource["type"])
-            print(newResource)
-            # newResource.required = resource["required"]
-            # newResource.prompt = resource["prompt"]
-            # newResource.repeat_prompt = resource["repeat_prompt"] if resource["repeatable"] else None
-            # newResource.confirm_prompt = resource["confirm_prompt"]
-            # newResource.cancel_prompt = resource["cancel_prompt"]
+            # newResource.__dict__.update(saved_state)
+            self.resources.append(newResource)
 
         self.resourceState: Optional[Resource] = None
         self.ans: Optional[str] = None

@@ -896,12 +896,12 @@ class Query:
             return
         Query.store_query_data(self.client_id, key, data)
 
-    def get_dialogue_state(self) -> Optional[ClientDataDict]:
-        """Fetch the dialogue state for a client"""
-        return self.client_data(DIALOGUE_DATA_KEY)
+    def get_dialogue_state(self) -> Optional[DialogueStructureType]:
+        """Load the dialogue state for a client"""
+        return cast(DialogueStructureType, self.client_data(DIALOGUE_DATA_KEY))
 
-    def start_dialogue(self, ds: DialogueStructureType) -> None:
-        """Set the clients state to be in the given dialogue"""
+    def set_dialogue_state(self, ds: DialogueStructureType) -> None:
+        """Save the state of a dialogue for a client"""
         self.set_client_data(DIALOGUE_DATA_KEY, ds)
 
     def end_dialogue(self) -> None:
