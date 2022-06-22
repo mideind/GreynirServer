@@ -61,6 +61,7 @@ def help_text(lemma: str) -> str:
             (
                 "Tengu miðstöðina",
                 "Tengdu ljósin"
+                "Tengdu hátalarann"
             )
         )
     )

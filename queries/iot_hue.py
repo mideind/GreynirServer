@@ -597,6 +597,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     # Fetch relevant data from the device_data table to perform an action on the lights
     device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
+    print("location :", q.location)
     print("device data :", device_data)
 
     selected_light: Optional[str] = None

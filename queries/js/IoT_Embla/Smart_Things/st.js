@@ -1,4 +1,4 @@
-const AUTH_TOKEN = "Bearer 85dabaad-10de-4f74-94a7-0dee4685982e";
+const AUTH_TOKEN = "";
 
 function turnOnLight() {
     var myHeaders = new Headers();
@@ -126,7 +126,17 @@ function lowerBrightness() {
         .catch((error) => console.log("error", error));
 }
 
-function smartThingsWrapper(device, capability, command, arguments = null) {
+function smartThingsWrapper(
+    query,
+    device,
+    capability,
+    command,
+    arguments = null
+) {
+
+    targetObject = smartThingsFuzzySearch(query)
+
+
     var myHeaders = new Headers();
     myHeaders.append("Authorization", AUTH_TOKEN);
     myHeaders.append("Content-Type", "application/json");
@@ -159,3 +169,4 @@ function smartThingsWrapper(device, capability, command, arguments = null) {
         .then((result) => console.log(result))
         .catch((error) => console.log("error", error));
 }
+

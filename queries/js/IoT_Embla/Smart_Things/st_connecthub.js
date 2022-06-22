@@ -17,9 +17,8 @@ async function storeDevice(data, ipAddress) {
 }
 
 // bearer token 64780d2b-b763-433d-95ca-3eaaf5e10642
-async function connectHub(clientID, ipAddress) {
+async function connectHub(clientID, ipAddress, bearerToken) {
     console.log("connect hub");
-    let bearerToken = "64780d2b-b763-433d-95ca-3eaaf5e10642";
 
     try {
         const data = {
