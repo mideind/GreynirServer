@@ -2,6 +2,7 @@ dialogue_name: "fruitseller"
 variables:
     - &Success 1
     - &Cancel -1
+# Resources, in order
 resources:
     - name: "Fruits"
       prompt: "Hvaða ávexti má bjóða þér?"

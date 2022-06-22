@@ -4,6 +4,8 @@ from enum import Enum, auto
 from datetime import datetime
 from dataclasses import dataclass
 
+from queries import ResourceType
+
 BaseResourceTypes = Union[str, int, float, bool, datetime, None]
 ListResourceType = List[BaseResourceTypes]
 
@@ -36,6 +38,9 @@ class Resource:
     def generate_answer(self, type: str) -> str:
         raise NotImplementedError()
 
+    def update(self, new_data: Optional[ResourceType]) -> None:
+        if new_data:
+            self.__dict__.update(new_data)
 
 class ListResource(Resource):
     data: ListResourceType = []

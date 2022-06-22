@@ -32,13 +32,14 @@ class DialogueStateManager:
         obj = load_dialogue_structure(yaml_file)
         print(obj)
         self.resources: List[Resource] = []
-        for resource in obj["resources"]:
+        for i, resource in enumerate(obj["resources"]):
             newResource: Resource
             if resource.get("type") == "ListResource":
                 newResource = ListResource(**resource)
             else:
                 newResource = DatetimeResource(**resource)
-            # newResource.__dict__.update(saved_state)
+            if saved_state and i < len(saved_state["resources"]):
+                newResource.update(saved_state["resources"][i])
             self.resources.append(newResource)
 
         self.resourceState: Optional[Resource] = None

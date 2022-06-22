@@ -713,6 +713,7 @@ class ResourceType(TypedDict, total=False):
     Representation of a single resource in a dialogue.
     """
 
+    name: str
     prompt: str
     type: str
     repeat_prompt: Optional[str]
@@ -720,12 +721,14 @@ class ResourceType(TypedDict, total=False):
     repeatable: bool
     # verification_function: "check_fruits"
     confirm_prompt: Optional[str]
+    data: Any
+    # state: int # TODO: wrong type?
+    cancel_prompt: Optional[str]
     # next_states: List[Any]
     # - QNo: #"verification_prompt"
     #     - QYes: "Date"
     #     - QNo: "repeat_prompt"
     # - QCancel: *Cancel
-
 
 class DialogueStructureType(TypedDict):
     """
