@@ -1,6 +1,6 @@
 function getGroups() {
     let myHeaders = new Headers();
-    myHeaders.append("Authorization", `Bearer ${bearerToken}`);
+    myHeaders.append("Authorization", `Bearer ${sonosBearerToken}`);
 
     let requestOptions = {
         method: "GET",
