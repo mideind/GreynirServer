@@ -187,10 +187,12 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
+    dsm = DialogueStateManager("fruit_seller/fruitseller.yaml", q.client_data(DIALOGUE_DATA_KEY), result)
+    answer = dsm.generate_answer()
     # Successfully matched a query type
     try:
         if result.qtype == _START_CONVERSATION_QTYPE:
-            fruitStateManager = DialogueStateManager()
+            fruitStateManager = DialogueStateManager("fruit_seller/fruitseller.yaml", q.client_data(DIALOGUE_DATA_KEY), result)
             fruitStateManager.initialize_resources(_START_CONVERSATION_QTYPE)
             q.start_dialogue(
                 _DIALOGUE_NAME, DialogueStateManager.serialize(fruitStateManager)

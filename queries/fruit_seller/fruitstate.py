@@ -2,9 +2,10 @@ from typing import Any, Optional, List
 
 import pickle
 import base64
+from Greynir.query import ClientDataDict
 
 from tree import Result
-from queries.fruit_seller.resource import ListResource, Resource, ResourceState
+from queries.fruit_seller.resource import DatetimeResource, ListResource, Resource, ResourceState
 from reynir import NounPhrase
 from queries import natlang_seq, sing_or_plur, load_yaml_file
 
@@ -20,15 +21,29 @@ def _list_items(items: Any) -> str:
 
 
 class DialogueStateManager:
-    def __init__(self):
+    def __init__(self, yaml_file: str, client_data: Optional[ClientDataDict], result: Result):
+        obj = load_yaml_file(yaml_file)
+        print(obj)
         self.resources: List[Resource] = []
+        for resource in obj["resources"]:
+            newResource: Resource
+            if resource["type"] == "list[str]":
+                newResource = ListResource()
+            else: # resource["type"] == "date"
+                newResource = DatetimeResource()
+            newResource.required = resource["required"]
+            newResource.prompt = resource["prompt"]
+            newResource.repeat_prompt = resource["repeat_prompt"] if resource["repeatable"] else None
+            newResource.confirm_prompt = resource["confirm_prompt"]
+            newResource.cancel_prompt = resource["cancel_prompt"]
+
         self.resourceState: Optional[Resource] = None
         self.ans: Optional[str] = None
 
     def initialize_resources(self, dialogue: str) -> None:
         # Order here is the priority of each resource
         obj = load_yaml_file("fruit_seller/fruitseller.yaml")
-        # print(obj["resources"])
+        print("Resources: ", obj["resources"])
         # TODO: parse yaml, add resources from yaml file
 
         self.resources.append(FruitState(prompt="Hvaða ávexti má bjóða þér?"))
@@ -47,19 +62,13 @@ class DialogueStateManager:
                 if resource.data is None:
                     if self.resourceState is not resource:
                         self.resourceState = resource
-                    resource.state = resource.DataState(
-                        resource.data, resource.partiallyFulfilled, resource.fulfilled
-                    )
+                    resource.state = resource.DataState(resource.data)
                     break
-                elif not resource.partiallyFulfilled:
-                    resource.state = resource.PartiallyFulfilledState(
-                        resource.data, resource.partiallyFulfilled, resource.fulfilled
-                    )
+                elif resource.state is not ResourceState.PARTIALLY_FULFILLED:
+                    resource.state = resource.PartiallyFulfilledState(resource.data)
                     break
-                elif resource.partiallyFulfilled:
-                    resource.state = resource.FulfilledState(
-                        resource.data, resource.partiallyFulfilled, resource.fulfilled
-                    )
+                elif resource.state is ResourceState.PARTIALLY_FULFILLED:
+                    resource.state = resource.FulfilledState(resource.data)
                     break
         self.generate_answer(type)
         print("Current state: ", self.resourceState.state)
@@ -71,8 +80,7 @@ class DialogueStateManager:
                 if method is not None:
                     (
                         self.resourceState.data,
-                        self.resourceState.partiallyFulfilled,
-                        self.resourceState.fulfilled,
+                        self.resourceState.state
                     ) = method(result)
                 self.updateState(result.qtype)
             else:
@@ -127,10 +135,8 @@ class FruitState(ListResource):
         return ans
 
     class DataState:
-        def __init__(self, data: Any, partiallyFulfilled: bool, fulfilled: bool):
+        def __init__(self, data: Any):
             self.data = data
-            self.partiallyFulfilled = partiallyFulfilled
-            self.fulfilled = fulfilled
 
         # Add fruits to array and switch to OrderReceived state
         def QAddFruitQuery(self, result: Result):
@@ -141,7 +147,7 @@ class FruitState(ListResource):
                     self.data[fruitname] = result.queryfruits[fruitname]
             result.fruits = self.data
             result.qtype = "ListFruit"
-            return (self.data, self.partiallyFulfilled, self.fulfilled)
+            return (self.data, ResourceState.PARTIALLY_FULFILLED)
 
         # Remove fruits from array
         def QRemoveFruitQuery(self, result: Result):
@@ -156,7 +162,7 @@ class FruitState(ListResource):
                 if result.qtype != "NoFruitMatched":
                     result.qtype = "ListFruit"
                     result.fruits = self.data
-            return (self.data, self.partiallyFulfilled, self.fulfilled)
+            return (self.data, ResourceState.PARTIALLY_FULFILLED if len(self.data) != 0 else ResourceState.UNFULFILLED)
 
         # Change the fruits array
         def QChangeFruitQuery(self, result: Result):
@@ -165,43 +171,40 @@ class FruitState(ListResource):
         # Inform what fruits are available
         def QFruitOptionsQuery(self, result: Result):
             result.qtype = "FruitOptions"
-            return (self.data, self.partiallyFulfilled, self.fulfilled)
+            return (self.data, ResourceState.UNFULFILLED if self.data is None else ResourceState.PARTIALLY_FULFILLED)
 
         # User wants to stop conversation
         def QCancelOrder(self, result: Result):
             result.qtype = "CancelOrder"
-            return (self.data, self.partiallyFulfilled, self.fulfilled)
+            return (self.data, ResourceState.UNFULFILLED)
 
     class PartiallyFulfilledState(DataState):
-        def __init__(self, data: Any, partiallyFulfilled: bool, fulfilled: bool):
-            super().__init__(data, partiallyFulfilled, fulfilled)
+        def __init__(self, data: Any):
+            super().__init__(data)
 
         # User is happy with the order, switch to confirm state
         def QNo(self, result: Result):
             result.qtype = "FruitsFulfilled"
-            self.partiallyFulfilled = True
-            return (self.data, self.partiallyFulfilled, self.fulfilled)
+            return (self.data, ResourceState.FULFILLED)
 
         # User wants to add more to the order, ask what
         def QYes(self, result: Result):
             result.qtype = "FruitOrderNotFinished"
-            return (self.data, self.partiallyFulfilled, self.fulfilled)
+            return (self.data, ResourceState.PARTIALLY_FULFILLED)
 
     class FulfilledState(DataState):
-        def __init__(self, data: Any, partiallyFulfilled: bool, fulfilled: bool):
-            super().__init__(data, partiallyFulfilled, fulfilled)
+        def __init__(self, data: Any):
+            super().__init__(data)
 
         # The order is correct, say the order is confirmed
         def QYes(self, result: Result):
             result.qtype = "OrderComplete"
-            self.fulfilled = True
-            return (self.data, self.partiallyFulfilled, self.fulfilled)
+            return (self.data, ResourceState.CONFIRMED)
 
         # Order was wrong, ask the user to start again
         def QNo(self, result: Result):
             result.qtype = "OrderWrong"
-            self.partiallyFulfilled = False
-            return (self.data, self.partiallyFulfilled, self.fulfilled)
+            return (self.data, ResourceState.FULFILLED)
 
 
 class OrderReceivedState(FruitState):
