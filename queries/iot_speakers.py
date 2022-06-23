@@ -1,4 +1,4 @@
-def getHouseholds():
+def getHouseholds(token):
     """
     Returns the list of households of the user
     """
@@ -9,24 +9,24 @@ def getHouseholds():
 
     response = requests.request("GET", url, headers=headers, data=payload)
 
-    print(response.text)
+    return response
 
 
-def getGroups():
+def getGroups(houshold_id, token):
     """
     Returns the list of groups of the user
     """
-    url = "https://api.ws.sonos.com/control/api/v1/households/Sonos_2qmmZYj1IfZpziI3yTZT2AdYkP.LzZPKytb_zgm6t3fVIv7/groups"
+    url = "https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups"
 
     payload = {}
     headers = {"Authorization": f"Bearer {token}"}
 
     response = requests.request("GET", url, headers=headers, data=payload)
 
-    print(response.text)
+    return response
 
 
-def createToken(code):
+def createToken(code, sonos_encoded_credentials):
     """
     Creates a token given a code
     """
@@ -40,4 +40,20 @@ def createToken(code):
 
     response = requests.request("POST", url, headers=headers, data=payload)
 
-    print(response.text)
+    return response
+
+
+def togglePlayPause(group_id, token):
+    """
+    Toggles the play/pause of a group
+    """
+    url = (
+        f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/playPause"
+    )
+
+    payload = {}
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    return response
