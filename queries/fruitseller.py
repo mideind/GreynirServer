@@ -6,7 +6,12 @@ from typing import cast
 from query import Query, QueryStateDict
 from tree import Result, Node, TerminalNode
 from queries import gen_answer, parse_num
-from queries.dialogue import Resource, ResourceState, DialogueStateManager
+from queries.dialogue import (
+    DatetimeResource,
+    Resource,
+    ResourceState,
+    DialogueStateManager,
+)
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -192,6 +197,7 @@ def QFruit(node: Node, params: QueryStateDict, result: Result):
 
 
 def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qtype = "bull"
     datetimenode = node.first_child(lambda n: True)
     assert isinstance(datetimenode, TerminalNode)
     print(datetimenode.aux)
@@ -209,11 +215,22 @@ def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
         min = 0
     result["delivery_time"] = datetime.time(h, min)
     result["delivery_date"] = datetime.date(y, m, d)
-    print("DATE:", result["delivery_date"])
-    print("TIME:", result["delivery_time"])
+
+    def _dt_callback(resource: DatetimeResource, result: Result) -> None:
+        if resource.data is None:
+            resource.data = []
+        print("DATETIME SHOULD BE FULFILLED NOW")
+        resource.data.append(result["delivery_date"])
+        resource.data.append(result["delivery_time"])
+        resource.state = ResourceState.FULFILLED
+
+    if "callbacks" not in result:
+        result["callbacks"] = []
+    result.callbacks.append(_dt_callback)
 
 
 def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qtype = "bull"
     datenode = node.first_child(lambda n: True)
     assert isinstance(datenode, TerminalNode)
     cdate = datenode.contained_date
@@ -230,11 +247,27 @@ def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
                     y += 1
             result["delivery_date"] = datetime.date(day=d, month=m, year=y)
             print("DELIVERY DATE:", result["delivery_date"])
+
+            def _dt_callback(resource: DatetimeResource, result: Result) -> None:
+                if resource.data is None:
+                    resource.data = []
+
+                resource.data.append(result["delivery_date"])
+                if isinstance(resource.data[0], datetime.time):
+                    resource.data.reverse()
+                    resource.state = ResourceState.FULFILLED
+                else:
+                    resource.state = ResourceState.PARTIALLY_FULFILLED
+
+            if "callbacks" not in result:
+                result["callbacks"] = []
+            result.callbacks.append(_dt_callback)
             return
     raise ValueError("No date in {0}".format(str(datenode)))
 
 
 def QFruitTime(node: Node, params: QueryStateDict, result: Result):
+    result.qtype = "bull"
     # Extract time from time terminal nodes
     tnode = cast(TerminalNode, node.first_child(lambda n: n.has_t_base("tími")))
     if tnode:
@@ -243,6 +276,19 @@ def QFruitTime(node: Node, params: QueryStateDict, result: Result):
 
         result["delivery_time"] = datetime.time(hour, minute)
         print("TIME IS: ", result["delivery_time"])
+
+        def _dt_callback(resource: DatetimeResource, result: Result) -> None:
+            if resource.data is None:
+                resource.data = []
+            resource.data.append(result["delivery_time"])
+            if isinstance(resource.data[0], datetime.date):
+                resource.state = ResourceState.FULFILLED
+            else:
+                resource.state = ResourceState.PARTIALLY_FULFILLED
+
+        if "callbacks" not in result:
+            result["callbacks"] = []
+        result.callbacks.append(_dt_callback)
 
 
 def _remove_fruit(resource: Resource, result: Result) -> None:
@@ -283,6 +329,12 @@ def _parse_yes(resource: Resource, result: Result) -> None:
     if resource.name == "Fruits":
         if resource.state == ResourceState.FULFILLED:
             resource.state = ResourceState.CONFIRMED
+    if resource.name == "Date":
+        print("CONFIRMING DATETIME...", resource)
+        if resource.state == ResourceState.FULFILLED:
+            print("CONFIRMING DATETIME... 2")
+            resource.state = ResourceState.CONFIRMED
+            print("DATETIME CONFIRMED")
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:

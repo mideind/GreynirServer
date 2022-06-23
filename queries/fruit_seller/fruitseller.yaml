@@ -18,4 +18,4 @@ resources:
       prompt: "Hvenær viltu fá ávextina?"
       time_fulfilled_prompt: "Afhendingin verður klukkan {time}. Hvaða dagsetningu viltu fá ávextina?"
       date_fulfilled_prompt: "Afhendingin verður {date}. Klukkan hvað viltu fá ávextina?"
-      confirm_prompt: "Afhending pöntunar er {date_time}. Viltu staðfesta afhendingartímann?"
+      confirm_prompt: "Afhending pöntunar er {date_time}. Viltu staðfesta afhendinguna?"

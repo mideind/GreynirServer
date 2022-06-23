@@ -1,5 +1,4 @@
-from ssl import ALERT_DESCRIPTION_PROTOCOL_VERSION
-from typing import Any, Dict, Union, List, Optional
+from typing import Any, Dict, Union, List, Optional, cast
 from typing_extensions import TypedDict
 
 from enum import IntEnum, auto
@@ -53,6 +52,7 @@ class DialogueStateManager:
             if resource.get("type") == "ListResource":
                 newResource = ListResource(**resource)
             else:
+                print(resource)
                 newResource = DatetimeResource(**resource)
             if saved_state and i < len(saved_state["resources"]):
                 newResource.__dict__.update(saved_state["resources"][i])
@@ -68,7 +68,10 @@ class DialogueStateManager:
                 if "callbacks" in result:
                     for cb in result.callbacks:
                         cb(resource, result)
-                    if resource.state is ResourceState.CONFIRMED and resource != self.resources[-1]:
+                    if (
+                        resource.state is ResourceState.CONFIRMED
+                        and resource != self.resources[-1]
+                    ):
                         continue
                 return resource.generate_answer()
         return "Upp kom villa, reyndu aftur."
@@ -99,8 +102,9 @@ class Resource:
             self.__dict__.update(new_data.__dict__)
 
 
+@dataclass
 class ListResource(Resource):
-    data: ListResourceType = []
+    data: Optional[ListResourceType] = None
     available_options: Optional[ListResourceType] = None
 
     def list_available_options(self) -> str:
@@ -129,10 +133,12 @@ class ListResource(Resource):
 # ...
 
 
+@dataclass
 class YesNoResource(Resource):
     data: Optional[bool] = None
 
 
+@dataclass
 class DatetimeResource(Resource):
     data: Optional[List[Union[Optional[datetime.date], Optional[datetime.time]]]] = None
     date_fulfilled_prompt: Optional[str] = None
@@ -145,18 +151,34 @@ class DatetimeResource(Resource):
                 ans = self.prompt
         if self.state is ResourceState.PARTIALLY_FULFILLED:
             if self.data:
-                if self.data[0] and self.date_fulfilled_prompt:
-                    ans = self.date_fulfilled_prompt.format(date = self.data[0].strftime("%Y/%m/%d"))
-                if self.data[1] and self.time_fulfilled_prompt:
-                    ans = self.time_fulfilled_prompt.format(time = self.data[1].strftime("%H:%M"))
+                if len(self.data) > 0 and self.data[0] and self.date_fulfilled_prompt:
+                    ans = self.date_fulfilled_prompt.format(
+                        date=self.data[0].strftime("%Y/%m/%d")
+                    )
+                if len(self.data) > 1 and self.data[1] and self.time_fulfilled_prompt:
+                    ans = self.time_fulfilled_prompt.format(
+                        time=self.data[1].strftime("%H:%M")
+                    )
         if self.state is ResourceState.FULFILLED:
-            if self.data and self.confirm_prompt and self.data[0] and self.data[1]:
-                ans = self.confirm_prompt.format(date_time = datetime.datetime.combine(self.data[0], self.data[1]).strftime("%Y/%m/%d %H:%M"))
+            if (
+                self.data
+                and self.confirm_prompt
+                and len(self.data) == 2
+                and self.data[0]
+                and self.data[1]
+            ):
+                ans = self.confirm_prompt.format(
+                    date_time=datetime.datetime.combine(
+                        cast(datetime.date, self.data[0]),
+                        cast(datetime.time, self.data[1]),
+                    ).strftime("%Y/%m/%d %H:%M")
+                )
         if self.state is ResourceState.CONFIRMED:
             ans = "Pöntunin er staðfest."
         return ans
 
 
+@dataclass
 class NumberResource(Resource):
     data: Optional[int] = None
 
