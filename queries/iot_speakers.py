@@ -431,27 +431,13 @@ def QIoTSpeakerGroupName(node: Node, params: QueryStateDict, result: Result) -> 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
-    changing_color = result.get("changing_color", False)
-    changing_scene = result.get("changing_scene", False)
-    changing_brightness = result.get("changing_brightness", False)
-    print("error?", sum((changing_color, changing_scene, changing_brightness)) > 1)
-    if (
-        sum((changing_color, changing_scene, changing_brightness)) > 1
-        or "qtype" not in result
-    ):
-        q.set_error("E_QUERY_NOT_UNDERSTOOD")
-        return
 
-    q.set_qtype(result.qtype)
+    q.set_qtype(result.get["qtype"])
 
-    smartdevice_type = "smartlights"
-    client_id = str(q.client_id)
-    print("client_id:", client_id)
+    smartdevice_type = "smartSpeaker"
 
     # Fetch relevant data from the device_data table to perform an action on the lights
     device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
-    print("location :", q.location)
-    print("device data :", device_data)
 
     selected_light: Optional[str] = None
     print("selected light:", selected_light)
