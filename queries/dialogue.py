@@ -119,19 +119,31 @@ class DialogueStateManager:
         # self.set_dialogue_state()
 
     def generate_answer(self, result: Result) -> str:
-        for resource in self.resources:
+        i = 0
+        while i < len(self.resources):
+            resource = self.resources[i]
             if resource.required and resource.state is not ResourceState.CONFIRMED:
                 if resource.state is ResourceState.INITIAL:
                     resource.state = ResourceState.UNFULFILLED
                 if "callbacks" in result:
-                    for cb in result.callbacks:
-                        cb(resource, result)
+                    while len(result.callbacks) > 0:
+                        r_name, cb = result.callbacks.pop(0)
+                        if self.resources[i].name in r_name:
+                            cb(resource, result)
+                        else:
+                            while i > -1:
+                                i -= 1
+                                if self.resources[i].name in r_name:
+                                    cb(self.resources[i], result)
+                                    break
                     if (
                         resource.state is ResourceState.CONFIRMED
                         and resource != self.resources[-1]
                     ):
+                        i += 1
                         continue
-                return resource.generate_answer()
+                return self.resources[i].generate_answer()
+            i += 1
         return "Upp kom villa, reyndu aftur."
 
     def _get_saved_dialogue_state(self) -> DialogueStructureType:

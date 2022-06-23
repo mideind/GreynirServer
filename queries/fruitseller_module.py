@@ -8,6 +8,7 @@ from tree import Result, Node, TerminalNode
 from queries import gen_answer, parse_num
 from queries.dialogue import (
     DatetimeResource,
+    ListResource,
     Resource,
     ResourceState,
     DialogueStateManager,
@@ -140,14 +141,14 @@ def QFruitStartQuery(node: Node, params: QueryStateDict, result: Result):
 def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
     if "callbacks" not in result:
         result["callbacks"] = []
-    result.callbacks.append(_add_fruit)
+    result.callbacks.append((("Fruits", ),_add_fruit))
     result.qtype = "QAddFruitQuery"
 
 
 def QRemoveFruitQuery(node: Node, params: QueryStateDict, result: Result):
     if "callbacks" not in result:
         result["callbacks"] = []
-    result.callbacks.append(_remove_fruit)
+    result.callbacks.append((("Fruits", ), _remove_fruit))
     result.qtype = "QRemoveFruitQuery"
 
 
@@ -162,14 +163,14 @@ def QFruitOptionsQuery(node: Node, params: QueryStateDict, result: Result):
 def QYes(node: Node, params: QueryStateDict, result: Result):
     if "callbacks" not in result:
         result["callbacks"] = []
-    result.callbacks.append(_parse_yes)
+    result.callbacks.append((("Fruits", "Date"), _parse_yes))
     result.qtype = "QYes"
 
 
 def QNo(node: Node, params: QueryStateDict, result: Result):
     if "callbacks" not in result:
         result["callbacks"] = []
-    result.callbacks.append(_parse_no)
+    result.callbacks.append((("Fruits", "Date"), _parse_no))
     result.qtype = "QNo"
 
 
@@ -224,7 +225,7 @@ def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
 
     if "callbacks" not in result:
         result["callbacks"] = []
-    result.callbacks.append(_dt_callback)
+    result.callbacks.append((("Date", ), _dt_callback))
 
 
 def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -255,7 +256,7 @@ def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
 
             if "callbacks" not in result:
                 result["callbacks"] = []
-            result.callbacks.append(_dt_callback)
+            result.callbacks.append((("Date", ), _dt_callback))
             return
     raise ValueError("No date in {0}".format(str(datenode)))
 
@@ -280,7 +281,7 @@ def QFruitTime(node: Node, params: QueryStateDict, result: Result):
 
         if "callbacks" not in result:
             result["callbacks"] = []
-        result.callbacks.append(_dt_callback)
+        result.callbacks.append((("Date", ), _dt_callback))
 
 
 def _remove_fruit(resource: Resource, result: Result) -> None:
