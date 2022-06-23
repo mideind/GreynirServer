@@ -1,12 +1,11 @@
 from queries.dialogue import (
     ListResource,
 )
-from queries.dialogue import list_items
 
-
-class FruitState(ListResource):
-    def generate_answer(self, type: str) -> str:
-        ans: str = ""
+class FruitResource(ListResource):
+    def generate_answer(self) -> str:
+        ans = super().generate_answer()
+        """ans: str = ""
         if type == "QFruitStartQuery":
             ans = "Hvaða ávexti má bjóða þér?"
         elif type == "ListFruit":
@@ -36,5 +35,5 @@ class FruitState(ListResource):
         elif type == "NoFruitMatched":
             ans = "Enginn ávöxtur í körfunni passaði við beiðnina á undan."
         elif type == "NoFruitToRemove":
-            ans = "Engir ávextir eru í körfunni til að fjarlægja."
+            ans = "Engir ávextir eru í körfunni til að fjarlægja." """
         return ans
