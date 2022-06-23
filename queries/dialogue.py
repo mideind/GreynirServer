@@ -2,16 +2,58 @@ import json
 from typing import Any, Dict, Union, List, Optional, cast
 from typing_extensions import TypedDict
 
-from enum import IntEnum, auto
 import datetime
+import os.path
+import yaml
+
+# try:
+#     import tomllib
+# except ModuleNotFoundError:
+#     import tomli as tomllib
+from enum import IntEnum, auto
 from dataclasses import dataclass
 
-from reynir import NounPhrase
 from tree import Result
-from queries import natlang_seq, sing_or_plur, load_dialogue_structure
+from query import Query, ClientDataDict
+from reynir import NounPhrase
+from queries import natlang_seq, sing_or_plur
 
-BaseResourceTypes = Union[str, int, float, bool, datetime.datetime, None]
-ListResourceType = List[BaseResourceTypes]
+# Global key for storing client data for dialogues
+DIALOGUE_KEY = "dialogue"
+DIALOGUE_DATA_KEY = "dialogue_data"
+EMPTY_DIALOGUE_DATA = "{}"
+
+ResourceType = Union[str, int, float, bool, datetime.datetime, None]
+ListResourceType = List[ResourceType]
+
+
+class DialogueStructureType(TypedDict):
+    """ """
+
+    dialogue_name: str
+    resources: List[Dict[Any, Any]]
+
+
+class ResourceState(IntEnum):
+    """Enum representing the different states a dialogue resource can be in."""
+
+    UNFULFILLED = auto()
+    PARTIALLY_FULFILLED = auto()
+    FULFILLED = auto()
+    CONFIRMED = auto()
+    # SKIPPED = auto()
+
+
+def load_dialogue_structure(filename: str) -> Any:
+    """Loads dialogue structure from YAML file."""
+    basepath, _ = os.path.split(os.path.realpath(__file__))
+    print(basepath)
+    fpath = os.path.join(basepath, filename)
+    print(fpath)
+    obj = None
+    with open(fpath, mode="r") as file:
+        obj = yaml.safe_load(file)
+    return obj
 
 
 def list_items(items: Any) -> str:
@@ -23,29 +65,23 @@ def list_items(items: Any) -> str:
     return natlang_seq(item_list)
 
 
-class DialogueStructureType(TypedDict):
-    """
-    A dialogue structure is a list of resources used in a dialogue.
-    """
-
-    dialogue_name: str
-    variables: Optional[List[Any]]
-    resources: List[Dict[Any, Any]]
-
-
-class ResourceState(IntEnum):
-    UNFULFILLED = auto()
-    PARTIALLY_FULFILLED = auto()
-    FULFILLED = auto()
-    CONFIRMED = auto()
-    # SKIPPED = auto()
-
-
 class DialogueStateManager:
-    def __init__(
-        self, yaml_file: str, saved_state: Optional[DialogueStructureType] = None
-    ):
-        obj = load_dialogue_structure(yaml_file)
+    def __init__(self, dialogue_name: str, query: Query, result: Result):
+        self._dialogue_name = dialogue_name
+        self._q = query
+        self._result = result
+        self._saved_state = self.get_dialogue_state()
+
+    def not_in_dialogue(self, start_dialogue_qtype: str) -> bool:
+        """Check if the client is in or wants to start this dialogue"""
+        qt = self._result.get("qtype")
+        return (
+            qt != start_dialogue_qtype
+            and self._saved_state.get("dialogue_name") != self._dialogue_name
+        )
+
+    def setup_dialogue(self):
+        obj = load_dialogue_structure(self._dialogue_name)
         print(obj)
         self.resources: List[Resource] = []
         for i, resource in enumerate(obj["resources"]):
@@ -55,9 +91,11 @@ class DialogueStateManager:
             else:
                 print(resource)
                 newResource = DatetimeResource(**resource)
-            if saved_state and i < len(saved_state["resources"]):
-                newResource.__dict__.update(saved_state["resources"][i])
-                newResource.state = ResourceState(saved_state["resources"][i]["state"])
+            if self._saved_state and i < len(self._saved_state["resources"]):
+                newResource.__dict__.update(self._saved_state["resources"][i])
+                newResource.state = ResourceState(
+                    self._saved_state["resources"][i]["state"]
+                )
             self.resources.append(newResource)
 
         self.resourceState: Optional[Resource] = None
@@ -77,9 +115,41 @@ class DialogueStateManager:
                 return resource.generate_answer()
         return "Upp kom villa, reyndu aftur."
 
+    def get_dialogue_state(self) -> DialogueStructureType:
+        """Load the dialogue state for a client"""
+        cd = self._q.client_data(DIALOGUE_KEY)
+        # Return empty DialogueStructureType in case no dialogue state exists
+        ds: DialogueStructureType = {
+            "dialogue_name": "",
+            "resources": [],
+        }
+        if cd:
+            ds_str = cd.get(DIALOGUE_DATA_KEY)
+            if isinstance(ds_str, str) and ds_str != EMPTY_DIALOGUE_DATA:
+                # TODO: Add try-except block
+                ds = json.loads(ds_str, cls=DialogueJSONDecoder)
+        return ds
+
+    def set_dialogue_state(self, ds: DialogueStructureType) -> None:
+        """Save the state of a dialogue for a client"""
+        ds_json: str = json.dumps(ds, cls=DialogueJSONEncoder)
+        # Wrap data before saving dialogue state into client data
+        # (due to custom JSON serialization)
+        cd = {DIALOGUE_DATA_KEY: ds_json}
+        self._q.set_client_data(DIALOGUE_KEY, cast(ClientDataDict, cd))
+
+    def end_dialogue(self) -> None:
+        """End the client's current dialogue"""
+        # TODO: Remove line from database?
+        self._q.set_client_data(DIALOGUE_KEY, {DIALOGUE_DATA_KEY: EMPTY_DIALOGUE_DATA})
+
+
 class DialogueJSONEncoder(json.JSONEncoder):
-    # TODO: check resource state
     def default(self, o: Any) -> Any:
+        # Add JSON encoding for any new Resource classes here!
+        # CUSTOM RESOURCE CLASSES
+
+        # BASE RESOURCE CLASSES
         if isinstance(o, ListResource):
             d = o.__dict__.copy()
             d["__type__"] = "ListResource"
@@ -98,18 +168,18 @@ class DialogueJSONEncoder(json.JSONEncoder):
             return d
         if isinstance(o, datetime.date):
             return {
-                '__type__' : 'date',
-                'year' : o.year,
-                'month' : o.month,
-                'day' : o.day,
+                "__type__": "date",
+                "year": o.year,
+                "month": o.month,
+                "day": o.day,
             }
         if isinstance(o, datetime.time):
             return {
-                '__type__' : 'time',
-                'hour' : o.hour,
-                'minute' : o.minute,
-                'second' : o.second,
-                'microsecond' : o.microsecond,
+                "__type__": "time",
+                "hour": o.hour,
+                "minute": o.minute,
+                "second": o.second,
+                "microsecond": o.microsecond,
             }
         if isinstance(o, Resource):
             d = o.__dict__.copy()
@@ -117,15 +187,17 @@ class DialogueJSONEncoder(json.JSONEncoder):
             return d
         return json.JSONEncoder.default(self, o)
 
-class DialogueJSONDecoder(json.JSONDecoder):
 
+class DialogueJSONDecoder(json.JSONDecoder):
     def __init__(self, *args: Any, **kwargs: Any):
-        json.JSONDecoder.__init__(self, object_hook=self.dialogue_decoding, *args, **kwargs)
+        json.JSONDecoder.__init__(
+            self, object_hook=self.dialogue_decoding, *args, **kwargs
+        )
 
     def dialogue_decoding(self, d: Dict[Any, Any]) -> Any:
-        if '__type__' not in d:
+        if "__type__" not in d:
             return d
-        t = d.pop('__type__')
+        t = d.pop("__type__")
         if t == "ListResource":
             return ListResource(**d)
         if t == "YesNoResource":
@@ -140,6 +212,7 @@ class DialogueJSONDecoder(json.JSONDecoder):
             return datetime.time(**d)
         if t == "Resource":
             return Resource(**d)
+
 
 @dataclass
 class Resource:

@@ -74,7 +74,6 @@ from reynir.grammar import GrammarError
 from islenska.bindb import BinFilterFunc
 
 from tree import Tree, TreeStateDict, Node
-from queries.dialogue import DialogueStructureType
 
 # from nertokenizer import recognize_entities
 from images import get_image_url
@@ -90,9 +89,7 @@ ResponseType = Union[ResponseDict, List[ResponseDict]]
 ContextDict = Dict[str, Any]
 
 # Client data
-ClientDataDict = Union[
-    Dict[str, Union[str, int, float, bool, Dict[str, str]]], DialogueStructureType
-]
+ClientDataDict = Dict[str, Union[str, int, float, bool, Dict[str, str]]]
 
 # Answer tuple (corresponds to parameter list of Query.set_answer())
 AnswerTuple = Tuple[ResponseType, str, Optional[str]]
@@ -144,7 +141,6 @@ _IGNORED_QUERY_PREFIXES = (
 _IGNORED_PREFIX_RE = r"^({0})\s*".format("|".join(_IGNORED_QUERY_PREFIXES))
 # Auto-capitalization corrections
 _CAPITALIZATION_REPLACEMENTS = (("í Dag", "í dag"),)
-DIALOGUE_DATA_KEY = "dialogue"
 
 
 def beautify_query(query: str) -> str:
@@ -895,19 +891,6 @@ class Query:
             logging.warning("Couldn't save query data, no client ID or key")
             return
         Query.store_query_data(self.client_id, key, data)
-
-    def get_dialogue_state(self) -> Optional[DialogueStructureType]:
-        """Load the dialogue state for a client"""
-        return cast(DialogueStructureType, self.client_data(DIALOGUE_DATA_KEY))
-
-    def set_dialogue_state(self, ds: DialogueStructureType) -> None:
-        """Save the state of a dialogue for a client"""
-        self.set_client_data(DIALOGUE_DATA_KEY, ds)
-
-    def end_dialogue(self) -> None:
-        """End the client's current dialogue"""
-        # TODO: Remove line from database?
-        self.set_client_data(DIALOGUE_DATA_KEY, {})
 
     @staticmethod
     def store_query_data(client_id: str, key: str, data: ClientDataDict) -> bool:

@@ -129,12 +129,12 @@ QFruitTime →
 
 """
 
-_START_CONVERSATION_QTYPE = "QFruitStartQuery"
+_START_DIALOGUE_QTYPE = "QFruitStartQuery"
 _DIALOGUE_NAME = "fruitseller"
 
 
 def QFruitStartQuery(node: Node, params: QueryStateDict, result: Result):
-    result.qtype = _START_CONVERSATION_QTYPE
+    result.qtype = _START_DIALOGUE_QTYPE
 
 
 def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
@@ -340,24 +340,19 @@ def _parse_yes(resource: Resource, result: Result) -> None:
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
-    dialogue_state = q.get_dialogue_state() or {}
-    qt = result.get("qtype")
+    dsm = DialogueStateManager(_DIALOGUE_NAME, q, result)
 
-    print("Dialogue state: ", dialogue_state)
-    # checka hvort user se i samtali med q.client_data
-    if qt != _START_CONVERSATION_QTYPE and not (
-        dialogue_state and dialogue_state.get("dialogue_name") == _DIALOGUE_NAME
-    ):
+    if dsm.not_in_dialogue(_START_DIALOGUE_QTYPE):
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
     print("Fyrir dsm")
-    dsm = DialogueStateManager("fruit_seller/fruitseller.yaml", q.get_dialogue_state())
+    dsm.setup_dialogue()
     print("Eftir dms")
     # Successfully matched a query type
     try:
-        if result.qtype == _START_CONVERSATION_QTYPE:
+        if result.qtype == _START_DIALOGUE_QTYPE:
             q.set_dialogue_state(
-                {"dialogue_name": "fruitseller", "resources": [], "variables": None}
+                {"dialogue_name": _DIALOGUE_NAME, "resources": [], "variables": None}
             )
         else:
             print("Í else")
@@ -369,7 +364,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         print("eftir generate")
         q.set_dialogue_state(
             {
-                "dialogue_name": "fruitseller",
+                "dialogue_name": _DIALOGUE_NAME,
                 "resources": [r.__dict__ for r in dsm.resources],
                 "variables": None,
             }

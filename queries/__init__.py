@@ -729,13 +729,3 @@ def join_grammar_files(folder: str) -> str:
 #     #     - QNo: "repeat_prompt"
 #     # - QCancel: *Cancel
 
-
-
-def load_dialogue_structure(filename: str) -> Any:
-    """Loads dialogue structure from YAML file."""
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    fpath = os.path.join(basepath, filename)
-    obj = None
-    with open(fpath, mode="r") as file:
-        obj = yaml.safe_load(file)
-    return obj
