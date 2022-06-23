@@ -63,7 +63,7 @@ def help_text(lemma: str) -> str:
                 "Tengdu ljósin"
                 "Tengdu hátalarann"
             )
-        )
+        ) 
     )
 
 
@@ -88,13 +88,16 @@ Query →
 QIoTConnect → 
     QIoTConnectLights
     | QIoTConnectHub
+    | QIoTConnectSpeaker
     
-
 QIoTConnectLights →
     "tengdu" "ljósin"
 
 QIoTConnectHub →
     "tengdu" "miðstöðina"
+
+QIoTConnectSpeaker →
+    "tengdu" "hátalarann"
 
 """
 
@@ -107,6 +110,10 @@ def QIoTConnectHub(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = "connect_hub"
     result.action = "connect_hub"
 
+def QIoTConnectSpeaker(node: Node, params: QueryStateDict, result: Result) -> None:
+    print("Connect Speaker")
+    result.qtype = "connect_speaker"
+    result.action = "connect_speaker"
 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
@@ -126,7 +133,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     if result.qtype == "connect_lights":
         host = str(flask.request.host)
         print("host: ", host)
-        smartdevice_type = "smartlight"
         client_id = str(q.client_id)
         print("client_id:", client_id)
         js = read_jsfile("IoT_Embla/Philips_Hue/hub.js")
@@ -140,7 +146,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     elif result.qtype == "connect_hub":
         host = str(flask.request.host)
         print("host: ", host)
-        smartdevice_type = "smarthub"
         client_id = str(q.client_id)
         print("client_id:", client_id)
         js = read_jsfile("IoT_Embla/Smart_Things/st_connecthub.js")
@@ -151,6 +156,17 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_answer(response, answer, voice_answer)
         q.set_command(js)
         return
+    elif result.qtype == "connect_speaker":
+        # host = str(flask.request.host)
+        print("Connect speaker sentence")
+        client_id = str(q.client_id)
+        answer = "Skráðu þig inn hjá Sonos"
+        voice_answer = answer
+        response = dict(answer=answer)
+        q.set_answer(response, answer, voice_answer)
+        q.set_url(f"https://api.sonos.com/login/v3/oauth?client_id=74436dd6-476a-4470-ada3-3a9da4642dec&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri=http://192.168.1.69:5000/connect_sonos.api")
+
+
 
 
     # smartdevice_type = "smartlights"
