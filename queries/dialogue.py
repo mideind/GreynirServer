@@ -289,40 +289,28 @@ class ListResource(Resource):
 
 @dataclass
 class YesNoResource(Resource):
-    data: Optional[bool] = None
+    data: bool = False
 
 
 @dataclass
 class DatetimeResource(Resource):
-    data: Optional[List[Union[Optional[datetime.date], Optional[datetime.time]]]] = None
+    data: List[Union[Optional[datetime.date], Optional[datetime.time]]] = list(
+        (None, None)
+    )
     date_fulfilled_prompt: Optional[str] = None
     time_fulfilled_prompt: Optional[str] = None
 
     def has_date(self) -> bool:
-        return self.data is not None and any(
-            isinstance(x, datetime.date) for x in self.data
-        )
+        return isinstance(self.data[0], datetime.date)
 
     def has_time(self) -> bool:
-        return self.data is not None and any(
-            isinstance(x, datetime.time) for x in self.data
-        )
+        return isinstance(self.data[1], datetime.time)
 
-    def update_date(self, new_date: datetime.date) -> None:
-        if self.data is None:
-            self.data = []
-        for i, x in enumerate(self.data):
-            if isinstance(x, datetime.date):
-                self.data[i] = new_date
-                break
+    def set_date(self, new_date: Optional[datetime.date] = None) -> None:
+        self.data[0] = new_date
 
-    def update_time(self, new_time: datetime.time) -> None:
-        if self.data is None:
-            self.data = []
-        for i, x in enumerate(self.data):
-            if isinstance(x, datetime.time):
-                self.data[i] = new_time
-                break
+    def set_time(self, new_time: Optional[datetime.time] = None) -> None:
+        self.data[1] = new_time
 
     def generate_answer(self) -> str:
         ans = ""

@@ -217,11 +217,9 @@ def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
     result["delivery_date"] = datetime.date(y, m, d)
 
     def _dt_callback(resource: DatetimeResource, result: Result) -> None:
-        if resource.data is None:
-            resource.data = []
         print("DATETIME SHOULD BE FULFILLED NOW")
-        resource.data.append(result["delivery_date"])
-        resource.data.append(result["delivery_time"])
+        resource.set_date(result["delivery_date"])
+        resource.set_time(result["delivery_time"])
         resource.state = ResourceState.FULFILLED
 
     if "callbacks" not in result:
@@ -249,12 +247,8 @@ def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
             print("DELIVERY DATE:", result["delivery_date"])
 
             def _dt_callback(resource: DatetimeResource, result: Result) -> None:
-                if resource.data is None:
-                    resource.data = []
-
-                resource.data.append(result["delivery_date"])
-                if isinstance(resource.data[0], datetime.time):
-                    resource.data.reverse()
+                resource.set_date(result["delivery_date"])
+                if resource.has_time():
                     resource.state = ResourceState.FULFILLED
                 else:
                     resource.state = ResourceState.PARTIALLY_FULFILLED
@@ -278,10 +272,8 @@ def QFruitTime(node: Node, params: QueryStateDict, result: Result):
         print("TIME IS: ", result["delivery_time"])
 
         def _dt_callback(resource: DatetimeResource, result: Result) -> None:
-            if resource.data is None:
-                resource.data = []
-            resource.data.append(result["delivery_time"])
-            if isinstance(resource.data[0], datetime.date):
+            resource.set_time(result["delivery_time"])
+            if resource.has_date():
                 resource.state = ResourceState.FULFILLED
             else:
                 resource.state = ResourceState.PARTIALLY_FULFILLED
