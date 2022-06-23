@@ -1,7 +1,10 @@
+import json
 import logging
+import datetime
+from typing import cast
 
 from query import Query, QueryStateDict
-from tree import Result, Node
+from tree import Result, Node, TerminalNode
 from queries import gen_answer, parse_num
 from queries.dialogue import Resource, ResourceState, DialogueStateManager
 
@@ -19,7 +22,7 @@ Query →
     QFruitSeller '?'?
 
 QFruitSeller →
-    QFruitStartQuery | QFruitQuery
+    QFruitStartQuery | QFruitQuery | QFruitDateQuery
 
 QFruitStartQuery →
     "ávöxtur"
@@ -104,6 +107,21 @@ QCancelOrder → "ég" "hætti" "við"
     | "ég" "vil" "hætta" "við" "pöntunina"
     | "ég" "vill" "hætta" "við" "pöntunina" 
 
+QFruitDateQuery →
+    QFruitDateTime
+    | QFruitDate
+    | QFruitTime
+
+QFruitDateTime →
+    tímapunkturafs
+
+QFruitDate →
+    dagsafs
+    | dagsföst
+
+QFruitTime →
+    "klukkan"? tími
+
 """
 
 _START_CONVERSATION_QTYPE = "QFruitStartQuery"
@@ -173,6 +191,60 @@ def QFruit(node: Node, params: QueryStateDict, result: Result):
         result.fruit = fruit
 
 
+def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
+    datetimenode = node.first_child(lambda n: True)
+    assert isinstance(datetimenode, TerminalNode)
+    print(datetimenode.aux)
+    now = datetime.datetime.now()
+    y, m, d, h, min, _ = (i if i != 0 else None for i in json.loads(datetimenode.aux))
+    if y is None:
+        y = now.year
+    if m is None:
+        m = now.month
+    if d is None:
+        d = now.day
+    if h is None:
+        h = 12
+    if min is None:
+        min = 0
+    result["delivery_time"] = datetime.time(h, min)
+    result["delivery_date"] = datetime.date(y, m, d)
+    print("DATE:", result["delivery_date"])
+    print("TIME:", result["delivery_time"])
+
+
+def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
+    datenode = node.first_child(lambda n: True)
+    assert isinstance(datenode, TerminalNode)
+    cdate = datenode.contained_date
+    if cdate:
+        y, m, d = cdate
+        now = datetime.datetime.utcnow()
+
+        # This is a date that contains at least month & mday
+        if d and m:
+            if not y:
+                y = now.year
+                # Bump year if month/day in the past
+                if m < now.month or (m == now.month and d < now.day):
+                    y += 1
+            result["delivery_date"] = datetime.date(day=d, month=m, year=y)
+            print("DELIVERY DATE:", result["delivery_date"])
+            return
+    raise ValueError("No date in {0}".format(str(datenode)))
+
+
+def QFruitTime(node: Node, params: QueryStateDict, result: Result):
+    # Extract time from time terminal nodes
+    tnode = cast(TerminalNode, node.first_child(lambda n: n.has_t_base("tími")))
+    if tnode:
+        aux_str = tnode.aux.strip("[]")
+        hour, minute, _ = (int(i) for i in aux_str.split(", "))
+
+        result["delivery_time"] = datetime.time(hour, minute)
+        print("TIME IS: ", result["delivery_time"])
+
+
 def _remove_fruit(resource: Resource, result: Result) -> None:
     if resource.data is not None:
         for _, fruitname in result.queryfruits:
@@ -193,6 +265,7 @@ def _add_fruit(resource: Resource, result: Result) -> None:
         resource.data.append((number, name))
     resource.state = ResourceState.PARTIALLY_FULFILLED
 
+
 def _parse_no(resource: Resource, result: Result) -> None:
     print("No callback")
     if resource.name == "Fruits":
@@ -205,10 +278,12 @@ def _parse_no(resource: Resource, result: Result) -> None:
             resource.state = ResourceState.PARTIALLY_FULFILLED
             print("State after setting to PARTIALLY_FULFILLED")
 
+
 def _parse_yes(resource: Resource, result: Result) -> None:
     if resource.name == "Fruits":
         if resource.state == ResourceState.FULFILLED:
             resource.state = ResourceState.CONFIRMED
+
 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
