@@ -6,13 +6,14 @@ from datetime import datetime
 from dataclasses import dataclass
 
 from reynir import NounPhrase
-from queries import natlang_seq, sing_or_plur
+from tree import Result
+from queries import natlang_seq, sing_or_plur, load_dialogue_structure
 
 BaseResourceTypes = Union[str, int, float, bool, datetime, None]
 ListResourceType = List[BaseResourceTypes]
 
 
-def _list_items(items: Any) -> str:
+def list_items(items: Any) -> str:
     item_list: List[str] = []
     for num, name in items:
         # TODO: get general plural form
@@ -37,6 +38,37 @@ class ResourceState(IntEnum):
     FULFILLED = auto()
     CONFIRMED = auto()
     # SKIPPED = auto()
+
+
+class DialogueStateManager:
+    def __init__(
+        self, yaml_file: str, saved_state: Optional[DialogueStructureType] = None
+    ):
+        obj = load_dialogue_structure(yaml_file)
+        print(obj)
+        self.resources: List[Resource] = []
+        for i, resource in enumerate(obj["resources"]):
+            newResource: Resource
+            if resource.get("type") == "ListResource":
+                newResource = ListResource(**resource)
+            else:
+                newResource = DatetimeResource(**resource)
+            if saved_state and i < len(saved_state["resources"]):
+                newResource.__dict__.update(saved_state["resources"][i])
+                newResource.state = ResourceState(saved_state["resources"][i]["state"])
+            self.resources.append(newResource)
+
+        self.resourceState: Optional[Resource] = None
+        self.ans: Optional[str] = None
+
+    def generate_answer(self, result: Result) -> str:
+        for resource in self.resources:
+            if resource.required and resource.state is not ResourceState.CONFIRMED:
+                if "callbacks" in result:
+                    for cb in result.callbacks:
+                        cb(resource, result)
+                return resource.generate_answer()
+        return "Upp kom villa, reyndu aftur."
 
 
 @dataclass
@@ -79,13 +111,11 @@ class ListResource(Resource):
                 ans = self.prompt
         if self.state is ResourceState.PARTIALLY_FULFILLED:
             if self.repeat_prompt:
-                ans = (
-                    f"{self.repeat_prompt.format(list_items = _list_items(self.data))}"
-                )
+                ans = f"{self.repeat_prompt.format(list_items = list_items(self.data))}"
         if self.state is ResourceState.FULFILLED:
             if self.confirm_prompt:
                 ans = (
-                    f"{self.confirm_prompt.format(list_items = _list_items(self.data))}"
+                    f"{self.confirm_prompt.format(list_items = list_items(self.data))}"
                 )
         if self.state is ResourceState.CONFIRMED:
             ans = "Pöntunin er staðfest."

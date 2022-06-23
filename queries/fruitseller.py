@@ -3,8 +3,7 @@ import logging
 from query import Query, QueryStateDict
 from tree import Result, Node
 from queries import gen_answer, parse_num
-from queries.fruit_seller.fruitstate import DialogueStateManager
-from queries.dialogue import Resource, ResourceState
+from queries.dialogue import Resource, ResourceState, DialogueStateManager
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
