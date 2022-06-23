@@ -209,7 +209,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         audioClip(text_to_audio_url(voice_answer))
         code = str(q.client_data("sonos_code"))
         q.set_answer(response, answer, voice_answer)
-        q.set_url(f"https://google.com/")
 
         url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://{host}/connect_sonos.api"
         payload = {}
