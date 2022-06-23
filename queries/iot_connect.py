@@ -165,7 +165,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         response = dict(answer=answer)
         q.set_answer(response, answer, voice_answer)
         q.set_url(f"https://api.sonos.com/login/v3/oauth?client_id=74436dd6-476a-4470-ada3-3a9da4642dec&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri=http://192.168.1.69:5000/connect_sonos.api")
-
+        return
 
 
 
