@@ -40,6 +40,7 @@ from tree import Result, Node
 from routes import better_jsonify
 from util import read_api_key
 
+
 class SmartLights(TypedDict):
     selected_light: str
     philips_hue: Dict[str, str]
@@ -60,15 +61,8 @@ def help_text(lemma: str) -> str:
     """Help text to return when query.py is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég skil þig ef þú segir til dæmis: {0}.".format(
-        random.choice(
-            (
-                "Tengu miðstöðina",
-                "Tengdu ljósin"
-                "Tengdu hátalarann"
-            )
-        ) 
+        random.choice(("Tengu miðstöðina", "Tengdu ljósin" "Tengdu hátalarann"))
     )
-
 
 
 # This module wants to handle parse trees for queries
@@ -108,19 +102,23 @@ QIoTCreateSpeakerToken →
 
 """
 
+
 def QIoTConnectLights(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = "connect_lights"
     result.action = "connect_lights"
+
 
 def QIoTConnectHub(node: Node, params: QueryStateDict, result: Result) -> None:
     print("Connect Hub")
     result.qtype = "connect_hub"
     result.action = "connect_hub"
 
+
 def QIoTConnectSpeaker(node: Node, params: QueryStateDict, result: Result) -> None:
     print("Connect Speaker")
     result.qtype = "connect_speaker"
     result.action = "connect_speaker"
+
 
 def QIoTCreateSpeakerToken(node: Node, params: QueryStateDict, result: Result) -> None:
     print("Create Token")
@@ -180,7 +178,9 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_answer(response, answer, voice_answer)
         print("sonos_key :", sonos_key)
         print("host :", host)
-        q.set_url(f"https://api.sonos.com/login/v3/oauth?client_id={sonos_key}&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri=http://{host}/connect_sonos.api")
+        q.set_url(
+            f"https://api.sonos.com/login/v3/oauth?client_id={sonos_key}&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri=http://{host}/connect_sonos.api"
+        )
         return
     elif result.qtype == "create_speaker_token":
         sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
@@ -195,10 +195,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         host = str(flask.request.host)
         url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://{host}/connect_sonos.api"
 
-        payload={}
+        payload = {}
         headers = {
-        'Authorization': f'Basic {sonos_encoded_credentials}',
-        'Cookie': 'JSESSIONID=2DEFC02D2184D987F4CCAD5E45196948; AWSELB=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBC76E6A16196350947ED84835621A185D1BF63900D4B3E7BC7FE3CF19CCF26B78C; AWSELBCORS=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBC76E6A16196350947ED84835621A185D1BF63900D4B3E7BC7FE3CF19CCF26B78C'
+            "Authorization": f"Basic {sonos_encoded_credentials}",
+            "Cookie": "JSESSIONID=2DEFC02D2184D987F4CCAD5E45196948; AWSELB=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBC76E6A16196350947ED84835621A185D1BF63900D4B3E7BC7FE3CF19CCF26B78C; AWSELBCORS=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBC76E6A16196350947ED84835621A185D1BF63900D4B3E7BC7FE3CF19CCF26B78C",
         }
 
         response = requests.request("POST", url, headers=headers, data=payload)
@@ -219,9 +219,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_client_data("sonos_access_token", sonos_access_token)
         q.set_client_data("sonos_refresh_token", sonos_refresh_token)
         q.set_client_data("sonos_token_time", current_time)
-    
 
-        
         # if client_id and code:
         #     success = QueryObject.store_query_data(
         #         client_id, "sonos_code", code
@@ -230,9 +228,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         #         return better_jsonify(valid=True, msg="Registered Sonos token")
 
         # return better_jsonify(valid=False, errmsg="Error registering Sonos token.")
-
-
-
 
     # smartdevice_type = "smartlights"
     # client_id = str(q.client_id)
@@ -263,7 +258,5 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     # print("username: ", username)
     # print("selected light :", selected_light)
     # print("hue credentials :", hue_credentials)
-
-
 
     # f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'p3obluiXT13IbHMpp4X63ZvZnpNRdbqqMt723gy2';"
