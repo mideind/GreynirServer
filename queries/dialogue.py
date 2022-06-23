@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict, Union, List, Optional, cast
 from typing_extensions import TypedDict
 
@@ -76,6 +77,20 @@ class DialogueStateManager:
                 return resource.generate_answer()
         return "Upp kom villa, reyndu aftur."
 
+class DialogueJSONEncoder(json.JSONEncoder):
+    # TODO: check resource state
+    def default(self, o: Any) -> Any:
+        if isinstance(o, DatetimeResource):
+            serializable_dict = o.__dict__.copy()
+            if o.data and isinstance(o.data[0], datetime.date):
+                #encode date as string
+                serializable_dict["data"][0] = o.data[0].strftime("%Y-%m-%d")
+                if o.data[1] is not None and isinstance(o.data[1], datetime.time):
+                    serializable_dict["data"][1] = o.data[1].strftime("%H:%M")
+            elif o.data and isinstance(o.data[0], datetime.time):
+                serializable_dict["data"][0] = o.data[0].strftime("%H:%M")
+            return serializable_dict
+        return json.JSONEncoder.default(self, o)
 
 @dataclass
 class Resource:
