@@ -1,0 +1,22 @@
+dialogue_name = "fruitseller"
+
+[[resources]]
+name = "Fruits"
+prompt = "Hvaða ávexti má bjóða þér?"
+# resource_nonterminal: "QFruitList"
+type = "ListResource"
+repeatable = true
+# verification_function: "check_fruits"
+confirm_prompt =  "Viltu staðfesta ávextina {list_items}?"
+repeat_prompt = "Pöntunin samanstendur af {list_items}. Verður það eitthvað fleira?"
+
+[[resources]]
+name = "Date"
+type = "DatetimeResource"
+# verification_function: "check_date"
+prompt = "Hvenær viltu fá ávextina?"
+time_fulfilled_prompt = "Afhendingin verður klukkan {time}. Hvaða dagsetningu viltu fá ávextina?"
+date_fulfilled_prompt = "Afhendingin verður {date}. Klukkan hvað viltu fá ávextina?"
+confirm_prompt = "Afhending pöntunar er {date_time}. Viltu staðfesta afhendinguna?"
+
+
