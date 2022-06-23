@@ -31,10 +31,13 @@ import logging
 import random
 import json
 import flask
+import requests
+import time
 
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_jsfile, read_grammar_file
 from tree import Result, Node
+from routes import better_jsonify
 
 
 class SmartLights(TypedDict):
@@ -89,6 +92,7 @@ QIoTConnect →
     QIoTConnectLights
     | QIoTConnectHub
     | QIoTConnectSpeaker
+    | QIoTCreateSpeakerToken
     
 QIoTConnectLights →
     "tengdu" "ljósin"
@@ -98,6 +102,9 @@ QIoTConnectHub →
 
 QIoTConnectSpeaker →
     "tengdu" "hátalarann"
+
+QIoTCreateSpeakerToken →
+    "skapaðu" "tóka"
 
 """
 
@@ -114,6 +121,12 @@ def QIoTConnectSpeaker(node: Node, params: QueryStateDict, result: Result) -> No
     print("Connect Speaker")
     result.qtype = "connect_speaker"
     result.action = "connect_speaker"
+
+def QIoTCreateSpeakerToken(node: Node, params: QueryStateDict, result: Result) -> None:
+    print("Create Token")
+    result.qtype = "create_speaker_token"
+    result.action = "create_speaker_token"
+
 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
@@ -166,6 +179,54 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_answer(response, answer, voice_answer)
         q.set_url(f"https://api.sonos.com/login/v3/oauth?client_id=74436dd6-476a-4470-ada3-3a9da4642dec&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri=http://192.168.1.69:5000/connect_sonos.api")
         return
+    elif result.qtype == "create_speaker_token":
+        answer = "Ég bjó til tóka frá Sonos"
+        voice_answer = answer
+        response = dict(answer=answer)
+        code = str(q.client_data("sonos_code"))
+        print(code)
+        q.set_answer(response, answer, voice_answer)
+        q.set_url(f"https://google.com/")
+
+
+
+
+
+        url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://192.168.1.69:5000/connect_sonos.api"
+
+        payload={}
+        headers = {
+        'Authorization': 'Basic NzQ0MzZkZDYtNDc2YS00NDcwLWFkYTMtM2E5ZGE0NjQyZGVjOjZlNmRhOGUzLWQ1MWEtNGFhMS1hZDg5LTFmZTY4OGVkZTI3ZA==',
+        'Cookie': 'JSESSIONID=2DEFC02D2184D987F4CCAD5E45196948; AWSELB=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBC76E6A16196350947ED84835621A185D1BF63900D4B3E7BC7FE3CF19CCF26B78C; AWSELBCORS=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBC76E6A16196350947ED84835621A185D1BF63900D4B3E7BC7FE3CF19CCF26B78C'
+        }
+
+        response = requests.request("POST", url, headers=headers, data=payload)
+        if response.status_code != 200:
+            print("Error:", response.status_code)
+            print(response.text)
+            return
+        response_json = response.json()
+        sonos_access_token = response_json["access_token"]
+        sonos_refresh_token = response_json["refresh_token"]
+
+        # print("access token :", response.access_token)
+        # print("refresh token :", response.refresh_token)
+        current_time = time.time()
+        print("current time :", current_time)
+        # q.set_client_data("sonos_access_token", response.access_token)
+        # q.set_client_data("sonos_token_time", current_time)
+    
+
+        
+        # if client_id and code:
+        #     success = QueryObject.store_query_data(
+        #         client_id, "sonos_code", code
+        #     )
+        #     if success:
+        #         return better_jsonify(valid=True, msg="Registered Sonos token")
+
+        # return better_jsonify(valid=False, errmsg="Error registering Sonos token.")
+
 
 
 
