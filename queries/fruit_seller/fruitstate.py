@@ -4,12 +4,12 @@ import pickle
 import base64
 
 from tree import Result
-from query import DialogueStructureType
-from queries.fruit_seller.resource import (
+from queries.dialogue import (
     DatetimeResource,
     ListResource,
     Resource,
     ResourceState,
+    DialogueStructureType,
 )
 from reynir import NounPhrase
 from queries import natlang_seq, sing_or_plur, load_dialogue_structure

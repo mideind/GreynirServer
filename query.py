@@ -74,7 +74,7 @@ from reynir.grammar import GrammarError
 from islenska.bindb import BinFilterFunc
 
 from tree import Tree, TreeStateDict, Node
-from queries.fruit_seller.resource import DialogueStructureType
+from queries.dialogue import DialogueStructureType
 
 # from nertokenizer import recognize_entities
 from images import get_image_url
