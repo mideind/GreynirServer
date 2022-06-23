@@ -140,11 +140,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         return
 
     q.set_qtype(result.qtype)
+    host = str(flask.request.host)
+    client_id = str(q.client_id)
+
     if result.qtype == "connect_lights":
-        host = str(flask.request.host)
-        print("host: ", host)
-        client_id = str(q.client_id)
-        print("client_id:", client_id)
         js = read_jsfile("IoT_Embla/Philips_Hue/hub.js")
         js += f"syncConnectHub('{client_id}','{host}');"
         answer = "Philips Hue miðstöðin hefur verið tengd"
@@ -153,65 +152,49 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_answer(response, answer, voice_answer)
         q.set_command(js)
         return
+
     elif result.qtype == "connect_hub":
-        host = str(flask.request.host)
-        print("host: ", host)
-        client_id = str(q.client_id)
-        print("client_id:", client_id)
         js = read_jsfile("IoT_Embla/Smart_Things/st_connecthub.js")
         js += f"syncConnectHub('{client_id}','{host}');"
         answer = "Smart Things miðstöðin hefur verið tengd"
-        voice_answer = answer
-        response = dict(answer=answer)
+        voice_answer, response = answer, dict(answer=answer)
         q.set_answer(response, answer, voice_answer)
         q.set_command(js)
         return
+
     elif result.qtype == "connect_speaker":
         sonos_key = read_api_key("SonosKey")
-        host = str(flask.request.host)
-        print("Connect speaker sentence")
-        client_id = str(q.client_id)
         answer = "Skráðu þig inn hjá Sonos"
-        voice_answer = answer
-        response = dict(answer=answer)
+        voice_answer, response = answer, dict(answer=answer)
         q.set_answer(response, answer, voice_answer)
-        print("sonos_key :", sonos_key)
-        print("host :", host)
         q.set_url(
             f"https://api.sonos.com/login/v3/oauth?client_id={sonos_key}&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri=http://{host}/connect_sonos.api"
         )
         return
+
     elif result.qtype == "create_speaker_token":
         sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
-        print("credientials :", sonos_encoded_credentials)
         answer = "Ég bjó til tóka frá Sonos"
-        voice_answer = answer
-        response = dict(answer=answer)
+        voice_answer, response = answer, dict(answer=answer)
         code = str(q.client_data("sonos_code"))
-        print(code)
         q.set_answer(response, answer, voice_answer)
         q.set_url(f"https://google.com/")
-        host = str(flask.request.host)
-        url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://{host}/connect_sonos.api"
 
+        url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://{host}/connect_sonos.api"
         payload = {}
         headers = {
             "Authorization": f"Basic {sonos_encoded_credentials}",
             "Cookie": "JSESSIONID=2DEFC02D2184D987F4CCAD5E45196948; AWSELB=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBC76E6A16196350947ED84835621A185D1BF63900D4B3E7BC7FE3CF19CCF26B78C; AWSELBCORS=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBC76E6A16196350947ED84835621A185D1BF63900D4B3E7BC7FE3CF19CCF26B78C",
         }
-
         response = requests.request("POST", url, headers=headers, data=payload)
         if response.status_code != 200:
             print("Error:", response.status_code)
             print(response.text)
             return
         response_json = response.json()
-        sonos_access_token = response_json["access_token"]
-        sonos_refresh_token = response_json["refresh_token"]
-        print(response.text)
         sonos_credentials_dict = {
-            "access_token": sonos_access_token,
-            "refresh_token": sonos_refresh_token,
+            "access_token": response_json["access_token"],
+            "refresh_token": response_json["refresh_token"],
         }
         q.store_query_data(
             str(q.client_id), "sonos_credentials", sonos_credentials_dict
