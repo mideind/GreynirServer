@@ -726,9 +726,7 @@ def sonos_code(version: int = 1) -> Response:
     client_id = args.get("state")
     code = args.get("code")
     if client_id and code:
-        success = QueryObject.store_query_data(
-            client_id, "sonos_code", code
-        )
+        success = QueryObject.store_query_data(client_id, "sonos_code", code)
         if success:
             return better_jsonify(valid=True, msg="Registered sonos code")
 
