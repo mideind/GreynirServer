@@ -38,7 +38,7 @@ from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_jsfile, read_grammar_file
 from tree import Result, Node
 from routes import better_jsonify
-
+from util import read_api_key
 
 class SmartLights(TypedDict):
     selected_light: str
@@ -170,16 +170,21 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_command(js)
         return
     elif result.qtype == "connect_speaker":
-        # host = str(flask.request.host)
+        sonos_key = read_api_key("SonosKey")
+        host = str(flask.request.host)
         print("Connect speaker sentence")
         client_id = str(q.client_id)
         answer = "Skráðu þig inn hjá Sonos"
         voice_answer = answer
         response = dict(answer=answer)
         q.set_answer(response, answer, voice_answer)
-        q.set_url(f"https://api.sonos.com/login/v3/oauth?client_id=74436dd6-476a-4470-ada3-3a9da4642dec&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri=http://192.168.1.69:5000/connect_sonos.api")
+        print("sonos_key :", sonos_key)
+        print("host :", host)
+        q.set_url(f"https://api.sonos.com/login/v3/oauth?client_id={sonos_key}&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri=http://{host}/connect_sonos.api")
         return
     elif result.qtype == "create_speaker_token":
+        sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
+        print("credientials :", sonos_encoded_credentials)
         answer = "Ég bjó til tóka frá Sonos"
         voice_answer = answer
         response = dict(answer=answer)
@@ -187,16 +192,12 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         print(code)
         q.set_answer(response, answer, voice_answer)
         q.set_url(f"https://google.com/")
-
-
-
-
-
-        url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://192.168.1.69:5000/connect_sonos.api"
+        host = str(flask.request.host)
+        url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://{host}/connect_sonos.api"
 
         payload={}
         headers = {
-        'Authorization': 'Basic NzQ0MzZkZDYtNDc2YS00NDcwLWFkYTMtM2E5ZGE0NjQyZGVjOjZlNmRhOGUzLWQ1MWEtNGFhMS1hZDg5LTFmZTY4OGVkZTI3ZA==',
+        'Authorization': f'Basic {sonos_encoded_credentials}',
         'Cookie': 'JSESSIONID=2DEFC02D2184D987F4CCAD5E45196948; AWSELB=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBC76E6A16196350947ED84835621A185D1BF63900D4B3E7BC7FE3CF19CCF26B78C; AWSELBCORS=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBC76E6A16196350947ED84835621A185D1BF63900D4B3E7BC7FE3CF19CCF26B78C'
         }
 
@@ -208,13 +209,16 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         response_json = response.json()
         sonos_access_token = response_json["access_token"]
         sonos_refresh_token = response_json["refresh_token"]
+        print(response.text)
 
         # print("access token :", response.access_token)
         # print("refresh token :", response.refresh_token)
         current_time = time.time()
         print("current time :", current_time)
-        # q.set_client_data("sonos_access_token", response.access_token)
-        # q.set_client_data("sonos_token_time", current_time)
+
+        q.set_client_data("sonos_access_token", sonos_access_token)
+        q.set_client_data("sonos_refresh_token", sonos_refresh_token)
+        q.set_client_data("sonos_token_time", current_time)
     
 
         
