@@ -80,17 +80,66 @@ class DialogueStateManager:
 class DialogueJSONEncoder(json.JSONEncoder):
     # TODO: check resource state
     def default(self, o: Any) -> Any:
+        if isinstance(o, ListResource):
+            d = o.__dict__.copy()
+            d["__type__"] = "ListResource"
+            return d
+        if isinstance(o, YesNoResource):
+            d = o.__dict__.copy()
+            d["__type__"] = "YesNoResource"
+            return d
         if isinstance(o, DatetimeResource):
-            serializable_dict = o.__dict__.copy()
-            if o.data and isinstance(o.data[0], datetime.date):
-                #encode date as string
-                serializable_dict["data"][0] = o.data[0].strftime("%Y-%m-%d")
-                if o.data[1] is not None and isinstance(o.data[1], datetime.time):
-                    serializable_dict["data"][1] = o.data[1].strftime("%H:%M")
-            elif o.data and isinstance(o.data[0], datetime.time):
-                serializable_dict["data"][0] = o.data[0].strftime("%H:%M")
-            return serializable_dict
+            d = o.__dict__.copy()
+            d["__type__"] = "DatetimeResource"
+            return d
+        if isinstance(o, NumberResource):
+            d = o.__dict__.copy()
+            d["__type__"] = "NumberResource"
+            return d
+        if isinstance(o, datetime.date):
+            return {
+                '__type__' : 'date',
+                'year' : o.year,
+                'month' : o.month,
+                'day' : o.day,
+            }
+        if isinstance(o, datetime.time):
+            return {
+                '__type__' : 'time',
+                'hour' : o.hour,
+                'minute' : o.minute,
+                'second' : o.second,
+                'microsecond' : o.microsecond,
+            }
+        if isinstance(o, Resource):
+            d = o.__dict__.copy()
+            d["__type__"] = "Resource"
+            return d
         return json.JSONEncoder.default(self, o)
+
+class DialogueJSONDecoder(json.JSONDecoder):
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        json.JSONDecoder.__init__(self, object_hook=self.dialogue_decoding, *args, **kwargs)
+
+    def dialogue_decoding(self, d: Dict[Any, Any]) -> Any:
+        if '__type__' not in d:
+            return d
+        t = d.pop('__type__')
+        if t == "ListResource":
+            return ListResource(**d)
+        if t == "YesNoResource":
+            return YesNoResource(**d)
+        if t == "DatetimeResource":
+            return DatetimeResource(**d)
+        if t == "NumberResource":
+            return NumberResource(**d)
+        if t == "date":
+            return datetime.date(**d)
+        if t == "time":
+            return datetime.time(**d)
+        if t == "Resource":
+            return Resource(**d)
 
 @dataclass
 class Resource:
