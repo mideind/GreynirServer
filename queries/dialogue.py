@@ -2,8 +2,8 @@ import json
 from typing import Any, Dict, Union, List, Optional, cast
 from typing_extensions import TypedDict
 
-import datetime
 import os.path
+import datetime
 import yaml
 
 # try:
@@ -31,7 +31,7 @@ class DialogueStructureType(TypedDict):
     """ """
 
     dialogue_name: str
-    resources: List[Dict[Any, Any]]
+    resources: List["Resource"]
 
 
 class ResourceState(IntEnum):
@@ -47,9 +47,7 @@ class ResourceState(IntEnum):
 def load_dialogue_structure(filename: str) -> Any:
     """Loads dialogue structure from YAML file."""
     basepath, _ = os.path.split(os.path.realpath(__file__))
-    print(basepath)
-    fpath = os.path.join(basepath, filename)
-    print(fpath)
+    fpath = os.path.join(basepath, filename, filename + ".yaml")  # TODO: Fix this
     obj = None
     with open(fpath, mode="r") as file:
         obj = yaml.safe_load(file)
@@ -70,7 +68,7 @@ class DialogueStateManager:
         self._dialogue_name = dialogue_name
         self._q = query
         self._result = result
-        self._saved_state = self.get_dialogue_state()
+        self._saved_state = self._get_saved_dialogue_state()
 
     def not_in_dialogue(self, start_dialogue_qtype: str) -> bool:
         """Check if the client is in or wants to start this dialogue"""
@@ -92,14 +90,33 @@ class DialogueStateManager:
                 print(resource)
                 newResource = DatetimeResource(**resource)
             if self._saved_state and i < len(self._saved_state["resources"]):
-                newResource.__dict__.update(self._saved_state["resources"][i])
+                newResource.update(self._saved_state["resources"][i])
                 newResource.state = ResourceState(
-                    self._saved_state["resources"][i]["state"]
+                    self._saved_state["resources"][i].state
                 )
             self.resources.append(newResource)
 
         self.resourceState: Optional[Resource] = None
         self.ans: Optional[str] = None
+
+    def start_dialogue(self):
+        """Save client's state as having started this dialogue"""
+        self.set_dialogue_state(
+            {
+                "dialogue_name": self._dialogue_name,
+                "resources": [],
+            }
+        )
+
+    def update_dialogue_state(self):
+        """Update the dialogue state for a client"""
+        self.set_dialogue_state(
+            {
+                "dialogue_name": self._dialogue_name,
+                "resources": self.resources,
+            }
+        )
+        # self.set_dialogue_state()
 
     def generate_answer(self, result: Result) -> str:
         for resource in self.resources:
@@ -115,7 +132,7 @@ class DialogueStateManager:
                 return resource.generate_answer()
         return "Upp kom villa, reyndu aftur."
 
-    def get_dialogue_state(self) -> DialogueStructureType:
+    def _get_saved_dialogue_state(self) -> DialogueStructureType:
         """Load the dialogue state for a client"""
         cd = self._q.client_data(DIALOGUE_KEY)
         # Return empty DialogueStructureType in case no dialogue state exists

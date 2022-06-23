@@ -351,28 +351,14 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     # Successfully matched a query type
     try:
         if result.qtype == _START_DIALOGUE_QTYPE:
-            q.set_dialogue_state(
-                {"dialogue_name": _DIALOGUE_NAME, "resources": [], "variables": None}
-            )
-        else:
-            print("Í else")
-            if dialogue_state is None:
-                q.set_error("E_QUERY_NOT_UNDERSTOOD")
-                return
-        print("fyrir generate")
+            dsm.start_dialogue()
+
         ans = dsm.generate_answer(result)
-        print("eftir generate")
-        q.set_dialogue_state(
-            {
-                "dialogue_name": _DIALOGUE_NAME,
-                "resources": [r.__dict__ for r in dsm.resources],
-                "variables": None,
-            }
-        )
+        dsm.update_dialogue_state()
         print("woohoo")
 
         if result.qtype == "OrderComplete" or result.qtype == "CancelOrder":
-            q.end_dialogue()
+            dsm.end_dialogue()
 
         q.set_answer(*gen_answer(ans))
         return

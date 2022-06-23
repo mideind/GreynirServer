@@ -705,27 +705,3 @@ def join_grammar_files(folder: str) -> str:
             with open(os.path.join(fpath, fname), mode="r") as file:
                 grammar.append(file.read())
     return "\n".join(grammar)
-
-
-# class ResourceType(TypedDict, total=False):
-#     """
-#     Representation of a single resource in a dialogue.
-#     """
-
-#     name: str
-#     prompt: str
-#     type: str
-#     repeat_prompt: Optional[str]
-#     required: bool
-#     repeatable: bool
-#     # verification_function: "check_fruits"
-#     confirm_prompt: Optional[str]
-#     data: Any
-#     # state: int # TODO: wrong type?
-#     cancel_prompt: Optional[str]
-#     # next_states: List[Any]
-#     # - QNo: #"verification_prompt"
-#     #     - QYes: "Date"
-#     #     - QNo: "repeat_prompt"
-#     # - QCancel: *Cancel
-
