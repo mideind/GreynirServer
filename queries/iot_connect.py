@@ -39,6 +39,7 @@ from queries import gen_answer, read_jsfile, read_grammar_file
 from tree import Result, Node
 from routes import better_jsonify
 from util import read_api_key
+from speech import text_to_audio_url
 
 
 class SpeakerCredentials(TypedDict):
@@ -125,6 +126,33 @@ def QIoTCreateSpeakerToken(node: Node, params: QueryStateDict, result: Result) -
     result.action = "create_speaker_token"
 
 
+def audioClip(audioclip_url):
+    """
+    Plays an audioclip
+    """
+    import requests
+    import json
+
+    url = f"https://api.ws.sonos.com/control/api/v1/players/RINCON_542A1B599FF201400/audioClip"
+
+    payload = json.dumps(
+        {
+            "name": "Embla",
+            "appId": "com.acme.app",
+            "streamUrl": f"{audioclip_url}",
+            "volume": 30,
+            "priority": "HIGH",
+            "clipType": "CUSTOM",
+        }
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer bEy3xnmpvoxrLcP7syVxVdjO2maj",
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
@@ -148,6 +176,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         js += f"syncConnectHub('{client_id}','{host}');"
         answer = "Philips Hue miðstöðin hefur verið tengd"
         voice_answer = answer
+        # audioClip(text_to_audio_url(voice_answer))
         response = dict(answer=answer)
         q.set_answer(response, answer, voice_answer)
         q.set_command(js)
@@ -166,6 +195,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         sonos_key = read_api_key("SonosKey")
         answer = "Skráðu þig inn hjá Sonos"
         voice_answer, response = answer, dict(answer=answer)
+        audioClip(text_to_audio_url(voice_answer))
         q.set_answer(response, answer, voice_answer)
         q.set_url(
             f"https://api.sonos.com/login/v3/oauth?client_id={sonos_key}&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri=http://{host}/connect_sonos.api"
@@ -176,6 +206,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
         answer = "Ég bjó til tóka frá Sonos"
         voice_answer, response = answer, dict(answer=answer)
+        audioClip(text_to_audio_url(voice_answer))
         code = str(q.client_data("sonos_code"))
         q.set_answer(response, answer, voice_answer)
         q.set_url(f"https://google.com/")
