@@ -298,6 +298,32 @@ class DatetimeResource(Resource):
     date_fulfilled_prompt: Optional[str] = None
     time_fulfilled_prompt: Optional[str] = None
 
+    def has_date(self) -> bool:
+        return self.data is not None and any(
+            isinstance(x, datetime.date) for x in self.data
+        )
+
+    def has_time(self) -> bool:
+        return self.data is not None and any(
+            isinstance(x, datetime.time) for x in self.data
+        )
+
+    def update_date(self, new_date: datetime.date) -> None:
+        if self.data is None:
+            self.data = []
+        for i, x in enumerate(self.data):
+            if isinstance(x, datetime.date):
+                self.data[i] = new_date
+                break
+
+    def update_time(self, new_time: datetime.time) -> None:
+        if self.data is None:
+            self.data = []
+        for i, x in enumerate(self.data):
+            if isinstance(x, datetime.time):
+                self.data[i] = new_time
+                break
+
     def generate_answer(self) -> str:
         ans = ""
         if self.state is ResourceState.UNFULFILLED:
