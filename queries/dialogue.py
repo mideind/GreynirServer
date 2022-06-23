@@ -11,7 +11,7 @@ import yaml
 # except ModuleNotFoundError:
 #     import tomli as tomllib
 from enum import IntEnum, auto
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from tree import Result
 from query import Query, ClientDataDict
@@ -36,7 +36,7 @@ class DialogueStructureType(TypedDict):
 
 class ResourceState(IntEnum):
     """Enum representing the different states a dialogue resource can be in."""
-
+    INITIAL = auto()
     UNFULFILLED = auto()
     PARTIALLY_FULFILLED = auto()
     FULFILLED = auto()
@@ -121,6 +121,8 @@ class DialogueStateManager:
     def generate_answer(self, result: Result) -> str:
         for resource in self.resources:
             if resource.required and resource.state is not ResourceState.CONFIRMED:
+                if resource.state is ResourceState.INITIAL:
+                    resource.state = ResourceState.UNFULFILLED
                 if "callbacks" in result:
                     for cb in result.callbacks:
                         cb(resource, result)
@@ -236,7 +238,7 @@ class Resource:
     name: str = ""
     required: bool = True
     data: Any = None
-    state: ResourceState = ResourceState.UNFULFILLED
+    state: ResourceState = ResourceState.INITIAL
     prompt: str = ""
     type: str = ""
     repeatable: bool = False
@@ -258,7 +260,7 @@ class Resource:
 
 @dataclass
 class ListResource(Resource):
-    data: Optional[ListResourceType] = None
+    data: ListResourceType = field(default_factory=list)
     available_options: Optional[ListResourceType] = None
 
     def list_available_options(self) -> str:
@@ -294,9 +296,7 @@ class YesNoResource(Resource):
 
 @dataclass
 class DatetimeResource(Resource):
-    data: List[Union[Optional[datetime.date], Optional[datetime.time]]] = list(
-        (None, None)
-    )
+    data: List[Union[Optional[datetime.date], Optional[datetime.time]]] = field(default_factory=lambda: [None, None])
     date_fulfilled_prompt: Optional[str] = None
     time_fulfilled_prompt: Optional[str] = None
 
@@ -348,7 +348,7 @@ class DatetimeResource(Resource):
 
 @dataclass
 class NumberResource(Resource):
-    data: Optional[int] = None
+    data: int = 0
 
 
 """ Three classes implemented for each resource
