@@ -120,6 +120,18 @@ class ListResource(Resource):
 @dataclass
 class YesNoResource(Resource):
     data: bool = False
+    yes_answer: Optional[str] = None
+    no_answer: Optional[str] = None
+
+    def generate_answer(self) -> str:
+        ans = ""
+        if self.data:
+            if self.yes_answer:
+                ans = self.yes_answer
+        else:
+            if self.no_answer:
+                ans = self.no_answer
+        return ans
 
 
 @dataclass
