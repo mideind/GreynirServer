@@ -1,15 +1,14 @@
 import json
-from typing import Any, Dict, Union, List, Optional, cast
+from typing import Any, Dict, Mapping, Union, List, Optional, cast
 from typing_extensions import TypedDict
 
 import os.path
 import datetime
-import yaml
 
-# try:
-#     import tomllib
-# except ModuleNotFoundError:
-#     import tomli as tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 from enum import IntEnum, auto
 from dataclasses import dataclass, field
 
@@ -36,213 +35,19 @@ class DialogueStructureType(TypedDict):
 
 class ResourceState(IntEnum):
     """Enum representing the different states a dialogue resource can be in."""
+
     INITIAL = auto()
     UNFULFILLED = auto()
     PARTIALLY_FULFILLED = auto()
     FULFILLED = auto()
     CONFIRMED = auto()
-    # SKIPPED = auto()
+    PAUSED = auto()
+    SKIPPED = auto()
 
 
-def load_dialogue_structure(filename: str) -> Any:
-    """Loads dialogue structure from YAML file."""
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    fpath = os.path.join(basepath, filename, filename + ".yaml")  # TODO: Fix this
-    obj = None
-    with open(fpath, mode="r") as file:
-        obj = yaml.safe_load(file)
-    return obj
-
-
-def list_items(items: Any) -> str:
-    item_list: List[str] = []
-    for num, name in items:
-        # TODO: get general plural form
-        plural_name: str = NounPhrase(name).dative or name
-        item_list.append(sing_or_plur(num, name, plural_name))
-    return natlang_seq(item_list)
-
-
-class DialogueStateManager:
-    def __init__(self, dialogue_name: str, query: Query, result: Result):
-        self._dialogue_name = dialogue_name
-        self._q = query
-        self._result = result
-        self._saved_state = self._get_saved_dialogue_state()
-
-    def not_in_dialogue(self, start_dialogue_qtype: str) -> bool:
-        """Check if the client is in or wants to start this dialogue"""
-        qt = self._result.get("qtype")
-        return (
-            qt != start_dialogue_qtype
-            and self._saved_state.get("dialogue_name") != self._dialogue_name
-        )
-
-    def setup_dialogue(self):
-        obj = load_dialogue_structure(self._dialogue_name)
-        print(obj)
-        self.resources: List[Resource] = []
-        for i, resource in enumerate(obj["resources"]):
-            newResource: Resource
-            if resource.get("type") == "ListResource":
-                newResource = ListResource(**resource)
-            else:
-                print(resource)
-                newResource = DatetimeResource(**resource)
-            if self._saved_state and i < len(self._saved_state["resources"]):
-                newResource.update(self._saved_state["resources"][i])
-                newResource.state = ResourceState(
-                    self._saved_state["resources"][i].state
-                )
-            self.resources.append(newResource)
-
-        self.resourceState: Optional[Resource] = None
-        self.ans: Optional[str] = None
-
-    def start_dialogue(self):
-        """Save client's state as having started this dialogue"""
-        self.set_dialogue_state(
-            {
-                "dialogue_name": self._dialogue_name,
-                "resources": [],
-            }
-        )
-
-    def update_dialogue_state(self):
-        """Update the dialogue state for a client"""
-        self.set_dialogue_state(
-            {
-                "dialogue_name": self._dialogue_name,
-                "resources": self.resources,
-            }
-        )
-        # self.set_dialogue_state()
-
-    def generate_answer(self, result: Result) -> str:
-        i = 0
-        while i < len(self.resources):
-            resource = self.resources[i]
-            if resource.required and resource.state is not ResourceState.CONFIRMED:
-                if resource.state is ResourceState.INITIAL:
-                    resource.state = ResourceState.UNFULFILLED
-                if "callbacks" in result:
-                    while len(result.callbacks) > 0:
-                        r_name, cb = result.callbacks.pop(0)
-                        if self.resources[i].name in r_name:
-                            cb(resource, result)
-                        else:
-                            while i > -1:
-                                i -= 1
-                                if self.resources[i].name in r_name:
-                                    cb(self.resources[i], result)
-                                    break
-                    if (
-                        resource.state is ResourceState.CONFIRMED
-                        and resource != self.resources[-1]
-                    ):
-                        i += 1
-                        continue
-                return self.resources[i].generate_answer()
-            i += 1
-        return "Upp kom villa, reyndu aftur."
-
-    def _get_saved_dialogue_state(self) -> DialogueStructureType:
-        """Load the dialogue state for a client"""
-        cd = self._q.client_data(DIALOGUE_KEY)
-        # Return empty DialogueStructureType in case no dialogue state exists
-        ds: DialogueStructureType = {
-            "dialogue_name": "",
-            "resources": [],
-        }
-        if cd:
-            ds_str = cd.get(DIALOGUE_DATA_KEY)
-            if isinstance(ds_str, str) and ds_str != EMPTY_DIALOGUE_DATA:
-                # TODO: Add try-except block
-                ds = json.loads(ds_str, cls=DialogueJSONDecoder)
-        return ds
-
-    def set_dialogue_state(self, ds: DialogueStructureType) -> None:
-        """Save the state of a dialogue for a client"""
-        ds_json: str = json.dumps(ds, cls=DialogueJSONEncoder)
-        # Wrap data before saving dialogue state into client data
-        # (due to custom JSON serialization)
-        cd = {DIALOGUE_DATA_KEY: ds_json}
-        self._q.set_client_data(DIALOGUE_KEY, cast(ClientDataDict, cd))
-
-    def end_dialogue(self) -> None:
-        """End the client's current dialogue"""
-        # TODO: Remove line from database?
-        self._q.set_client_data(DIALOGUE_KEY, {DIALOGUE_DATA_KEY: EMPTY_DIALOGUE_DATA})
-
-
-class DialogueJSONEncoder(json.JSONEncoder):
-    def default(self, o: Any) -> Any:
-        # Add JSON encoding for any new Resource classes here!
-        # CUSTOM RESOURCE CLASSES
-
-        # BASE RESOURCE CLASSES
-        if isinstance(o, ListResource):
-            d = o.__dict__.copy()
-            d["__type__"] = "ListResource"
-            return d
-        if isinstance(o, YesNoResource):
-            d = o.__dict__.copy()
-            d["__type__"] = "YesNoResource"
-            return d
-        if isinstance(o, DatetimeResource):
-            d = o.__dict__.copy()
-            d["__type__"] = "DatetimeResource"
-            return d
-        if isinstance(o, NumberResource):
-            d = o.__dict__.copy()
-            d["__type__"] = "NumberResource"
-            return d
-        if isinstance(o, datetime.date):
-            return {
-                "__type__": "date",
-                "year": o.year,
-                "month": o.month,
-                "day": o.day,
-            }
-        if isinstance(o, datetime.time):
-            return {
-                "__type__": "time",
-                "hour": o.hour,
-                "minute": o.minute,
-                "second": o.second,
-                "microsecond": o.microsecond,
-            }
-        if isinstance(o, Resource):
-            d = o.__dict__.copy()
-            d["__type__"] = "Resource"
-            return d
-        return json.JSONEncoder.default(self, o)
-
-
-class DialogueJSONDecoder(json.JSONDecoder):
-    def __init__(self, *args: Any, **kwargs: Any):
-        json.JSONDecoder.__init__(
-            self, object_hook=self.dialogue_decoding, *args, **kwargs
-        )
-
-    def dialogue_decoding(self, d: Dict[Any, Any]) -> Any:
-        if "__type__" not in d:
-            return d
-        t = d.pop("__type__")
-        if t == "ListResource":
-            return ListResource(**d)
-        if t == "YesNoResource":
-            return YesNoResource(**d)
-        if t == "DatetimeResource":
-            return DatetimeResource(**d)
-        if t == "NumberResource":
-            return NumberResource(**d)
-        if t == "date":
-            return datetime.date(**d)
-        if t == "time":
-            return datetime.time(**d)
-        if t == "Resource":
-            return Resource(**d)
+##########################
+#    RESOURCE CLASSES    #
+##########################
 
 
 @dataclass
@@ -270,6 +75,15 @@ class Resource:
             self.__dict__.update(new_data.__dict__)
 
 
+def _list_items(items: Any) -> str:
+    item_list: List[str] = []
+    for num, name in items:
+        # TODO: get general plural form
+        plural_name: str = NounPhrase(name).dative or name
+        item_list.append(sing_or_plur(num, name, plural_name))
+    return natlang_seq(item_list)
+
+
 @dataclass
 class ListResource(Resource):
     data: ListResourceType = field(default_factory=list)
@@ -286,11 +100,13 @@ class ListResource(Resource):
                 ans = self.prompt
         if self.state is ResourceState.PARTIALLY_FULFILLED:
             if self.repeat_prompt:
-                ans = f"{self.repeat_prompt.format(list_items = list_items(self.data))}"
+                ans = (
+                    f"{self.repeat_prompt.format(list_items = _list_items(self.data))}"
+                )
         if self.state is ResourceState.FULFILLED:
             if self.confirm_prompt:
                 ans = (
-                    f"{self.confirm_prompt.format(list_items = list_items(self.data))}"
+                    f"{self.confirm_prompt.format(list_items = _list_items(self.data))}"
                 )
         return ans
 
@@ -308,7 +124,9 @@ class YesNoResource(Resource):
 
 @dataclass
 class DatetimeResource(Resource):
-    data: List[Union[Optional[datetime.date], Optional[datetime.time]]] = field(default_factory=lambda: [None, None])
+    data: List[Union[Optional[datetime.date], Optional[datetime.time]]] = field(
+        default_factory=lambda: [None, None]
+    )
     date_fulfilled_prompt: Optional[str] = None
     time_fulfilled_prompt: Optional[str] = None
 
@@ -363,13 +181,183 @@ class NumberResource(Resource):
     data: int = 0
 
 
-""" Three classes implemented for each resource
-    class DataState():
-        pass
+##############################
+#    RESOURCE CLASSES END    #
+##############################
 
-    class PartiallyFulfilledState():
-        pass
+_RESOURCE_TYPES: Mapping[str, Any] = {
+    "Resource": Resource,
+    "ListResource": ListResource,
+    "YesNoResource": YesNoResource,
+    "DatetimeResource": DatetimeResource,
+    "NumberResource": NumberResource,
+}
 
-    class FulfillState(DataState):
-        pass
-"""
+
+def _load_dialogue_structure(filename: str) -> DialogueStructureType:
+    """Loads dialogue structure from TOML file."""
+    basepath, _ = os.path.split(os.path.realpath(__file__))
+    fpath = os.path.join(basepath, filename, filename + ".toml")
+    with open(fpath, mode="r") as file:
+        f = file.read()
+    obj: Dict[str, Any] = tomllib.loads(f)  # type:ignore
+    assert "dialogue_name" in obj
+    assert "resources" in obj
+    for i, resource in enumerate(obj["resources"]):
+        assert "name" in resource
+        assert "type" in resource
+        obj["resources"][i] = _RESOURCE_TYPES[resource["type"]](**resource)
+    print("OBJ:", obj)
+    return cast(DialogueStructureType, obj)
+
+
+class DialogueStateManager:
+    def __init__(self, dialogue_name: str, query: Query, result: Result):
+        self._dialogue_name: str = dialogue_name
+        self._q: Query = query
+        self._result: Result = result
+        self._saved_state: DialogueStructureType = self._get_saved_dialogue_state()
+        # TODO: CALL STACK!
+        # TODO: Delegate answering from a resource to another resource or to another dialogue
+        # TODO: í ávaxtasamtali "ég vil panta flug" "viltu að ég geymi ávaxtapöntunina eða eyði henni?" ...
+
+    def not_in_dialogue(self, start_dialogue_qtype: str) -> bool:
+        """Check if the client is in or wants to start this dialogue"""
+        qt = self._result.get("qtype")
+        return (
+            qt != start_dialogue_qtype
+            and self._saved_state.get("dialogue_name") != self._dialogue_name
+        )
+
+    def setup_dialogue(self):
+        obj = _load_dialogue_structure(self._dialogue_name)
+        print(obj)
+        self.resources: List[Resource] = []
+        for i, resource in enumerate(obj["resources"]):
+            if self._saved_state and i < len(self._saved_state["resources"]):
+                resource.update(self._saved_state["resources"][i])
+                resource.state = ResourceState(self._saved_state["resources"][i].state)
+            self.resources.append(resource)
+
+        self.resourceState: Optional[Resource] = None
+        self.ans: Optional[str] = None
+
+    def start_dialogue(self):
+        """Save client's state as having started this dialogue"""
+        # New empty dialogue state, with correct dialogue name
+        self._set_dialogue_state(
+            {
+                "dialogue_name": self._dialogue_name,
+                "resources": [],
+            }
+        )
+
+    def update_dialogue_state(self):
+        """Update the dialogue state for a client"""
+        # Save resources to client data
+        self._set_dialogue_state(
+            {
+                "dialogue_name": self._dialogue_name,
+                "resources": self.resources,
+            }
+        )
+
+    def generate_answer(self, result: Result) -> str:
+        i = 0
+        while i < len(self.resources):
+            resource = self.resources[i]
+            if resource.required and resource.state is not ResourceState.CONFIRMED:
+                if resource.state is ResourceState.INITIAL:
+                    resource.state = ResourceState.UNFULFILLED
+                if "callbacks" in result:
+                    while len(result.callbacks) > 0:
+                        r_name, cb = result.callbacks.pop(0)
+                        if self.resources[i].name in r_name:
+                            cb(resource, result)
+                        else:
+                            while i > -1:
+                                i -= 1
+                                if self.resources[i].name in r_name:
+                                    cb(self.resources[i], result)
+                                    break
+                    if (
+                        resource.state is ResourceState.CONFIRMED
+                        and resource != self.resources[-1]
+                    ):
+                        i += 1
+                        continue
+                return self.resources[i].generate_answer()
+            i += 1
+        return "Upp kom villa, reyndu aftur."
+
+    def _get_saved_dialogue_state(self) -> DialogueStructureType:
+        """Load the dialogue state for a client"""
+        cd = self._q.client_data(DIALOGUE_KEY)
+        # Return empty DialogueStructureType in case no dialogue state exists
+        ds: DialogueStructureType = {
+            "dialogue_name": "",
+            "resources": [],
+        }
+        if cd:
+            ds_str = cd.get(DIALOGUE_DATA_KEY)
+            if isinstance(ds_str, str) and ds_str != EMPTY_DIALOGUE_DATA:
+                # TODO: Add try-except block
+                ds = json.loads(ds_str, cls=DialogueJSONDecoder)
+        return ds
+
+    def _set_dialogue_state(self, ds: DialogueStructureType) -> None:
+        """Save the state of a dialogue for a client"""
+        ds_json: str = json.dumps(ds, cls=DialogueJSONEncoder)
+        # Wrap data before saving dialogue state into client data
+        # (due to custom JSON serialization)
+        cd = {DIALOGUE_DATA_KEY: ds_json}
+        self._q.set_client_data(DIALOGUE_KEY, cast(ClientDataDict, cd))
+
+    def end_dialogue(self) -> None:
+        """End the client's current dialogue"""
+        # TODO: Remove line from database?
+        self._q.set_client_data(DIALOGUE_KEY, {DIALOGUE_DATA_KEY: EMPTY_DIALOGUE_DATA})
+
+
+class DialogueJSONEncoder(json.JSONEncoder):
+    def default(self, o: Any) -> Any:
+        # Add JSON encoding for any new classes here
+
+        if isinstance(o, Resource):
+            # CLASSES THAT INHERIT FROM RESOURCE
+            d = o.__dict__.copy()
+            d["__type__"] = o.__class__.__name__
+            return d
+        if isinstance(o, datetime.date):
+            return {
+                "__type__": "date",
+                "year": o.year,
+                "month": o.month,
+                "day": o.day,
+            }
+        if isinstance(o, datetime.time):
+            return {
+                "__type__": "time",
+                "hour": o.hour,
+                "minute": o.minute,
+                "second": o.second,
+                "microsecond": o.microsecond,
+            }
+        return json.JSONEncoder.default(self, o)
+
+
+class DialogueJSONDecoder(json.JSONDecoder):
+    def __init__(self, *args: Any, **kwargs: Any):
+        json.JSONDecoder.__init__(
+            self, object_hook=self.dialogue_decoding, *args, **kwargs
+        )
+
+    def dialogue_decoding(self, d: Dict[Any, Any]) -> Any:
+        if "__type__" not in d:
+            return d
+        t = d.pop("__type__")
+        if t == "date":
+            return datetime.date(**d)
+        if t == "time":
+            return datetime.time(**d)
+        return _RESOURCE_TYPES[t](**d)
