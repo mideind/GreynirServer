@@ -39,15 +39,15 @@ from queries import gen_answer, read_jsfile, read_grammar_file
 from tree import Result, Node
 from routes import better_jsonify
 from util import read_api_key
+from speech import text_to_audio_url
 
 
-class SmartLights(TypedDict):
-    selected_light: str
-    philips_hue: Dict[str, str]
+class SpeakerCredentials(TypedDict):
+    tokens: Dict[str, str]
 
 
 class DeviceData(TypedDict):
-    smartlights: SmartLights
+    sonos: SpeakerCredentials
 
 
 _IoT_QTYPE = "IoTConnect"
@@ -141,122 +141,179 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         return
 
     q.set_qtype(result.qtype)
+    host = str(flask.request.host)
+    client_id = str(q.client_id)
+
     if result.qtype == "connect_lights":
-        host = str(flask.request.host)
-        print("host: ", host)
-        client_id = str(q.client_id)
-        print("client_id:", client_id)
         js = read_jsfile("IoT_Embla/Philips_Hue/hub.js")
         js += f"syncConnectHub('{client_id}','{host}');"
         answer = "Philips Hue miðstöðin hefur verið tengd"
         voice_answer = answer
+        # audioClip(text_to_audio_url(voice_answer))
         response = dict(answer=answer)
         q.set_answer(response, answer, voice_answer)
         q.set_command(js)
         return
+
     elif result.qtype == "connect_hub":
-        host = str(flask.request.host)
-        print("host: ", host)
-        client_id = str(q.client_id)
-        print("client_id:", client_id)
         js = read_jsfile("IoT_Embla/Smart_Things/st_connecthub.js")
         js += f"syncConnectHub('{client_id}','{host}');"
         answer = "Smart Things miðstöðin hefur verið tengd"
-        voice_answer = answer
-        response = dict(answer=answer)
+        voice_answer, response = answer, dict(answer=answer)
         q.set_answer(response, answer, voice_answer)
         q.set_command(js)
         return
+
     elif result.qtype == "connect_speaker":
         sonos_key = read_api_key("SonosKey")
-        host = str(flask.request.host)
-        print("Connect speaker sentence")
-        client_id = str(q.client_id)
         answer = "Skráðu þig inn hjá Sonos"
-        voice_answer = answer
-        response = dict(answer=answer)
+        voice_answer, response = answer, dict(answer=answer)
         q.set_answer(response, answer, voice_answer)
-        print("sonos_key :", sonos_key)
-        print("host :", host)
         q.set_url(
             f"https://api.sonos.com/login/v3/oauth?client_id={sonos_key}&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri=http://{host}/connect_sonos.api"
         )
         return
+
     elif result.qtype == "create_speaker_token":
-        sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
-        print("credientials :", sonos_encoded_credentials)
-        answer = "Ég bjó til tóka frá Sonos"
-        voice_answer = answer
-        response = dict(answer=answer)
         code = str(q.client_data("sonos_code"))
-        print(code)
-        q.set_answer(response, answer, voice_answer)
-        q.set_url(f"https://google.com/")
-        host = str(flask.request.host)
-        url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://{host}/connect_sonos.api"
-
-        payload = {}
-        headers = {
-            "Authorization": f"Basic {sonos_encoded_credentials}",
-            "Cookie": "JSESSIONID=2DEFC02D2184D987F4CCAD5E45196948; AWSELB=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBC76E6A16196350947ED84835621A185D1BF63900D4B3E7BC7FE3CF19CCF26B78C; AWSELBCORS=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBC76E6A16196350947ED84835621A185D1BF63900D4B3E7BC7FE3CF19CCF26B78C",
-        }
-
-        response = requests.request("POST", url, headers=headers, data=payload)
+        sonos_credentials_dict = {}
+        sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
+        response = create_token(code, sonos_encoded_credentials, host)
         if response.status_code != 200:
             print("Error:", response.status_code)
             print(response.text)
             return
         response_json = response.json()
-        sonos_access_token = response_json["access_token"]
-        sonos_refresh_token = response_json["refresh_token"]
-        print(response.text)
+        sonos_credentials_dict.update(
+            {
+                "access_token": response_json["access_token"],
+                "refresh_token": response_json["refresh_token"],
+            }
+        )
+        response = get_households(sonos_credentials_dict["access_token"])
+        if response.status_code != 200:
+            print("Error:", response.status_code)
+            print(response.text)
+            return
+        response_json = response.json()
+        sonos_credentials_dict.update(
+            {
+                "household_id": response_json["households"][0]["id"],
+            }
+        )
+        response = get_groups(
+            sonos_credentials_dict["household_id"],
+            sonos_credentials_dict["access_token"],
+        )
+        if response.status_code != 200:
+            print("Error:", response.status_code)
+            print(response.text)
+            return
+        response_json = response.json()
+        sonos_credentials_dict.update(
+            {
+                "group_id": response_json["groups"][0]["id"],
+                "player_id": response_json["players"][0]["id"],
+            }
+        )
+        q.store_query_data(
+            str(q.client_id), "sonos_credentials", sonos_credentials_dict
+        )
+        answer = "Ég bjó til tóka frá Sonos"
+        voice_answer = answer
+        audio_clip(
+            text_to_audio_url(answer),
+            sonos_credentials_dict["player_id"],
+            sonos_credentials_dict["access_token"],
+        )
+        q.set_answer(response, answer, voice_answer)
+        return
 
-        # print("access token :", response.access_token)
-        # print("refresh token :", response.refresh_token)
-        current_time = time.time()
-        print("current time :", current_time)
 
-        q.set_client_data("sonos_access_token", sonos_access_token)
-        q.set_client_data("sonos_refresh_token", sonos_refresh_token)
-        q.set_client_data("sonos_token_time", current_time)
+# put this in a separate file
+def get_households(token):
+    """
+    Returns the list of households of the user
+    """
+    url = f"https://api.ws.sonos.com/control/api/v1/households"
 
-        # if client_id and code:
-        #     success = QueryObject.store_query_data(
-        #         client_id, "sonos_code", code
-        #     )
-        #     if success:
-        #         return better_jsonify(valid=True, msg="Registered Sonos token")
+    payload = {}
+    headers = {"Authorization": f"Bearer {token}"}
 
-        # return better_jsonify(valid=False, errmsg="Error registering Sonos token.")
+    response = requests.request("GET", url, headers=headers, data=payload)
 
-    # smartdevice_type = "smartlights"
-    # client_id = str(q.client_id)
-    # print("client_id:", client_id)
+    return response
 
-    # # Fetch relevant data from the device_data table to perform an action on the lights
-    # device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
-    # print("device data :", device_data)
 
-    # selected_light: Optional[str] = None
-    # hue_credentials: Optional[Dict[str, str]] = None
+def get_groups(household_id, token):
+    """
+    Returns the list of groups of the user
+    """
+    url = f"https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups"
 
-    # if device_data is not None and smartdevice_type in device_data:
-    #     dev = device_data[smartdevice_type]
-    #     assert dev is not None
-    #     selected_light = dev.get("selected_light")
-    #     hue_credentials = dev.get("philips_hue")
-    #     bridge_ip = hue_credentials.get("ipAddress")
-    #     username = hue_credentials.get("username")
+    payload = {}
+    headers = {"Authorization": f"Bearer {token}"}
 
-    # if not device_data or not hue_credentials:
-    #     answer = "ég var að kveikja ljósin! "
-    #     q.set_answer(*gen_answer(answer))
-    #     return
+    response = requests.request("GET", url, headers=headers, data=payload)
 
-    # # Successfully matched a query type
-    # print("bridge_ip: ", bridge_ip)
-    # print("username: ", username)
-    # print("selected light :", selected_light)
-    # print("hue credentials :", hue_credentials)
+    return response
 
-    # f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'p3obluiXT13IbHMpp4X63ZvZnpNRdbqqMt723gy2';"
+
+def create_token(code, sonos_encoded_credentials, host):
+    """
+    Creates a token given a code
+    """
+    url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://{host}/connect_sonos.api"
+
+    payload = {}
+    headers = {
+        "Authorization": f"Basic {sonos_encoded_credentials}",
+        "Cookie": "JSESSIONID=F710019AF0A3B7126A8702577C883B5F; AWSELB=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBCFB059E28075D83A700FD504C030A53CC28683B515BE3DCA3CC587AFAF606E171; AWSELBCORS=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBCFB059E28075D83A700FD504C030A53CC28683B515BE3DCA3CC587AFAF606E171",
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    return response
+
+
+def toggle_play_pause(group_id, token):
+    """
+    Toggles the play/pause of a group
+    """
+    url = (
+        f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/playPause"
+    )
+
+    payload = {}
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    return response
+
+
+def audio_clip(audioclip_url, player_id, token):
+    """
+    Plays an audioclip from link to .mp3 file
+    """
+    import requests
+    import json
+
+    url = f"https://api.ws.sonos.com/control/api/v1/players/{player_id}/audioClip"
+
+    payload = json.dumps(
+        {
+            "name": "Embla",
+            "appId": "com.acme.app",
+            "streamUrl": f"{audioclip_url}",
+            "volume": 50,
+            "priority": "HIGH",
+            "clipType": "CUSTOM",
+        }
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {token}",
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
