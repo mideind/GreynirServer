@@ -25,11 +25,11 @@
 import requests
 
 
-def getHouseholds(token):
+def get_households(token):
     """
     Returns the list of households of the user
     """
-    url = "https://api.ws.sonos.com/control/api/v1/households"
+    url = f"https://api.ws.sonos.com/control/api/v1/households"
 
     payload = {}
     headers = {"Authorization": f"Bearer {token}"}
@@ -39,11 +39,11 @@ def getHouseholds(token):
     return response
 
 
-def getGroups(houshold_id, token):
+def get_groups(household_id, token):
     """
     Returns the list of groups of the user
     """
-    url = "https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups"
+    url = f"https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups"
 
     payload = {}
     headers = {"Authorization": f"Bearer {token}"}
@@ -53,11 +53,11 @@ def getGroups(houshold_id, token):
     return response
 
 
-def createToken(code, sonos_encoded_credentials):
+def create_token(code, sonos_encoded_credentials, host):
     """
     Creates a token given a code
     """
-    url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://localhost:5000/connect_sonos.api"
+    url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://{host}/connect_sonos.api"
 
     payload = {}
     headers = {
@@ -70,7 +70,7 @@ def createToken(code, sonos_encoded_credentials):
     return response
 
 
-def togglePlayPause(group_id, token):
+def toggle_play_pause(group_id, token):
     """
     Toggles the play/pause of a group
     """
@@ -86,7 +86,7 @@ def togglePlayPause(group_id, token):
     return response
 
 
-def audioClip(audioclip_url, player_id, token):
+def audio_clip(audioclip_url, player_id, token):
     """
     Plays an audioclip from link to .mp3 file
     """
@@ -100,7 +100,7 @@ def audioClip(audioclip_url, player_id, token):
             "name": "Embla",
             "appId": "com.acme.app",
             "streamUrl": f"{audioclip_url}",
-            "volume": 30,
+            "volume": 50,
             "priority": "HIGH",
             "clipType": "CUSTOM",
         }

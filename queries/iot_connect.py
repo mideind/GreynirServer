@@ -126,33 +126,6 @@ def QIoTCreateSpeakerToken(node: Node, params: QueryStateDict, result: Result) -
     result.action = "create_speaker_token"
 
 
-def audioClip(audioclip_url):
-    """
-    Plays an audioclip
-    """
-    import requests
-    import json
-
-    url = f"https://api.ws.sonos.com/control/api/v1/players/RINCON_542A1B599FF201400/audioClip"
-
-    payload = json.dumps(
-        {
-            "name": "Embla",
-            "appId": "com.acme.app",
-            "streamUrl": f"{audioclip_url}",
-            "volume": 30,
-            "priority": "HIGH",
-            "clipType": "CUSTOM",
-        }
-    )
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer bEy3xnmpvoxrLcP7syVxVdjO2maj",
-    }
-
-    response = requests.request("POST", url, headers=headers, data=payload)
-
-
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
@@ -195,7 +168,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         sonos_key = read_api_key("SonosKey")
         answer = "Skráðu þig inn hjá Sonos"
         voice_answer, response = answer, dict(answer=answer)
-        audioClip(text_to_audio_url(voice_answer))
         q.set_answer(response, answer, voice_answer)
         q.set_url(
             f"https://api.sonos.com/login/v3/oauth?client_id={sonos_key}&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri=http://{host}/connect_sonos.api"
@@ -203,30 +175,145 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         return
 
     elif result.qtype == "create_speaker_token":
-        sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
-        answer = "Ég bjó til tóka frá Sonos"
-        voice_answer, response = answer, dict(answer=answer)
-        audioClip(text_to_audio_url(voice_answer))
         code = str(q.client_data("sonos_code"))
-        q.set_answer(response, answer, voice_answer)
-
-        url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://{host}/connect_sonos.api"
-        payload = {}
-        headers = {
-            "Authorization": f"Basic {sonos_encoded_credentials}",
-            "Cookie": "JSESSIONID=2DEFC02D2184D987F4CCAD5E45196948; AWSELB=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBC76E6A16196350947ED84835621A185D1BF63900D4B3E7BC7FE3CF19CCF26B78C; AWSELBCORS=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBC76E6A16196350947ED84835621A185D1BF63900D4B3E7BC7FE3CF19CCF26B78C",
-        }
-        response = requests.request("POST", url, headers=headers, data=payload)
+        sonos_credentials_dict = {}
+        sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
+        response = create_token(code, sonos_encoded_credentials, host)
         if response.status_code != 200:
             print("Error:", response.status_code)
             print(response.text)
             return
         response_json = response.json()
-        sonos_credentials_dict = {
-            "access_token": response_json["access_token"],
-            "refresh_token": response_json["refresh_token"],
-        }
+        sonos_credentials_dict.update(
+            {
+                "access_token": response_json["access_token"],
+                "refresh_token": response_json["refresh_token"],
+            }
+        )
+        response = get_households(sonos_credentials_dict["access_token"])
+        if response.status_code != 200:
+            print("Error:", response.status_code)
+            print(response.text)
+            return
+        response_json = response.json()
+        sonos_credentials_dict.update(
+            {
+                "household_id": response_json["households"][0]["id"],
+            }
+        )
+        response = get_groups(
+            sonos_credentials_dict["household_id"],
+            sonos_credentials_dict["access_token"],
+        )
+        if response.status_code != 200:
+            print("Error:", response.status_code)
+            print(response.text)
+            return
+        response_json = response.json()
+        sonos_credentials_dict.update(
+            {
+                "group_id": response_json["groups"][0]["id"],
+                "player_id": response_json["players"][0]["id"],
+            }
+        )
         q.store_query_data(
             str(q.client_id), "sonos_credentials", sonos_credentials_dict
         )
+        answer = "Ég bjó til tóka frá Sonos"
+        voice_answer = answer
+        audio_clip(
+            text_to_audio_url(answer),
+            sonos_credentials_dict["player_id"],
+            sonos_credentials_dict["access_token"],
+        )
+        q.set_answer(response, answer, voice_answer)
         return
+
+
+# put this in a separate file
+def get_households(token):
+    """
+    Returns the list of households of the user
+    """
+    url = f"https://api.ws.sonos.com/control/api/v1/households"
+
+    payload = {}
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = requests.request("GET", url, headers=headers, data=payload)
+
+    return response
+
+
+def get_groups(household_id, token):
+    """
+    Returns the list of groups of the user
+    """
+    url = f"https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups"
+
+    payload = {}
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = requests.request("GET", url, headers=headers, data=payload)
+
+    return response
+
+
+def create_token(code, sonos_encoded_credentials, host):
+    """
+    Creates a token given a code
+    """
+    url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://{host}/connect_sonos.api"
+
+    payload = {}
+    headers = {
+        "Authorization": f"Basic {sonos_encoded_credentials}",
+        "Cookie": "JSESSIONID=F710019AF0A3B7126A8702577C883B5F; AWSELB=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBCFB059E28075D83A700FD504C030A53CC28683B515BE3DCA3CC587AFAF606E171; AWSELBCORS=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBCFB059E28075D83A700FD504C030A53CC28683B515BE3DCA3CC587AFAF606E171",
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    return response
+
+
+def toggle_play_pause(group_id, token):
+    """
+    Toggles the play/pause of a group
+    """
+    url = (
+        f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/playPause"
+    )
+
+    payload = {}
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    return response
+
+
+def audio_clip(audioclip_url, player_id, token):
+    """
+    Plays an audioclip from link to .mp3 file
+    """
+    import requests
+    import json
+
+    url = f"https://api.ws.sonos.com/control/api/v1/players/{player_id}/audioClip"
+
+    payload = json.dumps(
+        {
+            "name": "Embla",
+            "appId": "com.acme.app",
+            "streamUrl": f"{audioclip_url}",
+            "volume": 50,
+            "priority": "HIGH",
+            "clipType": "CUSTOM",
+        }
+    )
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {token}",
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
