@@ -220,7 +220,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             str(q.client_id), "sonos_credentials", sonos_credentials_dict
         )
         answer = "Ég bjó til tóka frá Sonos"
-        # voice_answer = answer
+        voice_answer = answer
         audio_clip(
             text_to_audio_url(answer),
             sonos_credentials_dict["player_id"],
@@ -306,7 +306,7 @@ def audio_clip(audioclip_url, player_id, token):
             "name": "Embla",
             "appId": "com.acme.app",
             "streamUrl": f"{audioclip_url}",
-            "volume": 30,
+            "volume": 50,
             "priority": "HIGH",
             "clipType": "CUSTOM",
         }

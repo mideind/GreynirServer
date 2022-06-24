@@ -29,7 +29,7 @@ def get_households(token):
     """
     Returns the list of households of the user
     """
-    url = "https://api.ws.sonos.com/control/api/v1/households"
+    url = f"https://api.ws.sonos.com/control/api/v1/households"
 
     payload = {}
     headers = {"Authorization": f"Bearer {token}"}
@@ -39,11 +39,11 @@ def get_households(token):
     return response
 
 
-def get_groups(houshold_id, token):
+def get_groups(household_id, token):
     """
     Returns the list of groups of the user
     """
-    url = "https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups"
+    url = f"https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups"
 
     payload = {}
     headers = {"Authorization": f"Bearer {token}"}
@@ -100,7 +100,7 @@ def audio_clip(audioclip_url, player_id, token):
             "name": "Embla",
             "appId": "com.acme.app",
             "streamUrl": f"{audioclip_url}",
-            "volume": 30,
+            "volume": 50,
             "priority": "HIGH",
             "clipType": "CUSTOM",
         }

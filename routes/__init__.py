@@ -380,5 +380,4 @@ from .loc import *
 from .words import *
 from .stats import *
 from .salescloud import *
-from .sonos import *
 from nn.api import *
