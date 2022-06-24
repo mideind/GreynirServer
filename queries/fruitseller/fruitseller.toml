@@ -25,5 +25,5 @@ confirm_prompt = "Afhending pöntunar er {date_time}. Viltu staðfesta afhending
 [[resources]]
 name = "Final"
 type = "FinalResource"
-prompt = "Pöntunin þín er {fruits} og verður afhent {date_time}."
+final_prompt = "Pöntunin þín er {fruits} og verður afhent {date_time}."
 requires = ["Fruits", "Date"]

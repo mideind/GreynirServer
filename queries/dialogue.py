@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Mapping, Union, List, Optional, cast
+from typing import Any, Callable, Dict, Mapping, Tuple, Union, List, Optional, cast
 from typing_extensions import TypedDict
 
 import os.path
@@ -25,12 +25,13 @@ FINAL_RESOURCE_NAME = "Final"
 
 ResourceType = Union[str, int, float, bool, datetime.datetime, None]
 ListResourceType = List[ResourceType]
+CallbackType = Callable[["Resource", Result], None]
+CallbackTupleType = Tuple[Tuple[str, ...], CallbackType]
 
 
 class ResourceState(IntEnum):
     """Enum representing the different states a dialogue resource can be in."""
 
-    INITIAL = auto()
     UNFULFILLED = auto()
     PARTIALLY_FULFILLED = auto()
     FULFILLED = auto()
@@ -48,7 +49,7 @@ class ResourceState(IntEnum):
 class Resource:
     name: str = ""
     data: Any = None
-    state: ResourceState = ResourceState.INITIAL
+    state: ResourceState = ResourceState.UNFULFILLED
     prompt: str = ""
     type: str = ""
     repeatable: bool = False
@@ -61,26 +62,49 @@ class Resource:
     def next_action(self) -> Any:
         raise NotImplementedError()
 
-    def generate_answer(self, dsm: "DialogueStateManager", result: Result) -> str:
+    def generate_answer(
+        self, dsm: "DialogueStateManager", result: Result
+    ) -> Optional[str]:
         raise NotImplementedError()
 
     def update(self, new_data: Optional["Resource"]) -> None:
         if new_data:
             self.__dict__.update(new_data.__dict__)
 
-    def _execute_children(
-        self, dsm: "DialogueStateManager", result: Result
-    ) -> Optional[str]:
+    def _execute_callbacks(self, dsm: "DialogueStateManager", result: Result) -> None:
+        if self.requires:
+            for rname in self.requires:
+                resource = dsm.get_resource(rname)
+                resource._execute_callbacks(dsm, result)
+
         if "callbacks" in result:
-            while len(result.callbacks) > 0:
-                rnames, cb = result.callbacks.pop(0)
+            i = 0
+            while i < len(result["callbacks"]):
+                rnames, cb = result.callbacks[i]
                 if self.name in rnames:
                     cb(self, result)
+                    if len(rnames) > 1:
+                        # Remove the current resource name from rnames
+                        # if it is not the last one
+                        result.callbacks[i] = (
+                            tuple(rn for rn in rnames if rn != self.name),
+                            cb,
+                        )
+                    else:
+                        result.callbacks.pop(i)
+                        i -= 1
+                i += 1
+
+    def _get_child_answer(
+        self, dsm: "DialogueStateManager", result: Result
+    ) -> Optional[str]:
         if self.requires:
             for rname in self.requires:
                 resource = dsm.get_resource(rname)
                 if resource.state is not ResourceState.CONFIRMED:
-                    return resource.generate_answer(dsm, result)
+                    ans = resource.generate_answer(dsm, result)
+                    if ans:
+                        return ans
         return None
 
 
@@ -101,12 +125,12 @@ class ListResource(Resource):
     def list_available_options(self) -> str:
         raise NotImplementedError()
 
-    def generate_answer(self, dsm: "DialogueStateManager", result: Result) -> str:
-        ans: Optional[str] = self._execute_children(dsm, result)
+    def generate_answer(
+        self, dsm: "DialogueStateManager", result: Result
+    ) -> Optional[str]:
+        ans: Optional[str] = self._get_child_answer(dsm, result)
         if ans:
             return ans
-        if self.state is ResourceState.INITIAL:
-            self.state = ResourceState.UNFULFILLED
         if self.state is ResourceState.UNFULFILLED:
             if self._repeat_count == 0 or not self.repeatable:
                 ans = self.prompt
@@ -120,8 +144,6 @@ class ListResource(Resource):
                 ans = (
                     f"{self.confirm_prompt.format(list_items = _list_items(self.data))}"
                 )
-        if ans is None:
-            raise ValueError("No answer generated")
         return ans
 
 
@@ -145,12 +167,12 @@ class YesNoResource(Resource):
         self.data = False
         self.state = ResourceState.CONFIRMED
 
-    def generate_answer(self, dsm: "DialogueStateManager", result: Result) -> str:
-        ans: Optional[str] = self._execute_children(dsm, result)
+    def generate_answer(
+        self, dsm: "DialogueStateManager", result: Result
+    ) -> Optional[str]:
+        ans: Optional[str] = self._get_child_answer(dsm, result)
         if ans:
             return ans
-        if self.state is ResourceState.INITIAL:
-            self.state = ResourceState.UNFULFILLED
         if self.data:
             if self.yes_answer:
                 ans = self.yes_answer
@@ -182,22 +204,22 @@ class DatetimeResource(Resource):
     def set_time(self, new_time: Optional[datetime.time] = None) -> None:
         self.data[1] = new_time
 
-    def generate_answer(self, dsm: "DialogueStateManager", result: Result) -> str:
-        ans: Optional[str] = self._execute_children(dsm, result)
+    def generate_answer(
+        self, dsm: "DialogueStateManager", result: Result
+    ) -> Optional[str]:
+        ans: Optional[str] = self._get_child_answer(dsm, result)
         if ans:
             return ans
-        if self.state is ResourceState.INITIAL:
-            self.state = ResourceState.UNFULFILLED
         if self.state is ResourceState.UNFULFILLED:
             if self._repeat_count == 0 or not self.repeatable:
                 ans = self.prompt
         if self.state is ResourceState.PARTIALLY_FULFILLED:
             if self.data:
-                if len(self.data) > 0 and self.data[0] and self.date_fulfilled_prompt:
+                if self.has_date() and self.date_fulfilled_prompt:
                     ans = self.date_fulfilled_prompt.format(
                         date=self.data[0].strftime("%Y/%m/%d")
                     )
-                if len(self.data) > 1 and self.data[1] and self.time_fulfilled_prompt:
+                if self.has_time() and self.time_fulfilled_prompt:
                     ans = self.time_fulfilled_prompt.format(
                         time=self.data[1].strftime("%H:%M")
                     )
@@ -205,9 +227,8 @@ class DatetimeResource(Resource):
             if (
                 self.data
                 and self.confirm_prompt
-                and len(self.data) == 2
-                and self.data[0]
-                and self.data[1]
+                and self.has_date()
+                and self.has_time()
             ):
                 ans = self.confirm_prompt.format(
                     date_time=datetime.datetime.combine(
@@ -215,10 +236,6 @@ class DatetimeResource(Resource):
                         cast(datetime.time, self.data[1]),
                     ).strftime("%Y/%m/%d %H:%M")
                 )
-        if self.state is ResourceState.CONFIRMED:
-            ans = "Pöntunin er staðfest."
-        if ans is None:
-            raise ValueError("No answer generated")
         return ans
 
 
@@ -239,10 +256,12 @@ class FinalResource(Resource):
     final_prompt: str = ""
 
     def generate_answer(self, dsm: "DialogueStateManager", result: Result) -> str:
-        ans: Optional[str] = self._execute_children(dsm, result)
-        if ans:
-            return ans
-        return self.final_prompt
+        self._execute_callbacks(dsm, result)
+        ans: Optional[str] = self._get_child_answer(dsm, result)
+        if ans is None:
+            self.state = ResourceState.CONFIRMED
+            ans = self.final_prompt
+        return ans
 
 
 ##############################
@@ -305,7 +324,6 @@ class DialogueStateManager:
 
     def setup_dialogue(self):
         obj = _load_dialogue_structure(self._dialogue_name)
-        print(obj)
         for i, resource in enumerate(obj["resources"]):
             if self._saved_state and i < len(self._saved_state["resources"]):
                 resource.update(self._saved_state["resources"][i])
@@ -345,14 +363,16 @@ class DialogueStateManager:
             # Final callback (performing some operation with the dialogue's data)
             # should be called before ending dialogue
             self.end_dialogue()
+        else:
+            self.update_dialogue_state()
+        if ans is None:
+            raise ValueError("No answer generated")
         return ans
 
         # i = 0
         # while i < len(self.resources):
         #     resource = self.resources[i]
         #     if resource.required and resource.state is not ResourceState.CONFIRMED:
-        #         if resource.state is ResourceState.INITIAL:
-        #             resource.state = ResourceState.UNFULFILLED
         #         if "callbacks" in result:
         #             while len(result.callbacks) > 0:
         #                 r_name, cb = result.callbacks.pop(0)
