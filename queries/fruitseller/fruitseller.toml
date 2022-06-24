@@ -5,7 +5,7 @@ name = "Fruits"
 prompt = "Hvaða ávexti má bjóða þér?"
 type = "ListResource"
 repeatable = true
-confirm_prompt =  "Viltu staðfesta ávextina {list_items}?"
+confirm_prompt = "Viltu staðfesta ávextina {list_items}?"
 repeat_prompt = "Pöntunin samanstendur af {list_items}. Verður það eitthvað fleira?"
 
 [[resources]]
@@ -17,7 +17,13 @@ date_fulfilled_prompt = "Afhendingin verður {date}. Klukkan hvað viltu fá áv
 confirm_prompt = "Afhending pöntunar er {date_time}. Viltu staðfesta afhendinguna?"
 
 # [[resources]]
-# name = "Final"
-# type = "FinalResource"
-# prompt = "Pöntunin þín er {fruits} og verður afhent {date_time}."
+# name = "ConfirmOrder"
+# type = "YesNoResource"
+# prompt = "Viltu staðfesta þessa pöntun?"
 # requires = ["Fruits", "Date"]
+
+[[resources]]
+name = "Final"
+type = "FinalResource"
+prompt = "Pöntunin þín er {fruits} og verður afhent {date_time}."
+requires = ["Fruits", "Date"]
