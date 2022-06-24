@@ -62,6 +62,9 @@
 #         )
 #     )
 
+# TOPIC_LEMMAS = [
+#     "tónlist",
+# ]
 
 # # This module wants to handle parse trees for queries
 # HANDLE_TREE = True
