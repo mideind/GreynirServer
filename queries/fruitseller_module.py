@@ -1,4 +1,4 @@
-from typing import Any, List, cast
+from typing import Any, Callable, List, cast
 import json
 import logging
 import datetime
@@ -107,9 +107,9 @@ QNum →
 
 QFruit → 'banani' | 'epli' | 'pera' | 'appelsína'
 
-QYes → "já" | "já" "takk" | "já" "þakka" "þér" "fyrir" | "já" "takk" "kærlega" "fyrir"?
+QYes → "já" "já"* | "já" "takk" | "játakk" | "já" "þakka" "þér" "fyrir" | "já" "takk" "kærlega" "fyrir"? | "jább" "takk"?
 
-QNo → "nei" | "nei" "takk"
+QNo → "nei" "takk"? | "nei" "nei"* | "neitakk"
 
 QCancelOrder → "ég" "hætti" "við"
     | "ég" "vil" "hætta" "við" "pöntunina"
@@ -163,7 +163,8 @@ def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
 
     if "callbacks" not in result:
         result["callbacks"] = []
-    result.callbacks.append((("Fruits",), _add_fruit))
+    filter_func: Callable[[Resource], bool] = lambda r: r.name == "Fruits"
+    result.callbacks.append((filter_func, _add_fruit))
     result.qtype = "QAddFruitQuery"
 
 
@@ -184,7 +185,8 @@ def QRemoveFruitQuery(node: Node, params: QueryStateDict, result: Result):
 
     if "callbacks" not in result:
         result["callbacks"] = []
-    result.callbacks.append((("Fruits",), _remove_fruit))
+    filter_func: Callable[[Resource], bool] = lambda r: r.name == "Fruits"
+    result.callbacks.append((filter_func, _remove_fruit))
     result.qtype = "QRemoveFruitQuery"
 
 
@@ -203,7 +205,6 @@ def QYes(node: Node, params: QueryStateDict, result: Result):
         if resource.name == "Fruits":
             if resource.is_fulfilled:
                 resource.state = ResourceState.CONFIRMED
-                result.answer_key = ("Date", "initial")
         if resource.name == "Date":
             if resource.is_fulfilled:
                 resource.state = ResourceState.CONFIRMED
@@ -211,7 +212,10 @@ def QYes(node: Node, params: QueryStateDict, result: Result):
 
     if "callbacks" not in result:
         result["callbacks"] = []
-    result.callbacks.append((("Fruits", "Date"), _parse_yes))
+    filter_func: Callable[[Resource], bool] = (
+        lambda r: r.name in ("Fruits", "Date") and not r.is_confirmed
+    )
+    result.callbacks.append((filter_func, _parse_yes))
     result.qtype = "QYes"
 
 
@@ -227,7 +231,10 @@ def QNo(node: Node, params: QueryStateDict, result: Result):
 
     if "callbacks" not in result:
         result["callbacks"] = []
-    result.callbacks.append((("Fruits", "Date"), _parse_no))
+    filter_func: Callable[[Resource], bool] = (
+        lambda r: r.name in ("Fruits", "Date") and not r.is_confirmed
+    )
+    result.callbacks.append((filter_func, _parse_no))
     result.qtype = "QNo"
 
 
@@ -286,7 +293,8 @@ def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
 
     if "callbacks" not in result:
         result["callbacks"] = []
-    result.callbacks.append((("Date",), _dt_callback))
+    filter_func: Callable[[Resource], bool] = lambda r: r.name == "Date"
+    result.callbacks.append((filter_func, _dt_callback))
 
 
 def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -325,7 +333,8 @@ def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
 
             if "callbacks" not in result:
                 result["callbacks"] = []
-            result.callbacks.append((("Date",), _dt_callback))
+            filter_func: Callable[[Resource], bool] = lambda r: r.name == "Date"
+            result.callbacks.append((filter_func, _dt_callback))
             return
     raise ValueError("No date in {0}".format(str(datenode)))
 
@@ -358,7 +367,8 @@ def QFruitTime(node: Node, params: QueryStateDict, result: Result):
 
         if "callbacks" not in result:
             result["callbacks"] = []
-        result.callbacks.append((("Date",), _dt_callback))
+        filter_func: Callable[[Resource], bool] = lambda r: r.name == "Date"
+        result.callbacks.append((filter_func, _dt_callback))
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
@@ -377,6 +387,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             dsm.start_dialogue()
 
         ans = dsm.get_answer()
+        if not ans:
+            raise ValueError("No answer generated!")
 
         q.set_answer(*gen_answer(ans))
         return
