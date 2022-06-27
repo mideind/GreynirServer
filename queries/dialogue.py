@@ -42,6 +42,7 @@ class ResourceState(IntEnum):
     CONFIRMED = auto()
     PAUSED = auto()
     SKIPPED = auto()
+    CANCELLED = auto()
 
 
 ##########################
@@ -346,6 +347,9 @@ class DialogueStateManager:
     def get_resource(self, name: str) -> Resource:
         return self._resources[name]
 
+    def get_result(self) -> Result:
+        return self._result
+
     def get_answer(self) -> str:
         # Executing callbacks
         self._execute_callbacks()
@@ -366,7 +370,7 @@ class DialogueStateManager:
         else:
             self.update_dialogue_state()
         if ans is None:
-            raise ValueError("No answer generated")
+            ans = self._resources[FINAL_RESOURCE_NAME].prompts["final"]
         return ans
 
     def _execute_callbacks(self) -> None:

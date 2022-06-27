@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, cast
+from typing import Any, Callable, List, Optional, cast
 import json
 import logging
 import datetime
@@ -135,6 +135,68 @@ QFruitTime →
 _START_DIALOGUE_QTYPE = "QFruitStartQuery"
 _DIALOGUE_NAME = "fruitseller"
 
+def _generate_fruit_answer(resource: Resource, dsm: DialogueStateManager) -> Optional[str]:
+    ans: Optional[str] = None
+    if dsm.get_result()["fruitsEmpty"]:
+        ans = resource.prompts["empty"]
+    elif dsm.get_result()["fruitOptions"]:
+        ans = resource.prompts["options"]
+    if resource.state is ResourceState.CONFIRMED:
+        return None
+    if resource.state is ResourceState.UNFULFILLED:
+        ans = resource.prompts["initial"]
+    elif resource.state is ResourceState.PARTIALLY_FULFILLED:
+        ans = (
+            f"{resource.prompts['repeat'].format(list_items = _list_items(resource.data))}"
+        )
+    elif resource.state is ResourceState.FULFILLED:
+        ans = (
+            f"{resource.prompts['confirm'].format(list_items = _list_items(resource.data))}"
+        )
+    return ans
+
+def _generate_date_answer(resource: DatetimeResource, dsm: DialogueStateManager) -> Optional[str]:
+    ans: Optional[str] = None
+    if resource.state is ResourceState.CONFIRMED:
+        return None
+
+    if resource.state is ResourceState.UNFULFILLED:
+        ans = resource.prompts["initial"]
+
+    elif resource.state is ResourceState.PARTIALLY_FULFILLED:
+        if resource.has_date():
+            ans = resource.prompts["date_fulfilled"].format(
+                date = resource.data[0].strftime("%Y/%m/%d")
+            )
+        if resource.has_time() and resource.prompts["time_fulfilled"]:
+            ans = resource.prompts["time_fulfilled"].format(
+                time = resource.data[1].strftime("%H:%M")
+            )
+
+    elif resource.state is ResourceState.FULFILLED:
+        if resource.has_date() and resource.has_time():
+            ans = resource.prompts["confirm"].format(
+                date_time=datetime.datetime.combine(
+                    cast(datetime.date, resource.data[0]),
+                    cast(datetime.time, resource.data[1]),
+                ).strftime("%Y/%m/%d %H:%M")
+            )
+    return ans
+
+def _generate_final_answer(resource: Resource, dsm: DialogueStateManager) -> Optional[str]:
+    ans: Optional[str] = None
+    if resource.state is ResourceState.CONFIRMED:
+        date_resource = dsm.get_resource("Date")
+        ans = resource.prompts["final"].format(
+            fruits = _list_items(dsm.get_resource("Fruits").data),
+            date_time = datetime.datetime.combine(
+                        cast(datetime.date, date_resource.data[0]),
+                        cast(datetime.time, date_resource.data[1]),
+                    ).strftime("%Y/%m/%d %H:%M")
+        )
+    elif resource.state is ResourceState.CANCELLED:
+        ans = resource.prompts["cancelled"]
+    return ans
 
 def _list_items(items: Any) -> str:
     item_list: List[str] = []
@@ -179,6 +241,7 @@ def QRemoveFruitQuery(node: Node, params: QueryStateDict, result: Result):
         if len(resource.data) == 0:
             resource.state = ResourceState.UNFULFILLED
             resource.set_answer("empty")
+            result.fruitsEmpty = True
         else:
             resource.state = ResourceState.PARTIALLY_FULFILLED
             resource.set_answer("repeat", list_items=_list_items(resource.data))
@@ -191,13 +254,20 @@ def QRemoveFruitQuery(node: Node, params: QueryStateDict, result: Result):
 
 
 def QCancelOrder(node: Node, params: QueryStateDict, result: Result):
+    def _cancel_order(resource: Resource, result: Result) -> None:
+        resource.state = ResourceState.CANCELLED
     result.qtype = "QCancelOrder"
     result.answer_key = ("Final", "cancelled")
+    if "callbacks" not in result:
+        result["callbacks"] = []
+    filter_func: Callable[[Resource], bool] = lambda r: r.name == "Final"
+    result.callbacks.append((filter_func, _cancel_order))
 
 
 def QFruitOptionsQuery(node: Node, params: QueryStateDict, result: Result):
     result.qtype = "QFruitOptionsQuery"
     result.answer_key = ("Fruits", "options")
+    result.fruitOptions = True
 
 
 def QYes(node: Node, params: QueryStateDict, result: Result):
