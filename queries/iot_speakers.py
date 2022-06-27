@@ -60,6 +60,7 @@ TOPIC_LEMMAS = [
 #         result["hue_obj"]["bri_inc"] = 64
 #         result["hue_obj"]["on"] = True
 
+
 def help_text(lemma: str) -> str:
     """Help text to return when query.py is unable to parse a query but
     one of the above lemmas is found in it"""
@@ -87,17 +88,17 @@ GRAMMAR = f"""
 Query →
     QIoTSpeaker '?'?
 
-QIoTSpeaker → 
+QIoTSpeaker →
     QIoTSpeakerQuery
 
-QIoTSpeakerQuery ->
-    QIoTSpeakerMakeVerb QIoTSpeakerMakeRest
-    | QIoTSpeakerSetVerb QIoTSpeakerSetRest
-    | QIoTSpeakerChangeVerb QIoTSpeakerChangeRest
-    | QIoTSpeakerLetVerb QIoTSpeakerLetRest
-    | QIoTSpeakerTurnOnVerb QIoTSpeakerTurnOnRest
-    | QIoTSpeakerTurnOffVerb QIoTSpeakerTurnOffRest
-    | QIoTSpeakerIncreaseOrDecreaseVerb QIoTSpeakerIncreaseOrDecreaseRest
+# QIoTSpeakerQuery ->
+#     QIoTSpeakerMakeVerb QIoTSpeakerMakeRest
+#     | QIoTSpeakerSetVerb QIoTSpeakerSetRest
+#     | QIoTSpeakerChangeVerb QIoTSpeakerChangeRest
+#     | QIoTSpeakerLetVerb QIoTSpeakerLetRest
+#     | QIoTSpeakerTurnOnVerb QIoTSpeakerTurnOnRest
+#     | QIoTSpeakerTurnOffVerb QIoTSpeakerTurnOffRest
+#     | QIoTSpeakerIncreaseOrDecreaseVerb QIoTSpeakerIncreaseOrDecreaseRest
 
 QIoTSpeakerMakeVerb ->
     'gera:so'_bh
@@ -130,7 +131,7 @@ QIoTSpeakerDecreaseVerb ->
     'lækka:so'_bh
     | 'minnka:so'_bh
 
-QCHANGEMakeRest ->
+# QCHANGEMakeRest ->
     # QCHANGESubject/þf QCHANGEHvar? QCHANGEHvernigMake
     # | QCHANGESubject/þf QCHANGEHvernigMake QCHANGEHvar?
     # | QCHANGEHvar? QCHANGESubject/þf QCHANGEHvernigMake
@@ -232,7 +233,7 @@ QIoTSpeakerHvar ->
 # QCHANGEThannigAd ->
 #     "þannig" "að"? pfn_nf QCHANGEBeOrBecomeSubjunctive QCHANGEAnnadAndlag
 
-# I think these verbs only appear in these forms. 
+# I think these verbs only appear in these forms.
 # In which case these terminals should be deleted and a direct reference should be made in the relevant non-terminals.
 # QCHANGEBe ->
 #     "vera"
@@ -283,8 +284,6 @@ QIoTSpeakerGroupName/fall ->
 # QCHANGELightName/fall ->
 #     no/fall
 
-# QCHANGEColorName ->
-#     {" | ".join(f"'{color}:lo'" for color in _COLORS.keys())}
 
 # QCHANGESceneName ->
 #     no
@@ -461,8 +460,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     print("household_id: " + household_id)
     print("group_id: " + group_id)
     print("player_id: " + player_id)
-
-
     try:
         # kalla í javascripts stuff
         light_or_group_name = result.get("light_name", result.get("group_name", ""))
