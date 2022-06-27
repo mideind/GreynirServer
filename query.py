@@ -892,6 +892,17 @@ class Query:
             return
         Query.store_query_data(self.client_id, key, data)
 
+    def update_client_data(self, key: str, new_data: ClientDataDict) -> None:
+        print("new_data :", new_data)
+        stored_data = self.client_data(key)
+        print("stored_data before update:", stored_data)
+        if stored_data is None:
+            self.set_client_data(key, new_data)
+            return
+        stored_data.update(new_data)
+        print("stored_data :", stored_data)
+        self.set_client_data(key, stored_data)
+
     @staticmethod
     def store_query_data(client_id: str, key: str, data: ClientDataDict) -> bool:
         """Save client query data in the database, under the given key"""

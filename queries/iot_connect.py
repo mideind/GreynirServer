@@ -22,7 +22,8 @@
     of random numbers, e.g. "Kastaðu tengingi", "Nefndu tölu milli 5 og 10", etc.
 
 """
-
+_BREAK_LENGTH = 5  # Seconds
+_BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
 
 from typing import Dict, Mapping, Optional, cast
 from typing_extensions import TypedDict
@@ -176,58 +177,85 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     elif result.qtype == "create_speaker_token":
         code = str(q.client_data("sonos_code"))
-        sonos_credentials_dict = {}
         sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
         response = create_token(code, sonos_encoded_credentials, host)
         if response.status_code != 200:
             print("Error:", response.status_code)
             print(response.text)
+            print("Invalid request usually means that the code is invalid")
             return
         response_json = response.json()
-        sonos_credentials_dict.update(
-            {
-                "access_token": response_json["access_token"],
-                "refresh_token": response_json["refresh_token"],
-            }
+        access_token, refresh_token = (
+            response_json["access_token"],
+            response_json["refresh_token"],
         )
-        response = get_households(sonos_credentials_dict["access_token"])
-        if response.status_code != 200:
-            print("Error:", response.status_code)
-            print(response.text)
-            return
-        response_json = response.json()
-        sonos_credentials_dict.update(
-            {
-                "household_id": response_json["households"][0]["id"],
-            }
-        )
-        response = get_groups(
-            sonos_credentials_dict["household_id"],
-            sonos_credentials_dict["access_token"],
-        )
-        if response.status_code != 200:
-            print("Error:", response.status_code)
-            print(response.text)
-            return
-        response_json = response.json()
-        sonos_credentials_dict.update(
-            {
-                "group_id": response_json["groups"][0]["id"],
-                "player_id": response_json["players"][0]["id"],
-            }
-        )
-        q.store_query_data(
-            str(q.client_id), "sonos_credentials", sonos_credentials_dict
-        )
-        answer = "Ég bjó til tóka frá Sonos"
+        data_dict = create_sonos_data_dict(access_token, q)
+        cred_dict = create_sonos_cred_dict(access_token, refresh_token, q)
+        store_sonos_data_and_credentials(data_dict, cred_dict, q)
+        answer = "Ég bjó til tóka frá Sónos"
         voice_answer = answer
-        audio_clip(
-            text_to_audio_url(answer),
-            sonos_credentials_dict["player_id"],
-            sonos_credentials_dict["access_token"],
-        )
+        # voice_answer = f"Ég ætla að tengja Sónos hátalarann. Hlustaðu vel. {_BREAK_SSML} Ég tengdi Sónos hátalarann. Góða skemmtun."
+        # sonos_voice_clip = (
+        #     f"{_BREAK_SSML} Hæ!, ég er búin að tengja þennan Sónos hátalara."
+        # )
+        # audio_clip(
+        #     text_to_audio_url(sonos_voice_clip),
+        #     sonos_dict["player_id"],
+        #     sonos_dict["access_token"],
+        # )
         q.set_answer(response, answer, voice_answer)
         return
+
+
+def create_sonos_data_dict(access_token, q):
+    data_dict = {}
+    households = get_households(access_token).json()
+    data_dict.update(households)
+    groups_list = []
+    players_list = []
+    for i in range(len(households)):
+        groups_object = get_groups(
+            households["households"][i]["id"], access_token
+        ).json()
+        groups_raw = groups_object["groups"]
+        players_raw = groups_object["players"]
+        groups_list += create_grouplist_for_db(groups_raw)
+        players_list += create_playerlist_for_db(players_raw)
+
+    data_dict["groups"] = groups_list
+    data_dict["players"] = players_list
+    return data_dict
+
+
+def create_sonos_cred_dict(access_token, refresh_token, q):
+    cred_dict = {}
+    cred_dict.update(
+        {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+        }
+    )
+    return cred_dict
+
+
+def store_sonos_data_and_credentials(data_dict, cred_dict, q):
+    sonos_dict = {}
+    sonos_dict["sonos"] = {"credentials": cred_dict, "data": data_dict}
+    q.update_client_data("IoT_Speakers", sonos_dict)
+
+
+def create_grouplist_for_db(groups):
+    groups_list = []
+    for i in range(len(groups)):
+        groups_list.append({groups[i]["name"]: groups[i]["id"]})
+    return groups_list
+
+
+def create_playerlist_for_db(players):
+    player_list = []
+    for i in range(len(players)):
+        player_list.append({players[i]["name"]: players[i]["id"]})
+    return player_list
 
 
 # put this in a separate file
