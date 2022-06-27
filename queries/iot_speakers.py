@@ -434,27 +434,32 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     smartdevice_type = "smartSpeaker"
 
     # Fetch relevant data from the device_data table to perform an action on the lights
-    device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
+    sonos_code = q.client_data("sonos_code")
+    device_data = q.client_data("sonos_credentials").json()
+    
+    # TODO: Need to add check for if there are no registered devices to an account, probably when initilazing the querydata
+    if device_data is not None:
+        try:
+            access_token = device_data.get("access_token")
+            refresh_token = device_data.get("refresh_token")    
+        except:
+            answer = "Mig vantar Sonos-tóka til að framkvæma þessa aðgerð."
+        try:
+            household_id = device_data.get("household_id")
+            group_id = device_data.get("group_id")
+            player_id = device_data.get("player_id")
+        except:
+            answer = "Mig vantar auðkenni Sonos-tækjanna þinna."
+    else:
+        answer = "Mig vantar upplýsingar um Sonos-tækin þín."
 
-    if device_data is not None and smartdevice_type in device_data:
-        dev = device_data[smartdevice_type]
-        assert dev is not None
-        selected_light = dev.get("selected_light")
-        hue_credentials = dev.get("philips_hue")
-        bridge_ip = hue_credentials.get("ipAddress")
-        username = hue_credentials.get("username")
 
-    if not device_data or not hue_credentials:
-        answer = "Það vantar að tengja Philips Hub-inn."
-        q.set_answer(*gen_answer(answer))
-        return
-
-    # Successfully matched a query type
-    print("bridge_ip: ", bridge_ip)
-    print("username: ", username)
-    print("selected light :", selected_light)
-    print("hue credentials :", hue_credentials)
-
+    # Successfully fetched data from the device_data table
+    print("access_token: " + access_token)
+    print("refresh_token: " + refresh_token)
+    print("household_id: " + household_id)
+    print("group_id: " + group_id)
+    print("player_id: " + player_id)
     try:
         # kalla í javascripts stuff
         light_or_group_name = result.get("light_name", result.get("group_name", ""))
