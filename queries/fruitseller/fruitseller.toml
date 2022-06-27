@@ -2,19 +2,21 @@ dialogue_name = "fruitseller"
 
 [[resources]]
 name = "Fruits"
-prompt = "Hvaða ávexti má bjóða þér?"
 type = "ListResource"
-repeatable = true
-confirm_prompt = "Viltu staðfesta ávextina {list_items}?"
-repeat_prompt = "Pöntunin samanstendur af {list_items}. Verður það eitthvað fleira?"
+# TODO: Keep singular and plural forms of fruits (or options more generally) for formatting answer
+prompts.initial = "Hvaða ávexti má bjóða þér?"
+prompts.options = "Ávextirnir sem eru í boði eru appelsínur, bananar, epli og perur."
+prompts.empty = "Karfan er núna tóm. Hvaða ávexti má bjóða þér?"
+prompts.confirm = "Viltu staðfesta ávextina {list_items}?"
+prompts.repeat = "Pöntunin samanstendur af {list_items}. Verður það eitthvað fleira?"
 
 [[resources]]
 name = "Date"
 type = "DatetimeResource"
-prompt = "Hvenær viltu fá ávextina?"
-time_fulfilled_prompt = "Afhendingin verður klukkan {time}. Hvaða dagsetningu viltu fá ávextina?"
-date_fulfilled_prompt = "Afhendingin verður {date}. Klukkan hvað viltu fá ávextina?"
-confirm_prompt = "Afhending pöntunar er {date_time}. Viltu staðfesta afhendinguna?"
+prompts.initial = "Hvenær viltu fá ávextina?"
+prompts.time_fulfilled = "Afhendingin verður klukkan {time}. Hvaða dagsetningu viltu fá ávextina?"
+prompts.date_fulfilled = "Afhendingin verður {date}. Klukkan hvað viltu fá ávextina?"
+prompts.confirm = "Afhending pöntunar er {date_time}. Viltu staðfesta afhendinguna?"
 
 # [[resources]]
 # name = "ConfirmOrder"
@@ -25,5 +27,6 @@ confirm_prompt = "Afhending pöntunar er {date_time}. Viltu staðfesta afhending
 [[resources]]
 name = "Final"
 type = "FinalResource"
-final_prompt = "Pöntunin þín er {fruits} og verður afhent {date_time}."
 requires = ["Fruits", "Date"]
+prompts.final = "Pöntunin þín er {fruits} og verður afhent {date_time}."
+prompts.cancelled = "Móttekið, hætti við pöntunina."
