@@ -133,9 +133,7 @@ function smartThingsWrapper(
     command,
     arguments = null
 ) {
-
-    targetObject = smartThingsFuzzySearch(query)
-
+    targetObject = smartThingsFuzzySearch(query);
 
     var myHeaders = new Headers();
     myHeaders.append("Authorization", AUTH_TOKEN);
@@ -169,4 +167,3 @@ function smartThingsWrapper(
         .then((result) => console.log(result))
         .catch((error) => console.log("error", error));
 }
-

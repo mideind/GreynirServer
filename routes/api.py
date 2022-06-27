@@ -687,8 +687,8 @@ def register_query_data_api(version: int = 1) -> Response:
 _WAV_MIMETYPES = frozenset(("audio/wav", "audio/x-wav"))
 
 
-@routes.route("/upload_speech_audio.api", methods=["POST"])
-@routes.route("/upload_speech_audio.api/v<int:version>", methods=["POST"])
+@routes.route("/upload_speech_audio.api", methods=["GET"])
+@routes.route("/upload_speech_audio.api/v<int:version>", methods=["GET"])
 def upload_speech_audio(version: int = 1) -> Response:
     """Receives uploaded speech audio for a query."""
 
@@ -716,3 +716,18 @@ def upload_speech_audio(version: int = 1) -> Response:
     #         return better_jsonify(valid=False, reason="Error reading file")
 
     # return better_jsonify(valid=True, msg="Audio data received")
+
+
+@routes.route("/connect_sonos.api", methods=["GET"])
+@routes.route("/connect_sonos.api/v<int:version>", methods=["GET", "POST"])
+def sonos_code(version: int = 1) -> Response:
+    print("ahkklklfsklhkfl")
+    args = request.args
+    client_id = args.get("state")
+    code = args.get("code")
+    if client_id and code:
+        success = QueryObject.store_query_data(client_id, "sonos_code", code)
+        if success:
+            return better_jsonify(valid=True, msg="Registered sonos code")
+
+    return better_jsonify(valid=False, errmsg="Error registering sonos code.")
