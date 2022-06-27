@@ -195,7 +195,7 @@ def QCancelOrder(node: Node, params: QueryStateDict, result: Result):
 
 def QFruitOptionsQuery(node: Node, params: QueryStateDict, result: Result):
     result.qtype = "QFruitOptionsQuery"
-    result.answer_key = "options"
+    result.answer_key = ("Fruits", "options")
 
 
 def QYes(node: Node, params: QueryStateDict, result: Result):
