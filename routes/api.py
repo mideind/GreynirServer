@@ -721,7 +721,7 @@ def upload_speech_audio(version: int = 1) -> Response:
 @routes.route("/connect_sonos.api", methods=["GET"])
 @routes.route("/connect_sonos.api/v<int:version>", methods=["GET", "POST"])
 def sonos_code(version: int = 1) -> Response:
-    print("ahkklklfsklhkfl")
+    print("sonos code")
     args = request.args
     client_id = args.get("state")
     code = args.get("code")

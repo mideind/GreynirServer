@@ -591,7 +591,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     q.set_qtype(result.qtype)
 
-    smartdevice_type = "smartlights"
+    smartdevice_type = "iot_lights"
     client_id = str(q.client_id)
     print("client_id:", client_id)
 
@@ -604,12 +604,12 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     print("selected light:", selected_light)
     hue_credentials: Optional[Dict[str, str]] = None
 
-    if device_data is not None and smartdevice_type in device_data:
-        dev = device_data[smartdevice_type]
+    if device_data is not None:
+        dev = device_data
         assert dev is not None
-        selected_light = dev.get("selected_light")
-        hue_credentials = dev.get("philips_hue")
-        bridge_ip = hue_credentials.get("ipAddress")
+        light = dev.get("philips_hue")
+        hue_credentials = light.get("credentials")
+        bridge_ip = hue_credentials.get("ip_address")
         username = hue_credentials.get("username")
 
     if not device_data or not hue_credentials:

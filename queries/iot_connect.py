@@ -186,8 +186,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             return
         response_json = response.json()
         access_token, refresh_token = (
-            response_json["access_token"],
-            response_json["refresh_token"],
+            response_json.get("access_token"),
+            response_json.get("refresh_token"),
         )
         data_dict = create_sonos_data_dict(access_token, q)
         cred_dict = create_sonos_cred_dict(access_token, refresh_token, q)
@@ -217,8 +217,8 @@ def create_sonos_data_dict(access_token, q):
         groups_object = get_groups(
             households["households"][i]["id"], access_token
         ).json()
-        groups_raw = groups_object["groups"]
-        players_raw = groups_object["players"]
+        groups_raw = groups_object.get("groups")
+        players_raw = groups_object.get("players")
         groups_list += create_grouplist_for_db(groups_raw)
         players_list += create_playerlist_for_db(players_raw)
 
@@ -241,7 +241,7 @@ def create_sonos_cred_dict(access_token, refresh_token, q):
 def store_sonos_data_and_credentials(data_dict, cred_dict, q):
     sonos_dict = {}
     sonos_dict["sonos"] = {"credentials": cred_dict, "data": data_dict}
-    q.update_client_data("IoT_Speakers", sonos_dict)
+    q.update_client_data("iot_speakers", sonos_dict)
 
 
 def create_grouplist_for_db(groups):
