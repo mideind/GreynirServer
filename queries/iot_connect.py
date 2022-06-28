@@ -176,7 +176,11 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         return
 
     elif result.qtype == "create_speaker_token":
-        code = str(q.client_data("sonos_code"))
+        device_data = q.client_data("iot_speakers")
+        code = device_data.get("sonos").get("credentials").get("code")
+        if device_data is None or code is None:
+            q.set_error("E_NO_DEVICE_DATA")
+            return
         sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
         response = create_token(code, sonos_encoded_credentials, host)
         if response.status_code != 200:
@@ -241,7 +245,7 @@ def create_sonos_cred_dict(access_token, refresh_token, q):
 def store_sonos_data_and_credentials(data_dict, cred_dict, q):
     sonos_dict = {}
     sonos_dict["sonos"] = {"credentials": cred_dict, "data": data_dict}
-    q.update_client_data("iot_speakers", sonos_dict)
+    q.set_client_data("iot_speakers", sonos_dict, update_in_place=True)
 
 
 def create_grouplist_for_db(groups):
