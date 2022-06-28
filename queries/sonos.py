@@ -24,7 +24,35 @@
 
 import requests
 
+# TODO: Refresh token functionality
+class SonosClient:
+    def __init__(self, access_token, refresh_token, household_id, group_id, player_id):
+        self.access_token = access_token
+        self.refresh_token = refresh_token
+        if (v := household_id) is not None:
+            self.household_id = v
+        else:
+            self.household_id = get_households(self.access_token).json()["households"][
+                0
+            ]["id"]
+        if (v := group_id) is not None:
+            self.group_id = v
+        else:
+            self.group_id = get_groups(self.access_token, self.household_id).json()[
+                "groups"
+            ][0]["id"]
+        if (v := player_id) is not None:
+            self.player_id = v
+        else:
+            self.player_id = get_players(
+                self.access_token, self.household_id, self.group_id
+            ).json()["players"][0]["id"]
 
+    def toggle_play_pause(self):
+        toggle_play_pause(self.group_id, self.access_token)
+
+
+# TODO: Check whether this should return the ids themselves instead of the json response
 def get_households(token):
     """
     Returns the list of households of the user
@@ -74,9 +102,7 @@ def toggle_play_pause(group_id, token):
     """
     Toggles the play/pause of a group
     """
-    url = (
-        f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/playPause"
-    )
+    url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/togglePlayPause"
 
     payload = {}
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
