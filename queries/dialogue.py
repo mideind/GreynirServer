@@ -132,7 +132,7 @@ class ListResource(Resource):
     data: ListResourceType = field(default_factory=list)
 
 
-# TODO:
+# TODO: ?
 # ExactlyOneResource (choose one resource from options)
 # SetResource (a set of resources)?
 # ...
@@ -180,26 +180,6 @@ class DatetimeResource(Resource):
     data: List[Union[Optional[datetime.date], Optional[datetime.time]]] = field(
         default_factory=lambda: [None, None]
     )
-
-    @property
-    def date(self) -> Optional[datetime.date]:
-        return self.data[0]
-
-    @property
-    def time(self) -> Optional[datetime.time]:
-        return self.data[1]
-
-    def has_date(self) -> bool:
-        return len(self.data) > 0 and isinstance(self.data[0], datetime.date)
-
-    def has_time(self) -> bool:
-        return len(self.data) > 1 and isinstance(self.data[1], datetime.time)
-
-    def set_date(self, new_date: Optional[datetime.date] = None) -> None:
-        self.data[0] = new_date
-
-    def set_time(self, new_time: Optional[datetime.time] = None) -> None:
-        self.data[1] = new_time
 
 
 @dataclass

@@ -155,7 +155,14 @@ def _generate_fruit_answer(
     if resource.is_unfulfilled:
         return resource.prompts["initial"]
     if resource.is_partially_fulfilled:
-        return f"{resource.prompts['repeat'].format(list_items = _list_items(resource.data))}"
+        ans: str = ""
+        if "actually_removed_something" in result:
+            if not result["actually_removed_something"]:
+                ans += "Ég fann ekki ávöxtinn sem þú vildir fjarlægja. "
+        return (
+            ans
+            + f"{resource.prompts['repeat'].format(list_items = _list_items(resource.data))}"
+        )
     if resource.is_fulfilled:
         return f"{resource.prompts['confirm'].format(list_items = _list_items(resource.data))}"
     return None
@@ -232,10 +239,9 @@ def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
         if resource.data is None:
             resource.data = []
         for number, name in result.queryfruits:
+            # TODO: check whether we have duplicate fruits
             resource.data.append((number, name))
         resource.state = ResourceState.PARTIALLY_FULFILLED
-        print("INSIDE ADD FRUITS CALLBACK", resource.name)
-        print("ANSWER IS:", resource._answer)
 
     if "callbacks" not in result:
         result["callbacks"] = []
@@ -248,20 +254,19 @@ def QRemoveFruitQuery(node: Node, params: QueryStateDict, result: Result):
     def _remove_fruit(
         resource: Resource, dsm: DialogueStateManager, result: Result
     ) -> None:
+        result.actually_removed_something = False
         if resource.data is not None:
             for _, fruitname in result.queryfruits:
                 for number, name in resource.data:
                     if name == fruitname:
                         resource.data.remove([number, name])
+                        result.actually_removed_something = True
                         break
         if len(resource.data) == 0:
             resource.state = ResourceState.UNFULFILLED
-            resource.set_answer("empty")
             result.fruitsEmpty = True
-            print("CALLBACK FRUTISEMPYT", "fruitsEmpty" in result)
         else:
             resource.state = ResourceState.PARTIALLY_FULFILLED
-            resource.set_answer("repeat", list_items=_list_items(resource.data))
 
     if "callbacks" not in result:
         result["callbacks"] = []
