@@ -9,12 +9,13 @@ from reynir import NounPhrase
 from queries import gen_answer, parse_num, natlang_seq, sing_or_plur
 from queries.dialogue import (
     AnsweringFunctionMap,
-    DatetimeResource,
+    DateResource,
     FinalResource,
     ListResource,
     Resource,
     ResourceState,
     DialogueStateManager,
+    TimeResource,
 )
 
 # Indicate that this module wants to handle parse trees for queries,
@@ -160,32 +161,34 @@ def _generate_fruit_answer(
     return None
 
 
-def _generate_date_answer(
-    resource: DatetimeResource, dsm: DialogueStateManager
+def _generate_datetime_answer(
+    resource: Resource, dsm: DialogueStateManager
 ) -> Optional[str]:
     ans: Optional[str] = None
+    date_resource: DateResource = cast(DateResource, dsm.get_resource("Date"))
+    time_resource: TimeResource = cast(TimeResource, dsm.get_resource("Time"))
+
     if resource.is_unfulfilled:
         return resource.prompts["initial"]
 
     if resource.is_partially_fulfilled:
-        if resource.has_date():
+        if date_resource.is_fulfilled:
             ans = resource.prompts["date_fulfilled"].format(
-                date=resource.data[0].strftime("%Y/%m/%d")
+                date=date_resource.data.strftime("%Y/%m/%d")
             )
-        if resource.has_time() and resource.prompts["time_fulfilled"]:
+        if time_resource.is_fulfilled:
             ans = resource.prompts["time_fulfilled"].format(
-                time=resource.data[1].strftime("%H:%M")
+                time=time_resource.data.strftime("%H:%M")
             )
         return ans
 
     if resource.is_fulfilled:
-        if resource.has_date() and resource.has_time():
-            ans = resource.prompts["confirm"].format(
-                date_time=datetime.datetime.combine(
-                    cast(datetime.date, resource.data[0]),
-                    cast(datetime.time, resource.data[1]),
-                ).strftime("%Y/%m/%d %H:%M")
-            )
+        ans = resource.prompts["confirm"].format(
+            date_time=datetime.datetime.combine(
+                date_resource.data,
+                time_resource.data,
+            ).strftime("%Y/%m/%d %H:%M")
+        )
     return ans
 
 
@@ -198,11 +201,12 @@ def _generate_final_answer(
 
     resource.state = ResourceState.CONFIRMED
     date_resource = dsm.get_resource("Date")
+    time_resource = dsm.get_resource("Time")
     ans = resource.prompts["final"].format(
         fruits=_list_items(dsm.get_resource("Fruits").data),
         date_time=datetime.datetime.combine(
-            cast(datetime.date, date_resource.data[0]),
-            cast(datetime.time, date_resource.data[1]),
+            date_resource.data,
+            time_resource.data,
         ).strftime("%Y/%m/%d %H:%M"),
     )
     return ans
@@ -219,7 +223,6 @@ def _list_items(items: Any) -> str:
 
 def QFruitStartQuery(node: Node, params: QueryStateDict, result: Result):
     result.qtype = _START_DIALOGUE_QTYPE
-    result.answer_key = ("Fruits", "initial")
 
 
 def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
@@ -232,7 +235,6 @@ def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
             resource.data.append((number, name))
         resource.state = ResourceState.PARTIALLY_FULFILLED
         print("INSIDE ADD FRUITS CALLBACK", resource.name)
-        resource.set_answer("repeat", list_items=_list_items(resource.data))
         print("ANSWER IS:", resource._answer)
 
     if "callbacks" not in result:
@@ -295,11 +297,14 @@ def QYes(node: Node, params: QueryStateDict, result: Result):
         if "yes_used" not in result and resource.is_fulfilled:
             resource.state = ResourceState.CONFIRMED
             result.yes_used = True
+            if resource.name == "DateTime":
+                for rname in resource.requires:
+                    dsm.get_resource(rname).state = ResourceState.CONFIRMED
 
     if "callbacks" not in result:
         result["callbacks"] = []
     filter_func: Callable[[Resource], bool] = (
-        lambda r: r.name in ("Fruits", "Date") and not r.is_confirmed
+        lambda r: r.name in ("Fruits", "DateTime") and not r.is_confirmed
     )
     result.callbacks.append((filter_func, _parse_yes))
     result.qtype = "QYes"
@@ -320,7 +325,7 @@ def QNo(node: Node, params: QueryStateDict, result: Result):
     if "callbacks" not in result:
         result["callbacks"] = []
     filter_func: Callable[[Resource], bool] = (
-        lambda r: r.name in ("Fruits", "Date") and not r.is_confirmed
+        lambda r: r.name == "Fruits" and not r.is_confirmed
     )
     result.callbacks.append((filter_func, _parse_no))
     result.qtype = "QNo"
@@ -349,45 +354,20 @@ def QFruit(node: Node, params: QueryStateDict, result: Result):
         result.fruit = fruit
 
 
-def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qtype = "bull"
-    datetimenode = node.first_child(lambda n: True)
-    assert isinstance(datetimenode, TerminalNode)
-    now = datetime.datetime.now()
-    y, m, d, h, min, _ = (i if i != 0 else None for i in json.loads(datetimenode.aux))
-    if y is None:
-        y = now.year
-    if m is None:
-        m = now.month
-    if d is None:
-        d = now.day
-    if h is None:
-        h = 12
-    if min is None:
-        min = 0
-    result["delivery_time"] = datetime.time(h, min)
-    result["delivery_date"] = datetime.date(y, m, d)
-
-    def _dt_callback(
-        resource: DatetimeResource, dsm: DialogueStateManager, result: Result
-    ) -> None:
-        if dsm.get_resource("Fruits").is_confirmed:
-            resource.set_date(result["delivery_date"])
-            resource.set_time(result["delivery_time"])
-            resource.state = ResourceState.FULFILLED
-            resource.set_answer(
-                "confirm",
-                date_time=datetime.datetime.combine(
-                    resource.date, resource.time
-                ).strftime("%Y/%m/%d %H:%M"),
-            )
+def _date_callback(
+    resource: DateResource, dsm: DialogueStateManager, result: Result
+) -> None:
+    if dsm.get_resource("Fruits").is_confirmed:
+        resource.set_date(result["delivery_date"])
+        resource.state = ResourceState.FULFILLED
+        time_resource = dsm.get_resource("Time")
+        datetime_resource = dsm.get_resource("DateTime")
+        if time_resource.is_fulfilled:
+            datetime_resource.state = ResourceState.FULFILLED
         else:
-            dsm.set_error()
-
-    if "callbacks" not in result:
-        result["callbacks"] = []
-    filter_func: Callable[[Resource], bool] = lambda r: r.name == "Date"
-    result.callbacks.append((filter_func, _dt_callback))
+            datetime_resource.state = ResourceState.PARTIALLY_FULFILLED
+    else:
+        dsm.set_error()
 
 
 def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -408,33 +388,28 @@ def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
                     y += 1
             result["delivery_date"] = datetime.date(day=d, month=m, year=y)
 
-            def _dt_callback(
-                resource: DatetimeResource, dsm: DialogueStateManager, result: Result
-            ) -> None:
-                if dsm.get_resource("Fruits").is_confirmed:
-                    resource.set_date(result["delivery_date"])
-                    if resource.has_time():
-                        resource.state = ResourceState.FULFILLED
-                        resource.set_answer(
-                            "confirm",
-                            date_time=datetime.datetime.combine(
-                                resource.date, resource.time
-                            ).strftime("%Y/%m/%d %H:%M"),
-                        )
-                    else:
-                        resource.state = ResourceState.PARTIALLY_FULFILLED
-                        resource.set_answer(
-                            "date_fulfilled", date=resource.date.strftime("%Y/%m/%d")
-                        )
-                else:
-                    dsm.set_error()
-
             if "callbacks" not in result:
                 result["callbacks"] = []
             filter_func: Callable[[Resource], bool] = lambda r: r.name == "Date"
-            result.callbacks.append((filter_func, _dt_callback))
+            result.callbacks.append((filter_func, _date_callback))
             return
     raise ValueError("No date in {0}".format(str(datenode)))
+
+
+def _time_callback(
+    resource: TimeResource, dsm: DialogueStateManager, result: Result
+) -> None:
+    if dsm.get_resource("Fruits").is_confirmed:
+        resource.set_time(result["delivery_time"])
+        resource.state = ResourceState.FULFILLED
+        date_resource = dsm.get_resource("Date")
+        datetime_resource = dsm.get_resource("DateTime")
+        if date_resource.is_fulfilled:
+            datetime_resource.state = ResourceState.FULFILLED
+        else:
+            datetime_resource.state = ResourceState.PARTIALLY_FULFILLED
+    else:
+        dsm.set_error()
 
 
 def QFruitTime(node: Node, params: QueryStateDict, result: Result):
@@ -447,31 +422,35 @@ def QFruitTime(node: Node, params: QueryStateDict, result: Result):
 
         result["delivery_time"] = datetime.time(hour, minute)
 
-        def _dt_callback(
-            resource: DatetimeResource, dsm: DialogueStateManager, result: Result
-        ) -> None:
-            if dsm.get_resource("Fruits").is_confirmed:
-                resource.set_time(result["delivery_time"])
-                if resource.has_date():
-                    resource.state = ResourceState.FULFILLED
-                    resource.set_answer(
-                        "confirm",
-                        date_time=datetime.datetime.combine(
-                            resource.date, resource.time
-                        ).strftime("%Y/%m/%d %H:%M"),
-                    )
-                else:
-                    resource.state = ResourceState.PARTIALLY_FULFILLED
-                    resource.set_answer(
-                        "time_fulfilled", time=resource.time.strftime("%H:%M")
-                    )
-            else:
-                dsm.set_error()
-
         if "callbacks" not in result:
             result["callbacks"] = []
-        filter_func: Callable[[Resource], bool] = lambda r: r.name == "Date"
-        result.callbacks.append((filter_func, _dt_callback))
+        filter_func: Callable[[Resource], bool] = lambda r: r.name == "Time"
+        result.callbacks.append((filter_func, _time_callback))
+
+
+def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qtype = "bull"
+    datetimenode = node.first_child(lambda n: True)
+    assert isinstance(datetimenode, TerminalNode)
+    now = datetime.datetime.now()
+    y, m, d, h, min, _ = (i if i != 0 else None for i in json.loads(datetimenode.aux))
+    if y is None:
+        y = now.year
+    if m is None:
+        m = now.month
+    if d is None:
+        d = now.day
+    if h is None:
+        h = 12
+    if min is None:
+        min = 0
+    result["delivery_time"] = datetime.time(h, min)
+    result["delivery_date"] = datetime.date(y, m, d)
+
+    if "callbacks" not in result:
+        result["callbacks"] = []
+    result.callbacks.append((lambda r: r.name == "Date", _date_callback))
+    result.callbacks.append((lambda r: r.name == "Time", _time_callback))
 
 
 def QFruitInfoQuery(node: Node, params: QueryStateDict, result: Result):
@@ -482,7 +461,7 @@ _ANSWERING_FUNCTIONS: AnsweringFunctionMap = cast(
     AnsweringFunctionMap,
     {
         "Fruits": _generate_fruit_answer,
-        "Date": _generate_date_answer,
+        "DateTime": _generate_datetime_answer,
         "Final": _generate_final_answer,
     },
 )

@@ -122,9 +122,6 @@ class Resource:
     def is_cancelled(self) -> bool:
         return self.state is ResourceState.CANCELLED
 
-    def next_action(self) -> Any:
-        raise NotImplementedError()
-
     def update(self, new_data: Optional["Resource"]) -> None:
         if new_data:
             self.__dict__.update(new_data.__dict__)
@@ -133,10 +130,6 @@ class Resource:
 @dataclass
 class ListResource(Resource):
     data: ListResourceType = field(default_factory=list)
-    available_options: Optional[ListResourceType] = None
-
-    def list_available_options(self) -> str:
-        raise NotImplementedError()
 
 
 # TODO:
@@ -164,7 +157,7 @@ class DateResource(Resource):
 
     @property
     def date(self) -> Optional[datetime.date]:
-        return self.data
+        return self.data if self.is_fulfilled else None
 
     def set_date(self, new_date: datetime.date) -> None:
         self.data = new_date
@@ -176,7 +169,7 @@ class TimeResource(Resource):
 
     @property
     def time(self) -> Optional[datetime.time]:
-        return self.data
+        return self.data if self.is_fulfilled else None
 
     def set_time(self, new_time: datetime.time) -> None:
         self.data = new_time
@@ -216,19 +209,29 @@ class NumberResource(Resource):
 
 @dataclass
 class OrResource(Resource):
-    data: Dict[str, Any] = field(default_factory=dict)
     exclusive: bool = False  # Only one of the resources should be fulfilled
 
 
 @dataclass
 class AndResource(Resource):  # For answering multiple resources at the same time
-    data: Dict[str, Any] = field(default_factory=dict)
+    pass
 
 
 @dataclass
 class FinalResource(Resource):
     data: Any = None
 
+
+_RESOURCE_TYPES: Mapping[str, Any] = {
+    "Resource": Resource,
+    "ListResource": ListResource,
+    "YesNoResource": YesNoResource,
+    "DateResource": DateResource,
+    "TimeResource": TimeResource,
+    "DatetimeResource": DatetimeResource,
+    "NumberResource": NumberResource,
+    "FinalResource": FinalResource,
+}
 
 ##############################
 #    RESOURCE CLASSES END    #
@@ -240,16 +243,6 @@ class DialogueStructureType(TypedDict):
 
     dialogue_name: str
     resources: Dict[str, Resource]
-
-
-_RESOURCE_TYPES: Mapping[str, Any] = {
-    "Resource": Resource,
-    "ListResource": ListResource,
-    "YesNoResource": YesNoResource,
-    "DatetimeResource": DatetimeResource,
-    "NumberResource": NumberResource,
-    "FinalResource": FinalResource,
-}
 
 
 def _load_dialogue_structure(filename: str) -> DialogueStructureType:
@@ -264,7 +257,8 @@ def _load_dialogue_structure(filename: str) -> DialogueStructureType:
     resource_dict: Dict[str, Resource] = {}
     for resource in obj[DIALOGUE_RESOURCES_KEY]:
         assert "name" in resource
-        assert "type" in resource
+        if "type" not in resource:
+            resource["type"] = "Resource"
         # Create instances of Resource classes (and its subclasses)
         resource_dict[resource["name"]] = _RESOURCE_TYPES[resource["type"]](**resource)
     obj[DIALOGUE_RESOURCES_KEY] = resource_dict
@@ -377,7 +371,9 @@ class DialogueStateManager:
             ans = self._get_answer_postorder(self._resources[rname])
             if ans:
                 return ans
-        return self._answering_functions[curr_resource.name](curr_resource, self)
+        if curr_resource.name in self._answering_functions:
+            return self._answering_functions[curr_resource.name](curr_resource, self)
+        return None
 
     def _execute_callbacks_postorder(
         self, curr_resource: Resource, cbs: List[CallbackTupleType]
