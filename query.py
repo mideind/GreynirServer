@@ -52,6 +52,7 @@ import json
 import re
 import random
 from collections import defaultdict
+from copy import deepcopy
 
 from settings import Settings
 
@@ -79,6 +80,8 @@ from tree import Tree, TreeStateDict, Node
 from images import get_image_url
 from processor import modules_in_dir
 from geo import LatLonTuple
+
+from util import merge_two_dicts
 
 # Query response
 ResponseDict = Dict[str, Any]
@@ -885,26 +888,21 @@ class Query:
                 )
         return None
 
-    def set_client_data(self, key: str, data: ClientDataDict) -> None:
+    def set_client_data(
+        self, key: str, data: ClientDataDict, update_in_place=False
+    ) -> None:
         """Setter for client query data"""
         if not self.client_id or not key:
             logging.warning("Couldn't save query data, no client ID or key")
             return
-        Query.store_query_data(self.client_id, key, data)
-
-    def update_client_data(self, key: str, new_data: ClientDataDict) -> None:
-        print("new_data :", new_data)
-        stored_data = self.client_data(key)
-        print("stored_data before update:", stored_data)
-        if stored_data is None:
-            self.set_client_data(key, new_data)
-            return
-        stored_data.update(new_data)
-        print("stored_data :", stored_data)
-        self.set_client_data(key, stored_data)
+        Query.store_query_data(
+            self.client_id, key, data, update_in_place=update_in_place
+        )
 
     @staticmethod
-    def store_query_data(client_id: str, key: str, data: ClientDataDict) -> bool:
+    def store_query_data(
+        client_id: str, key: str, data: ClientDataDict, update_in_place=False
+    ) -> bool:
         """Save client query data in the database, under the given key"""
         if not client_id or not key:
             return False
@@ -927,6 +925,9 @@ class Query:
                     )
                     session.add(row)
                 else:
+                    if update_in_place:
+                        stored_data = deepcopy(row.data)
+                        data = merge_two_dicts(stored_data, data)
                     # Already present: update
                     row.data = data  # type: ignore
                     row.modified = now  # type: ignore
