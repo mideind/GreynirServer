@@ -162,9 +162,24 @@ class YesNoResource(Resource):
 class DateResource(Resource):
     data: datetime.date = field(default_factory=datetime.date.today)
 
+    @property
+    def date(self) -> Optional[datetime.date]:
+        return self.data
+
+    def set_date(self, new_date: datetime.date) -> None:
+        self.data = new_date
+
+
 @dataclass
 class TimeResource(Resource):
     data: datetime.time = field(default_factory=datetime.time)
+
+    @property
+    def time(self) -> Optional[datetime.time]:
+        return self.data
+
+    def set_time(self, new_time: datetime.time) -> None:
+        self.data = new_time
 
 
 @dataclass
