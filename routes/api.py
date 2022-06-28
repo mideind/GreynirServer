@@ -734,3 +734,19 @@ def sonos_code(version: int = 1) -> Response:
             return better_jsonify(valid=True, msg="Registered sonos code")
 
     return better_jsonify(valid=False, errmsg="Error registering sonos code.")
+
+
+def sonos_code(version: int = 1) -> Response:
+    print("sonos code")
+    args = request.args
+    client_id = args.get("state")
+    code = args.get("code")
+    code = {"spotify": {"credentials": {"code": code}}}
+    if client_id and code:
+        success = QueryObject.store_query_data(
+            client_id, "iot_speakers", code, update_in_place=True
+        )
+        if success:
+            return better_jsonify(valid=True, msg="Registered sonos code")
+
+    return better_jsonify(valid=False, errmsg="Error registering sonos code.")

@@ -40,6 +40,7 @@ import logging
 import random
 import json
 import flask
+from datetime import datetime, timedelta
 
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_jsfile, read_grammar_file
@@ -462,6 +463,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     # TODO: Need to add check for if there are no registered devices to an account, probably when initilazing the querydata
     if device_data is not None:
+        timestamp  = device_data["sonos"]["credentials"]["timestamp"]
+        timestamp.datetime.strftime("%Y-%m-%d %H:%M:%S")
+        if (datetime.now() - datetime_date) > timedelta(hours=4):
+        print("It has been more than 4 seconds since the last update")
         print("if clause")
         try:
             access_token = device_data["sonos"]["credentials"]["access_token"]
