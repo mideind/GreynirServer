@@ -3,7 +3,7 @@ dialogue_name = "fruitseller"
 [[resources]]
 name = "Fruits"
 type = "ListResource"
-# TODO: Keep singular and plural forms of fruits (or options more generally) for formatting answer
+# TODO: Keep singular and plural forms of fruits (or options more generally) for formatting answer?
 prompts.initial = "Hvaða ávexti má bjóða þér?"
 prompts.options = "Ávextirnir sem eru í boði eru appelsínur, bananar, epli og perur."
 prompts.empty = "Karfan er núna tóm. Hvaða ávexti má bjóða þér?"
