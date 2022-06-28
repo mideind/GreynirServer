@@ -43,6 +43,7 @@ import flask
 
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_jsfile, read_grammar_file
+from queries.sonos import SonosClient
 from tree import Result, Node
 
 
@@ -91,14 +92,15 @@ Query →
 QIoTSpeaker →
     QIoTSpeakerQuery
 
-# QIoTSpeakerQuery ->
-#     QIoTSpeakerMakeVerb QIoTSpeakerMakeRest
-#     | QIoTSpeakerSetVerb QIoTSpeakerSetRest
-#     | QIoTSpeakerChangeVerb QIoTSpeakerChangeRest
-#     | QIoTSpeakerLetVerb QIoTSpeakerLetRest
-#     | QIoTSpeakerTurnOnVerb QIoTSpeakerTurnOnRest
-#     | QIoTSpeakerTurnOffVerb QIoTSpeakerTurnOffRest
-#     | QIoTSpeakerIncreaseOrDecreaseVerb QIoTSpeakerIncreaseOrDecreaseRest
+QIoTSpeakerQuery ->
+    QIoTSpeakerMakeVerb QIoTSpeakerMakeRest
+    | QIoTSpeakerSetVerb QIoTSpeakerSetRest
+    # | QIoTSpeakerChangeVerb QIoTSpeakerChangeRest
+    | QIoTSpeakerLetVerb QIoTSpeakerLetRest
+    | QIoTSpeakerTurnOnVerb QIoTSpeakerTurnOnRest
+    | QIoTSpeakerTurnOffVerb QIoTSpeakerTurnOffRest
+    | QIoTSpeakerPlayVerb QIoTSpeakerPlayRest
+    | QIoTSpeakerIncreaseOrDecreaseVerb QIoTSpeakerIncreaseOrDecreaseRest
 
 QIoTSpeakerMakeVerb ->
     'gera:so'_bh
@@ -119,6 +121,10 @@ QIoTSpeakerTurnOnVerb ->
 QIoTSpeakerTurnOffVerb ->
     'slökkva:so'_bh
 
+QIoTSpeakerPlayVerb ->
+    'spila:so'_bh
+    | "spilaðu"
+
 QIoTSpeakerIncreaseOrDecreaseVerb ->
     QIoTSpeakerIncreaseVerb
     | QIoTSpeakerDecreaseVerb
@@ -131,7 +137,7 @@ QIoTSpeakerDecreaseVerb ->
     'lækka:so'_bh
     | 'minnka:so'_bh
 
-# QCHANGEMakeRest ->
+QIoTSpeakerMakeRest ->
     # QCHANGESubject/þf QCHANGEHvar? QCHANGEHvernigMake
     # | QCHANGESubject/þf QCHANGEHvernigMake QCHANGEHvar?
     # | QCHANGEHvar? QCHANGESubject/þf QCHANGEHvernigMake
@@ -141,7 +147,7 @@ QIoTSpeakerDecreaseVerb ->
     QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
 
 # TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
-QCHANGESetRest ->
+QIoTSpeakerSetRest ->
     # QCHANGESubject/þf QCHANGEHvar? QCHANGEHvernigSet
     # | QCHANGESubject/þf QCHANGEHvernigSet QCHANGEHvar?
     # | QCHANGEHvar? QCHANGESubject/þf QCHANGEHvernigSet
@@ -150,7 +156,7 @@ QCHANGESetRest ->
     # | QCHANGEHvernigSet QCHANGEHvar? QCHANGESubject/þf
     "á" QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
 
-QCHANGEChangeRest ->
+# QIoTSpeakerChangeRest ->
     # QCHANGESubjectOne/þgf QCHANGEHvar? QCHANGEHvernigChange
     # | QCHANGESubjectOne/þgf QCHANGEHvernigChange QCHANGEHvar?
     # | QCHANGEHvar? QCHANGESubjectOne/þgf QCHANGEHvernigChange
@@ -158,16 +164,17 @@ QCHANGEChangeRest ->
     # | QCHANGEHvernigChange QCHANGESubjectOne/þgf QCHANGEHvar?
     # | QCHANGEHvernigChange QCHANGEHvar? QCHANGESubjectOne/þgf
 
-QCHANGELetRest ->
-    QCHANGESubject/þf QCHANGEHvar? QCHANGEHvernigLet
-    | QCHANGESubject/þf QCHANGEHvernigLet QCHANGEHvar?
-    | QCHANGEHvar? QCHANGESubject/þf QCHANGEHvernigLet
-    | QCHANGEHvar? QCHANGEHvernigLet QCHANGESubject/þf
-    | QCHANGEHvernigLet QCHANGESubject/þf QCHANGEHvar?
-    | QCHANGEHvernigLet QCHANGEHvar? QCHANGESubject/þf
+QIoTSpeakerLetRest ->
+    # QCHANGESubject/þf QCHANGEHvar? QCHANGEHvernigLet
+    # | QCHANGESubject/þf QCHANGEHvernigLet QCHANGEHvar?
+    # | QCHANGEHvar? QCHANGESubject/þf QCHANGEHvernigLet
+    # | QCHANGEHvar? QCHANGEHvernigLet QCHANGESubject/þf
+    # | QCHANGEHvernigLet QCHANGESubject/þf QCHANGEHvar?
+    # | QCHANGEHvernigLet QCHANGEHvar? QCHANGESubject/þf
     "vera" QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
+    | "á" QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
 
-QCHANGETurnOnRest ->
+QIoTSpeakerTurnOnRest ->
     # QCHANGETurnOnLightsRest
     # | QCHANGEAHverju QCHANGEHvar?
     # | QCHANGEHvar? QCHANGEAHverju
@@ -178,7 +185,7 @@ QCHANGETurnOnRest ->
 #     | QCHANGEHvar QCHANGELightSubject/þf?
 
 # Would be good to add "slökktu á rauða litnum" functionality
-QCHANGETurnOffRest ->
+QIoTSpeakerTurnOffRest ->
     # QCHANGETurnOffLightsRest
     "á" QIoTSpeakerMusicWord/þgf QIoTSpeakerHvar?
 
@@ -186,8 +193,12 @@ QCHANGETurnOffRest ->
 #     QCHANGELightSubject/þf QCHANGEHvar?
 #     | QCHANGEHvar QCHANGELightSubject/þf?
 
+QIoTSpeakerPlayRest ->
+    QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
+    | "tónlist"
+
 # TODO: Make the subject categorization cleaner
-QCHANGEIncreaseOrDecreaseRest ->
+QIoTSpeakerIncreaseOrDecreaseRest ->
     # QCHANGELightSubject/þf QCHANGEHvar?
     # | QCHANGEBrightnessSubject/þf QCHANGEHvar?
     QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
@@ -197,8 +208,8 @@ QCHANGEIncreaseOrDecreaseRest ->
 #     QCHANGESubjectOne/fall
 #     | QCHANGESubjectTwo/fall
 
-QIoTMusicWord ->
-    'tónlist'/fall
+QIoTSpeakerMusicWord/fall ->
+    'tónlist:no'/fall
 
 # # TODO: Decide whether LightSubject/þgf should be accepted
 # QCHANGESubjectOne/fall ->
@@ -425,34 +436,41 @@ def QIoTSpeakerGroupName(node: Node, params: QueryStateDict, result: Result) -> 
     result["group_name"] = result._indefinite
 
 
+def QIoTMusicWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.target = "music"
+    print("music")
+
+
 def sentence(state: QueryStateDict, result: Result) -> None:
+    # try:
+    print("sentence")
     """Called when sentence processing is complete"""
     q: Query = state["query"]
 
-    q.set_qtype(result.get["qtype"])
+    q.set_qtype(result.get("qtype"))
 
-    smartdevice_type = "smartSpeaker"
+    # TODO: Find way to only catch playing commands
+    if result.get("action") == None:
+        result.action = "play_music"
+
+    smartdevice_type = "smart_speaker"
 
     # Fetch relevant data from the device_data table to perform an action on the lights
-    sonos_code = q.client_data("sonos_code")
-    device_data = q.client_data("sonos_credentials").json()
+    # sonos_code = q.client_data("sonos_code")
+    device_data = q.client_data("iot_speakers")
+    print(device_data)
 
     # TODO: Need to add check for if there are no registered devices to an account, probably when initilazing the querydata
     if device_data is not None:
+        print("if clause")
         try:
-            access_token = device_data.get("access_token")
-            refresh_token = device_data.get("refresh_token")
-        except:
-            answer = "Mig vantar Sonos-tóka til að framkvæma þessa aðgerð."
-        try:
-            household_id = device_data.get("household_id")
-            group_id = device_data.get("group_id")
-            player_id = device_data.get("player_id")
-        except:
-            answer = "Mig vantar auðkenni Sonos-tækjanna þinna."
-    else:
-        answer = "Mig vantar upplýsingar um Sonos-tækin þín."
-
+            access_token = device_data["sonos"]["credentials"]["access_token"]
+            refresh_token = device_data["sonos"]["credentials"]["refresh_token"]
+            household_id = device_data["sonos"]["data"]["households"][0]["id"]
+            group_id = device_data["sonos"]["data"]["groups"][0]["Family Room"]
+            player_id = device_data["sonos"]["data"]["players"][0]["Family Room"]
+        except KeyError:
+            print("No device data found for this account")
 
     # Successfully fetched data from the device_data table
     print("access_token: " + access_token)
@@ -460,37 +478,32 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     print("household_id: " + household_id)
     print("group_id: " + group_id)
     print("player_id: " + player_id)
-    try:
-        # kalla í javascripts stuff
-        light_or_group_name = result.get("light_name", result.get("group_name", ""))
-        color_name = result.get("color_name", "")
-        print("GROUP NAME:", light_or_group_name)
-        print("COLOR NAME:", color_name)
-        print(result.hue_obj)
-        q.set_answer(
-            *gen_answer(
-                "ég var að kveikja ljósin! "
-                # + group_name
-                # + " "
-                # + color_name
-                # + " "
-                # + result.action
-                # + " "
-                # + str(result.hue_obj.get("hue", "enginn litur"))
-            )
-        )
-        js = (
-            read_jsfile("IoT_Embla/fuse.js")
-            + f"var BRIDGE_IP = '{bridge_ip}';var USERNAME = '{username}';"
-            + read_jsfile("IoT_Embla/Philips_Hue/fuse_search.js")
-            + read_jsfile("IoT_Embla/Philips_Hue/lights.js")
-            + read_jsfile("IoT_Embla/Philips_Hue/set_lights.js")
-        )
-        js += f"setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
-        q.set_command(js)
-    except Exception as e:
-        logging.warning("Exception while processing random query: {0}".format(e))
-        q.set_error("E_EXCEPTION: {0}".format(e))
-        raise
+
+    # Create a SonosClient object
+    sonos_client = SonosClient(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        household_id=household_id,
+        group_id=group_id,
+        player_id=player_id,
+    )
+
+    # Perform the action on the Sonos device
+    if result.action == "play_music":
+        sonos_client.toggle_play_spause()
+        answer = "Ég kveikti á tónlist."
+    # elif result.action == "increase_volume":
+    #     sonos_client.increase_volume()
+    # elif result.action == "decrease_volume":
+    #     sonos_client.decrease_volume()
+    # elif result.action == "set_volume":
+    #     sonos_client.set_volume(result.get["volume"])
+
+    answer_list = gen_answer(answer)
+    answer_list[1].replace("Sonos", "Sónos")
+    q.set_answer(*answer_list)
 
     # f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'p3obluiXT13IbHMpp4X63ZvZnpNRdbqqMt723gy2';"
+    # except Exception as e:
+    #     print(e)
+    #     print("Error in sentence")
