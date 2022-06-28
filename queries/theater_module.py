@@ -28,7 +28,7 @@ import random
 from query import Query, QueryStateDict
 from tree import Result, Node
 from queries import gen_answer, query_json_api
-from queries.dialogue import DialogueStateManager, ListResource
+from queries.dialogue import DialogueStateManager, ListResource, ResourceState
 
 _THEATER_DIALOGUE_NAME = "theater"
 _THEATER_QTYPE = "theater"
@@ -90,6 +90,56 @@ def _generate_show_answer(
     return resource.prompts["options"].format(options=", ".join(dsm.get_result().shows))
     return None
 
+def _generate_date_answer(
+    resource: ListResource, dsm: DialogueStateManager
+) -> Optional[str]:
+    result = dsm.get_result()
+    if result.get("dateOptions"):
+        return resource.prompts["options"]
+    if resource.is_unfulfilled:
+        return resource.prompts["initial"]
+    if resource.is_fulfilled:
+        return resource.prompts["confirm"].format(date = result.get("date"))
+
+def _generate_seat_answer(
+    resource: ListResource, dsm: DialogueStateManager
+) -> Optional[str]:
+    result = dsm.get_result()
+    if resource.is_unfulfilled:
+        return resource.prompts["initial"]
+    if resource.is_fulfilled:
+        return resource.prompts["confirm"].format(seats = result.get("seats"))
+
+def _generate_location_answer(
+    resource: ListResource, dsm: DialogueStateManager
+) -> Optional[str]:
+    result = dsm.get_result()
+    if result.get("locationOptions"):
+        return resource.prompts["options"]
+    if resource.is_unfulfilled:
+        return resource.prompts["initial"]
+    if resource.is_fulfilled:
+        return resource.prompts["confirm"].format(location = result.get("location"))
+
+def _generate_final_answer(
+    resource: ListResource, dsm: DialogueStateManager
+) -> Optional[str]:
+    if resource.is_cancelled:
+        return resource.prompts["cancelled"]
+
+    resource.state = ResourceState.CONFIRMED
+    seat_resource = dsm.get_resource("ShowSeats")
+    location_resource = dsm.get_resource("ShowLocation")
+    date_resource = dsm.get_resource("ShowDate")
+    show_resource = dsm.get_resource("Show")
+    ans = resource.prompts["final"].format(
+        seats = seat_resource.data,
+        location = location_resource.data[0],
+        show = show_resource.data[0],
+        date = date_resource.data[0],
+    )
+    return ans
+
 
 def QTheaterDialogue(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _THEATER_QTYPE
@@ -111,6 +161,10 @@ def _fetch_shows() -> Any:
 
 _ANSWERING_FUNCTIONS = {
     "Show": _generate_show_answer,
+    "ShowDate": _generate_date_answer,
+    "ShowSeats": _generate_seat_answer,
+    "SeatLocation": _generate_location_answer,
+    "Final": _generate_final_answer,
 }
 
 

@@ -35,5 +35,6 @@ name = "Final"
 type = "FinalResource"
 requires = ["SeatLocation"]
 prompts.final = "Þú valdir {seats} sæti á svæðinum {seat_location} fyrir sýninguna {show} þann {date}."
+prompts.cancelled = "Móttekið, hætti við leikhús pöntunina."
 
 # TODO: Add a resource for the payment method
