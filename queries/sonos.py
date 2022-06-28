@@ -98,6 +98,20 @@ def create_token(code, sonos_encoded_credentials, host):
     return response
 
 
+def refresh_token(sonos_encoded_credentials, refresh_token):
+    """
+    Refreshes token
+    """
+    url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=refresh_token&refresh_token={refresh_token}"
+
+    payload = {}
+    headers = {"Authorization": f"Basic {sonos_encoded_credentials}"}
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    return response
+
+
 def toggle_play_pause(group_id, token):
     """
     Toggles the play/pause of a group
