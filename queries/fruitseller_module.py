@@ -501,6 +501,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             q.set_error("E_QUERY_NOT_UNDERSTOOD")
             return
 
+        q.set_qtype(result.qtype)
         q.set_answer(*gen_answer(ans))
         return
     except Exception as e:

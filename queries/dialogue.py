@@ -18,7 +18,7 @@ from enum import IntEnum, auto
 from dataclasses import dataclass, field
 
 try:
-    import tomllib
+    import tomllib # type: ignore (module not available in Python <3.11)
 except ModuleNotFoundError:
     import tomli as tomllib
 
@@ -228,6 +228,7 @@ class DialogueStructureType(TypedDict):
 def _load_dialogue_structure(filename: str) -> DialogueStructureType:
     """Loads dialogue structure from TOML file."""
     basepath, _ = os.path.split(os.path.realpath(__file__))
+    # TODO: Fix this, causes issues when folders have the same name as a module
     fpath = os.path.join(basepath, filename, filename + ".toml")
     with open(fpath, mode="r") as file:
         f = file.read()
@@ -343,7 +344,6 @@ class DialogueStateManager:
             self.end_dialogue()
         else:
             self.update_dialogue_state()
-        assert self._answer is not None, "No answer generated :("
         return self._answer
 
     def _get_answer_postorder(self, curr_resource: Resource) -> Optional[str]:
