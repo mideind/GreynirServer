@@ -21,14 +21,14 @@
     This query module handles dialogue related to theater tickets.
 """
 
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 import logging
 import random
 
 from query import Query, QueryStateDict
 from tree import Result, Node
-from queries import gen_answer, query_json_api
-from queries.dialogue import DialogueStateManager, ListResource, ResourceState
+from queries import gen_answer, parse_num, query_json_api
+from queries.dialogue import DialogueStateManager, ListResource, Resource, ResourceState
 
 _THEATER_DIALOGUE_NAME = "theater"
 _THEATER_QTYPE = "theater"
@@ -72,12 +72,66 @@ QTheaterHotWord →
     | QTheaterEgVil? "fara" "í" "leikhús"
     | QTheaterEgVil? "fara" "á" "leikhússýningu"
 
-QTheaterDialogue → "sýningar"
+QTheaterDialogue → 
+    QTheaterShowQuery
+    | QTheaterShowDateQuery
+    | QTheaterShowSeatsQuery
+    | QTheaterShowLocationQuery
+    | QTheaterShowOptions
+    | QYes
+    | QNo
+    | QCancel
     # TODO: Hvað er í boði, ég vil sýningu X, dagsetningu X, X mörg sæti, staðsetningu X
+
+QTheaterShowQuery → QTheaterEgVil? "velja" 'sýning' QTheaterShowName > QTheaterShowName
+
+QTheaterShowName → Nl
+
+QTheaterShowDateQuery →
+    "ég"? "vil"? "fara"? "á" 'sýning'? QTheaterShowDate
+
+QTheaterShowDate →
+    QTheaterDateTime | QTheaterDate
+
+QTheaterDateTime →
+    tímapunkturafs
+
+QTheaterDate →
+    dagsafs
+    | dagsföst
+
+QTheaterShowSeatsQuery →
+    "ég"? "vil"? "fá"? QNum "sæti"?
+
+QTheaterShowLocationQuery →
+    "ég"? "vil"? "sæti"? QNum til? QNum "í" "röð" QNum
+    | "bekkur" QNum "sæti" QNum "til"? QNum
+
+QTheaterShowOptions → "sýningar" 
+    | "hvaða" "sýningar" "eru" "í" "boði"
+    | "hvað" "er" "í" "boði"
+    | "hverjir"? "eru"? "valmöguleikarnir"
+    | "hvert" "er" "úrvalið"
+
 
 QTheaterEgVil →
     "ég"? "vil"
+    | "ég" "vill"
     | "mig" "langar" "að"
+
+QNum →
+    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
+    # töl is an undeclinable number word ('sautján')
+    # tala is a number ('17')
+    to | töl | tala
+
+QYes → "já" "já"* | "endilega" | "já" "takk" | "játakk" | "já" "þakka" "þér" "fyrir" | "já" "takk" "kærlega" "fyrir"? | "jább" "takk"?
+
+QNo → "nei" "takk"? | "nei" "nei"* | "neitakk" | "ómögulega"
+
+QCancel → "ég" "hætti" "við"
+    | "ég" "vil" "hætta" "við" "pöntunina"
+    | "ég" "vill" "hætta" "við" "pöntunina"
 
 """
 
@@ -147,6 +201,29 @@ def QTheaterDialogue(node: Node, params: QueryStateDict, result: Result) -> None
 
 def QTheaterHotWord(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _START_DIALOGUE_QTYPE
+
+def QTheaterShowName(node: Node, params: QueryStateDict, result: Result) -> None:
+    show_name = " ".join(result._nominative.split()[1:]) if result._nominative.startswith("sýning") else result._nominative
+    print("NL: ", show_name)
+
+def QNum(node: Node, params: QueryStateDict, result: Result):
+    fruitnumber = int(parse_num(node, result._nominative))
+    if fruitnumber is not None:
+        result.fruitnumber = fruitnumber
+    else:
+        result.fruitnumber = 1
+
+def QCancel(node: Node, params: QueryStateDict, result: Result):
+    def _cancel_order(
+        resource: Resource, dsm: DialogueStateManager, result: Result
+    ) -> None:
+        resource.state = ResourceState.CANCELLED
+
+    result.qtype = "QCancel"
+    if "callbacks" not in result:
+        result["callbacks"] = []
+    filter_func: Callable[[Resource], bool] = lambda r: r.name == "Final"
+    result.callbacks.append((filter_func, _cancel_order))
 
 
 SHOW_URL = "https://leikhusid.is/wp-json/shows/v1/categories/938"

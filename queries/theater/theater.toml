@@ -19,7 +19,7 @@ prompts.confirm = "Þú valdir dagsetninguna {date}, viltu halda áfram og velja
 name = "ShowSeats"
 type = "NumberResource"
 requires = ["ShowDate"]
-prompts.initial = "Hversu mörg sæti viltu bóka á sýninguna {show} þann {date}?"
+prompts.initial = "Hversu mörg sæti viltu bóka?"
 prompts.confirm = "Þú valdir {seats} sæti, viltu halda áfram og velja staðsetningu sætanna?"
 
 [[resources]]
