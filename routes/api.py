@@ -636,21 +636,21 @@ def register_query_data_api(version: int = 1) -> Response:
     """
     Stores or updates query data for the given client ID
 
-    Hinrik's comment:
-    Data format example from js code
-    {
-        'device_id': device_id,
-        'key': 'smartlights',
-        'data': {
-            'smartlights': {
-                'selected_light': 'philips_hue',
-                'philips_hue': {
-                    'username': username,
-                    'ipAddress': internalipaddress
-                }
-            }
-        }
-    }
+    Jóhann's comment:
+    Data format example for IoT device from js code:
+
+    'client_id': clientID,
+    'key': "iot_lights",
+    'data': {
+        'philips_hue': {
+            'credentials': {
+                'username': username,
+                'ip_address': ip address,
+            },
+            'data': {
+                'groups': [{group1}, {group2}]
+        },
+    };
 
     """
 
