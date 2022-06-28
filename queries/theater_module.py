@@ -139,10 +139,17 @@ QCancel → "ég" "hætti" "við"
 def _generate_show_answer(
     resource: ListResource, dsm: DialogueStateManager
 ) -> Optional[str]:
-    # if resource.is_unfulfilled:
-    #     return resource.prompts["initial"]
-    return resource.prompts["options"].format(options=", ".join(dsm.get_result().shows))
+    result = dsm.get_result()
+    if result.get("showOptions"):
+        return resource.prompts["options"].format(
+            options=", ".join(dsm.get_result().shows)
+        )
+    if resource.is_unfulfilled:
+        return resource.prompts["initial"]
+    if resource.is_fulfilled:
+        return resource.prompts["confirm"].format(show=resource.data[0])
     return None
+
 
 def _generate_date_answer(
     resource: ListResource, dsm: DialogueStateManager
@@ -153,7 +160,8 @@ def _generate_date_answer(
     if resource.is_unfulfilled:
         return resource.prompts["initial"]
     if resource.is_fulfilled:
-        return resource.prompts["confirm"].format(date = result.get("date"))
+        return resource.prompts["confirm"].format(date=result.get("date"))
+
 
 def _generate_seat_answer(
     resource: ListResource, dsm: DialogueStateManager
@@ -162,7 +170,8 @@ def _generate_seat_answer(
     if resource.is_unfulfilled:
         return resource.prompts["initial"]
     if resource.is_fulfilled:
-        return resource.prompts["confirm"].format(seats = result.get("seats"))
+        return resource.prompts["confirm"].format(seats=result.get("seats"))
+
 
 def _generate_location_answer(
     resource: ListResource, dsm: DialogueStateManager
@@ -173,7 +182,8 @@ def _generate_location_answer(
     if resource.is_unfulfilled:
         return resource.prompts["initial"]
     if resource.is_fulfilled:
-        return resource.prompts["confirm"].format(location = result.get("location"))
+        return resource.prompts["confirm"].format(location=result.get("location"))
+
 
 def _generate_final_answer(
     resource: ListResource, dsm: DialogueStateManager
@@ -187,10 +197,10 @@ def _generate_final_answer(
     date_resource = dsm.get_resource("ShowDate")
     show_resource = dsm.get_resource("Show")
     ans = resource.prompts["final"].format(
-        seats = seat_resource.data,
-        location = location_resource.data[0],
-        show = show_resource.data[0],
-        date = date_resource.data[0],
+        seats=seat_resource.data,
+        location=location_resource.data[0],
+        show=show_resource.data[0],
+        date=date_resource.data[0],
     )
     return ans
 
@@ -202,9 +212,46 @@ def QTheaterDialogue(node: Node, params: QueryStateDict, result: Result) -> None
 def QTheaterHotWord(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _START_DIALOGUE_QTYPE
 
+
+def QTheaterShowQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+    def _add_show(
+        resource: Resource, dsm: DialogueStateManager, result: Result
+    ) -> None:
+        resource.data = [dsm.get_result().show_name]
+        resource.state = ResourceState.FULFILLED
+        print("Show resource data: ", resource.data)
+
+    if "callbacks" not in result:
+        result["callbacks"] = []
+    filter_func: Callable[[Resource], bool] = lambda r: r.name == "Show"
+    result.callbacks.append((filter_func, _add_show))
+
+
+def QTheaterShowDateQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+    pass
+
+
+def QTheaterShowSeatsQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+    pass
+
+
+def QTheaterShowLocationQuery(
+    node: Node, params: QueryStateDict, result: Result
+) -> None:
+    pass
+
+
+def QTheaterShowOptions(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.showOptions = True
+
+
 def QTheaterShowName(node: Node, params: QueryStateDict, result: Result) -> None:
-    show_name = " ".join(result._nominative.split()[1:]) if result._nominative.startswith("sýning") else result._nominative
-    print("NL: ", show_name)
+    result.show_name = (
+        " ".join(result._text.split()[1:])
+        if result._text.startswith("sýning")
+        else result._text
+    )
+
 
 def QNum(node: Node, params: QueryStateDict, result: Result):
     fruitnumber = int(parse_num(node, result._nominative))
@@ -212,6 +259,7 @@ def QNum(node: Node, params: QueryStateDict, result: Result):
         result.fruitnumber = fruitnumber
     else:
         result.fruitnumber = 1
+
 
 def QCancel(node: Node, params: QueryStateDict, result: Result):
     def _cancel_order(
