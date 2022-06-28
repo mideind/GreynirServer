@@ -1,0 +1,39 @@
+dialogue_name = "theater"
+
+[[resources]]
+name = "Show"
+type = "ListResource"
+prompts.initial = "Hvaða sýningu má bjóða þér að fara á?"
+prompts.options = "Sýningarnar sem eru í boði eru: {options}"
+prompts.confirm = "Þú valdir sýninguna {show}, viltu halda áfram með pöntunina?"
+
+[[resources]]
+name = "ShowDate"
+type = "ListResource"
+requires = "Show"
+prompts.initial = "Hvenær viltu fara á sýninguna {show}?"
+prompts.options = "Sýningardagsetningar eru: {options}"
+prompts.confirm = "Þú valdir dagsetninguna {date}, viltu halda áfram og velja fjölda sæta?"
+
+[[resources]]
+name = "ShowSeats"
+type = "NumberResource"
+requires = "ShowDate"
+prompts.initial = "Hversu mörg sæti viltu bóka á sýninguna {show} þann {date}?"
+prompts.confirm = "Þú valdir {seats} sæti, viltu halda áfram og velja staðsetningu sætanna?"
+
+[[resources]]
+name = "SeatLocation"
+type = "ListResource"
+requires = "ShowSeats"
+prompts.initial = "{seats} sæti eru í boði á svæðum {seat_location}. Á hvaða svæði viltu fá sæti?"
+prompts.options = "Svæðin með {seats} laus sæti eru: {seat_location}."
+prompts.confirm = "Þú valdir svæðið {seat_location}, viltu halda áfram?"
+
+[[resources]]
+name = "Final"
+type = "FinalResource"
+requires = "SeatLocation"
+prompts.final = "Þú valdir {seats} sæti á svæðinum {seat_location} fyrir sýninguna {show} þann {date}."
+
+# TODO: Add a resource for the payment method
