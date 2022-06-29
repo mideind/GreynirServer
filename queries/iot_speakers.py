@@ -465,39 +465,36 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     # TODO: Need to add check for if there are no registered devices to an account, probably when initilazing the querydata
     if device_data is not None:
-        timestamp = device_data["sonos"]["credentials"]["timestamp"]
-        timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
-        if (datetime.now() - timestamp) > timedelta(hours=24):
-            update_sonos_token(q, device_data)
-        print("if clause")
-        try:
-            access_token = device_data["sonos"]["credentials"]["access_token"]
-            refresh_token = device_data["sonos"]["credentials"]["refresh_token"]
-            household_id = device_data["sonos"]["data"]["households"][0]["id"]
-            group_id = device_data["sonos"]["data"]["groups"][0]["Family Room"]
-            player_id = device_data["sonos"]["data"]["players"][0]["Family Room"]
-        except KeyError:
-            print("No device data found for this account")
+        # timestamp = device_data["sonos"]["credentials"]["timestamp"]
+        # timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
+        # if (datetime.now() - timestamp) > timedelta(hours=24):
+        #     update_sonos_token(q, device_data)
+        # print("if clause")
+        # try:
+        #     access_token = device_data["sonos"]["credentials"]["access_token"]
+        #     refresh_token = device_data["sonos"]["credentials"]["refresh_token"]
+        #     household_id = device_data["sonos"]["data"]["households"][0]["id"]
+        #     group_id = device_data["sonos"]["data"]["groups"][0]["Family Room"]
+        #     player_id = device_data["sonos"]["data"]["players"][0]["Family Room"]
+        # except KeyError:
+        #     print("No device data found for this account")
 
-    # Successfully fetched data from the device_data table
-    print("access_token: " + access_token)
-    print("refresh_token: " + refresh_token)
-    print("household_id: " + household_id)
-    print("group_id: " + group_id)
-    print("player_id: " + player_id)
+        # Successfully fetched data from the device_data table
+        # print("access_token: " + access_token)
+        # print("refresh_token: " + refresh_token)
+        # print("household_id: " + household_id)
+        # print("group_id: " + group_id)
+        # print("player_id: " + player_id)
 
-    # Create a SonosClient object
-    sonos_client = SonosClient(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        household_id=household_id,
-        group_id=group_id,
-        player_id=player_id,
-    )
+        # Create a SonosClient object
+        sonos_client = SonosClient(device_data, q)
+    else:
+        print("No device data found for this account")
+        return
 
     # Perform the action on the Sonos device
     if result.action == "play_music":
-        sonos_client.toggle_play_spause()
+        sonos_client.toggle_play_pause()
         answer = "Ég kveikti á tónlist."
     # elif result.action == "increase_volume":
     #     sonos_client.increase_volume()
