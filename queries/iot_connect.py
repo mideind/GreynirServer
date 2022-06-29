@@ -25,6 +25,7 @@
 _BREAK_LENGTH = 5  # Seconds
 _BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
 
+from sqlite3 import Timestamp
 from typing import Dict, Mapping, Optional, cast
 from typing_extensions import TypedDict
 
@@ -33,6 +34,7 @@ import random
 import json
 import flask
 import requests
+from datetime import datetime
 import time
 
 from query import Query, QueryStateDict, AnswerTuple
@@ -193,8 +195,11 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             response_json.get("access_token"),
             response_json.get("refresh_token"),
         )
+        timestamp = str(datetime.now())
         data_dict = create_sonos_data_dict(access_token, q)
-        cred_dict = create_sonos_cred_dict(access_token, refresh_token, q)
+        cred_dict = create_sonos_cred_dict(access_token, refresh_token, timestamp, q)
+        print("data dict for update", data_dict)
+        print("cred dict for update", data_dict)
         store_sonos_data_and_credentials(data_dict, cred_dict, q)
         answer = "Ég bjó til tóka frá Sónos"
         voice_answer = answer
@@ -231,12 +236,13 @@ def create_sonos_data_dict(access_token, q):
     return data_dict
 
 
-def create_sonos_cred_dict(access_token, refresh_token, q):
+def create_sonos_cred_dict(access_token, refresh_token, timestamp, q):
     cred_dict = {}
     cred_dict.update(
         {
             "access_token": access_token,
             "refresh_token": refresh_token,
+            "timestamp": timestamp,
         }
     )
     return cred_dict
@@ -245,6 +251,7 @@ def create_sonos_cred_dict(access_token, refresh_token, q):
 def store_sonos_data_and_credentials(data_dict, cred_dict, q):
     sonos_dict = {}
     sonos_dict["sonos"] = {"credentials": cred_dict, "data": data_dict}
+    print("final dict for db :", sonos_dict)
     q.set_client_data("iot_speakers", sonos_dict, update_in_place=True)
 
 
