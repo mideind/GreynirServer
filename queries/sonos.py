@@ -23,6 +23,8 @@
 """
 
 import requests
+from datetime import datetime, timedelta
+from util import read_api_key
 
 # TODO: Refresh token functionality
 class SonosClient:
@@ -149,3 +151,20 @@ def audio_clip(audioclip_url, player_id, token):
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
+
+
+def update_sonos_token(q, device_data):
+    print("update sonos token")
+    sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
+    refresh_token_str = device_data["sonos"]["credentials"]["refresh_token"]
+    access_token = refresh_token(sonos_encoded_credentials, refresh_token_str).json()
+    access_token = access_token["access_token"]
+    sonos_dict = {
+        "sonos": {
+            "credentials": {
+                "access_token": access_token,
+                "timestamp": str(datetime.now()),
+            }
+        }
+    }
+    q.set_client_data("iot_speakers", sonos_dict, update_in_place=True)

@@ -636,21 +636,21 @@ def register_query_data_api(version: int = 1) -> Response:
     """
     Stores or updates query data for the given client ID
 
-    Hinrik's comment:
-    Data format example from js code
-    {
-        'device_id': device_id,
-        'key': 'smartlights',
-        'data': {
-            'smartlights': {
-                'selected_light': 'philips_hue',
-                'philips_hue': {
-                    'username': username,
-                    'ipAddress': internalipaddress
-                }
-            }
-        }
-    }
+    Jóhann's comment:
+    Data format example for IoT device from js code:
+
+    'client_id': clientID,
+    'key': "iot_lights",
+    'data': {
+        'philips_hue': {
+            'credentials': {
+                'username': username,
+                'ip_address': ip address,
+            },
+            'data': {
+                'groups': [{group1}, {group2}]
+        },
+    };
 
     """
 
@@ -725,8 +725,11 @@ def sonos_code(version: int = 1) -> Response:
     args = request.args
     client_id = args.get("state")
     code = args.get("code")
+    code = {"sonos": {"credentials": {"code": code}}}
     if client_id and code:
-        success = QueryObject.store_query_data(client_id, "sonos_code", code)
+        success = QueryObject.store_query_data(
+            client_id, "iot_speakers", code, update_in_place=True
+        )
         if success:
             return better_jsonify(valid=True, msg="Registered sonos code")
 

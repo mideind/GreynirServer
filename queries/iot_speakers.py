@@ -33,6 +33,7 @@
 # TODO: No specified location
 # TODO: Fix scene issues
 
+from os import access
 from typing import Dict, Mapping, Optional, cast
 from typing_extensions import TypedDict
 
@@ -40,10 +41,12 @@ import logging
 import random
 import json
 import flask
+from datetime import datetime, timedelta
 
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_jsfile, read_grammar_file
-from queries.sonos import SonosClient
+from queries.sonos import SonosClient, update_sonos_token
+from util import read_api_key
 from tree import Result, Node
 
 
@@ -466,6 +469,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     # TODO: Need to add check for if there are no registered devices to an account, probably when initilazing the querydata
     if device_data is not None:
+        timestamp = device_data["sonos"]["credentials"]["timestamp"]
+        timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
+        if (datetime.now() - timestamp) > timedelta(hours=24):
+            update_sonos_token(q, device_data)
         print("if clause")
         try:
             access_token = device_data["sonos"]["credentials"]["access_token"]
