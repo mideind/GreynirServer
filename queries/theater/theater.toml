@@ -38,9 +38,9 @@ prompts.confirm = "Þú valdir {seats} sæti, viltu halda áfram og velja staðs
 name = "SeatLocation"
 type = "ListResource"
 requires = ["ShowSeats"]
-prompts.initial = "{seats} sæti eru í boði á svæðum {seat_location}. Á hvaða svæði viltu fá sæti?"
-prompts.options = "Svæðin með {seats} laus sæti eru: {seat_location}."
-prompts.confirm = "Þú valdir svæðið {seat_location}, viltu halda áfram?"
+prompts.initial = "{seats} sæti eru í boði í röðum {seat_rows}. Á hvaða svæði viltu fá sæti?"
+prompts.options = "Raðirnar með {seats} laus sæti eru: {seat_rows}."
+prompts.confirm = "Þú valdir sæti {seats} í röð {row}, viltu halda áfram?"
 
 [[resources]]
 name = "Final"

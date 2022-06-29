@@ -27,9 +27,11 @@ import logging
 import random
 import datetime
 
+
 from query import Query, QueryStateDict
 from tree import Result, Node, TerminalNode
 from queries import gen_answer, parse_num, query_json_api
+from queries.num import number_to_neutral
 from queries.dialogue import (
     DateResource,
     DialogueStateManager,
@@ -118,8 +120,18 @@ QTheaterShowSeatsQuery →
     QTheaterEgVil "fá"? QNum "sæti"?
 
 QTheaterShowLocationQuery →
-    "ég"? "vil"? "sæti"? QNum til? QNum "í" "röð" QNum
-    | "bekkur" QNum "sæti" QNum "til"? QNum
+    QLocationRowFirst
+    | QLocationSeatsFirst
+
+QLocationRowFirst →
+    "bekkur" QNum "sæti" QNum "til"? QNum
+    | "röð" QNum "sæti" QNum "til"? QNum
+    
+QLocationSeatsFirst →
+    "ég"? "vil"? "sæti"? QNum "til"? QNum "í" "röð" QNum
+    | "ég"? "vil"? "sæti"? QNum "til"? QNum "í" QNum "röð"
+    | "ég"? "vil"? "sæti"? QNum "til"? QNum "á" "bekk" QNum
+    | "ég"? "vil"? "sæti"? QNum "til"? QNum "á" QNum "bekk"
 
 QTheaterShowOptions → "sýningar" 
     | "hvaða" "sýningar" "eru" "í" "boði"
@@ -127,6 +139,7 @@ QTheaterShowOptions → "sýningar"
     | "hverjir"? "eru"? "valmöguleikarnir"
     | "hvert" "er" "úrvalið"
 
+QTheaterRodBekk → "röð" | "bekk"
 
 QTheaterEgVil →
     "ég"? "vil"
@@ -265,12 +278,24 @@ def _generate_location_answer(
     resource: ListResource, dsm: DialogueStateManager
 ) -> Optional[str]:
     result = dsm.get_result()
+    seat_resource = dsm.get_resource("ShowSeats")
     if result.get("locationOptions"):
         return resource.prompts["options"]
     if resource.is_unfulfilled:
-        return resource.prompts["initial"]
+        return resource.prompts["initial"].format(
+            seats=seat_resource.data[0], seat_rows=10
+        )
     if resource.is_fulfilled:
-        return resource.prompts["confirm"].format(location=result.get("location"))
+        location_resource = dsm.get_resource("SeatLocation")
+        number_to_neutral()
+        seat_string = "{first_seat} til {last_seat}".format(
+            first_seat=number_to_neutral(location_resource.data[0][1]),
+            last_seat=number_to_neutral(location_resource.data[-1][1]),
+        )
+        return resource.prompts["confirm"].format(
+            seats=seat_string, row=location_resource.data[0][0]
+        )
+        return resource.prompts["confirm"].format(seats=result.get("location"))
 
 
 def _generate_final_answer(
@@ -281,7 +306,7 @@ def _generate_final_answer(
 
     resource.state = ResourceState.CONFIRMED
     seat_resource = dsm.get_resource("ShowSeats")
-    location_resource = dsm.get_resource("ShowLocation")
+    location_resource = dsm.get_resource("SeatLocation")
     date_resource = dsm.get_resource("ShowDate")
     show_resource = dsm.get_resource("Show")
     ans = resource.prompts["final"].format(
@@ -500,7 +525,28 @@ def QTheaterShowSeatsQuery(node: Node, params: QueryStateDict, result: Result) -
 def QTheaterShowLocationQuery(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
-    pass
+    print("In QTheaterShowLocationQuery")
+
+    def _add_location(
+        resource: ListResource, dsm: DialogueStateManager, result: Result
+    ) -> None:
+        print("ADD LOCATION CALLBACK")
+        for seat in range(result.numbers[1], result.numbers[2] + 1):
+            print("Adding seat to list: ", seat)
+            resource.data.append((result.numbers[0], seat))
+        print("Location data: ", resource.data)
+        resource.state = ResourceState.FULFILLED
+
+    if "callbacks" not in result:
+        result["callbacks"] = []
+    filter_func: Callable[[Resource], bool] = lambda r: r.name == "SeatLocation"
+    result.callbacks.append((filter_func, _add_location))
+
+
+def QLocationSeatsFirst(node: Node, params: QueryStateDict, result: Result) -> None:
+    # Making sure that the row comes before the seats in the list
+    result.numbers.insert(0, result.numbers.pop())
+    print("Result numbers: ", result.numbers)
 
 
 def QTheaterShowOptions(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -516,11 +562,11 @@ def QTheaterShowName(node: Node, params: QueryStateDict, result: Result) -> None
 
 
 def QNum(node: Node, params: QueryStateDict, result: Result):
-    number = int(parse_num(node, result._nominative))
-    if number is not None:
-        result.number = number
-    else:
-        result.number = 1
+    number: int = int(parse_num(node, result._nominative))
+    if "numbers" not in result:
+        result["numbers"] = []
+    result.numbers.append(number)
+    result.number = number
 
 
 def QCancel(node: Node, params: QueryStateDict, result: Result):
