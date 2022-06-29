@@ -92,7 +92,9 @@ QTheaterDialogue →
     | QCancel
     # TODO: Hvað er í boði, ég vil sýningu X, dagsetningu X, X mörg sæti, staðsetningu X
 
-QTheaterShowQuery → QTheaterEgVil? "velja" 'sýning' QTheaterShowName > QTheaterShowName
+QTheaterShowQuery → QTheaterEgVil? "velja" 'sýning' QTheaterShowName 
+    > QTheaterEgVil? "fara" "á" 'sýning' QTheaterShowName
+    > QTheaterShowName
 
 QTheaterShowName → Nl
 
@@ -113,7 +115,7 @@ QTheaterTime →
     "klukkan"? tími
 
 QTheaterShowSeatsQuery →
-    "ég"? "vil"? "fá"? QNum "sæti"?
+    QTheaterEgVil "fá"? QNum "sæti"?
 
 QTheaterShowLocationQuery →
     "ég"? "vil"? "sæti"? QNum til? QNum "í" "röð" QNum
@@ -178,9 +180,10 @@ def _generate_show_answer(
 ) -> Optional[str]:
     result = dsm.get_result()
     if result.get("showOptions"):
-        return resource.prompts["options"].format(
-            options=", ".join(dsm.get_result().shows)
-        )
+        shows: list[str] = []
+        for show in _SHOWS:
+            shows.append(show["title"])
+        return resource.prompts["options"].format(options=", ".join(shows))
     if result.get("no_show_matched"):
         return resource.prompts["no_show_matched"]
     if result.get("no_show_matched_data_exists"):
@@ -238,7 +241,14 @@ def _generate_date_answer(
             dates=start_string + "".join(dates),
         )
     if resource.is_fulfilled:
-        return resource.prompts["confirm"].format(date=result.get("date"))
+        date_resource = dsm.get_resource("ShowDate")
+        time_resource = dsm.get_resource("ShowTime")
+        return resource.prompts["confirm"].format(
+            date=datetime.datetime.combine(
+                date_resource.data,
+                time_resource.data,
+            ).strftime("%Y/%m/%d %H:%M")
+        )
 
 
 def _generate_seat_answer(
@@ -248,7 +258,7 @@ def _generate_seat_answer(
     if resource.is_unfulfilled:
         return resource.prompts["initial"]
     if resource.is_fulfilled:
-        return resource.prompts["confirm"].format(seats=result.get("seats"))
+        return resource.prompts["confirm"].format(seats=resource.data[0])
 
 
 def _generate_location_answer(
@@ -475,28 +485,16 @@ def QTheaterTime(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QTheaterShowSeatsQuery(node: Node, params: QueryStateDict, result: Result) -> None:
-    datenode = node.first_child(lambda n: True)
-    assert isinstance(datenode, TerminalNode)
-    cdate = datenode.contained_date
-    if cdate:
-        y, m, d = cdate
-        now = datetime.datetime.utcnow()
+    def _add_seats(
+        resource: Resource, dsm: DialogueStateManager, result: Result
+    ) -> None:
+        resource.data = [result.number]
+        resource.state = ResourceState.FULFILLED
 
-        # This is a date that contains at least month & mday
-        if d and m:
-            if not y:
-                y = now.year
-                # Bump year if month/day in the past
-                if m < now.month or (m == now.month and d < now.day):
-                    y += 1
-            result["delivery_date"] = datetime.date(day=d, month=m, year=y)
-
-            if "callbacks" not in result:
-                result["callbacks"] = []
-            filter_func: Callable[[Resource], bool] = lambda r: r.name == "Date"
-            result.callbacks.append((filter_func, _date_callback))
-            return
-    raise ValueError("No date in {0}".format(str(datenode)))
+    if "callbacks" not in result:
+        result["callbacks"] = []
+    filter_func: Callable[[Resource], bool] = lambda r: r.name == "ShowSeats"
+    result.callbacks.append((filter_func, _add_seats))
 
 
 def QTheaterShowLocationQuery(
@@ -552,10 +550,9 @@ def QYes(node: Node, params: QueryStateDict, result: Result):
     if "callbacks" not in result:
         result["callbacks"] = []
     filter_func: Callable[[Resource], bool] = (
-        lambda r: r.name in ("Show", "ShowDateTime") and not r.is_confirmed
+        lambda r: r.name in ("Show", "ShowDateTime", "ShowSeats") and not r.is_confirmed
     )
     result.callbacks.append((filter_func, _parse_yes))
-    result.qtype = "QYes"
 
 
 SHOW_URL = "https://leikhusid.is/wp-json/shows/v1/categories/938"
