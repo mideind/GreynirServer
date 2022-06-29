@@ -238,9 +238,18 @@ def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
     ) -> None:
         if resource.data is None:
             resource.data = []
-        for number, name in result.queryfruits:
-            # TODO: check whether we have duplicate fruits
-            resource.data.append((number, name))
+        query_fruit_index = 0
+        while query_fruit_index < len(result.queryfruits):
+            (number, name) = result.queryfruits[query_fruit_index]
+            added = False
+            for index, (fruit_number, fruit_name) in enumerate(resource.data):
+                if fruit_name == name:
+                    resource.data[index] = (number + fruit_number, name)
+                    added = True
+                    break
+            if not added:
+                resource.data.append((number, name))
+            query_fruit_index += 1
         resource.state = ResourceState.PARTIALLY_FULFILLED
 
     if "callbacks" not in result:
