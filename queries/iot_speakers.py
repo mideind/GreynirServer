@@ -144,7 +144,7 @@ QIoTSpeakerMakeRest ->
     # | QCHANGEHvar? QCHANGEHvernigMake QCHANGESubject/þf
     # | QCHANGEHvernigMake QCHANGESubject/þf QCHANGEHvar?
     # | QCHANGEHvernigMake QCHANGEHvar? QCHANGESubject/þf
-    QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
+    QIoTSpeakerMusicWord QIoTSpeakerHvar?
 
 # TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
 QIoTSpeakerSetRest ->
@@ -154,7 +154,7 @@ QIoTSpeakerSetRest ->
     # | QCHANGEHvar? QCHANGEHvernigSet QCHANGESubject/þf
     # | QCHANGEHvernigSet QCHANGESubject/þf QCHANGEHvar?
     # | QCHANGEHvernigSet QCHANGEHvar? QCHANGESubject/þf
-    "á" QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
+    "á" QIoTSpeakerMusicWord QIoTSpeakerHvar?
 
 # QIoTSpeakerChangeRest ->
     # QCHANGESubjectOne/þgf QCHANGEHvar? QCHANGEHvernigChange
@@ -171,14 +171,14 @@ QIoTSpeakerLetRest ->
     # | QCHANGEHvar? QCHANGEHvernigLet QCHANGESubject/þf
     # | QCHANGEHvernigLet QCHANGESubject/þf QCHANGEHvar?
     # | QCHANGEHvernigLet QCHANGEHvar? QCHANGESubject/þf
-    "vera" QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
-    | "á" QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
+    'Vera' QIoTSpeakerMusicWord QIoTSpeakerHvar?
+    | "á" QIoTSpeakerMusicWord QIoTSpeakerHvar?
 
 QIoTSpeakerTurnOnRest ->
     # QCHANGETurnOnLightsRest
     # | QCHANGEAHverju QCHANGEHvar?
     # | QCHANGEHvar? QCHANGEAHverju
-    "á" QIoTSpeakerMusicWord/þgf QIoTSpeakerHvar?
+    "á" QIoTSpeakerMusicWord QIoTSpeakerHvar?
 
 # QCHANGETurnOnLightsRest ->
 #     QCHANGELightSubject/þf QCHANGEHvar?
@@ -187,29 +187,31 @@ QIoTSpeakerTurnOnRest ->
 # Would be good to add "slökktu á rauða litnum" functionality
 QIoTSpeakerTurnOffRest ->
     # QCHANGETurnOffLightsRest
-    "á" QIoTSpeakerMusicWord/þgf QIoTSpeakerHvar?
+    "á" QIoTSpeakerMusicWord QIoTSpeakerHvar?
 
 # QCHANGETurnOffLightsRest ->
 #     QCHANGELightSubject/þf QCHANGEHvar?
 #     | QCHANGEHvar QCHANGELightSubject/þf?
 
 QIoTSpeakerPlayRest ->
-    QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
+    QIoTSpeakerMusicWord QIoTSpeakerHvar?
     | "tónlist"
 
 # TODO: Make the subject categorization cleaner
 QIoTSpeakerIncreaseOrDecreaseRest ->
     # QCHANGELightSubject/þf QCHANGEHvar?
     # | QCHANGEBrightnessSubject/þf QCHANGEHvar?
-    QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
-    | "í" QIoTSpeakerMusicWord/þgf QIoTSpeakerHvar?
+    QIoTSpeakerMusicWord QIoTSpeakerHvar?
+    | "í" QIoTSpeakerMusicWord QIoTSpeakerHvar?
 
 # QCHANGESubject/fall ->
 #     QCHANGESubjectOne/fall
 #     | QCHANGESubjectTwo/fall
 
-QIoTSpeakerMusicWord/fall ->
-    'tónlist:no'/fall
+# There is a bug when trying to
+QIoTSpeakerMusicWord ->
+    "tónlist"
+    # | 'tónlist:no'
 
 # # TODO: Decide whether LightSubject/þgf should be accepted
 # QCHANGESubjectOne/fall ->
@@ -421,6 +423,8 @@ QIoTSpeakerGroupName/fall ->
 # QCHANGESettingWord/fall ->
 #     'stilling'/fall
 
+$score(+35) QIoTSpeakerMusicWord
+
 """
 
 
@@ -490,7 +494,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     # Perform the action on the Sonos device
     if result.action == "play_music":
-        sonos_client.toggle_play_spause()
+        sonos_client.toggle_play_pause()
         answer = "Ég kveikti á tónlist."
     # elif result.action == "increase_volume":
     #     sonos_client.increase_volume()

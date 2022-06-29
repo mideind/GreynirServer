@@ -189,9 +189,9 @@ QIoTLetRest ->
     QIoTSubject/þf QIoTHvar? QIoTHvernigLet
     | QIoTSubject/þf QIoTHvernigLet QIoTHvar?
     | QIoTHvar? QIoTSubject/þf QIoTHvernigLet
-    | QIoTHvar? QIoTHvernigLet QIoTSubject/þf
-    | QIoTHvernigLet QIoTSubject/þf QIoTHvar?
-    | QIoTHvernigLet QIoTHvar? QIoTSubject/þf
+    # | QIoTHvar? QIoTHvernigLet QIoTSubject/þf
+    # | QIoTHvernigLet QIoTSubject/þf QIoTHvar?
+    # | QIoTHvernigLet QIoTHvar? QIoTSubject/þf
 
 QIoTTurnOnRest ->
     QIoTTurnOnLightsRest
