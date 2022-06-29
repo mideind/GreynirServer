@@ -6,19 +6,31 @@ type = "ListResource"
 prompts.initial = "Hvaða sýningu má bjóða þér að fara á?"
 prompts.options = "Sýningarnar sem eru í boði eru: {options}"
 prompts.confirm = "Þú valdir sýninguna {show}, viltu halda áfram með pöntunina?"
+prompts.no_show_matched = "Því miður er þessi sýning ekki í boði. Vinsamlegast reyndu aftur."
+prompts.no_show_matched_data_exists = "Því miður er þessi sýning ekki í boði. Síðasta valda sýning var {show}, viltu halda áfram með hana?"
 
 [[resources]]
 name = "ShowDate"
+type = "DateResource"
+
+[[resources]]
+name = "ShowTime"
+type = "TimeResource"
+
+[[resources]]
+name = "ShowDateTime"
 type = "ListResource"
-requires = ["Show"]
-prompts.initial = "Hvenær viltu fara á sýninguna {show}?"
+requires = ["Show", "ShowDate", "ShowTime"]
+prompts.initial = "Hvenær viltu fara á sýninguna {show}?\n{dates}"
 prompts.options = "Sýningardagsetningar eru: {options}"
 prompts.confirm = "Þú valdir dagsetninguna {date}, viltu halda áfram og velja fjölda sæta?"
+prompts.many_matching_times = "Margar dagsetningar pössuðu við gefna tímasetningu, vinsamlegast reyndu aftur."
+prompts.multiple_times_for_date = "Fyrir dagsetninguna {date} eru nokkrar tímasetningar, hverja af þeim viltu bóka?\nValmöguleikarnir eru:\n{times}"
 
 [[resources]]
 name = "ShowSeats"
 type = "NumberResource"
-requires = ["ShowDate"]
+requires = ["ShowDateTime"]
 prompts.initial = "Hversu mörg sæti viltu bóka?"
 prompts.confirm = "Þú valdir {seats} sæti, viltu halda áfram og velja staðsetningu sætanna?"
 

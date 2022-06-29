@@ -18,7 +18,7 @@ from enum import IntEnum, auto
 from dataclasses import dataclass, field
 
 try:
-    import tomllib # type: ignore (module not available in Python <3.11)
+    import tomllib  # type: ignore (module not available in Python <3.11)
 except ModuleNotFoundError:
     import tomli as tomllib
 
