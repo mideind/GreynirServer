@@ -28,30 +28,144 @@ from util import read_api_key
 
 # TODO: Refresh token functionality
 class SonosClient:
-    def __init__(self, access_token, refresh_token, household_id, group_id, player_id):
-        self.access_token = access_token
-        self.refresh_token = refresh_token
-        if (v := household_id) is not None:
-            self.household_id = v
-        else:
-            self.household_id = get_households(self.access_token).json()["households"][
-                0
-            ]["id"]
-        if (v := group_id) is not None:
-            self.group_id = v
-        else:
-            self.group_id = get_groups(self.access_token, self.household_id).json()[
-                "groups"
-            ][0]["id"]
-        if (v := player_id) is not None:
-            self.player_id = v
-        else:
-            self.player_id = get_players(
-                self.access_token, self.household_id, self.group_id
-            ).json()["players"][0]["id"]
+    def __init__(self, device_data, q, query=None):
+        self._q = q
+        self._device_data = device_data
+        self._query = query
+
+        try:
+            self._access_token = self._device_data["sonos"]["credentials"][
+                "access_token"
+            ]
+            self._refresh_token = self._device_data["sonos"]["credentials"][
+                "refresh_token"
+            ]
+            self.check_token_expiration()
+            self._households = (
+                self._device_data["sonos"]["data"]["households"]
+                or self.get_households()
+            )
+            self._household_id = self.get_household_id()
+            self._groups = (
+                self._device_data["sonos"]["data"]["groups"][0]["Family Room"]
+                or self.get_groups()
+            )
+            self._players = (
+                self._device_data["sonos"]["data"]["players"][0]["Family Room"]
+                or self.get_players()
+            )
+            self._group_id = self.get_group_id()
+        except KeyError:
+            print("Missing device data found for this account")
+
+    def check_token_expiration(self):
+        timestamp = self._device_data["sonos"]["credentials"]["timestamp"]
+        timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
+        if (datetime.now() - timestamp) > timedelta(hours=24):
+            self.update_sonos_token()
+
+    def update_sonos_token(self):
+        print("update sonos token")
+        self._sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
+        self._access_token = self.refresh_token()
+        self._access_token = self._access_token["access_token"]
+        sonos_dict = {
+            "sonos": {
+                "credentials": {
+                    "access_token": self._access_token,
+                    "timestamp": str(datetime.now()),
+                }
+            }
+        }
+
+        self._q.set_client_data("iot_speakers", sonos_dict, update_in_place=True)
+
+    def refresh_token(self):
+        """
+        Refreshes token
+        """
+        url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=refresh_token&refresh_token={self._refresh_token}"
+
+        payload = {}
+        headers = {"Authorization": f"Basic {self._sonos_encoded_credentials}"}
+
+        response = requests.request("POST", url, headers=headers, data=payload)
+
+        return response.json()
 
     def toggle_play_pause(self):
-        toggle_play_pause(self.group_id, self.access_token)
+        """
+        Toggles the play/pause of a group
+        """
+        url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playback/togglePlayPause"
+
+        payload = {}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self._access_token}",
+        }
+
+        response = requests.request("POST", url, headers=headers, data=payload)
+
+        return response
+
+    def get_households(self):
+        """
+        Returns the list of households of the user
+        """
+        url = f"https://api.ws.sonos.com/control/api/v1/households"
+
+        payload = {}
+        headers = {"Authorization": f"Bearer {self._access_token}"}
+
+        response = requests.request("GET", url, headers=headers, data=payload)
+
+        return response.json()
+
+    def get_household_id(self):
+        """
+        Returns the household id for the given query
+        """
+        url = f"https://api.ws.sonos.com/control/api/v1/households"
+
+        payload = {}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self._access_token}",
+        }
+
+        response = requests.request("GET", url, headers=headers, data=payload)
+
+        return response.json()["households"][0]["id"]
+
+    def get_groups(self):
+        """
+        Returns the list of groups of the user
+        """
+        url = f"https://api.ws.sonos.com/control/api/v1/households/{self.household_id}/groups"
+
+        payload = {}
+        headers = {"Authorization": f"Bearer {self._access_token}"}
+
+        response = requests.request("GET", url, headers=headers, data=payload)
+
+        return response.json()
+
+    def get_group_id(self):
+        """
+        Returns the group id for the given query
+        """
+        url = f"https://api.ws.sonos.com/control/api/v1/households/{self._household_id}/groups"
+
+        payload = {}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self._access_token}",
+        }
+
+        response = requests.request("GET", url, headers=headers, data=payload)
+
+        return response.json()["groups"][0]["id"]
 
 
 # TODO: Check whether this should return the ids themselves instead of the json response
@@ -66,7 +180,7 @@ def get_households(token):
 
     response = requests.request("GET", url, headers=headers, data=payload)
 
-    return response
+    return response.json()
 
 
 def get_groups(household_id, token):
@@ -108,20 +222,6 @@ def refresh_token(sonos_encoded_credentials, refresh_token):
 
     payload = {}
     headers = {"Authorization": f"Basic {sonos_encoded_credentials}"}
-
-    response = requests.request("POST", url, headers=headers, data=payload)
-
-    return response
-
-
-def toggle_play_pause(group_id, token):
-    """
-    Toggles the play/pause of a group
-    """
-    url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/togglePlayPause"
-
-    payload = {}
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
 
     response = requests.request("POST", url, headers=headers, data=payload)
 
