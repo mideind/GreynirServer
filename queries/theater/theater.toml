@@ -3,6 +3,7 @@ dialogue_name = "theater"
 [[resources]]
 name = "Show"
 type = "ListResource"
+max_items = 1
 prompts.initial = "Hvaða sýningu má bjóða þér að fara á?"
 prompts.options = "Sýningarnar sem eru í boði eru: {options}"
 prompts.confirm = "Þú valdir sýninguna {show}, viltu halda áfram með pöntunina?"
@@ -46,7 +47,7 @@ prompts.confirm = "Þú valdir svæðið {seat_location}, viltu halda áfram?"
 name = "Final"
 type = "FinalResource"
 requires = ["SeatLocation"]
-prompts.final = "Þú valdir {seats} sæti á svæðinum {seat_location} fyrir sýninguna {show} þann {date}."
+prompts.final = "Þú valdir {seats} sæti á svæðinu {seat_location} á sýninguna {show} þann {date}."
 prompts.cancelled = "Móttekið, hætti við leikhús pöntunina."
 
 # TODO: Add a resource for the payment method

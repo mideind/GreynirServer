@@ -331,10 +331,8 @@ def QNo(node: Node, params: QueryStateDict, result: Result):
         if resource.name == "Fruits":
             if resource.is_partially_fulfilled:
                 resource.state = ResourceState.FULFILLED
-                resource.set_answer("confirm", list_items=_list_items(resource.data))
             elif resource.is_fulfilled:
                 resource.state = ResourceState.PARTIALLY_FULFILLED
-                resource.set_answer("repeat", list_items=_list_items(resource.data))
 
     if "callbacks" not in result:
         result["callbacks"] = []
@@ -433,13 +431,15 @@ def QFruitTime(node: Node, params: QueryStateDict, result: Result):
     if tnode:
         aux_str = tnode.aux.strip("[]")
         hour, minute, _ = (int(i) for i in aux_str.split(", "))
+        if hour in range(0, 24) and minute in range(0, 60):
+            result["delivery_time"] = datetime.time(hour, minute)
 
-        result["delivery_time"] = datetime.time(hour, minute)
-
-        if "callbacks" not in result:
-            result["callbacks"] = []
-        filter_func: Callable[[Resource], bool] = lambda r: r.name == "Time"
-        result.callbacks.append((filter_func, _time_callback))
+            if "callbacks" not in result:
+                result["callbacks"] = []
+            filter_func: Callable[[Resource], bool] = lambda r: r.name == "Time"
+            result.callbacks.append((filter_func, _time_callback))
+        else:
+            result["parse_error"] = True
 
 
 def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -447,24 +447,20 @@ def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
     datetimenode = node.first_child(lambda n: True)
     assert isinstance(datetimenode, TerminalNode)
     now = datetime.datetime.now()
+    if "callbacks" not in result:
+        result["callbacks"] = []
     y, m, d, h, min, _ = (i if i != 0 else None for i in json.loads(datetimenode.aux))
     if y is None:
         y = now.year
-    if m is None:
-        m = now.month
-    if d is None:
-        d = now.day
-    if h is None:
-        h = 12
-    if min is None:
-        min = 0
-    result["delivery_time"] = datetime.time(h, min)
-    result["delivery_date"] = datetime.date(y, m, d)
+    if d is not None and m is not None:
+        result["delivery_date"] = datetime.date(y, m, d)
+        if result["delivery_date"] < now.date():
+            result["delivery_date"].year += 1
+        result.callbacks.append((lambda r: r.name == "Date", _date_callback))
 
-    if "callbacks" not in result:
-        result["callbacks"] = []
-    result.callbacks.append((lambda r: r.name == "Date", _date_callback))
-    result.callbacks.append((lambda r: r.name == "Time", _time_callback))
+    if h is not None and min is not None:
+        result["delivery_time"] = datetime.time(h, min)
+        result.callbacks.append((lambda r: r.name == "Time", _time_callback))
 
 
 def QFruitInfoQuery(node: Node, params: QueryStateDict, result: Result):
@@ -486,7 +482,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     q: Query = state["query"]
     dsm = DialogueStateManager(_DIALOGUE_NAME, _START_DIALOGUE_QTYPE, q, result)
 
-    if dsm.not_in_dialogue():
+    if dsm.not_in_dialogue() or result.get("parse_error"):
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
