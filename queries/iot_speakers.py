@@ -43,11 +43,13 @@ import json
 import flask
 from datetime import datetime, timedelta
 
+from reynir.lemmatize import simple_lemmatize
+
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_jsfile, read_grammar_file
 from queries.sonos import SonosClient, update_sonos_token
+from tree import Result, Node, TerminalNode
 from util import read_api_key
-from tree import Result, Node
 
 
 _IoT_QTYPE = "IoT"
@@ -174,7 +176,7 @@ QIoTSpeakerLetRest ->
     # | QCHANGEHvar? QCHANGEHvernigLet QCHANGESubject/þf
     # | QCHANGEHvernigLet QCHANGESubject/þf QCHANGEHvar?
     # | QCHANGEHvernigLet QCHANGEHvar? QCHANGESubject/þf
-    'Vera' QIoTSpeakerMusicWord QIoTSpeakerHvar?
+    QIoTSpeakerBe QIoTSpeakerMusicWord QIoTSpeakerHvar?
     | "á" QIoTSpeakerMusicWord QIoTSpeakerHvar?
 
 QIoTSpeakerTurnOnRest ->
@@ -251,8 +253,8 @@ QIoTSpeakerHvar ->
 
 # I think these verbs only appear in these forms.
 # In which case these terminals should be deleted and a direct reference should be made in the relevant non-terminals.
-# QCHANGEBe ->
-#     "vera"
+QIoTSpeakerBe ->
+    'vera:so'_nh
 
 # QCHANGEBecome ->
 #     "verða"
@@ -426,8 +428,6 @@ QIoTSpeakerGroupName/fall ->
 # QCHANGESettingWord/fall ->
 #     'stilling'/fall
 
-$score(+35) QIoTSpeakerMusicWord
-
 """
 
 
@@ -451,6 +451,13 @@ def QIoTMusicWord(node: Node, params: QueryStateDict, result: Result) -> None:
 def sentence(state: QueryStateDict, result: Result) -> None:
     # try:
     print("sentence")
+    print(
+        "DESCENDANTS:",
+        list(
+            i[0].root(state, result.params)
+            for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))
+        ),
+    )
     """Called when sentence processing is complete"""
     q: Query = state["query"]
 
@@ -508,7 +515,9 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     #     sonos_client.set_volume(result.get["volume"])
 
     answer_list = gen_answer(answer)
-    answer_list[1].replace("Sonos", "Sónos")
+    answer_list[1].replace(
+        "Sonos", "Sónos"
+    )  # Accounting for Embla's Icelandic pronunciation
     q.set_answer(*answer_list)
 
     # f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'p3obluiXT13IbHMpp4X63ZvZnpNRdbqqMt723gy2';"

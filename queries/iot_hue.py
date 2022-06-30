@@ -33,13 +33,15 @@
 # TODO: No specified location
 # TODO: Fix scene issues
 
-from typing import Dict, Mapping, Optional, cast
+from typing import Dict, Mapping, Optional, cast, FrozenSet
 from typing_extensions import TypedDict
 
 import logging
 import random
 import json
 import flask
+
+from reynir.lemmatize import simple_lemmatize
 
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_jsfile, read_grammar_file
@@ -574,86 +576,98 @@ _COLOR_NAME_TO_CIE: Mapping[str, float] = {
     # "Rauð": 360 * 65535 / 360,
 }
 
+_SPEAKER_WORDS: FrozenSet[str] = frozenset(
+    (
+        "tónlist",
+        "hátalari",
+    )
+)
+
 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
-    changing_color = result.get("changing_color", False)
-    changing_scene = result.get("changing_scene", False)
-    changing_brightness = result.get("changing_brightness", False)
-    print("error?", sum((changing_color, changing_scene, changing_brightness)) > 1)
-    if (
-        sum((changing_color, changing_scene, changing_brightness)) > 1
-        or "qtype" not in result
-    ):
+    lemmas = set(i[0] for i in simple_lemmatize(q.query.lower().split()))
+    if not _SPEAKER_WORDS.isdisjoint(lemmas):
+        print("matched with music word list")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
-        return
+    else:
+        changing_color = result.get("changing_color", False)
+        changing_scene = result.get("changing_scene", False)
+        changing_brightness = result.get("changing_brightness", False)
+        print("error?", sum((changing_color, changing_scene, changing_brightness)) > 1)
+        if (
+            sum((changing_color, changing_scene, changing_brightness)) > 1
+            or "qtype" not in result
+        ):
+            q.set_error("E_QUERY_NOT_UNDERSTOOD")
+            return
 
-    q.set_qtype(result.qtype)
+        q.set_qtype(result.qtype)
 
-    smartdevice_type = "iot_lights"
-    client_id = str(q.client_id)
-    print("client_id:", client_id)
+        smartdevice_type = "iot_lights"
+        client_id = str(q.client_id)
+        print("client_id:", client_id)
 
-    # Fetch relevant data from the device_data table to perform an action on the lights
-    device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
-    print("location :", q.location)
-    print("device data :", device_data)
+        # Fetch relevant data from the device_data table to perform an action on the lights
+        device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
+        print("location :", q.location)
+        print("device data :", device_data)
 
-    selected_light: Optional[str] = None
-    print("selected light:", selected_light)
-    hue_credentials: Optional[Dict[str, str]] = None
+        selected_light: Optional[str] = None
+        print("selected light:", selected_light)
+        hue_credentials: Optional[Dict[str, str]] = None
 
-    if device_data is not None:
-        dev = device_data
-        assert dev is not None
-        light = dev.get("philips_hue")
-        hue_credentials = light.get("credentials")
-        bridge_ip = hue_credentials.get("ip_address")
-        username = hue_credentials.get("username")
+        if device_data is not None:
+            dev = device_data
+            assert dev is not None
+            light = dev.get("philips_hue")
+            hue_credentials = light.get("credentials")
+            bridge_ip = hue_credentials.get("ip_address")
+            username = hue_credentials.get("username")
 
-    if not device_data or not hue_credentials:
-        answer = "Það vantar að tengja Philips Hub-inn."
-        q.set_answer(*gen_answer(answer))
-        return
+        if not device_data or not hue_credentials:
+            answer = "Það vantar að tengja Philips Hub-inn."
+            q.set_answer(*gen_answer(answer))
+            return
 
-    # Successfully matched a query type
-    print("bridge_ip: ", bridge_ip)
-    print("username: ", username)
-    print("selected light :", selected_light)
-    print("hue credentials :", hue_credentials)
+        # Successfully matched a query type
+        print("bridge_ip: ", bridge_ip)
+        print("username: ", username)
+        print("selected light :", selected_light)
+        print("hue credentials :", hue_credentials)
 
-    try:
-        # kalla í javascripts stuff
-        light_or_group_name = result.get("light_name", result.get("group_name", ""))
-        color_name = result.get("color_name", "")
-        print("GROUP NAME:", light_or_group_name)
-        print("COLOR NAME:", color_name)
-        print(result.hue_obj)
-        q.set_answer(
-            *gen_answer(
-                "ég var að kveikja ljósin! "
-                # + group_name
-                # + " "
-                # + color_name
-                # + " "
-                # + result.action
-                # + " "
-                # + str(result.hue_obj.get("hue", "enginn litur"))
+        try:
+            # kalla í javascripts stuff
+            light_or_group_name = result.get("light_name", result.get("group_name", ""))
+            color_name = result.get("color_name", "")
+            print("GROUP NAME:", light_or_group_name)
+            print("COLOR NAME:", color_name)
+            print(result.hue_obj)
+            q.set_answer(
+                *gen_answer(
+                    "ég var að kveikja ljósin! "
+                    # + group_name
+                    # + " "
+                    # + color_name
+                    # + " "
+                    # + result.action
+                    # + " "
+                    # + str(result.hue_obj.get("hue", "enginn litur"))
+                )
             )
-        )
-        js = (
-            read_jsfile("IoT_Embla/fuse.js")
-            + f"var BRIDGE_IP = '{bridge_ip}';var USERNAME = '{username}';"
-            + read_jsfile("IoT_Embla/Philips_Hue/fuse_search.js")
-            + read_jsfile("IoT_Embla/Philips_Hue/lights.js")
-            + read_jsfile("IoT_Embla/Philips_Hue/set_lights.js")
-        )
-        js += f"setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
-        q.set_command(js)
-    except Exception as e:
-        logging.warning("Exception while processing random query: {0}".format(e))
-        q.set_error("E_EXCEPTION: {0}".format(e))
-        raise
+            js = (
+                read_jsfile("IoT_Embla/fuse.js")
+                + f"var BRIDGE_IP = '{bridge_ip}';var USERNAME = '{username}';"
+                + read_jsfile("IoT_Embla/Philips_Hue/fuse_search.js")
+                + read_jsfile("IoT_Embla/Philips_Hue/lights.js")
+                + read_jsfile("IoT_Embla/Philips_Hue/set_lights.js")
+            )
+            js += f"setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
+            q.set_command(js)
+        except Exception as e:
+            logging.warning("Exception while processing random query: {0}".format(e))
+            q.set_error("E_EXCEPTION: {0}".format(e))
+            raise
 
     # f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'p3obluiXT13IbHMpp4X63ZvZnpNRdbqqMt723gy2';"
