@@ -22,12 +22,14 @@ name = "ShowDateTime"
 type = "ListResource"
 requires = ["Show", "ShowDate", "ShowTime"]
 prompts.initial = "Hvenær viltu fara á sýninguna {show}?\n{dates}"
-prompts.options = "Sýningardagsetningar eru: {options}"
+prompts.options = "{options}"
 prompts.confirm = "Þú valdir dagsetninguna {date}, viltu halda áfram og velja fjölda sæta?"
 prompts.many_matching_times = "Margar dagsetningar pössuðu við gefna tímasetningu, vinsamlegast reyndu aftur."
 prompts.multiple_times_for_date = "Fyrir dagsetninguna {date} eru nokkrar tímasetningar, hverja af þeim viltu bóka?\nValmöguleikarnir eru:\n{times}"
 prompts.no_date_matched = "Engin sýning er í boði fyrir gefna dagsetningu, vinsamlegast reyndu aftur."
 prompts.no_time_matched = "Engin sýning er í boði fyrir gefna tímasetningu, vinsamlegast reyndu aftur."
+prompts.no_date_available = "{show} hefur engar dagsetningar í boði. Vinsamlegast veldu aðra sýningu."
+prompts.no_date_chosen = "Vinsamlegast veldu dagsetningu til að fá mögulegar tímasetningar."
 
 [[resources]]
 name = "ShowSeatCount"
@@ -41,9 +43,10 @@ name = "ShowSeatRow"
 type = "ListResource"
 requires = ["ShowSeatCount"]
 prompts.initial = "Að minnsta kosti {seats} sæti eru í boði í röðum {seat_rows}. Í hvaða röð viltu sitja?"
-prompts.options = "Raðirnar {rows} eru með {seats} laus sæti."
+prompts.options = "Raðir {rows} eru með {seats} laus sæti."
 prompts.confirm = "Þú valdir röð {row}, viltu halda áfram?"
 prompts.no_row_matched = "Því miður er þessi röð ekki með {seats} laus sæti. Vinsamlegast reyndu aftur."
+prompts.not_enough_seats = "Því miður er engin röð með {seats} sæti, vinsamlegast veldu færri sæti eða prófaðu aðra dagsetningu."
 
 [[resources]]
 name = "ShowSeatNumber"
