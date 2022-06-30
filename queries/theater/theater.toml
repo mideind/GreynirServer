@@ -26,27 +26,40 @@ prompts.options = "Sýningardagsetningar eru: {options}"
 prompts.confirm = "Þú valdir dagsetninguna {date}, viltu halda áfram og velja fjölda sæta?"
 prompts.many_matching_times = "Margar dagsetningar pössuðu við gefna tímasetningu, vinsamlegast reyndu aftur."
 prompts.multiple_times_for_date = "Fyrir dagsetninguna {date} eru nokkrar tímasetningar, hverja af þeim viltu bóka?\nValmöguleikarnir eru:\n{times}"
+prompts.no_date_matched = "Engin sýning er í boði fyrir gefna dagsetningu, vinsamlegast reyndu aftur."
+prompts.no_time_matched = "Engin sýning er í boði fyrir gefna tímasetningu, vinsamlegast reyndu aftur."
 
 [[resources]]
-name = "ShowSeats"
+name = "ShowSeatCount"
 type = "NumberResource"
 requires = ["ShowDateTime"]
 prompts.initial = "Hversu mörg sæti viltu bóka?"
 prompts.confirm = "Þú valdir {seats} sæti, viltu halda áfram og velja staðsetningu sætanna?"
 
 [[resources]]
-name = "SeatLocation"
+name = "ShowSeatRow"
 type = "ListResource"
-requires = ["ShowSeats"]
-prompts.initial = "{seats} sæti eru í boði í röðum {seat_rows}. Á hvaða svæði viltu fá sæti?"
-prompts.options = "Raðirnar með {seats} laus sæti eru: {seat_rows}."
-prompts.confirm = "Þú valdir sæti {seats} í röð {row}, viltu halda áfram?"
+requires = ["ShowSeatCount"]
+prompts.initial = "Að minnsta kosti {seats} sæti eru í boði í röðum {seat_rows}. Í hvaða röð viltu sitja?"
+prompts.options = "Raðirnar {rows} eru með {seats} laus sæti."
+prompts.confirm = "Þú valdir röð {row}, viltu halda áfram?"
+prompts.no_row_matched = "Því miður er þessi röð ekki með {seats} laus sæti. Vinsamlegast reyndu aftur."
+
+[[resources]]
+name = "ShowSeatNumber"
+type = "ListResource"
+requires = ["ShowSeatRow"]
+prompts.initial = "Sæti {seats} eru í boði í röð {row}, hvaða sæti má bjóða þér?"
+prompts.options = "Sætin sem eru í boði í röð {row} eru {options}"
+prompts.confirm = "Þú valdir sæti {seats}, viltu halda áfram?"
+prompts.wrong_number_seats_selected = "Þú valdir {chosen_seats} sæti, en þú baðst um {seats}. Vinsamlegast reyndur aftur."
+prompts.seats_unavailable = "Valin sæti eru ekki laus, vinsamlegast reyndu aftur."
 
 [[resources]]
 name = "Final"
 type = "FinalResource"
-requires = ["SeatLocation"]
-prompts.final = "Þú valdir {seats} sæti á svæðinum {seat_location} fyrir sýninguna {show} þann {date}."
+requires = ["ShowSeatNumber"]
+prompts.final = "Þú bókaðir sæti {seats} í röð {row} fyrir sýninguna {show} þann {date_time}."
 prompts.cancelled = "Móttekið, hætti við leikhús pöntunina."
 
 # TODO: Add a resource for the payment method
