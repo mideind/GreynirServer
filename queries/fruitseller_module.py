@@ -352,7 +352,6 @@ def QNumOfFruit(node: Node, params: QueryStateDict, result: Result):
         result.queryfruits.append([1, result.fruit])
     else:
         result.queryfruits.append([result.fruitnumber, result.fruit])
-    _DIALOGUE_INFO["strings"] = result.queryfruits
 
 def QNum(node: Node, params: QueryStateDict, result: Result):
     fruitnumber = int(parse_num(node, result._nominative))
@@ -360,7 +359,6 @@ def QNum(node: Node, params: QueryStateDict, result: Result):
         result.fruitnumber = fruitnumber
     else:
         result.fruitnumber = 1
-    _DIALOGUE_INFO["numbers"] = result.fruitnumber
 
 def QFruit(node: Node, params: QueryStateDict, result: Result):
     fruit = result._root
@@ -490,7 +488,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     # Successfully matched a query type
     try:
-        print("INFO:", _DIALOGUE_INFO)
         dsm.setup_dialogue(_ANSWERING_FUNCTIONS)
         if result.qtype == "QFruitInfo":
             # Example info handling functionality
