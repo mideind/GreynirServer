@@ -28,11 +28,11 @@ import logging
 import random
 import datetime
 
-
+from settings import changedlocale
 from query import Query, QueryStateDict
 from tree import Result, Node, TerminalNode
 from queries import AnswerTuple, gen_answer, natlang_seq, parse_num, query_json_api
-from queries.num import number_to_text
+from queries.num import number_to_text, numbers_to_ordinal
 from queries.dialogue import (
     AnsweringFunctionMap,
     DateResource,
@@ -240,10 +240,12 @@ QTheaterPontun →
 
 """
 
+
 class ShowType(TypedDict):
     title: str
     date: List[datetime.datetime]
-    location: List[Tuple[int,int]]
+    location: List[Tuple[int, int]]
+
 
 _SHOWS: List[ShowType] = [
     {
@@ -286,9 +288,11 @@ def _generate_show_answer(
     if result.get("no_show_matched"):
         return gen_answer(resource.prompts["no_show_matched"])
     if result.get("no_show_matched_data_exists"):
-        return gen_answer(resource.prompts["no_show_matched_data_exists"].format(
-            show=resource.data[0]
-        ))
+        return gen_answer(
+            resource.prompts["no_show_matched_data_exists"].format(
+                show=resource.data[0]
+            )
+        )
     if resource.is_unfulfilled:
         return gen_answer(resource.prompts["initial"])
     if resource.is_fulfilled:
@@ -310,7 +314,8 @@ def _generate_date_answer(
         for show in _SHOWS:
             if show["title"] == title:
                 for date in show["date"]:
-                    dates.append(date.strftime("    %d/%m/%Y klukkan %H:%M\n"))
+                    with changedlocale(category="LC_TIME"):
+                        dates.append(date.strftime("    %A %d. %B klukkan %H:%M\n"))
         date_number: int = 3 if len(dates) >= 3 else len(dates)
         options_string: str = (
             "Eftirfarandi dagsetning er í boði:\n"
@@ -319,9 +324,14 @@ def _generate_date_answer(
             if date_number == 2
             else "Næstu þrjár dagsetningar eru:\n"
         )
-        options_string += "".join(dates)
+        options_string += natlang_seq(dates)
         if len(dates) > 0:
-            return gen_answer(resource.prompts["options"].format(options=options_string))
+            ans = gen_answer(
+                resource.prompts["options"]
+                .format(options=options_string)
+                .replace("dagur", "dagurinn")
+            )
+            return (ans[0], ans[1], numbers_to_ordinal(ans[2]))
         else:
             return gen_answer(resource.prompts["no_date_available"].format(show=title))
     if result.get("no_date_matched"):
@@ -342,16 +352,20 @@ def _generate_date_answer(
                         assert isinstance(date, datetime.datetime)
                         if date.date() == show_date:
                             show_times.append(date.strftime("    %H:%M\n"))
-            return gen_answer(resource.prompts["multiple_times_for_date"].format(
-                date=show_date, times="".join(show_times)
-            ))
+            ans = gen_answer(
+                resource.prompts["multiple_times_for_date"]
+                .format(times=natlang_seq(show_times))
+                .replace("dagur", "dagurinn")
+            )
+            return (ans[0], ans[1], numbers_to_ordinal(ans[2]))
     if resource.is_unfulfilled:
         title: str = dsm.get_resource("Show").data[0]
         dates: list[str] = []
         for show in _SHOWS:
             if show["title"] == title:
                 for date in show["date"]:
-                    dates.append(date.strftime("    %d/%m/%Y klukkan %H:%M\n"))
+                    with changedlocale(category="LC_TIME"):
+                        dates.append(date.strftime("    %A %d. %B klukkan %H:%M\n"))
         date_number: int = 3 if len(dates) >= 3 else len(dates)
         start_string: str = (
             "Eftirfarandi dagsetning er í boði:\n"
@@ -361,21 +375,31 @@ def _generate_date_answer(
             else "Næstu þrjár dagsetningar eru:\n"
         )
         if len(dates) > 0:
-            return gen_answer(resource.prompts["initial"].format(
-                show=title,
-                dates=start_string + "".join(dates),
-            ))
+            ans = gen_answer(
+                resource.prompts["initial"]
+                .format(
+                    show=title,
+                    dates=start_string + "".join(dates),
+                )
+                .replace("dagur", "dagurinn")
+            )
+            return (ans[0], ans[1], numbers_to_ordinal(ans[2]))
         else:
             return gen_answer(resource.prompts["no_date_available"].format(show=title))
     if resource.is_fulfilled:
-        date_resource = dsm.get_resource("ShowDate")
-        time_resource = dsm.get_resource("ShowTime")
-        return gen_answer(resource.prompts["confirm"].format(
-            date=datetime.datetime.combine(
-                date_resource.data,
-                time_resource.data,
-            ).strftime("%Y/%m/%d %H:%M")
-        ))
+        date = dsm.get_resource("ShowDate").data
+        time = dsm.get_resource("ShowTime").data
+        with changedlocale(category="LC_TIME"):
+            date_time: str = datetime.datetime.combine(
+                date,
+                time,
+            ).strftime("%A %d. %B klukkan %H:%M")
+        ans = gen_answer(
+            resource.prompts["confirm"]
+            .format(date=date_time)
+            .replace("dagur", "daginn")
+        )
+        return ans
 
 
 def _generate_seat_count_answer(
@@ -387,9 +411,11 @@ def _generate_seat_count_answer(
     if resource.is_unfulfilled:
         return gen_answer(resource.prompts["initial"])
     if resource.is_fulfilled:
-        return gen_answer(resource.prompts["confirm"].format(
-            seats=number_to_text(cast(int, resource.data))
-        ))
+        return gen_answer(
+            resource.prompts["confirm"].format(
+                seats=number_to_text(cast(int, resource.data))
+            )
+        )
 
 
 def _generate_row_answer(
@@ -418,17 +444,23 @@ def _generate_row_answer(
     if (not resource.is_confirmed and result.get("options_info")) or result.get(
         "row_options"
     ):
-        return gen_answer(resource.prompts["options"].format(
-            rows=natlang_seq(available_rows), seats=number_to_text(seats)
-        ))
+        return gen_answer(
+            resource.prompts["options"].format(
+                rows=natlang_seq(available_rows), seats=number_to_text(seats)
+            )
+        )
     if result.get("no_row_matched"):
-        return gen_answer(resource.prompts["no_row_matched"].format(seats=number_to_text(seats)))
+        return gen_answer(
+            resource.prompts["no_row_matched"].format(seats=number_to_text(seats))
+        )
     if resource.is_unfulfilled:
         if len(available_rows) == 0:
             return gen_answer(resource.prompts["not_enough_seats"].format(seats=seats))
-        return gen_answer(resource.prompts["initial"].format(
-            seats=number_to_text(seats), seat_rows=natlang_seq(available_rows)
-        ))
+        return gen_answer(
+            resource.prompts["initial"].format(
+                seats=number_to_text(seats), seat_rows=natlang_seq(available_rows)
+            )
+        )
     if resource.is_fulfilled:
         row = dsm.get_resource("ShowSeatRow").data[0]
         return gen_answer(resource.prompts["confirm"].format(row=number_to_text(row)))
@@ -451,25 +483,31 @@ def _generate_seat_number_answer(
     if (not resource.is_confirmed and result.get("options_info")) or result.get(
         "seat_options"
     ):
-        return gen_answer(resource.prompts["options"].format(
-            row=number_to_text(chosen_row), options=natlang_seq(available_seats)
-        ))
+        return gen_answer(
+            resource.prompts["options"].format(
+                row=number_to_text(chosen_row), options=natlang_seq(available_seats)
+            )
+        )
     if result.get("wrong_number_seats_selected"):
         print("wrong_number_seats_selected prompt")
         chosen_seats = len(
             range(result.get("numbers")[0], result.get("numbers")[1] + 1)
         )
-        return gen_answer(resource.prompts["wrong_number_seats_selected"].format(
-            chosen_seats=number_to_text(chosen_seats), seats=number_to_text(seats)
-        ))
+        return gen_answer(
+            resource.prompts["wrong_number_seats_selected"].format(
+                chosen_seats=number_to_text(chosen_seats), seats=number_to_text(seats)
+            )
+        )
     if result.get("seats_unavailable"):
         print("seats_unavailable prompt")
         return gen_answer(resource.prompts["seats_unavailable"])
     if resource.is_unfulfilled:
         print("initial prompt")
-        return gen_answer(resource.prompts["initial"].format(
-            seats=natlang_seq(available_seats), row=number_to_text(chosen_row)
-        ))
+        return gen_answer(
+            resource.prompts["initial"].format(
+                seats=natlang_seq(available_seats), row=number_to_text(chosen_row)
+            )
+        )
     if resource.is_fulfilled:
         print("confirm prompt")
         chosen_seats_string: str = ""
@@ -504,14 +542,20 @@ def _generate_final_answer(
     else:
         seat_string = number_to_text(seats[0])
     row = dsm.get_resource("ShowSeatRow").data[0]
-    ans = resource.prompts["final"].format(
-        seats=seat_string,
-        row=number_to_text(row),
-        show=title,
-        date_time=datetime.datetime.combine(
+    with changedlocale(category="LC_TIME"):
+        date_time: str = datetime.datetime.combine(
             date,
             time,
-        ).strftime("%Y/%m/%d %H:%M"),
+        ).strftime("%A %d. %B klukkan %H:%M\n")
+    ans = (
+        resource.prompts["final"]
+        .format(
+            seats=seat_string,
+            row=number_to_text(row),
+            show=title,
+            date_time=date_time,
+        )
+        .replace("dagur", "daginn")
     )
     return gen_answer(ans)
 
@@ -580,7 +624,9 @@ def _date_callback(
             dsm.set_resource_state(datetime_resource.name, ResourceState.FULFILLED)
         else:
             result.multiple_times_for_date = True
-            dsm.set_resource_state(datetime_resource.name, ResourceState.PARTIALLY_FULFILLED)
+            dsm.set_resource_state(
+                datetime_resource.name, ResourceState.PARTIALLY_FULFILLED
+            )
 
 
 def _time_callback(
@@ -607,7 +653,9 @@ def _time_callback(
                             first_matching_date = date
                             print("Time callback, date there, setting time")
                             resource.set_time(date.time())
-                            dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
+                            dsm.set_resource_state(
+                                resource.name, ResourceState.FULFILLED
+                            )
                             break
             if resource.is_fulfilled:
                 dsm.set_resource_state(datetime_resource.name, ResourceState.FULFILLED)
@@ -801,7 +849,9 @@ def QTheaterShowSeats(node: Node, params: QueryStateDict, result: Result) -> Non
                         else:
                             print("Seat unavailable")
                             resource.data = []
-                            dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
+                            dsm.set_resource_state(
+                                resource.name, ResourceState.UNFULFILLED
+                            )
                             result.seats_unavailable = True
                             return
                     resource.data = []

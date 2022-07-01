@@ -27,9 +27,9 @@ type = "ListResource"
 requires = ["ShowDate", "ShowTime"]
 prompts.initial = "Hvenær viltu fara á sýninguna {show}?\n{dates}"
 prompts.options = "{options}"
-prompts.confirm = "Þú valdir dagsetninguna {date}, viltu halda áfram og velja fjölda sæta?"
+prompts.confirm = "Þú valdir {date}, viltu halda áfram og velja fjölda sæta?"
 prompts.many_matching_times = "Margar dagsetningar pössuðu við gefna tímasetningu, vinsamlegast reyndu aftur."
-prompts.multiple_times_for_date = "Fyrir dagsetninguna {date} eru nokkrar tímasetningar, hverja af þeim viltu bóka?\nValmöguleikarnir eru:\n{times}"
+prompts.multiple_times_for_date = "Fyrir dagsetninguna sem þú valdir eru nokkrar tímasetningar, hverja af þeim viltu bóka?\nValmöguleikarnir eru:\n{times}"
 prompts.no_date_matched = "Engin sýning er í boði fyrir gefna dagsetningu, vinsamlegast reyndu aftur."
 prompts.no_time_matched = "Engin sýning er í boði fyrir gefna tímasetningu, vinsamlegast reyndu aftur."
 prompts.no_date_available = "{show} hefur engar dagsetningar í boði. Vinsamlegast veldu aðra sýningu."
@@ -67,7 +67,7 @@ prompts.seats_unavailable = "Valin sæti eru ekki laus, vinsamlegast reyndu aftu
 name = "Final"
 type = "FinalResource"
 requires = ["ShowSeatNumber"]
-prompts.final = "Þú bókaðir sæti {seats} í röð {row} fyrir sýninguna {show} þann {date_time}."
+prompts.final = "Þú bókaðir sæti {seats} í röð {row} fyrir sýninguna {show} {date_time}."
 prompts.cancelled = "Móttekið, hætti við leikhús pöntunina."
 
 # TODO: Add a resource for the payment method
