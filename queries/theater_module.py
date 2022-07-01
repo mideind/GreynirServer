@@ -165,13 +165,12 @@ QTheaterVeljaRod →
     | "fá" "sæti" "á"
 
 QTheaterRodBekkur →
-    "röð"? QNum
-    | "bekk" QNum
+    QTheaterRodBekk? "númer"? QNum
     | QNum "bekk"
     | QNum "röð"
 
 QTheaterShowSeats →
-    QTheaterEgVil? "sæti"? QNum "til"? QNum? 
+    QTheaterEgVil? "sæti"? "númer"? QNum "til"? QNum? 
 
 QTheaterDateOptions → 
     "hvaða" "dagsetningar" "eru" "í" "boði"
