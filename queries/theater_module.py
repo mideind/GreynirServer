@@ -554,9 +554,7 @@ def _date_callback(
     resource: DateResource, dsm: DialogueStateManager, result: Result
 ) -> None:
     resource.state = ResourceState.UNFULFILLED
-    print("In date callback")
     if dsm.get_resource("Show").is_confirmed:
-        print("Show was confirmed")
         show_title: str = dsm.get_resource("Show").data[0]
         for show in _SHOWS:
             if show["title"] == show_title:
@@ -566,40 +564,24 @@ def _date_callback(
                         resource.state = ResourceState.FULFILLED
                         break
         time_resource: TimeResource = cast(TimeResource, dsm.get_resource("ShowTime"))
+        time_resource.state = ResourceState.UNFULFILLED
         datetime_resource: Resource = dsm.get_resource("ShowDateTime")
-        if time_resource.is_fulfilled:
-            print("Time resource was fulfilled")
+        show_times: list[datetime.time] = []
+        for show in _SHOWS:
+            if show["title"] == show_title:
+                for date in show["date"]:
+                    if resource.date == date.date():
+                        show_times.append(date.time())
+        if len(show_times) == 0:
+            result.no_date_matched = True
+            return
+        if len(show_times) == 1:
+            time_resource.set_time(show_times[0])
+            time_resource.state = ResourceState.FULFILLED
             datetime_resource.state = ResourceState.FULFILLED
         else:
-            print("Time resource not fulfilled, trying to add time")
-            show_times: list[datetime.time] = []
-            for show in _SHOWS:
-                if show["title"] == show_title:
-                    for date in show["date"]:
-                        print("Date: ", date)
-                        print("Time: ", date.time())
-                        print("Resource date: ", resource.date)
-                        print("Date date: ", date.date())
-                        print("if: ", date.date() == resource.date)
-                        if resource.date == date.date():
-                            print(
-                                "Adding showtime: ", date.time(), " fyrir date: ", date
-                            )
-                            show_times.append(date.time())
-            print("Show times: ", show_times)
-            if len(show_times) == 0:
-                print("No show times found")
-                result.no_date_matched = True
-                return
-            if len(show_times) == 1:
-                time_resource.set_time(show_times[0])
-                time_resource.state = ResourceState.FULFILLED
-                datetime_resource.state = ResourceState.FULFILLED
-                print("One show time")
-            else:
-                result.multiple_times_for_date = True
-                print("Many showtimes", show_times)
-                datetime_resource.state = ResourceState.PARTIALLY_FULFILLED
+            result.multiple_times_for_date = True
+            datetime_resource.state = ResourceState.PARTIALLY_FULFILLED
 
 
 def _time_callback(
