@@ -884,12 +884,11 @@ def QNo(node: Node, params: QueryStateDict, result: Result):
         resource: Resource, dsm: DialogueStateManager, result: Result
     ) -> None:
         if "no_used" not in result and resource.is_fulfilled:
-            print("NO USED", resource.name, " confirming")
             resource.state = ResourceState.UNFULFILLED
             result.no_used = True
             if resource.name == "ShowDateTime":
-                for rname in resource.requires:
-                    dsm.get_resource(rname).state = ResourceState.UNFULFILLED
+                dsm.get_resource("ShowDate").state = ResourceState.UNFULFILLED
+                dsm.get_resource("ShowTime").state = ResourceState.UNFULFILLED
 
     if "callbacks" not in result:
         result["callbacks"] = []
