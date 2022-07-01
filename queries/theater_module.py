@@ -384,6 +384,9 @@ def _generate_date_answer(
 def _generate_seat_count_answer(
     resource: ListResource, dsm: DialogueStateManager
 ) -> Optional[str]:
+    result = dsm.get_result()
+    if result.get("invalid_seat_count"):
+        return resource.prompts["invalid_seat_count"]
     if resource.is_unfulfilled:
         return resource.prompts["initial"]
     if resource.is_fulfilled:
@@ -590,6 +593,8 @@ def _time_callback(
     resource.state = ResourceState.UNFULFILLED
     if result.get("no_date_matched"):
         return
+    if result.get("multiple_times_for_date"):
+        result.multiple_times_for_date = False
     if dsm.get_resource("Show").is_confirmed:
         show_title: str = dsm.get_resource("Show").data[0]
         date_resource: DateResource = cast(DateResource, dsm.get_resource("ShowDate"))
@@ -716,10 +721,11 @@ def QTheaterShowSeatCountQuery(
         resource: NumberResource, dsm: DialogueStateManager, result: Result
     ) -> None:
         if dsm.get_resource("ShowDateTime").is_confirmed:
-            print("Number count resource data: ", resource.data)
-            resource.data = result.number
-            print("Result.number: ", result.number)
-            resource.state = ResourceState.FULFILLED
+            if result.number > 0:
+                resource.data = result.number
+                resource.state = ResourceState.FULFILLED
+            else:
+                result.invalid_seat_count = True
 
     if "callbacks" not in result:
         result["callbacks"] = []

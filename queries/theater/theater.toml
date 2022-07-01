@@ -37,6 +37,7 @@ type = "NumberResource"
 requires = ["ShowDateTime"]
 prompts.initial = "Hversu mörg sæti viltu bóka?"
 prompts.confirm = "Þú valdir {seats} sæti, viltu halda áfram og velja staðsetningu sætanna?"
+prompts.invalid_seat_count = "Fjöldi sæta þarfa að vera hærri en einn. Vinsamlegast reyndu aftur."
 
 [[resources]]
 name = "ShowSeatRow"
