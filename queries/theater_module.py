@@ -597,10 +597,8 @@ def _time_callback(
                     for date in show["date"]:
                         if result["show_time"] == date.time():
                             if first_matching_date is None:
-                                print("Setting first_matching_date")
                                 first_matching_date = cast(datetime.datetime, date)
                             else:
-                                print("Result matched many times, returning")
                                 result.many_matching_times = True
                                 return
             if first_matching_date is not None:
@@ -608,13 +606,15 @@ def _time_callback(
                     DateResource, dsm.get_resource("ShowDate")
                 )
                 date_resource.set_date(first_matching_date.date())
+                date_resource.state = ResourceState.FULFILLED
                 resource.set_time(first_matching_date.time())
+                resource.state = ResourceState.FULFILLED
+                datetime_resource.state = ResourceState.FULFILLED
         if first_matching_date is None:
             result.no_time_matched = True
 
 
 def QTheaterDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
-    print("In theater datetime")
     datetimenode = node.first_child(lambda n: True)
     assert isinstance(datetimenode, TerminalNode)
     now = datetime.datetime.now()
@@ -634,8 +634,6 @@ def QTheaterDateTime(node: Node, params: QueryStateDict, result: Result) -> None
         h += 12
     result["show_time"] = datetime.time(h, min)
     result["show_date"] = datetime.date(y, m, d)
-    print("Show date: ", result["show_date"])
-    print("Show time: ", result["show_time"])
 
     if "callbacks" not in result:
         result["callbacks"] = []
@@ -674,6 +672,9 @@ def QTheaterTime(node: Node, params: QueryStateDict, result: Result) -> None:
     if tnode:
         aux_str = tnode.aux.strip("[]")
         hour, minute, _ = (int(i) for i in aux_str.split(", "))
+        # Change before noon times to afternoon
+        if hour < 12:
+            hour += 12
 
         result["show_time"] = datetime.time(hour, minute)
 
