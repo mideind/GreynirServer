@@ -289,6 +289,7 @@ def QCancelOrder(node: Node, params: QueryStateDict, result: Result):
         resource: Resource, dsm: DialogueStateManager, result: Result
     ) -> None:
         resource.state = ResourceState.CANCELLED
+        dsm.end_dialogue()
 
     result.qtype = "QCancelOrder"
     result.answer_key = ("Final", "cancelled")

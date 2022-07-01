@@ -876,6 +876,7 @@ def QCancel(node: Node, params: QueryStateDict, result: Result):
         resource: Resource, dsm: DialogueStateManager, result: Result
     ) -> None:
         resource.state = ResourceState.CANCELLED
+        dsm.end_dialogue()
 
     result.qtype = "QCancel"
     if "callbacks" not in result:
