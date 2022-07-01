@@ -6,7 +6,7 @@ import datetime
 from query import Query, QueryStateDict
 from tree import Result, Node, TerminalNode
 from reynir import NounPhrase
-from queries import gen_answer, parse_num, natlang_seq, sing_or_plur
+from queries import gen_answer, AnswerTuple, parse_num, natlang_seq, sing_or_plur
 from queries.dialogue import (
     AnsweringFunctionMap,
     DateResource,
@@ -146,65 +146,66 @@ _DIALOGUE_NAME = "fruitseller"
 
 def _generate_fruit_answer(
     resource: ListResource, dsm: DialogueStateManager
-) -> Optional[str]:
+) -> Optional[AnswerTuple]:
     result = dsm.get_result()
     if result.get("fruitsEmpty"):
-        return resource.prompts["empty"]
+        return gen_answer(resource.prompts["empty"])
     if result.get("fruitOptions"):
-        return resource.prompts["options"]
+        return gen_answer(resource.prompts["options"])
     if resource.is_unfulfilled:
-        return resource.prompts["initial"]
+        return gen_answer(resource.prompts["initial"])
     if resource.is_partially_fulfilled:
         ans: str = ""
         if "actually_removed_something" in result:
             if not result["actually_removed_something"]:
                 ans += "Ég fann ekki ávöxtinn sem þú vildir fjarlægja. "
-        return (
+        return gen_answer(
             ans
-            + f"{resource.prompts['repeat'].format(list_items = _list_items(resource.data))}"
+            + resource.prompts["repeat"].format(list_items=_list_items(resource.data))
         )
     if resource.is_fulfilled:
-        return f"{resource.prompts['confirm'].format(list_items = _list_items(resource.data))}"
+        return gen_answer(
+            resource.prompts["confirm"].format(list_items=_list_items(resource.data))
+        )
     return None
 
 
 def _generate_datetime_answer(
     resource: Resource, dsm: DialogueStateManager
-) -> Optional[str]:
+) -> Optional[AnswerTuple]:
     ans: Optional[str] = None
     date_resource: DateResource = cast(DateResource, dsm.get_resource("Date"))
     time_resource: TimeResource = cast(TimeResource, dsm.get_resource("Time"))
 
     if resource.is_unfulfilled:
-        return resource.prompts["initial"]
-
-    if resource.is_partially_fulfilled:
+        ans = resource.prompts["initial"]
+    elif resource.is_partially_fulfilled:
         if date_resource.is_fulfilled:
             ans = resource.prompts["date_fulfilled"].format(
                 date=date_resource.data.strftime("%Y/%m/%d")
             )
-        if time_resource.is_fulfilled:
+        elif time_resource.is_fulfilled:
             ans = resource.prompts["time_fulfilled"].format(
                 time=time_resource.data.strftime("%H:%M")
             )
-        return ans
-
-    if resource.is_fulfilled:
+    elif resource.is_fulfilled:
         ans = resource.prompts["confirm"].format(
             date_time=datetime.datetime.combine(
                 date_resource.data,
                 time_resource.data,
             ).strftime("%Y/%m/%d %H:%M")
         )
-    return ans
+    if ans:
+        return gen_answer(ans)
+    return None
 
 
 def _generate_final_answer(
     resource: FinalResource, dsm: DialogueStateManager
-) -> Optional[str]:
+) -> Optional[AnswerTuple]:
     ans: Optional[str] = None
     if resource.is_cancelled:
-        return resource.prompts["cancelled"]
+        return gen_answer(resource.prompts["cancelled"])
 
     resource.state = ResourceState.CONFIRMED
     date_resource = dsm.get_resource("Date")
@@ -216,7 +217,7 @@ def _generate_final_answer(
             time_resource.data,
         ).strftime("%Y/%m/%d %H:%M"),
     )
-    return ans
+    return gen_answer(ans)
 
 
 def _list_items(items: Any) -> str:
@@ -350,7 +351,7 @@ def QNumOfFruit(node: Node, params: QueryStateDict, result: Result):
         result.queryfruits.append([1, result.fruit])
     else:
         result.queryfruits.append([result.fruitnumber, result.fruit])
-
+    _DIALOGUE_INFO["strings"] = result.queryfruits
 
 def QNum(node: Node, params: QueryStateDict, result: Result):
     fruitnumber = int(parse_num(node, result._nominative))
@@ -358,7 +359,7 @@ def QNum(node: Node, params: QueryStateDict, result: Result):
         result.fruitnumber = fruitnumber
     else:
         result.fruitnumber = 1
-
+    _DIALOGUE_INFO["numbers"] = result.fruitnumber
 
 def QFruit(node: Node, params: QueryStateDict, result: Result):
     fruit = result._root
@@ -467,15 +468,15 @@ def QFruitInfoQuery(node: Node, params: QueryStateDict, result: Result):
     result.qtype = "QFruitInfo"
 
 
-_ANSWERING_FUNCTIONS: AnsweringFunctionMap = cast(
-    AnsweringFunctionMap,
-    {
-        "Fruits": _generate_fruit_answer,
-        "DateTime": _generate_datetime_answer,
-        "Final": _generate_final_answer,
-    },
-)
+def my_test(r: Resource, dsm: DialogueStateManager) -> Optional[AnswerTuple]:
+    return gen_answer("hello")
 
+_ANSWERING_FUNCTIONS: AnsweringFunctionMap = {
+    "Fruits": _generate_fruit_answer,
+    "DateTime": _generate_datetime_answer,
+    "Final": _generate_final_answer,
+    "something": my_test,
+}
 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
@@ -488,16 +489,20 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     # Successfully matched a query type
     try:
+        print("INFO:", _DIALOGUE_INFO)
         dsm.setup_dialogue(_ANSWERING_FUNCTIONS)
-        if result.qtype == _START_DIALOGUE_QTYPE:
-            dsm.start_dialogue()
-        elif result.qtype == "QFruitInfo":
+        if result.qtype == "QFruitInfo":
             # Example info handling functionality
-            ans = "Ávaxtapöntunin þín er bara flott. "
+            # ans = "Ávaxtapöntunin þín er bara flott. "
             # f = dsm.get_resource("Fruits")
             # ans += str(f.data)
-            ans += dsm.get_answer() or ""
-            q.set_answer(*gen_answer(ans))
+            ans = dsm.get_answer()
+            if not ans:
+                print("No answer generated")
+                q.set_error("E_QUERY_NOT_UNDERSTOOD")
+                return
+
+            q.set_answer(*ans)
             return
 
         ans = dsm.get_answer()
@@ -507,7 +512,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             return
 
         q.set_qtype(result.qtype)
-        q.set_answer(*gen_answer(ans))
+        q.set_answer(*ans)
         return
     except Exception as e:
         logging.warning(

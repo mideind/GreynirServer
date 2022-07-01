@@ -934,9 +934,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         print("A")
         result.shows = _fetch_shows()
         dsm.setup_dialogue(_ANSWERING_FUNCTIONS)
-        if result.qtype == _START_DIALOGUE_QTYPE:
-            print("B")
-            dsm.start_dialogue()
         print("C")
         print(dsm._resources)
         ans = dsm.get_answer()
