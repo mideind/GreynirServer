@@ -1,15 +1,12 @@
+
 /þgf = þgf
 /ef = ef
 
 Query →
-    QIoT
+    QIoT '?'?
 
 QIoT → 
-    QIoTQuery '?'? 
-    | QIoTConnectLights '?'?
-
-QIoTConnectLights →
-    "tengdu" "ljósin"
+    QIoTQuery
 
 QIoTQuery ->
     QIoTMakeVerb QIoTMakeRest
@@ -80,9 +77,9 @@ QIoTLetRest ->
     QIoTSubject/þf QIoTHvar? QIoTHvernigLet
     | QIoTSubject/þf QIoTHvernigLet QIoTHvar?
     | QIoTHvar? QIoTSubject/þf QIoTHvernigLet
-    | QIoTHvar? QIoTHvernigLet QIoTSubject/þf
-    | QIoTHvernigLet QIoTSubject/þf QIoTHvar?
-    | QIoTHvernigLet QIoTHvar? QIoTSubject/þf
+    # | QIoTHvar? QIoTHvernigLet QIoTSubject/þf
+    # | QIoTHvernigLet QIoTSubject/þf QIoTHvar?
+    # | QIoTHvernigLet QIoTHvar? QIoTSubject/þf
 
 QIoTTurnOnRest ->
     QIoTTurnOnLightsRest
@@ -195,7 +192,7 @@ QIoTLightName/fall ->
     no/fall
 
 QIoTColorName ->
-    {" | ".join(f"'{color}:lo'" for color in _COLORS.keys())}
+    {color_names}
 
 QIoTSceneName ->
     no
