@@ -36,6 +36,7 @@ from queries.dialogue import (
     DateResource,
     DialogueStateManager,
     ListResource,
+    NumberResource,
     Resource,
     ResourceState,
     TimeResource,
@@ -170,7 +171,7 @@ QTheaterRodBekkur →
     | QNum "röð"
 
 QTheaterShowSeats →
-    QTheaterEgVil? "sæti"? QNum "til" QNum 
+    QTheaterEgVil? "sæti"? QNum "til"? QNum? 
 
 QTheaterDateOptions → 
     "hvaða" "dagsetningar" "eru" "í" "boði"
@@ -239,6 +240,7 @@ def _generate_show_answer(
     resource: ListResource, dsm: DialogueStateManager
 ) -> Optional[str]:
     result = dsm.get_result()
+    print("Generate show answer")
     if (not resource.is_confirmed and result.get("options_info")) or result.get(
         "show_options"
     ):
@@ -348,7 +350,7 @@ def _generate_seat_count_answer(
         return resource.prompts["initial"]
     if resource.is_fulfilled:
         return resource.prompts["confirm"].format(
-            seats=number_to_text(cast(int, resource.data[0]))
+            seats=number_to_text(cast(int, resource.data))
         )
 
 
@@ -358,7 +360,7 @@ def _generate_row_answer(
     print("Generating row answer")
     result = dsm.get_result()
     title: str = dsm.get_resource("Show").data[0]
-    seats: int = dsm.get_resource("ShowSeatCount").data[0]
+    seats: int = dsm.get_resource("ShowSeatCount").data
     available_rows: list[str] = []
     for show in _SHOWS:
         if show["title"] == title:
@@ -383,7 +385,7 @@ def _generate_row_answer(
             rows=natlang_seq(available_rows), seats=number_to_text(seats)
         )
     if result.get("no_row_matched"):
-        return resource.prompts["no_row_matched"].format(seats=seats)
+        return resource.prompts["no_row_matched"].format(seats=number_to_text(seats))
     if resource.is_unfulfilled:
         if len(available_rows) == 0:
             return resource.prompts["not_enough_seats"].format(seats=seats)
@@ -401,7 +403,7 @@ def _generate_seat_number_answer(
     print("_generate_seat_number_answer", resource.state)
     result = dsm.get_result()
     title: str = dsm.get_resource("Show").data[0]
-    seats: int = dsm.get_resource("ShowSeatCount").data[0]
+    seats: int = dsm.get_resource("ShowSeatCount").data
     chosen_row: int = dsm.get_resource("ShowSeatRow").data[0]
     available_seats: list[str] = []
     for show in _SHOWS:
@@ -433,10 +435,14 @@ def _generate_seat_number_answer(
         )
     if resource.is_fulfilled:
         print("confirm prompt")
-        chosen_seats_string: str = "{first_seat} til {last_seat}".format(
-            first_seat=number_to_text(result.get("numbers")[0]),
-            last_seat=number_to_text(result.get("numbers")[1]),
-        )
+        chosen_seats_string: str = ""
+        if seats > 1:
+            chosen_seats_string = "{first_seat} til {last_seat}".format(
+                first_seat=number_to_text(result.get("numbers")[0]),
+                last_seat=number_to_text(result.get("numbers")[1]),
+            )
+        else:
+            chosen_seats_string = number_to_text(result.get("numbers")[0])
         return resource.prompts["confirm"].format(seats=chosen_seats_string)
 
 
@@ -450,15 +456,20 @@ def _generate_final_answer(
     title = dsm.get_resource("Show").data[0]
     date = cast(DateResource, dsm.get_resource("ShowDate")).data
     time = cast(TimeResource, dsm.get_resource("ShowTime")).data
+    number_of_seats = cast(NumberResource, dsm.get_resource("ShowSeatCount")).data
     seats = dsm.get_resource("ShowSeatNumber").data
-    seat_string: str = "{first_seat} til {last_seat}".format(
-        first_seat=number_to_text(seats[0]),
-        last_seat=number_to_text(seats[-1]),
-    )
+    seat_string: str = ""
+    if number_of_seats > 1:
+        seat_string = "{first_seat} til {last_seat}".format(
+            first_seat=number_to_text(seats[0]),
+            last_seat=number_to_text(seats[-1]),
+        )
+    else:
+        seat_string = number_to_text(seats[0])
     row = dsm.get_resource("ShowSeatRow").data[0]
     ans = resource.prompts["final"].format(
         seats=seat_string,
-        row=row,
+        row=number_to_text(row),
         show=title,
         date_time=datetime.datetime.combine(
             date,
@@ -550,8 +561,6 @@ def _date_callback(
                 result.multiple_times_for_date = True
                 print("Many showtimes", show_times)
                 datetime_resource.state = ResourceState.PARTIALLY_FULFILLED
-    else:
-        dsm.set_error()
 
 
 def _time_callback(
@@ -602,8 +611,6 @@ def _time_callback(
                 resource.set_time(first_matching_date.time())
         if first_matching_date is None:
             result.no_time_matched = True
-    else:
-        dsm.set_error()
 
 
 def QTheaterDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -622,6 +629,9 @@ def QTheaterDateTime(node: Node, params: QueryStateDict, result: Result) -> None
         h = 12
     if min is None:
         min = 0
+    # Change before noon times to afternoon
+    if h < 12:
+        h += 12
     result["show_time"] = datetime.time(h, min)
     result["show_date"] = datetime.date(y, m, d)
     print("Show date: ", result["show_date"])
@@ -681,10 +691,13 @@ def QTheaterShowSeatCountQuery(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
     def _add_seat_number(
-        resource: Resource, dsm: DialogueStateManager, result: Result
+        resource: NumberResource, dsm: DialogueStateManager, result: Result
     ) -> None:
-        resource.data = [result.number]
-        resource.state = ResourceState.FULFILLED
+        if dsm.get_resource("ShowDateTime").is_confirmed:
+            print("Number count resource data: ", resource.data)
+            resource.data = result.number
+            print("Result.number: ", result.number)
+            resource.state = ResourceState.FULFILLED
 
     if "callbacks" not in result:
         result["callbacks"] = []
@@ -702,33 +715,34 @@ def QTheaterShowRow(node: Node, params: QueryStateDict, result: Result) -> None:
     def _add_row(
         resource: ListResource, dsm: DialogueStateManager, result: Result
     ) -> None:
-        title: str = dsm.get_resource("Show").data[0]
-        seats: int = dsm.get_resource("ShowSeatCount").data[0]
-        available_rows: list[str] = []
-        for show in _SHOWS:
-            if show["title"] == title:
-                checking_row: int = 1
-                seats_in_row: int = 0
-                for (row, _) in show["location"]:
-                    if checking_row == row:
-                        seats_in_row += 1
-                        if seats_in_row >= seats:
-                            available_rows.append(row)
-                            seats_in_row = 0
-                    else:
-                        checking_row = row
-                        seats_in_row = 1
-        print("Add row: ", result.number)
-        print("Available rows: ", available_rows)
-        if result.number in available_rows:
-            print("Appending row")
-            resource.data.append(result.number)
-            resource.state = ResourceState.FULFILLED
-        else:
-            print("Emptying row data")
-            resource.data = []
-            resource.state = ResourceState.UNFULFILLED
-            result.no_row_matched = True
+        if dsm.get_resource("ShowSeatCount").is_confirmed:
+            title: str = dsm.get_resource("Show").data[0]
+            seats: int = dsm.get_resource("ShowSeatCount").data
+            available_rows: list[str] = []
+            for show in _SHOWS:
+                if show["title"] == title:
+                    checking_row: int = 1
+                    seats_in_row: int = 0
+                    for (row, _) in show["location"]:
+                        if checking_row == row:
+                            seats_in_row += 1
+                            if seats_in_row >= seats:
+                                available_rows.append(row)
+                                seats_in_row = 0
+                        else:
+                            checking_row = row
+                            seats_in_row = 1
+            print("Add row: ", result.number)
+            print("Available rows: ", available_rows)
+            if result.number in available_rows:
+                print("Appending row")
+                resource.data = [result.number]
+                resource.state = ResourceState.FULFILLED
+            else:
+                print("Emptying row data")
+                resource.data = []
+                resource.state = ResourceState.UNFULFILLED
+                result.no_row_matched = True
 
     if "callbacks" not in result:
         result["callbacks"] = []
@@ -740,41 +754,49 @@ def QTheaterShowSeats(node: Node, params: QueryStateDict, result: Result) -> Non
     def _add_seats(
         resource: ListResource, dsm: DialogueStateManager, result: Result
     ) -> None:
-        print("Add seats callback, state: ", resource.state)
-        title: str = dsm.get_resource("Show").data[0]
-        print("Row data: ", dsm.get_resource("ShowSeatRow").data)
-        row: int = dsm.get_resource("ShowSeatRow").data[0]
-        number_of_seats: int = dsm.get_resource("ShowSeatCount").data[0]
-        print("Result.numbers: ", len(result.numbers))
-        selected_seats: list[int] = [
-            seat for seat in range(result.numbers[0], result.numbers[1] + 1)
-        ]
-        if len(selected_seats) != number_of_seats:
-            print("Selected seats does not match number of seats")
-            print("Resource name that is being emptied: ", resource.name)
-            resource.data = []
-            resource.state = ResourceState.UNFULFILLED
-            result.wrong_number_seats_selected = True
-            return
-        for show in _SHOWS:
-            if show["title"] == title:
-                seats: list[int] = []
-                for seat in selected_seats:
-                    if (row, seat) in show["location"]:
-                        seats.append(seat)
-                    else:
-                        print("Seat not unavailable")
-                        resource.data = []
-                        resource.state = ResourceState.UNFULFILLED
-                        result.seats_unavailable = True
-                        return
-                for seat in seats:
-                    print("Appending seat: ", seat)
-                    resource.data.append(seat)
-        print("Length of data: ", len(resource.data))
-        if len(resource.data) > 0:
-            print("Setting state to fulfilled")
-            resource.state = ResourceState.FULFILLED
+        if dsm.get_resource("ShowSeatRow").is_confirmed:
+            print("Add seats callback, state: ", resource.state)
+            title: str = dsm.get_resource("Show").data[0]
+            print("Row data: ", dsm.get_resource("ShowSeatRow").data)
+            row: int = dsm.get_resource("ShowSeatRow").data[0]
+            number_of_seats: int = dsm.get_resource("ShowSeatCount").data
+            print("Result.numbers: ", len(result.numbers))
+            selected_seats: list[int] = []
+            if number_of_seats > 1:
+                selected_seats = [
+                    seat for seat in range(result.numbers[0], result.numbers[1] + 1)
+                ]
+            else:
+                print("Result.numbers: ", result.numbers)
+                print("Result.number: ", result.number)
+                selected_seats = [result.numbers[0]]
+            print("Selected seats: ", selected_seats)
+            if len(selected_seats) != number_of_seats:
+                print("Selected seats does not match number of seats")
+                print("Resource name that is being emptied: ", resource.name)
+                resource.data = []
+                resource.state = ResourceState.UNFULFILLED
+                result.wrong_number_seats_selected = True
+                return
+            for show in _SHOWS:
+                if show["title"] == title:
+                    seats: list[int] = []
+                    for seat in selected_seats:
+                        if (row, seat) in show["location"]:
+                            seats.append(seat)
+                        else:
+                            print("Seat unavailable")
+                            resource.data = []
+                            resource.state = ResourceState.UNFULFILLED
+                            result.seats_unavailable = True
+                            return
+                    resource.data = []
+                    for seat in seats:
+                        resource.data.append(seat)
+            print("Length of data: ", len(resource.data))
+            if len(resource.data) > 0:
+                print("Setting state to fulfilled")
+                resource.state = ResourceState.FULFILLED
 
     if "callbacks" not in result:
         result["callbacks"] = []
@@ -854,6 +876,28 @@ def QYes(node: Node, params: QueryStateDict, result: Result):
         and not r.is_confirmed
     )
     result.callbacks.append((filter_func, _parse_yes))
+
+
+def QNo(node: Node, params: QueryStateDict, result: Result):
+    def _parse_no(
+        resource: Resource, dsm: DialogueStateManager, result: Result
+    ) -> None:
+        if "no_used" not in result and resource.is_fulfilled:
+            print("NO USED", resource.name, " confirming")
+            resource.state = ResourceState.UNFULFILLED
+            result.no_used = True
+            if resource.name == "ShowDateTime":
+                for rname in resource.requires:
+                    dsm.get_resource(rname).state = ResourceState.UNFULFILLED
+
+    if "callbacks" not in result:
+        result["callbacks"] = []
+    filter_func: Callable[[Resource], bool] = (
+        lambda r: r.name
+        in ("Show", "ShowDateTime", "ShowSeatCount", "ShowSeatRow", "ShowSeatNumber")
+        and not r.is_confirmed
+    )
+    result.callbacks.append((filter_func, _parse_no))
 
 
 SHOW_URL = "https://leikhusid.is/wp-json/shows/v1/categories/938"
