@@ -75,14 +75,27 @@ QTheaterQuery →
     QTheaterHotWord | QTheaterDialogue
 
 QTheaterHotWord →
-    "leikhús"
-    | "þjóðleikhúsið"
-    | "þjóðleikhús"
-    | 'Þjóðleikhúsið'
+    QTheaterNames
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "leikhúsmiða"
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "miða" "í" QTheaterNames
+    | QTheaterEgVil?QTheaterKaupaFaraFaPanta "miða" "á" QTheaterNames "sýningu"
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta QTheaterNames
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "leikhússýningu"
+
+QTheaterNames →
+    'leikhús'
+    | 'þjóðleikhús'
     | 'Þjóðleikhús'
-    | QTheaterEgVil? "kaupa" "leikhúsmiða"
-    | QTheaterEgVil? "fara" "í" "leikhús"
-    | QTheaterEgVil? "fara" "á" "leikhússýningu"
+    | 'Borgarleikhús'
+    | 'borgarleikhús'
+
+
+QTheaterKaupaFaraFaPanta →
+    "kaupa"
+    | "fara" "á"
+    | "fara" "í"
+    | "fá"
+    | "panta"
 
 QTheaterDialogue → 
     QTheaterShowQuery
@@ -200,8 +213,21 @@ QYes → "já" "já"* | "endilega" | "já" "takk" | "játakk" | "já" "þakka" "
 QNo → "nei" "takk"? | "nei" "nei"* | "neitakk" | "ómögulega"
 
 QCancel → "ég" "hætti" "við"
-    | QTheaterEgVil "hætta" "við" "pöntunina"
-    | QTheaterEgVil "hætta" "við" "pöntunina"
+    | QTheaterEgVil "hætta" "við" QTheaterPontun
+
+QStatus →
+    "hver" "er" "staðan"
+    | "staðan"
+    | "hvert" "var" "ég" 'komin'
+    | "hvar" "var" "ég" 'komin'?
+    | "hver" "var" "staðan" "á"? QTheaterPontun
+    | QTheaterEgVil "halda" "áfram" "með" QTheaterPontun
+
+QTheaterPontun →
+    'pöntun'
+    | "leikhús" 'pöntun'
+    | "leikhúsmiða" 'pöntun'
+    | "leikhús" "miða" 'pöntun'
 
 """
 
