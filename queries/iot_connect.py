@@ -39,6 +39,7 @@ import time
 
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_jsfile, read_grammar_file
+from queries.sonos import SonosClient
 from tree import Result, Node
 from routes import better_jsonify
 from util import read_api_key
@@ -179,39 +180,46 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     elif result.qtype == "create_speaker_token":
         device_data = q.client_data("iot_speakers")
-        code = device_data.get("sonos").get("credentials").get("code")
+        try:
+            code = device_data.get("sonos").get("credentials").get("code") or None
+        except AttributeError:
+            print("Missing device data")
         if device_data is None or code is None:
-            q.set_error("E_NO_DEVICE_DATA")
+            print("Missing device data or code")
+            q.set_error("Missing sonos code")
             return
-        sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
-        response = create_token(code, sonos_encoded_credentials, host)
-        if response.status_code != 200:
-            print("Error:", response.status_code)
-            print(response.text)
-            print("Invalid request usually means that the code is invalid")
-            return
-        response_json = response.json()
-        access_token, refresh_token = (
-            response_json.get("access_token"),
-            response_json.get("refresh_token"),
-        )
-        timestamp = str(datetime.now())
-        data_dict = create_sonos_data_dict(access_token, q)
-        cred_dict = create_sonos_cred_dict(access_token, refresh_token, timestamp, q)
-        print("data dict for update", data_dict)
-        print("cred dict for update", data_dict)
-        store_sonos_data_and_credentials(data_dict, cred_dict, q)
+        sonos_client = SonosClient(device_data, q)
+        # code = device_data.get("sonos").get("credentials").get("code")
+        # if device_data is None or code is None:
+        #     q.set_error("Missing sonos code")
+        #     return
+        # sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
+        # response = create_token(code, sonos_encoded_credentials, host)
+        # response = sonos_client.create_token()
+        # access_token, refresh_token = (
+        #     response.get("access_token"),
+        #     response.get("refresh_token"),
+        # )
+        # if access_token is None or refresh_token is None:
+        #     q.set_error("Missing sonos access token")
+        #     return
+        # sonos_client.set_credentials(access_token, refresh_token)
+        sonos_client.set_data()
+        # timestamp = str(datetime.now())
+        # data_dict = sonos_client.create_sonos_data_dict()
+        # cred_dict = sonos_client.create_sonos_cred_dict()
+        # print("data dict for update", data_dict)
+        # print("cred dict for update", cred_dict)
+        sonos_client.store_sonos_data_and_credentials()
+
         answer = "Ég bjó til tóka frá Sónos"
+        response = dict(answer=answer)
         voice_answer = answer
-        # voice_answer = f"Ég ætla að tengja Sónos hátalarann. Hlustaðu vel. {_BREAK_SSML} Ég tengdi Sónos hátalarann. Góða skemmtun."
-        # sonos_voice_clip = (
-        #     f"{_BREAK_SSML} Hæ!, ég er búin að tengja þennan Sónos hátalara."
-        # )
-        # audio_clip(
-        #     text_to_audio_url(sonos_voice_clip),
-        #     sonos_dict["player_id"],
-        #     sonos_dict["access_token"],
-        # )
+        voice_answer = f"Ég ætla að tengja Sónos hátalarann. Hlustaðu vel. {_BREAK_SSML} Ég tengdi Sónos hátalarann. Góða skemmtun."
+        sonos_voice_clip = (
+            f"{_BREAK_SSML} Hæ!, ég er búin að tengja þennan Sónos hátalara."
+        )
+        sonos_client.audio_clip(text_to_audio_url(sonos_voice_clip))
         q.set_answer(response, answer, voice_answer)
         return
 
@@ -312,7 +320,7 @@ def create_token(code, sonos_encoded_credentials, host):
 
     response = requests.request("POST", url, headers=headers, data=payload)
 
-    return response
+    return response.json()
 
 
 def toggle_play_pause(group_id, token):

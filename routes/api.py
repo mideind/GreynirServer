@@ -50,6 +50,7 @@ from speech import (
     RECOMMENDED_VOICES,
 )
 from util import read_api_key, icelandic_asciify
+from queries.sonos import SonosClient
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH
@@ -727,21 +728,29 @@ def sonos_code(version: int = 1) -> Response:
     code = args.get("code")
     code = {"sonos": {"credentials": {"code": code}}}
     if client_id and code:
+        print("if client_id and code")
         success = QueryObject.store_query_data(
             client_id, "iot_speakers", code, update_in_place=True
         )
+        print("store querydata done")
+        print(success)
         if success:
+            print("success")
+            device_data = code
+            sonos_client = SonosClient(device_data, client_id)
+            sonos_voice_clip = f"Hæ!, ég er búin að tengja þennan Sónos hátalara."
+            sonos_client.audio_clip(text_to_audio_url(sonos_voice_clip))
             return better_jsonify(valid=True, msg="Registered sonos code")
-
+    print("else")
     return better_jsonify(valid=False, errmsg="Error registering sonos code.")
 
 
-def sonos_code(version: int = 1) -> Response:
+def sonos_code2(version: int = 1) -> Response:
     print("sonos code")
     args = request.args
     client_id = args.get("state")
     code = args.get("code")
-    code = {"spotify": {"credentials": {"code": code}}}
+    code = {"sonos": {"credentials": {"code": code}}}
     if client_id and code:
         success = QueryObject.store_query_data(
             client_id, "iot_speakers", code, update_in_place=True
