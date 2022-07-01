@@ -116,14 +116,20 @@ QTheaterDateOptions →
     | "hvaða" "dagsetningar" "er" "hægt" "að" "velja" "á" "milli"
 
 QTheaterRowOptions →
-    "hvaða" "raðir" "eru" "í" "boði"
-    | "hvaða" "röð" "er" "í" "boði"
-    | "hvaða" "bekkir" "eru" "í" "boði"
-    | "hvaða" "bekkur" "er" "í" "boði"
+    "hvaða" "raðir" "eru" QTheaterIBodiLausar
+    | "hvaða" "röð" "er" QTheaterIBodiLausar
+    | "hvaða" "bekkir" "eru" QTheaterIBodiLausar
+    | "hvaða" "bekkur" "er" QTheaterIBodiLausar
 
 QTheaterSeatOptions →
-    "hvaða" "sæti" "eru" "í" "boði"
+    "hvaða" "sæti" "eru" QTheaterIBodiLausar
     "hverjir" "eru" "sæta" "valmöguleikarnir"
+
+QTheaterIBodiLausar →
+    "í" "boði"
+    | "lausar"
+    | "lausir"
+    | "laus"
 
 QTheaterShowQuery → QTheaterEgVil? "velja" 'sýning' QTheaterShowName 
     > QTheaterEgVil? "fara" "á" 'sýning' QTheaterShowName
