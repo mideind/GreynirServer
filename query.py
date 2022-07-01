@@ -935,6 +935,7 @@ class Query:
                     row.data = data  # type: ignore
                     row.modified = now  # type: ignore
             # The session is auto-committed upon exit from the context manager
+            print("return True")
             return True
         except Exception as e:
             logging.error("Error storing query data in db: {0}".format(e))
