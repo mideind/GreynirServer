@@ -21,7 +21,8 @@
     This query module handles dialogue related to theater tickets.
 """
 
-from typing import Any, Callable, Optional, cast
+from typing import Any, Callable, List, Optional, Tuple, cast
+from typing_extensions import TypedDict
 import json
 import logging
 import random
@@ -30,9 +31,10 @@ import datetime
 
 from query import Query, QueryStateDict
 from tree import Result, Node, TerminalNode
-from queries import gen_answer, natlang_seq, parse_num, query_json_api
+from queries import AnswerTuple, gen_answer, natlang_seq, parse_num, query_json_api
 from queries.num import number_to_text
 from queries.dialogue import (
+    AnsweringFunctionMap,
     DateResource,
     DialogueStateManager,
     ListResource,
@@ -75,14 +77,27 @@ QTheaterQuery →
     QTheaterHotWord | QTheaterDialogue
 
 QTheaterHotWord →
-    "leikhús"
-    | "þjóðleikhúsið"
-    | "þjóðleikhús"
-    | 'Þjóðleikhúsið'
+    QTheaterNames
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "leikhúsmiða"
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "miða" "í" QTheaterNames
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "miða" "á" QTheaterNames "sýningu"
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta QTheaterNames
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "leikhússýningu"
+
+QTheaterNames →
+    'leikhús'
+    | 'þjóðleikhús'
     | 'Þjóðleikhús'
-    | QTheaterEgVil? "kaupa" "leikhúsmiða"
-    | QTheaterEgVil? "fara" "í" "leikhús"
-    | QTheaterEgVil? "fara" "á" "leikhússýningu"
+    | 'Borgarleikhús'
+    | 'borgarleikhús'
+
+
+QTheaterKaupaFaraFaPanta →
+    "kaupa" "mér"?
+    | "fara" "á"
+    | "fara" "í"
+    | "fá"
+    | "panta"
 
 QTheaterDialogue → 
     QTheaterShowQuery
@@ -93,6 +108,7 @@ QTheaterDialogue →
     | QYes
     | QNo
     | QCancel
+    | QStatus
     # TODO: Hvað er í boði, ég vil sýningu X, dagsetningu X, X mörg sæti, staðsetningu X
 
 QTheaterOptions →
@@ -116,14 +132,20 @@ QTheaterDateOptions →
     | "hvaða" "dagsetningar" "er" "hægt" "að" "velja" "á" "milli"
 
 QTheaterRowOptions →
-    "hvaða" "raðir" "eru" "í" "boði"
-    | "hvaða" "röð" "er" "í" "boði"
-    | "hvaða" "bekkir" "eru" "í" "boði"
-    | "hvaða" "bekkur" "er" "í" "boði"
+    "hvaða" "raðir" "eru" QTheaterIBodiLausar
+    | "hvaða" "röð" "er" QTheaterIBodiLausar
+    | "hvaða" "bekkir" "eru" QTheaterIBodiLausar
+    | "hvaða" "bekkur" "er" QTheaterIBodiLausar
 
 QTheaterSeatOptions →
-    "hvaða" "sæti" "eru" "í" "boði"
+    "hvaða" "sæti" "eru" QTheaterIBodiLausar
     "hverjir" "eru" "sæta" "valmöguleikarnir"
+
+QTheaterIBodiLausar →
+    "í" "boði"
+    | "lausar"
+    | "lausir"
+    | "laus"
 
 QTheaterShowQuery → QTheaterEgVil? "velja" 'sýning' QTheaterShowName 
     > QTheaterEgVil? "fara" "á" 'sýning' QTheaterShowName
@@ -165,13 +187,12 @@ QTheaterVeljaRod →
     | "fá" "sæti" "á"
 
 QTheaterRodBekkur →
-    "röð"? QNum
-    | "bekk" QNum
+    QTheaterRodBekk? "númer"? QNum
     | QNum "bekk"
     | QNum "röð"
 
 QTheaterShowSeats →
-    QTheaterEgVil? "sæti"? QNum "til"? QNum? 
+    QTheaterEgVil? "sæti"? "númer"? QNum "til"? QNum? 
 
 QTheaterDateOptions → 
     "hvaða" "dagsetningar" "eru" "í" "boði"
@@ -195,22 +216,36 @@ QYes → "já" "já"* | "endilega" | "já" "takk" | "játakk" | "já" "þakka" "
 QNo → "nei" "takk"? | "nei" "nei"* | "neitakk" | "ómögulega"
 
 QCancel → "ég" "hætti" "við"
-    | QTheaterEgVil "hætta" "við" "pöntunina"
-    | QTheaterEgVil "hætta" "við" "pöntunina"
+    | QTheaterEgVil "hætta" "við" QTheaterPontun
+
+QStatus →
+    "staðan"
+    | "hver" "er" "staðan" "á" QTheaterPontun?
+    | "staðan"
+    | "hvert" "var" "ég" 'komin'? "í" QTheaterPontun?
+    | "hvar" "var" "ég" 'komin'? "í"? QTheaterPontun?
+    | "hver" "var" "staðan" "á"? QTheaterPontun
+    | QTheaterEgVil "halda" "áfram" "með" QTheaterPontun
+
+QTheaterPontun →
+    "pöntuninni"
+    | "leikhús" "pöntuninni"
+    | "leikhús" "pöntunina"
+    | "leikhúsmiða" "pöntuninni"
+    | "leikhúsmiða" "pöntunina"
+    | "leikhúsmiðapöntunina"
+    | "leikhúsmiðapöntuninni"
+    | "leikhús" "miða" "pöntunina"
+    | "leikhús" "miða" "pöntuninni"
 
 """
 
-# QLocationRowFirst →
-#     "bekkur" QNum "sæti" QNum "til"? QNum
-#     | "röð" QNum "sæti" QNum "til"? QNum
+class ShowType(TypedDict):
+    title: str
+    date: List[datetime.datetime]
+    location: List[Tuple[int,int]]
 
-# QLocationSeatsFirst →
-#     "ég"? "vil"? "sæti"? QNum "til"? QNum "í" "röð" QNum
-#     | "ég"? "vil"? "sæti"? QNum "til"? QNum "í" QNum "röð"
-#     | "ég"? "vil"? "sæti"? QNum "til"? QNum "á" "bekk" QNum
-#     | "ég"? "vil"? "sæti"? QNum "til"? QNum "á" QNum "bekk"
-
-_SHOWS = [
+_SHOWS: List[ShowType] = [
     {
         "title": "Emil í Kattholti",
         "date": [
@@ -238,7 +273,7 @@ _SHOWS = [
 
 def _generate_show_answer(
     resource: ListResource, dsm: DialogueStateManager
-) -> Optional[str]:
+) -> Optional[AnswerTuple]:
     result = dsm.get_result()
     print("Generate show answer")
     if (not resource.is_confirmed and result.get("options_info")) or result.get(
@@ -247,23 +282,23 @@ def _generate_show_answer(
         shows: list[str] = []
         for show in _SHOWS:
             shows.append(show["title"])
-        return resource.prompts["options"].format(options=", ".join(shows))
+        return gen_answer(resource.prompts["options"].format(options=", ".join(shows)))
     if result.get("no_show_matched"):
-        return resource.prompts["no_show_matched"]
+        return gen_answer(resource.prompts["no_show_matched"])
     if result.get("no_show_matched_data_exists"):
-        return resource.prompts["no_show_matched_data_exists"].format(
+        return gen_answer(resource.prompts["no_show_matched_data_exists"].format(
             show=resource.data[0]
-        )
+        ))
     if resource.is_unfulfilled:
-        return resource.prompts["initial"]
+        return gen_answer(resource.prompts["initial"])
     if resource.is_fulfilled:
-        return resource.prompts["confirm"].format(show=resource.data[0])
+        return gen_answer(resource.prompts["confirm"].format(show=resource.data[0]))
     return None
 
 
 def _generate_date_answer(
     resource: ListResource, dsm: DialogueStateManager
-) -> Optional[str]:
+) -> Optional[AnswerTuple]:
     print("Generating date answer")
     result = dsm.get_result()
     title = dsm.get_resource("Show").data[0]
@@ -286,15 +321,15 @@ def _generate_date_answer(
         )
         options_string += "".join(dates)
         if len(dates) > 0:
-            return resource.prompts["options"].format(options=options_string)
+            return gen_answer(resource.prompts["options"].format(options=options_string))
         else:
-            return resource.prompts["no_date_available"].format(show=title)
+            return gen_answer(resource.prompts["no_date_available"].format(show=title))
     if result.get("no_date_matched"):
-        return resource.prompts["no_date_matched"]
+        return gen_answer(resource.prompts["no_date_matched"])
     if result.get("no_time_matched"):
-        return resource.prompts["no_time_matched"]
+        return gen_answer(resource.prompts["no_time_matched"])
     if result.get("many_matching_times"):
-        return resource.prompts["many_matching_times"]
+        return gen_answer(resource.prompts["many_matching_times"])
     if result.get("multiple_times_for_date"):
         show_date: Optional[datetime.date] = cast(
             DateResource, dsm.get_resource("ShowDate")
@@ -307,9 +342,9 @@ def _generate_date_answer(
                         assert isinstance(date, datetime.datetime)
                         if date.date() == show_date:
                             show_times.append(date.strftime("    %H:%M\n"))
-            return resource.prompts["multiple_times_for_date"].format(
+            return gen_answer(resource.prompts["multiple_times_for_date"].format(
                 date=show_date, times="".join(show_times)
-            )
+            ))
     if resource.is_unfulfilled:
         title: str = dsm.get_resource("Show").data[0]
         dates: list[str] = []
@@ -326,37 +361,40 @@ def _generate_date_answer(
             else "Næstu þrjár dagsetningar eru:\n"
         )
         if len(dates) > 0:
-            return resource.prompts["initial"].format(
+            return gen_answer(resource.prompts["initial"].format(
                 show=title,
                 dates=start_string + "".join(dates),
-            )
+            ))
         else:
-            return resource.prompts["no_date_available"].format(show=title)
+            return gen_answer(resource.prompts["no_date_available"].format(show=title))
     if resource.is_fulfilled:
         date_resource = dsm.get_resource("ShowDate")
         time_resource = dsm.get_resource("ShowTime")
-        return resource.prompts["confirm"].format(
+        return gen_answer(resource.prompts["confirm"].format(
             date=datetime.datetime.combine(
                 date_resource.data,
                 time_resource.data,
             ).strftime("%Y/%m/%d %H:%M")
-        )
+        ))
 
 
 def _generate_seat_count_answer(
     resource: ListResource, dsm: DialogueStateManager
-) -> Optional[str]:
+) -> Optional[AnswerTuple]:
+    result = dsm.get_result()
+    if result.get("invalid_seat_count"):
+        return gen_answer(resource.prompts["invalid_seat_count"])
     if resource.is_unfulfilled:
-        return resource.prompts["initial"]
+        return gen_answer(resource.prompts["initial"])
     if resource.is_fulfilled:
-        return resource.prompts["confirm"].format(
+        return gen_answer(resource.prompts["confirm"].format(
             seats=number_to_text(cast(int, resource.data))
-        )
+        ))
 
 
 def _generate_row_answer(
     resource: ListResource, dsm: DialogueStateManager
-) -> Optional[str]:
+) -> Optional[AnswerTuple]:
     print("Generating row answer")
     result = dsm.get_result()
     title: str = dsm.get_resource("Show").data[0]
@@ -377,29 +415,28 @@ def _generate_row_answer(
                 else:
                     checking_row = row
                     seats_in_row = 1
-    available_row_strings: list[str] = []
     if (not resource.is_confirmed and result.get("options_info")) or result.get(
         "row_options"
     ):
-        return resource.prompts["options"].format(
+        return gen_answer(resource.prompts["options"].format(
             rows=natlang_seq(available_rows), seats=number_to_text(seats)
-        )
+        ))
     if result.get("no_row_matched"):
-        return resource.prompts["no_row_matched"].format(seats=number_to_text(seats))
+        return gen_answer(resource.prompts["no_row_matched"].format(seats=number_to_text(seats)))
     if resource.is_unfulfilled:
         if len(available_rows) == 0:
-            return resource.prompts["not_enough_seats"].format(seats=seats)
-        return resource.prompts["initial"].format(
+            return gen_answer(resource.prompts["not_enough_seats"].format(seats=seats))
+        return gen_answer(resource.prompts["initial"].format(
             seats=number_to_text(seats), seat_rows=natlang_seq(available_rows)
-        )
+        ))
     if resource.is_fulfilled:
         row = dsm.get_resource("ShowSeatRow").data[0]
-        return resource.prompts["confirm"].format(row=number_to_text(row))
+        return gen_answer(resource.prompts["confirm"].format(row=number_to_text(row)))
 
 
 def _generate_seat_number_answer(
     resource: ListResource, dsm: DialogueStateManager
-) -> Optional[str]:
+) -> Optional[AnswerTuple]:
     print("_generate_seat_number_answer", resource.state)
     result = dsm.get_result()
     title: str = dsm.get_resource("Show").data[0]
@@ -414,25 +451,25 @@ def _generate_seat_number_answer(
     if (not resource.is_confirmed and result.get("options_info")) or result.get(
         "seat_options"
     ):
-        return resource.prompts["options"].format(
+        return gen_answer(resource.prompts["options"].format(
             row=number_to_text(chosen_row), options=natlang_seq(available_seats)
-        )
+        ))
     if result.get("wrong_number_seats_selected"):
         print("wrong_number_seats_selected prompt")
         chosen_seats = len(
             range(result.get("numbers")[0], result.get("numbers")[1] + 1)
         )
-        return resource.prompts["wrong_number_seats_selected"].format(
+        return gen_answer(resource.prompts["wrong_number_seats_selected"].format(
             chosen_seats=number_to_text(chosen_seats), seats=number_to_text(seats)
-        )
+        ))
     if result.get("seats_unavailable"):
         print("seats_unavailable prompt")
-        return resource.prompts["seats_unavailable"]
+        return gen_answer(resource.prompts["seats_unavailable"])
     if resource.is_unfulfilled:
         print("initial prompt")
-        return resource.prompts["initial"].format(
+        return gen_answer(resource.prompts["initial"].format(
             seats=natlang_seq(available_seats), row=number_to_text(chosen_row)
-        )
+        ))
     if resource.is_fulfilled:
         print("confirm prompt")
         chosen_seats_string: str = ""
@@ -443,16 +480,16 @@ def _generate_seat_number_answer(
             )
         else:
             chosen_seats_string = number_to_text(result.get("numbers")[0])
-        return resource.prompts["confirm"].format(seats=chosen_seats_string)
+        return gen_answer(resource.prompts["confirm"].format(seats=chosen_seats_string))
 
 
 def _generate_final_answer(
     resource: ListResource, dsm: DialogueStateManager
-) -> Optional[str]:
+) -> Optional[AnswerTuple]:
     if resource.is_cancelled:
-        return resource.prompts["cancelled"]
+        return gen_answer(resource.prompts["cancelled"])
 
-    resource.state = ResourceState.CONFIRMED
+    dsm.set_resource_state(resource.name, ResourceState.CONFIRMED)
     title = dsm.get_resource("Show").data[0]
     date = cast(DateResource, dsm.get_resource("ShowDate")).data
     time = cast(TimeResource, dsm.get_resource("ShowTime")).data
@@ -476,11 +513,12 @@ def _generate_final_answer(
             time,
         ).strftime("%Y/%m/%d %H:%M"),
     )
-    return ans
+    return gen_answer(ans)
 
 
 def QTheaterDialogue(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qtype = _THEATER_QTYPE
+    if "qtype" not in result:
+        result.qtype = _THEATER_QTYPE
 
 
 def QTheaterHotWord(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -496,7 +534,7 @@ def QTheaterShowQuery(node: Node, params: QueryStateDict, result: Result) -> Non
         for show in _SHOWS:
             if show["title"] == selected_show:
                 resource.data = [show["title"]]
-                resource.state = ResourceState.FULFILLED
+                dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
                 show_exists = True
                 break
         if not show_exists:
@@ -514,61 +552,45 @@ def QTheaterShowQuery(node: Node, params: QueryStateDict, result: Result) -> Non
 def _date_callback(
     resource: DateResource, dsm: DialogueStateManager, result: Result
 ) -> None:
-    resource.state = ResourceState.UNFULFILLED
-    print("In date callback")
+    dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
     if dsm.get_resource("Show").is_confirmed:
-        print("Show was confirmed")
         show_title: str = dsm.get_resource("Show").data[0]
         for show in _SHOWS:
             if show["title"] == show_title:
                 for date in show["date"]:
                     if result["show_date"] == date.date():
                         resource.set_date(date.date())
-                        resource.state = ResourceState.FULFILLED
+                        dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
                         break
         time_resource: TimeResource = cast(TimeResource, dsm.get_resource("ShowTime"))
+        dsm.set_resource_state(time_resource.name, ResourceState.UNFULFILLED)
         datetime_resource: Resource = dsm.get_resource("ShowDateTime")
-        if time_resource.is_fulfilled:
-            print("Time resource was fulfilled")
-            datetime_resource.state = ResourceState.FULFILLED
+        show_times: list[datetime.time] = []
+        for show in _SHOWS:
+            if show["title"] == show_title:
+                for date in show["date"]:
+                    if resource.date == date.date():
+                        show_times.append(date.time())
+        if len(show_times) == 0:
+            result.no_date_matched = True
+            return
+        if len(show_times) == 1:
+            time_resource.set_time(show_times[0])
+            dsm.set_resource_state(time_resource.name, ResourceState.FULFILLED)
+            dsm.set_resource_state(datetime_resource.name, ResourceState.FULFILLED)
         else:
-            print("Time resource not fulfilled, trying to add time")
-            show_times: list[datetime.time] = []
-            for show in _SHOWS:
-                if show["title"] == show_title:
-                    for date in show["date"]:
-                        print("Date: ", date)
-                        print("Time: ", date.time())
-                        print("Resource date: ", resource.date)
-                        print("Date date: ", date.date())
-                        print("if: ", date.date() == resource.date)
-                        if resource.date == date.date():
-                            print(
-                                "Adding showtime: ", date.time(), " fyrir date: ", date
-                            )
-                            show_times.append(date.time())
-            print("Show times: ", show_times)
-            if len(show_times) == 0:
-                print("No show times found")
-                result.no_date_matched = True
-                return
-            if len(show_times) == 1:
-                time_resource.set_time(show_times[0])
-                time_resource.state = ResourceState.FULFILLED
-                datetime_resource.state = ResourceState.FULFILLED
-                print("One show time")
-            else:
-                result.multiple_times_for_date = True
-                print("Many showtimes", show_times)
-                datetime_resource.state = ResourceState.PARTIALLY_FULFILLED
+            result.multiple_times_for_date = True
+            dsm.set_resource_state(datetime_resource.name, ResourceState.PARTIALLY_FULFILLED)
 
 
 def _time_callback(
     resource: TimeResource, dsm: DialogueStateManager, result: Result
 ) -> None:
-    resource.state = ResourceState.UNFULFILLED
+    dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
     if result.get("no_date_matched"):
         return
+    if result.get("multiple_times_for_date"):
+        result.multiple_times_for_date = False
     if dsm.get_resource("Show").is_confirmed:
         show_title: str = dsm.get_resource("Show").data[0]
         date_resource: DateResource = cast(DateResource, dsm.get_resource("ShowDate"))
@@ -582,13 +604,13 @@ def _time_callback(
                             date_resource.date == date.date()
                             and result["show_time"] == date.time()
                         ):
-                            first_matching_date = cast(datetime.datetime, date)
+                            first_matching_date = date
                             print("Time callback, date there, setting time")
                             resource.set_time(date.time())
-                            resource.state = ResourceState.FULFILLED
+                            dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
                             break
             if resource.is_fulfilled:
-                datetime_resource.state = ResourceState.FULFILLED
+                dsm.set_resource_state(datetime_resource.name, ResourceState.FULFILLED)
             else:
                 result.wrong_show_time = True
         else:
@@ -597,10 +619,8 @@ def _time_callback(
                     for date in show["date"]:
                         if result["show_time"] == date.time():
                             if first_matching_date is None:
-                                print("Setting first_matching_date")
-                                first_matching_date = cast(datetime.datetime, date)
+                                first_matching_date = date
                             else:
-                                print("Result matched many times, returning")
                                 result.many_matching_times = True
                                 return
             if first_matching_date is not None:
@@ -608,13 +628,15 @@ def _time_callback(
                     DateResource, dsm.get_resource("ShowDate")
                 )
                 date_resource.set_date(first_matching_date.date())
+                dsm.set_resource_state(date_resource.name, ResourceState.FULFILLED)
                 resource.set_time(first_matching_date.time())
+                dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
+                dsm.set_resource_state(datetime_resource.name, ResourceState.FULFILLED)
         if first_matching_date is None:
             result.no_time_matched = True
 
 
 def QTheaterDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
-    print("In theater datetime")
     datetimenode = node.first_child(lambda n: True)
     assert isinstance(datetimenode, TerminalNode)
     now = datetime.datetime.now()
@@ -634,8 +656,6 @@ def QTheaterDateTime(node: Node, params: QueryStateDict, result: Result) -> None
         h += 12
     result["show_time"] = datetime.time(h, min)
     result["show_date"] = datetime.date(y, m, d)
-    print("Show date: ", result["show_date"])
-    print("Show time: ", result["show_time"])
 
     if "callbacks" not in result:
         result["callbacks"] = []
@@ -674,6 +694,9 @@ def QTheaterTime(node: Node, params: QueryStateDict, result: Result) -> None:
     if tnode:
         aux_str = tnode.aux.strip("[]")
         hour, minute, _ = (int(i) for i in aux_str.split(", "))
+        # Change before noon times to afternoon
+        if hour < 12:
+            hour += 12
 
         result["show_time"] = datetime.time(hour, minute)
 
@@ -683,10 +706,6 @@ def QTheaterTime(node: Node, params: QueryStateDict, result: Result) -> None:
         result.callbacks.append((filter_func, _time_callback))
 
 
-def QTheaterDateOptions(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.date_options = True
-
-
 def QTheaterShowSeatCountQuery(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
@@ -694,21 +713,16 @@ def QTheaterShowSeatCountQuery(
         resource: NumberResource, dsm: DialogueStateManager, result: Result
     ) -> None:
         if dsm.get_resource("ShowDateTime").is_confirmed:
-            print("Number count resource data: ", resource.data)
-            resource.data = result.number
-            print("Result.number: ", result.number)
-            resource.state = ResourceState.FULFILLED
+            if result.number > 0:
+                resource.data = result.number
+                dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
+            else:
+                result.invalid_seat_count = True
 
     if "callbacks" not in result:
         result["callbacks"] = []
     filter_func: Callable[[Resource], bool] = lambda r: r.name == "ShowSeatCount"
     result.callbacks.append((filter_func, _add_seat_number))
-
-
-def QLocationSeatsFirst(node: Node, params: QueryStateDict, result: Result) -> None:
-    # Making sure that the row comes before the seats in the list
-    result.numbers.insert(0, result.numbers.pop())
-    print("Result numbers: ", result.numbers)
 
 
 def QTheaterShowRow(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -737,11 +751,11 @@ def QTheaterShowRow(node: Node, params: QueryStateDict, result: Result) -> None:
             if result.number in available_rows:
                 print("Appending row")
                 resource.data = [result.number]
-                resource.state = ResourceState.FULFILLED
+                dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
             else:
                 print("Emptying row data")
                 resource.data = []
-                resource.state = ResourceState.UNFULFILLED
+                dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
                 result.no_row_matched = True
 
     if "callbacks" not in result:
@@ -775,7 +789,7 @@ def QTheaterShowSeats(node: Node, params: QueryStateDict, result: Result) -> Non
                 print("Selected seats does not match number of seats")
                 print("Resource name that is being emptied: ", resource.name)
                 resource.data = []
-                resource.state = ResourceState.UNFULFILLED
+                dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
                 result.wrong_number_seats_selected = True
                 return
             for show in _SHOWS:
@@ -787,7 +801,7 @@ def QTheaterShowSeats(node: Node, params: QueryStateDict, result: Result) -> Non
                         else:
                             print("Seat unavailable")
                             resource.data = []
-                            resource.state = ResourceState.UNFULFILLED
+                            dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
                             result.seats_unavailable = True
                             return
                     resource.data = []
@@ -796,7 +810,7 @@ def QTheaterShowSeats(node: Node, params: QueryStateDict, result: Result) -> Non
             print("Length of data: ", len(resource.data))
             if len(resource.data) > 0:
                 print("Setting state to fulfilled")
-                resource.state = ResourceState.FULFILLED
+                dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
 
     if "callbacks" not in result:
         result["callbacks"] = []
@@ -847,7 +861,8 @@ def QCancel(node: Node, params: QueryStateDict, result: Result):
     def _cancel_order(
         resource: Resource, dsm: DialogueStateManager, result: Result
     ) -> None:
-        resource.state = ResourceState.CANCELLED
+        dsm.set_resource_state(resource.name, ResourceState.CANCELLED)
+        dsm.end_dialogue()
 
     result.qtype = "QCancel"
     if "callbacks" not in result:
@@ -862,7 +877,7 @@ def QYes(node: Node, params: QueryStateDict, result: Result):
     ) -> None:
         if "yes_used" not in result and resource.is_fulfilled:
             print("YES USED", resource.name, " confirming")
-            resource.state = ResourceState.CONFIRMED
+            dsm.set_resource_state(resource.name, ResourceState.CONFIRMED)
             result.yes_used = True
             if resource.name == "ShowDateTime":
                 for rname in resource.requires:
@@ -883,12 +898,11 @@ def QNo(node: Node, params: QueryStateDict, result: Result):
         resource: Resource, dsm: DialogueStateManager, result: Result
     ) -> None:
         if "no_used" not in result and resource.is_fulfilled:
-            print("NO USED", resource.name, " confirming")
-            resource.state = ResourceState.UNFULFILLED
+            dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
             result.no_used = True
             if resource.name == "ShowDateTime":
-                for rname in resource.requires:
-                    dsm.get_resource(rname).state = ResourceState.UNFULFILLED
+                dsm.get_resource("ShowDate").state = ResourceState.UNFULFILLED
+                dsm.get_resource("ShowTime").state = ResourceState.UNFULFILLED
 
     if "callbacks" not in result:
         result["callbacks"] = []
@@ -898,6 +912,10 @@ def QNo(node: Node, params: QueryStateDict, result: Result):
         and not r.is_confirmed
     )
     result.callbacks.append((filter_func, _parse_no))
+
+
+def QStatus(node: Node, params: QueryStateDict, result: Result):
+    result.qtype = "QStatus"
 
 
 SHOW_URL = "https://leikhusid.is/wp-json/shows/v1/categories/938"
@@ -910,7 +928,7 @@ def _fetch_shows() -> Any:
         return [s["title"] for s in resp]
 
 
-_ANSWERING_FUNCTIONS = {
+_ANSWERING_FUNCTIONS: AnsweringFunctionMap = {
     "Show": _generate_show_answer,
     "ShowDateTime": _generate_date_answer,
     "ShowSeatCount": _generate_seat_count_answer,
@@ -934,9 +952,15 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         print("A")
         result.shows = _fetch_shows()
         dsm.setup_dialogue(_ANSWERING_FUNCTIONS)
+        if result.qtype == "QStatus":
+            # Example info handling functionality
+            text = "Leikhúsmiðapöntunin þín gengur bara vel. "
+            ans = dsm.get_answer() or gen_answer(text)
+            q.set_answer(*ans)
+            return
         print("C")
         print(dsm._resources)
-        ans = dsm.get_answer()
+        ans: Optional[AnswerTuple] = dsm.get_answer()
         if "show_options" not in result:
             q.query_is_command()
         print("D")
@@ -946,7 +970,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             return
 
         q.set_qtype(result.qtype)
-        q.set_answer(*gen_answer(ans))
+        q.set_answer(*ans)
     except Exception as e:
         logging.warning("Exception while processing random query: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))

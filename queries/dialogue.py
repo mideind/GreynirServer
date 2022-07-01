@@ -484,30 +484,38 @@ class DialogueStateManager:
         Sets state of all parent resources to unfulfilled
         if cascade_state is set to True for the resource.
         """
+        print("SETTING STATE OF RESOURCE:", resource_name, "TO STATE:", state)
         resource = self._resources[resource_name]
         lowered_state = resource.state > state
         resource.state = state
+        print("CASCADES?", self._resources[resource_name].cascade_state)
         if resource.cascade_state and lowered_state:
             # Find all parent resources and set to corresponding state
-            parents = self._find_parent_resources(resource_name)
-            if parents:
-                for parent in parents:
-                    parent.state = ResourceState.UNFULFILLED
+            print("SEARCHING FOR PARENTS")
+            parent_names = self._find_parent_resources(resource_name)
+            print("PARENTS FOUND:", parent_names)
+            if parent_names:
+                for parent in parent_names:
+                    self._resources[parent].state = ResourceState.UNFULFILLED
 
-    def _find_parent_resources(self, resource_name: str) -> Optional[Set[Resource]]:
+    def _find_parent_resources(self, resource_name: str) -> Optional[Set[str]]:
         """Find all parent resources of a resource"""
-        all_parents: Set[Resource] = set()
+        all_parents: Set[str] = set()
         ap_len: int
         i = 0
+        print("LENGTH OF RESOURCES:", len(self._resources))
         while i < len(self._resources):
-            for resource in self._resources.values():
-                ap_len = len(all_parents)
-                if resource_name in resource.requires and resource not in all_parents:
-                    all_parents.add(resource)
-                    break
-                # If no new parent resources added to ps, return all_parents
-                if len(all_parents) == ap_len:
-                    return all_parents
+            print(list(self._resources.values()))
+            ap_len = len(all_parents)
+            for rname, resource in self._resources.items():
+                if resource_name in resource.requires and rname not in all_parents:
+                    all_parents.add(rname)
+                for r2name in all_parents.copy():
+                    if r2name in resource.requires and rname not in all_parents:
+                        all_parents.add(rname)
+            # If no new parent resources added to ps, return all_parents
+            if len(all_parents) == ap_len:
+                return all_parents
             i += 1
 
     def end_dialogue(self) -> None:
