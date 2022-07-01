@@ -78,7 +78,7 @@ QTheaterHotWord →
     QTheaterNames
     | QTheaterEgVil? QTheaterKaupaFaraFaPanta "leikhúsmiða"
     | QTheaterEgVil? QTheaterKaupaFaraFaPanta "miða" "í" QTheaterNames
-    | QTheaterEgVil?QTheaterKaupaFaraFaPanta "miða" "á" QTheaterNames "sýningu"
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "miða" "á" QTheaterNames "sýningu"
     | QTheaterEgVil? QTheaterKaupaFaraFaPanta QTheaterNames
     | QTheaterEgVil? QTheaterKaupaFaraFaPanta "leikhússýningu"
 
@@ -91,7 +91,7 @@ QTheaterNames →
 
 
 QTheaterKaupaFaraFaPanta →
-    "kaupa"
+    "kaupa" "mér"?
     | "fara" "á"
     | "fara" "í"
     | "fá"
@@ -106,6 +106,7 @@ QTheaterDialogue →
     | QYes
     | QNo
     | QCancel
+    | QStatus
     # TODO: Hvað er í boði, ég vil sýningu X, dagsetningu X, X mörg sæti, staðsetningu X
 
 QTheaterOptions →
@@ -216,18 +217,24 @@ QCancel → "ég" "hætti" "við"
     | QTheaterEgVil "hætta" "við" QTheaterPontun
 
 QStatus →
-    "hver" "er" "staðan"
+    "staðan"
+    | "hver" "er" "staðan" "á" QTheaterPontun?
     | "staðan"
-    | "hvert" "var" "ég" 'komin'
-    | "hvar" "var" "ég" 'komin'?
+    | "hvert" "var" "ég" 'komin'? "í" QTheaterPontun?
+    | "hvar" "var" "ég" 'komin'? "í"? QTheaterPontun?
     | "hver" "var" "staðan" "á"? QTheaterPontun
     | QTheaterEgVil "halda" "áfram" "með" QTheaterPontun
 
 QTheaterPontun →
-    'pöntun'
-    | "leikhús" 'pöntun'
-    | "leikhúsmiða" 'pöntun'
-    | "leikhús" "miða" 'pöntun'
+    "pöntuninni"
+    | "leikhús" "pöntuninni"
+    | "leikhús" "pöntunina"
+    | "leikhúsmiða" "pöntuninni"
+    | "leikhúsmiða" "pöntunina"
+    | "leikhúsmiðapöntunina"
+    | "leikhúsmiðapöntuninni"
+    | "leikhús" "miða" "pöntunina"
+    | "leikhús" "miða" "pöntuninni"
 
 """
 
@@ -511,7 +518,8 @@ def _generate_final_answer(
 
 
 def QTheaterDialogue(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qtype = _THEATER_QTYPE
+    if "qtype" not in result:
+        result.qtype = _THEATER_QTYPE
 
 
 def QTheaterHotWord(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -931,6 +939,10 @@ def QNo(node: Node, params: QueryStateDict, result: Result):
     result.callbacks.append((filter_func, _parse_no))
 
 
+def QStatus(node: Node, params: QueryStateDict, result: Result):
+    result.qtype = "QStatus"
+
+
 SHOW_URL = "https://leikhusid.is/wp-json/shows/v1/categories/938"
 
 
@@ -968,6 +980,12 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         if result.qtype == _START_DIALOGUE_QTYPE:
             print("B")
             dsm.start_dialogue()
+        elif result.qtype == "QStatus":
+            # Example info handling functionality
+            ans = "Leikhúsmiðapöntunin þín gengur bara vel. "
+            ans += dsm.get_answer() or ""
+            q.set_answer(*gen_answer(ans))
+            return
         print("C")
         print(dsm._resources)
         ans = dsm.get_answer()
