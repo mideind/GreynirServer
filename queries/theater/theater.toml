@@ -12,15 +12,17 @@ prompts.no_show_matched_data_exists = "Því miður er þessi sýning ekki í bo
 [[resources]]
 name = "ShowDate"
 type = "DateResource"
+requires = ["Show"]
 
 [[resources]]
 name = "ShowTime"
 type = "TimeResource"
+requires = ["Show"]
 
 [[resources]]
 name = "ShowDateTime"
 type = "ListResource"
-requires = ["Show", "ShowDate", "ShowTime"]
+requires = ["ShowDate", "ShowTime"]
 prompts.initial = "Hvenær viltu fara á sýninguna {show}?\n{dates}"
 prompts.options = "{options}"
 prompts.confirm = "Þú valdir dagsetninguna {date}, viltu halda áfram og velja fjölda sæta?"
