@@ -90,6 +90,8 @@ _RADIO_STEAMS = {
     "kiss fm": "http://stream3.radio.is:443/kissfm",
     "flassbakk": "http://stream.radio.is:443/flashback",
     "flassbakk fm": "http://stream.radio.is:443/flashback",
+    "útvarp 101": "https://stream.101.live/audio/101/chunklist.m3u8",
+    "útvarp hundrað og einn": "https://stream.101.live/audio/101/chunklist.m3u8",
 }
 
 
@@ -200,6 +202,7 @@ class SonosClient:
         """
         print("toggle playpause")
         group_id = self._get_group_id()
+        print("exited group_id")
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/togglePlayPause"
         headers = {
             "Content-Type": "application/json",
@@ -208,6 +211,7 @@ class SonosClient:
 
         # response = requests.request("POST", url, headers=headers, data=payload)
         response = post_to_json_api(url, headers=headers)
+        print("response :", response)
 
         return response
 
@@ -454,6 +458,34 @@ class SonosClient:
                 "itemId": "StreamItemId",
             }
         )
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self._access_token}",
+        }
+
+        response = post_to_json_api(url, payload, headers)
+
+        print(response.text)
+
+    def increase_volume(self):
+        group_id = self._get_group_id()
+        url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/groupVolume/relative"
+
+        payload = json.dumps({"volumeDelta": 10})
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self._access_token}",
+        }
+
+        response = post_to_json_api(url, payload, headers)
+
+        print(response.text)
+
+    def decrease_volume(self):
+        group_id = self._get_group_id()
+        url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/groupVolume/relative"
+
+        payload = json.dumps({"volumeDelta": -10})
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self._access_token}",

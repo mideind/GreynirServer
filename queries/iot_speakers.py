@@ -50,7 +50,7 @@ from util import read_api_key
 from tree import Result, Node
 
 
-_IoT_QTYPE = "IoT"
+_IoT_QTYPE = "IoTSpeakers"
 
 TOPIC_LEMMAS = [
     "tónlist",
@@ -84,7 +84,9 @@ QUERY_NONTERMINALS = {"QIoTSpeaker"}
 # The context-free grammar for the queries recognized by this plug-in module
 # GRAMMAR = read_grammar_file("iot_hue")
 
+# TODO: Fix music hardcoding
 GRAMMAR = f"""
+# TODO: Fix music hardcoding
 
 /þgf = þgf
 /ef = ef
@@ -102,7 +104,7 @@ QIoTSpeakerQuery ->
     | QIoTSpeakerLetVerb QIoTSpeakerLetRest
     | QIoTSpeakerTurnOnVerb QIoTSpeakerTurnOnRest
     | QIoTSpeakerTurnOffVerb QIoTSpeakerTurnOffRest
-    | QIoTSpeakerPlayVerb QIoTSpeakerPlayRest
+    | QIoTSpeakerPlayOrPauseVerb QIoTSpeakerPlayRest
     | QIoTSpeakerIncreaseOrDecreaseVerb QIoTSpeakerIncreaseOrDecreaseRest
 
 QIoTSpeakerMakeVerb ->
@@ -124,9 +126,17 @@ QIoTSpeakerTurnOnVerb ->
 QIoTSpeakerTurnOffVerb ->
     'slökkva:so'_bh
 
+QIoTSpeakerPlayOrPauseVerb ->
+    QIoTSpeakerPlayVerb
+    | QIoTSpeakerPauseVerb
+
 QIoTSpeakerPlayVerb ->
     'spila:so'_bh
-    | "spilaðu"
+
+QIoTSpeakerPauseVerb ->
+    'stöðva:so'_bh
+    | 'stoppa:so'_bh
+    | 'pása:so'_bh
 
 QIoTSpeakerIncreaseOrDecreaseVerb ->
     QIoTSpeakerIncreaseVerb
@@ -147,7 +157,7 @@ QIoTSpeakerMakeRest ->
     # | QCHANGEHvar? QCHANGEHvernigMake QCHANGESubject/þf
     # | QCHANGEHvernigMake QCHANGESubject/þf QCHANGEHvar?
     # | QCHANGEHvernigMake QCHANGEHvar? QCHANGESubject/þf
-    QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
+    QIoTSpeakerMusicWordÞf QIoTSpeakerHvar?
 
 # TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
 QIoTSpeakerSetRest ->
@@ -157,7 +167,7 @@ QIoTSpeakerSetRest ->
     # | QCHANGEHvar? QCHANGEHvernigSet QCHANGESubject/þf
     # | QCHANGEHvernigSet QCHANGESubject/þf QCHANGEHvar?
     # | QCHANGEHvernigSet QCHANGEHvar? QCHANGESubject/þf
-    "á" QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
+    "á" QIoTSpeakerMusicWordÞf QIoTSpeakerHvar?
 
 # QIoTSpeakerChangeRest ->
     # QCHANGESubjectOne/þgf QCHANGEHvar? QCHANGEHvernigChange
@@ -174,107 +184,66 @@ QIoTSpeakerLetRest ->
     # | QCHANGEHvar? QCHANGEHvernigLet QCHANGESubject/þf
     # | QCHANGEHvernigLet QCHANGESubject/þf QCHANGEHvar?
     # | QCHANGEHvernigLet QCHANGEHvar? QCHANGESubject/þf
-    "vera" QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
-    | "á" QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
+    QIoTSpeakerBeOrBecome QIoTSpeakerMusicWordNf QIoTSpeakerHvar?
+    | "á" QIoTSpeakerMusicWordNf QIoTSpeakerHvar?
 
+# TODO: Find out why they conjugate this incorrectly "tónlist" is in þgf here, not þf
 QIoTSpeakerTurnOnRest ->
-    # QCHANGETurnOnLightsRest
-    # | QCHANGEAHverju QCHANGEHvar?
+    QIoTSpeakerAHverju QIoTSpeakerHvar?
     # | QCHANGEHvar? QCHANGEAHverju
-    "á" QIoTSpeakerMusicWord/þgf QIoTSpeakerHvar?
-
-# QCHANGETurnOnLightsRest ->
-#     QCHANGELightSubject/þf QCHANGEHvar?
-#     | QCHANGEHvar QCHANGELightSubject/þf?
 
 # Would be good to add "slökktu á rauða litnum" functionality
 QIoTSpeakerTurnOffRest ->
     # QCHANGETurnOffLightsRest
-    "á" QIoTSpeakerMusicWord/þgf QIoTSpeakerHvar?
-
-# QCHANGETurnOffLightsRest ->
-#     QCHANGELightSubject/þf QCHANGEHvar?
-#     | QCHANGEHvar QCHANGELightSubject/þf?
+    "á" QIoTSpeakerMusicWordÞgf QIoTSpeakerHvar?
 
 QIoTSpeakerPlayRest ->
-    QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
-    | "tónlist"
+    QIoTSpeakerMusicWordÞf QIoTSpeakerHvar?
 
 # TODO: Make the subject categorization cleaner
 QIoTSpeakerIncreaseOrDecreaseRest ->
     # QCHANGELightSubject/þf QCHANGEHvar?
     # | QCHANGEBrightnessSubject/þf QCHANGEHvar?
-    QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
-    | "í" QIoTSpeakerMusicWord/þgf QIoTSpeakerHvar?
+    QIoTSpeakerMusicWordÞf QIoTSpeakerHvar?
+    | "í" QIoTSpeakerMusicWordÞgf QIoTSpeakerHvar?
 
-# QCHANGESubject/fall ->
-#     QCHANGESubjectOne/fall
-#     | QCHANGESubjectTwo/fall
+# Increase specificity
+# QIoTSpeakerMusicWord ->
+#     'tónlist'
 
-QIoTSpeakerMusicWord/fall ->
-    'tónlist:no'/fall
+QIoTSpeakerAHverju ->
+    "á" QIoTSpeakerMusicWordÞf
+#     | "á" QIoTSpeakerNewSetting/þgf
 
-# # TODO: Decide whether LightSubject/þgf should be accepted
-# QCHANGESubjectOne/fall ->
-#     QCHANGELightSubject/fall
-#     | QCHANGEColorSubject/fall
-#     | QCHANGEBrightnessSubject/fall
-#     | QCHANGESceneSubject/fall
+# QIoTSpeakerNewSetting/fall ->
+#     QIoTSpeakerNewRadio/fall
 
-# QCHANGESubjectTwo/fall ->
-#     QCHANGEGroupNameSubject/fall # á bara að styðja "gerðu eldhúsið rautt", "gerðu eldhúsið rómó" "gerðu eldhúsið bjartara", t.d.
+# QIoTSpeakerNewRadio/fall ->
+#     QIoTSpeakerRadioStationWord/fall? QIoTSpeakerRadioStationName/fall
+#     | QIoTSpeakerRadioStationWord/fall? QIoTSpeakerRadioStationNameIndeclinable    
+
+
+# QIoTSpeakerRadioStationWord/fall ->
+#     'útvarpsstöð:no'/fall
+
+QIoTSpeakerMusicWordNf ->
+    "tónlist"
+    | "tónlistin"
+
+QIoTSpeakerMusicWordÞf ->
+    "tónlist"
+    | "tónlistina"
+
+QIoTSpeakerMusicWordÞgf ->
+    "tónlist"
+    | "tónlistinni"
+
+QIoTSpeakerMusicWordEf ->
+    "tónlistar"
+    | "tónlistarinnar"
 
 QIoTSpeakerHvar ->
     QIoTSpeakerLocationPreposition QIoTSpeakerGroupName/þgf
-
-# QCHANGEHvernigMake ->
-#     QCHANGEAnnadAndlag # gerðu litinn rauðan í eldhúsinu EÐA gerðu birtuna meiri í eldhúsinu
-#     | QCHANGEAdHverju # gerðu litinn að rauðum í eldhúsinu
-#     | QCHANGEThannigAd
-
-# QCHANGEHvernigSet ->
-#     QCHANGEAHvad
-#     | QCHANGEThannigAd
-
-# QCHANGEHvernigChange ->
-#     QCHANGEIHvad
-#     | QCHANGEThannigAd
-
-# QCHANGEHvernigLet ->
-#     QCHANGEBecome QCHANGESomethingOrSomehow
-#     | QCHANGEBe QCHANGESomehow
-
-# QCHANGEThannigAd ->
-#     "þannig" "að"? pfn_nf QCHANGEBeOrBecomeSubjunctive QCHANGEAnnadAndlag
-
-# I think these verbs only appear in these forms.
-# In which case these terminals should be deleted and a direct reference should be made in the relevant non-terminals.
-# QCHANGEBe ->
-#     "vera"
-
-# QCHANGEBecome ->
-#     "verða"
-
-# QCHANGEBeOrBecomeSubjunctive ->
-#     "verði"
-#     | "sé"
-
-# QCHANGELightSubject/fall ->
-#     QCHANGELight/fall
-
-# QCHANGEColorSubject/fall ->
-#     QCHANGEColorWord/fall QCHANGELight/ef?
-#     | QCHANGEColorWord/fall "á" QCHANGELight/þgf
-
-# QCHANGEBrightnessSubject/fall ->
-#     QCHANGEBrightnessWord/fall QCHANGELight/ef?
-#     | QCHANGEBrightnessWord/fall "á" QCHANGELight/þgf
-
-# QCHANGESceneSubject/fall ->
-#     QCHANGESceneWord/fall
-
-# QCHANGEGroupNameSubject/fall ->
-#     QCHANGEGroupName/fall
 
 QIoTSpeakerLocationPreposition ->
     QIoTSpeakerLocationPrepositionFirstPart? QIoTSpeakerLocationPrepositionSecondPart
@@ -295,144 +264,29 @@ QIoTSpeakerLocationPrepositionSecondPart ->
 QIoTSpeakerGroupName/fall ->
     no/fall
 
-# QCHANGELightName/fall ->
-#     no/fall
+QIoTSpeakerBeOrBecome ->
+    QIoTSpeakerBe
+    | QIoTSpeakerBecome
 
+QIoTSpeakerBe ->
+    'vera:so'_nh
 
-# QCHANGESceneName ->
-#     no
-#     | lo
-
-# QCHANGEAnnadAndlag ->
-#     QCHANGENewSetting/nf
-#     | QCHANGESpyrjaHuldu/nf
-
-# QCHANGEAdHverju ->
-#     "að" QCHANGENewSetting/þgf
-
-# QCHANGEAHvad ->
-#     "á" QCHANGENewSetting/þf
-
-# QCHANGEIHvad ->
-#     "í" QCHANGENewSetting/þf
-
-# QCHANGEAHverju ->
-#     "á" QCHANGELight/þgf
-#     | "á" QCHANGENewSetting/þgf
-
-# QCHANGESomethingOrSomehow ->
-#     QCHANGEAnnadAndlag
-#     | QCHANGEAdHverju
-
-# QCHANGESomehow ->
-#     QCHANGEAnnadAndlag
-#     | QCHANGEThannigAd
-
-# QCHANGELight/fall ->
-#     QCHANGELightName/fall
-#     | QCHANGELightWord/fall
-
-# # Should 'birta' be included
-# QCHANGELightWord/fall ->
-#     'ljós'/fall
-#     | 'lýsing'/fall
-#     | 'birta'/fall
-#     | 'Birta'/fall
-
-# QCHANGEColorWord/fall ->
-#     'litur'/fall
-#     | 'litblær'/fall
-#     | 'blær'/fall
-
-# QCHANGEBrightnessWords/fall ->
-#     'bjartur'/fall
-#     | QCHANGEBrightnessWord/fall
-
-# QCHANGEBrightnessWord/fall ->
-#     'birta'/fall
-#     | 'Birta'/fall
-#     | 'birtustig'/fall
-
-# QCHANGESceneWord/fall ->
-#     'sena'/fall
-#     | 'stemning'/fall
-#     | 'stemming'/fall
-#     | 'stemmning'/fall
-
-# # Need to ask Hulda how this works.
-# QCHANGESpyrjaHuldu/fall ->
-#     # QCHANGEHuldaColor/fall
-#     QCHANGEHuldaBrightness/fall
-#     # | QCHANGEHuldaScene/fall
-
-# # Do I need a "new light state" non-terminal?
-# QCHANGENewSetting/fall ->
-#     QCHANGENewColor/fall
-#     | QCHANGENewBrightness/fall
-#     | QCHANGENewScene/fall
-
-# # Missing "meira dimmt"
-# QCHANGEHuldaBrightness/fall ->
-#     QCHANGEMoreBrighterOrHigher/fall QCHANGEBrightnessWords/fall?
-#     | QCHANGELessDarkerOrLower/fall QCHANGEBrightnessWords/fall?
-
-# #Unsure about whether to include /fall after QCHANGEColorName
-# QCHANGENewColor/fall ->
-#     QCHANGEColorWord/fall QCHANGEColorName
-#     | QCHANGEColorName QCHANGEColorWord/fall?
-
-# QCHANGENewBrightness/fall ->
-#     'sá'/fall? QCHANGEBrightestOrDarkest/fall
-#     | QCHANGEBrightestOrDarkest/fall QCHANGEBrightnessOrSettingWord/fall
-
-# QCHANGENewScene/fall ->
-#     QCHANGESceneWord/fall QCHANGESceneName
-#     | QCHANGESceneName QCHANGESceneWord/fall?
-
-# QCHANGEMoreBrighterOrHigher/fall ->
-#     'mikill:lo'_mst/fall
-#     | 'bjartur:lo'_mst/fall
-#     | 'ljós:lo'_mst/fall
-#     | 'hár:lo'_mst/fall
-
-# QCHANGELessDarkerOrLower/fall ->
-#     'lítill:lo'_mst/fall
-#     | 'dökkur:lo'_mst/fall
-#     | 'dimmur:lo'_mst/fall
-#     | 'lágur:lo'_mst/fall
-
-# QCHANGEBrightestOrDarkest/fall ->
-#     QCHANGEBrightest/fall
-#     | QCHANGEDarkest/fall
-
-# QCHANGEBrightest/fall ->
-#     'bjartur:lo'_evb
-#     | 'bjartur:lo'_esb
-#     | 'ljós:lo'_evb
-#     | 'ljós:lo'_esb
-
-# QCHANGEDarkest/fall ->
-#     'dimmur:lo'_evb
-#     | 'dimmur:lo'_esb
-#     | 'dökkur:lo'_evb
-#     | 'dökkur:lo'_esb
-
-# QCHANGEBrightnessOrSettingWord/fall ->
-#     QCHANGEBrightnessWord/fall
-#     | QCHANGESettingWord/fall
-
-# QCHANGESettingWord/fall ->
-#     'stilling'/fall
-
+QIoTSpeakerBecome ->
+    'verða:so'_nh
 """
 
 
+def QIoTSpeaker(node: Node, params: QueryStateDict, result: Result) -> None:
+    print("QTYPE")
+    result.qtype = _IoT_QTYPE
+
+
 def QIoTSpeakerIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.action = "increase_volume"
+    result["qkey"] = "increase_volume"
 
 
 def QIoTSpeakerDecreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.action = "decrease_volume"
+    result["qkey"] = "decrease_volume"
 
 
 def QIoTSpeakerGroupName(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -444,47 +298,98 @@ def QIoTMusicWord(node: Node, params: QueryStateDict, result: Result) -> None:
     print("music")
 
 
+def QIoTSpeakerTurnOnVerb(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "play_music"
+
+
+def QIoTSpeakerPauseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
+    print("PAUSE")
+    result["qkey"] = "pause_music"
+
+
+def QIoTSpeakerPlayVerb(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "play_music"
+
+
+# def QIoTSpeakerRadioStationName(
+#     node: Node, params: QueryStateDict, result: Result
+# ) -> None:
+#     result.target = "radio"
+#     print("radio")
+
+
+# def toggle_play_pause(q):
+#     device_data = q.client_data("iot_speakers")
+#     print(device_data)
+#     if device_data is not None:
+#         sonos_client = SonosClient(device_data, q.client_id)
+#     else:
+#         print("No device data found for this account")
+#         return
+#     sonos_client.toggle_play_pause()
+#     answer = "Ég kveikti á tónlist."
+#     answer_list = gen_answer(answer)
+#     answer_list[1].replace("Sonos", "Sónos")
+#     q.set_answer(*answer_list)
+
+
+# def get_device_data(q):
+#     device_data = q.client_data("iot_speakers")
+#     if device_data is not None:
+#         return device_data
+#     else:
+#         print("No device data found for this account")
+#         return
+
+
+_HANDLER_MAP = {
+    "play_music": ["toggle_play_pause", "Ég kveikti á tónlist"],
+    "pause_music": ["toggle_play_pause", "Ég slökkti á tónlist"],
+    "increase_volume": ["increase_volume", "Ég hækkaði í tónlistinni"],
+    "decrease_volume": ["decrease_volume", "Ég lækkaði í tónlistinni"],
+}
+
+
 def sentence(state: QueryStateDict, result: Result) -> None:
     # try:
     print("sentence")
     """Called when sentence processing is complete"""
-    q: Query = state["query"]
-
-    q.set_qtype(result.get("qtype"))
-
-    # TODO: Find way to only catch playing commands
-    if result.get("action") == None:
-        result.action = "play_music"
-
-    smartdevice_type = "smart_speaker"
-
-    # Fetch relevant data from the device_data table to perform an action on the lights
-    device_data = q.client_data("iot_speakers")
-    print(device_data)
-
-    # TODO: Need to add check for if there are no registered devices to an account, probably when initilazing the querydata
-    if device_data is not None:
-        sonos_client = SonosClient(device_data, q.client_id)
+    if "qtype" in result and "qkey" in result:
+        try:
+            q: Query = state["query"]
+            q.set_qtype(result.qtype)
+            device_data = q.client_data("iot_speakers")
+            if device_data is not None:
+                sonos_client = SonosClient(device_data, q.client_id)
+                handler_func = _HANDLER_MAP[result.qkey][0]
+                handler_answer = _HANDLER_MAP[result.qkey][1]
+                getattr(sonos_client, handler_func)()
+                answer = handler_answer
+                answer_list = gen_answer(answer)
+                answer_list[1].replace("Sonos", "Sónos")
+                q.set_answer(*answer_list)
+            else:
+                print("No device data found for this account")
+                return
+        except Exception as e:
+            logging.warning("Exception answering iot_speakers query: {0}".format(e))
+            q.set_error("E_EXCEPTION: {0}".format(e))
+            return
     else:
-        print("No device data found for this account")
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
-    # Perform the action on the Sonos device
-    if result.action == "play_music":
-        sonos_client.toggle_play_pause()
-        answer = "Ég kveikti á tónlist."
-    # elif result.action == "increase_volume":
-    #     sonos_client.increase_volume()
-    # elif result.action == "decrease_volume":
-    #     sonos_client.decrease_volume()
-    # elif result.action == "set_volume":
-    #     sonos_client.set_volume(result.get["volume"])
+    # # TODO: Need to add check for if there are no registered devices to an account, probably when initilazing the querydata
+    # if device_data is not None:
+    #     sonos_client = SonosClient(device_data, q.client_id)
+    # else:
+    #     print("No device data found for this account")
+    #     return
 
-    answer_list = gen_answer(answer)
-    answer_list[1].replace("Sonos", "Sónos")
-    q.set_answer(*answer_list)
-
-    # f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'p3obluiXT13IbHMpp4X63ZvZnpNRdbqqMt723gy2';"
-    # except Exception as e:
-    #     print(e)
-    #     print("Error in sentence")
+    # # Perform the action on the Sonos device
+    # if result.action == "play_music":
+    #     sonos_client.toggle_play_pause(q)
+    #     answer = "Ég kveikti á tónlist."
+    # answer_list = gen_answer(answer)
+    # answer_list[1].replace("Sonos", "Sónos")
+    # q.set_answer(*answer_list)
