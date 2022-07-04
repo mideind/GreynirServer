@@ -56,6 +56,7 @@ _IoT_QTYPE = "IoT"
 
 TOPIC_LEMMAS = [
     "tónlist",
+    "spila",
 ]
 
 # def QIoTSpeakerIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -81,12 +82,19 @@ def help_text(lemma: str) -> str:
 HANDLE_TREE = True
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = {"QIoTSpeaker"}
+QUERY_NONTERMINALS = {"QIoTSpeaker", "QIoTSpeakerQuery"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 # GRAMMAR = read_grammar_file("iot_hue")
 
-GRAMMAR = read_grammar_file("iot_speakers")
+GRAMMAR = read_grammar_file(
+    "iot_speakers",
+)
+
+
+def QIoTSpeaker(node: Node, params: QueryStateDict, result: Result) -> None:
+    print("QTYPE")
+    result.qtype = _IoT_QTYPE
 
 
 def QIoTSpeakerIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -106,56 +114,96 @@ def QIoTMusicWord(node: Node, params: QueryStateDict, result: Result) -> None:
     print("music")
 
 
+def QIoTSpeakerTurnOnVerb(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "play_music"
+
+
+def QIoTSpeakerPauseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
+    print("PAUSE")
+    result["qkey"] = "pause_music"
+
+
+def QIoTSpeakerPlayVerb(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "play_music"
+
+
+# def QIoTSpeakerRadioStationName(
+#     node: Node, params: QueryStateDict, result: Result
+# ) -> None:
+#     result.target = "radio"
+#     print("radio")
+
+
+# def toggle_play_pause(q):
+#     device_data = q.client_data("iot_speakers")
+#     print(device_data)
+#     if device_data is not None:
+#         sonos_client = SonosClient(device_data, q.client_id)
+#     else:
+#         print("No device data found for this account")
+#         return
+#     sonos_client.toggle_play_pause()
+#     answer = "Ég kveikti á tónlist."
+#     answer_list = gen_answer(answer)
+#     answer_list[1].replace("Sonos", "Sónos")
+#     q.set_answer(*answer_list)
+
+
+# def get_device_data(q):
+#     device_data = q.client_data("iot_speakers")
+#     if device_data is not None:
+#         return device_data
+#     else:
+#         print("No device data found for this account")
+#         return
+
+
+_HANDLER_MAP = {
+    "play_music": ["toggle_play_pause", "Ég kveikti á tónlist"],
+    "pause_music": ["toggle_play_pause", "Ég slökkti á tónlist"],
+}
+
+
 def sentence(state: QueryStateDict, result: Result) -> None:
     # try:
     print("sentence")
-    print(
-        "DESCENDANTS:",
-        list(
-            i[0].root(state, result.params)
-            for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))
-        ),
-    )
     """Called when sentence processing is complete"""
-    q: Query = state["query"]
-
-    q.set_qtype(result.get("qtype"))
-
-    # TODO: Find way to only catch playing commands
-    if result.get("action") == None:
-        result.action = "play_music"
-
-    smartdevice_type = "smart_speaker"
-
-    # Fetch relevant data from the device_data table to perform an action on the lights
-    device_data = q.client_data("iot_speakers")
-    print(device_data)
-
-    # TODO: Need to add check for if there are no registered devices to an account, probably when initilazing the querydata
-    if device_data is not None:
-        sonos_client = SonosClient(device_data, q.client_id)
+    if "qtype" in result and "qkey" in result:
+        try:
+            q: Query = state["query"]
+            q.set_qtype(result.qtype)
+            device_data = q.client_data("iot_speakers")
+            if device_data is not None:
+                sonos_client = SonosClient(device_data, q.client_id)
+                handler_func = _HANDLER_MAP[result.qkey][0]
+                handler_answer = _HANDLER_MAP[result.qkey][1]
+                getattr(sonos_client, handler_func)()
+                answer = handler_answer
+                answer_list = gen_answer(answer)
+                answer_list[1].replace("Sonos", "Sónos")
+                q.set_answer(*answer_list)
+            else:
+                print("No device data found for this account")
+                return
+        except Exception as e:
+            logging.warning("Exception answering iot_speakers query: {0}".format(e))
+            q.set_error("E_EXCEPTION: {0}".format(e))
+            return
     else:
-        print("No device data found for this account")
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
-    # Perform the action on the Sonos device
-    if result.action == "play_music":
-        sonos_client.toggle_play_pause()
-        answer = "Ég kveikti á tónlist."
-    # elif result.action == "increase_volume":
-    #     sonos_client.increase_volume()
-    # elif result.action == "decrease_volume":
-    #     sonos_client.decrease_volume()
-    # elif result.action == "set_volume":
-    #     sonos_client.set_volume(result.get["volume"])
+    # # TODO: Need to add check for if there are no registered devices to an account, probably when initilazing the querydata
+    # if device_data is not None:
+    #     sonos_client = SonosClient(device_data, q.client_id)
+    # else:
+    #     print("No device data found for this account")
+    #     return
 
-    answer_list = gen_answer(answer)
-    answer_list[1].replace(
-        "Sonos", "Sónos"
-    )  # Accounting for Embla's Icelandic pronunciation
-    q.set_answer(*answer_list)
-
-    # f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'p3obluiXT13IbHMpp4X63ZvZnpNRdbqqMt723gy2';"
-    # except Exception as e:
-    #     print(e)
-    #     print("Error in sentence")
+    # # Perform the action on the Sonos device
+    # if result.action == "play_music":
+    #     sonos_client.toggle_play_pause(q)
+    #     answer = "Ég kveikti á tónlist."
+    # answer_list = gen_answer(answer)
+    # answer_list[1].replace("Sonos", "Sónos")
+    # q.set_answer(*answer_list)
