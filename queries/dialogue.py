@@ -2,24 +2,21 @@ from typing import (
     Any,
     Callable,
     Dict,
-    Generic,
     Mapping,
-    NewType,
     Set,
     Tuple,
     List,
     Optional,
     Type,
     TypeVar,
-    Union,
     cast,
 )
-from typing_extensions import TypedDict, reveal_type
+from typing_extensions import TypedDict
 
 import os.path
 import json
 import datetime
-from enum import IntEnum, auto
+from enum import IntEnum, IntFlag, auto
 from dataclasses import dataclass, field
 
 try:
@@ -40,20 +37,20 @@ _DIALOGUE_EXTRAS_KEY = "extras"
 _EMPTY_DIALOGUE_DATA = "{}"
 _FINAL_RESOURCE_NAME = "Final"
 
-# Generic resource type (covariant, see https://peps.python.org/pep-0484/#covariance-and-contravariance)
-ResourceType_co = TypeVar("ResourceType_co", covariant=True)
+# Generic resource type
+ResourceType_co = TypeVar("ResourceType_co", bound="Resource")
 
 # Types for use in callbacks
 _CallbackType = Callable[[ResourceType_co, "DialogueStateManager", Result], None]
 _FilterFuncType = Type[Callable[[ResourceType_co], bool]]
 _CallbackTupleType = Tuple[_FilterFuncType["Resource"], _CallbackType["Resource"]]
 
-
 # Types for use in generating prompts/answers
 AnsweringFunctionType = Callable[
-    ["Resource", "DialogueStateManager"], Optional[AnswerTuple]
+    [ResourceType_co, "DialogueStateManager"], Optional[AnswerTuple]
 ]
-AnsweringFunctionMap = Mapping[str, AnsweringFunctionType]
+# TODO: Fix 'Any' in type hint (Callable args are contravariant)
+AnsweringFunctionMap = Mapping[str, AnsweringFunctionType[Any]]
 
 
 class ResourceState(IntEnum):
@@ -68,7 +65,7 @@ class ResourceState(IntEnum):
     PAUSED = auto()
     SKIPPED = auto()
     CANCELLED = auto()
-
+    # ALL = UNFULFILLED | PARTIALLY_FULFILLED | FULFILLED | CONFIRMED | PAUSED | SKIPPED | CANCELLED
 
 ##########################
 #    RESOURCE CLASSES    #
@@ -511,6 +508,7 @@ class DialogueStateManager:
 
     def _find_parent_resources(self, resource_name: str) -> Optional[Set[str]]:
         """Find all parent resources of a resource"""
+        # TODO: FIX ME, UGLY
         all_parents: Set[str] = set()
         ap_len: int
         i = 0

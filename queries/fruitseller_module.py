@@ -353,12 +353,14 @@ def QNumOfFruit(node: Node, params: QueryStateDict, result: Result):
     else:
         result.queryfruits.append([result.fruitnumber, result.fruit])
 
+
 def QNum(node: Node, params: QueryStateDict, result: Result):
     fruitnumber = int(parse_num(node, result._nominative))
     if fruitnumber is not None:
         result.fruitnumber = fruitnumber
     else:
         result.fruitnumber = 1
+
 
 def QFruit(node: Node, params: QueryStateDict, result: Result):
     fruit = result._root
@@ -467,15 +469,12 @@ def QFruitInfoQuery(node: Node, params: QueryStateDict, result: Result):
     result.qtype = "QFruitInfo"
 
 
-def my_test(r: Resource, dsm: DialogueStateManager) -> Optional[AnswerTuple]:
-    return gen_answer("hello")
-
 _ANSWERING_FUNCTIONS: AnsweringFunctionMap = {
     "Fruits": _generate_fruit_answer,
     "DateTime": _generate_datetime_answer,
     "Final": _generate_final_answer,
-    "something": my_test,
 }
+
 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""

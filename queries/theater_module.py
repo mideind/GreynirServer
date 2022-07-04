@@ -721,17 +721,6 @@ def _generate_final_answer(
         date_time=date_time_voice,
     )
     return (dict(answer=text_ans), text_ans, voice_ans)
-    ans = (
-        resource.prompts["final"]
-        .format(
-            seats=seat_voice_string,
-            row=number_to_text(row),
-            show=title,
-            date_time=date_time,
-        )
-        .replace("dagur", "daginn")
-    )
-    return gen_answer(ans)
 
 
 def QTheaterDialogue(node: Node, params: QueryStateDict, result: Result) -> None:
