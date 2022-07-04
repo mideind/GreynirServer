@@ -36,6 +36,7 @@ _DIALOGUE_KEY = "dialogue"
 _DIALOGUE_NAME_KEY = "dialogue_name"
 _DIALOGUE_RESOURCES_KEY = "resources"
 _DIALOGUE_LAST_INTERACTED_WITH_KEY = "last_interacted_with"
+_DIALOGUE_EXTRAS_KEY = "extras"
 _EMPTY_DIALOGUE_DATA = "{}"
 _FINAL_RESOURCE_NAME = "Final"
 
@@ -295,6 +296,7 @@ class DialogueStructureType(TypedDict):
     dialogue_name: str
     resources: Dict[str, Resource]
     last_interacted_with: Optional[datetime.datetime]
+    extras: Dict[str, Any]
 
 
 def _load_dialogue_structure(filename: str) -> DialogueStructureType:
@@ -336,6 +338,7 @@ class DialogueStateManager:
         self._answering_functions: AnsweringFunctionMap = {}
         self._answer_tuple: Optional[AnswerTuple] = None
         self._error: bool = False
+        self._extras: Dict[str, Any] = {}
         # TODO: Delegate answering from a resource to another resource or to another dialogue
         # TODO: í ávaxtasamtali "ég vil panta flug" "viltu að ég geymi ávaxtapöntunina eða eyði henni?" ...
 
@@ -360,6 +363,8 @@ class DialogueStateManager:
             # Change from int to enum type
             resource.state = ResourceState(resource.state)
             self._resources[rname] = resource
+        if _DIALOGUE_EXTRAS_KEY in self._saved_state:
+            self._extras = self._saved_state[_DIALOGUE_EXTRAS_KEY]
         self._answering_functions = answering_functions
 
         if self._result.qtype == self._start_qtype:
@@ -376,6 +381,7 @@ class DialogueStateManager:
                 _DIALOGUE_NAME_KEY: self._dialogue_name,
                 _DIALOGUE_RESOURCES_KEY: {},
                 _DIALOGUE_LAST_INTERACTED_WITH_KEY: datetime.datetime.now(),
+                _DIALOGUE_EXTRAS_KEY: self._extras,
             }
         )
 
@@ -387,6 +393,7 @@ class DialogueStateManager:
                 _DIALOGUE_NAME_KEY: self._dialogue_name,
                 _DIALOGUE_RESOURCES_KEY: self._resources,
                 _DIALOGUE_LAST_INTERACTED_WITH_KEY: datetime.datetime.now(),
+                _DIALOGUE_EXTRAS_KEY: self._extras,
             }
         )
 
@@ -395,6 +402,9 @@ class DialogueStateManager:
 
     def get_result(self) -> Result:
         return self._result
+
+    def get_extras(self) -> Dict[str, Any]:
+        return self._extras
 
     def get_answer(self) -> Optional[AnswerTuple]:
         # Executing callbacks
@@ -461,6 +471,7 @@ class DialogueStateManager:
             _DIALOGUE_NAME_KEY: "",
             _DIALOGUE_RESOURCES_KEY: {},
             _DIALOGUE_LAST_INTERACTED_WITH_KEY: datetime.datetime.now(),
+            _DIALOGUE_EXTRAS_KEY: {},
         }
         if cd:
             ds_str = cd.get(self._dialogue_name)

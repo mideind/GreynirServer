@@ -25,8 +25,9 @@ requires = ["Show"]
 name = "ShowDateTime"
 type = "ListResource"
 requires = ["ShowDate", "ShowTime"]
-prompts.initial = "Hvenær viltu fara á sýninguna {show}?\n{dates}"
-prompts.options = "{options}"
+cascade_state = true
+prompts.initial = "Hvenær viltu fara á sýninguna {show}? Í boði eru {date_number} dagsetningar.\n{dates}"
+prompts.options = "Í boði eru {date_number} dagsetningar. {options}"
 prompts.confirm = "Þú valdir {date}, viltu halda áfram og velja fjölda sæta?"
 prompts.many_matching_times = "Margar dagsetningar pössuðu við gefna tímasetningu, vinsamlegast reyndu aftur."
 prompts.multiple_times_for_date = "Fyrir dagsetninguna sem þú valdir eru nokkrar tímasetningar, hverja af þeim viltu bóka?\nValmöguleikarnir eru:\n{times}"
@@ -51,7 +52,7 @@ prompts.initial = "Að minnsta kosti {seats} sæti eru í boði í röðum {seat
 prompts.options = "Raðir {rows} eru með {seats} laus sæti."
 prompts.confirm = "Þú valdir röð {row}, viltu halda áfram?"
 prompts.no_row_matched = "Því miður er þessi röð ekki með {seats} laus sæti. Vinsamlegast reyndu aftur."
-prompts.not_enough_seats = "Því miður er engin röð með {seats} sæti, vinsamlegast veldu færri sæti eða prófaðu aðra dagsetningu."
+prompts.not_enough_seats = "Því miður er engin röð með {seats} laus sæti á þessari sýningu, vinsamlegast prófaðu aðra dagsetningu."
 
 [[resources]]
 name = "ShowSeatNumber"
