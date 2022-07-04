@@ -722,40 +722,43 @@ def upload_speech_audio(version: int = 1) -> Response:
 @routes.route("/connect_sonos.api", methods=["GET"])
 @routes.route("/connect_sonos.api/v<int:version>", methods=["GET", "POST"])
 def sonos_code(version: int = 1) -> Response:
+    """
+    API endpoint to connect to Sonos speakers
+    """
     print("sonos code")
     args = request.args
     client_id = args.get("state")
     code = args.get("code")
-    code = {"sonos": {"credentials": {"code": code}}}
+    code = {
+        "sonos": {"credentials": {"code": code}}
+    }  # create a dictonary with the code
     if client_id and code:
-        print("if client_id and code")
         success = QueryObject.store_query_data(
             client_id, "iot_speakers", code, update_in_place=True
         )
-        print("store querydata done")
-        print(success)
         if success:
-            print("success")
             device_data = code
+            # Create an instance of the SonosClient class. This will automatically create the rest of the credentials needed.
             sonos_client = SonosClient(device_data, client_id)
-            sonos_voice_clip = f"Hæ!, ég er búin að tengja þennan Sónos hátalara."
-            sonos_client.audio_clip(text_to_audio_url(sonos_voice_clip))
+            sonos_voice_clip = (
+                f"Hæ! Embla hérna. Ég er búin að tengja þennan Sónos hátalara."
+            )
+            sonos_client.audio_clip(text_to_audio_url(sonos_voice_clip)) # Send the above message to the Sonos speaker
             return better_jsonify(valid=True, msg="Registered sonos code")
-    print("else")
     return better_jsonify(valid=False, errmsg="Error registering sonos code.")
 
 
-def sonos_code2(version: int = 1) -> Response:
-    print("sonos code")
-    args = request.args
-    client_id = args.get("state")
-    code = args.get("code")
-    code = {"sonos": {"credentials": {"code": code}}}
-    if client_id and code:
-        success = QueryObject.store_query_data(
-            client_id, "iot_speakers", code, update_in_place=True
-        )
-        if success:
-            return better_jsonify(valid=True, msg="Registered sonos code")
+# def sonos_code2(version: int = 1) -> Response:
+#     print("sonos code")
+#     args = request.args
+#     client_id = args.get("state")
+#     code = args.get("code")
+#     code = {"sonos": {"credentials": {"code": code}}}
+#     if client_id and code:
+#         success = QueryObject.store_query_data(
+#             client_id, "iot_speakers", code, update_in_place=True
+#         )
+#         if success:
+#             return better_jsonify(valid=True, msg="Registered sonos code")
 
-    return better_jsonify(valid=False, errmsg="Error registering sonos code.")
+#     return better_jsonify(valid=False, errmsg="Error registering sonos code.")
