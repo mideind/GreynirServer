@@ -52,7 +52,7 @@ from tree import Result, Node, TerminalNode
 from util import read_api_key
 
 
-_IoT_QTYPE = "IoT"
+_IoT_QTYPE = "IoTSpeakers"
 
 TOPIC_LEMMAS = [
     "tónlist",
@@ -98,11 +98,11 @@ def QIoTSpeaker(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QIoTSpeakerIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.action = "increase_volume"
+    result["qkey"] = "increase_volume"
 
 
 def QIoTSpeakerDecreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.action = "decrease_volume"
+    result["qkey"] = "decrease_volume"
 
 
 def QIoTSpeakerGroupName(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -161,6 +161,8 @@ def QIoTSpeakerPlayVerb(node: Node, params: QueryStateDict, result: Result) -> N
 _HANDLER_MAP = {
     "play_music": ["toggle_play_pause", "Ég kveikti á tónlist"],
     "pause_music": ["toggle_play_pause", "Ég slökkti á tónlist"],
+    "increase_volume": ["increase_volume", "Ég hækkaði í tónlistinni"],
+    "decrease_volume": ["decrease_volume", "Ég lækkaði í tónlistinni"],
 }
 
 

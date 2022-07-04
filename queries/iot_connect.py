@@ -173,6 +173,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         answer = "Skráðu þig inn hjá Sonos"
         voice_answer, response = answer, dict(answer=answer)
         q.set_answer(response, answer, voice_answer)
+        # Redirect the user to a Sonos login screen, which will then forward the neccessary credentials to the connect_sonos.api found in api.py
         q.set_url(
             f"https://api.sonos.com/login/v3/oauth?client_id={sonos_key}&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri=http://{host}/connect_sonos.api"
         )
@@ -189,27 +190,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             q.set_error("Missing sonos code")
             return
         sonos_client = SonosClient(device_data, q)
-        # code = device_data.get("sonos").get("credentials").get("code")
-        # if device_data is None or code is None:
-        #     q.set_error("Missing sonos code")
-        #     return
-        # sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
-        # response = create_token(code, sonos_encoded_credentials, host)
-        # response = sonos_client.create_token()
-        # access_token, refresh_token = (
-        #     response.get("access_token"),
-        #     response.get("refresh_token"),
-        # )
-        # if access_token is None or refresh_token is None:
-        #     q.set_error("Missing sonos access token")
-        #     return
-        # sonos_client.set_credentials(access_token, refresh_token)
         sonos_client.set_data()
-        # timestamp = str(datetime.now())
-        # data_dict = sonos_client.create_sonos_data_dict()
-        # cred_dict = sonos_client.create_sonos_cred_dict()
-        # print("data dict for update", data_dict)
-        # print("cred dict for update", cred_dict)
         sonos_client.store_sonos_data_and_credentials()
 
         answer = "Ég bjó til tóka frá Sónos"
@@ -224,143 +205,143 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         return
 
 
-def create_sonos_data_dict(access_token, q):
-    data_dict = {}
-    households = get_households(access_token).json()
-    data_dict.update(households)
-    groups_list = []
-    players_list = []
-    for i in range(len(households)):
-        groups_object = get_groups(
-            households["households"][i]["id"], access_token
-        ).json()
-        groups_raw = groups_object.get("groups")
-        players_raw = groups_object.get("players")
-        groups_list += create_grouplist_for_db(groups_raw)
-        players_list += create_playerlist_for_db(players_raw)
+# def create_sonos_data_dict(access_token, q):
+#     data_dict = {}
+#     households = get_households(access_token).json()
+#     data_dict.update(households)
+#     groups_list = []
+#     players_list = []
+#     for i in range(len(households)):
+#         groups_object = get_groups(
+#             households["households"][i]["id"], access_token
+#         ).json()
+#         groups_raw = groups_object.get("groups")
+#         players_raw = groups_object.get("players")
+#         groups_list += create_grouplist_for_db(groups_raw)
+#         players_list += create_playerlist_for_db(players_raw)
 
-    data_dict["groups"] = groups_list
-    data_dict["players"] = players_list
-    return data_dict
-
-
-def create_sonos_cred_dict(access_token, refresh_token, timestamp, q):
-    cred_dict = {}
-    cred_dict.update(
-        {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "timestamp": timestamp,
-        }
-    )
-    return cred_dict
+#     data_dict["groups"] = groups_list
+#     data_dict["players"] = players_list
+#     return data_dict
 
 
-def store_sonos_data_and_credentials(data_dict, cred_dict, q):
-    sonos_dict = {}
-    sonos_dict["sonos"] = {"credentials": cred_dict, "data": data_dict}
-    print("final dict for db :", sonos_dict)
-    q.set_client_data("iot_speakers", sonos_dict, update_in_place=True)
+# def create_sonos_cred_dict(access_token, refresh_token, timestamp, q):
+#     cred_dict = {}
+#     cred_dict.update(
+#         {
+#             "access_token": access_token,
+#             "refresh_token": refresh_token,
+#             "timestamp": timestamp,
+#         }
+#     )
+#     return cred_dict
 
 
-def create_grouplist_for_db(groups):
-    groups_list = []
-    for i in range(len(groups)):
-        groups_list.append({groups[i]["name"]: groups[i]["id"]})
-    return groups_list
+# def store_sonos_data_and_credentials(data_dict, cred_dict, q):
+#     sonos_dict = {}
+#     sonos_dict["sonos"] = {"credentials": cred_dict, "data": data_dict}
+#     print("final dict for db :", sonos_dict)
+#     q.set_client_data("iot_speakers", sonos_dict, update_in_place=True)
 
 
-def create_playerlist_for_db(players):
-    player_list = []
-    for i in range(len(players)):
-        player_list.append({players[i]["name"]: players[i]["id"]})
-    return player_list
+# def create_grouplist_for_db(groups):
+#     groups_list = []
+#     for i in range(len(groups)):
+#         groups_list.append({groups[i]["name"]: groups[i]["id"]})
+#     return groups_list
 
 
-# put this in a separate file
-def get_households(token):
-    """
-    Returns the list of households of the user
-    """
-    url = f"https://api.ws.sonos.com/control/api/v1/households"
-
-    payload = {}
-    headers = {"Authorization": f"Bearer {token}"}
-
-    response = requests.request("GET", url, headers=headers, data=payload)
-
-    return response
+# def create_playerlist_for_db(players):
+#     player_list = []
+#     for i in range(len(players)):
+#         player_list.append({players[i]["name"]: players[i]["id"]})
+#     return player_list
 
 
-def get_groups(household_id, token):
-    """
-    Returns the list of groups of the user
-    """
-    url = f"https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups"
+# # put this in a separate file
+# def get_households(token):
+#     """
+#     Returns the list of households of the user
+#     """
+#     url = f"https://api.ws.sonos.com/control/api/v1/households"
 
-    payload = {}
-    headers = {"Authorization": f"Bearer {token}"}
+#     payload = {}
+#     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.request("GET", url, headers=headers, data=payload)
+#     response = requests.request("GET", url, headers=headers, data=payload)
 
-    return response
-
-
-def create_token(code, sonos_encoded_credentials, host):
-    """
-    Creates a token given a code
-    """
-    url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://{host}/connect_sonos.api"
-
-    payload = {}
-    headers = {
-        "Authorization": f"Basic {sonos_encoded_credentials}",
-        "Cookie": "JSESSIONID=F710019AF0A3B7126A8702577C883B5F; AWSELB=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBCFB059E28075D83A700FD504C030A53CC28683B515BE3DCA3CC587AFAF606E171; AWSELBCORS=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBCFB059E28075D83A700FD504C030A53CC28683B515BE3DCA3CC587AFAF606E171",
-    }
-
-    response = requests.request("POST", url, headers=headers, data=payload)
-
-    return response.json()
+#     return response
 
 
-def toggle_play_pause(group_id, token):
-    """
-    Toggles the play/pause of a group
-    """
-    url = (
-        f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/playPause"
-    )
+# def get_groups(household_id, token):
+#     """
+#     Returns the list of groups of the user
+#     """
+#     url = f"https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups"
 
-    payload = {}
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
+#     payload = {}
+#     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.request("POST", url, headers=headers, data=payload)
+#     response = requests.request("GET", url, headers=headers, data=payload)
 
-    return response
+#     return response
 
 
-def audio_clip(audioclip_url, player_id, token):
-    """
-    Plays an audioclip from link to .mp3 file
-    """
-    import requests
-    import json
+# def create_token(code, sonos_encoded_credentials, host):
+#     """
+#     Creates a token given a code
+#     """
+#     url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://{host}/connect_sonos.api"
 
-    url = f"https://api.ws.sonos.com/control/api/v1/players/{player_id}/audioClip"
+#     payload = {}
+#     headers = {
+#         "Authorization": f"Basic {sonos_encoded_credentials}",
+#         "Cookie": "JSESSIONID=F710019AF0A3B7126A8702577C883B5F; AWSELB=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBCFB059E28075D83A700FD504C030A53CC28683B515BE3DCA3CC587AFAF606E171; AWSELBCORS=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBCFB059E28075D83A700FD504C030A53CC28683B515BE3DCA3CC587AFAF606E171",
+#     }
 
-    payload = json.dumps(
-        {
-            "name": "Embla",
-            "appId": "com.acme.app",
-            "streamUrl": f"{audioclip_url}",
-            "volume": 50,
-            "priority": "HIGH",
-            "clipType": "CUSTOM",
-        }
-    )
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {token}",
-    }
+#     response = requests.request("POST", url, headers=headers, data=payload)
 
-    response = requests.request("POST", url, headers=headers, data=payload)
+#     return response.json()
+
+
+# def toggle_play_pause(group_id, token):
+#     """
+#     Toggles the play/pause of a group
+#     """
+#     url = (
+#         f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/playPause"
+#     )
+
+#     payload = {}
+#     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
+
+#     response = requests.request("POST", url, headers=headers, data=payload)
+
+#     return response
+
+
+# def audio_clip(audioclip_url, player_id, token):
+#     """
+#     Plays an audioclip from link to .mp3 file
+#     """
+#     import requests
+#     import json
+
+#     url = f"https://api.ws.sonos.com/control/api/v1/players/{player_id}/audioClip"
+
+#     payload = json.dumps(
+#         {
+#             "name": "Embla",
+#             "appId": "com.acme.app",
+#             "streamUrl": f"{audioclip_url}",
+#             "volume": 50,
+#             "priority": "HIGH",
+#             "clipType": "CUSTOM",
+#         }
+#     )
+#     headers = {
+#         "Content-Type": "application/json",
+#         "Authorization": f"Bearer {token}",
+#     }
+
+#     response = requests.request("POST", url, headers=headers, data=payload)
