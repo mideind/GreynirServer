@@ -294,7 +294,36 @@ _SHOWS: List[ShowType] = [
             (6, 24),
         ],
     },
+    {
+        "title": "Lína Langsokkur",
+        "date": [
+            datetime.datetime(2022, 8, 27, 13, 0),
+            datetime.datetime(2022, 8, 28, 13, 0),
+            datetime.datetime(2022, 8, 28, 17, 0),
+            datetime.datetime(2022, 9, 3, 13, 0),
+            datetime.datetime(2022, 9, 3, 17, 0),
+            datetime.datetime(2022, 9, 4, 13, 0),
+            datetime.datetime(2022, 9, 10, 13, 0),
+        ],
+        "location": [
+            (1, 11),  # (row, seat)
+            (1, 12),
+            (1, 13),
+            (1, 14),
+            (2, 7),
+            (2, 18),
+            (2, 19),
+            (6, 20),
+            (6, 21),
+            (6, 22),
+            (6, 23),
+            (6, 24),
+        ],
+    },
 ]
+
+_BREAK_LENGTH = 0.3  # Seconds
+_BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
 
 
 def _generate_show_answer(
@@ -307,8 +336,14 @@ def _generate_show_answer(
     ):
         shows: list[str] = []
         for show in _SHOWS:
-            shows.append(show["title"])
-        return gen_answer(resource.prompts["options"].format(options=", ".join(shows)))
+            shows.append("\n   - " + show["title"])
+        print("Prompts: ", resource.prompts)
+        ans = resource.prompts["options"]
+        if len(shows) == 1:
+            ans = ans.replace("Sýningarnar", "Sýningin").replace("eru", "er")
+        text_ans = ans.format(options="".join(shows))
+        voice_ans = ans.format(options=natlang_seq(shows)).replace("-", "")
+        return (dict(answer=text_ans), text_ans, voice_ans)
     if result.get("no_show_matched"):
         return gen_answer(resource.prompts["no_show_matched"])
     if result.get("no_show_matched_data_exists"):
@@ -332,6 +367,7 @@ def _generate_date_answer(
     title = dsm.get_resource("Show").data[0]
 
     dates: list[str] = []
+    text_dates: list[str] = []
     index: int = 0
     extras: Dict[str, Any] = dsm.get_extras()
     if "page_index" in extras:
@@ -340,21 +376,22 @@ def _generate_date_answer(
         if show["title"] == title:
             for date in show["date"]:
                 with changedlocale(category="LC_TIME"):
-                    dates.append(date.strftime("    %A %d. %B klukkan %H:%M\n"))
+                    text_dates.append(date.strftime("\n   - %a %d. %b kl. %H:%M"))
+                    dates.append(date.strftime("\n%A %d. %B klukkan %H:%M"))
     date_number: int = 3 if len(dates) >= 3 else len(dates)
     start_string: str = (
-        "Eftirfarandi dagsetning er í boði:\n"
+        "Eftirfarandi dagsetning er í boði:"
         if date_number == 1
-        else "Næstu tvær dagsetningar eru:\n"
+        else "Næstu tvær dagsetningarnar eru:"
         if date_number == 2
-        else "Næstu þrjár dagsetningar eru:\n"
+        else "Næstu þrjár dagsetningarnar eru:"
     )
     if index == 0:
         start_string = start_string.replace("Næstu", "Fyrstu")
     if len(dates) < 3:
         index = 0
         extras["page_index"] = 0
-    if index > len(dates) - 3:
+    if index > len(dates) - 3 and len(dates) > 3:
         start_string = "Síðustu þrjár dagsetningarnar eru:\n"
         index = max(0, len(dates) - 3)
         extras["page_index"] = index
@@ -362,17 +399,26 @@ def _generate_date_answer(
     if (not resource.is_confirmed and result.get("options_info")) or result.get(
         "date_options"
     ):
-        options_string = start_string + natlang_seq(dates[0:date_number])
+        options_string = (
+            start_string + natlang_seq(dates[index : index + date_number])
+        ).replace("dagur", "dagurinn")
+        text_options_string = start_string + "".join(
+            text_dates[index : index + date_number]
+        )
         if len(dates) > 0:
-            ans = gen_answer(
-                resource.prompts["options"]
-                .format(
-                    options=options_string,
-                    date_number=number_to_text(len(dates), gender="kvk"),
-                )
-                .replace("dagur", "dagurinn")
+            ans = resource.prompts["options"]
+            if date_number == 1:
+                ans = ans.replace("eru", "er").replace("dagsetningar", "dagsetning")
+            voice_ans = ans.format(
+                options=options_string,
+                date_number=number_to_text(len(dates), gender="kvk"),
+            ).replace("\n", _BREAK_SSML)
+            text_ans = ans.format(
+                options=text_options_string,
+                date_number=number_to_text(len(dates), gender="kvk"),
             )
-            return (ans[0], ans[1], numbers_to_ordinal(ans[2]))
+
+            return (dict(answer=text_ans), text_ans, numbers_to_ordinal(voice_ans))
         else:
             return gen_answer(resource.prompts["no_date_available"].format(show=title))
     if result.get("no_date_matched"):
@@ -392,25 +438,41 @@ def _generate_date_answer(
                     for date in show["date"]:
                         assert isinstance(date, datetime.datetime)
                         if date.date() == show_date:
-                            show_times.append(date.strftime("    %H:%M\n"))
+                            show_times.append(date.strftime("\n   - %H:%M"))
+            ans = resource.prompts["multiple_times_for_date"]
+            voice_times = " klukkan " + natlang_seq(show_times)
+            voice_ans = ans.format(
+                times=voice_times.replace("\n   -", "").replace("\n", _BREAK_SSML)
+            )
+            text_ans = ans.format(times="".join((show_times)))
             ans = gen_answer(
                 resource.prompts["multiple_times_for_date"]
                 .format(times=natlang_seq(show_times))
                 .replace("dagur", "dagurinn")
             )
-            return (ans[0], ans[1], numbers_to_ordinal(ans[2]))
+            return (dict(answer=text_ans), text_ans, numbers_to_ordinal(voice_ans))
     if resource.is_unfulfilled:
         if len(dates) > 0:
-            ans = gen_answer(
-                resource.prompts["initial"]
-                .format(
-                    show=title,
-                    dates=start_string + "".join(dates[index : index + 3]),
-                    date_number=number_to_text(len(dates), gender="kvk"),
-                )
-                .replace("dagur", "dagurinn")
+            ans = resource.prompts["initial"]
+            if date_number == 1:
+                ans = ans.replace("eru", "er").replace("dagsetningar", "dagsetning")
+            voice_date_string = (
+                start_string + natlang_seq(dates[index : index + date_number])
+            ).replace("dagur", "dagurinn")
+            text_date_string = start_string + "".join(
+                text_dates[index : index + date_number]
             )
-            return (ans[0], ans[1], numbers_to_ordinal(ans[2]))
+            voice_ans = ans.format(
+                show=title,
+                dates=voice_date_string,
+                date_number=number_to_text(len(dates), gender="kvk"),
+            ).replace("\n", _BREAK_SSML)
+            text_ans = ans.format(
+                show=title,
+                dates=text_date_string,
+                date_number=len(dates),
+            )
+            return (dict(answer=text_ans), text_ans, numbers_to_ordinal(voice_ans))
         else:
             return gen_answer(resource.prompts["no_date_available"].format(show=title))
     if resource.is_fulfilled:
@@ -430,7 +492,7 @@ def _generate_date_answer(
 
 
 def _generate_seat_count_answer(
-    resource: ListResource, dsm: DialogueStateManager
+    resource: NumberResource, dsm: DialogueStateManager
 ) -> Optional[AnswerTuple]:
     result = dsm.get_result()
     if result.get("invalid_seat_count"):
@@ -438,11 +500,21 @@ def _generate_seat_count_answer(
     if resource.is_unfulfilled:
         return gen_answer(resource.prompts["initial"])
     if resource.is_fulfilled:
-        return gen_answer(
-            resource.prompts["confirm"].format(
-                seats=number_to_text(cast(int, resource.data))
-            )
-        )
+        ans = resource.prompts["confirm"]
+        nr_seats: int = resource.data
+        print("Seats: ", resource.data)
+        if nr_seats == 1:
+            print("if ans: ", ans)
+            ans = ans.replace("eru", "er")
+            print("after if ans: ", ans)
+        text_ans = ans.format(seats=resource.data)
+        voice_ans = ans.format(seats=number_to_text(resource.data))
+        # return gen_answer(
+        #     resource.prompts["confirm"].format(
+        #         seats=number_to_text(cast(int, resource.data))
+        #     )
+        # )
+        return (dict(answer=text_ans), text_ans, voice_ans)
 
 
 def _generate_row_answer(
@@ -453,6 +525,7 @@ def _generate_row_answer(
     title: str = dsm.get_resource("Show").data[0]
     seats: int = dsm.get_resource("ShowSeatCount").data
     available_rows: list[str] = []
+    text_available_rows: list[str] = []
     for show in _SHOWS:
         if show["title"] == title:
             checking_row: int = 1
@@ -463,6 +536,7 @@ def _generate_row_answer(
                     seats_in_row += 1
                     if seats_in_row >= seats:
                         available_rows.append(number_to_text(row))
+                        text_available_rows.append(str(row))
                         seats_in_row = 0
                         row_added = row
                 else:
@@ -471,28 +545,49 @@ def _generate_row_answer(
     if (not resource.is_confirmed and result.get("options_info")) or result.get(
         "row_options"
     ):
-        return gen_answer(
-            resource.prompts["options"].format(
-                rows=natlang_seq(available_rows), seats=number_to_text(seats)
-            )
+        ans = resource.prompts["options"]
+        if len(available_rows) == 1:
+            ans = ans.replace("eru", "er").replace("Raðir", "Röð")
+        if seats == 1:
+            ans = ans.replace("laus", "laust")
+        text_ans = ans.format(rows=natlang_seq(text_available_rows), seats=seats)
+        voice_ans = ans.format(
+            rows=natlang_seq(available_rows), seats=number_to_text(seats)
         )
+        return (dict(answer=text_ans), text_ans, voice_ans)
     if result.get("no_row_matched"):
-        return gen_answer(
-            resource.prompts["no_row_matched"].format(seats=number_to_text(seats))
-        )
+        ans = resource.prompts["no_row_matched"]
+        if seats == 1:
+            ans = ans.replace("laus", "laust")
+        text_ans = ans.format(seats=seats)
+        voice_ans = ans.format(seats=number_to_text(seats))
+        return (dict(answer=text_ans), text_ans, voice_ans)
     if resource.is_unfulfilled:
         if len(available_rows) == 0:
             dsm.set_resource_state("ShowDateTime", ResourceState.UNFULFILLED)
             dsm.get_extras()["page_index"] = 0
-            return gen_answer(resource.prompts["not_enough_seats"].format(seats=seats))
-        return gen_answer(
-            resource.prompts["initial"].format(
-                seats=number_to_text(seats), seat_rows=natlang_seq(available_rows)
-            )
+            ans = resource.prompts["not_enough_seats"]
+            if seats == 1:
+                ans = ans.replace("laus", "laust")
+            text_ans = ans.format(seats=seats)
+            voice_ans = ans.format(seats=number_to_text(seats))
+            return (dict(answer=text_ans), text_ans, voice_ans)
+        ans = resource.prompts["initial"]
+        if len(available_rows) == 1:
+            ans = ans.replace("röðum", "röð")
+        if seats == 1:
+            ans = ans.replace("eru", "er")
+        text_ans = ans.format(seats=seats, seat_rows=natlang_seq(text_available_rows))
+        voice_ans = ans.format(
+            seats=number_to_text(seats), seat_rows=natlang_seq(available_rows)
         )
+        return (dict(answer=text_ans), text_ans, voice_ans)
     if resource.is_fulfilled:
         row = dsm.get_resource("ShowSeatRow").data[0]
-        return gen_answer(resource.prompts["confirm"].format(row=number_to_text(row)))
+        ans = resource.prompts["confirm"]
+        text_ans = ans.format(row=row)
+        voice_ans = ans.format(row=number_to_text(row))
+        return (dict(answer=text_ans), text_ans, voice_ans)
 
 
 def _generate_seat_number_answer(
@@ -504,34 +599,48 @@ def _generate_seat_number_answer(
     seats: int = dsm.get_resource("ShowSeatCount").data
     chosen_row: int = dsm.get_resource("ShowSeatRow").data[0]
     available_seats: list[str] = []
+    text_available_seats: list[str] = []
     for show in _SHOWS:
         if show["title"] == title:
             for (row, seat) in show["location"]:
                 if chosen_row == row:
+                    text_available_seats.append(str(seat))
                     available_seats.append(number_to_text(seat))
     if (not resource.is_confirmed and result.get("options_info")) or result.get(
         "seat_options"
     ):
-        return gen_answer(
-            resource.prompts["options"].format(
-                row=number_to_text(chosen_row), options=natlang_seq(available_seats)
-            )
+        ans = resource.prompts["options"]
+        if len(available_seats) == 1:
+            ans = ans.replace("Sætin", "Sætið").replace("eru", "er")
+        text_ans = ans.format(row=chosen_row, options=natlang_seq(text_available_seats))
+        voice_ans = ans.format(
+            row=number_to_text(chosen_row), options=natlang_seq(available_seats)
         )
+        return (dict(answer=text_ans), text_ans, voice_ans)
     if result.get("wrong_number_seats_selected"):
         print("wrong_number_seats_selected prompt")
         chosen_seats = len(
             range(result.get("numbers")[0], result.get("numbers")[1] + 1)
         )
-        return gen_answer(
-            resource.prompts["wrong_number_seats_selected"].format(
-                chosen_seats=number_to_text(chosen_seats), seats=number_to_text(seats)
-            )
+        ans = resource.prompts["wrong_number_seats_selected"]
+        text_ans = ans.format(chosen_seats=chosen_seats, seats=seats)
+        voice_ans = ans.format(
+            chosen_seats=number_to_text(chosen_seats), seats=number_to_text(seats)
         )
+        return (dict(answer=text_ans), text_ans, voice_ans)
     if result.get("seats_unavailable"):
         print("seats_unavailable prompt")
         return gen_answer(resource.prompts["seats_unavailable"])
     if resource.is_unfulfilled:
         print("initial prompt")
+        ans = resource.prompts["initial"]
+        if len(available_seats) == 1:
+            ans = ans.replace("eru", "er")
+        text_ans = ans.format(seats=natlang_seq(text_available_seats), row=chosen_row)
+        voice_ans = ans.format(
+            seats=natlang_seq(available_seats), row=number_to_text(chosen_row)
+        )
+        return (dict(answer=text_ans), text_ans, voice_ans)
         return gen_answer(
             resource.prompts["initial"].format(
                 seats=natlang_seq(available_seats), row=number_to_text(chosen_row)
@@ -539,15 +648,25 @@ def _generate_seat_number_answer(
         )
     if resource.is_fulfilled:
         print("confirm prompt")
-        chosen_seats_string: str = ""
+        chosen_seats_voice_string: str = ""
+        chosen_seats_text_string: str = ""
+
         if seats > 1:
-            chosen_seats_string = "{first_seat} til {last_seat}".format(
+            chosen_seats_voice_string = "{first_seat} til {last_seat}".format(
                 first_seat=number_to_text(result.get("numbers")[0]),
                 last_seat=number_to_text(result.get("numbers")[1]),
             )
+            chosen_seats_text_string = "{first_seat} til {last_seat}".format(
+                first_seat=result.get("numbers")[0],
+                last_seat=result.get("numbers")[1],
+            )
         else:
-            chosen_seats_string = number_to_text(result.get("numbers")[0])
-        return gen_answer(resource.prompts["confirm"].format(seats=chosen_seats_string))
+            chosen_seats_voice_string = number_to_text(result.get("numbers")[0])
+            chosen_seats_text_string = result.get("numbers")[0]
+        ans = resource.prompts["confirm"]
+        text_ans = ans.format(seats=chosen_seats_text_string)
+        voice_ans = ans.format(seats=chosen_seats_voice_string)
+        return (dict(answer=text_ans), text_ans, voice_ans)
 
 
 def _generate_final_answer(
@@ -563,23 +682,49 @@ def _generate_final_answer(
     number_of_seats = cast(NumberResource, dsm.get_resource("ShowSeatCount")).data
     seats = dsm.get_resource("ShowSeatNumber").data
     seat_string: str = ""
+    seat_voice_string: str = ""
+    seats_text_string: str = ""
     if number_of_seats > 1:
-        seat_string = "{first_seat} til {last_seat}".format(
+        seat_voice_string = "{first_seat} til {last_seat}".format(
             first_seat=number_to_text(seats[0]),
             last_seat=number_to_text(seats[-1]),
         )
+        seats_text_string = "{first_seat} til {last_seat}".format(
+            first_seat=seats[0],
+            last_seat=seats[-1],
+        )
     else:
-        seat_string = number_to_text(seats[0])
+        seat_voice_string = number_to_text(seats[0])
+        seats_text_string = seats[0]
     row = dsm.get_resource("ShowSeatRow").data[0]
     with changedlocale(category="LC_TIME"):
-        date_time: str = datetime.datetime.combine(
+        date_time_voice: str = (
+            datetime.datetime.combine(
+                date,
+                time,
+            )
+            .strftime("%A %d. %B klukkan %H:%M\n")
+            .replace("dagur", "daginn")
+        )
+        date_time_text: str = datetime.datetime.combine(
             date,
             time,
-        ).strftime("%A %d. %B klukkan %H:%M\n")
+        ).strftime("%a %d. %b kl. %H:%M")
+    ans = resource.prompts["final"]
+    text_ans = ans.format(
+        seats=seats_text_string, row=row, show=title, date_time=date_time_text
+    )
+    voice_ans = ans.format(
+        seats=seat_voice_string,
+        row=number_to_text(row),
+        show=title,
+        date_time=date_time_voice,
+    )
+    return (dict(answer=text_ans), text_ans, voice_ans)
     ans = (
         resource.prompts["final"]
         .format(
-            seats=seat_string,
+            seats=seat_voice_string,
             row=number_to_text(row),
             show=title,
             date_time=date_time,
