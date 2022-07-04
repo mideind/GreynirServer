@@ -299,8 +299,7 @@ class DialogueStructureType(TypedDict):
 def _load_dialogue_structure(filename: str) -> DialogueStructureType:
     """Loads dialogue structure from TOML file."""
     basepath, _ = os.path.split(os.path.realpath(__file__))
-    # TODO: Fix this, causes issues when folders have the same name as a module
-    fpath = os.path.join(basepath, filename, filename + ".toml")
+    fpath = os.path.join(basepath, "dialogues", filename + ".toml")
     with open(fpath, mode="r") as file:
         f = file.read()
     obj: Dict[str, Any] = tomllib.loads(f)  # type: ignore
