@@ -340,7 +340,7 @@ def _generate_show_answer(
         print("Prompts: ", resource.prompts)
         ans = resource.prompts["options"]
         if len(shows) == 1:
-            ans = ans.replace("Sýningarnar", "Sýningin").replace("eru", "er")
+            ans = ans.replace("Sýningarnar", "Sýningin", 1).replace("eru", "er", 2)
         text_ans = ans.format(options="".join(shows))
         voice_ans = ans.format(options=natlang_seq(shows)).replace("-", "")
         return (dict(answer=text_ans), text_ans, voice_ans)
@@ -387,7 +387,7 @@ def _generate_date_answer(
         else "Næstu þrjár dagsetningarnar eru:"
     )
     if index == 0:
-        start_string = start_string.replace("Næstu", "Fyrstu")
+        start_string = start_string.replace("Næstu", "Fyrstu", 1)
     if len(dates) < 3:
         index = 0
         extras["page_index"] = 0
@@ -408,7 +408,9 @@ def _generate_date_answer(
         if len(dates) > 0:
             ans = resource.prompts["options"]
             if date_number == 1:
-                ans = ans.replace("eru", "er").replace("dagsetningar", "dagsetning")
+                ans = ans.replace("eru", "er", 1).replace(
+                    "dagsetningar", "dagsetning", 1
+                )
             voice_ans = ans.format(
                 options=options_string,
                 date_number=number_to_text(len(dates), gender="kvk"),
@@ -455,7 +457,9 @@ def _generate_date_answer(
         if len(dates) > 0:
             ans = resource.prompts["initial"]
             if date_number == 1:
-                ans = ans.replace("eru", "er").replace("dagsetningar", "dagsetning")
+                ans = ans.replace("eru", "er", 1).replace(
+                    "dagsetningar", "dagsetning", 1
+                )
             voice_date_string = (
                 start_string + natlang_seq(dates[index : index + date_number])
             ).replace("dagur", "dagurinn")
@@ -611,7 +615,7 @@ def _generate_seat_number_answer(
     ):
         ans = resource.prompts["options"]
         if len(available_seats) == 1:
-            ans = ans.replace("Sætin", "Sætið").replace("eru", "er")
+            ans = ans.replace("Sætin", "Sætið", 1).replace("eru", "er", 2)
         text_ans = ans.format(row=chosen_row, options=natlang_seq(text_available_seats))
         voice_ans = ans.format(
             row=number_to_text(chosen_row), options=natlang_seq(available_seats)
