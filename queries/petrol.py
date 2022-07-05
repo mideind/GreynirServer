@@ -41,6 +41,7 @@ from queries import (
     krona_desc,
     AnswerTuple,
     LatLonTuple,
+    read_grammar_file,
 )
 from queries.num import floats_to_text
 
@@ -84,129 +85,7 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QPetrol"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QPetrol
-
-QPetrol → QPetrolQuery '?'?
-
-QPetrolQuery →
-    QPetrolClosestStation | QPetrolCheapestStation QPetrolNow? | QPetrolClosestCheapestStation
-
-QPetrolClosestStation →
-    QPetrolPetrol QPetrolNearMe?
-    | QPetrolStation QPetrolNearMe?
-    | "hvar" QPetrolCanIGet QPetrolPetrol QPetrolNearMe?
-    | "hvar" QPetrolCanI "keypt" QPetrolPetrol QPetrolNearMe?
-    | "hvar" QPetrolCanI "fyllt" "á"? QPetrolFillableÞf QPetrolNearMe?
-    | QPetrolWhereIs? QPetrolClosest QPetrolStation
-    | "hver" "er" QPetrolClosest QPetrolStation
-    | QPetrolWhichStation "er"? QPetrolNearMe
-    | QPetrolWhichStation "er"? "nálægust" "mér"?
-    | "hvað" "kostar" QPetrolPetrol QPetrolNearMe?
-
-QPetrolCheapestStation →
-    "ódýrasta" QPetrolPetrol
-    | QPetrolWhereIs "ódýrasta" QPetrolPetrol
-    | QPetrolWhichStation "er" "ódýrust"
-    | QPetrolWhichStation QPetrolHas "ódýrasta" QPetrolPetrol
-    | QPetrolWhichStation QPetrolHas "ódýrasta" "bensínlítrann"
-    | QPetrolWhichStation QPetrolHas QPetrolBestPriceÞf
-    | QPetrolWhichStation QPetrolHas QPetrolBestPriceÞf "á" "bensínlítranum"
-    | QPetrolWhichStation QPetrolHas QPetrolBestPriceÞf "á" "bensíni"
-    | QPetrolWhichStation QPetrolHas QPetrolBestPriceÞf "á" "dísel" "lítranum"
-    | QPetrolWhichStation QPetrolHas QPetrolBestPriceÞf "á" "dísel"
-    | QPetrolWhereIs QPetrolPetrol "ódýrast"
-    | QPetrolWhereIs "bensínlítrinn" "ódýrastur"
-    | "hvar" QPetrolCanIGet "ódýrasta" QPetrolPetrol
-    | "hvar" QPetrolCanIGet "ódýrasta" "bensínlítrann"
-    | QPetrolWhereIs "ódýrast" "að" "fylla" "á"? QPetrolFillableÞf
-    | QPetrolWhereIs QPetrolBestLowest "bensínverð"
-    | QPetrolWhereIs QPetrolBestLowest "bensínverðið"
-
-QPetrolClosestCheapestStation →
-    "ódýrt" QPetrolPetrol QPetrolNearMe?
-    | "hvar" QPetrolCanIGet "ódýrt" QPetrolPetrol QPetrolNearMe?
-    | "hvar" QPetrolCanIGet "ódýrasta" QPetrolPetrol QPetrolNearMe
-    | "hvar" QPetrolCanIGet "bensínlítrann" "ódýrt" QPetrolNearMe?
-    | "hvar" QPetrolCanIGet QPetrolPetrol "ódýrast" QPetrolNearMe
-    | "hvar" QPetrolCanIGet QPetrolPetrol "ódýrt" QPetrolNearMe?
-    | "hvar" QPetrolCanIGet QPetrolPetrol "á" "góðu" "verði" QPetrolNearMe?
-    | "hvar" QPetrolCanI "fyllt" "á" QPetrolFillableÞf "ódýrt" QPetrolNearMe?
-    | QPetrolWhereIs QPetrolPetrol "ódýrt" QPetrolNearMe?
-    | QPetrolWhereIs QPetrolPetrol "ódýrast" QPetrolNearMe
-    | QPetrolWhereIs "bensínlítrinn" "ódýr" QPetrolNearMe?
-    | QPetrolWhereIs "bensínlítrinn" "ódýrastur" QPetrolNearMe
-    | QPetrolWhereIs "ódýrt" QPetrolPetrol QPetrolNearMe?
-    | QPetrolWhereIs "ódýrt" "að" "kaupa" QPetrolPetrol QPetrolNearMe?
-    | QPetrolWhereIs "ódýrt" "að" "fylla" "á"? QPetrolFillableÞf QPetrolNearMe?
-    | QPetrolWhichStation QPetrolNearMe? QPetrolHas "ódýrt" QPetrolPetrol
-    | QPetrolWhichStation QPetrolNearMe? "er" "ódýr"
-    | QPetrolWhichStation QPetrolNearMe? QPetrolHas QPetrolLowPriceÞf
-    | QPetrolWhichStation QPetrolNearMe? QPetrolHas QPetrolLowPriceÞf "á" "bensíni"
-    | QPetrolWhichStation QPetrolHas "ódýrt" QPetrolPetrol QPetrolNearMe?
-    | QPetrolWhichStation "er" "ódýr" QPetrolNearMe?
-    | QPetrolWhichStation QPetrolHas QPetrolLowPriceÞf QPetrolNearMe?
-    | QPetrolWhichStation QPetrolHas QPetrolLowPriceÞf "á" "bensíni" QPetrolNearMe?
-
-QPetrolCanI →
-    "get" "ég" | "getur" "maður"
-
-QPetrolWhereIs →
-    "hvar" "er"
-
-QPetrolCanIGet →
-    "fæ" "ég" | "fær" "maður" | "get" "ég" "fengið" | "getur" "maður" "fengið"
-    | "kaupi" "ég" | "kaupir" "maður" | "get" "ég" "keypt" | "getur" "maður" "keypt"
-
-QPetrolHas →
-    "er" "með" | "hefur" | "býður" "upp" "á"
-
-QPetrolPetrol →
-    "bensín" | "bensínið" | "eldsneyti" | "eldsneytið" | "dísel" | "díselið"
-    | "díselolía" | "díselolíu"
-
-QPetrolClosest →
-    "næsta" | "nálægasta"
-
-QPetrolFillableÞf →
-    "tank" | "tankinn" | "bensíntank" | "bensíntankinn"
-    | "bílinn" | "bifreiðina" | "eldsneytið" | "eldsneytistankinn"
-
-QPetrolNearMe →
-    QPetrolHere? QPetrolAround
-
-QPetrolAround →
-    "nálægt" "mér"? | "í" "grenndinni" | "í" "grennd" | "á" "svæðinu"
-    | "skammt" "frá" "mér"? | "í" "nágrenninu"
-
-QPetrolHere →
-    "hér" | "hérna"
-
-QPetrolNow →
-    "núna" | "í" "dag" | "eins" "og" "stendur" | "í" "augnablikinu" | "þessa_dagana" # | 'í_dag' 
-
-QPetrolStation →
-    "bensínstöð" | "bensínstöðin" | "bensínafgreiðslustöð"
-
-QPetrolWhichStation →
-    "hvaða" "bensínstöð" | "hvaða" "bensínafgreiðslustöð"
-
-QPetrolLowPriceÞf →
-    "lágt" "verð" | "gott" "verð" | "lágan" "prís" | "góðan" "prís"
-    | "sæmilegt" "verð" | "sæmilegan" "prís"
-
-QPetrolBestPriceÞf →
-    QPetrolBestLowest "verðið" | QPetrolBestLowest "verð"
-    | QPetrolBestLowest "prísinn" | QPetrolBestLowest "prís"
-
-QPetrolBestLowest →
-    "lægsta" | "besta" | "hagstæðasta"
-
-$score(+35) QPetrol
-
-"""
+GRAMMAR = read_grammar_file("petrol")
 
 
 def QPetrolQuery(node: Node, params: QueryStateDict, result: Result) -> None:

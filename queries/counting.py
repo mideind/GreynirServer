@@ -27,7 +27,7 @@ import logging
 import random
 from datetime import datetime, timedelta
 
-from queries import parse_num, gen_answer
+from queries import parse_num, gen_answer, read_grammar_file
 from query import Query, QueryStateDict
 from tree import Result, Node
 
@@ -53,46 +53,7 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QCounting"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QCounting
-
-QCounting → QCountingQuery '?'?
-
-QCountingQuery →
-    QCountingUp | QCountingDown | QCountingBetween
-
-QCountingUp →
-    "teldu" QCountingSpeed? QCountingUpTo QCountingFirstNumber QCountingSpeed?
-    | QCountingCanYouCount QCountingSpeed? QCountingUpTo QCountingFirstNumber QCountingSpeed?
-
-QCountingDown →
-    "teldu" QCountingSpeed? "niður" "frá" QCountingFirstNumber QCountingSpeed?
-    | QCountingCanYouCount QCountingSpeed? "niður" "frá" QCountingFirstNumber QCountingSpeed?
-
-QCountingBetween →
-    "teldu" QCountingSpeed? "frá" QCountingFirstNumber QCountingUpTo QCountingSecondNumber QCountingSpeed?
-    | QCountingCanYouCount QCountingSpeed? "frá" QCountingFirstNumber QCountingUpTo QCountingSecondNumber QCountingSpeed?
-
-QCountingFirstNumber →
-    to | töl | tala
-
-QCountingSecondNumber →
-    to | töl | tala
-
-QCountingSpeed →
-    "mjög" "hægt" | "hægt" | "hratt" | "mjög" "hratt"
-
-QCountingUpTo →
-    "upp"? "að" | "upp"? "í" | "upp"? "til"
-
-QCountingCanYouCount →
-    "geturðu" "talið" | "getur" "þú" "talið" | "nennirðu" "að" "telja" | "nennir" "þú" "að" "telja"
-
-$score(+35) QCounting
-
-"""
+GRAMMAR = read_grammar_file("counting")
 
 
 def QCountingQuery(node: Node, params: QueryStateDict, result: Result) -> None:

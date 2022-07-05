@@ -1,0 +1,147 @@
+# A plug-in query grammar always starts with the following,
+# adding one or more query productions to the Query nonterminal
+
+Query →
+    QArithmetic
+    # 'Hvaða tala er pí'
+    | QArPi
+
+QArithmetic →
+    QArithmeticQuery '?'?
+
+QArPi →
+    QArPiQuery '?'?
+
+$score(+55) QArithmetic
+$score(+55) QArPi
+
+QArithmeticQuery →
+    # 'Hvað er X sinnum/deilt með/plús/mínus Y'
+    QArGenericPrefix QArStd
+
+    # 'Hver er summan af X og Y'
+    | QArAnyPrefix QArSum
+
+    # 'Hvað er tvisvar/þrisvar/fjórum sinnum Y'
+    | QArAnyPrefix QArMult
+
+    # 'Hver/Hvað er kvaðratrótin af X'
+    | QArAnyPrefix QArSqrt
+
+    # 'Hvað er X í Y veldi?'
+    | QArGenericPrefix QArPow
+
+    # 'Hvað er(u) 12 prósent af 93'
+    | QArGenericPrefix QArPercent
+
+    # 'Hvað er fjórðungurinn af 1220'
+    # 'Hvað er einn tuttugasti af 190'
+    | QArAnyPrefix QArFraction
+
+    # 'Hvað er 8900 með vaski/virðisaukaskatti'
+    | QArGenericPrefix? QArVAT
+
+
+/arfall = nf þgf
+
+QArGenericPrefix → "hvað" "er"? | "hvað" "eru" | "reiknaðu" | "geturðu" "reiknað" | 0
+QArSpecificPrefix → "hver" "er"? | "reiknaðu" | "geturðu" "reiknað" | 0
+QArAnyPrefix → QArGenericPrefix | QArSpecificPrefix
+
+QArStd → QArNumberWord_nf QArOperator/arfall QArNumberWord/arfall
+
+QArOperator/arfall →
+    QArPlusOperator/arfall
+    | QArMinusOperator/arfall
+    | QArMultiplicationOperator/arfall
+QArOperator_þgf →
+    QArDivisionOperator_þgf
+
+# Infix operators
+QArPlusOperator_nf → "plús" | "+"
+QArPlusOperator_þgf → "að" "viðbættum"
+
+QArMinusOperator_nf → "mínus" | "-"
+QArMinusOperator_þgf → "að" "frádregnum"
+
+QArMultiplicationOperator_nf → "sinnum" | "x"
+QArMultiplicationOperator_þgf → "margfaldað" "með" | "margfaldaðir" "með"
+
+QArDivisionOperator_þgf → "deilt" "með" | "skipt" "með" | "/"
+
+QArSum → QArSumOperator QArNumberWordAny "og" QArNumberWordAny
+QArMult → QArMultOperator QArNumberWord_nf
+QArSqrt → QArSquareRootOperator QArNumberWordAny
+QArPow → QArPowOperator
+QArPercent → QArPercentOperator QArNumberWordAny
+QArFraction → QArFractionOperator QArNumberWordAny
+QArVAT → QArCurrencyOrNum QArWithVAT | QArCurrencyOrNum QArWithoutVAT
+
+# Prevent nonterminal from being optimized out of the grammar
+$tag(keep) QArPow
+
+# Prefix operators
+QArSumOperator → "summan" "af"
+QArSquareRootOperator →
+    "kvaðratrótin" "af" | "kvaðratrótina" "af" | "kvaðratrót" "af"
+    | "ferningsrótin" "af" | "ferningsrót" "af"
+QArPercentOperator → Prósenta "af"
+
+QArFractionOperator →
+    QArFractionWord_nf "af"
+
+QArMultOperator →
+    # 'hvað er tvisvar sinnum X?'
+    # The following phrases are defined in reynir/config/Phrases.conf
+    'tvisvar_sinnum' | 'þrisvar_sinnum' | 'fjórum_sinnum'
+
+QArPowOperator →
+    QArNumberWord_nf "í" QArOrdinalOrNumberWord_þgf "veldi"
+    | QArNumberWord_nf "í" "veldinu" QArNumberWord_nf
+    | QArNumberWord_nf "í" "veldi" QArNumberWord_nf
+
+QArNumberWord/arfall →
+    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
+    # töl is an undeclinable number word ('sautján')
+    # tala is a number ('17')
+    to/arfall | töl | tala | "pí" | 'milljarður:kk'/arfall
+
+QArNumberWord_nf →
+    "núll" | QArLastResult_nf
+
+QArNumberWord_þgf →
+    "núlli" | QArLastResult_þgf
+
+QArLastResult/arfall →
+    # Reference to last result
+    'það:pfn'_et/arfall
+
+QArNumberWordAny → QArNumberWord/arfall
+
+QArFractionWord_nf →
+    {fraction_words} | {one_xth_words}
+
+QArOrdinalWord_þgf →
+    {ordinal_words} | raðnr
+
+QArOrdinalOrNumberWord_þgf →
+    QArNumberWord_þgf | QArOrdinalWord_þgf
+
+QArWithVAT →
+    "með" "vaski" | "með" "vask" | "með" "virðisaukaskatti"
+
+QArWithoutVAT →
+    "án" "vasks" | "án" "vask" | "án" "virðisaukaskatts"
+
+QArCurrencyOrNum →
+    QArNumberWordAny | QArNumberWordAny "íslenskar"? "krónur" | amount
+
+QArPiQuery →
+    "hvað" "er" "pí"
+    | "hvaða" "tala" "er" "pí"
+    | "hver" "er" "talan"? "pí"
+    | "skilgreindu" "töluna"? "pí"
+    | "hvað" "eru" "margir" "aukastafir" "í" "tölunni"? "pí"
+    | "hvað" "eru" "margir" "tölustafir" "í" "tölunni"? "pí"
+    | "hvað" "hefur" "talan"? "pí" "marga" "aukastafi"
+    | "hversu" "marga" "aukastafi" "hefur" "talan"? "pí"
