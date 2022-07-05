@@ -111,6 +111,7 @@ QIoTSpeakerTurnOffRest ->
 
 QIoTSpeakerPlayRest ->
     QIoTSpeakerMusicWordÞf QIoTSpeakerHvar?
+    | QIoTSpeakerRadioStationWord? QIoTSpeakerRadioStationName QIoTSpeakerHvar?
 
 # TODO: Make the subject categorization cleaner
 QIoTSpeakerIncreaseOrDecreaseRest ->
