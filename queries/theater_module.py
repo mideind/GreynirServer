@@ -258,6 +258,7 @@ QTheaterPontun →
     | "leikhús" "miða" "pöntunina"
     | "leikhús" "miða" "pöntuninni"
 
+
 """
 
 
@@ -609,9 +610,12 @@ def _generate_seat_number_answer(
         )
         return (dict(answer=text_ans), text_ans, voice_ans)
     if result.get("wrong_number_seats_selected"):
-        chosen_seats = len(
-            range(result.get("numbers")[0], result.get("numbers")[1] + 1)
-        )
+        if len(result.get("numbers")) > 1:
+            chosen_seats = len(
+                range(result.get("numbers")[0], result.get("numbers")[1] + 1)
+            )
+        else:
+            chosen_seats = 1
         ans = resource.prompts["wrong_number_seats_selected"]
         text_ans = ans.format(chosen_seats=chosen_seats, seats=seats)
         voice_ans = ans.format(
@@ -842,8 +846,12 @@ def QTheaterDateTime(node: Node, params: QueryStateDict, result: Result) -> None
     result["show_time"] = datetime.time(h, min)
     result["show_date"] = datetime.date(y, m, d)
 
-    DialogueStateManager.add_callback(result, lambda r: r.name == "ShowDate", _date_callback)
-    DialogueStateManager.add_callback(result, lambda r: r.name == "ShowTime", _time_callback)
+    DialogueStateManager.add_callback(
+        result, lambda r: r.name == "ShowDate", _date_callback
+    )
+    DialogueStateManager.add_callback(
+        result, lambda r: r.name == "ShowTime", _time_callback
+    )
 
 
 def QTheaterDate(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -863,7 +871,9 @@ def QTheaterDate(node: Node, params: QueryStateDict, result: Result) -> None:
                     y += 1
             result["show_date"] = datetime.date(day=d, month=m, year=y)
 
-            DialogueStateManager.add_callback(result, lambda r: r.name == "ShowDate", _date_callback)
+            DialogueStateManager.add_callback(
+                result, lambda r: r.name == "ShowDate", _date_callback
+            )
             return
     raise ValueError("No date in {0}".format(str(datenode)))
 
@@ -880,7 +890,9 @@ def QTheaterTime(node: Node, params: QueryStateDict, result: Result) -> None:
 
         result["show_time"] = datetime.time(hour, minute)
 
-        DialogueStateManager.add_callback(result, lambda r: r.name == "ShowTime", _time_callback)
+        DialogueStateManager.add_callback(
+            result, lambda r: r.name == "ShowTime", _time_callback
+        )
 
 
 def QTheaterMoreDates(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -893,7 +905,9 @@ def QTheaterMoreDates(node: Node, params: QueryStateDict, result: Result) -> Non
         else:
             extras["page_index"] = 3
 
-    DialogueStateManager.add_callback(result, lambda r: r.name == "ShowDate", _next_dates)
+    DialogueStateManager.add_callback(
+        result, lambda r: r.name == "ShowDate", _next_dates
+    )
 
 
 def QTheaterPreviousDates(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -906,7 +920,9 @@ def QTheaterPreviousDates(node: Node, params: QueryStateDict, result: Result) ->
         else:
             extras["page_index"] = 0
 
-    DialogueStateManager.add_callback(result, lambda r: r.name == "ShowDate", _prev_dates)
+    DialogueStateManager.add_callback(
+        result, lambda r: r.name == "ShowDate", _prev_dates
+    )
 
 
 def QTheaterShowSeatCountQuery(
@@ -922,7 +938,9 @@ def QTheaterShowSeatCountQuery(
             else:
                 result.invalid_seat_count = True
 
-    DialogueStateManager.add_callback(result, lambda r: r.name == "ShowSeatCount", _add_seat_number)
+    DialogueStateManager.add_callback(
+        result, lambda r: r.name == "ShowSeatCount", _add_seat_number
+    )
 
 
 def QTheaterShowRow(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -953,7 +971,10 @@ def QTheaterShowRow(node: Node, params: QueryStateDict, result: Result) -> None:
                 dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
                 result.no_row_matched = True
 
-    DialogueStateManager.add_callback(result, lambda r: r.name == "ShowSeatRow", _add_row)
+    DialogueStateManager.add_callback(
+        result, lambda r: r.name == "ShowSeatRow", _add_row
+    )
+
 
 def QTheaterShowSeats(node: Node, params: QueryStateDict, result: Result) -> None:
     def _add_seats(
@@ -964,7 +985,7 @@ def QTheaterShowSeats(node: Node, params: QueryStateDict, result: Result) -> Non
             row: int = dsm.get_resource("ShowSeatRow").data[0]
             number_of_seats: int = dsm.get_resource("ShowSeatCount").data
             selected_seats: list[int] = []
-            if number_of_seats > 1:
+            if len(result.numbers) > 1:
                 selected_seats = [
                     seat for seat in range(result.numbers[0], result.numbers[1] + 1)
                 ]
@@ -994,7 +1015,9 @@ def QTheaterShowSeats(node: Node, params: QueryStateDict, result: Result) -> Non
             if len(resource.data) > 0:
                 dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
 
-    DialogueStateManager.add_callback(result, lambda r: r.name == "ShowSeatNumber", _add_seats)
+    DialogueStateManager.add_callback(
+        result, lambda r: r.name == "ShowSeatNumber", _add_seats
+    )
 
 
 def QTheaterGeneralOptions(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -1041,7 +1064,9 @@ def QCancel(node: Node, params: QueryStateDict, result: Result):
         dsm.end_dialogue()
 
     result.qtype = "QCancel"
-    DialogueStateManager.add_callback(result, lambda r: r.name == "Final", _cancel_order)
+    DialogueStateManager.add_callback(
+        result, lambda r: r.name == "Final", _cancel_order
+    )
 
 
 def QYes(node: Node, params: QueryStateDict, result: Result):
