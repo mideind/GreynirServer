@@ -28,16 +28,24 @@ _RADIO_STREAMS = {
     "Rás 2": "http://netradio.ruv.is/ras2.mp3",
     "Rondó": "http://netradio.ruv.is/rondo.mp3",
     "Bylgjan": "https://live.visir.is/hls-radio/bylgjan/playlist.m3u8",
+    "Léttbylgjan": "https://live.visir.is/hls-radio/lettbylgjan/playlist.m3u8",
+    "Gullbylgjan": "https://live.visir.is/hls-radio/gullbylgjan/playlist.m3u8",
+    "80s Bylgjan": "https://live.visir.is/hls-radio/80s/chunklist_DVR.m3u8",
+    "Íslenska Bylgjan": "https://live.visir.is/hls-radio/islenska/chunklist_DVR.m3u8",
     "FM957": "https://live.visir.is/hls-radio/fm957/playlist.m3u8",
     "Útvarp Saga": "https://stream.utvarpsaga.is/Hljodver",
     "K100": "https://k100streymi.mbl.is/beint/k100/tracks-v1a1/rewind-3600.m3u8",
-    "Gullbylgjan": "https://live.visir.is/hls-radio/gullbylgjan/playlist.m3u8",
     "X977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
-    "Léttbylgjan": "https://live.visir.is/hls-radio/lettbylgjan/playlist.m3u8",
     "Retro": "https://k100straumar.mbl.is/retromobile",
     "KissFM": "http://stream3.radio.is:443/kissfm",
-    "Flashback": "http://stream.radio.is:443/flashback",
     "Útvarp 101": "https://stream.101.live/audio/101/chunklist.m3u8",
+    "Apparatið": "https://live.visir.is/hls-radio/apparatid/chunklist_DVR.m3u8",
+    "FM Extra": "https://live.visir.is/hls-radio/fmextra/chunklist_DVR.m3u8",
+    "Útvarp Suðurland": "http://ice-11.spilarinn.is/tsudurlandfm",
+    "Flashback": "http://stream.radio.is:443/flashback",
+    "70s Flashback": "http://stream3.radio.is:443/70flashback",
+    "80s Flashback": "http://stream3.radio.is:443/80flashback",
+    "90s Flashback": "http://stream3.radio.is:443/90flashback",
 }
 
 
@@ -204,6 +212,50 @@ def QIoTSpeakerUtvarp101(node: Node, params: QueryStateDict, result: Result) -> 
 def QIoTSpeakerK100(node: Node, params: QueryStateDict, result: Result) -> None:
     result["qkey"] = "radio"
     result["station"] = "K100"
+
+
+def QIoTSpeakerIslenskaBylgjan(
+    node: Node, params: QueryStateDict, result: Result
+) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Íslenska Bylgjan"
+
+
+def QIoT80sBylgjan(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "80s Bylgjan"
+
+
+def QIoTSpeakerApparatid(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Apparatið"
+
+
+def QIoTSpeakerFmExtra(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "FM Extra"
+
+
+def QIoTSpeaker70sFlashback(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "70s Flashback"
+
+
+def QIoTSpeaker80sFlashback(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "80s Flashback"
+
+
+def QIoTSpeaker90sFlashback(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "90s Flashback"
+
+
+def QIoTSpeakerUtvarpSudurland(
+    node: Node, params: QueryStateDict, result: Result
+) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Útvarp Suðurland"
 
 
 def call_sonos_client(sonos_client, result):
