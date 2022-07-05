@@ -28,6 +28,8 @@ from queries import AnswerTuple, natlang_seq
 from query import Query, ClientDataDict
 from tree import Result
 
+# TODO: Add timezone info to json encoding/decoding?
+
 # Keys for accessing saved client data for dialogues
 _DIALOGUE_KEY = "dialogue"
 _DIALOGUE_NAME_KEY = "dialogue_name"
@@ -306,26 +308,6 @@ class DialogueStructureType(TypedDict):
     extras: Optional[Dict[str, Any]]
 
 
-def _load_dialogue_structure(filename: str) -> DialogueStructureType:
-    """Loads dialogue structure from TOML file."""
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    fpath = os.path.join(basepath, "dialogues", filename + ".toml")
-    with open(fpath, mode="r") as file:
-        f = file.read()
-    obj: Dict[str, Any] = tomllib.loads(f)  # type: ignore
-    assert _DIALOGUE_NAME_KEY in obj
-    assert _DIALOGUE_RESOURCES_KEY in obj
-    resource_dict: Dict[str, Resource] = {}
-    for resource in obj[_DIALOGUE_RESOURCES_KEY]:
-        assert "name" in resource
-        if "type" not in resource:
-            resource["type"] = "Resource"
-        # Create instances of Resource classes (and its subclasses)
-        resource_dict[resource["name"]] = _RESOURCE_TYPES[resource["type"]](**resource)
-    obj[_DIALOGUE_RESOURCES_KEY] = resource_dict
-    return cast(DialogueStructureType, obj)
-
-
 class DialogueStateManager:
     def __init__(
         self,
@@ -348,12 +330,33 @@ class DialogueStateManager:
         # TODO: Delegate answering from a resource to another resource or to another dialogue
         # TODO: í ávaxtasamtali "ég vil panta flug" "viltu að ég geymi ávaxtapöntunina eða eyði henni?" ...
 
+    def _load_dialogue_structure(self, filename: str) -> DialogueStructureType:
+        """Loads dialogue structure from TOML file."""
+        basepath, _ = os.path.split(os.path.realpath(__file__))
+        fpath = os.path.join(basepath, "dialogues", filename + ".toml")
+        with open(fpath, mode="r") as file:
+            f = file.read()
+        obj: Dict[str, Any] = tomllib.loads(f)  # type: ignore
+        assert _DIALOGUE_RESOURCES_KEY in obj
+        resource_dict: Dict[str, Resource] = {}
+        for resource in obj[_DIALOGUE_RESOURCES_KEY]:
+            assert "name" in resource
+            if "type" not in resource:
+                resource["type"] = "Resource"
+            # Create instances of Resource classes (and its subclasses)
+            resource_dict[resource["name"]] = _RESOURCE_TYPES[resource["type"]](
+                **resource
+            )
+        obj[_DIALOGUE_RESOURCES_KEY] = resource_dict
+        return cast(DialogueStructureType, obj)
+
     def not_in_dialogue(self) -> bool:
         """Check if the client is in or wants to start this dialogue"""
         return (
             self._result.get("qtype") != self._start_qtype
             and self._saved_state.get(_DIALOGUE_NAME_KEY) != self._dialogue_name
         )
+        # TODO: Add check for newest dialogue
 
     def setup_dialogue(self, answering_functions: AnsweringFunctionMap) -> None:
         """
@@ -361,7 +364,7 @@ class DialogueStateManager:
         Should be called after initializing an instance of
         DialogueStateManager and before calling get_answer.
         """
-        obj = _load_dialogue_structure(self._dialogue_name)
+        obj = self._load_dialogue_structure(self._dialogue_name)
         for rname, resource in obj[_DIALOGUE_RESOURCES_KEY].items():
             if rname in self._saved_state[_DIALOGUE_RESOURCES_KEY]:
                 # Update empty resource with serialized data
@@ -492,8 +495,12 @@ class DialogueStateManager:
         ds_json: str = json.dumps(ds, cls=DialogueJSONEncoder)
         # Wrap data before saving dialogue state into client data
         # (due to custom JSON serialization)
-        cd = {self._dialogue_name: ds_json}
-        self._q.set_client_data(_DIALOGUE_KEY, cast(ClientDataDict, cd))
+        # TODO: add datetime stuff
+        self._q.set_client_data(
+            _DIALOGUE_KEY,
+            cast(ClientDataDict, cd),
+            update_in_place=True,
+        )
 
     def set_resource_state(self, resource_name: str, state: ResourceState):
         """
@@ -541,7 +548,9 @@ class DialogueStateManager:
         # TODO: Doesn't allow multiple conversations at once
         #       (set_client_data overwrites other conversations)
         self._q.set_client_data(
-            _DIALOGUE_KEY, {self._dialogue_name: _EMPTY_DIALOGUE_DATA}
+            _DIALOGUE_KEY,
+            {self._dialogue_name: _EMPTY_DIALOGUE_DATA},
+            update_in_place=True,
         )
 
     def set_error(self) -> None:
@@ -593,6 +602,17 @@ class DialogueJSONEncoder(json.JSONEncoder):
                 "second": o.second,
                 "microsecond": o.microsecond,
             }
+        if isinstance(o, datetime.datetime):
+            return {
+                "__type__": "datetime",
+                "year": o.year,
+                "month": o.month,
+                "day": o.day,
+                "hour": o.hour,
+                "minute": o.minute,
+                "second": o.second,
+                "microsecond": o.microsecond,
+            }
         return json.JSONEncoder.default(self, o)
 
 
@@ -610,4 +630,6 @@ class DialogueJSONDecoder(json.JSONDecoder):
             return datetime.date(**d)
         if t == "time":
             return datetime.time(**d)
+        if t == "datetime":
+            return datetime.datetime(**d)
         return _RESOURCE_TYPES[t](**d)

@@ -51,6 +51,7 @@ from datetime import datetime, timedelta
 import json
 import re
 import random
+from copy import deepcopy
 from collections import defaultdict
 
 from settings import Settings
@@ -307,6 +308,24 @@ class QueryTree(Tree):
                         # The processor successfully answered the query: We're done
                         return True
         return False
+
+
+def _merge_two_dicts(dict_a: Dict[str, Any], dict_b: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Recursively merge two dicts,
+    updating dict_a with values from dict_b,
+    leaving other values intact.
+    """
+    for key in dict_b:
+        if (
+            key in dict_a
+            and isinstance(dict_a[key], dict)
+            and isinstance(dict_b[key], dict)
+        ):
+            _merge_two_dicts(dict_a[key], dict_b[key])
+        else:
+            dict_a[key] = dict_b[key]
+    return dict_a
 
 
 class Query:
@@ -885,15 +904,21 @@ class Query:
                 )
         return None
 
-    def set_client_data(self, key: str, data: ClientDataDict) -> None:
+    def set_client_data(
+        self, key: str, data: ClientDataDict, *, update_in_place: bool = False
+    ) -> None:
         """Setter for client query data"""
         if not self.client_id or not key:
             logging.warning("Couldn't save query data, no client ID or key")
             return
-        Query.store_query_data(self.client_id, key, data)
+        Query.store_query_data(
+            self.client_id, key, data, update_in_place=update_in_place
+        )
 
     @staticmethod
-    def store_query_data(client_id: str, key: str, data: ClientDataDict) -> bool:
+    def store_query_data(
+        client_id: str, key: str, data: ClientDataDict, *, update_in_place: bool = False
+    ) -> bool:
         """Save client query data in the database, under the given key"""
         if not client_id or not key:
             return False
@@ -916,6 +941,9 @@ class Query:
                     )
                     session.add(row)
                 else:
+                    if update_in_place:
+                        stored_data = deepcopy(row.data)
+                        data = _merge_two_dicts(stored_data, data)
                     # Already present: update
                     row.data = data  # type: ignore
                     row.modified = now  # type: ignore
