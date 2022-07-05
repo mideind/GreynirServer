@@ -495,10 +495,11 @@ class DialogueStateManager:
         ds_json: str = json.dumps(ds, cls=DialogueJSONEncoder)
         # Wrap data before saving dialogue state into client data
         # (due to custom JSON serialization)
+        cd = {self._dialogue_name: ds_json}
         # TODO: add datetime stuff
         self._q.set_client_data(
             _DIALOGUE_KEY,
-            cast(ClientDataDict, ds_json),
+            cast(ClientDataDict, cd),
             update_in_place=True,
         )
 
