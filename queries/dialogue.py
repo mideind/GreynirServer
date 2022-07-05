@@ -36,6 +36,7 @@ _DIALOGUE_LAST_INTERACTED_WITH_KEY = "last_interacted_with"
 _DIALOGUE_EXTRAS_KEY = "extras"
 _EMPTY_DIALOGUE_DATA = "{}"
 _FINAL_RESOURCE_NAME = "Final"
+_CALLBACK_LOCATION = "callbacks"
 
 # Generic resource type
 ResourceType_co = TypeVar("ResourceType_co", bound="Resource")
@@ -413,7 +414,7 @@ class DialogueStateManager:
 
     def get_answer(self) -> Optional[AnswerTuple]:
         # Executing callbacks
-        cbs: Optional[List[_CallbackTupleType]] = self._result.get("callbacks")
+        cbs: Optional[List[_CallbackTupleType]] = self._result.get(_CALLBACK_LOCATION)
         curr_resource = self._resources[_FINAL_RESOURCE_NAME]
         if cbs:
             self._execute_callbacks_postorder(curr_resource, cbs, set())
@@ -545,6 +546,18 @@ class DialogueStateManager:
 
     def set_error(self) -> None:
         self._error = True
+
+    @classmethod  # TODO: Fix type hints?
+    def add_callback(
+        cls,
+        result: Result,
+        filter_func: _FilterFuncType[Resource],
+        cb: _CallbackType[Resource],
+    ):
+        """Add a callback to the callback list"""
+        if _CALLBACK_LOCATION not in result:
+            result[_CALLBACK_LOCATION] = []
+        result.callbacks.append((filter_func, cb))
 
 
 ###################################

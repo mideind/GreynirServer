@@ -120,7 +120,7 @@ QYes → "já" "já"* | "endilega" | "já" "takk" | "játakk" | "já" "þakka" "
 QNo → "nei" "takk"? | "nei" "nei"* | "neitakk" | "ómögulega"
 
 QCancelOrder → "ég" "hætti" "við"
-    | "ég" "vil" "hætta" "við" "pöntunina"
+    | "ég" "vil" "hætta" "við" "pöntunina"?
     | "ég" "vill" "hætta" "við" "pöntunina"
 
 QFruitDateQuery →
@@ -253,11 +253,8 @@ def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
             query_fruit_index += 1
         resource.state = ResourceState.PARTIALLY_FULFILLED
 
-    if "callbacks" not in result:
-        result["callbacks"] = []
-    filter_func: Callable[[Resource], bool] = lambda r: r.name == "Fruits"
-    result.callbacks.append((filter_func, _add_fruit))
     result.qtype = "QAddFruitQuery"
+    DialogueStateManager.add_callback(result, lambda r: r.name == "Fruits", _add_fruit)
 
 
 def QRemoveFruitQuery(node: Node, params: QueryStateDict, result: Result):
@@ -278,11 +275,10 @@ def QRemoveFruitQuery(node: Node, params: QueryStateDict, result: Result):
         else:
             resource.state = ResourceState.PARTIALLY_FULFILLED
 
-    if "callbacks" not in result:
-        result["callbacks"] = []
-    filter_func: Callable[[Resource], bool] = lambda r: r.name == "Fruits"
-    result.callbacks.append((filter_func, _remove_fruit))
     result.qtype = "QRemoveFruitQuery"
+    DialogueStateManager.add_callback(
+        result, lambda r: r.name == "Fruits", _remove_fruit
+    )
 
 
 def QCancelOrder(node: Node, params: QueryStateDict, result: Result):
@@ -294,10 +290,9 @@ def QCancelOrder(node: Node, params: QueryStateDict, result: Result):
 
     result.qtype = "QCancelOrder"
     result.answer_key = ("Final", "cancelled")
-    if "callbacks" not in result:
-        result["callbacks"] = []
-    filter_func: Callable[[Resource], bool] = lambda r: r.name == "Final"
-    result.callbacks.append((filter_func, _cancel_order))
+    DialogueStateManager.add_callback(
+        result, lambda r: r.name == "Final", _cancel_order
+    )
 
 
 def QFruitOptionsQuery(node: Node, params: QueryStateDict, result: Result):
@@ -317,13 +312,12 @@ def QYes(node: Node, params: QueryStateDict, result: Result):
                 for rname in resource.requires:
                     dsm.get_resource(rname).state = ResourceState.CONFIRMED
 
-    if "callbacks" not in result:
-        result["callbacks"] = []
-    filter_func: Callable[[Resource], bool] = (
-        lambda r: r.name in ("Fruits", "DateTime") and not r.is_confirmed
-    )
-    result.callbacks.append((filter_func, _parse_yes))
     result.qtype = "QYes"
+    DialogueStateManager.add_callback(
+        result,
+        lambda r: r.name in ("Fruits", "DateTime") and not r.is_confirmed,
+        _parse_yes,
+    )
 
 
 def QNo(node: Node, params: QueryStateDict, result: Result):
@@ -336,13 +330,10 @@ def QNo(node: Node, params: QueryStateDict, result: Result):
             elif resource.is_fulfilled:
                 resource.state = ResourceState.PARTIALLY_FULFILLED
 
-    if "callbacks" not in result:
-        result["callbacks"] = []
-    filter_func: Callable[[Resource], bool] = (
-        lambda r: r.name == "Fruits" and not r.is_confirmed
-    )
-    result.callbacks.append((filter_func, _parse_no))
     result.qtype = "QNo"
+    DialogueStateManager.add_callback(
+        result, lambda r: r.name == "Fruits" and not r.is_confirmed, _parse_no
+    )
 
 
 def QNumOfFruit(node: Node, params: QueryStateDict, result: Result):
@@ -402,10 +393,9 @@ def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
                     y += 1
             result["delivery_date"] = datetime.date(day=d, month=m, year=y)
 
-            if "callbacks" not in result:
-                result["callbacks"] = []
-            filter_func: Callable[[Resource], bool] = lambda r: r.name == "Date"
-            result.callbacks.append((filter_func, _date_callback))
+            DialogueStateManager.add_callback(
+                result, lambda r: r.name == "Date", _date_callback
+            )
             return
     raise ValueError("No date in {0}".format(str(datenode)))
 
@@ -436,10 +426,9 @@ def QFruitTime(node: Node, params: QueryStateDict, result: Result):
         if hour in range(0, 24) and minute in range(0, 60):
             result["delivery_time"] = datetime.time(hour, minute)
 
-            if "callbacks" not in result:
-                result["callbacks"] = []
-            filter_func: Callable[[Resource], bool] = lambda r: r.name == "Time"
-            result.callbacks.append((filter_func, _time_callback))
+            DialogueStateManager.add_callback(
+                result, lambda r: r.name == "Time", _time_callback
+            )
         else:
             result["parse_error"] = True
 
@@ -449,8 +438,6 @@ def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
     datetimenode = node.first_child(lambda n: True)
     assert isinstance(datetimenode, TerminalNode)
     now = datetime.datetime.now()
-    if "callbacks" not in result:
-        result["callbacks"] = []
     y, m, d, h, min, _ = (i if i != 0 else None for i in json.loads(datetimenode.aux))
     if y is None:
         y = now.year
@@ -458,11 +445,15 @@ def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
         result["delivery_date"] = datetime.date(y, m, d)
         if result["delivery_date"] < now.date():
             result["delivery_date"].year += 1
-        result.callbacks.append((lambda r: r.name == "Date", _date_callback))
+        DialogueStateManager.add_callback(
+            result, lambda r: r.name == "Date", _date_callback
+        )
 
     if h is not None and min is not None:
         result["delivery_time"] = datetime.time(h, min)
-        result.callbacks.append((lambda r: r.name == "Time", _time_callback))
+        DialogueStateManager.add_callback(
+            result, lambda r: r.name == "Time", _time_callback
+        )
 
 
 def QFruitInfoQuery(node: Node, params: QueryStateDict, result: Result):
