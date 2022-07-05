@@ -16,7 +16,7 @@ from typing_extensions import TypedDict
 import os.path
 import json
 import datetime
-from enum import IntEnum, IntFlag, auto
+from enum import IntFlag, auto
 from dataclasses import dataclass, field
 
 try:
@@ -53,7 +53,7 @@ AnsweringFunctionType = Callable[
 AnsweringFunctionMap = Mapping[str, AnsweringFunctionType[Any]]
 
 
-class ResourceState(IntEnum):
+class ResourceState(IntFlag):
     """Enum representing the different states a dialogue resource can be in."""
 
     # Main states (order matters, lower state should equal a lower number)
@@ -65,7 +65,16 @@ class ResourceState(IntEnum):
     PAUSED = auto()
     SKIPPED = auto()
     CANCELLED = auto()
-    # ALL = UNFULFILLED | PARTIALLY_FULFILLED | FULFILLED | CONFIRMED | PAUSED | SKIPPED | CANCELLED
+    ALL = (
+        UNFULFILLED
+        | PARTIALLY_FULFILLED
+        | FULFILLED
+        | CONFIRMED
+        | PAUSED
+        | SKIPPED
+        | CANCELLED
+    )
+
 
 ##########################
 #    RESOURCE CLASSES    #
@@ -96,31 +105,31 @@ class Resource:
 
     @property
     def is_unfulfilled(self) -> bool:
-        return self.state is ResourceState.UNFULFILLED
+        return ResourceState.UNFULFILLED in self.state
 
     @property
     def is_partially_fulfilled(self) -> bool:
-        return self.state is ResourceState.PARTIALLY_FULFILLED
+        return ResourceState.PARTIALLY_FULFILLED in self.state
 
     @property
     def is_fulfilled(self) -> bool:
-        return self.state is ResourceState.FULFILLED
+        return ResourceState.FULFILLED in self.state
 
     @property
     def is_confirmed(self) -> bool:
-        return self.state is ResourceState.CONFIRMED
+        return ResourceState.CONFIRMED in self.state
 
     @property
     def is_paused(self) -> bool:
-        return self.state is ResourceState.PAUSED
+        return ResourceState.PAUSED in self.state
 
     @property
     def is_skipped(self) -> bool:
-        return self.state is ResourceState.SKIPPED
+        return ResourceState.SKIPPED in self.state
 
     @property
     def is_cancelled(self) -> bool:
-        return self.state is ResourceState.CANCELLED
+        return ResourceState.CANCELLED in self.state
 
     def update(self, new_data: Optional["Resource"]) -> None:
         """Update resource with attributes from another resource."""
@@ -293,7 +302,7 @@ class DialogueStructureType(TypedDict):
     dialogue_name: str
     resources: Dict[str, Resource]
     last_interacted_with: Optional[datetime.datetime]
-    extras: Dict[str, Any]
+    extras: Optional[Dict[str, Any]]
 
 
 def _load_dialogue_structure(filename: str) -> DialogueStructureType:
@@ -360,7 +369,7 @@ class DialogueStateManager:
             resource.state = ResourceState(resource.state)
             self._resources[rname] = resource
         if _DIALOGUE_EXTRAS_KEY in self._saved_state:
-            self._extras = self._saved_state[_DIALOGUE_EXTRAS_KEY]
+            self._extras = self._saved_state[_DIALOGUE_EXTRAS_KEY] or self._extras
         self._answering_functions = answering_functions
 
         if self._result.qtype == self._start_qtype:

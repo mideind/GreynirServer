@@ -64,7 +64,7 @@ cascade_state = true
 prompts.initial = "Sæti {seats} eru í boði í röð {row}, hvaða sæti má bjóða þér?"
 prompts.options = "Sætin sem eru í boði í röð {row} eru {options}"
 prompts.confirm = "Þú valdir sæti {seats}, viltu halda áfram?"
-prompts.wrong_number_seats_selected = "Þú valdir {chosen_seats} sæti, en þú baðst um {seats}. Vinsamlegast reyndur aftur."
+prompts.wrong_number_seats_selected = "Þú valdir {chosen_seats} sæti, en þú baðst um {seats}. Vinsamlegast reyndu aftur."
 prompts.seats_unavailable = "Valin sæti eru ekki laus, vinsamlegast reyndu aftur."
 
 [[resources]]

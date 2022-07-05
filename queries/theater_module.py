@@ -236,7 +236,7 @@ QYes → "já" "já"* | "endilega" | "já" "takk" | "játakk" | "já" "þakka" "
 QNo → "nei" "takk"? | "nei" "nei"* | "neitakk" | "ómögulega"
 
 QCancel → "ég" "hætti" "við"
-    | QTheaterEgVil "hætta" "við" QTheaterPontun
+    | QTheaterEgVil "hætta" "við" QTheaterPontun?
 
 QStatus →
     "staðan"
@@ -645,11 +645,6 @@ def _generate_seat_number_answer(
             seats=natlang_seq(available_seats), row=number_to_text(chosen_row)
         )
         return (dict(answer=text_ans), text_ans, voice_ans)
-        return gen_answer(
-            resource.prompts["initial"].format(
-                seats=natlang_seq(available_seats), row=number_to_text(chosen_row)
-            )
-        )
     if resource.is_fulfilled:
         print("confirm prompt")
         chosen_seats_voice_string: str = ""
