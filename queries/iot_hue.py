@@ -33,6 +33,7 @@
 # TODO: No specified location
 # TODO: Fix scene issues
 # TODO: Turning on lights without using "turn on"
+# TODO: Add functionality for robot-like commands "ljós í eldhúsinu", "rauður í eldhúsinu"
 
 from typing import Dict, Mapping, Optional, cast, FrozenSet
 from typing_extensions import TypedDict

@@ -18,6 +18,7 @@ QIoTSpeakerQuery ->
     | QIoTSpeakerTurnOffVerb QIoTSpeakerTurnOffRest
     | QIoTSpeakerPlayOrPauseVerb QIoTSpeakerPlayRest
     | QIoTSpeakerIncreaseOrDecreaseVerb QIoTSpeakerIncreaseOrDecreaseRest
+    | QIoTSpeakerRadioStationName
 
 QIoTSpeakerMakeVerb ->
     'gera:so'_bh
@@ -74,6 +75,7 @@ QIoTSpeakerMakeRest ->
 # TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
 QIoTSpeakerSetRest ->
     QIoTSpeakerAHvad QIoTSpeakerHvar?
+    | "á" "tónlist"
     # QCHANGESubject/þf QCHANGEHvar? QCHANGEHvernigSet
     # | QCHANGESubject/þf QCHANGEHvernigSet QCHANGEHvar?
     # | QCHANGEHvar? QCHANGESubject/þf QCHANGEHvernigSet
