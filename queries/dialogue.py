@@ -498,7 +498,7 @@ class DialogueStateManager:
         # TODO: add datetime stuff
         self._q.set_client_data(
             _DIALOGUE_KEY,
-            cast(ClientDataDict, cd),
+            cast(ClientDataDict, ds_json),
             update_in_place=True,
         )
 
