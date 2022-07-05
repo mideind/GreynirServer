@@ -33,13 +33,15 @@
 # TODO: No specified location
 # TODO: Fix scene issues
 
-from typing import Dict, Mapping, Optional, cast
+from typing import Dict, Mapping, Optional, cast, FrozenSet
 from typing_extensions import TypedDict
 
 import logging
 import random
 import json
 import flask
+
+from reynir.lemmatize import simple_lemmatize
 
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_jsfile, read_grammar_file
@@ -109,329 +111,9 @@ QUERY_NONTERMINALS = {"QIoT"}
 # The context-free grammar for the queries recognized by this plug-in module
 # GRAMMAR = read_grammar_file("iot_hue")
 
-GRAMMAR = f"""
-
-/þgf = þgf
-/ef = ef
-
-Query →
-    QIoT '?'?
-
-QIoT → 
-    QIoTQuery
-
-QIoTQuery ->
-    QIoTMakeVerb QIoTMakeRest
-    | QIoTSetVerb QIoTSetRest
-    | QIoTChangeVerb QIoTChangeRest
-    | QIoTLetVerb QIoTLetRest
-    | QIoTTurnOnVerb QIoTTurnOnRest
-    | QIoTTurnOffVerb QIoTTurnOffRest
-    | QIoTIncreaseOrDecreaseVerb QIoTIncreaseOrDecreaseRest
-
-QIoTMakeVerb ->
-    'gera:so'_bh
-
-QIoTSetVerb ->
-    'setja:so'_bh
-    | 'stilla:so'_bh
-
-QIoTChangeVerb ->
-    'breyta:so'_bh
-
-QIoTLetVerb ->
-    'láta:so'_bh
-
-QIoTTurnOnVerb ->
-    'kveikja:so'_bh
-
-QIoTTurnOffVerb ->
-    'slökkva:so'_bh
-
-QIoTIncreaseOrDecreaseVerb ->
-    QIoTIncreaseVerb
-    | QIoTDecreaseVerb
-
-QIoTIncreaseVerb ->
-    'hækka:so'_bh
-    | 'auka:so'_bh
-
-QIoTDecreaseVerb ->
-    'lækka:so'_bh
-    | 'minnka:so'_bh
-
-QIoTMakeRest ->
-    QIoTSubject/þf QIoTHvar? QIoTHvernigMake
-    | QIoTSubject/þf QIoTHvernigMake QIoTHvar?
-    | QIoTHvar? QIoTSubject/þf QIoTHvernigMake
-    | QIoTHvar? QIoTHvernigMake QIoTSubject/þf
-    | QIoTHvernigMake QIoTSubject/þf QIoTHvar?
-    | QIoTHvernigMake QIoTHvar? QIoTSubject/þf
-
-# TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
-QIoTSetRest ->
-    QIoTSubject/þf QIoTHvar? QIoTHvernigSet
-    | QIoTSubject/þf QIoTHvernigSet QIoTHvar?
-    | QIoTHvar? QIoTSubject/þf QIoTHvernigSet
-    | QIoTHvar? QIoTHvernigSet QIoTSubject/þf
-    | QIoTHvernigSet QIoTSubject/þf QIoTHvar?
-    | QIoTHvernigSet QIoTHvar? QIoTSubject/þf
-
-QIoTChangeRest ->
-    QIoTSubjectOne/þgf QIoTHvar? QIoTHvernigChange
-    | QIoTSubjectOne/þgf QIoTHvernigChange QIoTHvar?
-    | QIoTHvar? QIoTSubjectOne/þgf QIoTHvernigChange
-    | QIoTHvar? QIoTHvernigChange QIoTSubjectOne/þgf
-    | QIoTHvernigChange QIoTSubjectOne/þgf QIoTHvar?
-    | QIoTHvernigChange QIoTHvar? QIoTSubjectOne/þgf
-
-QIoTLetRest ->
-    QIoTSubject/þf QIoTHvar? QIoTHvernigLet
-    | QIoTSubject/þf QIoTHvernigLet QIoTHvar?
-    | QIoTHvar? QIoTSubject/þf QIoTHvernigLet
-    | QIoTHvar? QIoTHvernigLet QIoTSubject/þf
-    | QIoTHvernigLet QIoTSubject/þf QIoTHvar?
-    | QIoTHvernigLet QIoTHvar? QIoTSubject/þf
-
-QIoTTurnOnRest ->
-    QIoTTurnOnLightsRest
-    | QIoTAHverju QIoTHvar?
-    | QIoTHvar? QIoTAHverju
-
-QIoTTurnOnLightsRest ->
-    QIoTLightSubject/þf QIoTHvar?
-    | QIoTHvar QIoTLightSubject/þf?
-
-# Would be good to add "slökktu á rauða litnum" functionality
-QIoTTurnOffRest ->
-    QIoTTurnOffLightsRest
-
-QIoTTurnOffLightsRest ->
-    QIoTLightSubject/þf QIoTHvar?
-    | QIoTHvar QIoTLightSubject/þf?
-
-# TODO: Make the subject categorization cleaner
-QIoTIncreaseOrDecreaseRest ->
-    QIoTLightSubject/þf QIoTHvar?
-    | QIoTBrightnessSubject/þf QIoTHvar?
-
-QIoTSubject/fall ->
-    QIoTSubjectOne/fall
-    | QIoTSubjectTwo/fall
-
-# TODO: Decide whether LightSubject/þgf should be accepted
-QIoTSubjectOne/fall ->
-    QIoTLightSubject/fall
-    | QIoTColorSubject/fall
-    | QIoTBrightnessSubject/fall
-    | QIoTSceneSubject/fall
-
-QIoTSubjectTwo/fall ->
-    QIoTGroupNameSubject/fall # á bara að styðja "gerðu eldhúsið rautt", "gerðu eldhúsið rómó" "gerðu eldhúsið bjartara", t.d.
-
-QIoTHvar ->
-    QIoTLocationPreposition QIoTGroupName/þgf
-
-QIoTHvernigMake ->
-    QIoTAnnadAndlag # gerðu litinn rauðan í eldhúsinu EÐA gerðu birtuna meiri í eldhúsinu
-    | QIoTAdHverju # gerðu litinn að rauðum í eldhúsinu
-    | QIoTThannigAd
-
-QIoTHvernigSet ->
-    QIoTAHvad
-    | QIoTThannigAd
-
-QIoTHvernigChange ->
-    QIoTIHvad
-    | QIoTThannigAd
-
-QIoTHvernigLet ->
-    QIoTBecome QIoTSomethingOrSomehow
-    | QIoTBe QIoTSomehow
-
-QIoTThannigAd ->
-    "þannig" "að"? pfn_nf QIoTBeOrBecomeSubjunctive QIoTAnnadAndlag
-
-# I think these verbs only appear in these forms. 
-# In which case these terminals should be deleted and a direct reference should be made in the relevant non-terminals.
-QIoTBe ->
-    "vera"
-
-QIoTBecome ->
-    "verða"
-
-QIoTBeOrBecomeSubjunctive ->
-    "verði"
-    | "sé"
-
-QIoTLightSubject/fall ->
-    QIoTLight/fall
-
-QIoTColorSubject/fall ->
-    QIoTColorWord/fall QIoTLight/ef?
-    | QIoTColorWord/fall "á" QIoTLight/þgf
-
-QIoTBrightnessSubject/fall ->
-    QIoTBrightnessWord/fall QIoTLight/ef?
-    | QIoTBrightnessWord/fall "á" QIoTLight/þgf
-
-QIoTSceneSubject/fall ->
-    QIoTSceneWord/fall
-
-QIoTGroupNameSubject/fall ->
-    QIoTGroupName/fall
-
-QIoTLocationPreposition ->
-    QIoTLocationPrepositionFirstPart? QIoTLocationPrepositionSecondPart
-
-# The latter proverbs are grammatically incorrect, but common errors, both in speech and transcription.
-# The list provided is taken from StefnuAtv in Greynir.grammar. That includes "aftur:ao", which is not applicable here.
-QIoTLocationPrepositionFirstPart ->
-    StaðarAtv
-    | "fram:ao"
-    | "inn:ao"
-    | "niður:ao"
-    | "upp:ao"
-    | "út:ao"
-
-QIoTLocationPrepositionSecondPart ->
-    "á" | "í"
-
-QIoTGroupName/fall ->
-    no/fall
-
-QIoTLightName/fall ->
-    no/fall
-
-QIoTColorName ->
-    {" | ".join(f"'{color}:lo'" for color in _COLORS.keys())}
-
-QIoTSceneName ->
-    no
-    | lo
-
-QIoTAnnadAndlag ->
-    QIoTNewSetting/nf
-    | QIoTSpyrjaHuldu/nf
-
-QIoTAdHverju ->
-    "að" QIoTNewSetting/þgf
-
-QIoTAHvad ->
-    "á" QIoTNewSetting/þf
-
-QIoTIHvad ->
-    "í" QIoTNewSetting/þf
-
-QIoTAHverju ->
-    "á" QIoTLight/þgf
-    | "á" QIoTNewSetting/þgf
-
-QIoTSomethingOrSomehow ->
-    QIoTAnnadAndlag
-    | QIoTAdHverju
-
-QIoTSomehow ->
-    QIoTAnnadAndlag
-    | QIoTThannigAd
-
-QIoTLight/fall ->
-    QIoTLightName/fall
-    | QIoTLightWord/fall
-
-# Should 'birta' be included
-QIoTLightWord/fall ->
-    'ljós'/fall
-    | 'lýsing'/fall
-    | 'birta'/fall
-    | 'Birta'/fall
-
-QIoTColorWord/fall ->
-    'litur'/fall
-    | 'litblær'/fall
-    | 'blær'/fall
-
-QIoTBrightnessWords/fall ->
-    'bjartur'/fall
-    | QIoTBrightnessWord/fall
-
-QIoTBrightnessWord/fall ->
-    'birta'/fall
-    | 'Birta'/fall
-    | 'birtustig'/fall
-
-QIoTSceneWord/fall ->
-    'sena'/fall
-    | 'stemning'/fall
-    | 'stemming'/fall
-    | 'stemmning'/fall
-
-# Need to ask Hulda how this works.
-QIoTSpyrjaHuldu/fall ->
-    # QIoTHuldaColor/fall
-    QIoTHuldaBrightness/fall
-    # | QIoTHuldaScene/fall
-
-# Do I need a "new light state" non-terminal?
-QIoTNewSetting/fall ->
-    QIoTNewColor/fall
-    | QIoTNewBrightness/fall
-    | QIoTNewScene/fall
-
-# Missing "meira dimmt"
-QIoTHuldaBrightness/fall ->
-    QIoTMoreBrighterOrHigher/fall QIoTBrightnessWords/fall?
-    | QIoTLessDarkerOrLower/fall QIoTBrightnessWords/fall?
-
-#Unsure about whether to include /fall after QIoTColorName
-QIoTNewColor/fall ->
-    QIoTColorWord/fall QIoTColorName
-    | QIoTColorName QIoTColorWord/fall?
-
-QIoTNewBrightness/fall ->
-    'sá'/fall? QIoTBrightestOrDarkest/fall
-    | QIoTBrightestOrDarkest/fall QIoTBrightnessOrSettingWord/fall
-
-QIoTNewScene/fall ->
-    QIoTSceneWord/fall QIoTSceneName
-    | QIoTSceneName QIoTSceneWord/fall?
-
-QIoTMoreBrighterOrHigher/fall ->
-    'mikill:lo'_mst/fall
-    | 'bjartur:lo'_mst/fall
-    | 'ljós:lo'_mst/fall
-    | 'hár:lo'_mst/fall
-
-QIoTLessDarkerOrLower/fall ->
-    'lítill:lo'_mst/fall
-    | 'dökkur:lo'_mst/fall
-    | 'dimmur:lo'_mst/fall
-    | 'lágur:lo'_mst/fall
-
-QIoTBrightestOrDarkest/fall ->
-    QIoTBrightest/fall
-    | QIoTDarkest/fall
-
-QIoTBrightest/fall ->
-    'bjartur:lo'_evb
-    | 'bjartur:lo'_esb
-    | 'ljós:lo'_evb
-    | 'ljós:lo'_esb
-
-QIoTDarkest/fall ->
-    'dimmur:lo'_evb
-    | 'dimmur:lo'_esb
-    | 'dökkur:lo'_evb
-    | 'dökkur:lo'_esb
-
-QIoTBrightnessOrSettingWord/fall ->
-    QIoTBrightnessWord/fall
-    | QIoTSettingWord/fall
-
-QIoTSettingWord/fall ->
-    'stilling'/fall
-
-"""
+GRAMMAR = read_grammar_file(
+    "iot_hue", color_names=" | ".join(f"'{color}:lo'" for color in _COLORS.keys())
+)
 
 
 def QIoTColorWord(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -534,7 +216,7 @@ def QIoTDarkest(node: Node, params: QueryStateDict, result: Result) -> None:
 def QIoTNewScene(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "set_scene"
     scene_name = result.get("scene_name", None)
-    print(scene_name)
+    print("scene: " + scene_name)
     if scene_name is not None:
         if "hue_obj" not in result:
             result["hue_obj"] = {"on": True, "scene": scene_name}
@@ -551,7 +233,7 @@ def QIoTColorName(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QIoTSceneName(node: Node, params: QueryStateDict, result: Result) -> None:
     result["scene_name"] = result._indefinite
-    print(result.get("scene_name", None))
+    print("scene: " + result.get("scene_name", None))
 
 
 def QIoTGroupName(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -574,10 +256,45 @@ _COLOR_NAME_TO_CIE: Mapping[str, float] = {
     # "Rauð": 360 * 65535 / 360,
 }
 
+_SPEAKER_WORDS: FrozenSet[str] = frozenset(
+    (
+        "tónlist",
+        "hátalari",
+        "bylgja",
+        "útvarp saga",
+        "gullbylgja",
+        "x-ið",
+        "léttbylgjan",
+        "rás 1",
+        "rás 2",
+        "rondo",
+        "rondó",
+        "fm 957",
+        "fm957",
+        "fm-957",
+        "k-100",
+        "k 100",
+        "k hundrað",
+        "x977",
+        "x 977",
+        "x-977",
+        "x-ið 977",
+        "retro",
+        "kiss fm",
+        "flassbakk",
+        "flassbakk fm",
+    )
+)
+
 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
+    lemmas = set(i[0] for i in simple_lemmatize(q.query.lower().split()))
+    if not _SPEAKER_WORDS.isdisjoint(lemmas):
+        print("matched with music word list")
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        return
     changing_color = result.get("changing_color", False)
     changing_scene = result.get("changing_scene", False)
     changing_brightness = result.get("changing_brightness", False)
@@ -656,4 +373,5 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_error("E_EXCEPTION: {0}".format(e))
         raise
 
-    # f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'p3obluiXT13IbHMpp4X63ZvZnpNRdbqqMt723gy2';"
+
+# f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'p3obluiXT13IbHMpp4X63ZvZnpNRdbqqMt723gy2';"

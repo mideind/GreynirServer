@@ -43,17 +43,20 @@ import json
 import flask
 from datetime import datetime, timedelta
 
+from reynir.lemmatize import simple_lemmatize
+
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_jsfile, read_grammar_file
 from queries.sonos import SonosClient
+from tree import Result, Node, TerminalNode
 from util import read_api_key
-from tree import Result, Node
 
 
 _IoT_QTYPE = "IoTSpeakers"
 
 TOPIC_LEMMAS = [
     "tónlist",
+    "spila",
 ]
 
 # def QIoTSpeakerIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -79,201 +82,14 @@ def help_text(lemma: str) -> str:
 HANDLE_TREE = True
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = {"QIoTSpeaker"}
+QUERY_NONTERMINALS = {"QIoTSpeaker", "QIoTSpeakerQuery"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 # GRAMMAR = read_grammar_file("iot_hue")
 
-# TODO: Fix music hardcoding
-GRAMMAR = f"""
-# TODO: Fix music hardcoding
-
-/þgf = þgf
-/ef = ef
-
-Query →
-    QIoTSpeaker '?'?
-
-QIoTSpeaker →
-    QIoTSpeakerQuery
-
-QIoTSpeakerQuery ->
-    QIoTSpeakerMakeVerb QIoTSpeakerMakeRest
-    | QIoTSpeakerSetVerb QIoTSpeakerSetRest
-    # | QIoTSpeakerChangeVerb QIoTSpeakerChangeRest
-    | QIoTSpeakerLetVerb QIoTSpeakerLetRest
-    | QIoTSpeakerTurnOnVerb QIoTSpeakerTurnOnRest
-    | QIoTSpeakerTurnOffVerb QIoTSpeakerTurnOffRest
-    | QIoTSpeakerPlayOrPauseVerb QIoTSpeakerPlayRest
-    | QIoTSpeakerIncreaseOrDecreaseVerb QIoTSpeakerIncreaseOrDecreaseRest
-
-QIoTSpeakerMakeVerb ->
-    'gera:so'_bh
-
-QIoTSpeakerSetVerb ->
-    'setja:so'_bh
-    | 'stilla:so'_bh
-
-QIoTSpeakerChangeVerb ->
-    'breyta:so'_bh
-
-QIoTSpeakerLetVerb ->
-    'láta:so'_bh
-
-QIoTSpeakerTurnOnVerb ->
-    'kveikja:so'_bh
-
-QIoTSpeakerTurnOffVerb ->
-    'slökkva:so'_bh
-
-QIoTSpeakerPlayOrPauseVerb ->
-    QIoTSpeakerPlayVerb
-    | QIoTSpeakerPauseVerb
-
-QIoTSpeakerPlayVerb ->
-    'spila:so'_bh
-
-QIoTSpeakerPauseVerb ->
-    'stöðva:so'_bh
-    | 'stoppa:so'_bh
-    | 'pása:so'_bh
-
-QIoTSpeakerIncreaseOrDecreaseVerb ->
-    QIoTSpeakerIncreaseVerb
-    | QIoTSpeakerDecreaseVerb
-
-QIoTSpeakerIncreaseVerb ->
-    'hækka:so'_bh
-    | 'auka:so'_bh
-
-QIoTSpeakerDecreaseVerb ->
-    'lækka:so'_bh
-    | 'minnka:so'_bh
-
-QIoTSpeakerMakeRest ->
-    # QCHANGESubject/þf QCHANGEHvar? QCHANGEHvernigMake
-    # | QCHANGESubject/þf QCHANGEHvernigMake QCHANGEHvar?
-    # | QCHANGEHvar? QCHANGESubject/þf QCHANGEHvernigMake
-    # | QCHANGEHvar? QCHANGEHvernigMake QCHANGESubject/þf
-    # | QCHANGEHvernigMake QCHANGESubject/þf QCHANGEHvar?
-    # | QCHANGEHvernigMake QCHANGEHvar? QCHANGESubject/þf
-    QIoTSpeakerMusicWordÞf QIoTSpeakerHvar?
-
-# TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
-QIoTSpeakerSetRest ->
-    # QCHANGESubject/þf QCHANGEHvar? QCHANGEHvernigSet
-    # | QCHANGESubject/þf QCHANGEHvernigSet QCHANGEHvar?
-    # | QCHANGEHvar? QCHANGESubject/þf QCHANGEHvernigSet
-    # | QCHANGEHvar? QCHANGEHvernigSet QCHANGESubject/þf
-    # | QCHANGEHvernigSet QCHANGESubject/þf QCHANGEHvar?
-    # | QCHANGEHvernigSet QCHANGEHvar? QCHANGESubject/þf
-    "á" QIoTSpeakerMusicWordÞf QIoTSpeakerHvar?
-
-# QIoTSpeakerChangeRest ->
-    # QCHANGESubjectOne/þgf QCHANGEHvar? QCHANGEHvernigChange
-    # | QCHANGESubjectOne/þgf QCHANGEHvernigChange QCHANGEHvar?
-    # | QCHANGEHvar? QCHANGESubjectOne/þgf QCHANGEHvernigChange
-    # | QCHANGEHvar? QCHANGEHvernigChange QCHANGESubjectOne/þgf
-    # | QCHANGEHvernigChange QCHANGESubjectOne/þgf QCHANGEHvar?
-    # | QCHANGEHvernigChange QCHANGEHvar? QCHANGESubjectOne/þgf
-
-QIoTSpeakerLetRest ->
-    # QCHANGESubject/þf QCHANGEHvar? QCHANGEHvernigLet
-    # | QCHANGESubject/þf QCHANGEHvernigLet QCHANGEHvar?
-    # | QCHANGEHvar? QCHANGESubject/þf QCHANGEHvernigLet
-    # | QCHANGEHvar? QCHANGEHvernigLet QCHANGESubject/þf
-    # | QCHANGEHvernigLet QCHANGESubject/þf QCHANGEHvar?
-    # | QCHANGEHvernigLet QCHANGEHvar? QCHANGESubject/þf
-    QIoTSpeakerBeOrBecome QIoTSpeakerMusicWordNf QIoTSpeakerHvar?
-    | "á" QIoTSpeakerMusicWordNf QIoTSpeakerHvar?
-
-# TODO: Find out why they conjugate this incorrectly "tónlist" is in þgf here, not þf
-QIoTSpeakerTurnOnRest ->
-    QIoTSpeakerAHverju QIoTSpeakerHvar?
-    # | QCHANGEHvar? QCHANGEAHverju
-
-# Would be good to add "slökktu á rauða litnum" functionality
-QIoTSpeakerTurnOffRest ->
-    # QCHANGETurnOffLightsRest
-    "á" QIoTSpeakerMusicWordÞgf QIoTSpeakerHvar?
-
-QIoTSpeakerPlayRest ->
-    QIoTSpeakerMusicWordÞf QIoTSpeakerHvar?
-
-# TODO: Make the subject categorization cleaner
-QIoTSpeakerIncreaseOrDecreaseRest ->
-    # QCHANGELightSubject/þf QCHANGEHvar?
-    # | QCHANGEBrightnessSubject/þf QCHANGEHvar?
-    QIoTSpeakerMusicWordÞf QIoTSpeakerHvar?
-    | "í" QIoTSpeakerMusicWordÞgf QIoTSpeakerHvar?
-
-# Increase specificity
-# QIoTSpeakerMusicWord ->
-#     'tónlist'
-
-QIoTSpeakerAHverju ->
-    "á" QIoTSpeakerMusicWordÞf
-#     | "á" QIoTSpeakerNewSetting/þgf
-
-# QIoTSpeakerNewSetting/fall ->
-#     QIoTSpeakerNewRadio/fall
-
-# QIoTSpeakerNewRadio/fall ->
-#     QIoTSpeakerRadioStationWord/fall? QIoTSpeakerRadioStationName/fall
-#     | QIoTSpeakerRadioStationWord/fall? QIoTSpeakerRadioStationNameIndeclinable    
-
-
-# QIoTSpeakerRadioStationWord/fall ->
-#     'útvarpsstöð:no'/fall
-
-QIoTSpeakerMusicWordNf ->
-    "tónlist"
-    | "tónlistin"
-
-QIoTSpeakerMusicWordÞf ->
-    "tónlist"
-    | "tónlistina"
-
-QIoTSpeakerMusicWordÞgf ->
-    "tónlist"
-    | "tónlistinni"
-
-QIoTSpeakerMusicWordEf ->
-    "tónlistar"
-    | "tónlistarinnar"
-
-QIoTSpeakerHvar ->
-    QIoTSpeakerLocationPreposition QIoTSpeakerGroupName/þgf
-
-QIoTSpeakerLocationPreposition ->
-    QIoTSpeakerLocationPrepositionFirstPart? QIoTSpeakerLocationPrepositionSecondPart
-
-# The latter proverbs are grammatically incorrect, but common errors, both in speech and transcription.
-# The list provided is taken from StefnuAtv in Greynir.grammar. That includes "aftur:ao", which is not applicable here.
-QIoTSpeakerLocationPrepositionFirstPart ->
-    StaðarAtv
-    | "fram:ao"
-    | "inn:ao"
-    | "niður:ao"
-    | "upp:ao"
-    | "út:ao"
-
-QIoTSpeakerLocationPrepositionSecondPart ->
-    "á" | "í"
-
-QIoTSpeakerGroupName/fall ->
-    no/fall
-
-QIoTSpeakerBeOrBecome ->
-    QIoTSpeakerBe
-    | QIoTSpeakerBecome
-
-QIoTSpeakerBe ->
-    'vera:so'_nh
-
-QIoTSpeakerBecome ->
-    'verða:so'_nh
-"""
+GRAMMAR = read_grammar_file(
+    "iot_speakers",
+)
 
 
 def QIoTSpeaker(node: Node, params: QueryStateDict, result: Result) -> None:
