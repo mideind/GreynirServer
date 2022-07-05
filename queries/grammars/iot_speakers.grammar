@@ -154,6 +154,7 @@ QIoTSpeakerRadioStationName ->
     | QIoTSpeakerRetro
     | QIoTSpeakerKissFm
     | QIoTSpeakerFlashback
+    | QIoTSpeakerUtvarp101
 
 QIoTSpeakerRadioStationWord/fall ->
     'útvarpsstöð:no'/fall
@@ -292,6 +293,8 @@ QIoTSpeakerK100 ->
     | "k100"
     | "k-hundrað"
     | "k-100"
+    | "kk" "hundrað"
+    | "kk" "100"
 
 QIoTSpeakerRetro ->
     "retro" "fm"?
@@ -304,8 +307,10 @@ QIoTSpeakerFlashback ->
     "flassbakk" "fm"?
     | "flass" "bakk" "fm"?
 
-QIoTUtvarp101 ->
+QIoTSpeakerUtvarp101 ->
     "útvarp"? "101"
     | "útvarp"? "hundrað" "og" "einn"
     | "útvarp"? "hundrað" "og" "eitt"
+    | "útvarp"? "hundrað" "einn"
+    | "útvarp"? "hundrað" "1"
 

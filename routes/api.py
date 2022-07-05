@@ -741,9 +741,11 @@ def sonos_code(version: int = 1) -> Response:
             # Create an instance of the SonosClient class. This will automatically create the rest of the credentials needed.
             sonos_client = SonosClient(device_data, client_id)
             sonos_voice_clip = (
-                f"Hæ! Embla hérna. Ég er búin að tengja þennan Sónos hátalara."
+                f"Hæ! Embla hérna! Ég er búin að tengja þennan Sónos hátalara."
             )
-            sonos_client.audio_clip(text_to_audio_url(sonos_voice_clip)) # Send the above message to the Sonos speaker
+            sonos_client.audio_clip(
+                text_to_audio_url(sonos_voice_clip)
+            )  # Send the above message to the Sonos speaker
             return better_jsonify(valid=True, msg="Registered sonos code")
     return better_jsonify(valid=False, errmsg="Error registering sonos code.")
 

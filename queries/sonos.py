@@ -66,33 +66,33 @@ _GROUPS = {
     "bóka herbergi": "Library",
 }
 
-_RADIO_STEAMS = {
-    "rás 1": "	http://netradio.ruv.is/ras1.mp3",
-    "rás 2": "http://netradio.ruv.is/ras2.mp3",
-    "rondo": "http://netradio.ruv.is/rondo.mp3",
-    "rondó": "http://netradio.ruv.is/rondo.mp3",
-    "bylgjan": "https://live.visir.is/hls-radio/bylgjan/playlist.m3u8",
-    "fm 957": "https://live.visir.is/hls-radio/fm957/playlist.m3u8",
-    "fm957": "https://live.visir.is/hls-radio/fm957/playlist.m3u8",
-    "fm-957": "https://live.visir.is/hls-radio/fm957/playlist.m3u8",
-    "Útvarp Saga": "https://stream.utvarpsaga.is/Hljodver",
-    "k-100": "https://k100streymi.mbl.is/beint/k100/tracks-v1a1/rewind-3600.m3u8",
-    "k 100": "https://k100streymi.mbl.is/beint/k100/tracks-v1a1/rewind-3600.m3u8",
-    "k hundrað": "https://k100streymi.mbl.is/beint/k100/tracks-v1a1/rewind-3600.m3u8",
-    "Gullbylgjan": "https://live.visir.is/hls-radio/gullbylgjan/playlist.m3u8",
-    "x977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
-    "x 977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
-    "x-977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
-    "x-ið": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
-    "x-ið 977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
-    "léttbylgjan": "https://live.visir.is/hls-radio/lettbylgjan/playlist.m3u8",
-    "retro": "https://k100straumar.mbl.is/retromobile",
-    "kiss fm": "http://stream3.radio.is:443/kissfm",
-    "flassbakk": "http://stream.radio.is:443/flashback",
-    "flassbakk fm": "http://stream.radio.is:443/flashback",
-    "útvarp 101": "https://stream.101.live/audio/101/chunklist.m3u8",
-    "útvarp hundrað og einn": "https://stream.101.live/audio/101/chunklist.m3u8",
-}
+# _RADIO_STEAMS = {
+#     "rás 1": "	http://netradio.ruv.is/ras1.mp3",
+#     "rás 2": "http://netradio.ruv.is/ras2.mp3",
+#     "rondo": "http://netradio.ruv.is/rondo.mp3",
+#     "rondó": "http://netradio.ruv.is/rondo.mp3",
+#     "bylgjan": "https://live.visir.is/hls-radio/bylgjan/playlist.m3u8",
+#     "fm 957": "https://live.visir.is/hls-radio/fm957/playlist.m3u8",
+#     "fm957": "https://live.visir.is/hls-radio/fm957/playlist.m3u8",
+#     "fm-957": "https://live.visir.is/hls-radio/fm957/playlist.m3u8",
+#     "Útvarp Saga": "https://stream.utvarpsaga.is/Hljodver",
+#     "k-100": "https://k100streymi.mbl.is/beint/k100/tracks-v1a1/rewind-3600.m3u8",
+#     "k 100": "https://k100streymi.mbl.is/beint/k100/tracks-v1a1/rewind-3600.m3u8",
+#     "k hundrað": "https://k100streymi.mbl.is/beint/k100/tracks-v1a1/rewind-3600.m3u8",
+#     "Gullbylgjan": "https://live.visir.is/hls-radio/gullbylgjan/playlist.m3u8",
+#     "x977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
+#     "x 977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
+#     "x-977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
+#     "x-ið": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
+#     "x-ið 977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
+#     "léttbylgjan": "https://live.visir.is/hls-radio/lettbylgjan/playlist.m3u8",
+#     "retro": "https://k100straumar.mbl.is/retromobile",
+#     "kiss fm": "http://stream3.radio.is:443/kissfm",
+#     "flassbakk": "http://stream.radio.is:443/flashback",
+#     "flassbakk fm": "http://stream.radio.is:443/flashback",
+#     "útvarp 101": "https://stream.101.live/audio/101/chunklist.m3u8",
+#     "útvarp hundrað og einn": "https://stream.101.live/audio/101/chunklist.m3u8",
+# }
 
 
 import requests
@@ -233,6 +233,7 @@ class SonosClient:
         """
         Returns the household id for the given query
         """
+        print("get household id")
         url = f"https://api.ws.sonos.com/control/api/v1/households"
         headers = {
             "Content-Type": "application/json",
@@ -406,6 +407,7 @@ class SonosClient:
         """
         Plays an audioclip from link to .mp3 file
         """
+        print("audio_clip")
         player_id = self._get_player_id()
         url = f"https://api.ws.sonos.com/control/api/v1/players/{player_id}/audioClip"
 
@@ -427,8 +429,10 @@ class SonosClient:
         response = post_to_json_api(url, payload, headers)
         return response
 
-    def create_or_join_session(self):
-        url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playbackSession/joinOrCreate"
+    def _create_or_join_session(self):
+        print("_create_or_join_session")
+        group_id = self._get_group_id()
+        url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playbackSession/joinOrCreate"
 
         payload = json.dumps({"appId": "com.mideind.embla", "appContext": "embla123"})
         headers = {
@@ -438,15 +442,12 @@ class SonosClient:
 
         response = post_to_json_api(url, payload, headers)
         print(response)
-        session_id = response.sessionId
+        session_id = response["sessionId"]
         return session_id
 
-    def play_radio_stream(self, query=None):
+    def play_radio_stream(self, radio_url):
+        print("play radio stream")
         session_id = self._create_or_join_session()
-        if query == None:
-            radio_name, radio_url = random.choice(list(_RADIO_STEAMS.items()))
-        else:
-            radio_name, radio_url = _RADIO_STEAMS.get(query)
 
         url = f"https://api.ws.sonos.com/control/api/v1//playbackSessions/{session_id}/playbackSession/loadStreamUrl?"
 
@@ -454,7 +455,7 @@ class SonosClient:
             {
                 "streamUrl": f"{radio_url}",
                 "playOnCompletion": True,
-                "stationMetadata": {"name": f"{radio_name}"},
+                # "stationMetadata": {"name": f"{radio_name}"},
                 "itemId": "StreamItemId",
             }
         )
@@ -465,9 +466,10 @@ class SonosClient:
 
         response = post_to_json_api(url, payload, headers)
 
-        print(response.text)
+        print(response.get("text"))
 
     def increase_volume(self):
+        print("increase_volume")
         group_id = self._get_group_id()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/groupVolume/relative"
 
@@ -479,9 +481,10 @@ class SonosClient:
 
         response = post_to_json_api(url, payload, headers)
 
-        print(response.text)
+        print(response.get("text"))
 
     def decrease_volume(self):
+        print("decrease volume")
         group_id = self._get_group_id()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/groupVolume/relative"
 
@@ -493,7 +496,7 @@ class SonosClient:
 
         response = post_to_json_api(url, payload, headers)
 
-        print(response.text)
+        print(response.get("text"))
 
 
 # # TODO: Check whether this should return the ids themselves instead of the json response

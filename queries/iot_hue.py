@@ -46,7 +46,7 @@ from reynir.lemmatize import simple_lemmatize
 
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_jsfile, read_grammar_file
-from tree import Result, Node
+from tree import Result, Node, TerminalNode
 
 
 class SmartLights(TypedDict):
@@ -275,7 +275,9 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
         "fm-957",
         "k-100",
         "k 100",
+        "kk 100",
         "k hundrað",
+        "kk hundrað",
         "x977",
         "x 977",
         "x-977",
@@ -284,6 +286,12 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
         "kiss fm",
         "flassbakk",
         "flassbakk fm",
+        "útvarp hundraðið",
+        "útvarp 101",
+        "útvarp hundraðogeinn",
+        "útvarp hundrað og einn",
+        "útvarp hundrað einn",
+        "útvarp hundrað 1",
     )
 )
 
@@ -291,7 +299,10 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
-    lemmas = set(i[0] for i in simple_lemmatize(q.query.lower().split()))
+    lemmas = set(
+        i[0].root(state, result.params)
+        for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))
+    )
     if not _SPEAKER_WORDS.isdisjoint(lemmas):
         print("matched with music word list")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
