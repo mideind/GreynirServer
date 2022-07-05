@@ -22,6 +22,24 @@
     of random numbers, e.g. "Kastaðu tengingi", "Nefndu tölu milli 5 og 10", etc.
 
 """
+# Dictionary of radio stations and their stream urls
+_RADIO_STREAMS = {
+    "Rás 1": "http://netradio.ruv.is/ras1.mp3",
+    "Rás 2": "http://netradio.ruv.is/ras2.mp3",
+    "Rondó": "http://netradio.ruv.is/rondo.mp3",
+    "Bylgjan": "https://live.visir.is/hls-radio/bylgjan/playlist.m3u8",
+    "FM957": "https://live.visir.is/hls-radio/fm957/playlist.m3u8",
+    "Útvarp Saga": "https://stream.utvarpsaga.is/Hljodver",
+    "K100": "https://k100streymi.mbl.is/beint/k100/tracks-v1a1/rewind-3600.m3u8",
+    "Gullbylgjan": "https://live.visir.is/hls-radio/gullbylgjan/playlist.m3u8",
+    "X977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
+    "Léttbylgjan": "https://live.visir.is/hls-radio/lettbylgjan/playlist.m3u8",
+    "Retro": "https://k100straumar.mbl.is/retromobile",
+    "KissFM": "http://stream3.radio.is:443/kissfm",
+    "Flashback": "http://stream.radio.is:443/flashback",
+    "Útvarp 101": "https://stream.101.live/audio/101/chunklist.m3u8",
+}
+
 
 # TODO: add "láttu", "hafðu", "litaðu", "kveiktu" functionality.
 # TODO: make the objects of sentences more modular, so that the same structure doesn't need to be written for each action
@@ -59,14 +77,6 @@ TOPIC_LEMMAS = [
     "spila",
 ]
 
-# def QIoTSpeakerIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
-#     result.action = "increase_volume"
-#     if "hue_obj" not in result:
-#         result["hue_obj"] = {"on": True, "bri_inc": 64}
-#     else:
-#         result["hue_obj"]["bri_inc"] = 64
-#         result["hue_obj"]["on"] = True
-
 
 def help_text(lemma: str) -> str:
     """Help text to return when query.py is unable to parse a query but
@@ -85,7 +95,6 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QIoTSpeaker", "QIoTSpeakerQuery"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-# GRAMMAR = read_grammar_file("iot_hue")
 
 GRAMMAR = read_grammar_file(
     "iot_speakers",
@@ -127,63 +136,114 @@ def QIoTSpeakerPlayVerb(node: Node, params: QueryStateDict, result: Result) -> N
     result["qkey"] = "play_music"
 
 
-# def QIoTSpeakerRadioStationName(
-#     node: Node, params: QueryStateDict, result: Result
-# ) -> None:
-#     result.target = "radio"
-#     print("radio")
+def QIoTSpeakerRas1(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Rás 1"
 
 
-# def toggle_play_pause(q):
-#     device_data = q.client_data("iot_speakers")
-#     print(device_data)
-#     if device_data is not None:
-#         sonos_client = SonosClient(device_data, q.client_id)
-#     else:
-#         print("No device data found for this account")
-#         return
-#     sonos_client.toggle_play_pause()
-#     answer = "Ég kveikti á tónlist."
-#     answer_list = gen_answer(answer)
-#     answer_list[1].replace("Sonos", "Sónos")
-#     q.set_answer(*answer_list)
+def QIoTSpeakerRas2(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Rás 2"
 
 
-# def get_device_data(q):
-#     device_data = q.client_data("iot_speakers")
-#     if device_data is not None:
-#         return device_data
-#     else:
-#         print("No device data found for this account")
-#         return
+def QIoTSpeakerRondo(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Rondó"
 
 
+def QIoTSpeakerBylgjan(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Bylgjan"
+
+
+def QIoTSpeakerFm957(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "FM957"
+
+
+def QIoTSpeakerUtvarpSaga(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Útvarp Saga"
+
+
+def QIoTSpeakerGullbylgjan(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Gullbylgjan"
+
+
+def QIoTSpeakerLettbylgjan(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Léttbylgjan"
+
+
+def QIoTSpeakerXid(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "X977"
+
+
+def QIoTSpeakerKissfm(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "KissFM"
+
+
+def QIoTSpeakerFlassback(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Flashback"
+
+
+def QIoTSpeakerRetro(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Retro"
+
+
+def QIoTSpeakerUtvarp101(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Útvarp 101"
+
+
+def QIoTSpeakerK100(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "K100"
+
+
+def call_sonos_client(sonos_client, result):
+    """Call the appropriate function in the SonosClient based on the result"""
+    handler_func = _HANDLER_MAP[result.qkey][0]
+    if result.get("station") is not None:
+        radio_url = _RADIO_STREAMS.get(f"{result.station}")
+        getattr(sonos_client, handler_func)(radio_url)
+    else:
+        getattr(sonos_client, handler_func)()
+    return
+
+
+# Map of query keys to handler functions and the corresponding answer string for Embla
 _HANDLER_MAP = {
     "play_music": ["toggle_play_pause", "Ég kveikti á tónlist"],
     "pause_music": ["toggle_play_pause", "Ég slökkti á tónlist"],
     "increase_volume": ["increase_volume", "Ég hækkaði í tónlistinni"],
     "decrease_volume": ["decrease_volume", "Ég lækkaði í tónlistinni"],
+    "radio": ["play_radio_stream", "Ég setti á útvarpstöðina"],
 }
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    # try:
-    print("sentence")
     """Called when sentence processing is complete"""
+    print("sentence")
+    q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         try:
-            q: Query = state["query"]
             q.set_qtype(result.qtype)
             device_data = q.client_data("iot_speakers")
             if device_data is not None:
                 sonos_client = SonosClient(device_data, q.client_id)
-                handler_func = _HANDLER_MAP[result.qkey][0]
+                call_sonos_client(sonos_client, result)
                 handler_answer = _HANDLER_MAP[result.qkey][1]
-                getattr(sonos_client, handler_func)()
                 answer = handler_answer
                 answer_list = gen_answer(answer)
                 answer_list[1].replace("Sonos", "Sónos")
                 q.set_answer(*answer_list)
+                return
             else:
                 print("No device data found for this account")
                 return
@@ -196,16 +256,3 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         return
 
     # # TODO: Need to add check for if there are no registered devices to an account, probably when initilazing the querydata
-    # if device_data is not None:
-    #     sonos_client = SonosClient(device_data, q.client_id)
-    # else:
-    #     print("No device data found for this account")
-    #     return
-
-    # # Perform the action on the Sonos device
-    # if result.action == "play_music":
-    #     sonos_client.toggle_play_pause(q)
-    #     answer = "Ég kveikti á tónlist."
-    # answer_list = gen_answer(answer)
-    # answer_list[1].replace("Sonos", "Sónos")
-    # q.set_answer(*answer_list)

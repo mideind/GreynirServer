@@ -66,34 +66,6 @@ _GROUPS = {
     "bóka herbergi": "Library",
 }
 
-_RADIO_STEAMS = {
-    "rás 1": "	http://netradio.ruv.is/ras1.mp3",
-    "rás 2": "http://netradio.ruv.is/ras2.mp3",
-    "rondo": "http://netradio.ruv.is/rondo.mp3",
-    "rondó": "http://netradio.ruv.is/rondo.mp3",
-    "bylgjan": "https://live.visir.is/hls-radio/bylgjan/playlist.m3u8",
-    "fm 957": "https://live.visir.is/hls-radio/fm957/playlist.m3u8",
-    "fm957": "https://live.visir.is/hls-radio/fm957/playlist.m3u8",
-    "fm-957": "https://live.visir.is/hls-radio/fm957/playlist.m3u8",
-    "Útvarp Saga": "https://stream.utvarpsaga.is/Hljodver",
-    "k-100": "https://k100streymi.mbl.is/beint/k100/tracks-v1a1/rewind-3600.m3u8",
-    "k 100": "https://k100streymi.mbl.is/beint/k100/tracks-v1a1/rewind-3600.m3u8",
-    "k hundrað": "https://k100streymi.mbl.is/beint/k100/tracks-v1a1/rewind-3600.m3u8",
-    "Gullbylgjan": "https://live.visir.is/hls-radio/gullbylgjan/playlist.m3u8",
-    "x977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
-    "x 977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
-    "x-977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
-    "x-ið": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
-    "x-ið 977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
-    "léttbylgjan": "https://live.visir.is/hls-radio/lettbylgjan/playlist.m3u8",
-    "retro": "https://k100straumar.mbl.is/retromobile",
-    "kiss fm": "http://stream3.radio.is:443/kissfm",
-    "flassbakk": "http://stream.radio.is:443/flashback",
-    "flassbakk fm": "http://stream.radio.is:443/flashback",
-    "útvarp 101": "https://stream.101.live/audio/101/chunklist.m3u8",
-    "útvarp hundrað og einn": "https://stream.101.live/audio/101/chunklist.m3u8",
-}
-
 
 import requests
 from datetime import datetime, timedelta
@@ -233,6 +205,7 @@ class SonosClient:
         """
         Returns the household id for the given query
         """
+        print("get household id")
         url = f"https://api.ws.sonos.com/control/api/v1/households"
         headers = {
             "Content-Type": "application/json",
@@ -240,7 +213,6 @@ class SonosClient:
         }
 
         response = query_json_api(url, headers)
-
         return response["households"][0]["id"]
 
     def _get_groups(self):
@@ -269,8 +241,7 @@ class SonosClient:
         headers = {"Authorization": f"Bearer {self._access_token}"}
 
         response = query_json_api(url, headers)
-        return response.json()
-        # return response.json()["groups"]
+        return response
 
     def _get_group_id(self):
         """
@@ -288,7 +259,6 @@ class SonosClient:
             }
 
             response = query_json_api(url, headers)
-
             return response["groups"][0]["id"]
 
     def _get_players(self):
@@ -332,12 +302,9 @@ class SonosClient:
     def _create_sonos_data_dict(self):
         print("_create_sonos_data_dict")
         data_dict = {"households": self._households}
-        # groups_list = []
-        # players_list = []
         for i in range(len(self._households)):
             groups_raw = self._groups
             players_raw = self._players
-            # groups_list += self._create_grouplist_for_db(groups_raw)
             groups_list = self._groups
             players_list = self._players
 
@@ -406,6 +373,7 @@ class SonosClient:
         """
         Plays an audioclip from link to .mp3 file
         """
+        print("audio_clip")
         player_id = self._get_player_id()
         url = f"https://api.ws.sonos.com/control/api/v1/players/{player_id}/audioClip"
 
@@ -427,8 +395,10 @@ class SonosClient:
         response = post_to_json_api(url, payload, headers)
         return response
 
-    def create_or_join_session(self):
-        url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playbackSession/joinOrCreate"
+    def _create_or_join_session(self):
+        print("_create_or_join_session")
+        group_id = self._get_group_id()
+        url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playbackSession/joinOrCreate"
 
         payload = json.dumps({"appId": "com.mideind.embla", "appContext": "embla123"})
         headers = {
@@ -438,15 +408,12 @@ class SonosClient:
 
         response = post_to_json_api(url, payload, headers)
         print(response)
-        session_id = response.sessionId
+        session_id = response["sessionId"]
         return session_id
 
-    def play_radio_stream(self, query=None):
+    def play_radio_stream(self, radio_url):
+        print("play radio stream")
         session_id = self._create_or_join_session()
-        if query == None:
-            radio_name, radio_url = random.choice(list(_RADIO_STEAMS.items()))
-        else:
-            radio_name, radio_url = _RADIO_STEAMS.get(query)
 
         url = f"https://api.ws.sonos.com/control/api/v1//playbackSessions/{session_id}/playbackSession/loadStreamUrl?"
 
@@ -454,7 +421,7 @@ class SonosClient:
             {
                 "streamUrl": f"{radio_url}",
                 "playOnCompletion": True,
-                "stationMetadata": {"name": f"{radio_name}"},
+                # "stationMetadata": {"name": f"{radio_name}"},
                 "itemId": "StreamItemId",
             }
         )
@@ -464,10 +431,10 @@ class SonosClient:
         }
 
         response = post_to_json_api(url, payload, headers)
-
-        print(response.text)
+        print(response.get("text"))
 
     def increase_volume(self):
+        print("increase_volume")
         group_id = self._get_group_id()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/groupVolume/relative"
 
@@ -478,10 +445,10 @@ class SonosClient:
         }
 
         response = post_to_json_api(url, payload, headers)
-
-        print(response.text)
+        print(response.get("text"))
 
     def decrease_volume(self):
+        print("decrease volume")
         group_id = self._get_group_id()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/groupVolume/relative"
 
@@ -492,109 +459,4 @@ class SonosClient:
         }
 
         response = post_to_json_api(url, payload, headers)
-
-        print(response.text)
-
-
-# # TODO: Check whether this should return the ids themselves instead of the json response
-# def _get_households(token):
-#     """
-#     Returns the list of households of the user
-#     """
-#     url = f"https://api.ws.sonos.com/control/api/v1/households"
-
-#     payload = {}
-#     headers = {"Authorization": f"Bearer {token}"}
-
-#     response = requests.request("GET", url, headers=headers, data=payload)
-
-#     return response.json()
-
-
-# def _get_groups(household_id, token):
-#     """
-#     Returns the list of groups of the user
-#     """
-#     url = f"https://api.ws.sonos.com/control/api/v1/households/{household_id}/groups"
-
-#     payload = {}
-#     headers = {"Authorization": f"Bearer {token}"}
-
-#     response = requests.request("GET", url, headers=headers, data=payload)
-
-#     return response
-
-
-# def _create_token(code, sonos_encoded_credentials, host):
-#     """
-#     Creates a token given a code
-#     """
-#     url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={code}&redirect_uri=http://{host}/connect_sonos.api"
-
-#     payload = {}
-#     headers = {
-#         "Authorization": f"Basic {sonos_encoded_credentials}",
-#         "Cookie": "JSESSIONID=F710019AF0A3B7126A8702577C883B5F; AWSELB=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBCFB059E28075D83A700FD504C030A53CC28683B515BE3DCA3CC587AFAF606E171; AWSELBCORS=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBCFB059E28075D83A700FD504C030A53CC28683B515BE3DCA3CC587AFAF606E171",
-#     }
-
-#     response = requests.request("POST", url, headers=headers, data=payload)
-
-#     return response
-
-
-# def refresh_token(sonos_encoded_credentials, refresh_token):
-#     """
-#     Refreshes token
-#     """
-#     url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=refresh_token&refresh_token={refresh_token}"
-
-#     payload = {}
-#     headers = {"Authorization": f"Basic {sonos_encoded_credentials}"}
-
-#     response = requests.request("POST", url, headers=headers, data=payload)
-
-#     return response
-
-
-# def audio_clip(audioclip_url, player_id, token):
-#     """
-#     Plays an audioclip from link to .mp3 file
-#     """
-#     import requests
-#     import json
-
-#     url = f"https://api.ws.sonos.com/control/api/v1/players/{player_id}/audioClip"
-
-#     payload = json.dumps(
-#         {
-#             "name": "Embla",
-#             "appId": "com.acme.app",
-#             "streamUrl": f"{audioclip_url}",
-#             "volume": 50,
-#             "priority": "HIGH",
-#             "clipType": "CUSTOM",
-#         }
-#     )
-#     headers = {
-#         "Content-Type": "application/json",
-#         "Authorization": f"Bearer {token}",
-#     }
-
-#     response = requests.request("POST", url, headers=headers, data=payload)
-
-
-# def _update_sonos_token(q, device_data):
-#     print("update sonos token")
-#     sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
-#     refresh_token_str = device_data["sonos"]["credentials"]["refresh_token"]
-#     access_token = refresh_token(sonos_encoded_credentials, refresh_token_str).json()
-#     access_token = access_token["access_token"]
-#     sonos_dict = {
-#         "sonos": {
-#             "credentials": {
-#                 "access_token": access_token,
-#                 "timestamp": str(datetime.now()),
-#             }
-#         }
-#     }
-#     q.set_client_data("iot_speakers", sonos_dict, update_in_place=True)
+        print(response.get("text"))
