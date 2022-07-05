@@ -32,6 +32,7 @@
 # TODO: Two specified groups or lights.
 # TODO: No specified location
 # TODO: Fix scene issues
+# TODO: Turning on lights without using "turn on"
 
 from typing import Dict, Mapping, Optional, cast, FrozenSet
 from typing_extensions import TypedDict

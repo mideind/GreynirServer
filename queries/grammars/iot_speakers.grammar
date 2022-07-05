@@ -303,3 +303,8 @@ QIoTSpeakerFlashback ->
     "flassbakk" "fm"?
     | "flass" "bakk" "fm"?
 
+QIoTUtvarp101 ->
+    "útvarp"? "101"
+    | "útvarp"? "hundrað" "og" "einn"
+    | "útvarp"? "hundrað" "og" "eitt"
+
