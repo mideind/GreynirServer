@@ -212,6 +212,7 @@ QTheaterRodBekkur →
 
 QTheaterShowSeats →
     QTheaterEgVil? "sæti"? "númer"? QNum "til"? QNum? 
+    | QTheaterEgVil? "sæti"? "númer"? QNum "og"? QNum? 
 
 QTheaterDateOptions → 
     "hvaða" "dagsetningar" "eru" "í" "boði"
@@ -425,7 +426,7 @@ def _generate_date_answer(
         return gen_answer(resource.prompts["no_time_matched"])
     if result.get("many_matching_times"):
         return gen_answer(resource.prompts["many_matching_times"])
-    if result.get("multiple_times_for_date"):
+    if resource.is_partially_fulfilled:
         show_date: Optional[datetime.date] = cast(
             DateResource, dsm.get_resource("ShowDate")
         ).date
@@ -662,7 +663,6 @@ def _generate_final_answer(
     time = cast(TimeResource, dsm.get_resource("ShowTime")).data
     number_of_seats = cast(NumberResource, dsm.get_resource("ShowSeatCount")).data
     seats = dsm.get_resource("ShowSeatNumber").data
-    seat_string: str = ""
     seat_voice_string: str = ""
     seats_text_string: str = ""
     if number_of_seats > 1:
@@ -764,7 +764,6 @@ def _date_callback(
             dsm.set_resource_state(time_resource.name, ResourceState.FULFILLED)
             dsm.set_resource_state(datetime_resource.name, ResourceState.FULFILLED)
         else:
-            result.multiple_times_for_date = True
             dsm.set_resource_state(
                 datetime_resource.name, ResourceState.PARTIALLY_FULFILLED
             )
@@ -776,8 +775,6 @@ def _time_callback(
     dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
     if result.get("no_date_matched"):
         return
-    if result.get("multiple_times_for_date"):
-        result.multiple_times_for_date = False
     if dsm.get_resource("Show").is_confirmed:
         show_title: str = dsm.get_resource("Show").data[0]
         date_resource: DateResource = cast(DateResource, dsm.get_resource("ShowDate"))
