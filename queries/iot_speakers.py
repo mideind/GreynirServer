@@ -258,14 +258,20 @@ def QIoTSpeakerUtvarpSudurland(
     result["station"] = "Útvarp Suðurland"
 
 
+def QIoTSpeakerGroupName(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["group_name"] = result._indefinite
+
+
 def call_sonos_client(sonos_client, result):
     """Call the appropriate function in the SonosClient based on the result"""
     handler_func = _HANDLER_MAP[result.qkey][0]
     if result.get("station") is not None:
         radio_url = _RADIO_STREAMS.get(f"{result.station}")
-        getattr(sonos_client, handler_func)(radio_url)
+        response = getattr(sonos_client, handler_func)(radio_url)
+        return response
     else:
-        getattr(sonos_client, handler_func)()
+        response = getattr(sonos_client, handler_func)()
+        return response
     return
 
 
@@ -284,17 +290,29 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     print("sentence")
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
+        print("IF QTYPE AND QKEY")
         try:
             q.set_qtype(result.qtype)
             device_data = q.client_data("iot_speakers")
             if device_data is not None:
-                sonos_client = SonosClient(device_data, q.client_id)
-                call_sonos_client(sonos_client, result)
-                handler_answer = _HANDLER_MAP[result.qkey][1]
-                answer = handler_answer
-                answer_list = gen_answer(answer)
-                answer_list[1].replace("Sonos", "Sónos")
-                q.set_answer(*answer_list)
+                print("JUST BEFORE SONOS CLIENT")
+                sonos_client = SonosClient(
+                    device_data, q.client_id, group_name=result.get("group_name")
+                )
+                print("JUST AFTER SONOS CLIENT")
+                response = call_sonos_client(sonos_client, result)
+                if response == "Group not found":
+                    text_ans = f"Herbergið '{result.group_name}' fannst ekki. Vinsamlegast athugaðu í Sonos appinu hvort nafnið sé rétt."
+                else:
+                    handler_answer = _HANDLER_MAP[result.qkey][1]
+                    text_ans = handler_answer
+
+                answer = (
+                    dict(answer=text_ans),
+                    text_ans,
+                    text_ans.replace("Sonos", "Sónos"),
+                )
+                q.set_answer(*answer)
                 return
             else:
                 print("No device data found for this account")
@@ -304,6 +322,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             q.set_error("E_EXCEPTION: {0}".format(e))
             return
     else:
+        print("ELSE")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 

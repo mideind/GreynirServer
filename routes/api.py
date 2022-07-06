@@ -26,6 +26,7 @@ from typing import Dict, Any, List, Optional, cast
 
 from datetime import datetime
 import logging
+import time
 
 from flask import request, abort
 from flask.wrappers import Response
@@ -646,10 +647,10 @@ def register_query_data_api(version: int = 1) -> Response:
         'philips_hue': {
             'credentials': {
                 'username': username,
-                'ip_address': ip address,
+                'ip_address': IP address,
             },
             'data': {
-                'groups': [{group1}, {group2}]
+                'groups': {name, id}, {name, id}, ...
         },
     };
 
@@ -743,7 +744,9 @@ def sonos_code(version: int = 1) -> Response:
             sonos_voice_clip = (
                 f"Hæ! Embla hérna! Ég er búin að tengja þennan Sónos hátalara."
             )
-            sonos_client.audio_clip(
+            sonos_client.play_chime()
+            time.sleep(1.3)
+            sonos_client.play_audio_clip(
                 text_to_audio_url(sonos_voice_clip)
             )  # Send the above message to the Sonos speaker
             return better_jsonify(valid=True, msg="Registered sonos code")

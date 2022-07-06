@@ -196,6 +196,7 @@ QIoTSpeakerLocationPrepositionSecondPart ->
 
 QIoTSpeakerGroupName/fall ->
     no/fall
+    | sérnafn/fall
 
 QIoTSpeakerBeOrBecome ->
     QIoTSpeakerBe
