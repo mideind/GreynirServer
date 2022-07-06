@@ -1,3 +1,5 @@
+# Grammar for the dictionary query module
+
 Query →
     QDictQuery '?'?
 

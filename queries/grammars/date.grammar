@@ -1,3 +1,5 @@
+# Grammar for the date query module
+
 Query →
     QDate
 

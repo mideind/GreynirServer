@@ -1,3 +1,4 @@
+# Grammar for the rand query module
 
 Query →
     QRandom

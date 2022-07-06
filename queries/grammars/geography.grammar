@@ -1,3 +1,5 @@
+# Grammar for the geography query module
+
 Query →
     QGeo
 

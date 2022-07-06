@@ -1,10 +1,4 @@
-# ----------------------------------------------
-#
-# Query grammar
-#
-# The following grammar is used for queries only
-#
-# ----------------------------------------------
+# Grammar for the whatis query module
 
 Query →
     QWhatIsQuery

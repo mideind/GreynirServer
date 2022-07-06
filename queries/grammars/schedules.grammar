@@ -1,3 +1,5 @@
+# Grammar for the schedules query module
+
 Query →
     QSchedule
 

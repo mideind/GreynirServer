@@ -1,3 +1,5 @@
+# Grammar for the ja query module
+
 Query →
     QJaQuery '?'?
 

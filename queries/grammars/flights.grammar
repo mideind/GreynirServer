@@ -1,3 +1,5 @@
+# Grammar for the flights query module
+
 Query →
     QFlights
 

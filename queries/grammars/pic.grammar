@@ -1,3 +1,5 @@
+# Grammar for the pic query module
+
 Query →
     QPic
 

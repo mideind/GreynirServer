@@ -1,3 +1,5 @@
+# Grammar for the weather query module
+
 Query →
     QWeather
 
