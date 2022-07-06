@@ -329,9 +329,8 @@ _BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
 
 
 def _generate_show_answer(
-    resource: ListResource, dsm: DialogueStateManager
+    resource: ListResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
-    result = dsm.get_result()
     if (not resource.is_confirmed and result.get("options_info")) or result.get(
         "show_options"
     ):
@@ -360,9 +359,8 @@ def _generate_show_answer(
 
 
 def _generate_date_answer(
-    resource: ListResource, dsm: DialogueStateManager
+    resource: ListResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
-    result = dsm.get_result()
     title = dsm.get_resource("Show").data[0]
 
     dates: list[str] = []
@@ -495,9 +493,8 @@ def _generate_date_answer(
 
 
 def _generate_seat_count_answer(
-    resource: NumberResource, dsm: DialogueStateManager
+    resource: NumberResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
-    result = dsm.get_result()
     if result.get("invalid_seat_count"):
         return gen_answer(resource.prompts["invalid_seat_count"])
     if resource.is_unfulfilled:
@@ -513,9 +510,8 @@ def _generate_seat_count_answer(
 
 
 def _generate_row_answer(
-    resource: ListResource, dsm: DialogueStateManager
+    resource: ListResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
-    result = dsm.get_result()
     title: str = dsm.get_resource("Show").data[0]
     seats: int = dsm.get_resource("ShowSeatCount").data
     available_rows: list[str] = []
@@ -585,9 +581,8 @@ def _generate_row_answer(
 
 
 def _generate_seat_number_answer(
-    resource: ListResource, dsm: DialogueStateManager
+    resource: ListResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
-    result = dsm.get_result()
     title: str = dsm.get_resource("Show").data[0]
     seats: int = dsm.get_resource("ShowSeatCount").data
     chosen_row: int = dsm.get_resource("ShowSeatRow").data[0]
@@ -657,7 +652,7 @@ def _generate_seat_number_answer(
 
 
 def _generate_final_answer(
-    resource: ListResource, dsm: DialogueStateManager
+    resource: ListResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
     if resource.is_cancelled:
         return gen_answer(resource.prompts["cancelled"])
