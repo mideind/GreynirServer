@@ -69,7 +69,7 @@ QIoTSpeakerMakeRest ->
     # | QCHANGEHvar? QCHANGEHvernigMake QCHANGESubject/þf
     # | QCHANGEHvernigMake QCHANGESubject/þf QCHANGEHvar?
     # | QCHANGEHvernigMake QCHANGEHvar? QCHANGESubject/þf
-    QIoTSpeakerMusicWordÞf QIoTSpeakerHvar?
+    QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
 
 # TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
 QIoTSpeakerSetRest ->
@@ -96,8 +96,8 @@ QIoTSpeakerLetRest ->
     # | QCHANGEHvar? QCHANGEHvernigLet QCHANGESubject/þf
     # | QCHANGEHvernigLet QCHANGESubject/þf QCHANGEHvar?
     # | QCHANGEHvernigLet QCHANGEHvar? QCHANGESubject/þf
-    QIoTSpeakerBeOrBecome QIoTSpeakerMusicWordNf QIoTSpeakerHvar?
-    | "á" QIoTSpeakerMusicWordNf QIoTSpeakerHvar?
+    QIoTSpeakerBeOrBecome QIoTSpeakerMusicWord/nf QIoTSpeakerHvar?
+    | "á" QIoTSpeakerMusicWord/nf QIoTSpeakerHvar?
 
 # TODO: Find out why they conjugate this incorrectly "tónlist" is in þgf here, not þf
 QIoTSpeakerTurnOnRest ->
@@ -107,29 +107,29 @@ QIoTSpeakerTurnOnRest ->
 # Would be good to add "slökktu á rauða litnum" functionality
 QIoTSpeakerTurnOffRest ->
     # QCHANGETurnOffLightsRest
-    "á" QIoTSpeakerMusicWordÞgf QIoTSpeakerHvar?
+    "á" QIoTSpeakerMusicWord/þgf QIoTSpeakerHvar?
 
 QIoTSpeakerPlayRest ->
-    QIoTSpeakerMusicWordÞf QIoTSpeakerHvar?
+    QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
     | QIoTSpeakerRadioStationWord/þf? QIoTSpeakerRadioStationName QIoTSpeakerHvar?
 
 # TODO: Make the subject categorization cleaner
 QIoTSpeakerIncreaseOrDecreaseRest ->
     # QCHANGELightSubject/þf QCHANGEHvar?
     # | QCHANGEBrightnessSubject/þf QCHANGEHvar?
-    QIoTSpeakerMusicWordÞf QIoTSpeakerHvar?
-    | "í" QIoTSpeakerMusicWordÞgf QIoTSpeakerHvar?
+    QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
+    | "í" QIoTSpeakerMusicWord/þgf QIoTSpeakerHvar?
 
 # Increase specificity
 # QIoTSpeakerMusicWord ->
 #     'tónlist'
 
 QIoTSpeakerAHvad ->
-    "á" QIoTSpeakerMusicWordÞf
+    "á" QIoTSpeakerMusicWord/þf
     | "á" QIoTSpeakerNewSetting/þf
 
 QIoTSpeakerAHverju ->
-    "á" QIoTSpeakerMusicWordÞf
+    "á" QIoTSpeakerMusicWord/þf
     | "á" QIoTSpeakerNewSetting/þgf
 
 QIoTSpeakerNewSetting/fall ->
@@ -159,21 +159,8 @@ QIoTSpeakerRadioStationName ->
 QIoTSpeakerRadioStationWord/fall ->
     'útvarpsstöð:no'/fall
 
-QIoTSpeakerMusicWordNf ->
-    "tónlist"
-    | "tónlistin"
-
-QIoTSpeakerMusicWordÞf ->
-    "tónlist"
-    | "tónlistina"
-
-QIoTSpeakerMusicWordÞgf ->
-    "tónlist"
-    | "tónlistinni"
-
-QIoTSpeakerMusicWordEf ->
-    "tónlistar"
-    | "tónlistarinnar"
+QIoTSpeakerMusicWord/fall ->
+    'tónlist'/fall
 
 QIoTSpeakerHvar ->
     QIoTSpeakerLocationPreposition QIoTSpeakerGroupName/þgf
