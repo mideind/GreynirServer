@@ -21,6 +21,7 @@ from queries.dialogue import (
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
+DIALOGUE_NAME = "fruitseller"
 
 # The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = {"QFruitSeller"}
@@ -470,7 +471,7 @@ _ANSWERING_FUNCTIONS: AnsweringFunctionMap = {
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
-    dsm = DialogueStateManager(_DIALOGUE_NAME, _START_DIALOGUE_QTYPE, q, result)
+    dsm = q._dsm
 
     if dsm.not_in_dialogue() or result.get("parse_error"):
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

@@ -63,6 +63,9 @@ def help_text(lemma: str) -> str:
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
 
+# This module involves dialogue functionality
+DIALOGUE_NAME = "theater"
+
 # The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = {"QTheater"}
 
@@ -362,15 +365,17 @@ def _generate_date_answer(
     resource: ListResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
     title = dsm.get_resource("Show").data[0]
-
+    print("GENERATING DATE ANSWER")
     dates: list[str] = []
     text_dates: list[str] = []
     index: int = 0
     extras: Dict[str, Any] = dsm.get_extras()
     if "page_index" in extras:
         index = extras["page_index"]
+    print("itering shows")
     for show in _SHOWS:
         if show["title"] == title:
+            print("itering dates")
             for date in show["date"]:
                 with changedlocale(category="LC_TIME"):
                     text_dates.append(date.strftime("\n   - %a %d. %b kl. %H:%M"))
@@ -383,6 +388,7 @@ def _generate_date_answer(
         if date_number == 2
         else "Næstu þrjár dagsetningarnar eru:"
     )
+    print("blaaaaa")
     if index == 0:
         start_string = start_string.replace("Næstu", "Fyrstu", 1)
     if len(dates) < 3:
@@ -450,7 +456,9 @@ def _generate_date_answer(
                 .replace("dagur", "dagurinn")
             )
             return (dict(answer=text_ans), text_ans, numbers_to_ordinal(voice_ans))
+    print("UNFULFILLLED?")
     if resource.is_unfulfilled:
+        print("UNFULFILLLED")
         if len(dates) > 0:
             ans = resource.prompts["initial"]
             if date_number == 1:
@@ -711,6 +719,7 @@ def QTheaterDialogue(node: Node, params: QueryStateDict, result: Result) -> None
 
 def QTheaterHotWord(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _START_DIALOGUE_QTYPE
+    cast(QueryStateDict, result.state)["query"].dsm.activate_dialogue()
 
 
 def QTheaterShowQuery(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -1107,7 +1116,7 @@ def QYes(node: Node, params: QueryStateDict, result: Result):
     #                 dsm.get_resource(rname).state = ResourceState.CONFIRMED
 
     dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
-    current_resource = dsm.get_current_resource()
+    current_resource = dsm.current_resource
     if current_resource.is_fulfilled and current_resource.name in (
         "Show",
         "ShowDateTime",
@@ -1115,7 +1124,9 @@ def QYes(node: Node, params: QueryStateDict, result: Result):
         "ShowSeatRow",
         "ShowSeatNumber",
     ):
-        dsm.set_resource_state(current_resource, ResourceState.CONFIRMED)
+        print("CONFIRIMNGG")
+        dsm.set_resource_state(current_resource.name, ResourceState.CONFIRMED)
+        print("CASCADED STATE")
         if isinstance(current_resource, WrapperResource):
             for rname in current_resource.requires:
                 dsm.get_resource(rname).state = ResourceState.CONFIRMED
@@ -1140,8 +1151,8 @@ def QNo(node: Node, params: QueryStateDict, result: Result):
     #             dsm.get_resource("ShowTime").state = ResourceState.UNFULFILLED
 
     dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
-    current_resource = dsm.get_current_resource()
-    if current_resource.is_fulfilled and current_resource.name in (
+    resource = dsm.current_resource
+    if resource.is_fulfilled and resource.name in (
         "Show",
         "ShowDateTime",
         "ShowSeatCount",
@@ -1149,8 +1160,8 @@ def QNo(node: Node, params: QueryStateDict, result: Result):
         "ShowSeatNumber",
     ):
         dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
-        if isinstance(current_resource, WrapperResource):
-            for rname in current_resource.requires:
+        if isinstance(resource, WrapperResource):
+            for rname in resource.requires:
                 dsm.get_resource(rname).state = ResourceState.UNFULFILLED
 
     # filter_func: Callable[[Resource], bool] = (
@@ -1188,29 +1199,27 @@ _ANSWERING_FUNCTIONS: AnsweringFunctionMap = {
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
-    dsm: DialogueStateManager = DialogueStateManager(
-        _THEATER_DIALOGUE_NAME, _START_DIALOGUE_QTYPE, q, result
-    )
+    dsm: DialogueStateManager = q.dsm
     if dsm.not_in_dialogue():
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
     try:
         print("A")
-        result.shows = _fetch_shows()
-        dsm.setup_dialogue(_ANSWERING_FUNCTIONS)
-        if result.qtype == "QStatus":
-            # Example info handling functionality
-            text = "Leikhúsmiðapöntunin þín gengur bara vel. "
-            ans = dsm.get_answer() or gen_answer(text)
-            q.set_answer(*ans)
-            return
-        print("C")
-        print(dsm._resources)
-        ans: Optional[AnswerTuple] = dsm.get_answer()
+        # result.shows = _fetch_shows()
+        # dsm.setup_dialogue(_ANSWERING_FUNCTIONS)
+        # if result.qtype == "QStatus":
+        #     # Example info handling functionality
+        #     text = "Leikhúsmiðapöntunin þín gengur bara vel. "
+        #     ans = dsm.get_answer() or gen_answer(text)
+        #     q.set_answer(*ans)
+        #     return
+        # print("C")
+        # print(dsm._resources)
+        ans: Optional[AnswerTuple] = dsm.get_answer(_ANSWERING_FUNCTIONS, result)
         if "show_options" not in result:
             q.query_is_command()
-        print("D")
+        print("D", ans)
         if not ans:
             print("No answer generated")
             q.set_error("E_QUERY_NOT_UNDERSTOOD")

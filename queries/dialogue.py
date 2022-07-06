@@ -25,10 +25,9 @@ except ModuleNotFoundError:
     import tomli as tomllib  # Used for Python <3.11
 
 from queries import AnswerTuple, natlang_seq
-from query import Query, ClientDataDict
-from tree import Result
 
 # TODO: Add timezone info to json encoding/decoding?
+# TODO: FIX TYPE HINTS (esp. 'Any')
 
 # Keys for accessing saved client data for dialogues
 _DIALOGUE_KEY = "dialogue"
@@ -41,17 +40,19 @@ _EMPTY_DIALOGUE_DATA = "{}"
 _FINAL_RESOURCE_NAME = "Final"
 _CALLBACK_LOCATION = "callbacks"
 
+QueryType = TypeVar("QueryType")
+
 # Generic resource type
 ResourceType_co = TypeVar("ResourceType_co", bound="Resource")
 
 # Types for use in callbacks
-_CallbackType = Callable[[ResourceType_co, "DialogueStateManager", Result], None]
+_CallbackType = Callable[[ResourceType_co, "DialogueStateManager", Any], None]
 _FilterFuncType = Type[Callable[[ResourceType_co], bool]]
 _CallbackTupleType = Tuple[_FilterFuncType["Resource"], _CallbackType["Resource"]]
 
 # Types for use in generating prompts/answers
 AnsweringFunctionType = Callable[
-    [ResourceType_co, "DialogueStateManager"], Optional[AnswerTuple]
+    [ResourceType_co, "DialogueStateManager", Any], Optional[AnswerTuple]
 ]
 # TODO: Fix 'Any' in type hint (Callable args are contravariant)
 AnsweringFunctionMap = Mapping[str, AnsweringFunctionType[Any]]
@@ -333,28 +334,73 @@ class DialogueStructureType(TypedDict, total=False):
 
 
 class DialogueStateManager:
-    def __init__(
-        self,
-        dialogue_name: str,
-        start_dialogue_qtype: str,
-        query: Query,
-        result: Result,
-    ):
+    def __init__(self, dialogue_name: str, saved_state: Optional[str] = None):
         self._dialogue_name: str = dialogue_name
-        self._start_qtype: str = start_dialogue_qtype
-        self._q: Query = query
-        self._result: Result = result
         self._resources: Dict[str, Resource] = {}
-        self._saved_state: DialogueStructureType = self._get_saved_dialogue_state()
-        self._data: Dict[str, Any] = {}
-        self._answering_functions: AnsweringFunctionMap = {}
-        self._answer_tuple: Optional[AnswerTuple] = None
-        self._error: bool = False
+        self._in_this_dialogue: bool = False
         self._extras: Dict[str, Any] = {}
-        self._resource_graph: ResourceGraph = {}
+        # self._error: bool = False
+        # self._answering_functions = answering_functions
+        self._answer_tuple: Optional[AnswerTuple] = None
         self._current_resource: Optional[Resource] = None
-        # TODO: Delegate answering from a resource to another resource or to another dialogue
-        # TODO: í ávaxtasamtali "ég vil panta flug" "viltu að ég geymi ávaxtapöntunina eða eyði henni?" ...
+        self._resource_graph: ResourceGraph = {}
+        self._saved_state: Optional[DialogueStructureType] = None
+
+        if isinstance(saved_state, str):
+            # TODO: Add try-except block
+            # TODO: Add check for datetime last interaction
+            self._saved_state = cast(
+                DialogueStructureType, json.loads(saved_state, cls=DialogueJSONDecoder)
+            )
+            # Check that we have saved data for this dialogue
+            if self._saved_state.get(_DIALOGUE_RESOURCES_KEY):
+                self._in_this_dialogue = True
+            print("setting up dialogue")
+            self.setup_dialogue() # TODO: Rename me
+
+    def setup_dialogue(self) -> None:
+        """
+        Load dialogue structure from TOML file and update resource states from client data.
+        Should be called after initializing an instance of
+        DialogueStateManager and before calling get_answer.
+        """
+        obj = self._load_dialogue_structure(self._dialogue_name)
+        # TODO: fix type hints
+        for rname, resource in obj[_DIALOGUE_RESOURCES_KEY].items():
+            if self._saved_state and rname in self._saved_state.get(_DIALOGUE_RESOURCES_KEY, {}):
+                # Update empty resource with serialized data
+                resource.update(self._saved_state[_DIALOGUE_RESOURCES_KEY][rname])
+            # Change from int to enum type
+            resource.state = ResourceState(resource.state)
+            self._resources[rname] = resource
+        if self._saved_state and _DIALOGUE_EXTRAS_KEY in self._saved_state:
+            self._extras = self._saved_state.get(_DIALOGUE_EXTRAS_KEY) or self._extras
+
+        assert _DIALOGUE_INITIAL_RESOURCE_KEY in obj
+        self._initial_resource = self._resources[obj[_DIALOGUE_INITIAL_RESOURCE_KEY]]
+        self._initialize_resource_graph()
+
+        #     # We just started this dialogue,
+        # # save an empty dialogue state for this device
+        # # (in order to resume dialogue upon next query)
+        # self._start_dialogue()
+
+    # def old__init__(
+    #     self,
+    #     dialogue_name: str,
+    #     start_dialogue_qtype: str,
+    #     result: Any,
+    # ):
+    #     self._dialogue_name: str = dialogue_name
+    #     self._start_qtype: str = start_dialogue_qtype
+    #     self._result: Any = result
+    #     self._resources: Dict[str, Resource] = {}
+    #     self._saved_state: Optional[DialogueStructureType] = self._get_saved_dialogue_state()
+    #     self._answering_functions: AnsweringFunctionMap = {}
+    #     self._extras: Dict[str, Any] = {}
+    #     self._current_resource: Optional[Resource] = None
+    #     # TODO: Delegate answering from a resource to another resource or to another dialogue
+    #     # TODO: í ávaxtasamtali "ég vil panta flug" "viltu að ég geymi ávaxtapöntunina eða eyði henni?" ...
 
     def _initialize_resource_graph(self) -> None:
         """
@@ -391,42 +437,18 @@ class DialogueStateManager:
         obj[_DIALOGUE_RESOURCES_KEY] = resource_dict
         return cast(DialogueStructureType, obj)
 
+    def activate_dialogue(self) -> None:
+        self._in_this_dialogue = True
+        self.setup_dialogue()
+
     def not_in_dialogue(self) -> bool:
         """Check if the client is in or wants to start this dialogue"""
-        return (
-            self._result.get("qtype") != self._start_qtype
-            and self._saved_state.get(_DIALOGUE_NAME_KEY) != self._dialogue_name
-        )
+        return not self._in_this_dialogue
+        # return (
+        #     self._result.get("qtype") != self._start_qtype
+        #     and self._saved_state.get(_DIALOGUE_NAME_KEY) != self._dialogue_name
+        # )
         # TODO: Add check for newest dialogue
-
-    def setup_dialogue(self, answering_functions: AnsweringFunctionMap) -> None:
-        """
-        Load dialogue structure from TOML file and update resource states from client data.
-        Should be called after initializing an instance of
-        DialogueStateManager and before calling get_answer.
-        """
-        obj = self._load_dialogue_structure(self._dialogue_name)
-        # TODO: fix type hints
-        for rname, resource in obj[_DIALOGUE_RESOURCES_KEY].items():
-            if rname in self._saved_state[_DIALOGUE_RESOURCES_KEY]:
-                # Update empty resource with serialized data
-                resource.update(self._saved_state[_DIALOGUE_RESOURCES_KEY][rname])
-            # Change from int to enum type
-            resource.state = ResourceState(resource.state)
-            self._resources[rname] = resource
-        if _DIALOGUE_EXTRAS_KEY in self._saved_state:
-            self._extras = self._saved_state[_DIALOGUE_EXTRAS_KEY] or self._extras
-        self._answering_functions = answering_functions
-
-        if self._result.qtype == self._start_qtype:
-            # We just started this dialogue,
-            # save an empty dialogue state for this device
-            # (in order to resume dialogue upon next query)
-            self._start_dialogue()
-
-        assert _DIALOGUE_INITIAL_RESOURCE_KEY in obj
-        self._initial_resource = self._resources[obj[_DIALOGUE_INITIAL_RESOURCE_KEY]]
-        self._initialize_resource_graph()
 
     def _start_dialogue(self):
         """Save client's state as having started this dialogue"""
@@ -452,40 +474,47 @@ class DialogueStateManager:
             }
         )
 
+    @property
+    def current_resource(self) -> Resource:
+        if self._current_resource is None:
+            self._current_resource = self._find_current_resource()
+        return self._current_resource
+
     def get_resource(self, name: str) -> Resource:
         return self._resources[name]
-
-    def get_result(self) -> Result:
-        return self._result
 
     def get_extras(self) -> Dict[str, Any]:
         return self._extras
 
-    def get_answer(self) -> Optional[AnswerTuple]:
+    def get_answer(self, answering_functions: AnsweringFunctionMap, result: Any) -> Optional[AnswerTuple]:
         # Executing callbacks
-        cbs: Optional[List[_CallbackTupleType]] = self._result.get(_CALLBACK_LOCATION)
-        curr_resource = self._resources[_FINAL_RESOURCE_NAME]
-        if cbs:
-            self._execute_callbacks_postorder(curr_resource, cbs, set())
+        # cbs: Optional[List[_CallbackTupleType]] = self._result.get(_CALLBACK_LOCATION)
+        # curr_resource = self._resources[_FINAL_RESOURCE_NAME]
+        # if cbs:
+        #     self._execute_callbacks_postorder(curr_resource, cbs, set())
 
-        if self._error:
-            # An error was raised somewhere during the callbacks
-            return None
-
+        self._current_resource = self._find_current_resource()
+        # if self._error:
+        #     # An error was raised somewhere during the callbacks
+        #     return None
+        self._answering_functions = answering_functions
         # Check if dialogue was cancelled
-        if curr_resource.is_cancelled:
+        if self._current_resource.is_cancelled:
             self._answer_tuple = self._answering_functions[_FINAL_RESOURCE_NAME](
-                curr_resource, self
+                self._current_resource, self, result
             )
             if not self._answer_tuple:
                 raise ValueError("No answer for cancelled dialogue")
             return self._answer_tuple
 
-        self._current_resource = self._find_current_resource()
 
+        if self._current_resource.name in self._answering_functions:
+            ans= self._answering_functions[self._current_resource.name](self._current_resource, self, result)
+            print("GENERATED DATE ANSWERRRRRRRRRRRRRRRRR")
+            return ans
         # Iterate through resources (inorder traversal)
         # until one generates an answer
-        self._answer_tuple = self._get_answer_postorder(curr_resource, set())
+        self._answer_tuple = self._get_answer_postorder(self._current_resource, result, set())
 
         if self._resources[_FINAL_RESOURCE_NAME].is_confirmed:
             # Final callback (performing some operation with the dialogue's data)
@@ -496,16 +525,16 @@ class DialogueStateManager:
         return self._answer_tuple
 
     def _get_answer_postorder(
-        self, curr_resource: Resource, finished: Set[Resource]
+        self, curr_resource: Resource, result: Any, finished: Set[Resource]
     ) -> Optional[AnswerTuple]:
         for resource in self._resource_graph[curr_resource]["children"]:
             if resource not in finished:
                 finished.add(resource)
-                ans = self._get_answer_postorder(resource, finished)
+                ans = self._get_answer_postorder(resource, result, finished)
                 if ans:
                     return ans
         if curr_resource.name in self._answering_functions:
-            return self._answering_functions[curr_resource.name](curr_resource, self)
+            return self._answering_functions[curr_resource.name](curr_resource, self, result)
         return None
 
     def _execute_callbacks_postorder(
@@ -519,26 +548,29 @@ class DialogueStateManager:
                 finished.add(resource)
                 self._execute_callbacks_postorder(resource, cbs, finished)
 
-        for filter_func, cb in cbs:
-            if filter_func(curr_resource):
-                cb(curr_resource, self, self._result)
+        # for filter_func, cb in cbs:
+        #     if filter_func(curr_resource):
+        #         cb(curr_resource, self, self._result)
 
-    def _get_saved_dialogue_state(self) -> DialogueStructureType:
-        """Load the dialogue state for a client"""
-        cd = self._q.client_data(_DIALOGUE_KEY)
-        # Return empty DialogueStructureType in case no dialogue state exists
-        dialogue_struct: DialogueStructureType = {
-            _DIALOGUE_NAME_KEY: "",
-            _DIALOGUE_RESOURCES_KEY: {},
-            _DIALOGUE_LAST_INTERACTED_WITH_KEY: datetime.datetime.now(),
-            _DIALOGUE_EXTRAS_KEY: {},
-        }
-        if cd:
-            ds_str = cd.get(self._dialogue_name)
-            if isinstance(ds_str, str) and ds_str != _EMPTY_DIALOGUE_DATA:
-                # TODO: Add try-except block
-                dialogue_struct = json.loads(ds_str, cls=DialogueJSONDecoder)
-        return dialogue_struct
+    # def _get_saved_dialogue_state(self) -> Optional[DialogueStructureType]:
+    #     """Load the dialogue state for a client"""
+    #     cd = self._q.client_data(_DIALOGUE_KEY)
+    #     dialogue_struct: Optional[DialogueStructureType] = None
+    #     if cd:
+    #         ds_str = cd.get(self._dialogue_name)
+    #         if isinstance(ds_str, str) and ds_str != _EMPTY_DIALOGUE_DATA:
+    #             # TODO: Add try-except block
+    #             dialogue_struct = json.loads(ds_str, cls=DialogueJSONDecoder)
+    #     # if dialogue_struct is None:
+    #     #     self._in_this_dialogue = False
+    #     #     # Return empty DialogueStructureType in case no dialogue state exists
+    #     #     dialogue_struct = {
+    #     #         _DIALOGUE_NAME_KEY: "",
+    #     #         _DIALOGUE_RESOURCES_KEY: {},
+    #     #         _DIALOGUE_LAST_INTERACTED_WITH_KEY: datetime.datetime.now(),
+    #     #         _DIALOGUE_EXTRAS_KEY: {},
+    #     #     }
+    #     return dialogue_struct
 
     def _set_dialogue_state(self, ds: DialogueStructureType) -> None:
         """Save the state of a dialogue for a client"""
@@ -548,11 +580,11 @@ class DialogueStateManager:
         # (due to custom JSON serialization)
         cd = {self._dialogue_name: ds_json}
         # TODO: add datetime stuff
-        self._q.set_client_data(
-            _DIALOGUE_KEY,
-            cast(ClientDataDict, cd),
-            update_in_place=True,
-        )
+        # self._q.set_client_data(
+        #     _DIALOGUE_KEY,
+        #     cast(Any, cd),
+        #     update_in_place=True,
+        # )
 
     def set_resource_state(self, resource_name: str, state: ResourceState):
         """
@@ -605,19 +637,32 @@ class DialogueStateManager:
         """End the client's current dialogue"""
         # TODO: Doesn't allow multiple conversations at once
         #       (set_client_data overwrites other conversations)
-        self._q.set_client_data(
-            _DIALOGUE_KEY,
-            {self._dialogue_name: _EMPTY_DIALOGUE_DATA},
-            update_in_place=True,
-        )
+        self._resources = {}
 
-    def set_error(self) -> None:
-        self._error = True
+    def serialize_data(self):
+        """Serialize the dialogue's data"""
+        # TODO: Add try-except block?
+        ds_json: str = json.dumps(
+            {
+                _DIALOGUE_RESOURCES_KEY: self._resources,
+                _DIALOGUE_LAST_INTERACTED_WITH_KEY: datetime.datetime.now(),
+                _DIALOGUE_EXTRAS_KEY: self._extras,
+            },
+            cls=DialogueJSONEncoder,
+        )
+        # Wrap data before saving dialogue state into client data
+        # (due to custom JSON serialization)
+        cd = {self._dialogue_name: ds_json}
+        # TODO: add datetime stuff
+        return cd
+
+    # def set_error(self) -> None:
+    #     self._error = True
 
     @classmethod  # TODO: Fix type hints?
     def add_callback(
         cls,
-        result: Result,
+        result: Any,
         filter_func: _FilterFuncType[Resource],
         cb: _CallbackType[Resource],
     ):

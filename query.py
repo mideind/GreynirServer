@@ -53,6 +53,7 @@ import re
 import random
 from copy import deepcopy
 from collections import defaultdict
+from queries.dialogue import DialogueStateManager
 
 from settings import Settings
 
@@ -634,10 +635,21 @@ class Query:
         if self._tree is None:
             self.set_error("E_QUERY_NOT_PARSED")
             return False
+        dialogue_data: Optional[ClientDataDict] = None  # For storing all dialogue data
         # Try each tree processor in turn, in priority order (highest priority first)
         for processor in self._tree_processors:
             self._error = None
             self._qtype = None
+            # Check if processor is a dialogue module
+            dialogue_name = getattr(processor, "DIALOGUE_NAME", None)
+            if dialogue_name:
+                if dialogue_data is None:
+                    dialogue_data = self.client_data("dialogue")
+                self._dsm = DialogueStateManager(
+                    dialogue_name,
+                    dialogue_data.get(dialogue_name) if dialogue_data else None,
+                )
+                print("INITIALIZED DSM FOR {0}".format(dialogue_name))
             # Process the tree, which has only one sentence, but may
             # have multiple matching query nonterminals
             # (children of Query in the grammar)
@@ -646,6 +658,18 @@ class Query:
                 # "query" field of the TreeStateDict is populated,
                 # turning it into a QueryStateDict.
                 if self._tree.process_queries(self, self._session, processor):
+                    if dialogue_name:
+                        print(
+                            "SAVING DSM STATE FOR {0} {1}".format(
+                                dialogue_name, self._dsm.serialize_data()
+                            )
+                        )
+                        # Save the dialogue state
+                        self.set_client_data(
+                            "dialogue",
+                            self._dsm.serialize_data(),
+                            update_in_place=True,
+                        )
                     # This processor found an answer, which is already stored
                     # in the Query object: return True
                     return True
@@ -844,6 +868,11 @@ class Query:
     def client_version(self) -> Optional[str]:
         """Return client version string, e.g. "1.0.3" """
         return self._client_version
+
+    @property
+    def dsm(self) -> DialogueStateManager:
+        assert self._dsm is not None
+        return self._dsm
 
     def response(self) -> Optional[ResponseType]:
         """Return the detailed query answer"""
