@@ -1,5 +1,4 @@
-# A plug-in query grammar always starts with the following,
-# adding one or more query productions to the Query nonterminal
+# Grammar for the arithmetic query module
 
 Query →
     QArithmetic

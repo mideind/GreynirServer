@@ -1,3 +1,5 @@
+# Grammar for the counting query module
+
 Query →
     QCounting
 

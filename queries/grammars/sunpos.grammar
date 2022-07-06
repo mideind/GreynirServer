@@ -1,3 +1,5 @@
+# Grammar for the sunpos query module
+
 Query →
     QSunQuery '?'?
 

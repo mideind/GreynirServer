@@ -1,3 +1,5 @@
+# Grammar for the wiki query module
+
 Query →
     QWiki
 

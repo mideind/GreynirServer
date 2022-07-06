@@ -1,3 +1,5 @@
+# Grammar for the places query module
+
 Query →
     QPlaces
 

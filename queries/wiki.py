@@ -167,7 +167,16 @@ def FsMeðFallstjórn(node: Node, params: QueryStateDict, result: Result) -> Non
     result._nominative = result._text
 
 
-_MULTIPLE_MEANINGS_RE = re.compile(r"(hefur ýmsar merkingar:|getur átt við:)\s+")
+_DISAMBIG_INDICATORS = [
+    "hefur ýmsar merkingar:",
+    "getur átt við",
+    "getur átt við:",
+    "getur átt við eftirfarandi:",
+    "getur vísað til:",
+]
+
+
+_MULTIPLE_MEANINGS_RE = re.compile(r"({})\s+".format("|".join(_DISAMBIG_INDICATORS)))
 
 
 def _clean_answer(answer: str) -> str:

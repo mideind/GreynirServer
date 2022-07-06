@@ -1,3 +1,5 @@
+# Grammar for the news query module
+
 Query →
     QNewsQuery '?'?
 

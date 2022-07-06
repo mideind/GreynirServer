@@ -1,3 +1,5 @@
+# Grammar for the petrol query module
+
 Query →
     QPetrol
 

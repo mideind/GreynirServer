@@ -1,3 +1,5 @@
+# Grammar for the opinion query module
+
 Query →
     QOpinion
 

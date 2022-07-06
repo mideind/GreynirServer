@@ -79,7 +79,7 @@ def QRandomBetween(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "randbtwn"
 
 
-def QRandomDiceRoll(node: Node, params: QueryStateDict, result: Result) -> None:
+def QRandomDieRoll(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "dieroll"
 
 
@@ -93,6 +93,11 @@ def QRandNumber(node: Node, params: QueryStateDict, result: Result) -> None:
         add_num(terminal_num(d), result)
     else:
         add_num(result._nominative, result)
+
+
+def gen_multiple_die_rolls_answer(q: Query, result):
+    # TODO: Implement me
+    pass
 
 
 def gen_random_answer(q: Query, result):
@@ -133,7 +138,7 @@ def heads_or_tails(q: Query, result) -> AnswerTuple:
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
-    if "qtype" not in result:
+    if "qtype" not in result or "action" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
