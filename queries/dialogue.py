@@ -84,7 +84,7 @@ class ResourceState(IntFlag):
 ##########################
 
 
-@dataclass
+@dataclass(eq=False)
 class Resource:
     """
     Base class representing a dialogue resource.
@@ -146,8 +146,14 @@ class Resource:
         """
         return format_func(self.data) if format_func else self.data
 
+    def __hash__(self) -> int:
+        return hash(self.name)
 
-@dataclass
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, Resource) and self.name == other.name
+
+
+@dataclass(eq=False)
 class ListResource(Resource):
     """Resource representing a list of items."""
 
@@ -167,7 +173,7 @@ class ListResource(Resource):
 # ...
 
 
-@dataclass
+@dataclass(eq=False)
 class YesNoResource(Resource):
     """Resource representing a yes/no answer."""
 
@@ -187,7 +193,7 @@ class YesNoResource(Resource):
         return "já" if self.data else "nei"
 
 
-@dataclass
+@dataclass(eq=False)
 class ConfirmResource(YesNoResource):
     """Resource representing a confirmation of other resources."""
 
@@ -211,7 +217,7 @@ class ConfirmResource(YesNoResource):
                 req_res.state = ResourceState.CONFIRMED
 
 
-@dataclass
+@dataclass(eq=False)
 class DateResource(Resource):
     """Resource representing a date."""
 
@@ -230,7 +236,7 @@ class DateResource(Resource):
         return self.data.strftime("%x")
 
 
-@dataclass
+@dataclass(eq=False)
 class TimeResource(Resource):
     """Resource representing a time (00:00-23:59)."""
 
@@ -249,31 +255,31 @@ class TimeResource(Resource):
         return self.data.strftime("%X")
 
 
-@dataclass
+@dataclass(eq=False)
 class DatetimeResource(Resource):
     """Resource for wrapping date and time resources."""
 
     ...
 
 
-@dataclass
+@dataclass(eq=False)
 class NumberResource(Resource):
     """Resource representing a number."""
 
     data: int = 0
 
 
-@dataclass
+@dataclass(eq=False)
 class OrResource(Resource):
     exclusive: bool = False  # Only one of the resources should be fulfilled
 
 
-@dataclass
+@dataclass(eq=False)
 class AndResource(Resource):  # For answering multiple resources at the same time
     ...
 
 
-@dataclass
+@dataclass(eq=False)
 class FinalResource(Resource):
     """Resource representing the final state of a dialogue."""
 
@@ -294,6 +300,14 @@ _RESOURCE_TYPES: Mapping[str, Any] = {
 ################################
 #    DIALOGUE STATE MANAGER    #
 ################################
+
+
+class ResourceGraphItem(TypedDict):
+    children: List[Resource]
+    parents: List[Resource]
+
+
+ResourceGraph = Dict[Resource, ResourceGraphItem]
 
 
 class DialogueStructureType(TypedDict):
@@ -327,8 +341,23 @@ class DialogueStateManager:
         self._answer_tuple: Optional[AnswerTuple] = None
         self._error: bool = False
         self._extras: Dict[str, Any] = {}
+        self._resource_graph: ResourceGraph = {}
         # TODO: Delegate answering from a resource to another resource or to another dialogue
         # TODO: í ávaxtasamtali "ég vil panta flug" "viltu að ég geymi ávaxtapöntunina eða eyði henni?" ...
+
+    def _initialize_resource_graph(self) -> None:
+        """
+        Initializes the resource graph with each
+        resource having children and parents according
+        to what each resource requires.
+        """
+        for resource in self._resources.values():
+            self._resource_graph[resource] = {"children": [], "parents": []}
+
+        for resource in self._resources.values():
+            for req in resource.requires:
+                self._resource_graph[self._resources[req]]["parents"].append(resource)
+                self._resource_graph[resource]["children"].append(self._resources[req])
 
     def _load_dialogue_structure(self, filename: str) -> DialogueStructureType:
         """Loads dialogue structure from TOML file."""
@@ -381,6 +410,8 @@ class DialogueStateManager:
             # save an empty dialogue state for this device
             # (in order to resume dialogue upon next query)
             self._start_dialogue()
+
+        self._initialize_resource_graph()
 
     def _start_dialogue(self):
         """Save client's state as having started this dialogue"""
