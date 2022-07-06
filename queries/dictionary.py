@@ -32,7 +32,7 @@ from reynir.bindb import GreynirBin
 from query import Query, ContextDict, QueryStateDict
 from tree import Result, Node
 
-from . import query_json_api, gen_answer, cap_first, icequote
+from queries import query_json_api, gen_answer, cap_first, icequote, read_grammar_file
 
 
 # This module wants to handle parse trees for queries
@@ -42,63 +42,7 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QDictQuery"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QDictQuery '?'?
-
-QDictQuery →
-    QDictWordQuery
-
-QDictWordQuery →
-    "hvað" "segir" QDictDict "um" "orðið" QDictSubjectNom
-    | "hvað" "stendur" QDictInDictionary "um" "orðið" QDictSubjectNom
-    | QDictWhatWhich "er" QDictDefinition "á" "orðinu" QDictSubjectNom QDictInDictionary?
-    | "flettu" "upp" "orðinu" QDictSubjectNom QDictInDictionary?
-    | "flettu" "orðinu" QDictSubjectNom "upp" QDictInDictionary?
-    | "fletta" "upp" "orðinu" QDictSubjectNom QDictInDictionary?
-    | "fletta" "orðinu" QDictSubjectNom "upp" QDictInDictionary?
-    | QDictCanYou "flett" "upp" "orðinu" QDictSubjectNom QDictInDictionary?
-    | "hvernig" "skilgreinir" QDictDict "orðið" QDictSubjectNom
-    | "hvernig" "er" "orðið" QDictSubjectNom "skilgreint" QDictInDictionary?
-    | QDictDefinition "á" "orðinu" QDictSubjectNom
-    | "skilgreindu" "orðið" QDictSubjectNom
-    | "komdu" "með" "skilgreininguna" "á" "orðinu" QDictSubjectNom
-    | "komdu" "með" "skilgreiningu" "á" "orðinu" QDictSubjectNom
-    | "komdu" "með" "orðabókarskilgreiningu" "á" QDictSubjectNom
-    | "komdu" "með" "orðabókarskilgreininguna" "á" QDictSubjectNom
-    | QDictKnowHowTo "að" "skilgreina" "orðið" QDictSubjectNom
-    | QDictCanYou "skilgreint" "orðið" QDictSubjectNom
-
-QDictInDictionary →
-    "í" "orðabók" | "í" "orðabókinni"
-    | "í" "íslenskri" "orðabók" | "í" "íslensku" "orðabókinni"
-
-QDictDict →
-    "orðabók" | "orðabókin" | "íslensk" "orðabók" | "íslenska" "orðabókin"
-
-QDictWhatWhich →
-    "hvað" | "hver"
-
-QDictCanYou →
-    "getur" "þú" | "geturðu"
-
-QDictKnowHowTo →
-    "kannt" "þú" | "kanntu"
-
-QDictDefinition →
-    "skilgreining" | "skilgreiningin"
-    | "orðabókarskilgreining" | "orðabókarskilgreiningin"
-    | "orðabókaskilgreining" | "orðabókaskilgreiningin"
-    | "skilgreining" "íslenskrar"? "orðabókar" | "skilgreining" "íslensku"? "orðabókarinnar"
-    | "skilgreining" "í" "íslenskri"? "orðabók" | "skilgreiningin" "í" "íslenskri"? "orðabók"
-
-QDictSubjectNom →
-    Nl
-
-$score(+35) QDictQuery
-
-"""
+GRAMMAR = read_grammar_file("dictionary")
 
 
 def QDictSubjectNom(node: Node, params: QueryStateDict, result: Result) -> None:

@@ -34,7 +34,7 @@ import cachetools  # type: ignore
 import random
 
 from query import Query, QueryStateDict, AnswerTuple
-from queries import gen_answer, query_json_api
+from queries import gen_answer, query_json_api, read_grammar_file
 from tree import Result, Node
 
 
@@ -60,55 +60,7 @@ QUERY_NONTERMINALS = {"QNewsQuery"}
 HANDLE_TREE = True
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QNewsQuery '?'?
-
-QNewsQuery →
-    QNewsLatest
-
-QNewsLatest →
-    QNewsTellMe? QNewsQualifiersDef? "fréttir"
-    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttum" QNewsRUV? QNewsNow?
-    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttunum" QNewsRUV? QNewsNow?
-    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "að" "frétta" QNewsRUV? QNewsNow?
-    | QNewsTellMe? "hvað" "er" "að" "gerast" QNewsNow?
-    | QNewsTellMe? "hvaða" "fréttir" "eru" QNewsQualifiers? QNewsRUV QNewsNow?
-    | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttir" QNewsRUV? QNewsNow?
-    | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttirnar" QNewsRUV? QNewsNow?
-    | QNewsCanYou "lesið" "fyrir" "mig" QNewsQualifiersDef? "fréttir" QNewsRUV?
-    | QNewsCanYou "lesið" QNewsQualifiersDef? QNewsRUV? "fréttir" "fyrir" "mig"
-
-QNewsTellMe →
-    "segðu" "mér"? | "geturðu" "sagt" "mér"?
-
-QNewsCanYou →
-    "geturðu" | "getur" "þú"
-
-QNewsNow →
-    "núna" | "þessa_stundina" | "í" "dag" # | 'í_dag'
-
-QNewsQualifiers →
-    "helst" | "eiginlega" | "núna" | "nýjast"
-
-QNewsQualifiersDef →
-    "helstu" | "nýjustu" | "síðustu" | "allranýjustu" | "seinustu"
-
-QNewsRUV →
-    "á"? "rúv"
-    | "í" "rúv"
-    | "hjá" "rúv"
-    | "í" "ríkisútvarpinu"
-    | "á" "ríkisútvarpinu"
-    | "hjá" "ríkisútvarpinu"
-    | "á" "vef" "rúv"
-    | "á" "vef" "ríkisútvarpsins"
-    | "ríkisútvarpsins"
-
-$score(+35) QNewsQuery
-
-"""
+GRAMMAR = read_grammar_file("news")
 
 
 def QNewsQuery(node: Node, params: QueryStateDict, result: Result) -> None:

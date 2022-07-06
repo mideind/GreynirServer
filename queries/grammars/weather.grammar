@@ -1,0 +1,171 @@
+Query →
+    QWeather
+
+QWeather → QWeatherQuery '?'?
+
+QWeatherQuery →
+    QWeatherCurrent
+    | QWeatherForecast
+    | QWeatherTemperature
+    | QWeatherWind
+
+QWeatherCurrent →
+    QWeatherHowIs? "veðrið" QWeatherAnyLoc? QWeatherNow?
+    | QWeatherHowIs? "veðrið" QWeatherNow? QWeatherAnyLoc?
+    | "hvernig" "veður" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hvernig" "viðrar" QWeatherAnyLoc? QWeatherNow?
+    | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
+    | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
+
+QWeatherWhatCanYouTellMeAbout →
+    "hvað" "geturðu" "sagt" "mér"? "um"
+    | "hvað" "getur" "þú" "sagt" "mér"? "um"
+    | "hvað" "geturðu" "sagt" "mér"? "varðandi"
+    | "hvað" "getur" "þú" "sagt" "mér"? "varðandi"
+
+QWeatherForecast →
+    QWeatherWhatIs QWeatherConditionSingular QWeatherLocation? QWeatherNextDays?
+    | QWeatherHowIs QWeatherConditionSingular QWeatherLocation? QWeatherNextDays?
+    | QWeatherConditionSingular
+
+    | QWeatherHowAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?
+    | QWeatherWhatAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?
+
+    | "hvernig" QWeatherIsWill "veðrið" QWeatherLocation? QWeatherNextDays
+
+    | QWeatherWhatKindOfWeather "er" "spáð" QWeatherLocation? QWeatherNextDays?
+    | QWeatherWhatKindOfWeather "má" "búast" "við" QWeatherLocation? QWeatherNextDays?
+
+    | "ert" "þú" "með" "veðurspá" QWeatherNextDays?
+    | "ertu" "með" "veðurspá" QWeatherNextDays?
+
+QWeatherWhatKindOfWeather →
+    "hvers" "konar" "veðri" | "hverskonar" "veðri"
+    | "hvers" "kyns" "veðri" | "hvernig" "veðri"
+
+QWeatherConditionSingular →
+    "veðurspáin" | "spáin" | "veðurspá"
+
+QWeatherConditionPlural →
+    "veðurhorfur" | "veður" "horfur"
+    | "veðurhorfurnar" | "veður" "horfurnar"
+    | "horfur" | "horfurnar"
+
+QWeatherIsWill →
+    "er" | "verður"
+
+QWeatherWhatIs →
+    "hver" "er" | "hvað" "er"
+
+QWeatherHowIs →
+    "hvernig" "er"
+
+QWeatherHowAre →
+    "hvernig" "eru"
+
+QWeatherWhatAre →
+    "hverjar" "eru"
+
+QWeatherTemperature →
+    "hvert" "er" "hitastigið" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "er" "hitastigið" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "heitt" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "er" "heitt" QWeatherAnyLoc? QWeatherNow?
+    | "hvaða" "hitastig" "er" QWeatherAnyLoc? QWeatherNow
+    | "hversu" "hlýtt" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "heitt" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "kalt" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "mikið" "frost" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "er" "kalt" QWeatherAnyLoc? QWeatherNow
+    | "hvað" "er" "hlýtt" QWeatherAnyLoc? QWeatherNow
+    | "hvað" "er" "margra" "stiga" "hiti" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "er" "mikið" "frost" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "er" "margra" "stiga" "frost" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "margra" "stiga" "hiti" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hve" "margra" "stiga" "hiti" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hve" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
+    | "er" "mjög"? "heitt" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" "mjög"? "kalt" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" "mikill"? "kuldi" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" "mikill"? "hiti" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" "mikið"? "frost" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" QWeatherHotCold? "fyrir_ofan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+    | "er" QWeatherHotCold? "fyrir_neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
+
+QWeatherHotCold →
+    "hiti" | "hitinn" | "kuldi" | "kuldinn" | "hitastig" | "hitastigið"
+
+QWeatherWind →
+    "hvað"? "er" "mikið"? "rok" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "mikið" "rok" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hve" "mikið" "rok" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hversu" "hvasst" "er" QWeatherAnyLoc? QWeatherNow?
+    | "hvað" "er" "hvasst" QWeatherAnyLoc? QWeatherNow?
+    | "er" "mjög"? "hvasst" QWeatherAnyLoc? QWeatherNow?
+    | "hvað"? "eru" "mörg" "vindstig" QWeatherAnyLoc? QWeatherNow?
+    | "hversu"? "mörg" "vindstig" "eru"? QWeatherAnyLoc? QWeatherNow?
+    | "hvað"? "er" "mikill" "vindur" QWeatherAnyLoc? QWeatherNow?
+    | "hvað"? "er" "mikill" "vindhraði" QWeatherAnyLoc? QWeatherNow?
+    | "hver" "er" "vindhraðinn" QWeatherAnyLoc? QWeatherNow?
+    | "hvaða"? "vindhraði" "er"? QWeatherAnyLoc? QWeatherNow?
+
+QWeatherUmbrella →
+    "þarf" QWeatherOne? "regnhlíf" QWeatherNow
+    | "þarf" "ég" "að" "taka" "með" "mér" "regnhlíf" QWeatherNow
+    | "þarf" "maður" "að" "taka" "með" "sér" "regnhlíf" QWeatherNow
+    | "væri" "regnhlíf" "gagnleg" QWeatherForMe? QWeatherNow
+    | "væri" "gagn" "af" "regnhlíf" QWeatherForMe? QWeatherNow
+    | "kæmi" "regnhlíf" "að" "gagni" QWeatherForMe? QWeatherNow
+    | "myndi" "regnhlíf" "gagnast" "mér" QWeatherNow
+
+QWeatherOne →
+    "ég" | "maður"
+
+QWeatherForMe →
+    "fyrir" "mig"
+
+QWeatherNow →
+    "úti"
+    | "úti"? "í" "dag"
+    # | "úti"? 'í_dag'
+    | "úti"? "núna"
+    | "úti"? "í" "augnablikinu"
+    | "úti"? "eins" "og" "stendur"
+
+QWeatherNextDays →
+    "á_næstunni"
+    | "næstu" "daga"
+    | "næstu" "dagana"
+    | "fyrir" "næstu" "daga"
+    | "á" "næstu" "dögum"
+    | "þessa" "viku"
+    | "þessa" "vikuna"
+    | "út" "vikuna"
+    | "í" "vikunni"
+    | "á_morgun"
+    | "í" "fyrramálið"
+    | "fyrir" "morgundaginn"
+
+QWeatherCountry →
+    "á" "landinu" | "á" "íslandi" | "hér_á_landi" | "á" "landsvísu"
+    | "um" "landið" "allt" | "um" "allt" "land" | "fyrir" "allt" "landið"
+    | "á" "fróni" | "heima"
+
+QWeatherCapitalRegion →
+    "á" "höfuðborgarsvæðinu" | "fyrir" "höfuðborgarsvæðið"
+    | "í" "reykjavík" | "fyrir" "reykjavík"
+    | "í" "höfuðborginni" | "fyrir" "höfuðborgina"
+    | "á" "reykjavíkursvæðinu" | "fyrir" "reykjavíkursvæðið"
+    | "í" "borginni" | "fyrir" "borgina"
+
+QWeatherAnyLoc →
+    QWeatherCountry > QWeatherCapitalRegion > QWeatherOpenLoc
+
+QWeatherOpenLoc →
+    fs_þgf Nl_þgf
+
+QWeatherLocation →
+    QWeatherCountry | QWeatherCapitalRegion
+
+$score(+55) QWeather

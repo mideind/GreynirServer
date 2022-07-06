@@ -1,0 +1,75 @@
+Query →
+    QFlights
+
+QFlights → QFlightsQuery '?'?
+
+QFlightsQuery →
+    QFlightsArrivalQuery
+    | QFlightsDepartureQuery
+
+QFlightsArrivalQuery →
+    # Arrivals at Icelandic airports, e.g.
+    # Hver er lendingartími næstu vélar í Reykjavík
+    # Hvenær kemur næsta flug til Keflavíkur frá Kaupmannahöfn
+    QFlightsWhenArr QFlightsNextPlane QFlightsPathDesc
+
+QFlightsWhenArr →
+    QFlightsWhen "lendir"
+    | QFlightsWhen "kemur"
+    | QFlightsWhen "mætir"
+    | "hver" "er" "lendingartími"
+    | "hver" "er" "lendingartíminn" "fyrir"
+
+QFlightsDepartureQuery →
+    # Departures from Icelandic airports, e.g.
+    # Hver er brottfarartími næstu vélar til London
+    # Hvenær flýgur næsta vél af stað frá Keflavík til Köben
+    QFlightsWhenDepNextPlane QFlightsPathDesc
+
+QFlightsAfStað → "af" "stað"
+
+QFlightsWhenDepNextPlane →
+    QFlightsWhen "leggur" QFlightsNextPlane QFlightsAfStað
+    | QFlightsWhenDep QFlightsNextPlane QFlightsAfStað?
+
+QFlightsNextPlane →
+    "næsta" QFlightsPlane/fall
+    | "næstu" QFlightsPlane/fall
+
+QFlightsWhenDep →
+    QFlightsWhen "fer"
+    | QFlightsWhen "er"
+    | QFlightsWhen "flýgur"
+    | "hver" "er" "brottfarartími"
+    | "hver" "er" "brottfarartíminn" "fyrir"
+
+QFlightsWhen →
+    "hvenær" | "klukkan" "hvað"
+
+QFlightsPlane/fall ->
+    'flug:hk'_et/fall
+    | 'flugvél:kvk'_et/fall
+    | 'vél:kvk'_et/fall
+
+QFlightsPathDesc →
+    # At least one endpoint of the flight (in any order), e.g.
+    # frá Keflavík til Reykjavíkur
+    # til Akureyrar
+    QFlightsPrepLoc QFlightsPrepLoc
+    > QFlightsPrepLoc
+
+QFlightsPrepLoc →
+    "til" QFlightsArrLoc_ef
+    | "frá" QFlightsDepLoc_þgf
+    | "í" QFlightsArrLoc_þgf
+    | "á" QFlightsArrLoc_þgf
+    | "á" QFlightsArrLoc_þf
+
+QFlightsArrLoc/fall →
+    Nl/fall
+
+QFlightsDepLoc/fall →
+    Nl/fall
+
+$tag(keep) QFlightsArrLoc/fall
+$tag(keep) QFlightsDepLoc/fall

@@ -29,7 +29,7 @@ import logging
 import random
 
 from query import Query, QueryStateDict, AnswerTuple
-from queries import gen_answer
+from queries import gen_answer, read_grammar_file
 from queries.arithmetic import add_num, terminal_num
 from queries.num import number_to_text
 from tree import Result, Node
@@ -64,78 +64,7 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QRandom"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QRandom
-
-QRandom → QRandomQuery '?'?
-
-QRandomQuery →
-    QRandomDieRoll | QRandomMultipleDiceRoll| QRandomBetween | QRandomHeadsOrTails
-
-QRandomHeadsOrTails →
-    "fiskur" "eða" "skjaldarmerki" | "skjaldarmerki" "eða" "fiskur"
-    | "kastaðu" "upp"? "peningi" | "kastaðu" "upp"? "pening" | "kastaðu" "upp"? "krónu"
-
-QRandomDieRoll →
-    "kastaðu" QRandomDiceSides? QRandomDie QRandomForMe?
-    | "kastaðu" QRandomForMe? QRandomDiceSides? QRandomDie
-    | "kasta" QRandomDiceSides? QRandomDie QRandomForMe?
-    | "nennirðu" "að" "kasta" QRandomDiceSides? QRandomDie QRandomForMe?
-    | "geturðu" "kastað" QRandomDiceSides? QRandomDie QRandomForMe?
-    | "geturðu" "kastað" QRandomForMe? QRandomDiceSides? QRandomDie
-    | "kastaðu" "upp" "á" "teningnum" QRandomForMe?
-    | "kastaðu" "upp" "á" "teningi" QRandomForMe?
-
-QRandomMultipleDiceRoll →
-    "kastaðu" QRandNumber "teningum" QRandomForMe?
-    | "kastaðu" QRandomForMe? QRandNumber "teningum"
-    | "kasta" QRandNumber "teningum" QRandomForMe?
-    | "nennirðu" "að" "kasta" QRandNumber "teningum" QRandomForMe?
-    | "geturðu" "kastað" QRandNumber "teningum" QRandomForMe?
-    | "geturðu" "kastað" QRandomForMe? QRandNumber "teningum"
-
-QRandomForMe →
-    "fyrir" "mig"
-
-QRandomDie →
-    # Allow "tening" (accusative) to make it a bit more robust. Common error.
-    "teningi" | "tening" | "teningnum" | "teningunum"
-
-QRandomDiceSides →
-    QRandNumber "hliða"
-
-QRandomBetween →
-    QRandAction "tölu" "á"? "milli" QRandNumber "og" QRandNumber QRandRand?
-    | QRandAction "tölu" QRandRand? "á"? "milli" QRandNumber "og" QRandNumber
-    | QRandAction QRandRand? "tölu" "á"? "milli" QRandNumber "og" QRandNumber
-
-QRandAction →
-    "veldu" | "veldu" "fyrir" "mig" | "veldu" "handa" "mér" | "veldu" "fyrir" "okkur"
-    | "geturðu" "valið" "fyrir" "mig" | "getur" "þú" "valið" "fyrir" "mig"
-    | "gætir" "þú" "valið" "fyrir" "mig" | "værirðu" "til" "í" "að" "velja" "fyrir" "mig"
-    | "nefndu" | "nefndu" "fyrir" "mig" | "nefndu" "fyrir" "okkur"
-    | "komdu" "með"
-    | "geturðu" "komið" "með" | "getur" "þú" "komið" "með"
-    | "gætirðu" "komið" "með" | "gætir" "þú" "komið" "með"
-    | "gefðu" "mér"
-    | "geturðu" "gefið" "mér" |  "getur" "þú" "gefið" "mér"
-    | "gætirðu" "gefið" "mér" |  "gætir" "þú" "gefið" "mér"
-
-QRandRand →
-    # "Að handahófi" is incorrect but we'll allow it
-    "af" "handahófi" | "að" "handahófi"
-
-QRandNumber →
-    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
-    # töl is an undeclinable number word ('sautján')
-    # tala is a number ('17')
-    to | töl | tala | "núll"
-
-$score(+35) QRandom
-
-"""
+GRAMMAR = read_grammar_file("rand")
 
 
 def QRandomQuery(node: Node, params: QueryStateDict, result: Result) -> None:
