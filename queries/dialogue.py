@@ -479,12 +479,12 @@ class DialogueStateManager:
         return self._answer_tuple
 
     def _get_answer_postorder(
-        self, curr_resource: Resource, finished: Set[str]
+        self, curr_resource: Resource, finished: Set[Resource]
     ) -> Optional[AnswerTuple]:
-        for rname in curr_resource.requires:
-            if rname not in finished:
-                finished.add(rname)
-                ans = self._get_answer_postorder(self._resources[rname], finished)
+        for resource in self._resource_graph[curr_resource]["children"]:
+            if resource not in finished:
+                finished.add(resource)
+                ans = self._get_answer_postorder(resource, finished)
                 if ans:
                     return ans
         if curr_resource.name in self._answering_functions:
@@ -492,12 +492,15 @@ class DialogueStateManager:
         return None
 
     def _execute_callbacks_postorder(
-        self, curr_resource: Resource, cbs: List[_CallbackTupleType], finished: Set[str]
+        self,
+        curr_resource: Resource,
+        cbs: List[_CallbackTupleType],
+        finished: Set[Resource],
     ) -> None:
-        for rname in curr_resource.requires:
-            if rname not in finished:
-                finished.add(rname)
-                self._execute_callbacks_postorder(self._resources[rname], cbs, finished)
+        for resource in self._resource_graph[curr_resource]["children"]:
+            if resource not in finished:
+                finished.add(resource)
+                self._execute_callbacks_postorder(resource, cbs, finished)
 
         for filter_func, cb in cbs:
             if filter_func(curr_resource):
