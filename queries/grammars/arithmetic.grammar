@@ -1,3 +1,5 @@
+# Grammar for the arithmetic query module
+
 Query →
     QArithmetic
     # 'Hvaða tala er pí'

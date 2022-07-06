@@ -6,7 +6,7 @@ Query →
 QRandom → QRandomQuery '?'?
 
 QRandomQuery →
-    QRandomDieRoll | QRandomMultipleDiceRoll| QRandomBetween | QRandomHeadsOrTails
+    QRandomDieRoll | QRandomBetween | QRandomHeadsOrTails # | QRandomMultipleDiceRoll
 
 QRandomHeadsOrTails →
     "fiskur" "eða" "skjaldarmerki" | "skjaldarmerki" "eða" "fiskur"
@@ -22,13 +22,13 @@ QRandomDieRoll →
     | "kastaðu" "upp" "á" "teningnum" QRandomForMe?
     | "kastaðu" "upp" "á" "teningi" QRandomForMe?
 
-QRandomMultipleDiceRoll →
-    "kastaðu" QRandNumber "teningum" QRandomForMe?
-    | "kastaðu" QRandomForMe? QRandNumber "teningum"
-    | "kasta" QRandNumber "teningum" QRandomForMe?
-    | "nennirðu" "að" "kasta" QRandNumber "teningum" QRandomForMe?
-    | "geturðu" "kastað" QRandNumber "teningum" QRandomForMe?
-    | "geturðu" "kastað" QRandomForMe? QRandNumber "teningum"
+# QRandomMultipleDiceRoll →
+#     "kastaðu" QRandNumber "teningum" QRandomForMe?
+#     | "kastaðu" QRandomForMe? QRandNumber "teningum"
+#     | "kasta" QRandNumber "teningum" QRandomForMe?
+#     | "nennirðu" "að" "kasta" QRandNumber "teningum" QRandomForMe?
+#     | "geturðu" "kastað" QRandNumber "teningum" QRandomForMe?
+#     | "geturðu" "kastað" QRandomForMe? QRandNumber "teningum"
 
 QRandomForMe →
     "fyrir" "mig"
