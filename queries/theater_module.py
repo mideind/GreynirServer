@@ -42,6 +42,7 @@ from queries.dialogue import (
     Resource,
     ResourceState,
     TimeResource,
+    WrapperResource,
 )
 
 _THEATER_DIALOGUE_NAME = "theater"
@@ -721,7 +722,7 @@ def QTheaterShowQuery(node: Node, params: QueryStateDict, result: Result) -> Non
     def _add_show(
         resource: Resource, dsm: DialogueStateManager, result: Result
     ) -> None:
-        selected_show: str = dsm.get_result().show_name
+        selected_show: str = result.show_name
         show_exists = False
         for show in _SHOWS:
             if show["title"] == selected_show:
@@ -735,7 +736,10 @@ def QTheaterShowQuery(node: Node, params: QueryStateDict, result: Result) -> Non
             if resource.is_fulfilled:
                 result.no_show_matched_data_exists = True
 
-    DialogueStateManager.add_callback(result, lambda r: r.name == "Show", _add_show)
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    _add_show(dsm.get_resource("Show"), dsm, result)
+
+    # DialogueStateManager.add_callback(result, lambda r: r.name == "Show", _add_show)
 
 
 def _date_callback(
@@ -846,12 +850,16 @@ def QTheaterDateTime(node: Node, params: QueryStateDict, result: Result) -> None
     result["show_time"] = datetime.time(h, min)
     result["show_date"] = datetime.date(y, m, d)
 
-    DialogueStateManager.add_callback(
-        result, lambda r: r.name == "ShowDate", _date_callback
-    )
-    DialogueStateManager.add_callback(
-        result, lambda r: r.name == "ShowTime", _time_callback
-    )
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    _date_callback(dsm.get_resource("ShowDate"), dsm, result)
+    _time_callback(dsm.get_resource("ShowTime"), dsm, result)
+
+    # DialogueStateManager.add_callback(
+    #     result, lambda r: r.name == "ShowDate", _date_callback
+    # )
+    # DialogueStateManager.add_callback(
+    #     result, lambda r: r.name == "ShowTime", _time_callback
+    # )
 
 
 def QTheaterDate(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -871,9 +879,12 @@ def QTheaterDate(node: Node, params: QueryStateDict, result: Result) -> None:
                     y += 1
             result["show_date"] = datetime.date(day=d, month=m, year=y)
 
-            DialogueStateManager.add_callback(
-                result, lambda r: r.name == "ShowDate", _date_callback
-            )
+            dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+            _date_callback(dsm.get_resource("ShowDate"), dsm, result)
+
+            # DialogueStateManager.add_callback(
+            #     result, lambda r: r.name == "ShowDate", _date_callback
+            # )
             return
     raise ValueError("No date in {0}".format(str(datenode)))
 
@@ -890,9 +901,12 @@ def QTheaterTime(node: Node, params: QueryStateDict, result: Result) -> None:
 
         result["show_time"] = datetime.time(hour, minute)
 
-        DialogueStateManager.add_callback(
-            result, lambda r: r.name == "ShowTime", _time_callback
-        )
+        dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+        _time_callback(dsm.get_resource("ShowTime"), dsm, result)
+
+        # DialogueStateManager.add_callback(
+        #     result, lambda r: r.name == "ShowTime", _time_callback
+        # )
 
 
 def QTheaterMoreDates(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -905,9 +919,12 @@ def QTheaterMoreDates(node: Node, params: QueryStateDict, result: Result) -> Non
         else:
             extras["page_index"] = 3
 
-    DialogueStateManager.add_callback(
-        result, lambda r: r.name == "ShowDate", _next_dates
-    )
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    _next_dates(dsm.get_resource("ShowDate"), dsm, result)
+
+    # DialogueStateManager.add_callback(
+    #     result, lambda r: r.name == "ShowDate", _next_dates
+    # )
 
 
 def QTheaterPreviousDates(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -920,9 +937,12 @@ def QTheaterPreviousDates(node: Node, params: QueryStateDict, result: Result) ->
         else:
             extras["page_index"] = 0
 
-    DialogueStateManager.add_callback(
-        result, lambda r: r.name == "ShowDate", _prev_dates
-    )
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    _prev_dates(dsm.get_resource("ShowDate"), dsm, result)
+
+    # DialogueStateManager.add_callback(
+    #     result, lambda r: r.name == "ShowDate", _prev_dates
+    # )
 
 
 def QTheaterShowSeatCountQuery(
@@ -938,9 +958,12 @@ def QTheaterShowSeatCountQuery(
             else:
                 result.invalid_seat_count = True
 
-    DialogueStateManager.add_callback(
-        result, lambda r: r.name == "ShowSeatCount", _add_seat_number
-    )
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    _add_seat_number(dsm.get_resource("ShowSeatCount"), dsm, result)
+
+    # DialogueStateManager.add_callback(
+    #     result, lambda r: r.name == "ShowSeatCount", _add_seat_number
+    # )
 
 
 def QTheaterShowRow(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -971,9 +994,12 @@ def QTheaterShowRow(node: Node, params: QueryStateDict, result: Result) -> None:
                 dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
                 result.no_row_matched = True
 
-    DialogueStateManager.add_callback(
-        result, lambda r: r.name == "ShowSeatRow", _add_row
-    )
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    _add_row(dsm.get_resource("ShowSeatRow"), dsm, result)
+
+    # DialogueStateManager.add_callback(
+    #     result, lambda r: r.name == "ShowSeatRow", _add_row
+    # )
 
 
 def QTheaterShowSeats(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -1015,9 +1041,12 @@ def QTheaterShowSeats(node: Node, params: QueryStateDict, result: Result) -> Non
             if len(resource.data) > 0:
                 dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
 
-    DialogueStateManager.add_callback(
-        result, lambda r: r.name == "ShowSeatNumber", _add_seats
-    )
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    _add_seats(dsm.get_resource("ShowSeatNumber"), dsm, result)
+
+    # DialogueStateManager.add_callback(
+    #     result, lambda r: r.name == "ShowSeatNumber", _add_seats
+    # )
 
 
 def QTheaterGeneralOptions(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -1057,54 +1086,84 @@ def QNum(node: Node, params: QueryStateDict, result: Result):
 
 
 def QCancel(node: Node, params: QueryStateDict, result: Result):
-    def _cancel_order(
-        resource: Resource, dsm: DialogueStateManager, result: Result
-    ) -> None:
-        dsm.set_resource_state(resource.name, ResourceState.CANCELLED)
-        dsm.end_dialogue()
+    # def _cancel_order(
+    #     resource: Resource, dsm: DialogueStateManager, result: Result
+    # ) -> None:
+
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    dsm.set_resource_state(dsm.get_resource("Final").name, ResourceState.CANCELLED)
+    dsm.end_dialogue()
 
     result.qtype = "QCancel"
-    DialogueStateManager.add_callback(
-        result, lambda r: r.name == "Final", _cancel_order
-    )
+    # DialogueStateManager.add_callback(
+    #     result, lambda r: r.name == "Final", _cancel_order
+    # )
 
 
 def QYes(node: Node, params: QueryStateDict, result: Result):
-    def _parse_yes(
-        resource: Resource, dsm: DialogueStateManager, result: Result
-    ) -> None:
-        if "yes_used" not in result and resource.is_fulfilled:
-            dsm.set_resource_state(resource.name, ResourceState.CONFIRMED)
-            result.yes_used = True
-            if resource.name == "ShowDateTime":
-                for rname in resource.requires:
-                    dsm.get_resource(rname).state = ResourceState.CONFIRMED
+    # def _parse_yes(
+    #     resource: Resource, dsm: DialogueStateManager, result: Result
+    # ) -> None:
+    #     if "yes_used" not in result and resource.is_fulfilled:
+    #         dsm.set_resource_state(resource.name, ResourceState.CONFIRMED)
+    #         result.yes_used = True
+    #         if resource.name == "ShowDateTime":
+    #             for rname in resource.requires:
+    #                 dsm.get_resource(rname).state = ResourceState.CONFIRMED
 
-    filter_func: Callable[[Resource], bool] = (
-        lambda r: r.name
-        in ("Show", "ShowDateTime", "ShowSeatCount", "ShowSeatRow", "ShowSeatNumber")
-        and not r.is_confirmed
-    )
-    DialogueStateManager.add_callback(result, filter_func, _parse_yes)
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    current_resource = dsm.get_current_resource()
+    if current_resource.is_fulfilled and current_resource.name in (
+        "Show",
+        "ShowDateTime",
+        "ShowSeatCount",
+        "ShowSeatRow",
+        "ShowSeatNumber",
+    ):
+        dsm.set_resource_state(current_resource, ResourceState.CONFIRMED)
+        if isinstance(current_resource, WrapperResource):
+            for rname in current_resource.requires:
+                dsm.get_resource(rname).state = ResourceState.CONFIRMED
+
+    # filter_func: Callable[[Resource], bool] = (
+    #     lambda r: r.name
+    #     in ("Show", "ShowDateTime", "ShowSeatCount", "ShowSeatRow", "ShowSeatNumber")
+    #     and not r.is_confirmed
+    # )
+    # DialogueStateManager.add_callback(result, filter_func, _parse_yes)
 
 
 def QNo(node: Node, params: QueryStateDict, result: Result):
-    def _parse_no(
-        resource: Resource, dsm: DialogueStateManager, result: Result
-    ) -> None:
-        if "no_used" not in result and resource.is_fulfilled:
-            dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
-            result.no_used = True
-            if resource.name == "ShowDateTime":
-                dsm.get_resource("ShowDate").state = ResourceState.UNFULFILLED
-                dsm.get_resource("ShowTime").state = ResourceState.UNFULFILLED
+    # def _parse_no(
+    #     resource: Resource, dsm: DialogueStateManager, result: Result
+    # ) -> None:
+    #     if "no_used" not in result and resource.is_fulfilled:
+    #         dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
+    #         result.no_used = True
+    #         if resource.name == "ShowDateTime":
+    #             dsm.get_resource("ShowDate").state = ResourceState.UNFULFILLED
+    #             dsm.get_resource("ShowTime").state = ResourceState.UNFULFILLED
 
-    filter_func: Callable[[Resource], bool] = (
-        lambda r: r.name
-        in ("Show", "ShowDateTime", "ShowSeatCount", "ShowSeatRow", "ShowSeatNumber")
-        and not r.is_confirmed
-    )
-    DialogueStateManager.add_callback(result, filter_func, _parse_no)
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    current_resource = dsm.get_current_resource()
+    if current_resource.is_fulfilled and current_resource.name in (
+        "Show",
+        "ShowDateTime",
+        "ShowSeatCount",
+        "ShowSeatRow",
+        "ShowSeatNumber",
+    ):
+        dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
+        if isinstance(current_resource, WrapperResource):
+            for rname in current_resource.requires:
+                dsm.get_resource(rname).state = ResourceState.UNFULFILLED
+
+    # filter_func: Callable[[Resource], bool] = (
+    #     lambda r: r.name
+    #     in ("Show", "ShowDateTime", "ShowSeatCount", "ShowSeatRow", "ShowSeatNumber")
+    #     and not r.is_confirmed
+    # )
+    # DialogueStateManager.add_callback(result, filter_func, _parse_no)
 
 
 def QStatus(node: Node, params: QueryStateDict, result: Result):
