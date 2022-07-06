@@ -36,6 +36,7 @@ _DIALOGUE_NAME_KEY = "dialogue_name"
 _DIALOGUE_RESOURCES_KEY = "resources"
 _DIALOGUE_LAST_INTERACTED_WITH_KEY = "last_interacted_with"
 _DIALOGUE_EXTRAS_KEY = "extras"
+_DIALOGUE_INITIAL_RESOURCE_KEY = "initial_resource"
 _EMPTY_DIALOGUE_DATA = "{}"
 _FINAL_RESOURCE_NAME = "Final"
 _CALLBACK_LOCATION = "callbacks"
@@ -84,7 +85,7 @@ class ResourceState(IntFlag):
 ##########################
 
 
-@dataclass(eq=False)
+@dataclass(eq=False, repr=False)
 class Resource:
     """
     Base class representing a dialogue resource.
@@ -152,8 +153,14 @@ class Resource:
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Resource) and self.name == other.name
 
+    def __repr__(self) -> str:
+        return f"<{self.name}>"
 
-@dataclass(eq=False)
+    def __str__(self) -> str:
+        return f"<{self.name}>"
+
+
+@dataclass(eq=False, repr=False)
 class ListResource(Resource):
     """Resource representing a list of items."""
 
@@ -173,7 +180,7 @@ class ListResource(Resource):
 # ...
 
 
-@dataclass(eq=False)
+@dataclass(eq=False, repr=False)
 class YesNoResource(Resource):
     """Resource representing a yes/no answer."""
 
@@ -193,7 +200,7 @@ class YesNoResource(Resource):
         return "já" if self.data else "nei"
 
 
-@dataclass(eq=False)
+@dataclass(eq=False, repr=False)
 class ConfirmResource(YesNoResource):
     """Resource representing a confirmation of other resources."""
 
@@ -217,7 +224,7 @@ class ConfirmResource(YesNoResource):
                 req_res.state = ResourceState.CONFIRMED
 
 
-@dataclass(eq=False)
+@dataclass(eq=False, repr=False)
 class DateResource(Resource):
     """Resource representing a date."""
 
@@ -236,7 +243,7 @@ class DateResource(Resource):
         return self.data.strftime("%x")
 
 
-@dataclass(eq=False)
+@dataclass(eq=False, repr=False)
 class TimeResource(Resource):
     """Resource representing a time (00:00-23:59)."""
 
@@ -255,31 +262,31 @@ class TimeResource(Resource):
         return self.data.strftime("%X")
 
 
-@dataclass(eq=False)
+@dataclass(eq=False, repr=False)
 class DatetimeResource(Resource):
     """Resource for wrapping date and time resources."""
 
     ...
 
 
-@dataclass(eq=False)
+@dataclass(eq=False, repr=False)
 class NumberResource(Resource):
     """Resource representing a number."""
 
     data: int = 0
 
 
-@dataclass(eq=False)
+@dataclass(eq=False, repr=False)
 class OrResource(Resource):
     exclusive: bool = False  # Only one of the resources should be fulfilled
 
 
-@dataclass(eq=False)
-class AndResource(Resource):  # For answering multiple resources at the same time
+@dataclass(eq=False, repr=False)  # Wrapper when multiple resources are required
+class WrapperResource(Resource):
     ...
 
 
-@dataclass(eq=False)
+@dataclass(eq=False, repr=False)
 class FinalResource(Resource):
     """Resource representing the final state of a dialogue."""
 
@@ -295,6 +302,8 @@ _RESOURCE_TYPES: Mapping[str, Any] = {
     "DatetimeResource": DatetimeResource,
     "NumberResource": NumberResource,
     "FinalResource": FinalResource,
+    "WrapperResource": WrapperResource,
+    "OrResource": OrResource,
 }
 
 ################################
@@ -310,13 +319,14 @@ class ResourceGraphItem(TypedDict):
 ResourceGraph = Dict[Resource, ResourceGraphItem]
 
 
-class DialogueStructureType(TypedDict):
+class DialogueStructureType(TypedDict, total=False):
     """
     Representation of the dialogue structure,
     as it is read from the TOML files and saved to the database.
     """
 
     dialogue_name: str
+    initial_resource: str
     resources: Dict[str, Resource]
     last_interacted_with: Optional[datetime.datetime]
     extras: Optional[Dict[str, Any]]
@@ -342,6 +352,7 @@ class DialogueStateManager:
         self._error: bool = False
         self._extras: Dict[str, Any] = {}
         self._resource_graph: ResourceGraph = {}
+        self._current_resource: Optional[Resource] = None
         # TODO: Delegate answering from a resource to another resource or to another dialogue
         # TODO: í ávaxtasamtali "ég vil panta flug" "viltu að ég geymi ávaxtapöntunina eða eyði henni?" ...
 
@@ -358,6 +369,7 @@ class DialogueStateManager:
             for req in resource.requires:
                 self._resource_graph[self._resources[req]]["parents"].append(resource)
                 self._resource_graph[resource]["children"].append(self._resources[req])
+        print(self._resource_graph)
 
     def _load_dialogue_structure(self, filename: str) -> DialogueStructureType:
         """Loads dialogue structure from TOML file."""
@@ -394,6 +406,7 @@ class DialogueStateManager:
         DialogueStateManager and before calling get_answer.
         """
         obj = self._load_dialogue_structure(self._dialogue_name)
+        # TODO: fix type hints
         for rname, resource in obj[_DIALOGUE_RESOURCES_KEY].items():
             if rname in self._saved_state[_DIALOGUE_RESOURCES_KEY]:
                 # Update empty resource with serialized data
@@ -411,6 +424,8 @@ class DialogueStateManager:
             # (in order to resume dialogue upon next query)
             self._start_dialogue()
 
+        assert _DIALOGUE_INITIAL_RESOURCE_KEY in obj
+        self._initial_resource = self._resources[obj[_DIALOGUE_INITIAL_RESOURCE_KEY]]
         self._initialize_resource_graph()
 
     def _start_dialogue(self):
@@ -465,6 +480,8 @@ class DialogueStateManager:
             if not self._answer_tuple:
                 raise ValueError("No answer for cancelled dialogue")
             return self._answer_tuple
+
+        self._current_resource = self._find_current_resource()
 
         # Iterate through resources (inorder traversal)
         # until one generates an answer
@@ -566,6 +583,23 @@ class DialogueStateManager:
                     all_parents.add(parent)
                     all_parents.update(self._find_parent_resources(parent))
         return all_parents
+
+    def _find_current_resource(self) -> Resource:
+        """
+        Finds the current resource in the resource graph.
+        """
+        curr_res: Resource = self._initial_resource
+        while curr_res.is_confirmed:
+            for parent in self._resource_graph[curr_res]["parents"]:
+                curr_res = parent
+                grandparents = self._resource_graph[parent]["parents"]
+                if len(grandparents) == 1 and isinstance(
+                    grandparents[0], WrapperResource
+                ):
+                    curr_res = grandparents[0]
+                    break
+        print("CURRENT RESOURCE:", curr_res)
+        return curr_res
 
     def end_dialogue(self) -> None:
         """End the client's current dialogue"""

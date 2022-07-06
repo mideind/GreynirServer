@@ -1,4 +1,5 @@
 dialogue_name = "theater"
+initial_resource = "Show"
 
 [[resources]]
 name = "Show"
@@ -23,7 +24,7 @@ requires = ["Show"]
 
 [[resources]]
 name = "ShowDateTime"
-type = "ListResource"
+type = "WrapperResource"
 requires = ["ShowDate", "ShowTime"]
 cascade_state = true
 prompts.initial = "Hvenær viltu fara á sýninguna {show}? Í boði eru {date_number} dagsetningar.\n{dates}"
