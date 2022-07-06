@@ -548,32 +548,21 @@ class DialogueStateManager:
         if resource.cascade_state and lowered_state:
             # Find all parent resources and set to corresponding state
             print("SEARCHING FOR PARENTS")
-            parent_names = self._find_parent_resources(resource_name)
-            print("PARENTS FOUND:", parent_names)
-            if parent_names:
-                for parent in parent_names:
-                    self._resources[parent].state = ResourceState.UNFULFILLED
+            parents = self._find_parent_resources(self._resources[resource_name])
+            print("PARENTS FOUND:", parents)
+            for parent in parents:
+                parent.state = ResourceState.UNFULFILLED
 
-    def _find_parent_resources(self, resource_name: str) -> Optional[Set[str]]:
+    def _find_parent_resources(self, resource: Resource) -> Set[Resource]:
         """Find all parent resources of a resource"""
-        # TODO: FIX ME, UGLY
-        all_parents: Set[str] = set()
-        ap_len: int
-        i = 0
-        print("LENGTH OF RESOURCES:", len(self._resources))
-        while i < len(self._resources):
-            print(list(self._resources.values()))
-            ap_len = len(all_parents)
-            for rname, resource in self._resources.items():
-                if resource_name in resource.requires and rname not in all_parents:
-                    all_parents.add(rname)
-                for r2name in all_parents.copy():
-                    if r2name in resource.requires and rname not in all_parents:
-                        all_parents.add(rname)
-            # If no new parent resources added to ps, return all_parents
-            if len(all_parents) == ap_len:
-                return all_parents
-            i += 1
+        all_parents: Set[Resource] = set()
+        resource_parents: list[Resource] = self._resource_graph[resource]["parents"]
+        if len(resource_parents) > 0:
+            for parent in resource_parents:
+                if parent not in all_parents:
+                    all_parents.add(parent)
+                    all_parents.update(self._find_parent_resources(parent))
+        return all_parents
 
     def end_dialogue(self) -> None:
         """End the client's current dialogue"""
