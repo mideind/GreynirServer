@@ -18,6 +18,7 @@ type = "TimeResource"
 
 [[resources]]
 name = "DateTime"
+type = "WrapperResource"
 requires = ["Date", "Time"]
 prompts.initial = "Hvenær viltu fá ávextina?"
 prompts.time_fulfilled = "Afhendingin verður klukkan {time}. Hvaða dagsetningu viltu fá ávextina?"
