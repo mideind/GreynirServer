@@ -33,6 +33,7 @@
 # TODO: No specified location
 # TODO: Fix scene issues
 # TODO: Turning on lights without using "turn on"
+# TODO: Add functionality for robot-like commands "ljós í eldhúsinu", "rauður í eldhúsinu"
 
 from typing import Dict, Mapping, Optional, cast, FrozenSet
 from typing_extensions import TypedDict
@@ -116,6 +117,9 @@ GRAMMAR = read_grammar_file(
     "iot_hue", color_names=" | ".join(f"'{color}:lo'" for color in _COLORS.keys())
 )
 
+def QIoTQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qtype = _IoT_QTYPE
+
 
 def QIoTColorWord(node: Node, params: QueryStateDict, result: Result) -> None:
     result.changing_color = True
@@ -128,9 +132,6 @@ def QIoTSceneWord(node: Node, params: QueryStateDict, result: Result) -> None:
 def QIoTBrightnessWord(node: Node, params: QueryStateDict, result: Result) -> None:
     result.changing_brightness = True
 
-
-def QIoTQuery(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qtype = _IoT_QTYPE
 
 
 def QIoTTurnOnLightsRest(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -245,6 +246,10 @@ def QIoTLightName(node: Node, params: QueryStateDict, result: Result) -> None:
     result["light_name"] = result._indefinite
 
 
+def QIoTLightsBanwords(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.abort = True
+
+
 # Convert color name into hue
 # Taken from home.py
 _COLOR_NAME_TO_CIE: Mapping[str, float] = {
@@ -262,6 +267,8 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
         "tónlist",
         "hátalari",
         "bylgja",
+        "útvarp",
+        "útvarpsstöð",
         "útvarp saga",
         "gullbylgja",
         "x-ið",
@@ -282,6 +289,7 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
         "x 977",
         "x-977",
         "x-ið 977",
+        "x-ið",
         "retro",
         "kiss fm",
         "flassbakk",
@@ -300,14 +308,16 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
-    lemmas = set(
-        i[0].root(state, result.params)
-        for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))
-    )
-    if not _SPEAKER_WORDS.isdisjoint(lemmas):
-        print("matched with music word list")
+    if result.get("abort"):
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
-        return
+    # lemmas = set(
+    #     i[0].root(state, result.params)
+    #     for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))
+    # )
+    # if not _SPEAKER_WORDS.isdisjoint(lemmas):
+    #     print("matched with music word list")
+    #     q.set_error("E_QUERY_NOT_UNDERSTOOD")
+    #     return
     changing_color = result.get("changing_color", False)
     changing_scene = result.get("changing_scene", False)
     changing_brightness = result.get("changing_brightness", False)
