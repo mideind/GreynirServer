@@ -53,7 +53,7 @@ import re
 import random
 from copy import deepcopy
 from collections import defaultdict
-from queries.dialogue import DialogueStateManager
+from queries.dialogue import DialogueStateManager as DSM
 
 from settings import Settings
 
@@ -644,8 +644,8 @@ class Query:
             dialogue_name = getattr(processor, "DIALOGUE_NAME", None)
             if dialogue_name:
                 if dialogue_data is None:
-                    dialogue_data = self.client_data("dialogue")
-                self._dsm = DialogueStateManager(
+                    dialogue_data = self.client_data(DSM.DIALOGUE_DATA_KEY)
+                self._dsm = DSM(
                     dialogue_name,
                     dialogue_data.get(dialogue_name) if dialogue_data else None,
                 )
@@ -659,15 +659,10 @@ class Query:
                 # turning it into a QueryStateDict.
                 if self._tree.process_queries(self, self._session, processor):
                     if dialogue_name:
-                        print(
-                            "SAVING DSM STATE FOR {0} {1}".format(
-                                dialogue_name, self._dsm.serialize_data()
-                            )
-                        )
                         # Save the dialogue state
                         self.set_client_data(
-                            "dialogue",
-                            self._dsm.serialize_data(),
+                            DSM.DIALOGUE_DATA_KEY,
+                            cast(ClientDataDict, self._dsm.serialize_data()),
                             update_in_place=True,
                         )
                     # This processor found an answer, which is already stored
@@ -870,7 +865,7 @@ class Query:
         return self._client_version
 
     @property
-    def dsm(self) -> DialogueStateManager:
+    def dsm(self) -> DSM:
         assert self._dsm is not None
         return self._dsm
 

@@ -371,7 +371,7 @@ def _generate_date_answer(
     dates: list[str] = []
     text_dates: list[str] = []
     index: int = 0
-    extras: Dict[str, Any] = dsm.get_extras()
+    extras: Dict[str, Any] = dsm.extras
     if "page_index" in extras:
         index = extras["page_index"]
     print("itering shows")
@@ -565,7 +565,7 @@ def _generate_row_answer(
     if resource.is_unfulfilled:
         if len(available_rows) == 0:
             dsm.set_resource_state("ShowDateTime", ResourceState.UNFULFILLED)
-            dsm.get_extras()["page_index"] = 0
+            dsm.extras["page_index"] = 0
             ans = resource.prompts["not_enough_seats"]
             if seats == 1:
                 ans = ans.replace("laus", "laust")
@@ -897,7 +897,7 @@ def QTheaterTime(node: Node, params: QueryStateDict, result: Result) -> None:
 def QTheaterMoreDates(node: Node, params: QueryStateDict, result: Result) -> None:
     dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
     if dsm.current_resource.name == "ShowDate":
-        extras: Dict[str, Any] = dsm.get_extras()
+        extras: Dict[str, Any] = dsm.extras
         if "page_index" in extras:
             extras["page_index"] += 3
         else:
@@ -907,7 +907,7 @@ def QTheaterMoreDates(node: Node, params: QueryStateDict, result: Result) -> Non
 def QTheaterPreviousDates(node: Node, params: QueryStateDict, result: Result) -> None:
     dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
     if dsm.current_resource.name == "ShowDate":
-        extras: Dict[str, Any] = dsm.get_extras()
+        extras: Dict[str, Any] = dsm.extras
         if "page_index" in extras:
             extras["page_index"] = max(extras["page_index"] - 3, 0)
         else:
