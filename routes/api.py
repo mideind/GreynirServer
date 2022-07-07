@@ -52,6 +52,7 @@ from speech import (
 )
 from util import read_api_key, icelandic_asciify
 from queries.sonos import SonosClient
+from queries.smartthings import SmartThingsClient
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH
@@ -751,6 +752,32 @@ def sonos_code(version: int = 1) -> Response:
             )  # Send the above message to the Sonos speaker
             return better_jsonify(valid=True, msg="Registered sonos code")
     return better_jsonify(valid=False, errmsg="Error registering sonos code.")
+
+
+@routes.route("/connect_smartthings.api", methods=["GET"])
+@routes.route("/connect_smartthings.api/v<int:version>", methods=["GET", "POST"])
+def smartthings_code(version: int = 1) -> Response:
+    """
+    API endpoint to connect to Sonos speakers
+    """
+    print("smartthings code")
+    args = request.args
+    client_id = args.get("state")
+    code = args.get("code")
+    code = {
+        "smartthings": {"credentials": {"code": code}}
+    }  # create a dictonary with the code
+    if client_id and code:
+        success = QueryObject.store_query_data(
+            client_id, "iot_hubs", code, update_in_place=True
+        )
+        if success:
+            device_data = code
+            smartthings_client = SmartThingsClient(device_data, client_id)
+            # device_data = code
+            # Create an instance of the SonosClient class. This will automatically create the rest of the credentials needed.
+            return better_jsonify(valid=True, msg="Registered smartthings code")
+    return better_jsonify(valid=False, errmsg="Error registering smartthings code.")
 
 
 # def sonos_code2(version: int = 1) -> Response:

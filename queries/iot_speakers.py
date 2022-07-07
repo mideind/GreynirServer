@@ -262,6 +262,14 @@ def QIoTSpeakerGroupName(node: Node, params: QueryStateDict, result: Result) -> 
     result["group_name"] = result._indefinite
 
 
+def QIoTSpeakerNext(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "next_song"
+
+
+def QIoTSpeakerPrevious(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "prev_song"
+
+
 def call_sonos_client(sonos_client, result):
     """Call the appropriate function in the SonosClient based on the result"""
     handler_func = _HANDLER_MAP[result.qkey][0]
@@ -282,6 +290,8 @@ _HANDLER_MAP = {
     "increase_volume": ["increase_volume", "Ég hækkaði í tónlistinni"],
     "decrease_volume": ["decrease_volume", "Ég lækkaði í tónlistinni"],
     "radio": ["play_radio_stream", "Ég setti á útvarpstöðina"],
+    "next_song": ["next_song", "Skal gert. Næsta lag."],
+    "prev_song": ["prev_song", "Skal gert. Fyrra lag."],
 }
 
 

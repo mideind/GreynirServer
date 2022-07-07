@@ -160,13 +160,23 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         return
 
     elif result.qtype == "connect_hub":
-        js = read_jsfile("IoT_Embla/Smart_Things/st_connecthub.js")
-        js += f"syncConnectHub('{client_id}','{host}');"
-        answer = "Smart Things miðstöðin hefur verið tengd"
+
+        smartthings_key = read_api_key("SmartThingsKey")
+        answer = "Skráðu þig inn hjá SmartThings"
         voice_answer, response = answer, dict(answer=answer)
         q.set_answer(response, answer, voice_answer)
-        q.set_command(js)
+        # Redirect the user to a Sonos login screen, which will then forward the neccessary credentials to the connect_sonos.api found in api.py
+        q.set_url(
+            f"https://graph.api.smartthings.com/oauth/confirm_access?response_type=code&scope=devices&client_id={smartthings_key}&redirect_uri=http://{host}/connect_smartthings.api&state={client_id}"
+        )
         return
+        # js = read_jsfile("IoT_Embla/Smart_Things/st_connecthub.js")
+        # js += f"syncConnectHub('{client_id}','{host}');"
+        # answer = "Smart Things miðstöðin hefur verið tengd"
+        # voice_answer, response = answer, dict(answer=answer)
+        # q.set_answer(response, answer, voice_answer)
+        # q.set_command(js)
+        # return
 
     elif result.qtype == "connect_speaker":
         sonos_key = read_api_key("SonosKey")
