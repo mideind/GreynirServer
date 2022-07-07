@@ -234,6 +234,7 @@ def _list_items(items: Any) -> str:
 
 def QFruitStartQuery(node: Node, params: QueryStateDict, result: Result):
     result.qtype = _START_DIALOGUE_QTYPE
+    cast(QueryStateDict, result.state)["query"].dsm.hotword_activated()
 
 
 def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
