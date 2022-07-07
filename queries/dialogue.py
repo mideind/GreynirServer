@@ -126,10 +126,9 @@ class DialogueStateManager:
         """
         Load dialogue resources from TOML file and update their state from database data.
         """
-        assert self._saved_state
         self._initialize_resources(self._dialogue_name)
         for rname, resource in self._resources.items():
-            if rname in self._saved_state["resources"]:
+            if self._saved_state and rname in self._saved_state["resources"]:
                 # Update empty resource with data from database
                 resource.update(self._saved_state[_DIALOGUE_RESOURCES_KEY][rname])
             # Change from int to enum type

@@ -285,6 +285,17 @@ class DialogueJSONEncoder(json.JSONEncoder):
                     del d[key]
             d["__type__"] = o.__class__.__name__
             return d
+        if isinstance(o, datetime.datetime):
+            return {
+                "__type__": "datetime",
+                "year": o.year,
+                "month": o.month,
+                "day": o.day,
+                "hour": o.hour,
+                "minute": o.minute,
+                "second": o.second,
+                "microsecond": o.microsecond,
+            }
         if isinstance(o, datetime.date):
             return {
                 "__type__": "date",
@@ -295,17 +306,6 @@ class DialogueJSONEncoder(json.JSONEncoder):
         if isinstance(o, datetime.time):
             return {
                 "__type__": "time",
-                "hour": o.hour,
-                "minute": o.minute,
-                "second": o.second,
-                "microsecond": o.microsecond,
-            }
-        if isinstance(o, datetime.datetime):
-            return {
-                "__type__": "datetime",
-                "year": o.year,
-                "month": o.month,
-                "day": o.day,
                 "hour": o.hour,
                 "minute": o.minute,
                 "second": o.second,
@@ -324,10 +324,10 @@ class DialogueJSONDecoder(json.JSONDecoder):
         if "__type__" not in d:
             return d
         t = d.pop("__type__")
+        if t == "datetime":
+            return datetime.datetime(**d)
         if t == "date":
             return datetime.date(**d)
         if t == "time":
             return datetime.time(**d)
-        if t == "datetime":
-            return datetime.datetime(**d)
         return RESOURCE_MAP[t](**d)
