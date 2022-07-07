@@ -298,14 +298,22 @@ class QueryTree(Tree):
             # But this processor is not interested in any of the nonterminals
             # in this query's parse forest: don't waste more cycles on it
             return False
-        # Check if processor is a dialogue module
         dialogue_name: Optional[str] = getattr(processor, "DIALOGUE_NAME", None)
         if dialogue_name:
             # Processor uses dialogue functionality,
             # initialize dialogue state manager
+            hotword_nonterminals: Set[str] = getattr(
+                processor, "HOTWORD_NONTERMINALS", set()
+            )
             # TODO: ONLY FETCH DATA ONCE if dialogue_data is None:
             # Fetch saved dialogue state
             dialogue_data = query.client_data(DSM.DIALOGUE_DATA_KEY)
+            if self.query_nonterminals.isdisjoint(hotword_nonterminals) and (
+                dialogue_data is None or dialogue_data.get(dialogue_name) is None
+            ):
+                # Query doesn't contain dialogue hotwords
+                # and has no saved data for this dialogue
+                return False
             query._dsm = DSM(
                 dialogue_name,
                 cast(str, dialogue_data.get(dialogue_name)) if dialogue_data else None,

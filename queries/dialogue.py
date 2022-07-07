@@ -38,12 +38,7 @@ from queries.resources import (
 # TODO: Add try-except blocks where appropriate
 
 _TOML_FOLDER_NAME = "dialogues"
-_EXPIRATION_TIME = 30 * 60  # 30 minutes (dialogue expires after 30 minutes)
-
-# Keys for accessing saved client data for dialogues
-_RESOURCES_KEY = "resources"
-_LAST_INTERACTED_WITH_KEY = "last_interacted_with"
-_EXTRAS_KEY = "extras"
+_EXPIRATION_TIME = 30 * 60  # a dialogue expires after 30 minutes
 _FINAL_RESOURCE_NAME = "Final"
 
 # Generic resource type
@@ -63,15 +58,27 @@ AnsweringFunctionMap = Mapping[str, AnsweringFunctionType[Any]]
 
 
 class ResourceGraphItem(TypedDict):
+    """Type for a node in the resource graph."""
+
     children: List[Resource]
     parents: List[Resource]
 
 
+# Dependency relationship graph type for resources
 ResourceGraph = Dict[Resource, ResourceGraphItem]
 
 
 class DialogueTOMLStructure(TypedDict):
+    """Structure of a dialogue TOML file."""
+
     resources: List[Dict[str, Any]]
+
+
+# Keys for accessing saved client data for dialogues
+# (must match typed dict attributes below)
+_RESOURCES_KEY = "resources"
+_MODIFIED_KEY = "modified"
+_EXTRAS_KEY = "extras"
 
 
 class DialogueDBStructure(TypedDict):
@@ -81,7 +88,7 @@ class DialogueDBStructure(TypedDict):
     """
 
     resources: Dict[str, Resource]
-    last_interacted_with: datetime.datetime
+    modified: datetime.datetime
     extras: Dict[str, Any]
 
 
@@ -110,7 +117,7 @@ class DialogueStateManager:
                 DialogueDBStructure, json.loads(saved_state, cls=DialogueJSONDecoder)
             )
             time_from_last_interaction = (
-                datetime.datetime.now() - self._saved_state[_LAST_INTERACTED_WITH_KEY]
+                datetime.datetime.now() - self._saved_state[_MODIFIED_KEY]
             )
             # Check that we have saved data for this dialogue and that it is not expired
             if (
@@ -167,10 +174,10 @@ class DialogueStateManager:
             f = file.read()
         # Read TOML file containing a list of resources for the dialogue
         obj: DialogueTOMLStructure = tomllib.loads(f)  # type: ignore
-        assert _RESOURCES_KEY in obj
+        assert _RESOURCES_KEY in obj, f"No resources found in TOML file {f}"
         # Create resource instances from TOML data and return as a dict
         for i, resource in enumerate(obj[_RESOURCES_KEY]):
-            assert "name" in resource
+            assert "name" in resource, f"Name missing for resource {i+1}"
             if "type" not in resource:
                 resource["type"] = "Resource"
             # Create instances of Resource classes (and its subclasses)
@@ -224,7 +231,6 @@ class DialogueStateManager:
             ans = self._answering_functions[self._current_resource.name](
                 self._current_resource, self, result
             )
-            print("GENERATED DATE ANSWERRRRRRRRRRRRRRRRR")
             return ans
         # Iterate through resources (inorder traversal)
         # until one generates an answer
@@ -309,7 +315,7 @@ class DialogueStateManager:
         ds_json: str = json.dumps(
             {
                 _RESOURCES_KEY: self._resources,
-                _LAST_INTERACTED_WITH_KEY: datetime.datetime.now(),
+                _MODIFIED_KEY: datetime.datetime.now(),
                 _EXTRAS_KEY: self._extras,
             },
             cls=DialogueJSONEncoder,
