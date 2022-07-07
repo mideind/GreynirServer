@@ -1,6 +1,3 @@
-dialogue_name = "theater"
-initial_resource = "Show"
-
 [[resources]]
 name = "Show"
 type = "ListResource"
