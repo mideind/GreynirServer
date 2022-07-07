@@ -298,6 +298,18 @@ class QueryTree(Tree):
             # But this processor is not interested in any of the nonterminals
             # in this query's parse forest: don't waste more cycles on it
             return False
+        # Check if processor is a dialogue module
+        dialogue_name: Optional[str] = getattr(processor, "DIALOGUE_NAME", None)
+        if dialogue_name:
+            # Processor uses dialogue functionality,
+            # initialize dialogue state manager
+            # TODO: ONLY FETCH DATA ONCE if dialogue_data is None:
+            # Fetch saved dialogue state
+            dialogue_data = query.client_data(DSM.DIALOGUE_DATA_KEY)
+            query._dsm = DSM(
+                dialogue_name,
+                cast(str, dialogue_data.get(dialogue_name)) if dialogue_data else None,
+            )
         with self.context(session, processor, query=query) as state:
             for query_tree in self._query_trees:
                 # Is the processor interested in the root nonterminal
@@ -643,18 +655,6 @@ class Query:
             self._error = None
             self._qtype = None
             self._dsm = None
-            # Check if processor is a dialogue module
-            dialogue_name: Optional[str] = getattr(processor, "DIALOGUE_NAME", None)
-            if dialogue_name:
-                # Processor uses dialogue functionality,
-                # initialize dialogue state manager
-                if dialogue_data is None:
-                    # Fetch saved dialogue state
-                    dialogue_data = self.client_data(DSM.DIALOGUE_DATA_KEY)
-                self._dsm = DSM(
-                    dialogue_name,
-                    dialogue_data.get(dialogue_name) if dialogue_data else None,
-                )
             # Process the tree, which has only one sentence, but may
             # have multiple matching query nonterminals
             # (children of Query in the grammar)
@@ -663,8 +663,7 @@ class Query:
                 # "query" field of the TreeStateDict is populated,
                 # turning it into a QueryStateDict.
                 if self._tree.process_queries(self, self._session, processor):
-                    if dialogue_name:
-                        assert self._dsm is not None
+                    if self._dsm is not None:
                         # Save the dialogue state when a dialogue module query
                         # is successfully processed
                         self.set_client_data(
