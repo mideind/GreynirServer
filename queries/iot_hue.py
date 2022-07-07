@@ -296,6 +296,7 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
         "útvarp hundrað og einn",
         "útvarp hundrað einn",
         "útvarp hundrað 1",
+        "útvarp",
     )
 )
 

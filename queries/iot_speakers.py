@@ -28,16 +28,24 @@ _RADIO_STREAMS = {
     "Rás 2": "http://netradio.ruv.is/ras2.mp3",
     "Rondó": "http://netradio.ruv.is/rondo.mp3",
     "Bylgjan": "https://live.visir.is/hls-radio/bylgjan/playlist.m3u8",
+    "Léttbylgjan": "https://live.visir.is/hls-radio/lettbylgjan/playlist.m3u8",
+    "Gullbylgjan": "https://live.visir.is/hls-radio/gullbylgjan/playlist.m3u8",
+    "80s Bylgjan": "https://live.visir.is/hls-radio/80s/chunklist_DVR.m3u8",
+    "Íslenska Bylgjan": "https://live.visir.is/hls-radio/islenska/chunklist_DVR.m3u8",
     "FM957": "https://live.visir.is/hls-radio/fm957/playlist.m3u8",
     "Útvarp Saga": "https://stream.utvarpsaga.is/Hljodver",
     "K100": "https://k100streymi.mbl.is/beint/k100/tracks-v1a1/rewind-3600.m3u8",
-    "Gullbylgjan": "https://live.visir.is/hls-radio/gullbylgjan/playlist.m3u8",
     "X977": "https://live.visir.is/hls-radio/x977/playlist.m3u8",
-    "Léttbylgjan": "https://live.visir.is/hls-radio/lettbylgjan/playlist.m3u8",
     "Retro": "https://k100straumar.mbl.is/retromobile",
     "KissFM": "http://stream3.radio.is:443/kissfm",
-    "Flashback": "http://stream.radio.is:443/flashback",
     "Útvarp 101": "https://stream.101.live/audio/101/chunklist.m3u8",
+    "Apparatið": "https://live.visir.is/hls-radio/apparatid/chunklist_DVR.m3u8",
+    "FM Extra": "https://live.visir.is/hls-radio/fmextra/chunklist_DVR.m3u8",
+    "Útvarp Suðurland": "http://ice-11.spilarinn.is/tsudurlandfm",
+    "Flashback": "http://stream.radio.is:443/flashback",
+    "70s Flashback": "http://stream3.radio.is:443/70flashback",
+    "80s Flashback": "http://stream3.radio.is:443/80flashback",
+    "90s Flashback": "http://stream3.radio.is:443/90flashback",
 }
 
 
@@ -206,21 +214,71 @@ def QIoTSpeakerK100(node: Node, params: QueryStateDict, result: Result) -> None:
     result["station"] = "K100"
 
 
+def QIoTSpeakerIslenskaBylgjan(
+    node: Node, params: QueryStateDict, result: Result
+) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Íslenska Bylgjan"
+
+
+def QIoT80sBylgjan(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "80s Bylgjan"
+
+
+def QIoTSpeakerApparatid(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Apparatið"
+
+
+def QIoTSpeakerFmExtra(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "FM Extra"
+
+
+def QIoTSpeaker70sFlashback(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "70s Flashback"
+
+
+def QIoTSpeaker80sFlashback(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "80s Flashback"
+
+
+def QIoTSpeaker90sFlashback(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "90s Flashback"
+
+
+def QIoTSpeakerUtvarpSudurland(
+    node: Node, params: QueryStateDict, result: Result
+) -> None:
+    result["qkey"] = "radio"
+    result["station"] = "Útvarp Suðurland"
+
+
+def QIoTSpeakerGroupName(node: Node, params: QueryStateDict, result: Result) -> None:
+    result["group_name"] = result._indefinite
+
+
 def call_sonos_client(sonos_client, result):
     """Call the appropriate function in the SonosClient based on the result"""
     handler_func = _HANDLER_MAP[result.qkey][0]
     if result.get("station") is not None:
         radio_url = _RADIO_STREAMS.get(f"{result.station}")
-        getattr(sonos_client, handler_func)(radio_url)
+        response = getattr(sonos_client, handler_func)(radio_url)
+        return response
     else:
-        getattr(sonos_client, handler_func)()
+        response = getattr(sonos_client, handler_func)()
+        return response
     return
 
 
 # Map of query keys to handler functions and the corresponding answer string for Embla
 _HANDLER_MAP = {
-    "play_music": ["toggle_play_pause", "Ég kveikti á tónlist"],
-    "pause_music": ["toggle_play_pause", "Ég slökkti á tónlist"],
+    "play_music": ["toggle_play", "Ég kveikti á tónlist"],
+    "pause_music": ["toggle_pause", "Ég slökkti á tónlist"],
     "increase_volume": ["increase_volume", "Ég hækkaði í tónlistinni"],
     "decrease_volume": ["decrease_volume", "Ég lækkaði í tónlistinni"],
     "radio": ["play_radio_stream", "Ég setti á útvarpstöðina"],
@@ -232,17 +290,29 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     print("sentence")
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
+        print("IF QTYPE AND QKEY")
         try:
             q.set_qtype(result.qtype)
             device_data = q.client_data("iot_speakers")
             if device_data is not None:
-                sonos_client = SonosClient(device_data, q.client_id)
-                call_sonos_client(sonos_client, result)
-                handler_answer = _HANDLER_MAP[result.qkey][1]
-                answer = handler_answer
-                answer_list = gen_answer(answer)
-                answer_list[1].replace("Sonos", "Sónos")
-                q.set_answer(*answer_list)
+                print("JUST BEFORE SONOS CLIENT")
+                sonos_client = SonosClient(
+                    device_data, q.client_id, group_name=result.get("group_name")
+                )
+                print("JUST AFTER SONOS CLIENT")
+                response = call_sonos_client(sonos_client, result)
+                if response == "Group not found":
+                    text_ans = f"Herbergið '{result.group_name}' fannst ekki. Vinsamlegast athugaðu í Sonos appinu hvort nafnið sé rétt."
+                else:
+                    handler_answer = _HANDLER_MAP[result.qkey][1]
+                    text_ans = handler_answer
+
+                answer = (
+                    dict(answer=text_ans),
+                    text_ans,
+                    text_ans.replace("Sonos", "Sónos"),
+                )
+                q.set_answer(*answer)
                 return
             else:
                 print("No device data found for this account")
@@ -252,6 +322,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             q.set_error("E_EXCEPTION: {0}".format(e))
             return
     else:
+        print("ELSE")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
