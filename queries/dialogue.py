@@ -114,6 +114,10 @@ class DialogueStateManager:
             # Check that we have saved data for this dialogue
             if self._saved_state.get(_DIALOGUE_RESOURCES_KEY):
                 self._in_this_dialogue = True
+<<<<<<< Updated upstream
+=======
+            print("setting up dialogue")
+>>>>>>> Stashed changes
             self.setup_dialogue()  # TODO: Rename me
 
     def setup_dialogue(self) -> None:
@@ -122,6 +126,7 @@ class DialogueStateManager:
         Should be called after initializing an instance of
         DialogueStateManager and before calling get_answer.
         """
+<<<<<<< Updated upstream
         resource_dict: Dict[str, Resource] = self._initialize_resources(
             self._dialogue_name
         )
@@ -130,6 +135,15 @@ class DialogueStateManager:
                 _DIALOGUE_RESOURCES_KEY, {}
             ):
                 # Update empty resource with data from database
+=======
+        obj = self._load_dialogue_structure(self._dialogue_name)
+        # TODO: fix type hints
+        for rname, resource in obj[_DIALOGUE_RESOURCES_KEY].items():
+            if self._saved_state and rname in self._saved_state.get(
+                _DIALOGUE_RESOURCES_KEY, {}
+            ):
+                # Update empty resource with serialized data
+>>>>>>> Stashed changes
                 resource.update(self._saved_state[_DIALOGUE_RESOURCES_KEY][rname])
             # Change from int to enum type
             resource.state = ResourceState(resource.state)
@@ -146,6 +160,8 @@ class DialogueStateManager:
         to what each resource requires.
         """
         for resource in self._resources.values():
+            if resource.order_index == 0:
+                self._initial_resource = resource
             self._resource_graph[resource] = {"children": [], "parents": []}
 
         for resource in self._resources.values():
