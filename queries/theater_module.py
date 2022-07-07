@@ -21,7 +21,7 @@
     This query module handles dialogue related to theater tickets.
 """
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 from typing_extensions import TypedDict
 import json
 import logging
@@ -33,16 +33,18 @@ from query import Query, QueryStateDict
 from tree import Result, Node, TerminalNode
 from queries import AnswerTuple, gen_answer, natlang_seq, parse_num, query_json_api
 from queries.num import number_to_text, numbers_to_ordinal
-from queries.dialogue import (
-    AnsweringFunctionMap,
+from queries.resources import (
     DateResource,
-    DialogueStateManager,
     ListResource,
     NumberResource,
     Resource,
     ResourceState,
     TimeResource,
     WrapperResource,
+)
+from queries.dialogue import (
+    AnsweringFunctionMap,
+    DialogueStateManager,
 )
 
 _THEATER_DIALOGUE_NAME = "theater"
@@ -719,7 +721,7 @@ def QTheaterDialogue(node: Node, params: QueryStateDict, result: Result) -> None
 
 def QTheaterHotWord(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _START_DIALOGUE_QTYPE
-    cast(QueryStateDict, result.state)["query"].dsm.activate_dialogue()
+    cast(QueryStateDict, result.state)["query"].dsm.hotword_activated()
 
 
 def QTheaterShowQuery(node: Node, params: QueryStateDict, result: Result) -> None:

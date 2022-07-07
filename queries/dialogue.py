@@ -175,18 +175,13 @@ class DialogueStateManager:
             )
         return resource_dict
 
-    def activate_dialogue(self) -> None:
+    def hotword_activated(self) -> None:
         self._in_this_dialogue = True
         self.setup_dialogue()
 
     def not_in_dialogue(self) -> bool:
         """Check if the client is in or wants to start this dialogue"""
         return not self._in_this_dialogue
-        # return (
-        #     self._result.get("qtype") != self._start_qtype
-        #     and self._saved_state.get(_DIALOGUE_NAME_KEY) != self._dialogue_name
-        # )
-        # TODO: Add check for newest dialogue
 
     def _start_dialogue(self):
         """Save client's state as having started this dialogue"""
