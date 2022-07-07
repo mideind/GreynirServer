@@ -208,6 +208,8 @@ class DialogueStateManager:
     def get_answer(
         self, answering_functions: AnsweringFunctionMap, result: Any
     ) -> Optional[AnswerTuple]:
+        if self._answer_tuple is not None:
+            return self._answer_tuple
         self._current_resource = self._find_current_resource()
         self._answering_functions = answering_functions
 
@@ -248,6 +250,9 @@ class DialogueStateManager:
                 curr_resource, self, result
             )
         return None
+
+    def set_answer(self, answer: AnswerTuple) -> None:
+        self._answer_tuple = answer
 
     def set_resource_state(self, resource_name: str, state: ResourceState):
         """
