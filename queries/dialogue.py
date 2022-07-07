@@ -36,6 +36,7 @@ from queries.resources import (
 # TODO:? í ávaxtasamtali "ég vil panta flug" "viltu að ég geymi ávaxtapöntunina eða eyði henni?" ...
 # TODO: Add timezone info to json encoding/decoding?
 # TODO: FIX TYPE HINTS (esp. 'Any')
+# TODO: Add specific prompt handling to DSM to remove result from DSM.
 
 # Keys for accessing saved client data for dialogues
 _DIALOGUE_KEY = "dialogue"
