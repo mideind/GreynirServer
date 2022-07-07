@@ -71,13 +71,13 @@ DIALOGUE_NAME = "theater"
 HOTWORD_NONTERMINALS = {"QTheaterHotWord"}
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = {"QTheater", "QTheaterHotWord"}
+QUERY_NONTERMINALS = {"QTheater"}.union(HOTWORD_NONTERMINALS)
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
 Query →
-    QTheaterHotWord > QTheater
+    QTheaterHotWord | QTheater
 
 QTheater → QTheaterQuery '?'?
 
@@ -1281,14 +1281,14 @@ def QTheaterStatus(node: Node, params: QueryStateDict, result: Result):
     )
 
 
-SHOW_URL = "https://leikhusid.is/wp-json/shows/v1/categories/938"
+# SHOW_URL = "https://leikhusid.is/wp-json/shows/v1/categories/938"
 
 
-def _fetch_shows() -> Any:
-    resp = query_json_api(SHOW_URL)
-    if resp:
-        assert isinstance(resp, list)
-        return [s["title"] for s in resp]
+# def _fetch_shows() -> Any:
+#     resp = query_json_api(SHOW_URL)
+#     if resp:
+#         assert isinstance(resp, list)
+#         return [s["title"] for s in resp]
 
 
 _ANSWERING_FUNCTIONS: AnsweringFunctionMap = {

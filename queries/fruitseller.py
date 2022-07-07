@@ -29,13 +29,13 @@ DIALOGUE_NAME = "fruitseller"
 HOTWORD_NONTERMINALS = {"QFruitStartQuery"}
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = {"QFruitSeller"}
+QUERY_NONTERMINALS = {"QFruitSeller"}.union(HOTWORD_NONTERMINALS)
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
 Query →
-    QFruitStartQuery > QFruitSeller
+    QFruitStartQuery | QFruitSeller
 
 QFruitSeller →
     QFruitQuery '?'?

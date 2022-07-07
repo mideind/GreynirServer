@@ -11,10 +11,12 @@ prompts.repeat = "Pöntunin samanstendur af {list_items}. Verður það eitthva�
 [[resources]]
 name = "Date"
 type = "DateResource"
+requires = ["Fruits"]
 
 [[resources]]
 name = "Time"
 type = "TimeResource"
+requires = ["Fruits"]
 
 [[resources]]
 name = "DateTime"
@@ -39,6 +41,6 @@ prompts.confirm = "Afhending pöntunar er {date_time}. Viltu staðfesta afhendin
 [[resources]]
 name = "Final"
 type = "FinalResource"
-requires = ["Fruits", "DateTime"]
+requires = ["DateTime"]
 prompts.final = "Pöntunin þín er {fruits} og verður afhent {date_time}."
 prompts.cancelled = "Móttekið, hætti við pöntunina."
