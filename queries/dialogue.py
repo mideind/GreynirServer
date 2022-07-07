@@ -38,12 +38,12 @@ from queries.resources import (
 # TODO: Add try-except blocks where appropriate
 
 _TOML_FOLDER_NAME = "dialogues"
-_DIALOGUE_EXPIRATION_TIME = 30 * 60  # 30 minutes (dialogue expires after 30 minutes)
+_EXPIRATION_TIME = 30 * 60  # 30 minutes (dialogue expires after 30 minutes)
 
 # Keys for accessing saved client data for dialogues
-_DIALOGUE_RESOURCES_KEY = "resources"
-_DIALOGUE_LAST_INTERACTED_WITH_KEY = "last_interacted_with"
-_DIALOGUE_EXTRAS_KEY = "extras"
+_RESOURCES_KEY = "resources"
+_LAST_INTERACTED_WITH_KEY = "last_interacted_with"
+_EXTRAS_KEY = "extras"
 _FINAL_RESOURCE_NAME = "Final"
 
 # Generic resource type
@@ -110,32 +110,33 @@ class DialogueStateManager:
                 DialogueDBStructure, json.loads(saved_state, cls=DialogueJSONDecoder)
             )
             time_from_last_interaction = (
-                datetime.datetime.now() - self._saved_state["last_interacted_with"]
+                datetime.datetime.now() - self._saved_state[_LAST_INTERACTED_WITH_KEY]
             )
             # Check that we have saved data for this dialogue and that it is not expired
             if (
-                self._saved_state[_DIALOGUE_RESOURCES_KEY]
-                and time_from_last_interaction.total_seconds()
-                < _DIALOGUE_EXPIRATION_TIME
+                self._saved_state[_RESOURCES_KEY]
+                and time_from_last_interaction.total_seconds() < _EXPIRATION_TIME
             ):
                 self._in_this_dialogue = True
-                self.setup_dialogue()
+                self.setup_resources()
             # TODO: IF EXPIRED DO SOMETHING
 
-    def setup_dialogue(self) -> None:
+    def setup_resources(self) -> None:
         """
         Load dialogue resources from TOML file and update their state from database data.
         """
+        # Fetch empty resources from TOML
         self._initialize_resources(self._dialogue_name)
+        # Update empty resources with data from database
         for rname, resource in self._resources.items():
             if self._saved_state and rname in self._saved_state["resources"]:
-                # Update empty resource with data from database
-                resource.update(self._saved_state[_DIALOGUE_RESOURCES_KEY][rname])
+                resource.update(self._saved_state[_RESOURCES_KEY][rname])
             # Change from int to enum type
             resource.state = ResourceState(resource.state)
-        if self._saved_state and _DIALOGUE_EXTRAS_KEY in self._saved_state:
-            self._extras = self._saved_state.get(_DIALOGUE_EXTRAS_KEY) or self._extras
-
+        # Set extra data from database
+        if self._saved_state and _EXTRAS_KEY in self._saved_state:
+            self._extras = self._saved_state.get(_EXTRAS_KEY) or self._extras
+        # Create resource dependency relationship graph
         self._initialize_resource_graph()
 
     def _initialize_resource_graph(self) -> None:
@@ -166,9 +167,9 @@ class DialogueStateManager:
             f = file.read()
         # Read TOML file containing a list of resources for the dialogue
         obj: DialogueTOMLStructure = tomllib.loads(f)  # type: ignore
-        assert _DIALOGUE_RESOURCES_KEY in obj
+        assert _RESOURCES_KEY in obj
         # Create resource instances from TOML data and return as a dict
-        for i, resource in enumerate(obj[_DIALOGUE_RESOURCES_KEY]):
+        for i, resource in enumerate(obj[_RESOURCES_KEY]):
             assert "name" in resource
             if "type" not in resource:
                 resource["type"] = "Resource"
@@ -179,7 +180,13 @@ class DialogueStateManager:
 
     def hotword_activated(self) -> None:
         self._in_this_dialogue = True
-        self.setup_dialogue()
+        self.setup_resources()
+
+    def pause_dialogue(self) -> None:
+        ...  # TODO
+
+    def resume_dialogue(self) -> None:
+        ...  # TODO
 
     def not_in_dialogue(self) -> bool:
         """Check if the client is in or wants to start this dialogue"""
@@ -301,9 +308,9 @@ class DialogueStateManager:
             self.end_dialogue()
         ds_json: str = json.dumps(
             {
-                _DIALOGUE_RESOURCES_KEY: self._resources,
-                _DIALOGUE_LAST_INTERACTED_WITH_KEY: datetime.datetime.now(),
-                _DIALOGUE_EXTRAS_KEY: self._extras,
+                _RESOURCES_KEY: self._resources,
+                _LAST_INTERACTED_WITH_KEY: datetime.datetime.now(),
+                _EXTRAS_KEY: self._extras,
             },
             cls=DialogueJSONEncoder,
         )

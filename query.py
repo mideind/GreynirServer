@@ -401,6 +401,8 @@ class Query:
         # Query context, which is None until fetched via self.fetch_context()
         # This should be a dict that can be represented in JSON
         self._context: Optional[ContextDict] = None
+        # Dialogue state manager, used for dialogue modules
+        self._dsm: Optional[DSM] = None
 
     def _preprocess_query_string(self, q: str) -> str:
         """Preprocess the query string prior to further analysis"""
@@ -640,16 +642,19 @@ class Query:
         for processor in self._tree_processors:
             self._error = None
             self._qtype = None
+            self._dsm = None
             # Check if processor is a dialogue module
-            dialogue_name = getattr(processor, "DIALOGUE_NAME", None)
+            dialogue_name: Optional[str] = getattr(processor, "DIALOGUE_NAME", None)
             if dialogue_name:
+                # Processor uses dialogue functionality,
+                # initialize dialogue state manager
                 if dialogue_data is None:
+                    # Fetch saved dialogue state
                     dialogue_data = self.client_data(DSM.DIALOGUE_DATA_KEY)
                 self._dsm = DSM(
                     dialogue_name,
                     dialogue_data.get(dialogue_name) if dialogue_data else None,
                 )
-                print("INITIALIZED DSM FOR {0}".format(dialogue_name))
             # Process the tree, which has only one sentence, but may
             # have multiple matching query nonterminals
             # (children of Query in the grammar)
@@ -659,7 +664,9 @@ class Query:
                 # turning it into a QueryStateDict.
                 if self._tree.process_queries(self, self._session, processor):
                     if dialogue_name:
-                        # Save the dialogue state
+                        assert self._dsm is not None
+                        # Save the dialogue state when a dialogue module query
+                        # is successfully processed
                         self.set_client_data(
                             DSM.DIALOGUE_DATA_KEY,
                             cast(ClientDataDict, self._dsm.serialize_data()),
