@@ -57,6 +57,10 @@ AnsweringFunctionMap = Mapping[str, AnsweringFunctionType[Any]]
 ################################
 
 
+class ResourceNotFoundError(Exception):
+    ...
+
+
 class ResourceGraphItem(TypedDict):
     """Type for a node in the resource graph."""
 
@@ -111,6 +115,8 @@ class DialogueStateManager:
         self._resource_graph: ResourceGraph = {}
         # Database data for this dialogue, if any
         self._saved_state: Optional[DialogueDBStructure] = None
+        # Whether this dialogue is finished (successful/cancelled) or not
+        self._finished: bool = False
 
         if isinstance(saved_state, str):
             self._saved_state = cast(
@@ -144,7 +150,9 @@ class DialogueStateManager:
         if self._saved_state and _EXTRAS_KEY in self._saved_state:
             self._extras = self._saved_state.get(_EXTRAS_KEY) or self._extras
         # Create resource dependency relationship graph
+        print("SETTING UP RESOURCE GRAPH")
         self._initialize_resource_graph()
+        print("FINISHED SETTING UP RESOURCE GRAPH")
 
     def _initialize_resource_graph(self) -> None:
         """
@@ -187,7 +195,9 @@ class DialogueStateManager:
 
     def hotword_activated(self) -> None:
         self._in_this_dialogue = True
+        print("STARTING RESOURCE SETUP")
         self.setup_resources()
+        print("FINISHED RESOURCE SETUP")
 
     def pause_dialogue(self) -> None:
         ...  # TODO
@@ -307,25 +317,26 @@ class DialogueStateManager:
         print("CURRENT RESOURCE:", curr_res)
         return curr_res
 
-    def end_dialogue(self) -> None:
-        """Set the dialogue as finished (resources and extras set to empty)."""
-        self._resources = {}
-        self._extras = {}
+    def finish_dialogue(self) -> None:
+        """Set the dialogue as finished."""
+        self._finished = True
 
-    def serialize_data(self) -> Dict[str, str]:
+    def serialize_data(self) -> Dict[str, Optional[str]]:
         """Serialize the dialogue's data for saving to database"""
         if self._resources[_FINAL_RESOURCE_NAME].is_confirmed:
             # When final resource is confirmed, the dialogue is over
-            self.end_dialogue()
-        ds_json: str = json.dumps(
-            {
-                _RESOURCES_KEY: self._resources,
-                _MODIFIED_KEY: datetime.datetime.now(),
-                _EXTRAS_KEY: self._extras,
-            },
-            cls=DialogueJSONEncoder,
-        )
+            self.finish_dialogue()
+        ds_json: Optional[str] = None
+        if not self._finished:
+            ds_json = json.dumps(
+                {
+                    _RESOURCES_KEY: self._resources,
+                    _MODIFIED_KEY: datetime.datetime.now(),
+                    _EXTRAS_KEY: self._extras,
+                },
+                cls=DialogueJSONEncoder,
+            )
         # Wrap data before saving dialogue state into client data
         # (due to custom JSON serialization)
-        cd: Dict[str, str] = {self._dialogue_name: ds_json}
+        cd: Dict[str, Optional[str]] = {self._dialogue_name: ds_json}
         return cd

@@ -42,10 +42,10 @@ from typing import (
     Callable,
     Iterator,
     NamedTuple,
-    Type,
     cast,
 )
 
+from typing_extensions import TypedDict
 from types import ModuleType
 
 import json
@@ -63,7 +63,6 @@ from reynir.bindb import GreynirBin
 from reynir.binparser import BIN_Token
 from reynir.simpletree import SimpleTree, SimpleTreeBuilder
 from reynir.cache import LRU_Cache
-from typing_extensions import TypedDict
 
 
 class TreeStateDict(TypedDict, total=False):

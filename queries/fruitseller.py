@@ -24,7 +24,9 @@ from queries.resources import (
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
+
 DIALOGUE_NAME = "fruitseller"
+HOTWORD_NONTERMINALS = {"QFruitStartQuery"}
 
 # The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = {"QFruitSeller"}
@@ -33,33 +35,34 @@ QUERY_NONTERMINALS = {"QFruitSeller"}
 GRAMMAR = """
 
 Query →
-    QFruitSeller '?'?
+    QFruitStartQuery > QFruitSeller
 
 QFruitSeller →
-    QFruitStartQuery
-    | QFruitQuery
-    | QFruitDateQuery
-    | QFruitInfoQuery
+    QFruitQuery '?'?
+    | QFruitDateQuery '?'?
+    | QFruitInfoQuery '?'?
 
 QFruitInfoQuery →
     "hver"? "er"? "staðan" "á"? "ávaxtapöntuninni"?
 
 QFruitStartQuery →
-    "ávöxtur" | "postur" | "póstur"
-    | "ég" "vill" "kaupa"? "ávexti"
-    | "ég" "vil" "kaupa"? "ávexti"
-    | "mig" "langar" "að" "kaupa" "ávexti" "hjá"? "þér"?
-    | "mig" "langar" "að" "panta" "ávexti" "hjá"? "þér"?
-    | "get" "ég" "keypt" "ávexti" "hjá" "þér"
+    "ávöxtur" '?'?
+    | "postur" '?'?
+    | "póstur" '?'?
+    | "ég" "vill" "kaupa"? "ávexti" '?'?
+    | "ég" "vil" "kaupa"? "ávexti" '?'?
+    | "mig" "langar" "að" "kaupa" "ávexti" "hjá"? "þér"? '?'?
+    | "mig" "langar" "að" "panta" "ávexti" "hjá"? "þér"? '?'?
+    | "get" "ég" "keypt" "ávexti" "hjá" "þér" '?'?
 
 QFruitQuery →
     QAddFruitQuery
     | QRemoveFruitQuery
     | QChangeFruitQuery
     | QFruitOptionsQuery
-    | QYes
-    | QNo
-    | QCancelOrder
+    | QFruitYes
+    | QFruitNo
+    | QFruitCancelOrder
 
 QAddFruitQuery →
     "já"? "má"? "ég"? "fá"? QFruitList
@@ -107,11 +110,11 @@ QFruitOptionsQuery →
     | "hvaða" "ávexti" "ertu" "með"
     | "hvaða" "ávextir" "eru" "í" "boði"
 
-QFruitList → QNumOfFruit QNumOfFruit*
+QFruitList → QFruitNumOfFruit QFruitNumOfFruit*
 
-QNumOfFruit → QNum? QFruit "og"?
+QFruitNumOfFruit → QFruitNum? QFruit "og"?
 
-QNum →
+QFruitNum →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
     # töl is an undeclinable number word ('sautján')
     # tala is a number ('17')
@@ -119,11 +122,11 @@ QNum →
 
 QFruit → 'banani' | 'epli' | 'pera' | 'appelsína'
 
-QYes → "já" "já"* | "endilega" | "já" "takk" | "játakk" | "já" "þakka" "þér" "fyrir" | "já" "takk" "kærlega" "fyrir"? | "jább" "takk"?
+QFruitYes → "já" "já"* | "endilega" | "já" "takk" | "játakk" | "já" "þakka" "þér" "fyrir" | "já" "takk" "kærlega" "fyrir"? | "jább" "takk"?
 
-QNo → "nei" "takk"? | "nei" "nei"* | "neitakk" | "ómögulega"
+QFruitNo → "nei" "takk"? | "nei" "nei"* | "neitakk" | "ómögulega"
 
-QCancelOrder → "ég" "hætti" "við"
+QFruitCancelOrder → "ég" "hætti" "við"
     | "ég" "vil" "hætta" "við" "pöntunina"?
     | "ég" "vill" "hætta" "við" "pöntunina"
 
@@ -234,12 +237,12 @@ def _list_items(items: Any) -> str:
 
 def QFruitStartQuery(node: Node, params: QueryStateDict, result: Result):
     result.qtype = _START_DIALOGUE_QTYPE
-    cast(QueryStateDict, result.state)["query"].dsm.hotword_activated()
+    Query.get_dsm(result).hotword_activated()
 
 
 def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
     result.qtype = "QAddFruitQuery"
-    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    dsm: DialogueStateManager = Query.get_dsm(result)
     resource: ListResource = cast(ListResource, dsm.get_resource("Fruits"))
     if resource.data is None:
         resource.data = []
@@ -260,7 +263,7 @@ def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
 
 def QRemoveFruitQuery(node: Node, params: QueryStateDict, result: Result):
     result.qtype = "QRemoveFruitQuery"
-    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    dsm: DialogueStateManager = Query.get_dsm(result)
     resource: ListResource = cast(ListResource, dsm.get_resource("Fruits"))
     result.actually_removed_something = False
     if resource.data is not None:
@@ -277,10 +280,10 @@ def QRemoveFruitQuery(node: Node, params: QueryStateDict, result: Result):
         dsm.set_resource_state(resource.name, ResourceState.PARTIALLY_FULFILLED)
 
 
-def QCancelOrder(node: Node, params: QueryStateDict, result: Result):
-    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+def QFruitCancelOrder(node: Node, params: QueryStateDict, result: Result):
+    dsm: DialogueStateManager = Query.get_dsm(result)
     dsm.set_resource_state("Final", ResourceState.CANCELLED)
-    dsm.end_dialogue()
+    dsm.finish_dialogue()
 
 
 def QFruitOptionsQuery(node: Node, params: QueryStateDict, result: Result):
@@ -289,10 +292,10 @@ def QFruitOptionsQuery(node: Node, params: QueryStateDict, result: Result):
     result.fruitOptions = True
 
 
-def QYes(node: Node, params: QueryStateDict, result: Result):
+def QFruitYes(node: Node, params: QueryStateDict, result: Result):
 
-    result.qtype = "QYes"
-    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    result.qtype = "QFruitYes"
+    dsm: DialogueStateManager = Query.get_dsm(result)
     resource = dsm.current_resource
     if (
         not resource.is_confirmed and resource.name in ("Fruits", "DateTime")
@@ -303,9 +306,9 @@ def QYes(node: Node, params: QueryStateDict, result: Result):
                 dsm.get_resource(rname).state = ResourceState.CONFIRMED
 
 
-def QNo(node: Node, params: QueryStateDict, result: Result):
-    result.qtype = "QNo"
-    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+def QFruitNo(node: Node, params: QueryStateDict, result: Result):
+    result.qtype = "QFruitNo"
+    dsm: DialogueStateManager = Query.get_dsm(result)
     resource = dsm.current_resource
     if resource.name == "Fruits" and not resource.is_confirmed:
         if resource.is_partially_fulfilled:
@@ -314,7 +317,7 @@ def QNo(node: Node, params: QueryStateDict, result: Result):
             resource.state = ResourceState.PARTIALLY_FULFILLED
 
 
-def QNumOfFruit(node: Node, params: QueryStateDict, result: Result):
+def QFruitNumOfFruit(node: Node, params: QueryStateDict, result: Result):
     if "queryfruits" not in result:
         result["queryfruits"] = []
     if "fruitnumber" not in result:
@@ -323,7 +326,7 @@ def QNumOfFruit(node: Node, params: QueryStateDict, result: Result):
         result.queryfruits.append([result.fruitnumber, result.fruit])
 
 
-def QNum(node: Node, params: QueryStateDict, result: Result):
+def QFruitNum(node: Node, params: QueryStateDict, result: Result):
     fruitnumber = int(parse_num(node, result._nominative))
     if fruitnumber is not None:
         result.fruitnumber = fruitnumber
@@ -368,7 +371,7 @@ def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
                 if m < now.month or (m == now.month and d < now.day):
                     y += 1
             result["delivery_date"] = datetime.date(day=d, month=m, year=y)
-            dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+            dsm: DialogueStateManager = Query.get_dsm(result)
             if dsm.current_resource.name == "DateTime":
                 _add_date(cast(DateResource, dsm.get_resource("Date")), dsm, result)
             return
@@ -398,7 +401,7 @@ def QFruitTime(node: Node, params: QueryStateDict, result: Result):
         hour, minute, _ = (int(i) for i in aux_str.split(", "))
         if hour in range(0, 24) and minute in range(0, 60):
             result["delivery_time"] = datetime.time(hour, minute)
-            dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+            dsm: DialogueStateManager = Query.get_dsm(result)
             if dsm.current_resource.name == "DateTime":
                 _add_time(cast(TimeResource, dsm.get_resource("Time")), dsm, result)
         else:
@@ -413,7 +416,7 @@ def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
     y, m, d, h, min, _ = (i if i != 0 else None for i in json.loads(datetimenode.aux))
     if y is None:
         y = now.year
-    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    dsm: DialogueStateManager = Query.get_dsm(result)
     if d is not None and m is not None:
         result["delivery_date"] = datetime.date(y, m, d)
         if result["delivery_date"] < now.date():

@@ -53,7 +53,7 @@ import re
 import random
 from copy import deepcopy
 from collections import defaultdict
-from queries.dialogue import DialogueStateManager as DSM
+from queries.dialogue import DialogueStateManager as DSM, ResourceNotFoundError
 
 from settings import Settings
 
@@ -75,7 +75,7 @@ from reynir.bindb import GreynirBin
 from reynir.grammar import GrammarError
 from islenska.bindb import BinFilterFunc
 
-from tree import Tree, TreeStateDict, Node
+from tree import Tree, TreeStateDict, Node, Result
 
 # from nertokenizer import recognize_entities
 from images import get_image_url
@@ -299,25 +299,43 @@ class QueryTree(Tree):
             # in this query's parse forest: don't waste more cycles on it
             return False
         dialogue_name: Optional[str] = getattr(processor, "DIALOGUE_NAME", None)
+        print("IN DIALOGUE MODULE:", dialogue_name)
         if dialogue_name:
-            # Processor uses dialogue functionality,
-            # initialize dialogue state manager
+            # This processor uses dialogue functionality,
+            # check if it wants to process this query
             hotword_nonterminals: Set[str] = getattr(
                 processor, "HOTWORD_NONTERMINALS", set()
             )
-            # TODO: ONLY FETCH DATA ONCE if dialogue_data is None:
-            # Fetch saved dialogue state
-            dialogue_data = query.client_data(DSM.DIALOGUE_DATA_KEY)
-            if self.query_nonterminals.isdisjoint(hotword_nonterminals) and (
-                dialogue_data is None or dialogue_data.get(dialogue_name) is None
-            ):
-                # Query doesn't contain dialogue hotwords
-                # and has no saved data for this dialogue
-                return False
-            query._dsm = DSM(
-                dialogue_name,
-                cast(str, dialogue_data.get(dialogue_name)) if dialogue_data else None,
+            print("HOTWORD NONTERMINALS:", hotword_nonterminals)
+            print("QUERY NONTERMINALS:", self.query_nonterminals)
+            # Dialogue modules must have at least one
+            # hotword nonterminal for activating dialogue
+            assert isinstance(hotword_nonterminals, set)
+            assert len(hotword_nonterminals) > 0
+            dialogue_data = cast(
+                Optional[str], query.all_dialogue_data.get(dialogue_name)
             )
+            print(
+                "CHECKING WHETHER PROCESSOR IS INTERESTED IN DIALOGUE:",
+                not (
+                    self.query_nonterminals.isdisjoint(hotword_nonterminals)
+                    and dialogue_data is None
+                ),
+            )
+            # Fetch saved dialogue state
+            if (
+                self.query_nonterminals.isdisjoint(hotword_nonterminals)
+                and dialogue_data is None
+            ):
+                print("NO DIALOGUE DATA AND NO HOTWORDS MATCHED")
+                # Query's parse forest doesn't contain hotwords
+                # and has no saved data for this dialogue,
+                # not interested in this query
+                return False
+            print("STARTING DSM")
+            # Query matches this dialogue processor, start DialogueStateManager
+            query.start_dsm(dialogue_name, dialogue_data)
+            print("FINISHED SETTING UP DSM")
         with self.context(session, processor, query=query) as state:
             for query_tree in self._query_trees:
                 # Is the processor interested in the root nonterminal
@@ -327,6 +345,8 @@ class QueryTree(Tree):
                     self.process_sentence(state, query_tree)
                     if query.has_answer():
                         # The processor successfully answered the query: We're done
+                        # Also save any changes to dialogue data, if needed
+                        query.update_dialogue_data()
                         return True
         return False
 
@@ -421,8 +441,9 @@ class Query:
         # Query context, which is None until fetched via self.fetch_context()
         # This should be a dict that can be represented in JSON
         self._context: Optional[ContextDict] = None
-        # Dialogue state manager, used for dialogue modules
+        # Dialogue state manager and dialogue data, used for dialogue modules
         self._dsm: Optional[DSM] = None
+        self._all_dialogue_data: Optional[ClientDataDict] = None
 
     def _preprocess_query_string(self, q: str) -> str:
         """Preprocess the query string prior to further analysis"""
@@ -657,7 +678,6 @@ class Query:
         if self._tree is None:
             self.set_error("E_QUERY_NOT_PARSED")
             return False
-        dialogue_data: Optional[ClientDataDict] = None  # For storing all dialogue data
         # Try each tree processor in turn, in priority order (highest priority first)
         for processor in self._tree_processors:
             self._error = None
@@ -670,18 +690,12 @@ class Query:
                 # Note that passing query=self here means that the
                 # "query" field of the TreeStateDict is populated,
                 # turning it into a QueryStateDict.
+                print("TRYING PROCESSOR:", processor.__name__)
                 if self._tree.process_queries(self, self._session, processor):
-                    if self._dsm is not None:
-                        # Save the dialogue state when a dialogue module query
-                        # is successfully processed
-                        self.set_client_data(
-                            DSM.DIALOGUE_DATA_KEY,
-                            cast(ClientDataDict, self._dsm.serialize_data()),
-                            update_in_place=True,
-                        )
                     # This processor found an answer, which is already stored
                     # in the Query object: return True
                     return True
+                print("FAILED PROCESSOR:", processor.__name__)
             except Exception as e:
                 logging.error(
                     f"Exception in execute_from_tree('{processor.__name__}') "
@@ -878,10 +892,39 @@ class Query:
         """Return client version string, e.g. "1.0.3" """
         return self._client_version
 
+    @staticmethod
+    def get_dsm(result: Result) -> DSM:
+        """Fetch DialogueStateManager instance from result object"""
+        dsm = cast(QueryStateDict, result.state)["query"]._dsm
+        assert dsm is not None, "get_dsm called in non-dialogue state"
+        return dsm
+
     @property
     def dsm(self) -> DSM:
-        assert self._dsm is not None
+        assert self._dsm is not None, "dsm property used in non-dialogue state"
         return self._dsm
+
+    def start_dsm(self, dialogue_name: str, dialogue_data: Optional[str]) -> None:
+        """Start a new DialogueStateManager instance"""
+        self._dsm = DSM(dialogue_name, dialogue_data)
+
+    @property
+    def all_dialogue_data(self) -> ClientDataDict:
+        if self._all_dialogue_data is None:
+            # Fetch dialogue data for the given client, or set it to an empty dict
+            self._all_dialogue_data = self.client_data(DSM.DIALOGUE_DATA_KEY) or dict()
+        return self._all_dialogue_data
+
+    def update_dialogue_data(self) -> None:
+        """Update the dialogue data for the given client if a dialogue module was used"""
+        if self._dsm is not None:
+            # Save the dialogue state when a dialogue module query
+            # is successfully processed
+            self.set_client_data(
+                DSM.DIALOGUE_DATA_KEY,
+                cast(ClientDataDict, self._dsm.serialize_data()),
+                update_in_place=True,
+            )
 
     def response(self) -> Optional[ResponseType]:
         """Return the detailed query answer"""
