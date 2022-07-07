@@ -342,7 +342,10 @@ class QueryTree(Tree):
                 # of this query tree?
                 if query_tree.string_self() in processor_query_types:
                     # Yes: hand the query tree over to the processor
-                    self.process_sentence(state, query_tree)
+                    try:
+                        self.process_sentence(state, query_tree)
+                    except ResourceNotFoundError:
+                        pass
                     if query.has_answer():
                         # The processor successfully answered the query: We're done
                         # Also save any changes to dialogue data, if needed

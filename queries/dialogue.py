@@ -216,7 +216,10 @@ class DialogueStateManager:
         return self._current_resource
 
     def get_resource(self, name: str) -> Resource:
-        return self._resources[name]
+        try:
+            return self._resources[name]
+        except KeyError:
+            raise ResourceNotFoundError(f"Resource {name} not found")
 
     @property
     def extras(self) -> Dict[str, Any]:
