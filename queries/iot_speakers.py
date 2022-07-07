@@ -110,156 +110,169 @@ GRAMMAR = read_grammar_file(
 
 
 def QIoTSpeaker(node: Node, params: QueryStateDict, result: Result) -> None:
-    print("QTYPE")
     result.qtype = _IoT_QTYPE
 
 
-def QIoTSpeakerIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "increase_volume"
-
-
-def QIoTSpeakerDecreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "decrease_volume"
-
-
-def QIoTSpeakerGroupName(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["group_name"] = result._indefinite
-
-
-def QIoTMusicWord(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.target = "music"
-    print("music")
-
-
 def QIoTSpeakerTurnOnVerb(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "play_music"
+    result.qkey = "turn_on"
 
 
-def QIoTSpeakerPauseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
-    print("PAUSE")
-    result["qkey"] = "pause_music"
+def QIoTSpeakerTurnOffVerb(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qkey = "turn_off"
 
 
 def QIoTSpeakerPlayVerb(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "play_music"
+    result.qkey = "turn_on"
+
+
+def QIoTSpeakerPauseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qkey = "turn_off"
+
+
+def QIoTSpeakerIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qkey = "increase_volume"
+
+
+def QIoTSpeakerDecreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qkey = "decrease_volume"
+
+
+def QIoTSpeakerMoreOrHigher(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qkey = "increase_volume"
+
+
+def QIoTSpeakerLessOrLower(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qkey = "decrease_volume"
+
+
+def QIoTSpeakerMusicWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.target = "music"
+
+
+def QIoTSpeakerSpeakerWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.target = "speaker"
+
+
+def QIoTSpeakerRadioWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.target = "radio"
+
+
+def QIoTSpeakerGroupName(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.group_name = result._indefinite
 
 
 def QIoTSpeakerRas1(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "Rás 1"
+    result.target = "radio"
+    result.station = "Rás 1"
 
 
 def QIoTSpeakerRas2(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "Rás 2"
+    result.target = "radio"
+    result.station = "Rás 2"
 
 
 def QIoTSpeakerRondo(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "Rondó"
+    result.target = "radio"
+    result.station = "Rondó"
 
 
 def QIoTSpeakerBylgjan(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "Bylgjan"
+    result.target = "radio"
+    result.station = "Bylgjan"
 
 
 def QIoTSpeakerFm957(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "FM957"
+    result.target = "radio"
+    result.station = "FM957"
 
 
 def QIoTSpeakerUtvarpSaga(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "Útvarp Saga"
+    result.target = "radio"
+    result.station = "Útvarp Saga"
 
 
 def QIoTSpeakerGullbylgjan(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "Gullbylgjan"
+    result.target = "radio"
+    result.station = "Gullbylgjan"
 
 
 def QIoTSpeakerLettbylgjan(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "Léttbylgjan"
+    result.target = "radio"
+    result.station = "Léttbylgjan"
 
 
 def QIoTSpeakerXid(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "X977"
+    result.target = "radio"
+    result.station = "X977"
 
 
 def QIoTSpeakerKissfm(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "KissFM"
+    result.target = "radio"
+    result.station = "KissFM"
 
 
 def QIoTSpeakerFlassback(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "Flashback"
+    result.target = "radio"
+    result.station = "Flashback"
 
 
 def QIoTSpeakerRetro(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "Retro"
+    result.target = "radio"
+    result.station = "Retro"
 
 
 def QIoTSpeakerUtvarp101(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "Útvarp 101"
+    result.target = "radio"
+    result.station = "Útvarp 101"
 
 
 def QIoTSpeakerK100(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "K100"
+    result.target = "radio"
+    result.station = "K100"
 
 
 def QIoTSpeakerIslenskaBylgjan(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "Íslenska Bylgjan"
+    result.target = "radio"
+    result.station = "Íslenska Bylgjan"
 
 
-def QIoT80sBylgjan(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "80s Bylgjan"
+def QIoTSpeaker80sBylgjan(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.target = "radio"
+    result.station = "80s Bylgjan"
 
 
 def QIoTSpeakerApparatid(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "Apparatið"
+    result.target = "radio"
+    result.station = "Apparatið"
 
 
 def QIoTSpeakerFmExtra(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "FM Extra"
+    result.target = "radio"
+    result.station = "FM Extra"
 
 
 def QIoTSpeaker70sFlashback(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "70s Flashback"
+    result.target = "radio"
+    result.station = "70s Flashback"
 
 
 def QIoTSpeaker80sFlashback(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "80s Flashback"
+    result.target = "radio"
+    result.station = "80s Flashback"
 
 
 def QIoTSpeaker90sFlashback(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "90s Flashback"
+    result.target = "radio"
+    result.station = "90s Flashback"
 
 
 def QIoTSpeakerUtvarpSudurland(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
-    result["qkey"] = "radio"
-    result["station"] = "Útvarp Suðurland"
-
-
-def QIoTSpeakerGroupName(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["group_name"] = result._indefinite
+    result.target = "radio"
+    result.station = "Útvarp Suðurland"
 
 
 def call_sonos_client(sonos_client, result):
@@ -272,13 +285,12 @@ def call_sonos_client(sonos_client, result):
     else:
         response = getattr(sonos_client, handler_func)()
         return response
-    return
 
 
 # Map of query keys to handler functions and the corresponding answer string for Embla
 _HANDLER_MAP = {
-    "play_music": ["toggle_play", "Ég kveikti á tónlist"],
-    "pause_music": ["toggle_pause", "Ég slökkti á tónlist"],
+    "turn_on": ["toggle_play", "Ég kveikti á tónlist"],
+    "turn_off": ["toggle_pause", "Ég slökkti á tónlist"],
     "increase_volume": ["increase_volume", "Ég hækkaði í tónlistinni"],
     "decrease_volume": ["decrease_volume", "Ég lækkaði í tónlistinni"],
     "radio": ["play_radio_stream", "Ég setti á útvarpstöðina"],
@@ -289,6 +301,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     print("sentence")
     q: Query = state["query"]
+    if "qkey" not in result:
+        result.qkey = "turn_on"
+    if result.qkey == "turn_on" and result.target == "radio":
+        result.qkey = "radio"
     if "qtype" in result and "qkey" in result:
         print("IF QTYPE AND QKEY")
         try:

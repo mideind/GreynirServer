@@ -1,6 +1,7 @@
 # TODO: Fix music hardcoding
 # TODO: Check whether to force determinate form
 # TODO: "Settu á útvarpið", which station to play?
+# TODO: Refactor make and let "Gerðu tónlistina hærri í hátalaranum (í eldhúsinu)"-type sentences
 
 /þgf = þgf
 /ef = ef
@@ -14,10 +15,8 @@ QIoTSpeaker →
 QIoTSpeakerQuery →
     QIoTSpeakerMakeVerb QIoTSpeakerMakeRest
     | QIoTSpeakerSetVerb QIoTSpeakerSetRest
-    # | QIoTSpeakerChangeVerb QIoTSpeakerChangeRest
     | QIoTSpeakerLetVerb QIoTSpeakerLetRest
-    | QIoTSpeakerTurnOnVerb QIoTSpeakerTurnOnRest
-    | QIoTSpeakerTurnOffVerb QIoTSpeakerTurnOffRest
+    | QIoTSpeakerTurnOnOrOffVerb QIoTSpeakerTurnOrOffOnRest
     | QIoTSpeakerPlayOrPauseVerb QIoTSpeakerPlayOrPauseRest
     | QIoTSpeakerIncreaseOrDecreaseVerb QIoTSpeakerIncreaseOrDecreaseRest
     | QIoTSpeakerRadioStationName
@@ -36,8 +35,13 @@ QIoTSpeakerChangeVerb →
 QIoTSpeakerLetVerb →
     'láta:so'_bh
 
+QIoTSpeakerTurnOnOrOffVerb ->
+    QIoTSpeakerTurnOnVerb
+    | QIoTSpeakerTurnOffVerb
+
 QIoTSpeakerTurnOnVerb →
     'kveikja:so'_bh
+    | "kveiktu"
 
 QIoTSpeakerTurnOffVerb →
     'slökkva:so'_bh
@@ -68,65 +72,33 @@ QIoTSpeakerDecreaseVerb →
     | 'minnka:so'_bh
 
 QIoTSpeakerMakeRest →
-    QIoTSpeakerMusicPhrase/þf QIoTSpeakerHvar? QIoTSpeakerComparative/nf
+    QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerComparative/nf QIoTSpeakerHvar
     | QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerHvar? QIoTSpeakerComparative/nf
-    | QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerComparative/nf QIoTSpeakerHvar?
-    # | QCHANGESubject/þf QCHANGEHvar? QCHANGEHvernigMake
-    # | QCHANGESubject/þf QCHANGEHvernigMake QCHANGEHvar?
-    # | QCHANGEHvar? QCHANGESubject/þf QCHANGEHvernigMake
-    # | QCHANGEHvar? QCHANGEHvernigMake QCHANGESubject/þf
-    # | QCHANGEHvernigMake QCHANGESubject/þf QCHANGEHvar?
-    # | QCHANGEHvernigMake QCHANGEHvar? QCHANGESubject/þf
+    | QIoTSpeakerMusicWord/þf QIoTSpeakerComparative/nf QIoTSpeakerHvarWithSpeaker
+    | QIoTSpeakerSoundWord/þf QIoTSpeakerComparative/nf QIoTSpeakerHvarWithAppliance
 
-# TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
 QIoTSpeakerSetRest →
-    QIoTSpeakerApplianceWord/þf? QIoTSpeakerAHvad QIoTSpeakerHvar?
+    QIoTSpeakerApplianceWord/þf? QIoTSpeakerAHvad QIoTSpeakerHvar
     | QIoTSpeakerApplianceWord/þf? QIoTSpeakerHvar? QIoTSpeakerAHvad
-    # QCHANGESubject/þf QCHANGEHvar? QCHANGEHvernigSet
-    # | QCHANGESubject/þf QCHANGEHvernigSet QCHANGEHvar?
-    # | QCHANGEHvar? QCHANGESubject/þf QCHANGEHvernigSet
-    # | QCHANGEHvar? QCHANGEHvernigSet QCHANGESubject/þf
-    # | QCHANGEHvernigSet QCHANGESubject/þf QCHANGEHvar?
-    # | QCHANGEHvernigSet QCHANGEHvar? QCHANGESubject/þf
-
-# QIoTSpeakerChangeRest →
-    # QCHANGESubjectOne/þgf QCHANGEHvar? QCHANGEHvernigChange
-    # | QCHANGESubjectOne/þgf QCHANGEHvernigChange QCHANGEHvar?
-    # | QCHANGEHvar? QCHANGESubjectOne/þgf QCHANGEHvernigChange
-    # | QCHANGEHvar? QCHANGEHvernigChange QCHANGESubjectOne/þgf
-    # | QCHANGEHvernigChange QCHANGESubjectOne/þgf QCHANGEHvar?
-    # | QCHANGEHvernigChange QCHANGEHvar? QCHANGESubjectOne/þgf
 
 QIoTSpeakerLetRest →
-    QIoTSpeakerBeOrBecome QIoTSpeakerMusicWord/nf QIoTSpeakerHvar?
-    | QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerHvar? QIoTSpeakerBeOrBecome QIoTSpeakerComparative/nf
+    QIoTSpeakerBeOrBecome QIoTSpeakerMusicWord/nf QIoTSpeakerHvarWithSpeaker?
+    | QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerHvar QIoTSpeakerBeOrBecome QIoTSpeakerComparative/nf
     | QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerBeOrBecome QIoTSpeakerComparative/nf QIoTSpeakerHvar?
+    | QIoTSpeakerMusicWord/þf QIoTSpeakerBeOrBecome QIoTSpeakerComparative/nf QIoTSpeakerHvarWithSpeaker
+    | QIoTSpeakerSoundWord/þf QIoTSpeakerBeOrBecome QIoTSpeakerComparative/nf QIoTSpeakerHvarWithAppliance
 
-# TODO: Find out why they conjugate this incorrectly "tónlist" is in þgf here, not þf
-QIoTSpeakerTurnOnRest →
-    QIoTSpeakerAHverju QIoTSpeakerHvar?
-    # | QCHANGEHvar? QCHANGEAHverju
+QIoTSpeakerTurnOrOffOnRest →
+    QIoTSpeakerAHverju QIoTSpeakerHvarWithSpeaker?
 
-# Would be good to add "slökktu á rauða litnum" functionality
-QIoTSpeakerTurnOffRest →
-    # QCHANGETurnOffLightsRest
-    "á" QIoTSpeakerMusicWord/þgf QIoTSpeakerHvar?
+QIoTSpeakerPlayOrPauseRest →
+    QIoTSpeakerMusicWord/þf QIoTSpeakerHvarWithSpeaker?
+    | QIoTSpeakerNewRadio/þf? QIoTSpeakerHvarWithSpeaker?
 
-QIoTSpeakerPlayO →
-    QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
-    | QIoTSpeakerNewRadio/þf? QIoTSpeakerHvar?
-
-# TODO: Make the subject categorization cleaner
 QIoTSpeakerIncreaseOrDecreaseRest →
-    # QCHANGELightSubject/þf QCHANGEHvar?
-    # | QCHANGEBrightnessSubject/þf QCHANGEHvar?
-    QIoTSpeakerMusicWord/þf QIoTSpeakerHvar?
-    | QIoTSpeakerSoundPhrase/þf QIoTSpeakerHvar?
+    QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerHvar?
     | "í" QIoTSpeakerMusicOrApplianceWord/þgf QIoTSpeakerHvar?
-
-# Increase specificity
-# QIoTSpeakerMusicWord →
-#     'tónlist'
+    | "í" QIoTSpeakerRadioStationName QIoTSpeakerHvar?
 
 QIoTSpeakerComparative/fall →
     QIoTSpeakerMoreOrHigher/fall
@@ -140,6 +112,7 @@ QIoTSpeakerAHvad →
 QIoTSpeakerAHverju →
     "á" QIoTSpeakerMusicOrApplianceWord/þgf
     | "á" QIoTSpeakerNewRadio/þgf
+    | "á" QIoTSpeakerMusicOrRadioWord/þgf "í" QIoTSpeakerSpeakerWord/þgf
 
 QIoTSpeakerNewSetting/fall →
     QIoTSpeakerNewRadio/fall
@@ -148,8 +121,6 @@ QIoTSpeakerNewSetting/fall →
 
 QIoTSpeakerNewRadio/fall →
     QIoTSpeakerRadioStationWord/fall? QIoTSpeakerRadioStationName
-    # | QIoTSpeakerRadioStationWord/fall? "bylgjunni"
-    # | QIoTSpeakerRadioStationWord/fall? QIoTSpeakerRadioStationNameIndeclinable    
 
 QIoTSpeakerNewPlay/fall →
     "play"
@@ -157,8 +128,8 @@ QIoTSpeakerNewPlay/fall →
     | "pley"
 
 QIoTSpeakerNewPause/fall →
-    'pása:no'/fall
-    | 'stopp:no'/fall
+    'pása'/fall
+    | 'stopp'/fall
 
 QIoTSpeakerMusicOrSoundPhrase/fall →
     QIoTSpeakerMusicPhrase/fall
@@ -169,10 +140,10 @@ QIoTSpeakerMusicPhrase/fall →
     | QIoTSpeakerMusicWord/fall "í" QIoTSpeakerApplianceWord/þgf
 
 QIoTSpeakerSoundPhrase/fall →
-    QIoTSpeakerVolumeOrNoiseWord/fall? QIoTSpeakerMusicOrApplianceWord/ef?
-    | QIoTSpeakerVolumeOrNoiseWord/fall "í" QIoTSpeakerMusicOrApplianceWord/þgf?
+    QIoTSpeakerSoundWord/fall? QIoTSpeakerMusicOrApplianceWord/ef?
+    | QIoTSpeakerSoundWord/fall "í" QIoTSpeakerMusicOrApplianceWord/þgf?
 
-QIoTSpeakerVolumeOrNoiseWord/fall →
+QIoTSpeakerSoundWord/fall →
     QIoTSpeakerVolumeWord/fall
     | QIoTSpeakerNoiseWord/fall
 
@@ -181,18 +152,18 @@ QIoTSpeakerMusicOrApplianceWord/fall →
     | QIoTSpeakerApplianceWord/fall
 
 QIoTSpeakerRadioStationWord/fall →
-    'útvarpsstöð:no'/fall
+    'útvarpsstöð'/fall
 
 QIoTSpeakerMusicWord/fall →
     'tónlist'/fall
 
 QIoTSpeakerVolumeWord/fall →
-    'hljóð:no'/fall
-    | 'hljóðstyrkur:no'/fall
+    'hljóð'/fall
+    | 'hljóðstyrkur'/fall
 
 QIoTSpeakerNoiseWord/fall →
-    'læti:no'/fall
-    | 'hávaði:no'/fall
+    'læti'/fall
+    | 'hávaði'/fall
 
 QIoTSpeakerApplianceWord/fall →
     QIoTSpeakerSpeakerWord/fall
@@ -203,10 +174,10 @@ QIoTSpeakerMusicOrRadioWord/fall →
     | QIoTSpeakerRadioWord/fall
 
 QIoTSpeakerSpeakerWord/fall →
-    'hátalari:no'/fall
+    'hátalari'/fall
 
 QIoTSpeakerRadioWord/fall →
-    'útvarp:no'/fall
+    'útvarp'/fall
 
 QIoTSpeakerMoreOrHigher/fall →
     'mikill:lo'_mst/fall
@@ -218,8 +189,17 @@ QIoTSpeakerLessOrLower/fall →
     | 'dimmur:lo'_mst/fall
     | 'lágur:lo'_mst/fall
 
+QIoTSpeakerHvarWithAppliance →
+    "í" QIoTSpeakerApplianceWord/þgf QIoTSpeakerHvar
+    > QIoTSpeakerHvar
+
+QIoTSpeakerHvarWithSpeaker ->
+    "í" QIoTSpeakerSpeakerWord/þgf QIoTSpeakerHvar
+    > QIoTSpeakerHvar
+
 QIoTSpeakerHvar →
     QIoTSpeakerLocationPreposition QIoTSpeakerGroupName/þgf
+    > QIoTSpeakerAllGroups
 
 QIoTSpeakerLocationPreposition →
     QIoTSpeakerLocationPrepositionFirstPart? QIoTSpeakerLocationPrepositionSecondPart
@@ -240,6 +220,20 @@ QIoTSpeakerLocationPrepositionSecondPart →
 QIoTSpeakerGroupName/fall →
     no/fall
     | sérnafn/fall
+
+QIoTSpeakerAllGroups ->
+    QIoTSpeakerLocationPreposition QIoTSpeakerHouse/þgf
+    | QIoTSpeakerEverywhere 
+
+QIoTSpeakerHouse/fall ->
+    'allur:fn'_et_hk/fall? 'hús'_et/fall
+
+QIoTSpeakerEverywhere ->
+    "alls_staðar"
+    | "alstaðar"
+    | "allstaðar"
+    | "allsstaðar"
+    | "alsstaðar"
 
 QIoTSpeakerBeOrBecome →
     QIoTSpeakerBe
@@ -270,7 +264,7 @@ QIoTSpeakerRadioStationName →
     | QIoTSpeakerApparatid
     | QIoTSpeakerFmExtra
     | QIoTSpeakerUtvarpSudurland
-    | QIoTSpeakerFlashback
+    | QIoTSpeakerFlashbackWord
     | QIoTSpeaker70sFlashback
     | QIoTSpeaker80sFlashback
     | QIoTSpeaker90sFlashback
@@ -414,13 +408,18 @@ QIoTSpeakerUtvarpSudurland →
     | "útvarps"? "suðurlands"
 
 QIoTSpeaker70sFlashback →
-    QIoTSpeaker70s "flassbakk"
+    QIoTSpeaker70s QIoTSpeakerFlashbackWord
 
 QIoTSpeaker80sFlashback →
-    QIoTSpeaker80s "flassbakk"
+    QIoTSpeaker80s QIoTSpeakerFlashbackWord
 
 QIoTSpeaker90sFlashback →
-    QIoTSpeaker90s "flassbakk"
+    QIoTSpeaker90s QIoTSpeakerFlashbackWord
+
+QIoTSpeakerFlashbackWord ->
+    "flassbakk"
+    | "flass" "bakk"
+    | "bakk"
 
 QIoTSpeaker70s →
     "seventís"
@@ -428,10 +427,18 @@ QIoTSpeaker70s →
 
 QIoTSpeaker80s →
     "eitís"
+    | "Eydís"
     | "eydís"
+    | "Eidís"
     | "eidís"
     | "eighties"
 
 QIoTSpeaker90s →
     "næntís"
     | "nineties"
+
+# Hotwords to block other similarly phrased query modules from catching queries belonging to iot_speakers
+QIoTSpeakerHotwords/fall ->
+    QIoTSpeakerMusicOrApplianceWord/fall
+    | QIoTSpeakerSoundWord/fall
+    | QIoTSpeakerRadioStationName
