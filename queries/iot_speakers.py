@@ -277,8 +277,8 @@ def call_sonos_client(sonos_client, result):
 
 # Map of query keys to handler functions and the corresponding answer string for Embla
 _HANDLER_MAP = {
-    "play_music": ["toggle_play_pause", "Ég kveikti á tónlist"],
-    "pause_music": ["toggle_play_pause", "Ég slökkti á tónlist"],
+    "play_music": ["toggle_play", "Ég kveikti á tónlist"],
+    "pause_music": ["toggle_pause", "Ég slökkti á tónlist"],
     "increase_volume": ["increase_volume", "Ég hækkaði í tónlistinni"],
     "decrease_volume": ["decrease_volume", "Ég lækkaði í tónlistinni"],
     "radio": ["play_radio_stream", "Ég setti á útvarpstöðina"],

@@ -431,14 +431,37 @@ class SonosClient:
             return "Group not found"
         print(response.get("text"))
 
-    def toggle_play_pause(self):
+    def toggle_play(self):
         """
         Toggles play/pause of a group
         """
         print("toggle playpause")
         group_id = self._get_group_id()
         print("exited group_id")
-        url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/togglePlayPause"
+        url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/play"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self._access_token}",
+        }
+
+        # response = requests.request("POST", url, headers=headers, data=payload)
+        response = post_to_json_api(url, headers=headers)
+        print("response :", response)
+        if response is None:
+            return "Group not found"
+
+        return response
+
+    def toggle_pause(self):
+        """
+        Toggles play/pause of a group
+        """
+        print("toggle playpause")
+        group_id = self._get_group_id()
+        print("exited group_id")
+        url = (
+            f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/pause"
+        )
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self._access_token}",
