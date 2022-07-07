@@ -1039,7 +1039,7 @@ def QTheaterShowSeats(node: Node, params: QueryStateDict, result: Result) -> Non
 
 
 def QTheaterGeneralOptions(node: Node, params: QueryStateDict, result: Result) -> None:
-    # result.options_info = True
+    result.options_info = True
     dsm: DialogueStateManager = Query.get_dsm(result)
     resource = dsm.current_resource
     if resource.name == "Show":
@@ -1055,7 +1055,10 @@ def QTheaterGeneralOptions(node: Node, params: QueryStateDict, result: Result) -
 def QTheaterShowOptions(node: Node, params: QueryStateDict, result: Result) -> None:
     # result.show_options = True
     dsm: DialogueStateManager = Query.get_dsm(result)
-    resource = dsm.current_resource
+    if result.get("options_info"):
+        resource = dsm.current_resource
+    else:
+        resource = dsm.get_resource("Show")
     if resource.name == "Show":
         shows: list[str] = []
         for show in _SHOWS:
@@ -1071,7 +1074,10 @@ def QTheaterShowOptions(node: Node, params: QueryStateDict, result: Result) -> N
 def QTheaterDateOptions(node: Node, params: QueryStateDict, result: Result) -> None:
     # result.date_options = True
     dsm: DialogueStateManager = Query.get_dsm(result)
-    resource = dsm.current_resource
+    if result.get("options_info"):
+        resource = dsm.current_resource
+    else:
+        resource = dsm.get_resource("ShowDateTime")
     if resource.name == "ShowDateTime":
         title = dsm.get_resource("Show").data[0]
         dates: list[str] = []
@@ -1138,7 +1144,10 @@ def QTheaterDateOptions(node: Node, params: QueryStateDict, result: Result) -> N
 def QTheaterRowOptions(node: Node, params: QueryStateDict, result: Result) -> None:
     # result.row_options = True
     dsm: DialogueStateManager = Query.get_dsm(result)
-    resource = dsm.current_resource
+    if result.get("options_info"):
+        resource = dsm.current_resource
+    else:
+        resource = dsm.get_resource("ShowSeatRow")
     if resource.name == "ShowSeatRow":
         title: str = dsm.get_resource("Show").data[0]
         seats: int = dsm.get_resource("ShowSeatCount").data
@@ -1175,7 +1184,10 @@ def QTheaterRowOptions(node: Node, params: QueryStateDict, result: Result) -> No
 def QTheaterSeatOptions(node: Node, params: QueryStateDict, result: Result) -> None:
     result.seat_options = True
     dsm: DialogueStateManager = Query.get_dsm(result)
-    resource = dsm.current_resource
+    if result.get("options_info"):
+        resource = dsm.current_resource
+    else:
+        resource = dsm.get_resource("ShowSeatNumber")
     if resource.name == "ShowSeatNumber":
         title: str = dsm.get_resource("Show").data[0]
         chosen_row: int = dsm.get_resource("ShowSeatRow").data[0]
@@ -1272,13 +1284,12 @@ def QTheaterStatus(node: Node, params: QueryStateDict, result: Result):
     # TODO: Handle QTheaterStatus again with dsm in query
     result.qtype = "QTheaterStatus"
     dsm: DialogueStateManager = Query.get_dsm(result)
-    dsm.set_answer(
-        gen_answer(
-            "Leikhúsmiðapöntunin þín gengur bara vel. {0}".format(
-                dsm.get_answer(_ANSWERING_FUNCTIONS, result)
-            )
-        )
-    )
+    at = dsm.get_answer(_ANSWERING_FUNCTIONS, result)
+    if at:
+        (_, ans, voice) = at
+        ans = "Leikhúsmiðapöntunin þín gengur bara vel. " + ans
+        voice = "Leikhúsmiðapöntunin þín gengur bara vel. " + voice
+        dsm.set_answer((dict(answer=ans), ans, voice))
 
 
 # SHOW_URL = "https://leikhusid.is/wp-json/shows/v1/categories/938"
