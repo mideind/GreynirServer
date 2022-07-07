@@ -35,6 +35,7 @@ from queries import AnswerTuple, gen_answer, natlang_seq, parse_num, query_json_
 from queries.num import number_to_text, numbers_to_ordinal
 from queries.resources import (
     DateResource,
+    FinalResource,
     ListResource,
     NumberResource,
     Resource,
@@ -662,7 +663,7 @@ def _generate_seat_number_answer(
 
 
 def _generate_final_answer(
-    resource: ListResource, dsm: DialogueStateManager, result: Result
+    resource: FinalResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
     if resource.is_cancelled:
         return gen_answer(resource.prompts["cancelled"])
@@ -1033,7 +1034,7 @@ def QNum(node: Node, params: QueryStateDict, result: Result):
 
 def QCancel(node: Node, params: QueryStateDict, result: Result):
     dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
-    dsm.set_resource_state(dsm.get_resource("Final").name, ResourceState.CANCELLED)
+    dsm.set_resource_state("Final", ResourceState.CANCELLED)
     dsm.end_dialogue()
 
     result.qtype = "QCancel"
@@ -1078,7 +1079,7 @@ def QNo(node: Node, params: QueryStateDict, result: Result):
         dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
         if isinstance(resource, WrapperResource):
             for rname in resource.requires:
-                dsm.get_resource(rname).state = ResourceState.UNFULFILLED
+                dsm.set_resource_state(rname, ResourceState.UNFULFILLED)
 
 
 def QStatus(node: Node, params: QueryStateDict, result: Result):

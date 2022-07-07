@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, Optional, cast
+from typing import Any, List, Optional, cast
 import json
 import logging
 import datetime
@@ -9,13 +9,16 @@ from reynir import NounPhrase
 from queries import gen_answer, AnswerTuple, parse_num, natlang_seq, sing_or_plur
 from queries.dialogue import (
     AnsweringFunctionMap,
+    DialogueStateManager,
+)
+from queries.resources import (
     DateResource,
-    FinalResource,
     ListResource,
     Resource,
     ResourceState,
-    DialogueStateManager,
     TimeResource,
+    FinalResource,
+    WrapperResource,
 )
 
 # Indicate that this module wants to handle parse trees for queries,
@@ -146,9 +149,8 @@ _DIALOGUE_NAME = "fruitseller"
 
 
 def _generate_fruit_answer(
-    resource: ListResource, dsm: DialogueStateManager
+    resource: ListResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
-    result = dsm.get_result()
     if result.get("fruitsEmpty"):
         return gen_answer(resource.prompts["empty"])
     if result.get("fruitOptions"):
@@ -172,7 +174,7 @@ def _generate_fruit_answer(
 
 
 def _generate_datetime_answer(
-    resource: Resource, dsm: DialogueStateManager
+    resource: Resource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
     ans: Optional[str] = None
     date_resource: DateResource = cast(DateResource, dsm.get_resource("Date"))
@@ -202,13 +204,13 @@ def _generate_datetime_answer(
 
 
 def _generate_final_answer(
-    resource: FinalResource, dsm: DialogueStateManager
+    resource: FinalResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
     ans: Optional[str] = None
     if resource.is_cancelled:
         return gen_answer(resource.prompts["cancelled"])
 
-    resource.state = ResourceState.CONFIRMED
+    dsm.set_resource_state(resource.name, ResourceState.CONFIRMED)
     date_resource = dsm.get_resource("Date")
     time_resource = dsm.get_resource("Time")
     ans = resource.prompts["final"].format(
@@ -235,65 +237,49 @@ def QFruitStartQuery(node: Node, params: QueryStateDict, result: Result):
 
 
 def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
-    def _add_fruit(
-        resource: Resource, dsm: DialogueStateManager, result: Result
-    ) -> None:
-        if resource.data is None:
-            resource.data = []
-        query_fruit_index = 0
-        while query_fruit_index < len(result.queryfruits):
-            (number, name) = result.queryfruits[query_fruit_index]
-            added = False
-            for index, (fruit_number, fruit_name) in enumerate(resource.data):
-                if fruit_name == name:
-                    resource.data[index] = (number + fruit_number, name)
-                    added = True
-                    break
-            if not added:
-                resource.data.append((number, name))
-            query_fruit_index += 1
-        resource.state = ResourceState.PARTIALLY_FULFILLED
-
     result.qtype = "QAddFruitQuery"
-    DialogueStateManager.add_callback(result, lambda r: r.name == "Fruits", _add_fruit)
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    resource: ListResource = cast(ListResource, dsm.get_resource("Fruits"))
+    if resource.data is None:
+        resource.data = []
+    query_fruit_index = 0
+    while query_fruit_index < len(result.queryfruits):
+        (number, name) = result.queryfruits[query_fruit_index]
+        added = False
+        for index, (fruit_number, fruit_name) in enumerate(resource.data):
+            if fruit_name == name:
+                resource.data[index] = (number + fruit_number, name)
+                added = True
+                break
+        if not added:
+            resource.data.append((number, name))
+        query_fruit_index += 1
+    dsm.set_resource_state(resource.name, ResourceState.PARTIALLY_FULFILLED)
 
 
 def QRemoveFruitQuery(node: Node, params: QueryStateDict, result: Result):
-    def _remove_fruit(
-        resource: Resource, dsm: DialogueStateManager, result: Result
-    ) -> None:
-        result.actually_removed_something = False
-        if resource.data is not None:
-            for _, fruitname in result.queryfruits:
-                for number, name in resource.data:
-                    if name == fruitname:
-                        resource.data.remove([number, name])
-                        result.actually_removed_something = True
-                        break
-        if len(resource.data) == 0:
-            resource.state = ResourceState.UNFULFILLED
-            result.fruitsEmpty = True
-        else:
-            resource.state = ResourceState.PARTIALLY_FULFILLED
-
     result.qtype = "QRemoveFruitQuery"
-    DialogueStateManager.add_callback(
-        result, lambda r: r.name == "Fruits", _remove_fruit
-    )
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    resource: ListResource = cast(ListResource, dsm.get_resource("Fruits"))
+    result.actually_removed_something = False
+    if resource.data is not None:
+        for _, fruitname in result.queryfruits:
+            for number, name in resource.data:
+                if name == fruitname:
+                    resource.data.remove([number, name])
+                    result.actually_removed_something = True
+                    break
+    if len(resource.data) == 0:
+        dsm.set_resource_state(resource.name, ResourceState.UNFULFILLED)
+        result.fruitsEmpty = True
+    else:
+        dsm.set_resource_state(resource.name, ResourceState.PARTIALLY_FULFILLED)
 
 
 def QCancelOrder(node: Node, params: QueryStateDict, result: Result):
-    def _cancel_order(
-        resource: Resource, dsm: DialogueStateManager, result: Result
-    ) -> None:
-        resource.state = ResourceState.CANCELLED
-        dsm.end_dialogue()
-
-    result.qtype = "QCancelOrder"
-    result.answer_key = ("Final", "cancelled")
-    DialogueStateManager.add_callback(
-        result, lambda r: r.name == "Final", _cancel_order
-    )
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    dsm.set_resource_state("Final", ResourceState.CANCELLED)
+    dsm.end_dialogue()
 
 
 def QFruitOptionsQuery(node: Node, params: QueryStateDict, result: Result):
@@ -303,38 +289,28 @@ def QFruitOptionsQuery(node: Node, params: QueryStateDict, result: Result):
 
 
 def QYes(node: Node, params: QueryStateDict, result: Result):
-    def _parse_yes(
-        resource: Resource, dsm: DialogueStateManager, result: Result
-    ) -> None:
-        if "yes_used" not in result and resource.is_fulfilled:
-            resource.state = ResourceState.CONFIRMED
-            result.yes_used = True
-            if resource.name == "DateTime":
-                for rname in resource.requires:
-                    dsm.get_resource(rname).state = ResourceState.CONFIRMED
 
     result.qtype = "QYes"
-    DialogueStateManager.add_callback(
-        result,
-        lambda r: r.name in ("Fruits", "DateTime") and not r.is_confirmed,
-        _parse_yes,
-    )
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    resource = dsm.current_resource
+    if (
+        not resource.is_confirmed and resource.name in ("Fruits", "DateTime")
+    ) and resource.is_fulfilled:
+        dsm.set_resource_state(resource.name, ResourceState.CONFIRMED)
+        if isinstance(resource, WrapperResource):
+            for rname in resource.requires:
+                dsm.get_resource(rname).state = ResourceState.CONFIRMED
 
 
 def QNo(node: Node, params: QueryStateDict, result: Result):
-    def _parse_no(
-        resource: Resource, dsm: DialogueStateManager, result: Result
-    ) -> None:
-        if resource.name == "Fruits":
-            if resource.is_partially_fulfilled:
-                resource.state = ResourceState.FULFILLED
-            elif resource.is_fulfilled:
-                resource.state = ResourceState.PARTIALLY_FULFILLED
-
     result.qtype = "QNo"
-    DialogueStateManager.add_callback(
-        result, lambda r: r.name == "Fruits" and not r.is_confirmed, _parse_no
-    )
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+    resource = dsm.current_resource
+    if resource.name == "Fruits" and not resource.is_confirmed:
+        if resource.is_partially_fulfilled:
+            resource.state = ResourceState.FULFILLED
+        elif resource.is_fulfilled:
+            resource.state = ResourceState.PARTIALLY_FULFILLED
 
 
 def QNumOfFruit(node: Node, params: QueryStateDict, result: Result):
@@ -360,7 +336,7 @@ def QFruit(node: Node, params: QueryStateDict, result: Result):
         result.fruit = fruit
 
 
-def _date_callback(
+def _add_date(
     resource: DateResource, dsm: DialogueStateManager, result: Result
 ) -> None:
     if dsm.get_resource("Fruits").is_confirmed:
@@ -372,8 +348,6 @@ def _date_callback(
             datetime_resource.state = ResourceState.FULFILLED
         else:
             datetime_resource.state = ResourceState.PARTIALLY_FULFILLED
-    else:
-        dsm.set_error()
 
 
 def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -393,15 +367,14 @@ def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
                 if m < now.month or (m == now.month and d < now.day):
                     y += 1
             result["delivery_date"] = datetime.date(day=d, month=m, year=y)
-
-            DialogueStateManager.add_callback(
-                result, lambda r: r.name == "Date", _date_callback
-            )
+            dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+            if dsm.current_resource.name == "DateTime":
+                _add_date(cast(DateResource, dsm.get_resource("Date")), dsm, result)
             return
     raise ValueError("No date in {0}".format(str(datenode)))
 
 
-def _time_callback(
+def _add_time(
     resource: TimeResource, dsm: DialogueStateManager, result: Result
 ) -> None:
     if dsm.get_resource("Fruits").is_confirmed:
@@ -413,8 +386,6 @@ def _time_callback(
             datetime_resource.state = ResourceState.FULFILLED
         else:
             datetime_resource.state = ResourceState.PARTIALLY_FULFILLED
-    else:
-        dsm.set_error()
 
 
 def QFruitTime(node: Node, params: QueryStateDict, result: Result):
@@ -426,10 +397,9 @@ def QFruitTime(node: Node, params: QueryStateDict, result: Result):
         hour, minute, _ = (int(i) for i in aux_str.split(", "))
         if hour in range(0, 24) and minute in range(0, 60):
             result["delivery_time"] = datetime.time(hour, minute)
-
-            DialogueStateManager.add_callback(
-                result, lambda r: r.name == "Time", _time_callback
-            )
+            dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
+            if dsm.current_resource.name == "DateTime":
+                _add_time(cast(TimeResource, dsm.get_resource("Time")), dsm, result)
         else:
             result["parse_error"] = True
 
@@ -442,19 +412,18 @@ def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
     y, m, d, h, min, _ = (i if i != 0 else None for i in json.loads(datetimenode.aux))
     if y is None:
         y = now.year
+    dsm: DialogueStateManager = cast(QueryStateDict, result.state)["query"].dsm
     if d is not None and m is not None:
         result["delivery_date"] = datetime.date(y, m, d)
         if result["delivery_date"] < now.date():
             result["delivery_date"].year += 1
-        DialogueStateManager.add_callback(
-            result, lambda r: r.name == "Date", _date_callback
-        )
+        if dsm.current_resource.name == "DateTime":
+            _add_date(cast(DateResource, dsm.get_resource("Date")), dsm, result)
 
     if h is not None and min is not None:
         result["delivery_time"] = datetime.time(h, min)
-        DialogueStateManager.add_callback(
-            result, lambda r: r.name == "Time", _time_callback
-        )
+        if dsm.current_resource.name == "DateTime":
+            _add_time(cast(TimeResource, dsm.get_resource("Time")), dsm, result)
 
 
 def QFruitInfoQuery(node: Node, params: QueryStateDict, result: Result):
@@ -471,30 +440,29 @@ _ANSWERING_FUNCTIONS: AnsweringFunctionMap = {
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
-    dsm = q._dsm
+    dsm: DialogueStateManager = q.dsm
 
-    if dsm.not_in_dialogue() or result.get("parse_error"):
+    if dsm.not_in_dialogue():
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
     # Successfully matched a query type
     try:
-        dsm.setup_dialogue(_ANSWERING_FUNCTIONS)
-        if result.qtype == "QFruitInfo":
-            # Example info handling functionality
-            # ans = "Ávaxtapöntunin þín er bara flott. "
-            # f = dsm.get_resource("Fruits")
-            # ans += str(f.data)
-            ans = dsm.get_answer()
-            if not ans:
-                print("No answer generated")
-                q.set_error("E_QUERY_NOT_UNDERSTOOD")
-                return
+        # if result.qtype == "QFruitInfo":
+        #     # Example info handling functionality
+        #     # ans = "Ávaxtapöntunin þín er bara flott. "
+        #     # f = dsm.get_resource("Fruits")
+        #     # ans += str(f.data)
+        #     ans = dsm.get_answer()
+        #     if not ans:
+        #         print("No answer generated")
+        #         q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        #         return
 
-            q.set_answer(*ans)
-            return
+        #     q.set_answer(*ans)
+        #     return
 
-        ans = dsm.get_answer()
+        ans = dsm.get_answer(_ANSWERING_FUNCTIONS, result)
         if not ans:
             print("No answer generated")
             q.set_error("E_QUERY_NOT_UNDERSTOOD")
