@@ -130,7 +130,7 @@ def QIoTSpeakerPauseVerb(node: Node, params: QueryStateDict, result: Result) -> 
 
 
 def QIoTSpeakerSkipVerb(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qkey = "fast_forward"
+    result.qkey = "next_song"
 
 
 def QIoTSpeakerNewPlay(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -142,11 +142,11 @@ def QIoTSpeakerNewPause(node: Node, params: QueryStateDict, result: Result) -> N
 
 
 def QIoTSpeakerNewNext(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qkey = "fast_forward"
+    result.qkey = "next_song"
 
 
 def QIoTSpeakerNewPrevious(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qkey = "rewind"
+    result.qkey = "prev_song"
 
 
 def QIoTSpeakerIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -341,6 +341,16 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                         sonos_client.play_radio_stream,
                         [radio_url],
                         "Ég setti á útvarpstöðina",
+                    ],
+                    "next_song": [
+                        sonos_client.next_song,
+                        [],
+                        "Ég hötta á næsta tón",
+                    ],
+                    "prev_song": [
+                        sonos_client.prev_song,
+                        [],
+                        "Ég hötta á fyrri tón",
                     ],
                 }
                 handler, args, answer = handler_map.get(result.qkey)
