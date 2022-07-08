@@ -71,5 +71,6 @@ type = "FinalResource"
 requires = ["ShowSeatNumber"]
 prompts.final = "Þú bókaðir sæti {seats} í röð {row} fyrir sýninguna {show} {date_time}."
 prompts.cancelled = "Móttekið, hætti við leikhús pöntunina."
+prompts.timed_out = "Leikhúsmiðapöntunin þín rann út á tíma. Vinsamlegast byrjaðu aftur."
 
 # TODO: Add a resource for the payment method

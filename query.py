@@ -336,6 +336,13 @@ class QueryTree(Tree):
             # Query matches this dialogue processor, start DialogueStateManager
             query.start_dsm(dialogue_name, dialogue_data)
             print("FINISHED SETTING UP DSM")
+            # TODO: if dialogue is timed_out, set query answer and return True
+            if query.dsm.timed_out:
+                print("TIMED OUT")
+                timed_out_ans = query.dsm.get_resource("Final").prompts["timed_out"]
+                ans = (dict(answer=timed_out_ans), timed_out_ans, timed_out_ans)
+                query.set_answer(*ans)
+                return True
         with self.context(session, processor, query=query) as state:
             for query_tree in self._query_trees:
                 # Is the processor interested in the root nonterminal

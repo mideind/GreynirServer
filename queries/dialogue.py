@@ -9,7 +9,7 @@ from typing import (
     TypeVar,
     cast,
 )
-from typing_extensions import TypedDict
+from typing_extensions import TypedDict, NotRequired
 
 import os.path
 import json
@@ -38,7 +38,7 @@ from queries.resources import (
 # TODO: Add try-except blocks where appropriate
 
 _TOML_FOLDER_NAME = "dialogues"
-_EXPIRATION_TIME = 30 * 60  # a dialogue expires after 30 minutes
+_DEFAULT_EXPIRATION_TIME = 30 * 60  # a dialogue expires after 30 minutes
 _FINAL_RESOURCE_NAME = "Final"
 
 # Generic resource type
@@ -76,6 +76,7 @@ class DialogueTOMLStructure(TypedDict):
     """Structure of a dialogue TOML file."""
 
     resources: List[Dict[str, Any]]
+    expiration_time: NotRequired[int]
 
 
 # Keys for accessing saved client data for dialogues
@@ -117,19 +118,16 @@ class DialogueStateManager:
         self._saved_state: Optional[DialogueDBStructure] = None
         # Whether this dialogue is finished (successful/cancelled) or not
         self._finished: bool = False
+        self._expiration_time: int = _DEFAULT_EXPIRATION_TIME
+        self._timed_out: bool = False
 
         if isinstance(saved_state, str):
             self._saved_state = cast(
                 DialogueDBStructure, json.loads(saved_state, cls=DialogueJSONDecoder)
             )
-            time_from_last_interaction = (
-                datetime.datetime.now() - self._saved_state[_MODIFIED_KEY]
-            )
+
             # Check that we have saved data for this dialogue and that it is not expired
-            if (
-                self._saved_state[_RESOURCES_KEY]
-                and time_from_last_interaction.total_seconds() < _EXPIRATION_TIME
-            ):
+            if self._saved_state[_RESOURCES_KEY]:
                 self._in_this_dialogue = True
                 self.setup_resources()
             # TODO: IF EXPIRED DO SOMETHING
@@ -140,6 +138,13 @@ class DialogueStateManager:
         """
         # Fetch empty resources from TOML
         self._initialize_resources(self._dialogue_name)
+        if self._saved_state:
+            time_from_last_interaction = (
+                datetime.datetime.now() - self._saved_state[_MODIFIED_KEY]
+            )
+            if time_from_last_interaction.total_seconds() >= _DEFAULT_EXPIRATION_TIME:
+                self._timed_out = True
+                return
         # Update empty resources with data from database
         for rname, resource in self._resources.items():
             if self._saved_state and rname in self._saved_state["resources"]:
@@ -192,6 +197,7 @@ class DialogueStateManager:
             self._resources[resource["name"]] = RESOURCE_MAP[resource["type"]](
                 **resource, order_index=i
             )
+        self._expiration_time = obj.get("expiration_time", _DEFAULT_EXPIRATION_TIME)
 
     def hotword_activated(self) -> None:
         self._in_this_dialogue = True
@@ -224,6 +230,10 @@ class DialogueStateManager:
     @property
     def extras(self) -> Dict[str, Any]:
         return self._extras
+
+    @property
+    def timed_out(self) -> bool:
+        return self._timed_out
 
     def get_answer(
         self, answering_functions: AnsweringFunctionMap, result: Any
