@@ -275,28 +275,6 @@ def QIoTSpeakerUtvarpSudurland(
     result.station = "Útvarp Suðurland"
 
 
-def call_sonos_client(sonos_client, result):
-    """Call the appropriate function in the SonosClient based on the result"""
-    handler_func = _HANDLER_MAP[result.qkey][0]
-    if result.get("station") is not None:
-        radio_url = _RADIO_STREAMS.get(f"{result.station}")
-        response = getattr(sonos_client, handler_func)(radio_url)
-        return response
-    else:
-        response = getattr(sonos_client, handler_func)()
-        return response
-
-
-# Map of query keys to handler functions and the corresponding answer string for Embla
-_HANDLER_MAP = {
-    "turn_on": ["toggle_play", "Ég kveikti á tónlist"],
-    "turn_off": ["toggle_pause", "Ég slökkti á tónlist"],
-    "increase_volume": ["increase_volume", "Ég hækkaði í tónlistinni"],
-    "decrease_volume": ["decrease_volume", "Ég lækkaði í tónlistinni"],
-    "radio": ["play_radio_stream", "Ég setti á útvarpstöðina"],
-}
-
-
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     print("sentence")
@@ -305,7 +283,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         result.qkey = "turn_on"
     if result.qkey == "turn_on" and result.target == "radio":
         result.qkey = "radio"
-    if "qtype" in result and "qkey" in result:
+    if "qtype" in result:
         print("IF QTYPE AND QKEY")
         try:
             q.set_qtype(result.qtype)
@@ -316,13 +294,42 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                     device_data, q.client_id, group_name=result.get("group_name")
                 )
                 print("JUST AFTER SONOS CLIENT")
-                response = call_sonos_client(sonos_client, result)
+                # Map of query keys to handler functions and the corresponding answer string for Embla
+                radio_url = _RADIO_STREAMS.get(result.get("station"))
+                handler_map = {
+                    "turn_on": [
+                        sonos_client.toggle_play,
+                        [],
+                        "Ég kveikti á tónlist",
+                    ],
+                    "turn_off": [
+                        sonos_client.toggle_pause,
+                        [],
+                        "Ég slökkti á tónlist",
+                    ],
+                    "increase_volume": [
+                        sonos_client.increase_volume,
+                        [],
+                        "Ég hækkaði í tónlistinni",
+                    ],
+                    "decrease_volume": [
+                        sonos_client.decrease_volume,
+                        [],
+                        "Ég lækkaði í tónlistinni",
+                    ],
+                    "radio": [
+                        sonos_client.play_radio_stream,
+                        [radio_url],
+                        "Ég setti á útvarpstöðina",
+                    ],
+                }
+                handler, args, answer = handler_map.get(result.qkey)
+                response = handler(*args)
                 if response == "Group not found":
                     text_ans = f"Herbergið '{result.group_name}' fannst ekki. Vinsamlegast athugaðu í Sonos appinu hvort nafnið sé rétt."
                 else:
-                    handler_answer = _HANDLER_MAP[result.qkey][1]
+                    handler_answer = answer
                     text_ans = handler_answer
-
                 answer = (
                     dict(answer=text_ans),
                     text_ans,

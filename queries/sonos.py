@@ -78,7 +78,7 @@ import random
 from util import read_api_key
 from queries import query_json_api, post_to_json_api
 from query import Query
-from typing import Dict
+from typing import Dict, Optional
 
 import json
 
@@ -377,7 +377,7 @@ class SonosClient:
     ------------------------------------- PUBLIC METHODS --------------------------------------------------------------------------------
     """
 
-    def play_radio_stream(self, radio_url: str):
+    def play_radio_stream(self, radio_url): #: Optional[str] = self._device_data.get]
         print("play radio stream")
         session_id = self._create_or_join_session()
 
