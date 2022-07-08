@@ -313,6 +313,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     if result.get("abort"):
         print("aborted")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        return
     # lemmas = set(
     #     i[0].root(state, result.params)
     #     for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))

@@ -78,7 +78,7 @@ import random
 from util import read_api_key
 from queries import query_json_api, post_to_json_api
 from query import Query
-from typing import Dict, Optional
+from typing import Dict
 
 import json
 
@@ -114,6 +114,7 @@ class SonosClient:
         self._household_id = self._households[0]["id"]
         self._groups = self._get_groups()
         self._players = self._get_players()
+        self._group_id = self._get_group_id()
         self._store_sonos_data_and_credentials()
 
     """
@@ -359,8 +360,8 @@ class SonosClient:
 
     def _create_or_join_session(self):
         print("_create_or_join_session")
-        group_id = self._get_group_id()
-        url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playbackSession/joinOrCreate"
+        # group_id = self._get_group_id()
+        url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playbackSession/joinOrCreate"
 
         payload = json.dumps({"appId": "com.mideind.embla", "appContext": "embla123"})
         headers = {
@@ -410,8 +411,8 @@ class SonosClient:
 
     def increase_volume(self):
         print("increase_volume")
-        group_id = self._get_group_id()
-        url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/groupVolume/relative"
+        # group_id = self._get_group_id()
+        url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/groupVolume/relative"
 
         payload = json.dumps({"volumeDelta": 10})
         headers = {
@@ -445,9 +446,9 @@ class SonosClient:
         Toggles play/pause of a group
         """
         print("toggle playpause")
-        group_id = self._get_group_id()
+        # group_id = self._get_group_id()
         print("exited group_id")
-        url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/play"
+        url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playback/play"
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self._access_token}",
@@ -466,11 +467,9 @@ class SonosClient:
         Toggles play/pause of a group
         """
         print("toggle playpause")
-        group_id = self._get_group_id()
+        # group_id = self._get_group_id()
         print("exited group_id")
-        url = (
-            f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/playback/pause"
-        )
+        url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playback/pause"
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self._access_token}",
@@ -530,20 +529,44 @@ class SonosClient:
             "Authorization": f"Bearer {self._access_token}",
         }
 
-        response = requests.request("POST", url, headers=headers, data=payload)
+        response = post_to_json_api(url, payload, headers)
 
-        print(response.text)
+        return response
 
-    def _refresh_data(self, function):
-        print("refresh data")
-        print("device_data: ", self._device_data)
-        # self._device_data["sonos"]["data"] = None
-        # print("device_data after deletion: ", self._device_data)
-        self._households = self._get_households()
-        self._groups = self._get_groups()
-        self._players = self._get_players()
-        # self._store_sonos_data_and_credentials()
-        getattr(self, function)()
+    def next_song(self):
+        url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playback/skipToNextTrack"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self._access_token}",
+        }
+
+        response = post_to_json_api(url, headers=headers)
+
+        return response
+
+    def prev_song(self):
+        url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playback/skipToPreviousTrack"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self._access_token}",
+        }
+
+        response = post_to_json_api(url, headers=headers)
+
+        return response
+
+    # def _refresh_data(self, function):
+    #     print("refresh data")
+    #     print("device_data: ", self._device_data)
+    #     # self._device_data["sonos"]["data"] = None
+    #     # print("device_data after deletion: ", self._device_data)
+    #     self._households = self._get_households()
+    #     self._groups = self._get_groups()
+    #     self._players = self._get_players()
+    #     # self._store_sonos_data_and_credentials()
+    #     getattr(self, function)()
 
     # def get_groups_and_players(self):
     #     """
