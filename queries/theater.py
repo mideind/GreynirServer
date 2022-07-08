@@ -666,6 +666,7 @@ def QTheaterShowQuery(node: Node, params: QueryStateDict, result: Result) -> Non
             )
             # result.no_show_matched_data_exists = True
 
+
 def QTheaterShowPrice(node: Node, params: QueryStateDict, result: Result) -> None:
     dsm = Query.get_dsm(result)
     show = dsm.get_resource("Show")
@@ -674,9 +675,16 @@ def QTheaterShowPrice(node: Node, params: QueryStateDict, result: Result) -> Non
         price = show["price"]
         ans = f"Verðið fyrir einn miða á sýninguna {show['title']} er {price} kr."
 
-        dsm.set_answer(({"answer": ans}, ans, numbers_to_text(ans, gender="kvk").replace("kr", "krónur")))
+        dsm.set_answer(
+            (
+                {"answer": ans},
+                ans,
+                numbers_to_text(ans, gender="kvk").replace("kr", "krónur"),
+            )
+        )
     else:
         dsm.set_answer(gen_answer("Þú hefur ekki valið sýningu."))
+
 
 def QTheaterShowLength(node: Node, params: QueryStateDict, result: Result) -> None:
     dsm = Query.get_dsm(result)
@@ -689,6 +697,7 @@ def QTheaterShowLength(node: Node, params: QueryStateDict, result: Result) -> No
         dsm.set_answer(({"answer": ans}, ans, numbers_to_text(ans, gender="kvk")))
     else:
         dsm.set_answer(gen_answer("Þú hefur ekki valið sýningu."))
+
 
 def _add_date(
     resource: DateResource, dsm: DialogueStateManager, result: Result
@@ -919,7 +928,7 @@ def QTheaterShowRow(node: Node, params: QueryStateDict, result: Result) -> None:
 
         # Adding rows to result
         _add_available_rows_to_result(dsm, title, seats, result)
-        available_rows = result.available_rows
+        available_rows: list[int] = [int(i) for i in result.text_available_rows]
         # No rows available
         if len(available_rows) == 0:
             dsm.set_resource_state("ShowDateTime", ResourceState.UNFULFILLED)
@@ -930,8 +939,11 @@ def QTheaterShowRow(node: Node, params: QueryStateDict, result: Result) -> None:
             text_ans = ans.format(seats=seats)
             voice_ans = ans.format(seats=number_to_text(seats))
             dsm.set_answer((dict(answer=text_ans), text_ans, voice_ans))
+        print("Available rows: ", available_rows)
+        print("Result number: ", result.number)
         # Available row chosen
         if result.number in available_rows:
+            print("Chosen row: ", result.number)
             resource.data = [result.number]
             dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
         # Incorrect row chosen
