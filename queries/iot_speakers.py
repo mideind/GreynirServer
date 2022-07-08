@@ -129,6 +129,26 @@ def QIoTSpeakerPauseVerb(node: Node, params: QueryStateDict, result: Result) -> 
     result.qkey = "turn_off"
 
 
+def QIoTSpeakerSkipVerb(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qkey = "fast_forward"
+
+
+def QIoTSpeakerNewPlay(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qkey = "turn_on"
+
+
+def QIoTSpeakerNewPause(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qkey = "turn_off"
+
+
+def QIoTSpeakerNewNext(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qkey = "fast_forward"
+
+
+def QIoTSpeakerNewPrevious(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qkey = "rewind"
+
+
 def QIoTSpeakerIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qkey = "increase_volume"
 
@@ -281,7 +301,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     q: Query = state["query"]
     if "qkey" not in result:
         result.qkey = "turn_on"
-    if result.qkey == "turn_on" and result.target == "radio":
+    if result.qkey == "turn_on" and result.get("target") == "radio":
         result.qkey = "radio"
     if "qtype" in result:
         print("IF QTYPE AND QKEY")

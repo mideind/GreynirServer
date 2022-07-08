@@ -186,17 +186,20 @@ QIoTLocationPrepositionSecondPart ->
     "á" | "í"
 
 QIoTGroupName/fall ->
-    no/fall
+    QIoTLightsBanwords/fall
+    > no/fall
 
 QIoTLightName/fall ->
-    no/fall
+    QIoTLightsBanwords/fall
+    > no/fall
 
 QIoTColorName ->
     {color_names}
 
 QIoTSceneName ->
-    no
-    | lo
+    QIoTLightsBanwords/fall
+    > no
+    > lo
 
 QIoTAnnadAndlag ->
     QIoTNewSetting/nf
@@ -320,5 +323,5 @@ QIoTSettingWord/fall ->
     'stilling'/fall
 
 # Catching hotwords from iot_speakers
-QIoTLightsBanwords ->
-    QIoTSpeakerHotwords/nf
+QIoTLightsBanwords/fall ->
+    QIoTSpeakerHotwords/fall
