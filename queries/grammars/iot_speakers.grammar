@@ -1,7 +1,7 @@
 # TODO: Fix music hardcoding
 # TODO: Check whether to force determinate form
 # TODO: "Settu á útvarpið", which station to play?
-# TODO: Refactor make and let "Gerðu tónlistina hærri í hátalaranum (í eldhúsinu)"-type sentences
+# TODO: "Kveiktu á tónlist í hátalarnum"
 
 /þgf = þgf
 /ef = ef
@@ -112,13 +112,13 @@ QIoTSpeakerComparative/fall →
 
 # Sometimes "á" is not registered by Embla
 QIoTSpeakerAHvad →
-    "á"? QIoTSpeakerMusicOrRadioWord/þf
-    | "á"? QIoTSpeakerNewSetting/þf
+    "yfir"? "á"? QIoTSpeakerMusicOrRadioWord/þf
+    | "yfir"? "á"? QIoTSpeakerNewSetting/þf
 
 QIoTSpeakerAHverju →
     "á" QIoTSpeakerMusicOrApplianceWord/þgf
     | "á" QIoTSpeakerNewRadio/þgf
-    | "á" QIoTSpeakerMusicOrRadioWord/þgf "í" QIoTSpeakerSpeakerWord/þgf
+    | "á" QIoTSpeakerMusicOrRadioWord/þgf
     | "á" QIoTSpeakerNewNextOrPrevious/fall
 
 QIoTSpeakerNewSetting/fall →
@@ -152,6 +152,7 @@ QIoTSpeakerNewNext/fall ->
 QIoTSpeakerNewPrevious/fall ->
     'seinastur:lo'_kvk/fall 'lag:hk'_et/fall
     | 'síðastur:lo'_kvk/fall 'lag:hk'_et/fall
+    | 'fyrri:lo'_kvk/fall 'lag:hk'_et/fall
 
 QIoTSpeakerMusicOrSoundPhrase/fall →
     QIoTSpeakerMusicPhrase/fall
@@ -466,3 +467,4 @@ QIoTSpeakerHotwords/fall ->
     | QIoTSpeakerSoundWord/fall
     | QIoTSpeakerRadioStationName
     | 'lag:no'
+    | QIoTSpeakerNewSetting/fall

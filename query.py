@@ -301,6 +301,7 @@ class QueryTree(Tree):
             return False
         with self.context(session, processor, query=query) as state:
             for query_tree in self._query_trees:
+                print("Processing query tree", query_tree.string_self())
                 # Is the processor interested in the root nonterminal
                 # of this query tree?
                 if query_tree.string_self() in processor_query_types:
