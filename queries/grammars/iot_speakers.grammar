@@ -148,11 +148,14 @@ QIoTSpeakerNewNextOrPrevious/fall ->
 
 QIoTSpeakerNewNext/fall ->
     'næstur:lo'_kvk/fall 'lag:hk'_et/fall
+    | 'lag:hk'_et_gr/fall "á" "eftir"
+    # | "næsta" "lagið"
 
 QIoTSpeakerNewPrevious/fall ->
     'seinastur:lo'_kvk/fall 'lag:hk'_et/fall
     | 'síðastur:lo'_kvk/fall 'lag:hk'_et/fall
     | 'fyrri:lo'_kvk/fall 'lag:hk'_et/fall
+    | 'lag:hk'_et_gr/fall "á" "undan"
 
 QIoTSpeakerMusicOrSoundPhrase/fall →
     QIoTSpeakerMusicPhrase/fall
@@ -462,9 +465,9 @@ QIoTSpeaker90s →
 
 # TODO: Fix the song hotword
 # Hotwords to block other similarly phrased query modules from catching queries belonging to iot_speakers
-QIoTSpeakerHotwords/fall ->
-    QIoTSpeakerMusicOrApplianceWord/fall
-    | QIoTSpeakerSoundWord/fall
-    | QIoTSpeakerRadioStationName
-    | 'lag:no'
-    | QIoTSpeakerNewSetting/fall
+# QIoTSpeakerHotwords/fall ->
+#     QIoTSpeakerMusicOrApplianceWord/fall
+#     | QIoTSpeakerSoundWord/fall
+#     | QIoTSpeakerRadioStationName
+#     | 'lag:no'
+#     | QIoTSpeakerNewSetting/fall

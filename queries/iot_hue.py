@@ -263,47 +263,48 @@ _COLOR_NAME_TO_CIE: Mapping[str, float] = {
     # "Rauð": 360 * 65535 / 360,
 }
 
-# _SPEAKER_WORDS: FrozenSet[str] = frozenset(
-#     (
-#         "tónlist",
-#         "hátalari",
-#         "bylgja",
-#         "útvarp",
-#         "útvarpsstöð",
-#         "útvarp saga",
-#         "gullbylgja",
-#         "x-ið",
-#         "léttbylgjan",
-#         "rás 1",
-#         "rás 2",
-#         "rondo",
-#         "rondó",
-#         "fm 957",
-#         "fm957",
-#         "fm-957",
-#         "k-100",
-#         "k 100",
-#         "kk 100",
-#         "k hundrað",
-#         "kk hundrað",
-#         "x977",
-#         "x 977",
-#         "x-977",
-#         "x-ið 977",
-#         "x-ið",
-#         "retro",
-#         "kiss fm",
-#         "flassbakk",
-#         "flassbakk fm",
-#         "útvarp hundraðið",
-#         "útvarp 101",
-#         "útvarp hundraðogeinn",
-#         "útvarp hundrað og einn",
-#         "útvarp hundrað einn",
-#         "útvarp hundrað 1",
-#         "útvarp",
-#     )
-# )
+_SPEAKER_WORDS: FrozenSet[str] = frozenset(
+    (
+        "tónlist",
+        "lag",
+        "hátalari",
+        "bylgja",
+        "útvarp",
+        "útvarpsstöð",
+        "útvarp saga",
+        "gullbylgja",
+        "x-ið",
+        "léttbylgjan",
+        "rás 1",
+        "rás 2",
+        "rondo",
+        "rondó",
+        "fm 957",
+        "fm957",
+        "fm-957",
+        "k-100",
+        "k 100",
+        "kk 100",
+        "k hundrað",
+        "kk hundrað",
+        "x977",
+        "x 977",
+        "x-977",
+        "x-ið 977",
+        "x-ið",
+        "retro",
+        "kiss fm",
+        "flassbakk",
+        "flassbakk fm",
+        "útvarp hundraðið",
+        "útvarp 101",
+        "útvarp hundraðogeinn",
+        "útvarp hundrað og einn",
+        "útvarp hundrað einn",
+        "útvarp hundrað 1",
+        "útvarp",
+    )
+)
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
@@ -314,14 +315,14 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         print("aborted")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
-    # lemmas = set(
-    #     i[0].root(state, result.params)
-    #     for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))
-    # )
-    # if not _SPEAKER_WORDS.isdisjoint(lemmas):
-    #     print("matched with music word list")
-    #     q.set_error("E_QUERY_NOT_UNDERSTOOD")
-    #     return
+    lemmas = set(
+        i[0].root(state, result.params)
+        for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))
+    )
+    if not _SPEAKER_WORDS.isdisjoint(lemmas):
+        print("matched with music word list")
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        return
     changing_color = result.get("changing_color", False)
     changing_scene = result.get("changing_scene", False)
     changing_brightness = result.get("changing_brightness", False)
