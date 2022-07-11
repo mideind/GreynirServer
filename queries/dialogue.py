@@ -142,6 +142,7 @@ class DialogueStateManager:
             time_from_last_interaction = (
                 datetime.datetime.now() - self._saved_state[_MODIFIED_KEY]
             )
+            # The dialogue timed out, nothing should be done
             if time_from_last_interaction.total_seconds() >= _DEFAULT_EXPIRATION_TIME:
                 self._timed_out = True
                 return
@@ -340,7 +341,7 @@ class DialogueStateManager:
             # When final resource is confirmed, the dialogue is over
             self.finish_dialogue()
         ds_json: Optional[str] = None
-        if not self._finished:
+        if not self._finished and not self._timed_out:
             ds_json = json.dumps(
                 {
                     _RESOURCES_KEY: self._resources,

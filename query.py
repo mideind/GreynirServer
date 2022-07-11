@@ -342,6 +342,7 @@ class QueryTree(Tree):
                 timed_out_ans = query.dsm.get_resource("Final").prompts["timed_out"]
                 ans = (dict(answer=timed_out_ans), timed_out_ans, timed_out_ans)
                 query.set_answer(*ans)
+                query.update_dialogue_data()
                 return True
         with self.context(session, processor, query=query) as state:
             for query_tree in self._query_trees:
