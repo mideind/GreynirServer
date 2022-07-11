@@ -124,7 +124,6 @@ class ListResource(Resource):
     """Resource representing a list of items."""
 
     data: List[Any] = field(default_factory=list)
-    max_items: Optional[int] = None
 
     def format_data(self, format_func: Optional[Callable[[Any], str]] = None) -> str:
         if format_func:

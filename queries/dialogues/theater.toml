@@ -1,7 +1,6 @@
 [[resources]]
 name = "Show"
 type = "ListResource"
-max_items = 1
 cascade_state = true
 prompts.initial = "Hvaða sýningu má bjóða þér að fara á?"
 prompts.options = "Sýningarnar sem eru í boði eru: {options}"
