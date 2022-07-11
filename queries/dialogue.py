@@ -131,7 +131,6 @@ class DialogueStateManager:
             if self._saved_state[_RESOURCES_KEY]:
                 self._in_this_dialogue = True
                 self.setup_resources()
-            # TODO: IF EXPIRED DO SOMETHING
 
     def setup_resources(self) -> None:
         """
