@@ -117,6 +117,7 @@ GRAMMAR = read_grammar_file(
     "iot_hue", color_names=" | ".join(f"'{color}:lo'" for color in _COLORS.keys())
 )
 
+
 def QIoTQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _IoT_QTYPE
 
@@ -131,7 +132,6 @@ def QIoTSceneWord(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QIoTBrightnessWord(node: Node, params: QueryStateDict, result: Result) -> None:
     result.changing_brightness = True
-
 
 
 def QIoTTurnOnLightsRest(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -246,7 +246,8 @@ def QIoTLightName(node: Node, params: QueryStateDict, result: Result) -> None:
     result["light_name"] = result._indefinite
 
 
-def QIoTLightsBanwords(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTSpeakerHotwords(node: Node, params: QueryStateDict, result: Result) -> None:
+    print("lights banwords")
     result.abort = True
 
 
@@ -265,6 +266,7 @@ _COLOR_NAME_TO_CIE: Mapping[str, float] = {
 _SPEAKER_WORDS: FrozenSet[str] = frozenset(
     (
         "tónlist",
+        "lag",
         "hátalari",
         "bylgja",
         "útvarp",
@@ -308,16 +310,19 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
+    print("start of sentence")
     if result.get("abort"):
+        print("aborted")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
-    # lemmas = set(
-    #     i[0].root(state, result.params)
-    #     for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))
-    # )
-    # if not _SPEAKER_WORDS.isdisjoint(lemmas):
-    #     print("matched with music word list")
-    #     q.set_error("E_QUERY_NOT_UNDERSTOOD")
-    #     return
+        return
+    lemmas = set(
+        i[0].root(state, result.params)
+        for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))
+    )
+    if not _SPEAKER_WORDS.isdisjoint(lemmas):
+        print("matched with music word list")
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        return
     changing_color = result.get("changing_color", False)
     changing_scene = result.get("changing_scene", False)
     changing_brightness = result.get("changing_brightness", False)

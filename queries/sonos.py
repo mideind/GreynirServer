@@ -378,12 +378,17 @@ class SonosClient:
     ------------------------------------- PUBLIC METHODS --------------------------------------------------------------------------------
     """
 
-    def play_radio_stream(self, radio_url: str):
+    def play_radio_stream(self, radio_url):  #: Optional[str] = self._device_data.get]
         print("play radio stream")
         session_id = self._create_or_join_session()
+        if radio_url is None:
+            try:
+                radio_url = self._device_data["sonos"]["data"]["last_radio_url"]
+            except KeyError:
+                radio_url = "http://netradio.ruv.is/rondo.mp3"
 
         url = f"https://api.ws.sonos.com/control/api/v1//playbackSessions/{session_id}/playbackSession/loadStreamUrl?"
-
+        print("RADIO URL :", radio_url)
         payload = json.dumps(
             {
                 "streamUrl": f"{radio_url}",
@@ -400,6 +405,8 @@ class SonosClient:
         response = post_to_json_api(url, payload, headers)
         if response is None:
             return "Group not found"
+        data_dict = {"sonos": {"data": {"last_radio_url": radio_url}}}
+        self._store_data(data_dict)
         print(response.get("text"))
 
     def increase_volume(self):
@@ -524,7 +531,7 @@ class SonosClient:
 
         response = post_to_json_api(url, payload, headers)
 
-        print(response)
+        return response
 
     def next_song(self):
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playback/skipToNextTrack"
@@ -536,7 +543,7 @@ class SonosClient:
 
         response = post_to_json_api(url, headers=headers)
 
-        print(response)
+        return response
 
     def prev_song(self):
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playback/skipToPreviousTrack"
@@ -548,7 +555,7 @@ class SonosClient:
 
         response = post_to_json_api(url, headers=headers)
 
-        print(response)
+        return response
 
     # def _refresh_data(self, function):
     #     print("refresh data")

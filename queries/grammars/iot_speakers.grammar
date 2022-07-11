@@ -1,7 +1,7 @@
 # TODO: Fix music hardcoding
 # TODO: Check whether to force determinate form
 # TODO: "Settu á útvarpið", which station to play?
-# TODO: Refactor make and let "Gerðu tónlistina hærri í hátalaranum (í eldhúsinu)"-type sentences
+# TODO: "Kveiktu á tónlist í hátalarnum"
 
 /þgf = þgf
 /ef = ef
@@ -12,6 +12,7 @@ Query →
 QIoTSpeaker →
     QIoTSpeakerQuery
 
+# TODO: Flesh out skip queries
 QIoTSpeakerQuery →
     QIoTSpeakerMakeVerb QIoTSpeakerMakeRest
     | QIoTSpeakerSetVerb QIoTSpeakerSetRest
@@ -19,7 +20,8 @@ QIoTSpeakerQuery →
     | QIoTSpeakerTurnOnOrOffVerb QIoTSpeakerTurnOrOffOnRest
     | QIoTSpeakerPlayOrPauseVerb QIoTSpeakerPlayOrPauseRest
     | QIoTSpeakerIncreaseOrDecreaseVerb QIoTSpeakerIncreaseOrDecreaseRest
-    | QIoTSpeakerRadioStationName
+    | QIoTSpeakerSkipVerb
+    | QIoTSpeakerNewSetting/fall
 
 QIoTSpeakerMakeVerb →
     'gera:so'_bh
@@ -71,6 +73,9 @@ QIoTSpeakerDecreaseVerb →
     'lækka:so'_bh
     | 'minnka:so'_bh
 
+QIoTSpeakerSkipVerb ->
+    'skippa:so'_bh
+
 QIoTSpeakerMakeRest →
     QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerComparative/nf QIoTSpeakerHvar
     | QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerHvar? QIoTSpeakerComparative/nf
@@ -93,7 +98,8 @@ QIoTSpeakerTurnOrOffOnRest →
 
 QIoTSpeakerPlayOrPauseRest →
     QIoTSpeakerMusicWord/þf QIoTSpeakerHvarWithSpeaker?
-    | QIoTSpeakerNewRadio/þf? QIoTSpeakerHvarWithSpeaker?
+    | QIoTSpeakerNewRadio/þf QIoTSpeakerHvarWithSpeaker?
+    | QIoTSpeakerNewNextOrPrevious/þf QIoTSpeakerHvarWithSpeaker?
 
 QIoTSpeakerIncreaseOrDecreaseRest →
     QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerHvar?
@@ -106,21 +112,26 @@ QIoTSpeakerComparative/fall →
 
 # Sometimes "á" is not registered by Embla
 QIoTSpeakerAHvad →
-    "á"? QIoTSpeakerMusicOrRadioWord/þf
-    | "á"? QIoTSpeakerNewSetting/þf
+    "yfir"? "á"? QIoTSpeakerMusicOrRadioWord/þf
+    | "yfir"? "á"? QIoTSpeakerNewSetting/þf
 
 QIoTSpeakerAHverju →
     "á" QIoTSpeakerMusicOrApplianceWord/þgf
     | "á" QIoTSpeakerNewRadio/þgf
-    | "á" QIoTSpeakerMusicOrRadioWord/þgf "í" QIoTSpeakerSpeakerWord/þgf
+    | "á" QIoTSpeakerMusicOrRadioWord/þgf
+    | "á" QIoTSpeakerNewNextOrPrevious/fall
 
 QIoTSpeakerNewSetting/fall →
     QIoTSpeakerNewRadio/fall
-    | QIoTSpeakerNewPlay/fall
-    | QIoTSpeakerNewPause/fall
+    | QIoTSpeakerNewPlayOrPause/fall
+    | QIoTSpeakerNewNextOrPrevious/fall
 
 QIoTSpeakerNewRadio/fall →
     QIoTSpeakerRadioStationWord/fall? QIoTSpeakerRadioStationName
+
+QIoTSpeakerNewPlayOrPause/fall ->
+    QIoTSpeakerNewPlay/fall
+    | QIoTSpeakerNewPause/fall
 
 QIoTSpeakerNewPlay/fall →
     "play"
@@ -130,6 +141,21 @@ QIoTSpeakerNewPlay/fall →
 QIoTSpeakerNewPause/fall →
     'pása'/fall
     | 'stopp'/fall
+
+QIoTSpeakerNewNextOrPrevious/fall ->
+    QIoTSpeakerNewNext/fall
+    | QIoTSpeakerNewPrevious/fall
+
+QIoTSpeakerNewNext/fall ->
+    'næstur:lo'_kvk/fall 'lag:hk'_et/fall
+    | 'lag:hk'_et_gr/fall "á" "eftir"
+    # | "næsta" "lagið"
+
+QIoTSpeakerNewPrevious/fall ->
+    'seinastur:lo'_kvk/fall 'lag:hk'_et/fall
+    | 'síðastur:lo'_kvk/fall 'lag:hk'_et/fall
+    | 'fyrri:lo'_kvk/fall 'lag:hk'_et/fall
+    | 'lag:hk'_et_gr/fall "á" "undan"
 
 QIoTSpeakerMusicOrSoundPhrase/fall →
     QIoTSpeakerMusicPhrase/fall
@@ -437,8 +463,11 @@ QIoTSpeaker90s →
     "næntís"
     | "nineties"
 
+# TODO: Fix the song hotword
 # Hotwords to block other similarly phrased query modules from catching queries belonging to iot_speakers
-QIoTSpeakerHotwords/fall ->
-    QIoTSpeakerMusicOrApplianceWord/fall
-    | QIoTSpeakerSoundWord/fall
-    | QIoTSpeakerRadioStationName
+# QIoTSpeakerHotwords/fall ->
+#     QIoTSpeakerMusicOrApplianceWord/fall
+#     | QIoTSpeakerSoundWord/fall
+#     | QIoTSpeakerRadioStationName
+#     | 'lag:no'
+#     | QIoTSpeakerNewSetting/fall
