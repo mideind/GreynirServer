@@ -84,6 +84,7 @@ class DialogueTOMLStructure(TypedDict):
 _RESOURCES_KEY = "resources"
 _MODIFIED_KEY = "modified"
 _EXTRAS_KEY = "extras"
+_EXPIRATION_TIME_KEY = "expiration_time"
 
 
 class DialogueDBStructure(TypedDict):
@@ -143,7 +144,7 @@ class DialogueStateManager:
                 datetime.datetime.now() - self._saved_state[_MODIFIED_KEY]
             )
             # The dialogue timed out, nothing should be done
-            if time_from_last_interaction.total_seconds() >= _DEFAULT_EXPIRATION_TIME:
+            if time_from_last_interaction.total_seconds() >= self._expiration_time:
                 self._timed_out = True
                 return
         # Update empty resources with data from database
