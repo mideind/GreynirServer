@@ -295,6 +295,7 @@ class QueryTree(Tree):
         # For development, we allow processors to be disinterested in any query
         # assert len(processor_query_types) > 0
         if self.query_nonterminals.isdisjoint(processor_query_types):
+            print("!!!!!No query trees to process in this processor!!!!!")
             # But this processor is not interested in any of the nonterminals
             # in this query's parse forest: don't waste more cycles on it
             return False
@@ -539,13 +540,15 @@ class Query:
         cls._parser = QueryParser(grammar_additions)
 
     @staticmethod
-    def _parse(toklist: Iterable[Tok]) -> Tuple[ResponseDict, Dict[int, str]]:
+    def _parse(
+        toklist: Iterable[Tok], banned_nonterminals: Optional[Set[str]] = None
+    ) -> Tuple[ResponseDict, Dict[int, str]]:
         """Parse a token list as a query"""
         bp = Query._parser
         assert bp is not None
         num_sent = 0
         num_parsed_sent = 0
-        rdc = Reducer(bp.grammar)
+        rdc = Reducer(bp.grammar, banned_nonterminals=banned_nonterminals)
         trees: Dict[int, str] = dict()
         sent: List[Tok] = []
 
@@ -636,8 +639,16 @@ class Query:
             # Log the query string as seen by the parser
             print("Query is: '{0}'".format(actual_q))
 
+        banned_nonterminals: Set[str] = set()
+        for t in Query._tree_processors:
+            f = getattr(t, "banned_nonterminals", None)
+            if f is not None:
+                banned_nonterminals.update(f(self))
+        print("QUERY BANNED NON TERMINALS: ", banned_nonterminals)
         try:
-            parse_result, trees = Query._parse(toklist)
+            parse_result, trees = Query._parse(
+                toklist, banned_nonterminals=banned_nonterminals
+            )
         except ParseError:
             self.set_error("E_PARSE_ERROR")
             return False

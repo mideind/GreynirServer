@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, cast
+from typing import Any, List, Optional, Set, cast
 import json
 import logging
 import datetime
@@ -35,7 +35,10 @@ QUERY_NONTERMINALS = {"QFruitSeller"}.union(HOTWORD_NONTERMINALS)
 GRAMMAR = """
 
 Query →
-    QFruitStartQuery | QFruitSeller
+    QFruitStartQuery | QFruitSellerQuery
+
+QFruitSellerQuery →
+    QFruitSeller
 
 QFruitSeller →
     QFruitQuery '?'?
@@ -149,6 +152,35 @@ QFruitTime →
 
 _START_DIALOGUE_QTYPE = "QFruitStartQuery"
 _DIALOGUE_NAME = "fruitseller"
+
+
+def banned_nonterminals(q: Query) -> Set[str]:
+    banned_nonterminals: set[str] = set()
+    dialogue_data = cast(Optional[str], q.all_dialogue_data.get(_DIALOGUE_NAME))
+    print("Dialogue data: ", dialogue_data)
+    if dialogue_data is None:
+        banned_nonterminals.add("QFruitSeller")
+        return banned_nonterminals
+    print("STARTING DSM IN BANNED NONTERMINALS")
+    q.start_dsm(_DIALOGUE_NAME, dialogue_data)
+    if q.dsm.not_in_dialogue():
+        banned_nonterminals.add("QFruitSeller")
+        return banned_nonterminals
+    dsm: DialogueStateManager = q.dsm
+    resource: Resource = dsm.current_resource
+    if resource.name == "Fruits":
+        print("BANNINGBANNINGBANNING: Current resource is show!")
+        banned_nonterminals.add("QFruitDateQuery")
+        if resource.is_unfulfilled:
+            print("BANNINGBANNINGBANNING: Show was unfulfilled")
+            banned_nonterminals.add("QFruitYes")
+            banned_nonterminals.add("QFruitNo")
+    elif resource.name == "DateTime":
+        print("BANNINGBANNINGBANNING: Current resource is ShowDateTime!")
+        if resource.is_unfulfilled:
+            banned_nonterminals.add("QFruitYes")
+            banned_nonterminals.add("QFruitNo")
+    return banned_nonterminals
 
 
 def _generate_fruit_answer(

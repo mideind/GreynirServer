@@ -21,7 +21,7 @@
     This query module handles dialogue related to theater tickets.
 """
 
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Set, Tuple, cast
 from typing_extensions import TypedDict
 import json
 import logging
@@ -150,7 +150,7 @@ QTheaterRowOptions →
 
 QTheaterSeatOptions →
     "hvaða" "sæti" "eru" QTheaterIBodiLausar
-    "hverjir" "eru" "sæta" "valmöguleikarnir"
+    | "hverjir" "eru" "sæta" "valmöguleikarnir"
 
 QTheaterIBodiLausar →
     "í" "boði"
@@ -160,9 +160,12 @@ QTheaterIBodiLausar →
 
 QTheaterShowQuery → QTheaterEgVil? "velja" 'sýning' QTheaterShowName 
     > QTheaterEgVil? "fara" "á" 'sýning' QTheaterShowName
-    > QTheaterShowName
+    > QTheaterShowOnlyName
+
+QTheaterShowOnlyName → QTheaterShowName
 
 QTheaterShowName → Nl
+
 
 QTheaterShowPrice →
     "hvað" "kostar" "einn"? 'miði'
@@ -207,9 +210,13 @@ QSyningarTimar →
     | "sýningartímana"
 
 QTheaterShowSeatCountQuery →
-    QTheaterEgVil? "fá"? QTheaterNum "sæti"?
+    QTheaterSeatCountNum 
+    | QTheaterEgVil? "fá"? QTheaterNum "sæti"
     | QTheaterEgVil? "fá"? QTheaterNum "miða"
     | QTheaterEgVil? "fá"? QTheaterNum "miða" "á" "sýninguna"
+
+QTheaterSeatCountNum →
+    to | töl | tala
 
 QTheaterShowLocationQuery →
     QTheaterShowRow
@@ -226,13 +233,22 @@ QTheaterVeljaRod →
     | "fá" "sæti" "á"
 
 QTheaterRodBekkur →
-    QTheaterRodBekk? "númer"? QTheaterNum
+    QTheaterRowNum
+    | QTheaterRodBekk "númer"? QTheaterNum
     | QTheaterNum "bekk"
     | QTheaterNum "röð"
 
+QTheaterRowNum →
+    to | töl | tala
+
 QTheaterShowSeats →
-    QTheaterEgVil? "sæti"? "númer"? QTheaterNum "til"? QTheaterNum? 
-    | QTheaterEgVil? "sæti"? "númer"? QTheaterNum "og"? QTheaterNum? 
+    QTheaterShowSeatsNum
+    | QTheaterEgVil? "sæti"? "númer"? QTheaterNum "til" QTheaterNum? 
+    | QTheaterEgVil? "sæti" "númer"? QTheaterNum "og" QTheaterNum? 
+    | "ég" "vil" "sitja" "í" "röð" "númer" QTheaterNum
+
+QTheaterShowSeatsNum →
+    to | töl | tala
 
 QTheaterDateOptions → 
     "hvaða" "dagsetningar" "eru" "í" "boði"
@@ -283,6 +299,59 @@ QTheaterPontun →
 
 
 """
+
+
+def banned_nonterminals(q: Query) -> Set[str]:
+    banned_nonterminals: set[str] = set()
+    dialogue_data = cast(Optional[str], q.all_dialogue_data.get(_THEATER_DIALOGUE_NAME))
+    if dialogue_data is None:
+        banned_nonterminals.add("QTheaterDialogue")
+        return banned_nonterminals
+    q.start_dsm(_THEATER_DIALOGUE_NAME, dialogue_data)
+    dsm: DialogueStateManager = q.dsm
+    if q.dsm.not_in_dialogue():
+        banned_nonterminals.add("QTheaterDialogue")
+        return banned_nonterminals
+    resource: Resource = dsm.current_resource
+    if resource.name == "Show":
+        banned_nonterminals.add("QTheaterShowDateQuery")
+        banned_nonterminals.add("QTheaterMoreDates")
+        banned_nonterminals.add("QTheaterPreviousDates")
+        banned_nonterminals.add("QTheaterShowSeatCountQuery")
+        banned_nonterminals.add("QTheaterShowLocationQuery")
+        banned_nonterminals.add("QTheaterDateOptions")
+        banned_nonterminals.add("QTheaterRowOptions")
+        banned_nonterminals.add("QTheaterSeatOptions")
+        if resource.is_unfulfilled:
+            banned_nonterminals.add("QTheaterShowLength")
+            banned_nonterminals.add("QTheaterShowPrice")
+    elif resource.name == "ShowDateTime":
+        banned_nonterminals.add("QTheaterShowSeatCountQuery")
+        banned_nonterminals.add("QTheaterShowLocationQuery")
+        banned_nonterminals.add("QTheaterRowOptions")
+        banned_nonterminals.add("QTheaterSeatOptions")
+        banned_nonterminals.add("QTheaterShowOnlyName")
+    elif resource.name == "ShowSeatCount":
+        banned_nonterminals.add("QTheaterShowLocationQuery")
+        banned_nonterminals.add("QTheaterRowOptions")
+        banned_nonterminals.add("QTheaterSeatOptions")
+        banned_nonterminals.add("QTheaterRowNum")
+        banned_nonterminals.add("QTheaterShowSeatsNum")
+        banned_nonterminals.add("QTheaterShowOnlyName")
+    elif resource.name == "ShowSeatRow":
+        banned_nonterminals.add("QTheaterShowSeats")
+        banned_nonterminals.add("QTheaterSeatCountNum")
+        banned_nonterminals.add("QTheaterShowSeatsNum")
+        banned_nonterminals.add("QTheaterSeatOptions")
+        banned_nonterminals.add("QTheaterShowOnlyName")
+    elif resource.name == "ShowSeatNumber":
+        banned_nonterminals.add("QTheaterSeatCountNum")
+        banned_nonterminals.add("QTheaterRowNum")
+        banned_nonterminals.add("QTheaterShowOnlyName")
+    if resource.is_unfulfilled:
+        banned_nonterminals.add("QTheaterYes")
+        banned_nonterminals.add("QTheaterNo")
+    return banned_nonterminals
 
 
 class ShowType(TypedDict):
@@ -1201,6 +1270,11 @@ def QTheaterNum(node: Node, params: QueryStateDict, result: Result):
         result["numbers"] = []
     result.numbers.append(number)
     result.number = number
+
+
+QTheaterSeatCountNum = QTheaterNum
+QTheaterRowNum = QTheaterNum
+QTheaterShowSeatsNum = QTheaterNum
 
 
 def QTheaterCancel(node: Node, params: QueryStateDict, result: Result):
