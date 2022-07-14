@@ -95,10 +95,10 @@ class SonosClient:
         self._device_data = device_data
         self._group_name = group_name
         self._radio_name = radio_name
-        self._sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
+        self._encoded_credentials = read_api_key("SonosEncodedCredentials")
         self._code = self._device_data["sonos"]["credentials"]["code"]
         print("code :", self._code)
-        self._timestamp = datetime.now()
+        self._timestamp = device_data.get("sonos").get("credentials").get("timestamp")
         print("device data :", self._device_data)
         try:
             self._access_token = self._device_data["sonos"]["credentials"][
@@ -115,7 +115,7 @@ class SonosClient:
         self._groups = self._get_groups()
         self._players = self._get_players()
         self._group_id = self._get_group_id()
-        self._store_sonos_data_and_credentials()
+        self._store_data_and_credentials()
 
     """
     ------------------------------------- PRIVATE METHODS --------------------------------------------------------------------------------
@@ -139,14 +139,13 @@ class SonosClient:
         Updates the access token
         """
         print("update sonos token")
-        self._sonos_encoded_credentials = read_api_key("SonosEncodedCredentials")
-        self._access_token = self._refresh_expired_token()
-        self._access_token = self._access_token["access_token"]
+        self._encoded_credentials = read_api_key("SonosEncodedCredentials")
+        self._refresh_expired_token()
         sonos_dict = {
             "sonos": {
                 "credentials": {
                     "access_token": self._access_token,
-                    "timestamp": str(datetime.now()),
+                    "timestamp": self._timestamp,
                 }
             }
         }
@@ -159,9 +158,12 @@ class SonosClient:
         """
         print("_refresh_expired_token")
         url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=refresh_token&refresh_token={self._refresh_token}"
-        headers = {"Authorization": f"Basic {self._sonos_encoded_credentials}"}
+        headers = {"Authorization": f"Basic {self._encoded_credentials}"}
 
         response = post_to_json_api(url, headers=headers)
+
+        self._access_token = response["access_token"]
+        self._timestamp = str(datetime.now())
 
         return response
 
@@ -173,7 +175,7 @@ class SonosClient:
         host = str(flask.request.host)
         url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={self._code}&redirect_uri=http://{host}/connect_sonos.api"
         headers = {
-            "Authorization": f"Basic {self._sonos_encoded_credentials}",
+            "Authorization": f"Basic {self._encoded_credentials}",
             "Cookie": "JSESSIONID=F710019AF0A3B7126A8702577C883B5F; AWSELB=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBCFB059E28075D83A700FD504C030A53CC28683B515BE3DCA3CC587AFAF606E171; AWSELBCORS=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBCFB059E28075D83A700FD504C030A53CC28683B515BE3DCA3CC587AFAF606E171",
         }
 
@@ -181,6 +183,7 @@ class SonosClient:
 
         self._access_token = response.get("access_token")
         self._refresh_token = response.get("refresh_token")
+        self._timestamp = str(datetime.now())
         return response
 
     def _get_households(self):
@@ -308,8 +311,8 @@ class SonosClient:
 
             return response["players"][0]["id"]
 
-    def _create_sonos_data_dict(self):
-        print("_create_sonos_data_dict")
+    def _create_data_dict(self):
+        print("_create_data_dict")
         data_dict = {"households": self._households}
         for i in range(len(self._households)):
             groups_dict = self._groups
@@ -319,22 +322,22 @@ class SonosClient:
         data_dict["players"] = players_dict
         return data_dict
 
-    def _create_sonos_cred_dict(self):
-        print("_create_sonos_cred_dict")
+    def _create_cred_dict(self):
+        print("_create_cred_dict")
         cred_dict = {}
         cred_dict.update(
             {
                 "access_token": self._access_token,
                 "refresh_token": self._refresh_token,
-                "timestamp": str(datetime.now()),
+                "timestamp": self._timestamp,
             }
         )
         return cred_dict
 
-    def _store_sonos_data_and_credentials(self):
-        print("_store_sonos_data_and_credentials")
-        # data_dict = self._create_sonos_data_dict()
-        cred_dict = self._create_sonos_cred_dict()
+    def _store_data_and_credentials(self):
+        print("_store_data_and_credentials")
+        # data_dict = self._create_data_dict()
+        cred_dict = self._create_cred_dict()
         sonos_dict = {}
         sonos_dict["sonos"] = {"credentials": cred_dict}
         self._store_data(sonos_dict)
@@ -565,7 +568,7 @@ class SonosClient:
     #     self._households = self._get_households()
     #     self._groups = self._get_groups()
     #     self._players = self._get_players()
-    #     # self._store_sonos_data_and_credentials()
+    #     # self._store_data_and_credentials()
     #     getattr(self, function)()
 
     # def get_groups_and_players(self):
