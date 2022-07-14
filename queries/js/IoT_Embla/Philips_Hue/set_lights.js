@@ -7,10 +7,10 @@
 // TODO: Implement a hotfix for Ikea Tradfri bulbs, since it can only take one argument at a time
 
 /** Gets a target for the given query and sets the state of the target to the given state using a fetch request.
- *  @param {String} query - the query to find the target e.g. "eldhús" or "lampi"
+ *  @param {String} target - the target to find the target e.g. "eldhús" or "lampi"
  *  @param {String} state - the state to set the target to e.g. "{"on": true}" or "{"scene": "energize"}"
  */
-function setLights(query, state) {
+function setLights(target, state) {
     let parsedState = JSON.parse(state);
     let promiseList = [getAllGroups(), getAllLights()];
     let sceneName;
@@ -29,8 +29,8 @@ function setLights(query, state) {
             console.log("No scene in state");
         }
 
-        // Get the target object for the given query
-        let targetObject = getTargetObject(query, allLights, allGroups);
+        // Get the target object for the given target
+        let targetObject = getTargetObject(target, allLights, allGroups);
         if (targetObject === undefined) {
             return "Ekki tókst að finna ljós";
         }
@@ -65,14 +65,14 @@ function setLights(query, state) {
 }
 
 /** Finds a matching light or group and returns an object with the ID, name and url for the target
- * @param {String} query - the query to find the target e.g. "eldhús"
+ * @param {String} target - the target to find the target e.g. "eldhús"
  * @param {Object} allLights - an object of all lights from the API
  * @param {Object} allGroups - an object of all groups from the API
  */
-function getTargetObject(query, allLights, allGroups) {
+function getTargetObject(target, allLights, allGroups) {
     let targetObject, selection, url;
-    let lightsResult = philipsFuzzySearch(query, allLights);
-    let groupsResult = philipsFuzzySearch(query, allGroups);
+    let lightsResult = philipsFuzzySearch(target, allLights);
+    let groupsResult = philipsFuzzySearch(target, allGroups);
 
     if (lightsResult != null && groupsResult != null) {
         // Found a match for a light group and a light+
@@ -120,37 +120,37 @@ function getSceneID(scene_name, allScenes) {
 
 /* Tester function for setting lights directly from HTML controls */
 function setLightsFromHTML() {
-    let query = document.getElementById("queryInput").value;
+    let target = document.getElementById("queryInput").value;
     let stateObject = new Object();
     stateObject.bri_inc = Number(
         document.getElementById("brightnessInput").value
     );
     stateObject = JSON.stringify(stateObject);
-    setLights(query, stateObject);
+    setLights(target, stateObject);
 }
 
 /* Tester function for setting lights directly from HTML input fields */
 function queryTestFromHTML() {
-    let query = document.getElementById("queryInput").value;
+    let target = document.getElementById("queryInput").value;
     let bool = document.getElementById("boolInput").value;
     let scene = document.getElementById("sceneInput").value;
-    console.log(query);
+    console.log(target);
     if (scene === "") {
-        setLights(query, `{"on": ${bool}}`);
+        setLights(target, `{"on": ${bool}}`);
     } else {
-        setLights(query, `{"scene": "${scene}"}`);
+        setLights(target, `{"scene": "${scene}"}`);
     }
 }
 
 // /** Finds a matching light or group and returns an object with the ID, name and url for the target
-//  * @param {String} query - the query to find the target e.g. "eldhús"
+//  * @param {String} target - the target to find the target e.g. "eldhús"
 //  * @param {Object} allLights - an array of all lights from the API
 //  * @param {Object} allGroups - an array of all groups from the API
 //  */
-//  function getTargetObjectOLD(query, allLights, allGroups) {
+//  function getTargetObjectOLD(target, allLights, allGroups) {
 //     let targetObject;
-//     let lightsResult = philipsFuzzySearch(query, allLights);
-//     let groupsResult = philipsFuzzySearch(query, allGroups);
+//     let lightsResult = philipsFuzzySearch(target, allLights);
+//     let groupsResult = philipsFuzzySearch(target, allGroups);
 //     console.log("lightsResult: ", lightsResult);
 //     console.log("groupsResult: ", groupsResult);
 
