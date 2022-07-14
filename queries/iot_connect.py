@@ -91,6 +91,7 @@ QIoTConnect →
     | QIoTConnectHub
     | QIoTConnectSpeaker
     | QIoTCreateSpeakerToken
+    | QIoTConnectSpotify
     
 QIoTConnectLights →
     "tengdu" "ljósin"
@@ -103,6 +104,9 @@ QIoTConnectSpeaker →
 
 QIoTCreateSpeakerToken →
     "skapaðu" "tóka"
+
+QIoTConnectSpotify →
+    "tengdu" "spotify"
 
 """
 
@@ -128,6 +132,12 @@ def QIoTCreateSpeakerToken(node: Node, params: QueryStateDict, result: Result) -
     print("Create Token")
     result.qtype = "create_speaker_token"
     result.action = "create_speaker_token"
+
+
+def QIoTConnectSpotify(node: Node, params: QueryStateDict, result: Result) -> None:
+    print("Connect Spotify")
+    result.qtype = "connect_spotify"
+    result.action = "connect_spotify"
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
@@ -212,6 +222,18 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         )
         sonos_client.audio_clip(text_to_audio_url(sonos_voice_clip))
         q.set_answer(response, answer, voice_answer)
+        return
+
+    elif result.qtype == "connect_spotify":
+        print("connect spotify")
+        spotify_key = read_api_key("SpotifyKey")
+        answer = "Skráðu þig inn hjá Spotify"
+        voice_answer, response = answer, dict(answer=answer)
+        q.set_answer(response, answer, voice_answer)
+        # Redirect the user to a Sonos login screen, which will then forward the neccessary credentials to the connect_sonos.api found in api.py
+        q.set_url(
+            f"https://accounts.spotify.com/authorize?client_id={spotify_key}&response_type=code&redirect_uri=http://{host}/connect_spotify.api&state={client_id}&scope=user-read-playback-state+user-modify-playback-state+user-read-playback-position+user-read-recently-played+app-remote-control+user-top-read+user-read-currently-playing+playlist-read-private+streaming"
+        )
         return
 
 
