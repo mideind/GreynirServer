@@ -48,7 +48,7 @@ from queries.dialogue import (
     DialogueStateManager,
 )
 
-_THEATER_DIALOGUE_NAME = "theater"
+_DIALOGUE_NAME = "theater"
 _THEATER_QTYPE = "theater"
 _START_DIALOGUE_QTYPE = "theater_start"
 
@@ -63,8 +63,8 @@ def help_text(lemma: str) -> str:
     )
 
 
-# This module wants to handle parse trees for queries
-HANDLE_TREE = True
+# This module wants to handle dialogue parse trees for queries
+HANDLE_DIALOGUE = True
 
 # This module involves dialogue functionality
 DIALOGUE_NAME = "theater"
@@ -79,10 +79,10 @@ GRAMMAR = """
 Query →
     QTheaterHotWord | QTheater
 
-QTheater → QTheaterQuery '?'?
+QTheater → QTheaterQuery
 
 QTheaterQuery →
-    QTheaterDialogue
+    QTheaterDialogue '?'?
 
 QTheaterHotWord →
     QTheaterNames '?'?
@@ -303,16 +303,10 @@ QTheaterPontun →
 
 def banned_nonterminals(q: Query) -> Set[str]:
     banned_nonterminals: set[str] = set()
-    dialogue_data = cast(Optional[str], q.all_dialogue_data.get(_THEATER_DIALOGUE_NAME))
-    if dialogue_data is None:
-        banned_nonterminals.add("QTheaterDialogue")
+    if q.dsm.dialogue_name != DIALOGUE_NAME:
+        banned_nonterminals.add("QTheaterQuery")
         return banned_nonterminals
-    q.start_dsm(_THEATER_DIALOGUE_NAME, dialogue_data)
-    dsm: DialogueStateManager = q.dsm
-    if q.dsm.not_in_dialogue():
-        banned_nonterminals.add("QTheaterDialogue")
-        return banned_nonterminals
-    resource: Resource = dsm.current_resource
+    resource: Resource = q.dsm.current_resource
     if resource.name == "Show":
         banned_nonterminals.update(
             {
@@ -467,17 +461,14 @@ def _generate_date_answer(
     resource: ListResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
     title = dsm.get_resource("Show").data[0]
-    print("GENERATING DATE ANSWER")
     dates: list[str] = []
     text_dates: list[str] = []
     index: int = 0
     extras: Dict[str, Any] = dsm.extras
     if "page_index" in extras:
         index = extras["page_index"]
-    print("itering shows")
     for show in _SHOWS:
         if show["title"] == title:
-            print("itering dates")
             for date in show["date"]:
                 with changedlocale(category="LC_TIME"):
                     text_dates.append(date.strftime("\n   - %a %d. %b kl. %H:%M"))
@@ -524,7 +515,6 @@ def _generate_date_answer(
                 ans.format(times=natlang_seq(show_times)).replace("dagur", "dagurinn")
             )
             return (dict(answer=text_ans), text_ans, numbers_to_ordinal(voice_ans))
-    print("UNFULFILLLED?", resource.is_unfulfilled)
     # No date selected, list available dates
     if resource.is_unfulfilled:
         if len(dates) > 0:
@@ -740,7 +730,6 @@ def QTheaterHotWord(node: Node, params: QueryStateDict, result: Result) -> None:
 def QTheaterShowQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     dsm: DialogueStateManager = Query.get_dsm(result)
     selected_show: str = result.show_name
-    print("SEARCHING FOR A SHOW:", selected_show)
     resource: ListResource = cast(ListResource, dsm.get_resource("Show"))
     show_exists = False
     for show in _SHOWS:
@@ -1036,11 +1025,8 @@ def QTheaterShowRow(node: Node, params: QueryStateDict, result: Result) -> None:
             text_ans = ans.format(seats=seats)
             voice_ans = ans.format(seats=number_to_text(seats))
             dsm.set_answer((dict(answer=text_ans), text_ans, voice_ans))
-        print("Available rows: ", available_rows)
-        print("Result number: ", result.number)
         # Available row chosen
         if result.number in available_rows:
-            print("Chosen row: ", result.number)
             resource.data = [result.number]
             dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
         # Incorrect row chosen
@@ -1158,7 +1144,6 @@ def QTheaterDateOptions(node: Node, params: QueryStateDict, result: Result) -> N
             index = extras["page_index"]
         for show in _SHOWS:
             if show["title"].lower() == title.lower():
-                print("itering dates")
                 for date in show["date"]:
                     with changedlocale(category="LC_TIME"):
                         text_dates.append(date.strftime("\n   - %a %d. %b kl. %H:%M"))
@@ -1171,7 +1156,6 @@ def QTheaterDateOptions(node: Node, params: QueryStateDict, result: Result) -> N
             if date_number == 2
             else "Næstu þrjár dagsetningarnar eru:"
         )
-        print("blaaaaa")
         if index == 0:
             start_string = start_string.replace("Næstu", "Fyrstu", 1)
         if len(dates) < 3:
@@ -1327,9 +1311,7 @@ def QTheaterYes(node: Node, params: QueryStateDict, result: Result):
             "ShowSeatNumber",
         )
     ) and current_resource.is_fulfilled:
-        print("CONFIRIMNGG")
         dsm.set_resource_state(current_resource.name, ResourceState.CONFIRMED)
-        print("CASCADED STATE")
         if isinstance(current_resource, WrapperResource):
             for rname in current_resource.requires:
                 dsm.get_resource(rname).state = ResourceState.CONFIRMED

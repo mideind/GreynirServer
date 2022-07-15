@@ -53,7 +53,11 @@ import re
 import random
 from copy import deepcopy
 from collections import defaultdict
-from queries.dialogue import DialogueStateManager as DSM, ResourceNotFoundError
+from queries.dialogue import (
+    DialogueStateManager as DSM,
+    ResourceNotFoundError,
+    DialogueDataDict,
+)
 
 from settings import Settings
 
@@ -299,65 +303,16 @@ class QueryTree(Tree):
             # But this processor is not interested in any of the nonterminals
             # in this query's parse forest: don't waste more cycles on it
             return False
-        dialogue_name: Optional[str] = getattr(processor, "DIALOGUE_NAME", None)
-        print("IN DIALOGUE MODULE:", dialogue_name)
-        if dialogue_name:
-            # This processor uses dialogue functionality,
-            # check if it wants to process this query
-            hotword_nonterminals: Set[str] = getattr(
-                processor, "HOTWORD_NONTERMINALS", set()
-            )
-            print("HOTWORD NONTERMINALS:", hotword_nonterminals)
-            print("QUERY NONTERMINALS:", self.query_nonterminals)
-            # Dialogue modules must have at least one
-            # hotword nonterminal for activating dialogue
-            assert isinstance(hotword_nonterminals, set)
-            assert len(hotword_nonterminals) > 0
-            dialogue_data = cast(
-                Optional[str], query.all_dialogue_data.get(dialogue_name)
-            )
-            print(
-                "CHECKING WHETHER PROCESSOR IS INTERESTED IN DIALOGUE:",
-                not (
-                    self.query_nonterminals.isdisjoint(hotword_nonterminals)
-                    and dialogue_data is None
-                ),
-            )
-            # Fetch saved dialogue state
-            if (
-                self.query_nonterminals.isdisjoint(hotword_nonterminals)
-                and dialogue_data is None
-            ):
-                print("NO DIALOGUE DATA AND NO HOTWORDS MATCHED")
-                # Query's parse forest doesn't contain hotwords
-                # and has no saved data for this dialogue,
-                # not interested in this query
-                return False
-            print("STARTING DSM")
-            # Query matches this dialogue processor, start DialogueStateManager
-            query.start_dsm(dialogue_name, dialogue_data)
-            print("FINISHED SETTING UP DSM")
-            if query.dsm.timed_out:
-                print("TIMED OUT")
-                timed_out_ans = query.dsm.get_resource("Final").prompts["timed_out"]
-                ans = (dict(answer=timed_out_ans), timed_out_ans, timed_out_ans)
-                query.set_answer(*ans)
-                query.update_dialogue_data()
-                return True
         with self.context(session, processor, query=query) as state:
             for query_tree in self._query_trees:
                 # Is the processor interested in the root nonterminal
                 # of this query tree?
                 if query_tree.string_self() in processor_query_types:
                     # Yes: hand the query tree over to the processor
-                    try:
-                        self.process_sentence(state, query_tree)
-                    except ResourceNotFoundError:
-                        pass
+                    self.process_sentence(state, query_tree)
                     if query.has_answer():
                         # The processor successfully answered the query: We're done
                         # Also save any changes to dialogue data, if needed
-                        query.update_dialogue_data()
                         return True
         return False
 
@@ -453,7 +408,9 @@ class Query:
         # This should be a dict that can be represented in JSON
         self._context: Optional[ContextDict] = None
         # Dialogue state manager and dialogue data, used for dialogue modules
-        self._dsm: Optional[DSM] = None
+        self._dsm: DSM = DSM(
+            cast(DialogueDataDict, self.client_data(DSM.DIALOGUE_DATA_KEY)) or dict()
+        )
         self._all_dialogue_data: Optional[ClientDataDict] = None
 
     def _preprocess_query_string(self, q: str) -> str:
@@ -477,6 +434,7 @@ class Query:
         all_procs: List[ModuleType] = []
         tree_procs: List[Tuple[int, ModuleType]] = []
         text_procs: List[Tuple[int, Callable[["Query"], bool]]] = []
+        dialogue_procs: List[Tuple[int, ModuleType]] = []
         # Load the query processor modules found in the
         # queries directory. The modules can be tree and/or text processors,
         # and we sort them into two lists, accordingly.
@@ -491,6 +449,10 @@ class Query:
                     # This is a tree processor
                     is_proc = True
                     tree_procs.append((priority, m))
+                if getattr(m, "HANDLE_DIALOGUE", False):
+                    # This is a dialogue processor
+                    is_proc = True
+                    dialogue_procs.append((priority, m))
                 handle_plain_text = getattr(m, "handle_plain_text", None)
                 if handle_plain_text is not None:
                     # This is a text processor:
@@ -507,11 +469,14 @@ class Query:
         # so that the higher-priority ones get invoked bfore the lower-priority ones
         cls._tree_processors = [t[1] for t in sorted(tree_procs, key=lambda x: -x[0])]
         cls._text_processors = [t[1] for t in sorted(text_procs, key=lambda x: -x[0])]
+        cls._dialogue_processors = [
+            t[1] for t in sorted(dialogue_procs, key=lambda x: -x[0])
+        ]
 
         # Obtain query grammar fragments from the tree processors
         grammar_fragments: List[str] = []
-        for processor in cls._tree_processors:
-            # Check whether this tree processor supplies a query grammar fragment
+        for processor in cls._dialogue_processors + cls._tree_processors:
+            # Check whether this dialogue/tree processor supplies a query grammar fragment
             fragment = getattr(processor, "GRAMMAR", None)
             if fragment and isinstance(fragment, str):
                 # Looks legit: add it to our list
@@ -640,11 +605,10 @@ class Query:
             print("Query is: '{0}'".format(actual_q))
 
         banned_nonterminals: Set[str] = set()
-        for t in Query._tree_processors:
+        for t in Query._dialogue_processors:
             f = getattr(t, "banned_nonterminals", None)
             if f is not None:
                 banned_nonterminals.update(f(self))
-        print("QUERY BANNED NON TERMINALS: ", banned_nonterminals)
         try:
             parse_result, trees = Query._parse(
                 toklist, banned_nonterminals=banned_nonterminals
@@ -693,6 +657,97 @@ class Query:
             handle_plain_text(self) for handle_plain_text in self._text_processors
         )
 
+    def execute_from_dialogue(self) -> bool:
+        """Execute the query or queries contained in the previously parsed tree;
+        return True if successful"""
+        if self._tree is None:
+            self.set_error("E_QUERY_NOT_PARSED")
+            return False
+        # Try each dialogue processor in turn, in priority order (highest priority first)
+        for processor in self._dialogue_processors:
+            self._error = None
+            self._qtype = None
+            # Process the dialogue, which has only one sentence, but may
+            # have multiple matching query nonterminals
+            # (children of Query in the grammar)
+            try:
+                # Note that passing query=self here means that the
+                # "query" field of the TreeStateDict is populated,
+                # turning it into a QueryStateDict.
+                processor_query_types: Set[str] = getattr(
+                    processor, "QUERY_NONTERMINALS", set()
+                )
+                if self._tree.query_nonterminals.isdisjoint(processor_query_types):
+                    print("!!!!!No query trees to process in this processor!!!!!")
+                    # But this processor is not interested in any of the nonterminals
+                    # in this query's parse forest: don't waste more cycles on it
+                    continue
+                dialogue_name: Optional[str] = getattr(processor, "DIALOGUE_NAME", None)
+                if dialogue_name:
+                    # This processor uses dialogue functionality,
+                    # check if it wants to process this query
+                    hotword_nonterminals: Set[str] = getattr(
+                        processor, "HOTWORD_NONTERMINALS", set()
+                    )
+                    # Dialogue modules must have at least one
+                    # hotword nonterminal for activating dialogue
+                    assert isinstance(hotword_nonterminals, set)
+                    assert len(hotword_nonterminals) > 0
+                    dialogue_data = cast(
+                        Optional[str], self.all_dialogue_data.get(dialogue_name)
+                    )
+                    print(
+                        "CHECKING WHETHER PROCESSOR IS INTERESTED IN DIALOGUE:",
+                        not (
+                            self._tree.query_nonterminals.isdisjoint(
+                                hotword_nonterminals
+                            )
+                            and dialogue_data is None
+                        ),
+                    )
+                    # Fetch saved dialogue state
+                    if (
+                        self._tree.query_nonterminals.isdisjoint(hotword_nonterminals)
+                        and dialogue_data is None
+                    ):
+                        print("NO DIALOGUE DATA AND NO HOTWORDS MATCHED")
+                        # Query's parse forest doesn't contain hotwords
+                        # and has no saved data for this dialogue,
+                        # not interested in this query
+                        continue
+                    # Query matches this dialogue processor, start DialogueStateManager
+                    self.dsm.load_dialogue(dialogue_name)
+                    if self.dsm.timed_out:
+                        timed_out_ans = self.dsm.get_resource("Final").prompts[
+                            "timed_out"
+                        ]
+                        ans = (dict(answer=timed_out_ans), timed_out_ans, timed_out_ans)
+                        self.set_answer(*ans)
+                        self.update_dialogue_data()
+                        return True
+                with self._tree.context(self._session, processor, query=self) as state:
+                    for query_tree in self._tree._query_trees:
+                        # Is the processor interested in the root nonterminal
+                        # of this query tree?
+                        if query_tree.string_self() in processor_query_types:
+                            # Yes: hand the query tree over to the processor
+                            try:
+                                self._tree.process_sentence(state, query_tree)
+                            except ResourceNotFoundError:
+                                pass
+                            if self.has_answer():
+                                # The processor successfully answered the query: We're done
+                                # Also save any changes to dialogue data, if needed
+                                self.update_dialogue_data()
+                                return True
+            except Exception as e:
+                logging.error(
+                    f"Exception in execute_from_dialogue('{processor.__name__}') "
+                    f"for query '{self._query}': {repr(e)}"
+                )
+        # No processor was able to answer the query
+        return False
+
     def execute_from_tree(self) -> bool:
         """Execute the query or queries contained in the previously parsed tree;
         return True if successful"""
@@ -703,7 +758,6 @@ class Query:
         for processor in self._tree_processors:
             self._error = None
             self._qtype = None
-            self._dsm = None
             # Process the tree, which has only one sentence, but may
             # have multiple matching query nonterminals
             # (children of Query in the grammar)
@@ -711,12 +765,10 @@ class Query:
                 # Note that passing query=self here means that the
                 # "query" field of the TreeStateDict is populated,
                 # turning it into a QueryStateDict.
-                print("TRYING PROCESSOR:", processor.__name__)
                 if self._tree.process_queries(self, self._session, processor):
                     # This processor found an answer, which is already stored
                     # in the Query object: return True
                     return True
-                print("FAILED PROCESSOR:", processor.__name__)
             except Exception as e:
                 logging.error(
                     f"Exception in execute_from_tree('{processor.__name__}') "
@@ -925,10 +977,6 @@ class Query:
         assert self._dsm is not None, "dsm property used in non-dialogue state"
         return self._dsm
 
-    def start_dsm(self, dialogue_name: str, dialogue_data: Optional[str]) -> None:
-        """Start a new DialogueStateManager instance"""
-        self._dsm = DSM(dialogue_name, dialogue_data)
-
     @property
     def all_dialogue_data(self) -> ClientDataDict:
         if self._all_dialogue_data is None:
@@ -1111,7 +1159,7 @@ class Query:
                     result["error"] = err
                 result["valid"] = False
                 return result
-            if not self.execute_from_tree():
+            if not self.execute_from_dialogue() and not self.execute_from_tree():
                 # This is a query, but its execution failed for some reason:
                 # return the error
                 # if Settings.DEBUG:

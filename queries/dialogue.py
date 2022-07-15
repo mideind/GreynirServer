@@ -87,6 +87,10 @@ _EXTRAS_KEY = "extras"
 _EXPIRATION_TIME_KEY = "expiration_time"
 
 
+# Dialogue data
+DialogueDataDict = Dict[str, str]
+
+
 class DialogueDBStructure(TypedDict):
     """
     Representation of the dialogue structure,
@@ -98,10 +102,22 @@ class DialogueDBStructure(TypedDict):
     extras: Dict[str, Any]
 
 
-class DialogueStateManager:
+class DialogueStateManager(object):
     DIALOGUE_DATA_KEY = "dialogue"
+    _instance = None
 
-    def __init__(self, dialogue_name: str, saved_state: Optional[str] = None):
+    # TODO: Check if singleton can be done in a better way
+    def __new__(cls, dialogue_data: DialogueDataDict) -> "DialogueStateManager":
+        if cls._instance is None:
+            cls._instance = super(DialogueStateManager, cls).__new__(cls)
+            # Put any initialization here.
+            cls._dialogue_data: DialogueDataDict = dialogue_data
+        return cls._instance
+
+    def __init__(self, dialogue_data: DialogueDataDict) -> None:
+        self._dialogue_data: DialogueDataDict = dialogue_data
+
+    def load_dialogue(self, dialogue_name: str):
         self._dialogue_name: str = dialogue_name
         # Dict mapping resource name to resource instance
         self._resources: Dict[str, Resource] = {}
@@ -122,15 +138,21 @@ class DialogueStateManager:
         self._expiration_time: int = _DEFAULT_EXPIRATION_TIME
         self._timed_out: bool = False
 
-        if isinstance(saved_state, str):
+        dialogue_saved_state: Optional[str] = self._dialogue_data.get(
+            dialogue_name, None
+        )
+        if isinstance(dialogue_saved_state, str):
             self._saved_state = cast(
-                DialogueDBStructure, json.loads(saved_state, cls=DialogueJSONDecoder)
+                DialogueDBStructure,
+                json.loads(dialogue_saved_state, cls=DialogueJSONDecoder),
             )
 
             # Check that we have saved data for this dialogue and that it is not expired
             if self._saved_state[_RESOURCES_KEY]:
                 self._in_this_dialogue = True
                 self.setup_resources()
+        else:
+            print("NO DIALOGUE DATA FOR", dialogue_name)
 
     def setup_resources(self) -> None:
         """
@@ -156,9 +178,7 @@ class DialogueStateManager:
         if self._saved_state and _EXTRAS_KEY in self._saved_state:
             self._extras = self._saved_state.get(_EXTRAS_KEY) or self._extras
         # Create resource dependency relationship graph
-        print("SETTING UP RESOURCE GRAPH")
         self._initialize_resource_graph()
-        print("FINISHED SETTING UP RESOURCE GRAPH")
 
     def _initialize_resource_graph(self) -> None:
         """
@@ -175,7 +195,6 @@ class DialogueStateManager:
             for req in resource.requires:
                 self._resource_graph[self._resources[req]]["parents"].append(resource)
                 self._resource_graph[resource]["children"].append(self._resources[req])
-        print(self._resource_graph)
 
     def _initialize_resources(self, filename: str) -> None:
         """
@@ -202,9 +221,7 @@ class DialogueStateManager:
 
     def hotword_activated(self) -> None:
         self._in_this_dialogue = True
-        print("STARTING RESOURCE SETUP")
         self.setup_resources()
-        print("FINISHED RESOURCE SETUP")
 
     def pause_dialogue(self) -> None:
         ...  # TODO
@@ -215,6 +232,12 @@ class DialogueStateManager:
     def not_in_dialogue(self) -> bool:
         """Check if the client is in or wants to start this dialogue"""
         return not self._in_this_dialogue
+
+    @property
+    def dialogue_name(self) -> Optional[str]:
+        if hasattr(self, "_dialogue_name"):
+            return self._dialogue_name
+        return None
 
     @property
     def current_resource(self) -> Resource:
@@ -290,16 +313,12 @@ class DialogueStateManager:
         Sets state of all parent resources to unfulfilled
         if cascade_state is set to True for the resource.
         """
-        print("SETTING STATE OF RESOURCE:", resource_name, "TO STATE:", state)
         resource = self._resources[resource_name]
         lowered_state = resource.state > state
         resource.state = state
-        print("CASCADES?", self._resources[resource_name].cascade_state)
         if resource.cascade_state and lowered_state:
             # Find all parent resources and set to corresponding state
-            print("SEARCHING FOR PARENTS")
             parents = self._find_parent_resources(self._resources[resource_name])
-            print("PARENTS FOUND:", parents)
             for parent in parents:
                 parent.state = ResourceState.UNFULFILLED
 
@@ -328,7 +347,6 @@ class DialogueStateManager:
                 ):
                     curr_res = grandparents[0]
                     break
-        print("CURRENT RESOURCE:", curr_res)
         return curr_res
 
     def finish_dialogue(self) -> None:

@@ -21,9 +21,12 @@ from queries.resources import (
     WrapperResource,
 )
 
-# Indicate that this module wants to handle parse trees for queries,
+_START_DIALOGUE_QTYPE = "QFruitStartQuery"
+_DIALOGUE_NAME = "fruitseller"
+
+# Indicate that this module wants to handle dialogue parse trees for queries,
 # as opposed to simple literal text strings
-HANDLE_TREE = True
+HANDLE_DIALOGUE = True
 
 DIALOGUE_NAME = "fruitseller"
 HOTWORD_NONTERMINALS = {"QFruitStartQuery"}
@@ -31,16 +34,17 @@ HOTWORD_NONTERMINALS = {"QFruitStartQuery"}
 # The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = {"QFruitSeller"}.union(HOTWORD_NONTERMINALS)
 
+
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
 Query →
-    QFruitStartQuery | QFruitSellerQuery
-
-QFruitSellerQuery →
-    QFruitSeller
+    QFruitStartQuery | QFruitSeller
 
 QFruitSeller →
+    QFruitSellerQuery
+
+QFruitSellerQuery →
     QFruitQuery '?'?
     | QFruitDateQuery '?'?
     | QFruitInfoQuery '?'?
@@ -150,33 +154,19 @@ QFruitTime →
 
 """
 
-_START_DIALOGUE_QTYPE = "QFruitStartQuery"
-_DIALOGUE_NAME = "fruitseller"
-
 
 def banned_nonterminals(q: Query) -> Set[str]:
     banned_nonterminals: set[str] = set()
-    dialogue_data = cast(Optional[str], q.all_dialogue_data.get(_DIALOGUE_NAME))
-    print("Dialogue data: ", dialogue_data)
-    if dialogue_data is None:
-        banned_nonterminals.add("QFruitSeller")
+    if q.dsm.dialogue_name != DIALOGUE_NAME:
+        banned_nonterminals.add("QFruitSellerQuery")
         return banned_nonterminals
-    print("STARTING DSM IN BANNED NONTERMINALS")
-    q.start_dsm(_DIALOGUE_NAME, dialogue_data)
-    if q.dsm.not_in_dialogue():
-        banned_nonterminals.add("QFruitSeller")
-        return banned_nonterminals
-    dsm: DialogueStateManager = q.dsm
-    resource: Resource = dsm.current_resource
+    resource: Resource = q.dsm.current_resource
     if resource.name == "Fruits":
-        print("BANNINGBANNINGBANNING: Current resource is show!")
         banned_nonterminals.add("QFruitDateQuery")
         if resource.is_unfulfilled:
-            print("BANNINGBANNINGBANNING: Show was unfulfilled")
             banned_nonterminals.add("QFruitYes")
             banned_nonterminals.add("QFruitNo")
     elif resource.name == "DateTime":
-        print("BANNINGBANNINGBANNING: Current resource is ShowDateTime!")
         if resource.is_unfulfilled:
             banned_nonterminals.add("QFruitYes")
             banned_nonterminals.add("QFruitNo")
@@ -464,6 +454,13 @@ def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QFruitInfoQuery(node: Node, params: QueryStateDict, result: Result):
     result.qtype = "QFruitInfo"
+    dsm: DialogueStateManager = Query.get_dsm(result)
+    at = dsm.get_answer(_ANSWERING_FUNCTIONS, result)
+    if at:
+        (_, ans, voice) = at
+        ans = "Ávaxtapöntunin þín gengur bara vel. " + ans
+        voice = "Ávaxtapöntunin þín gengur bara vel. " + voice
+        dsm.set_answer((dict(answer=ans), ans, voice))
 
 
 _ANSWERING_FUNCTIONS: AnsweringFunctionMap = {
@@ -499,6 +496,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         #     return
 
         ans = dsm.get_answer(_ANSWERING_FUNCTIONS, result)
+        print("FRUIT ANS: ", ans)
         if not ans:
             print("No answer generated")
             q.set_error("E_QUERY_NOT_UNDERSTOOD")
