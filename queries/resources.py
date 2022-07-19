@@ -65,6 +65,8 @@ class Resource:
     cascade_state: bool = False
     # Used for comparing states (which one is earlier/later in the dialogue)
     order_index: int = 0
+    # Extra variables to be used for specific variables
+    extras: Dict[str, Any] = field(default_factory=dict)
 
     @property
     def is_unfulfilled(self) -> bool:

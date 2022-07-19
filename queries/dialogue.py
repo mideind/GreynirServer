@@ -76,12 +76,14 @@ class DialogueTOMLStructure(TypedDict):
     """Structure of a dialogue TOML file."""
 
     resources: List[Dict[str, Any]]
+    dynamic_resources: List[Dict[str, Any]]
     expiration_time: NotRequired[int]
 
 
 # Keys for accessing saved client data for dialogues
 # (must match typed dict attributes below)
 _RESOURCES_KEY = "resources"
+_DYNAMIC_RESOURCES_KEY = "dynamic_resources"
 _MODIFIED_KEY = "modified"
 _EXTRAS_KEY = "extras"
 _EXPIRATION_TIME_KEY = "expiration_time"
@@ -111,11 +113,13 @@ class DialogueStateManager(object):
         if cls._instance is None:
             cls._instance = super(DialogueStateManager, cls).__new__(cls)
             # Put any initialization here.
+            print(">>>>>>>>Dialogue data in NEW:", dialogue_data)
             cls._dialogue_data: DialogueDataDict = dialogue_data
         return cls._instance
 
     def __init__(self, dialogue_data: DialogueDataDict) -> None:
         self._dialogue_data: DialogueDataDict = dialogue_data
+        print(">>>>>>>>Dialogue data in INIT:", dialogue_data)
 
     def load_dialogue(self, dialogue_name: str):
         self._dialogue_name: str = dialogue_name
@@ -158,6 +162,8 @@ class DialogueStateManager(object):
         """
         Load dialogue resources from TOML file and update their state from database data.
         """
+        print("Setting up resources")
+        # TODO: Only initialize if not hotword activated
         # Fetch empty resources from TOML
         self._initialize_resources(self._dialogue_name)
         if self._saved_state:
@@ -178,7 +184,9 @@ class DialogueStateManager(object):
         if self._saved_state and _EXTRAS_KEY in self._saved_state:
             self._extras = self._saved_state.get(_EXTRAS_KEY) or self._extras
         # Create resource dependency relationship graph
+        print("Initializing resource graph")
         self._initialize_resource_graph()
+        print("Finished setting up resources")
 
     def _initialize_resource_graph(self) -> None:
         """
@@ -187,40 +195,131 @@ class DialogueStateManager(object):
         to what each resource requires.
         """
         for resource in self._resources.values():
+            print("Initializing resource graph for", resource.name)
             if resource.order_index == 0:
                 self._initial_resource = resource
             self._resource_graph[resource] = {"children": [], "parents": []}
-
+        print("Children/parents set up, starting to fill:")
         for resource in self._resources.values():
+            print("In outer for loop")
             for req in resource.requires:
+                print("Appending parents and children for resource", req)
                 self._resource_graph[self._resources[req]]["parents"].append(resource)
                 self._resource_graph[resource]["children"].append(self._resources[req])
+                print("Done appending parents and children for resource", req)
+        print("Resource graph: ", self._resource_graph)
 
     def _initialize_resources(self, filename: str) -> None:
         """
         Loads dialogue structure from TOML file and
         fills self._resources with empty Resource instances.
         """
+        if self._saved_state:
+            print("IN IFFFFFF with resources: ", self._saved_state[_RESOURCES_KEY])
+            self._resources = {}
+            for rname, resource in self._saved_state[_RESOURCES_KEY].items():
+                print("Adding resource", rname)
+                self._resources[rname] = resource
+            self._expiration_time = self._saved_state.get(
+                "expiration_time", _DEFAULT_EXPIRATION_TIME
+            )
+        else:
+            basepath, _ = os.path.split(os.path.realpath(__file__))
+            fpath = os.path.join(basepath, _TOML_FOLDER_NAME, filename + ".toml")
+            with open(fpath, mode="r") as file:
+                f = file.read()
+            # Read TOML file containing a list of resources for the dialogue
+            obj: DialogueTOMLStructure = tomllib.loads(f)  # type: ignore
+            assert _RESOURCES_KEY in obj, f"No resources found in TOML file {f}"
+            # Create resource instances from TOML data and return as a dict
+            for i, resource in enumerate(obj[_RESOURCES_KEY]):
+                assert "name" in resource, f"Name missing for resource {i+1}"
+                if "type" not in resource:
+                    resource["type"] = "Resource"
+                # Create instances of Resource classes (and its subclasses)
+                self._resources[resource["name"]] = RESOURCE_MAP[resource["type"]](
+                    **resource, order_index=i
+                )
+            self._expiration_time = obj.get("expiration_time", _DEFAULT_EXPIRATION_TIME)
+
+    def add_dynamic_resource(self, resource_name: str, parent_name: str) -> None:
+        """
+        Adds a dynamic resource to the dialogue from TOML file and
+        updates the requirements of it's parents.
+        """
+        # TODO: should dynamic resources be loaded from TOML at initialization?
+        # Loading dynamic resources from TOML
         basepath, _ = os.path.split(os.path.realpath(__file__))
-        fpath = os.path.join(basepath, _TOML_FOLDER_NAME, filename + ".toml")
+        fpath = os.path.join(basepath, _TOML_FOLDER_NAME, self._dialogue_name + ".toml")
         with open(fpath, mode="r") as file:
             f = file.read()
-        # Read TOML file containing a list of resources for the dialogue
+
         obj: DialogueTOMLStructure = tomllib.loads(f)  # type: ignore
-        assert _RESOURCES_KEY in obj, f"No resources found in TOML file {f}"
-        # Create resource instances from TOML data and return as a dict
-        for i, resource in enumerate(obj[_RESOURCES_KEY]):
-            assert "name" in resource, f"Name missing for resource {i+1}"
-            if "type" not in resource:
-                resource["type"] = "Resource"
-            # Create instances of Resource classes (and its subclasses)
-            self._resources[resource["name"]] = RESOURCE_MAP[resource["type"]](
-                **resource, order_index=i
+        assert (
+            _DYNAMIC_RESOURCES_KEY in obj
+        ), f"No dynamic resources found in TOML file {f}"
+        parent_resource: Resource = self.get_resource(parent_name)
+        order_index: int = parent_resource.order_index
+        dynamic_resources: Dict[str, Resource] = {}
+        # Index of dynamic resource
+        dynamic_resource_index = (
+            len(
+                [
+                    i
+                    for i in self._resources
+                    if self.get_resource(i).name.startswith(resource_name + "_")
+                ]
             )
-        self._expiration_time = obj.get("expiration_time", _DEFAULT_EXPIRATION_TIME)
+            + 1
+        )
+        # Adding all dynamic resources to a list
+        for dynamic_resource in obj[_DYNAMIC_RESOURCES_KEY]:
+            assert "name" in dynamic_resource, f"Name missing for dynamic resource"
+            if "type" not in dynamic_resource:
+                dynamic_resource["type"] = "Resource"
+            # Updating required resources to have indexed name
+            dynamic_resource["requires"] = [
+                "{res}_{index}".format(res=res, index=dynamic_resource_index)
+                for res in dynamic_resource.get("requires", [])
+            ]
+            # Updating dynamic resource name to have indexed name
+            dynamic_resource["name"] = "{name}_{index}".format(
+                name=dynamic_resource["name"], index=dynamic_resource_index
+            )
+            # Adding dynamic resource to list
+            dynamic_resources[dynamic_resource["name"]] = RESOURCE_MAP[
+                dynamic_resource["type"]
+            ](
+                **dynamic_resource,
+                order_index=order_index,
+            )
+        # Indexed resource name of the dynamic resource
+        indexed_resource_name = "{name}_{index}".format(
+            name=resource_name, index=dynamic_resource_index
+        )
+        resource: Resource = dynamic_resources[indexed_resource_name]
+        # Appending resource to required list of parent resource
+        parent_resource.requires.append(indexed_resource_name)
+
+        def _add_child_resource(resource: Resource) -> None:
+            """
+            Recursively adds a child resource to the resources list
+            """
+            print("Start of add child resource")
+            self._resources[resource.name] = resource
+            for req in resource.requires:
+                _add_child_resource(dynamic_resources[req])
+
+        _add_child_resource(resource)
+        # Initialize the resource graph again with the update resources
+        # for i, (rname, resource) in enumerate(self._resources.items()):
+        #     self._resources[rname].order_index = i
+        self._initialize_resource_graph()
+        self._find_current_resource()
 
     def hotword_activated(self) -> None:
         self._in_this_dialogue = True
+        print("In hotword activated")
         self.setup_resources()
 
     def pause_dialogue(self) -> None:
@@ -276,8 +375,10 @@ class DialogueStateManager(object):
                 raise ValueError("No answer for cancelled dialogue")
             return self._answer_tuple
 
-        if self._current_resource.name in self._answering_functions:
-            ans = self._answering_functions[self._current_resource.name](
+        resource_name = self._current_resource.name.partition("_")[0]
+        if resource_name in self._answering_functions:
+            print("GENERATING ANSWER FOR ", resource_name)
+            ans = self._answering_functions[resource_name](
                 self._current_resource, self, result
             )
             return ans
@@ -338,6 +439,12 @@ class DialogueStateManager(object):
         Finds the current resource in the resource graph.
         """
         curr_res: Resource = self._initial_resource
+        # If the initial parent is a wrapper, the current resource should be that parent
+        initial_parents = self._resource_graph[curr_res]["parents"]
+        if len(initial_parents) == 1 and isinstance(
+            initial_parents[0], WrapperResource
+        ):
+            curr_res = initial_parents[0]
         while curr_res.is_confirmed:
             for parent in self._resource_graph[curr_res]["parents"]:
                 curr_res = parent
@@ -360,6 +467,7 @@ class DialogueStateManager(object):
             self.finish_dialogue()
         ds_json: Optional[str] = None
         if not self._finished and not self._timed_out:
+            print("!!!!!!!!!!!!!!!Serializing data! with resources: ", self._resources)
             ds_json = json.dumps(
                 {
                     _RESOURCES_KEY: self._resources,

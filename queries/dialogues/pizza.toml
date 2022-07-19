@@ -1,0 +1,75 @@
+# [[resources]]
+# name = "PizzaCount"
+# type = "NumberResource"
+
+# [[resources]]
+# name = "Pizzas"
+# type = "WrapperResource"
+# requires = ["PizzaCount"]
+# prompts.initial = "Hvað má bjóða þér?"
+
+# [[resources]]
+# name = "Sides"
+# type = "ListResource"
+
+# [[resources]]
+# name = "Sauces"
+# type = "ListResource"
+
+# [[resources]]
+# name = "Drinks"
+# type = "ListResource"
+
+[[resources]]
+name = "PizzaOrder"
+type = "WrapperResource"
+#requires = ["Pizzas"]    #, "Sides", "Sauces", "Drinks"]
+prompts.initial = "Hvað má bjóða þér?"
+
+[[resources]]
+name = "Final"
+type = "FinalResource"
+requires = ["PizzaOrder"]
+prompts.final = "Pizzupöntunin þín er móttekin."
+prompts.cancelled = "Móttekið, hætti við pizzu pöntunina."
+prompts.timed_out = "Pizzupöntunin þín rann út á tíma. Vinsamlegast byrjaðu aftur."
+
+# Dynamic resources that get created when a user orders a pizza
+[[dynamic_resources]]
+name = "Pizza"
+type = "WrapperResource"
+requires = ["Type", "Size", "Crust"]
+prompts.initial = "Hvað má bjóða þér á pizzuna?"
+
+[[dynamic_resources]]
+name = "Type"
+type = "OrResource"
+requires = ["Toppings", "FromMenu"] #, "Split"]
+
+[[dynamic_resources]]
+name = "Toppings"
+type = "ListResource"
+
+[[dynamic_resources]]
+name = "FromMenu"
+
+[[dynamic_resources]]
+name = "Size"
+
+[[dynamic_resource]]
+name = "Split"
+type = "WrapperResource"
+requires = ["Side1", "Side2"]
+
+[[dynamic_resource]]
+name = "Side1"
+type = "OrResource"
+requires = ["Toppings", "FromMenu"]
+
+[[dynamic_resource]]
+name = "Side2"
+type = "OrResource"
+requires = ["Toppings", "FromMenu"]
+
+[[dynamic_resources]]
+name = "Crust"

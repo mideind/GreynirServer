@@ -156,6 +156,10 @@ QFruitTime →
 
 
 def banned_nonterminals(q: Query) -> Set[str]:
+    """
+    Returns a set of nonterminals that are not
+    allowed due to the state of the dialogue
+    """
     banned_nonterminals: set[str] = set()
     if q.dsm.dialogue_name != DIALOGUE_NAME:
         banned_nonterminals.add("QFruitSellerQuery")
