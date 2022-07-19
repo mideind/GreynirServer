@@ -1,0 +1,318 @@
+{
+	"info": {
+		"_postman_id": "f0e8ea0e-501e-4b89-a45d-c99278219f2b",
+		"name": "ikea",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "http://localhost:3500/test",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"groupOperation\":{\n\t\t\"group\": \"stue loft\",\n\t\t\"operation\": {\n\t\t\t\"onOff\": true\n\t\t}\n\t}\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3500/test",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3500",
+					"path": [
+						"test"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:3500/devices",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:3500/devices",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3500",
+					"path": [
+						"devices"
+					],
+					"query": [
+						{
+							"key": "asdf",
+							"value": "asdf",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:3500/devices/get-single-device",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"deviceNameOrId\": \"Sov.loft.E27WS\"}"
+				},
+				"url": {
+					"raw": "http://localhost:3500/devices/get-single-device",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3500",
+					"path": [
+						"devices",
+						"get-single-device"
+					],
+					"query": [
+						{
+							"key": "asdf",
+							"value": "asdf",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:3500/devices/set-device",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"deviceNameOrId\": \"Stue.gulvlampe.E27WS\",\n\t\"action\": {\n\t\t\"name\": \"toggle\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3500/devices/set-device",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3500",
+					"path": [
+						"devices",
+						"set-device"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:3500/rooms",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:3500/rooms",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3500",
+					"path": [
+						"rooms"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:3500/rooms/set-room",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"room\": {\n\t\t\"name\": \"STUE LOFT\",\n\t\t\"scene\": \"Lidt lys\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3500/rooms/set-room",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3500",
+					"path": [
+						"rooms",
+						"set-room"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:3500/rooms/get-single-room",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"room\": {\n\t\t\"name\": \"STUE LOFT\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3500/rooms/get-single-room",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3500",
+					"path": [
+						"rooms",
+						"get-single-room"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:3500/masterswitch",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"confirmation\": true\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3500/masterswitch",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3500",
+					"path": [
+						"masterswitch"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:3500/masterswitch/all-on",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"confirmation\": true\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3500/masterswitch/all-on",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3500",
+					"path": [
+						"masterswitch",
+						"all-on"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:3500/devices/get-battery-life",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:3500/devices/get-battery-life",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3500",
+					"path": [
+						"devices",
+						"get-battery-life"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

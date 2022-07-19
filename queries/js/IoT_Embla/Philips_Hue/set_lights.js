@@ -1,8 +1,8 @@
 "use strict";
 
 // Constants to be used when setting lights from HTML
-// var BRIDGE_IP = "192.168.1.68";
-// var USERNAME = "MQH9DVv1lhgaOKN67uVox4fWNc9iu3j5g7MmdDUr";
+var BRIDGE_IP = "192.168.1.68";
+var USERNAME = "BzdNyxr6mGSHVdQN86UeZP67qp5huJ2Q6TWyTzvz";
 
 // TODO: Implement a hotfix for Ikea Tradfri bulbs, since it can only take one argument at a time
 
@@ -50,18 +50,49 @@ function setLights(target, state) {
 
         // Send data to API
         let url = targetObject.url;
-        fetch(`http://${BRIDGE_IP}/api/${USERNAME}/${url}`, {
-            method: "PUT",
-            body: state,
-        })
-            .then((resp) => resp.json())
-            .then((obj) => {
-                console.log(obj);
-            })
-            .catch((err) => {
-                console.log("an error occurred!");
+        call_api(url, state);
+        let isTradfriBulb = check_if_if_ikea_bulb_in_group(
+            targetObject,
+            allLights
+        );
+        console.log("isTradfriBulb:", isTradfriBulb);
+        if (isTradfriBulb) {
+            console.log("sending request again");
+            const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+            sleep(450).then(() => {
+                call_api(url, state);
             });
+        }
     });
+}
+//         fetch(`http://${BRIDGE_IP}/api/${USERNAME}/${url}`, {
+//             method: "PUT",
+//             body: state,
+//         })
+//             .then((resp) => resp.json())
+//             .then((obj) => {
+//                 console.log(obj);
+//             })
+//             .catch((err) => {
+//                 console.log("an error occurred!");
+//             });
+//     });
+// }
+
+function call_api(url, state) {
+    console.log("call api");
+    fetch(`http://${BRIDGE_IP}/api/${USERNAME}/${url}`, {
+        method: "PUT",
+        body: state,
+    })
+        .then((resp) => resp.json())
+        .then((obj) => {
+            console.log(obj);
+        })
+        .catch((err) => {
+            console.log("an error occurred!");
+        });
+    return;
 }
 
 /** Finds a matching light or group and returns an object with the ID, name and url for the target
@@ -84,6 +115,7 @@ function getTargetObject(target, allLights, allGroups) {
                   }
                 : {
                       id: groupsResult.result.ID,
+                      lights: groupsResult.result.info.lights,
                       url: `groups/${groupsResult.result.ID}/action`,
                   };
     } else if (lightsResult != null && groupsResult == null) {
@@ -96,6 +128,7 @@ function getTargetObject(target, allLights, allGroups) {
         // Found a match for a light group
         targetObject = {
             id: groupsResult.result.ID,
+            lights: groupsResult.result.info.lights,
             url: `groups/${groupsResult.result.ID}/action`,
         };
     } else {
@@ -139,6 +172,20 @@ function queryTestFromHTML() {
         setLights(target, `{"on": ${bool}}`);
     } else {
         setLights(target, `{"scene": "${scene}"}`);
+    }
+}
+
+function check_if_if_ikea_bulb_in_group(groupsObject, all_lights) {
+    for (let key in groupsObject.lights) {
+        let lightID = groupsObject.lights[key];
+        let light = all_lights[lightID];
+        if (
+            light.manufacturername.includes("IKEA") |
+            light.modelid.includes("TRADFRI")
+        );
+        {
+            return true;
+        }
     }
 }
 

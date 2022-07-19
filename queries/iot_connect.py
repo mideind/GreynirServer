@@ -156,6 +156,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     q.set_qtype(result.qtype)
     host = str(flask.request.host)
+    print("host :", host)
     client_id = str(q.client_id)
 
     if result.qtype == "connect_lights":

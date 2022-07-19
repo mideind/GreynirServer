@@ -168,22 +168,27 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         print("ARTIST NAME :", artist_name)
 
         print("RESTULT SONG NAME:", result.song_name)
-        print("RESTULT ARTIST NAME:", result.artist_name)
+        print("RESULT ARTIST NAME:", result.artist_name)
         device_data = q.client_data("spotify")
-        client_id = str(q.client_id)
-        spotify_client = SpotifyClient(
-            device_data,
-            client_id,
-            song_name=result.song_name,
-            artist_name=result.artist_name,
-        )
-        song_url = spotify_client.get_song_by_artist()
-        response = spotify_client.play_song_on_device()
-        print("RESPONSE FROM SPOTIFY:", response)
-        if response is None:
-            q.set_url(song_url)
+        if device_data is not None:
+            client_id = str(q.client_id)
+            spotify_client = SpotifyClient(
+                device_data,
+                client_id,
+                song_name=result.song_name,
+                artist_name=result.artist_name,
+            )
+            song_url = spotify_client.get_song_by_artist()
+            response = spotify_client.play_song_on_device()
+            print("RESPONSE FROM SPOTIFY:", response)
+            if response is None:
+                q.set_url(song_url)
 
-        answer = "Ég spilaði lagið"
+            answer = "Ég spilaði lagið"
+        else:
+            answer = "Það vantar að tengja Spotify aðgang."
+            q.set_answer(*gen_answer(answer))
+            return
         # q.set_url(
         #     "https://spotify.app.link/?product=open&%24full_url=https%3A%2F%2Fopen.spotify.com%2Ftrack%2F2BSyX4weGuITcvl5r2lLCC%3Fgo%3D1%26sp_cid%3D2a74d03dedb9fa4450d122ddebebcf9b%26fallback%3Dgetapp&feature=organic&_p=c31529c0980b7af1e11b90f9"
         # )

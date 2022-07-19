@@ -34,6 +34,7 @@
 # TODO: Fix scene issues
 # TODO: Turning on lights without using "turn on"
 # TODO: Add functionality for robot-like commands "ljós í eldhúsinu", "rauður í eldhúsinu"
+# TODO: Heldur að 'gerðu ljósið kaldara' sé senan 'köld'
 
 from typing import Dict, Mapping, Optional, cast, FrozenSet
 from typing_extensions import TypedDict
@@ -189,6 +190,22 @@ def QIoTIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None
     else:
         result["hue_obj"]["bri_inc"] = 64
         result["hue_obj"]["on"] = True
+
+
+def QIoTCooler(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.action = "decrease_colortemp"
+    if "hue_obj" not in result:
+        result["hue_obj"] = {"ct_inc": -30000}
+    else:
+        result["hue_obj"]["ct_inc"] = -30000
+
+
+def QIoTWarmer(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.action = "increase_colortemp"
+    if "hue_obj" not in result:
+        result["hue_obj"] = {"ct_inc": 30000}
+    else:
+        result["hue_obj"]["ct_inc"] = 30000
 
 
 def QIoTDecreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:

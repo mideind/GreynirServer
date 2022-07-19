@@ -188,10 +188,12 @@ QIoTLocationPrepositionSecondPart ->
 QIoTGroupName/fall ->
     # QIoTLightsBanwords/fall
     no/fall
+    | sérnafn/fall
 
 QIoTLightName/fall ->
     # QIoTLightsBanwords/fall
     no/fall
+    | sérnafn/fall
 
 QIoTColorName ->
     {color_names}
@@ -200,6 +202,7 @@ QIoTSceneName ->
     # QIoTLightsBanwords/fall
     no
     | lo
+    | sérnafn/fall
 
 QIoTAnnadAndlag ->
     QIoTNewSetting/nf
@@ -262,6 +265,7 @@ QIoTSpyrjaHuldu/fall ->
     # QIoTHuldaColor/fall
     QIoTHuldaBrightness/fall
     # | QIoTHuldaScene/fall
+    | QIoTHuldaTemp/fall
 
 # Do I need a "new light state" non-terminal?
 QIoTNewSetting/fall ->
@@ -273,6 +277,10 @@ QIoTNewSetting/fall ->
 QIoTHuldaBrightness/fall ->
     QIoTMoreBrighterOrHigher/fall QIoTBrightnessWords/fall?
     | QIoTLessDarkerOrLower/fall QIoTBrightnessWords/fall?
+
+QIoTHuldaTemp/fall ->
+    QIoTWarmer/fall
+    | QIoTCooler/fall 
 
 #Unsure about whether to include /fall after QIoTColorName
 QIoTNewColor/fall ->
@@ -298,6 +306,12 @@ QIoTLessDarkerOrLower/fall ->
     | 'dökkur:lo'_mst/fall
     | 'dimmur:lo'_mst/fall
     | 'lágur:lo'_mst/fall
+
+QIoTWarmer/fall ->
+    'hlýr:lo'_mst/fall
+
+QIoTCooler/fall ->
+    'kaldur:lo'_mst/fall
 
 QIoTBrightestOrDarkest/fall ->
     QIoTBrightest/fall
