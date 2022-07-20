@@ -20,9 +20,10 @@
 
     This query module handles dialogue related to ordering pizza.
 """
-from typing import Optional, Set, cast
+from typing import Dict, Optional, Set, cast
 import logging
 import random
+from xxlimited import Str
 
 from query import Query, QueryStateDict
 from tree import Result, Node
@@ -277,8 +278,22 @@ def QPizzaNumberAnswer(node: Node, params: QueryStateDict, result: Result) -> No
     print("Pizza Count: ", number)
 
 
-def QPizzaToppingsAnswer(node: Node, params: QueryStateDict, result: Result) -> None:
-    ...
+def QPizzaToppingsList(node: Node, params: QueryStateDict, result: Result) -> None:
+    print("Toppings in QPizzaToppingsList: ", result.get("toppings", {}))
+    dsm: DialogueStateManager = Query.get_dsm(result)
+    toppings: Dict[str, int] = result.get("toppings", {})
+    resource = dsm.current_resource
+    (_, _, index) = resource.name.partition("_")
+    toppings_resource = dsm.get_resource("Toppings_{}".format(index))
+    for topping in toppings:
+        ...  # toppings_resource.data[topping] = toppings[topping]
+
+
+def QPizzaToppingsWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    topping: str = result.dict.pop("real_name", result._nominative)
+    if "toppings" not in result:
+        result["toppings"] = {}
+    result["toppings"][topping] = 1  # TODO: Add support for extra toppings
 
 
 def QPizzaNum(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -287,6 +302,18 @@ def QPizzaNum(node: Node, params: QueryStateDict, result: Result) -> None:
         result["numbers"] = []
     result.numbers.append(number)
     result.number = number
+
+
+def QPizzaPepperoniWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.real_name = "pepperóní"
+
+
+def QPizzaOliveWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.real_name = "ólífur"
+
+
+def QPizzaMushroomWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.real_name = "sveppir"
 
 
 _ANSWERING_FUNCTIONS: AnsweringFunctionMap = {
