@@ -141,6 +141,7 @@ class DialogueStateManager(object):
         self._finished: bool = False
         self._expiration_time: int = _DEFAULT_EXPIRATION_TIME
         self._timed_out: bool = False
+        self._initial_resource = None
 
         dialogue_saved_state: Optional[str] = self._dialogue_data.get(
             dialogue_name, None
@@ -196,7 +197,7 @@ class DialogueStateManager(object):
         """
         for resource in self._resources.values():
             print("Initializing resource graph for", resource.name)
-            if resource.order_index == 0:
+            if resource.order_index == 0 and self._initial_resource is None:
                 self._initial_resource = resource
             self._resource_graph[resource] = {"children": [], "parents": []}
         print("Children/parents set up, starting to fill:")
@@ -300,6 +301,7 @@ class DialogueStateManager(object):
         resource: Resource = dynamic_resources[indexed_resource_name]
         # Appending resource to required list of parent resource
         parent_resource.requires.append(indexed_resource_name)
+        print("Parent resource requirements: ", parent_resource.requires)
 
         def _add_child_resource(resource: Resource) -> None:
             """
@@ -437,6 +439,7 @@ class DialogueStateManager(object):
         Finds the current resource in the resource graph.
         """
         curr_res: Resource = self._initial_resource
+        print("Current resource: ", curr_res.name)
         # If the initial parent is a wrapper, the current resource should be that parent
         initial_parents = self._resource_graph[curr_res]["parents"]
         if len(initial_parents) == 1 and isinstance(
@@ -444,14 +447,16 @@ class DialogueStateManager(object):
         ):
             curr_res = initial_parents[0]
         while curr_res.is_confirmed:
+            print("Current resource!!: ", curr_res.name)
             for parent in self._resource_graph[curr_res]["parents"]:
                 curr_res = parent
                 grandparents = self._resource_graph[parent]["parents"]
                 if len(grandparents) == 1 and isinstance(
                     grandparents[0], WrapperResource
                 ):
+                    print("!!Current resource!!: ", curr_res.name)
                     curr_res = grandparents[0]
-                    break
+                    return curr_res
         return curr_res
 
     def finish_dialogue(self) -> None:
