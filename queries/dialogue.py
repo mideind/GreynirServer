@@ -436,7 +436,8 @@ class DialogueStateManager(object):
 
     def _find_current_resource(self) -> Resource:
         """
-        Finds the current resource in the resource graph.
+        Finds the current resource in the resource graph
+        using a postorder traversal of the resource graph.
         """
         curr_res: Optional[Resource] = None
         wrapper_parent: Optional[Resource] = None
@@ -445,25 +446,26 @@ class DialogueStateManager(object):
             nonlocal curr_res, wrapper_parent
             if resource.is_confirmed or resource.is_skipped:
                 return
-            else:
-                if isinstance(resource, WrapperResource):
-                    wrapper_parent = resource
-                for child in self._resource_graph[resource]["children"]:
-                    _recurse_resources(child)
-                    if curr_res == child:
-                        # Found a non-confirmed descendant
-                        if (
-                            not isinstance(child, WrapperResource)
-                            and wrapper_parent == resource
-                        ):
-                            # If the direct child of a wrapper resource
-                            # is the current resource (and not a wrapper itself),
-                            # set the wrapper as the current resource
-                            curr_res = resource
-                        return
-                    if curr_res is not None:
-                        return
-                curr_res = resource
+            # Current resource is neither confirmed nor skipped,
+            # so we try to recurse further
+            if isinstance(resource, WrapperResource):
+                # This resource is a wrapper, keep it in a variable
+                wrapper_parent = resource
+            for child in self._resource_graph[resource]["children"]:
+                _recurse_resources(child)
+                if (
+                    curr_res == child
+                    and not isinstance(child, WrapperResource)
+                    and wrapper_parent == resource
+                ):
+                    # If the direct child of a wrapper resource
+                    # is the current resource and not a wrapper itself,
+                    # set the wrapper as the current resource instead
+                    curr_res = resource
+                if curr_res is not None:
+                    # Found a non-confirmed resource, stop looking
+                    return
+            curr_res = resource
 
         _recurse_resources(self._resources["Final"])
         return curr_res or self._resources["Final"]
