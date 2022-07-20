@@ -76,14 +76,14 @@ GRAMMAR = """
 /ef = ef
 
 Query →
-    QPizza '?'?
+    QPizzaHotWord '?'? 
+    | QPizza '?'?
 
 QPizza → 
     QPizzaQuery
 
 QPizzaQuery →
-    QPizzaHotWord
-    | QPizzaDialogue
+    QPizzaDialogue
 
 QPizzaHotWord →
     QPizzaWord/nf
@@ -102,7 +102,7 @@ QPizzaNumberAnswer →
     | QPizzaNum/þf QPizzaWord/þf?
 
 QPizzaToppingsAnswer ->
-    QPizzaEgVil? QPizzaToppingsList "á" QPizzaWord/þf
+    QPizzaEgVil? QPizzaToppingsList "á"? QPizzaWord/þf?
 
 # QPizzaSizeAnswer ->
 #     QPizza
@@ -202,7 +202,7 @@ def QPizzaHotWord(node: Node, params: QueryStateDict, result: Result) -> None:
     Query.get_dsm(result).hotword_activated()
 
 
-def QPizzaOrder(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaNumberAnswer(node: Node, params: QueryStateDict, result: Result) -> None:
     dsm: DialogueStateManager = Query.get_dsm(result)
     # resource = dsm.get_resource("PizzaCount")
     number: int = result.get("number", 1)
@@ -210,6 +210,10 @@ def QPizzaOrder(node: Node, params: QueryStateDict, result: Result) -> None:
         print("CCCCCCAAAAALLLLLLLLLLLLLL")
         dsm.add_dynamic_resource("Pizza", "PizzaOrder")
     print("Pizza Count: ", number)
+
+
+def QPizzaToppingsAnswer(node: Node, params: QueryStateDict, result: Result) -> None:
+    ...
 
 
 def QPizzaNum(node: Node, params: QueryStateDict, result: Result) -> None:
