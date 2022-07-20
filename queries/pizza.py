@@ -82,20 +82,20 @@ QPizza →
     QPizzaQuery
 
 QPizzaQuery →
-    QPizzaHotword
+    QPizzaHotWord
     | QPizzaDialogue
 
 QPizzaHotWord →
-    QPizzaWord
+    QPizzaWord/nf
     | QPizzaRequestBare
 
 QPizzaRequestBare ->
-    QPizzaEgVil QPizzaKaupaFaraFaPanta QPizzaWord
+    QPizzaEgVil QPizzaKaupaFaraFaPanta QPizzaWord/þf
 
 QPizzaDialogue →
     QPizzaNumberAnswer
     | QPizzaToppingsAnswer
-    | QPizzaSizeAnswer
+    # | QPizzaSizeAnswer
 
 QPizzaNumberAnswer →
     QPizzaEgVil QPizzaKaupaFaraFaPanta QPizzaNum/þf QPizzaWord/þf
@@ -104,11 +104,11 @@ QPizzaNumberAnswer →
 QPizzaToppingsAnswer ->
     QPizzaEgVil? QPizzaToppingsList "á" QPizzaWord/þf
 
-QPizzaSizeAnswer ->
-    QPizza
+# QPizzaSizeAnswer ->
+#     QPizza
 
 QPizzaToppingsList ->
-    QPizzaToppingsWord/þf* 'og:st'? QPizzaToppingsWord
+    QPizzaToppingsWord/þf* 'og:st'? QPizzaToppingsWord/þf
 
 QPizzaEgVil →
     "ég"? "vil"
