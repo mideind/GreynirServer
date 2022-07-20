@@ -141,6 +141,7 @@ class DialogueStateManager(object):
         self._finished: bool = False
         self._expiration_time: int = _DEFAULT_EXPIRATION_TIME
         self._timed_out: bool = False
+        self._initial_resource = None
 
         dialogue_saved_state: Optional[str] = self._dialogue_data.get(
             dialogue_name, None
@@ -196,7 +197,7 @@ class DialogueStateManager(object):
         """
         for resource in self._resources.values():
             print("Initializing resource graph for", resource.name)
-            if resource.order_index == 0:
+            if resource.order_index == 0 and self._initial_resource is None:
                 self._initial_resource = resource
             self._resource_graph[resource] = {"children": [], "parents": []}
         print("Children/parents set up, starting to fill:")
@@ -300,6 +301,7 @@ class DialogueStateManager(object):
         resource: Resource = dynamic_resources[indexed_resource_name]
         # Appending resource to required list of parent resource
         parent_resource.requires.append(indexed_resource_name)
+        print("Parent resource requirements: ", parent_resource.requires)
 
         def _add_child_resource(resource: Resource) -> None:
             """
@@ -373,7 +375,7 @@ class DialogueStateManager(object):
                 raise ValueError("No answer for cancelled dialogue")
             return self._answer_tuple
 
-        resource_name = self._current_resource.name.partition("_")[0]
+        resource_name = self._current_resource.name.split("_")[0]
         if resource_name in self._answering_functions:
             print("GENERATING ANSWER FOR ", resource_name)
             ans = self._answering_functions[resource_name](
@@ -434,25 +436,39 @@ class DialogueStateManager(object):
 
     def _find_current_resource(self) -> Resource:
         """
-        Finds the current resource in the resource graph.
+        Finds the current resource in the resource graph
+        using a postorder traversal of the resource graph.
         """
-        curr_res: Resource = self._initial_resource
-        # If the initial parent is a wrapper, the current resource should be that parent
-        initial_parents = self._resource_graph[curr_res]["parents"]
-        if len(initial_parents) == 1 and isinstance(
-            initial_parents[0], WrapperResource
-        ):
-            curr_res = initial_parents[0]
-        while curr_res.is_confirmed:
-            for parent in self._resource_graph[curr_res]["parents"]:
-                curr_res = parent
-                grandparents = self._resource_graph[parent]["parents"]
-                if len(grandparents) == 1 and isinstance(
-                    grandparents[0], WrapperResource
+        curr_res: Optional[Resource] = None
+        wrapper_parent: Optional[Resource] = None
+
+        def _recurse_resources(resource: Resource) -> None:
+            nonlocal curr_res, wrapper_parent
+            if resource.is_confirmed or resource.is_skipped:
+                return
+            # Current resource is neither confirmed nor skipped,
+            # so we try to recurse further
+            if isinstance(resource, WrapperResource):
+                # This resource is a wrapper, keep it in a variable
+                wrapper_parent = resource
+            for child in self._resource_graph[resource]["children"]:
+                _recurse_resources(child)
+                if (
+                    curr_res == child
+                    and not isinstance(child, WrapperResource)
+                    and wrapper_parent == resource
                 ):
-                    curr_res = grandparents[0]
-                    break
-        return curr_res
+                    # If the direct child of a wrapper resource
+                    # is the current resource and not a wrapper itself,
+                    # set the wrapper as the current resource instead
+                    curr_res = resource
+                if curr_res is not None:
+                    # Found a non-confirmed resource, stop looking
+                    return
+            curr_res = resource
+
+        _recurse_resources(self._resources["Final"])
+        return curr_res or self._resources["Final"]
 
     def finish_dialogue(self) -> None:
         """Set the dialogue as finished."""

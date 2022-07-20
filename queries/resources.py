@@ -133,6 +133,13 @@ class ListResource(Resource):
         return ",".join(str(x) for x in self.data)
 
 
+@dataclass(eq=False, repr=False)
+class DictResource(Resource):
+    """Resource representing a dictionary of items."""
+
+    data: Dict[str, Any] = field(default_factory=dict)
+
+
 # TODO: ?
 # ExactlyOneResource (choose one resource from options)
 # SetResource (a set of resources)?
@@ -236,14 +243,15 @@ class NumberResource(Resource):
     data: int = 0
 
 
-@dataclass(eq=False, repr=False)
-class OrResource(Resource):
-    exclusive: bool = False  # Only one of the resources should be fulfilled
-
-
 @dataclass(eq=False, repr=False)  # Wrapper when multiple resources are required
 class WrapperResource(Resource):
     ...
+
+
+@dataclass(eq=False, repr=False)
+class OrResource(WrapperResource):
+    exclusive: bool = False  # Only one of the resources should be fulfilled
+    # TODO: Add choose_resource() method to skip other options
 
 
 @dataclass(eq=False, repr=False)
@@ -265,6 +273,7 @@ RESOURCE_MAP: Mapping[str, Type[Resource]] = {
     "DatetimeResource": DatetimeResource,
     "FinalResource": FinalResource,
     "ListResource": ListResource,
+    "DictResource": DictResource,
     "NumberResource": NumberResource,
     "OrResource": OrResource,
     "TimeResource": TimeResource,
