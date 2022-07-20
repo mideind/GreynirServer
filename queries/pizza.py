@@ -23,7 +23,6 @@
 from typing import Dict, Optional, Set, cast
 import logging
 import random
-from xxlimited import Str
 
 from query import Query, QueryStateDict
 from tree import Result, Node
@@ -32,9 +31,11 @@ from queries.num import number_to_text, numbers_to_ordinal, numbers_to_text
 from queries.resources import (
     FinalResource,
     ListResource,
+    DictResource,
     NumberResource,
     OrResource,
     Resource,
+    ResourceState,
     WrapperResource,
 )
 from queries.dialogue import (
@@ -238,16 +239,24 @@ def _generate_order_answer(
 def _generate_pizza_answer(
     resource: WrapperResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
-    (_, _, index) = resource.name.partition("_")
+    print("Generating pizza answer")
+    print("Generate pizza resource name: ", resource.name)
+    index = resource.name.split("_")[-1]
     type_resource: OrResource = cast(
         OrResource, dsm.get_resource("Type_{}".format(index))
     )
+    print("Type state: {}".format(type_resource.state))
     size_resource: Resource = dsm.get_resource("Size_{}".format(index))
+    print("Size state: {}".format(size_resource.state))
     crust_resource: Resource = dsm.get_resource("Crust_{}".format(index))
+    print("Crust state: {}".format(crust_resource.state))
     if resource.is_unfulfilled:
+        print("Unfulfilled pizza")
         return gen_answer(resource.prompts["initial"])
     if resource.is_partially_fulfilled:
+        print("Partially fulfilled pizza")
         if type_resource.is_confirmed and size_resource.is_unfulfilled:
+            print("Confirmed type, unfulfilled size")
             return gen_answer(resource.prompts["size"])
         if (
             type_resource.is_confirmed
@@ -255,6 +264,19 @@ def _generate_pizza_answer(
             and crust_resource.is_unfulfilled
         ):
             return gen_answer(resource.prompts["crust"])
+
+
+def _generate_type_answer(
+    resource: WrapperResource, dsm: DialogueStateManager, result: Result
+) -> Optional[AnswerTuple]:
+    print("Generating type answer")
+    print("Generate type resource name: ", resource.name)
+    index = resource.name.split("_")[-1]
+    pizza_resource: Resource = dsm.get_resource("Pizza_{}".format(index))
+    print("Pizza state: {}".format(pizza_resource.state))
+    if resource.is_unfulfilled:
+        print("Unfulfilled type")
+        return gen_answer(resource.prompts["initial"])
 
 
 def QPizzaDialogue(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -282,11 +304,19 @@ def QPizzaToppingsList(node: Node, params: QueryStateDict, result: Result) -> No
     print("Toppings in QPizzaToppingsList: ", result.get("toppings", {}))
     dsm: DialogueStateManager = Query.get_dsm(result)
     toppings: Dict[str, int] = result.get("toppings", {})
-    resource = dsm.current_resource
-    (_, _, index) = resource.name.partition("_")
+    type_resource = dsm.current_resource
+    print("Current resource in topping list: ", type_resource.name)
+    index = type_resource.name.split("_")[-1]
     toppings_resource = dsm.get_resource("Toppings_{}".format(index))
-    for topping in toppings:
-        ...  # toppings_resource.data[topping] = toppings[topping]
+    pizza_resource = dsm.get_resource("Pizza_{}".format(index))
+    print("Toppings resource: ", toppings_resource.name)
+    for (topping, amount) in toppings.items():
+        toppings_resource.data[topping] = amount
+    print("Toppings in QPizzaToppingsList: ", toppings_resource.data)
+    dsm.set_resource_state(toppings_resource.name, ResourceState.CONFIRMED)
+    dsm.set_resource_state(type_resource.name, ResourceState.CONFIRMED)
+    dsm.set_resource_state(pizza_resource.name, ResourceState.CONFIRMED)
+    # TODO: This should not be done here, only for testing purposes
 
 
 def QPizzaToppingsWord(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -319,6 +349,7 @@ def QPizzaMushroomWord(node: Node, params: QueryStateDict, result: Result) -> No
 _ANSWERING_FUNCTIONS: AnsweringFunctionMap = {
     "PizzaOrder": _generate_order_answer,
     "Pizza": _generate_pizza_answer,
+    "Type": _generate_type_answer,
 }
 
 

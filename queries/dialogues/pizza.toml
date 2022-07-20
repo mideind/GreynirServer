@@ -21,18 +21,18 @@ prompts.timed_out = "Pítsupöntunin þín rann út á tíma. Vinsamlegast byrja
 name = "Pizza"
 type = "WrapperResource"
 requires = ["Type", "Size", "Crust"]
-prompts.initial = "Hvernig pítsu viltu fá?"
 prompts.size = "Hvaða stærð af pítsu viltu fá?"
 prompts.crust = "Hvernig botn viltu?"
 
 [[dynamic_resources]]
 name = "Type"
 type = "OrResource"
-requires = ["Toppings", "FromMenu"] #, "Split"]
+requires = ["Toppings", "FromMenu"]         #, "Split"]
+prompts.initial = "Hvernig pítsu viltu fá?"
 
 [[dynamic_resources]]
 name = "Toppings"
-type = "ListResource"
+type = "DictResource"
 
 [[dynamic_resources]]
 name = "FromMenu"

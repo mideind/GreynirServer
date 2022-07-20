@@ -375,7 +375,7 @@ class DialogueStateManager(object):
                 raise ValueError("No answer for cancelled dialogue")
             return self._answer_tuple
 
-        resource_name = self._current_resource.name.partition("_")[0]
+        resource_name = self._current_resource.name.split("_")[0]
         if resource_name in self._answering_functions:
             print("GENERATING ANSWER FOR ", resource_name)
             ans = self._answering_functions[resource_name](
