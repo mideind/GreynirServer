@@ -281,12 +281,12 @@ class DialogueStateManager(object):
                 dynamic_resource["type"] = "Resource"
             # Updating required resources to have indexed name
             dynamic_resource["requires"] = [
-                "{res}_{index}".format(res=res, index=dynamic_resource_index)
+                f"{res}_{dynamic_resource_index}"
                 for res in dynamic_resource.get("requires", [])
             ]
             # Updating dynamic resource name to have indexed name
-            dynamic_resource["name"] = "{name}_{index}".format(
-                name=dynamic_resource["name"], index=dynamic_resource_index
+            dynamic_resource["name"] = (
+                f"{dynamic_resource['name']}_" f"{dynamic_resource_index}"
             )
             # Adding dynamic resource to list
             dynamic_resources[dynamic_resource["name"]] = RESOURCE_MAP[
@@ -296,9 +296,7 @@ class DialogueStateManager(object):
                 order_index=order_index,
             )
         # Indexed resource name of the dynamic resource
-        indexed_resource_name = "{name}_{index}".format(
-            name=resource_name, index=dynamic_resource_index
-        )
+        indexed_resource_name = f"{resource_name}_{dynamic_resource_index}"
         resource: Resource = dynamic_resources[indexed_resource_name]
         # Appending resource to required list of parent resource
         parent_resource.requires.append(indexed_resource_name)
@@ -383,21 +381,20 @@ class DialogueStateManager(object):
                 self._current_resource, self, result
             )
             return ans
-        # Iterate through resources (inorder traversal)
+        # Iterate through resources (postorder traversal)
         # until one generates an answer
-        self._answer_tuple = self._get_answer_postorder(
-            self._current_resource, result, set()
-        )
+        self._answer_tuple = self._get_answer(self._current_resource, result, set())
 
         return self._answer_tuple
 
-    def _get_answer_postorder(
+    # TODO: Can we remove this function?
+    def _get_answer(
         self, curr_resource: Resource, result: Any, finished: Set[Resource]
     ) -> Optional[AnswerTuple]:
         for resource in self._resource_graph[curr_resource]["children"]:
             if resource not in finished:
                 finished.add(resource)
-                ans = self._get_answer_postorder(resource, result, finished)
+                ans = self._get_answer(resource, result, finished)
                 if ans:
                     return ans
         if curr_resource.name in self._answering_functions:
