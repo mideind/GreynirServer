@@ -44,7 +44,7 @@ QPizzaToppingsAnswer ->
 QPizzaSizeAnswer ->
     QPizzaEgVil? QPizzaSize/þf QPizzaWord/þf? # e.g. "Ég vil stóra pítsu."
     | QPizzaSize/nf # e.g. "Tólf tommur."
-    | QPizzaEgVil? QPizzaMediumWord QPizzaAfPitsuPhrase # e.g. "Ég vil miðstærð af pítsu."
+    | QPizzaEgVil? QPizzaMediumWord QPizzaAfPitsuPhrase? # e.g. "Ég vil miðstærð af pítsu."
 
 QPizzaCrustAnswer ->
     QPizzaEgVil? QPizzaCrustPhrase/þf QPizzaAPitsunaPhrase? # e.g. "Ég vil klassískan botn."
