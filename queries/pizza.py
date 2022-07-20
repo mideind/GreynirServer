@@ -20,26 +20,20 @@
 
     This query module handles dialogue related to ordering pizza.
 """
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
-from typing_extensions import TypedDict
-import json
+from typing import Optional, Set, cast
 import logging
 import random
-import datetime
 
-from settings import changedlocale
 from query import Query, QueryStateDict
-from tree import Result, Node, TerminalNode
-from queries import AnswerTuple, gen_answer, natlang_seq, parse_num, time_period_desc
+from tree import Result, Node
+from queries import AnswerTuple, gen_answer, natlang_seq, parse_num
 from queries.num import number_to_text, numbers_to_ordinal, numbers_to_text
 from queries.resources import (
-    DateResource,
     FinalResource,
     ListResource,
     NumberResource,
+    OrResource,
     Resource,
-    ResourceState,
-    TimeResource,
     WrapperResource,
 )
 from queries.dialogue import (
@@ -137,7 +131,23 @@ def _generate_order_answer(
 def _generate_pizza_answer(
     resource: WrapperResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
-    return gen_answer(resource.prompts["initial"])
+    (_, _, index) = resource.name.partition("_")
+    type_resource: OrResource = cast(
+        OrResource, dsm.get_resource("Type_{}".format(index))
+    )
+    size_resource: Resource = dsm.get_resource("Size_{}".format(index))
+    crust_resource: Resource = dsm.get_resource("Crust_{}".format(index))
+    if resource.is_unfulfilled:
+        return gen_answer(resource.prompts["initial"])
+    if resource.is_partially_fulfilled:
+        if type_resource.is_confirmed and size_resource.is_unfulfilled:
+            return gen_answer(resource.prompts["size"])
+        if (
+            type_resource.is_confirmed
+            and size_resource.is_confirmed
+            and crust_resource.is_unfulfilled
+        ):
+            return gen_answer(resource.prompts["crust"])
 
 
 def QPizzaDialogue(node: Node, params: QueryStateDict, result: Result) -> None:

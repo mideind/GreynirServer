@@ -40,6 +40,8 @@ name = "Pizza"
 type = "WrapperResource"
 requires = ["Type", "Size", "Crust"]
 prompts.initial = "Hvað má bjóða þér á pizzuna?"
+prompts.size = "Hvaða stærð af pizzu viltu fá?"
+prompts.crust = "Hvernig botn viltu?"
 
 [[dynamic_resources]]
 name = "Type"
