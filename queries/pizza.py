@@ -187,6 +187,30 @@ def QPizzaNum(node: Node, params: QueryStateDict, result: Result) -> None:
     result.number = number
 
 
+def QPizzaSizeLarge(node: Node, params: QueryStateDict, result: Result) -> None:
+    return
+
+
+def QPizzaSizeMedium(node: Node, params: QueryStateDict, result: Result) -> None:
+    return
+
+
+def QPizzaMediumWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    return
+
+
+def QPizzaSizeSmall(node: Node, params: QueryStateDict, result: Result) -> None:
+    return
+
+
+def QPizzaItalianWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    return
+
+
+def QPizzaClassicWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    return
+
+
 def QPizzaPepperoniWord(node: Node, params: QueryStateDict, result: Result) -> None:
     result.real_name = "pepperóní"
 

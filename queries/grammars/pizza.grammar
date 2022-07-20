@@ -34,7 +34,7 @@ QPizzaDialogue →
 
 QPizzaNumberAnswer →
     QPizzaEgVil QPizzaKaupaFaraFaPanta? QPizzaNum/þf QPizzaWord/þf # e.g. "Ég vil kaupa tvær pítsur."
-    | QPizzaNum/þf QPizzaWord/þf? # e.g. "Tvær pítsur."
+    | QPizzaNum/nf QPizzaWord/nf? # e.g. "Tvær pítsur."
 
 QPizzaToppingsAnswer ->
     QPizzaEgVil? QPizzaToppingsList/þf QPizzaAPitsunaPhrase? # e.g. "Ég vil skinku, ólífur og pepperóní á pítsuna."
