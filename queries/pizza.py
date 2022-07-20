@@ -147,7 +147,7 @@ QPizzaPepperoniWord/fall ->
     | "pepperóni"
     | "pepperoní"
 
-QPizzaOliveWord/fall
+QPizzaOliveWord/fall ->
     'ólífa:kvk'/fall
     | 'ólíva:kvk'/fall
 
