@@ -23,6 +23,7 @@ except ModuleNotFoundError:
 from queries import AnswerTuple
 from queries.resources import (
     RESOURCE_MAP,
+    OrResource,
     Resource,
     DialogueJSONDecoder,
     DialogueJSONEncoder,
@@ -280,12 +281,12 @@ class DialogueStateManager(object):
                 dynamic_resource["type"] = "Resource"
             # Updating required resources to have indexed name
             dynamic_resource["requires"] = [
-                "{res}_{index}".format(res=res, index=dynamic_resource_index)
+                f"{res}_{dynamic_resource_index}"
                 for res in dynamic_resource.get("requires", [])
             ]
             # Updating dynamic resource name to have indexed name
-            dynamic_resource["name"] = "{name}_{index}".format(
-                name=dynamic_resource["name"], index=dynamic_resource_index
+            dynamic_resource["name"] = (
+                f"{dynamic_resource['name']}_" f"{dynamic_resource_index}"
             )
             # Adding dynamic resource to list
             dynamic_resources[dynamic_resource["name"]] = RESOURCE_MAP[
@@ -295,9 +296,7 @@ class DialogueStateManager(object):
                 order_index=order_index,
             )
         # Indexed resource name of the dynamic resource
-        indexed_resource_name = "{name}_{index}".format(
-            name=resource_name, index=dynamic_resource_index
-        )
+        indexed_resource_name = f"{resource_name}_{dynamic_resource_index}"
         resource: Resource = dynamic_resources[indexed_resource_name]
         # Appending resource to required list of parent resource
         parent_resource.requires.append(indexed_resource_name)
@@ -382,21 +381,20 @@ class DialogueStateManager(object):
                 self._current_resource, self, result
             )
             return ans
-        # Iterate through resources (inorder traversal)
+        # Iterate through resources (postorder traversal)
         # until one generates an answer
-        self._answer_tuple = self._get_answer_postorder(
-            self._current_resource, result, set()
-        )
+        self._answer_tuple = self._get_answer(self._current_resource, result, set())
 
         return self._answer_tuple
 
-    def _get_answer_postorder(
+    # TODO: Can we remove this function?
+    def _get_answer(
         self, curr_resource: Resource, result: Any, finished: Set[Resource]
     ) -> Optional[AnswerTuple]:
         for resource in self._resource_graph[curr_resource]["children"]:
             if resource not in finished:
                 finished.add(resource)
-                ans = self._get_answer_postorder(resource, result, finished)
+                ans = self._get_answer(resource, result, finished)
                 if ans:
                     return ans
         if curr_resource.name in self._answering_functions:
@@ -469,6 +467,47 @@ class DialogueStateManager(object):
 
         _recurse_resources(self._resources["Final"])
         return curr_res or self._resources["Final"]
+
+    def skip_other_resources(self, or_resource: OrResource, resource: Resource) -> None:
+        """Skips other resources in the or resource"""
+        assert isinstance(
+            or_resource, OrResource
+        ), f"{or_resource} is not an OrResource"
+        for res in or_resource.requires:
+            if res != resource.name:
+                self.set_resource_state(res, ResourceState.SKIPPED)
+
+    def update_wrapper_state(self, wrapper: WrapperResource) -> None:
+        """
+        Updates the state of the wrapper resource
+        based on the state of its children.
+        """
+        print("UPDATING WRAPPER STATE", wrapper.state)
+        if wrapper.state == ResourceState.UNFULFILLED:
+            print("Wrapper is unfulfilled")
+            if all(
+                [
+                    child.state == ResourceState.UNFULFILLED
+                    for child in self._resource_graph[wrapper]["children"]
+                ]
+            ):
+                print("All children are unfulfilled")
+                return
+            print("At least one child is fulfilled")
+            self.set_resource_state(wrapper.name, ResourceState.PARTIALLY_FULFILLED)
+        elif wrapper.state == ResourceState.PARTIALLY_FULFILLED:
+            print("Wrapper is partially fulfilled")
+            if any(
+                [
+                    child.state != ResourceState.CONFIRMED
+                    for child in self._resource_graph[wrapper]["children"]
+                ]
+            ):
+                print("At least one child is not confirmed")
+                self.set_resource_state(wrapper.name, ResourceState.PARTIALLY_FULFILLED)
+                return
+            print("All children are confirmed")
+            self.set_resource_state(wrapper.name, ResourceState.FULFILLED)
 
     def finish_dialogue(self) -> None:
         """Set the dialogue as finished."""
