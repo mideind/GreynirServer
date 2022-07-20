@@ -71,15 +71,16 @@ GRAMMAR = """
 
 # TODO: 2x of a topping. "Tvöfalt", "mikið", "extra"
 # TODO: Ban more than two instances of a topping.
+# TODO: Fix the toppings being a set. Doesn't handle "Ég vil skinku, ólífur og auka skinku."
 
 /þgf = þgf
 /ef = ef
 
 Query →
-    QPizzaHotWord '?'? 
+    QPizzaHotWord '?'?
     | QPizza '?'?
 
-QPizza → 
+QPizza →
     QPizzaQuery
 
 QPizzaQuery →
@@ -95,7 +96,7 @@ QPizzaRequestBare ->
 QPizzaDialogue →
     QPizzaNumberAnswer
     | QPizzaToppingsAnswer
-    # | QPizzaSizeAnswer
+    | QPizzaSizeAnswer
 
 QPizzaNumberAnswer →
     QPizzaEgVil QPizzaKaupaFaraFaPanta QPizzaNum/þf QPizzaWord/þf
@@ -104,11 +105,52 @@ QPizzaNumberAnswer →
 QPizzaToppingsAnswer ->
     QPizzaEgVil? QPizzaToppingsList "á"? QPizzaWord/þf?
 
-# QPizzaSizeAnswer ->
-#     QPizza
+QPizzaSizeAnswer ->
+    QPizzaEgVil? QPizzaSize/þf QPizzaWord/þf?
+    | QPizzaSize/nf
+    | QPizzaEgVil? QPizzaMediumWord QPizzaAfPitsuPhrase # Common to say "miðstærð", or "Ég vil miðstærð af pítsu."
 
 QPizzaToppingsList ->
-    QPizzaToppingsWord/þf* 'og:st'? QPizzaToppingsWord/þf
+    QPizzaToppingsWordWrapper/þf* 'og:st'? QPizzaToppingsWord/þf
+
+QPizzaSize/fall ->
+    QPizzaSizeLarge/fall
+    | QPizzaSizeMedium/fall
+    | QPizzaSizeSmall/fall
+
+QPizzaToppingsWordWrapper/fall ->
+    QPizzaToppingsWord/fall
+
+# Toppings that are transcribed in different ways are in separate nonterminals.
+QPizzaToppingsWord/fall ->
+    QPizzaMushroomWord/fall
+    | QPizzaPepperoniWord/fall
+    | 'ananas:kk'/fall
+    | 'skinka:kvk'/fall
+    | QPizzaOliveWord/fall
+
+QPizzaAfPitsuPhrase ->
+    "af" QPizzaWord/þgf
+
+# A large pizza at Domino's is typically thought to be 16", some believe it to be 15".
+# The actual size is 14.5".
+QPizzaSizeLarge/fall ->
+    'stór:lo'/fall
+    | QPizzaSixteenWord 'tomma:kvk'/fall?
+    | QPizzaFifteenWord 'tomma:kvk'/fall?
+    | QPizzaFourteenPointFiveWord 'tomma:kvk'/fall?
+
+QPizzaSizeMedium/fall ->
+    'millistór:lo'/fall
+    | 'meðalstór:lo'/fall
+    | QPizzaTwelveWord 'tomma:kvk'/fall?
+
+QPizzaMediumWord ->
+    "miðstærð"
+
+QPizzaSizeSmall/fall ->
+    'lítil:lo'/fall
+    | QPizzaNineWord 'tomma:kvk'/fall?
 
 QPizzaEgVil →
     "ég"? "vil"
@@ -127,13 +169,32 @@ QPizzaWord/fall →
     | 'pítsa:kvk'/fall
     | 'flatbaka:kvk'/fall
 
-# Toppings that are transcribed in different ways are in separate nonterminals.
-QPizzaToppingsWord/fall ->
-    'sveppur:kk'/fall
-    | QPizzaPepperoniWord/fall
-    | 'ananas:kk'/fall
-    | 'skinka:kvk'/fall
-    | QPizzaOliveWord/fall
+QPizzaSixteenWord ->
+    "16"
+    | "sextán"
+
+QPizzaFifteenWord ->
+    "15"
+    | "fimmtán"
+
+QPizzaFourteenPointFiveWord ->
+    QPizzaFourteenWord "komma" QPizzaFiveWord
+
+QPizzaFourteenWord ->
+    "14"
+    | "fjórtán"
+
+QPizzaFiveWord ->
+    "5"
+    | "fimm"
+
+QPizzaTwelveWord ->
+    "12"
+    | "tólf"
+
+QPizzaNineWord ->
+    "9"
+    | "níu"
 
 QPizzaNum/fall →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
@@ -150,6 +211,10 @@ QPizzaPepperoniWord/fall ->
 QPizzaOliveWord/fall ->
     'ólífa:kvk'/fall
     | 'ólíva:kvk'/fall
+
+QPizzaMushroomWord/fall ->
+    'sveppur:kk'/fall
+    | "Sveppi"
 
 """
 
