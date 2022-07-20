@@ -1,10 +1,12 @@
 # TODO: 2x of a topping. "Tvöfalt", "mikið", "extra"
 # TODO: Ban more than two instances of a topping.
 # TODO: Fix the toppings being a set. Doesn't handle "Ég vil skinku, ólífur og auka skinku."
+# TODO: Add to PizzaRequestBare, start conversation with an order.
 
 /þgf = þgf
 /ef = ef
 
+# Currently, the Hotword needs to be top-level, because the QPizza nonterminal is banned.
 Query →
     QPizzaHotWord '?'?
     | QPizza '?'?
@@ -15,42 +17,54 @@ QPizza →
 QPizzaQuery →
     QPizzaDialogue
 
+# Hotwords are used to initialize the conversation.
 QPizzaHotWord →
-    QPizzaWord/nf
-    | QPizzaRequestBare
+    QPizzaWord/nf # e.g. "Pítsa"
+    | QPizzaRequestBare # e.g. "Ég vil panta pizzu."
 
+# Doesn't allow for any specification, i.e. number of pizzas: "Ég vil panta tvær flatbökur."
 QPizzaRequestBare ->
-    QPizzaEgVil QPizzaKaupaFaraFaPanta QPizzaWord/þf
+    QPizzaEgVil QPizzaKaupaFaraFaPanta? QPizzaWord/þf
 
 QPizzaDialogue →
-    QPizzaNumberAnswer
-    | QPizzaToppingsAnswer
-    | QPizzaSizeAnswer
+    QPizzaNumberAnswer #Answer to the question "How many pizzas do you want?"
+    | QPizzaToppingsAnswer #Answer to the question "What toppings do you want?"
+    | QPizzaSizeAnswer #Answer to the question "What size do you want?"
+    | QPizzaCrustAnswer #Answer to the question "What kind of crust do you want?"
 
 QPizzaNumberAnswer →
-    QPizzaEgVil QPizzaKaupaFaraFaPanta QPizzaNum/þf QPizzaWord/þf
-    | QPizzaNum/þf QPizzaWord/þf?
+    QPizzaEgVil QPizzaKaupaFaraFaPanta? QPizzaNum/þf QPizzaWord/þf # e.g. "Ég vil kaupa tvær pítsur."
+    | QPizzaNum/þf QPizzaWord/þf? # e.g. "Tvær pítsur."
 
 QPizzaToppingsAnswer ->
-    QPizzaEgVil? QPizzaToppingsList "á"? QPizzaWord/þf?
+    QPizzaEgVil? QPizzaToppingsList/þf QPizzaAPitsunaPhrase? # e.g. "Ég vil skinku, ólífur og pepperóní á pítsuna."
+    | QPizzaEgVil? QPizzaWord/þf "með" QPizzaToppingsList/þgf # e.g. "Ég vil pizzu með ólífum og ananas."
 
+# It is common to say "miðstærð af pítsu", which is handled separately here.
 QPizzaSizeAnswer ->
-    QPizzaEgVil? QPizzaSize/þf QPizzaWord/þf?
-    | QPizzaSize/nf
-    | QPizzaEgVil? QPizzaMediumWord QPizzaAfPitsuPhrase # Common to say "miðstærð", or "Ég vil miðstærð af pítsu."
+    QPizzaEgVil? QPizzaSize/þf QPizzaWord/þf? # e.g. "Ég vil stóra pítsu."
+    | QPizzaSize/nf # e.g. "Tólf tommur."
+    | QPizzaEgVil? QPizzaMediumWord QPizzaAfPitsuPhrase # e.g. "Ég vil miðstærð af pítsu."
 
-QPizzaToppingsList ->
-    QPizzaToppingsWordWrapper/þf* 'og:st'? QPizzaToppingsWord/þf
+QPizzaCrustAnswer ->
+    QPizzaEgVil? QPizzaCrustPhrase/þf QPizzaAPitsunaPhrase? # e.g. "Ég vil klassískan botn."
+    | QPizzaCrustPhrase/nf # e.g. "Ítalskur botn."
+
+QPizzaToppingsList/fall ->
+    QPizzaToppingsWordWrapper/fall* 'og:st'? QPizzaToppingsWord/fall
 
 QPizzaSize/fall ->
     QPizzaSizeLarge/fall
     | QPizzaSizeMedium/fall
     | QPizzaSizeSmall/fall
 
+# This wrapper is necessary to prevent the module from reading toppings multiple times.
+# Otherwise, it reads "ananas skinku og pepperóní" as "ananas" "skinka" "pepperóní" and "ananas skinka" (2022/07/20).
 QPizzaToppingsWordWrapper/fall ->
     QPizzaToppingsWord/fall
 
-# Toppings that are transcribed in different ways are in separate nonterminals.
+# Toppings that are transcribed in different ways are in separate nonterminals for clarity.
+# This also helps standardize the handling of each topping in the module, i.e. not reading "ólífa" and "ólíva" as separate toppings.
 QPizzaToppingsWord/fall ->
     QPizzaMushroomWord/fall
     | QPizzaPepperoniWord/fall
@@ -58,8 +72,14 @@ QPizzaToppingsWord/fall ->
     | 'skinka:kvk'/fall
     | QPizzaOliveWord/fall
 
+QPizzaCrustPhrase/fall ->
+    QPizzaCrustType/fall QPizzaCrustWord/fall?
+
 QPizzaAfPitsuPhrase ->
     "af" QPizzaWord/þgf
+
+QPizzaAPitsunaPhrase ->
+    "á" QPizzaWord/þgf
 
 # A large pizza at Domino's is typically thought to be 16", some believe it to be 15".
 # The actual size is 14.5".
@@ -80,6 +100,10 @@ QPizzaMediumWord ->
 QPizzaSizeSmall/fall ->
     'lítil:lo'/fall
     | QPizzaNineWord 'tomma:kvk'/fall?
+
+QPizzaCrustType/fall ->
+    QPizzaItalianWord/fall 
+    | QPizzaClassicWord/fall
 
 QPizzaEgVil →
     "ég"? "vil"
@@ -125,6 +149,15 @@ QPizzaNineWord ->
     "9"
     | "níu"
 
+QPizzaItalianWord/fall ->
+    'ítalskur:lo'/fall
+
+QPizzaClassicWord/fall ->
+    'klassískur:lo'/fall
+
+QPizzaCrustWord/fall ->
+    'botn:kk'/fall
+
 QPizzaNum/fall →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
     # töl is an undeclinable number word ('sautján')
@@ -143,4 +176,4 @@ QPizzaOliveWord/fall ->
 
 QPizzaMushroomWord/fall ->
     'sveppur:kk'/fall
-    | "Sveppi"
+    | 'Sveppi:kk'
