@@ -75,31 +75,46 @@ QUERY_NONTERMINALS = {"QPizza"}.union(HOTWORD_NONTERMINALS)
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = """
 
-Query →
-    QPizzaHotWord | QPizza
+# TODO: 2x of a topping. "Tvöfalt", "mikið", "extra"
+# TODO: Ban more than two instances of a topping.
 
-QPizza → QPizzaQuery
+/þgf = þgf
+/ef = ef
+
+Query →
+    QPizza '?'?
+
+QPizza → 
+    QPizzaQuery
 
 QPizzaQuery →
-    QPizzaDialogue '?'?
+    QPizzaHotword
+    | QPizzaDialogue
 
 QPizzaHotWord →
-    QPizzaNames
-    | QPizzaEgVil QPizzaKaupaFaraFaPanta QPizzaNames
+    QPizzaWord
+    | QPizzaRequestBare
 
-QPizzaNames →
-    'pizza'
-    | 'pitsa'
-    | "pitsur"
-    | "pizzur"
-
-QPizzaKaupaFaraFaPanta →
-    "kaupa" "mér"?
-    | "fá" "mér"?
-    | "panta" "mér"?
+QPizzaRequestBare ->
+    QPizzaEgVil QPizzaKaupaFaraFaPanta QPizzaWord
 
 QPizzaDialogue →
-    QPizzaOrder
+    QPizzaNumberAnswer
+    | QPizzaToppingsAnswer
+    | QPizzaSizeAnswer
+
+QPizzaNumberAnswer →
+    QPizzaEgVil QPizzaKaupaFaraFaPanta QPizzaNum/þf QPizzaWord/þf
+    | QPizzaNum/þf QPizzaWord/þf?
+
+QPizzaToppingsAnswer ->
+    QPizzaEgVil? QPizzaToppingsList "á" QPizzaWord/þf
+
+QPizzaSizeAnswer ->
+    QPizza
+
+QPizzaToppingsList ->
+    QPizzaToppingsWord/þf* 'og:st'? QPizzaToppingsWord
 
 QPizzaEgVil →
     "ég"? "vil"
@@ -107,14 +122,40 @@ QPizzaEgVil →
     | "mig" "langar" "að"
     | "mig" "langar" "í"
 
-QPizzaOrder →
-    QPizzaEgVil QPizzaKaupaFaraFaPanta QPizzaNum QPizzaNames
+QPizzaKaupaFaraFaPanta →
+    "kaupa" "mér"?
+    | "fá" "mér"?
+    | "panta" "mér"?
 
-QPizzaNum →
+QPizzaWord/fall →
+    'pizza:kvk'/fall
+    | 'pitsa:kvk'/fall
+    | 'pítsa:kvk'/fall
+    | 'flatbaka:kvk'/fall
+
+# Toppings that are transcribed in different ways are in separate nonterminals.
+QPizzaToppingsWord/fall ->
+    'sveppur:kk'/fall
+    | QPizzaPepperoniWord/fall
+    | 'ananas:kk'/fall
+    | 'skinka:kvk'/fall
+    | QPizzaOliveWord/fall
+
+QPizzaNum/fall →
     # to is a declinable number word ('tveir/tvo/tveim/tveggja')
     # töl is an undeclinable number word ('sautján')
     # tala is a number ('17')
     to | töl | tala
+
+QPizzaPepperoniWord/fall ->
+    'pepperóní:hk'/fall
+    | "pepperoni"
+    | "pepperóni"
+    | "pepperoní"
+
+QPizzaOliveWord/fall
+    'ólífa:kvk'/fall
+    | 'ólíva:kvk'/fall
 
 """
 
