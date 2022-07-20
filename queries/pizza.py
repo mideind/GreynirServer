@@ -26,7 +26,7 @@ import random
 
 from query import Query, QueryStateDict
 from tree import Result, Node
-from queries import AnswerTuple, gen_answer, natlang_seq, parse_num
+from queries import AnswerTuple, gen_answer, natlang_seq, parse_num, read_grammar_file
 from queries.num import number_to_text, numbers_to_ordinal, numbers_to_text
 from queries.resources import (
     FinalResource,
@@ -69,156 +69,9 @@ HOTWORD_NONTERMINALS = {"QPizzaHotWord"}
 QUERY_NONTERMINALS = {"QPizza"}.union(HOTWORD_NONTERMINALS)
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-# TODO: 2x of a topping. "Tvöfalt", "mikið", "extra"
-# TODO: Ban more than two instances of a topping.
-# TODO: Fix the toppings being a set. Doesn't handle "Ég vil skinku, ólífur og auka skinku."
-
-/þgf = þgf
-/ef = ef
-
-Query →
-    QPizzaHotWord '?'?
-    | QPizza '?'?
-
-QPizza →
-    QPizzaQuery
-
-QPizzaQuery →
-    QPizzaDialogue
-
-QPizzaHotWord →
-    QPizzaWord/nf
-    | QPizzaRequestBare
-
-QPizzaRequestBare ->
-    QPizzaEgVil QPizzaKaupaFaraFaPanta QPizzaWord/þf
-
-QPizzaDialogue →
-    QPizzaNumberAnswer
-    | QPizzaToppingsAnswer
-    | QPizzaSizeAnswer
-
-QPizzaNumberAnswer →
-    QPizzaEgVil QPizzaKaupaFaraFaPanta QPizzaNum/þf QPizzaWord/þf
-    | QPizzaNum/þf QPizzaWord/þf?
-
-QPizzaToppingsAnswer ->
-    QPizzaEgVil? QPizzaToppingsList "á"? QPizzaWord/þf?
-
-QPizzaSizeAnswer ->
-    QPizzaEgVil? QPizzaSize/þf QPizzaWord/þf?
-    | QPizzaSize/nf
-    | QPizzaEgVil? QPizzaMediumWord QPizzaAfPitsuPhrase # Common to say "miðstærð", or "Ég vil miðstærð af pítsu."
-
-QPizzaToppingsList ->
-    QPizzaToppingsWordWrapper/þf* 'og:st'? QPizzaToppingsWord/þf
-
-QPizzaSize/fall ->
-    QPizzaSizeLarge/fall
-    | QPizzaSizeMedium/fall
-    | QPizzaSizeSmall/fall
-
-QPizzaToppingsWordWrapper/fall ->
-    QPizzaToppingsWord/fall
-
-# Toppings that are transcribed in different ways are in separate nonterminals.
-QPizzaToppingsWord/fall ->
-    QPizzaMushroomWord/fall
-    | QPizzaPepperoniWord/fall
-    | 'ananas:kk'/fall
-    | 'skinka:kvk'/fall
-    | QPizzaOliveWord/fall
-
-QPizzaAfPitsuPhrase ->
-    "af" QPizzaWord/þgf
-
-# A large pizza at Domino's is typically thought to be 16", some believe it to be 15".
-# The actual size is 14.5".
-QPizzaSizeLarge/fall ->
-    'stór:lo'/fall
-    | QPizzaSixteenWord 'tomma:kvk'/fall?
-    | QPizzaFifteenWord 'tomma:kvk'/fall?
-    | QPizzaFourteenPointFiveWord 'tomma:kvk'/fall?
-
-QPizzaSizeMedium/fall ->
-    'millistór:lo'/fall
-    | 'meðalstór:lo'/fall
-    | QPizzaTwelveWord 'tomma:kvk'/fall?
-
-QPizzaMediumWord ->
-    "miðstærð"
-
-QPizzaSizeSmall/fall ->
-    'lítil:lo'/fall
-    | QPizzaNineWord 'tomma:kvk'/fall?
-
-QPizzaEgVil →
-    "ég"? "vil"
-    | "ég" "vill"
-    | "mig" "langar" "að"
-    | "mig" "langar" "í"
-
-QPizzaKaupaFaraFaPanta →
-    "kaupa" "mér"?
-    | "fá" "mér"?
-    | "panta" "mér"?
-
-QPizzaWord/fall →
-    'pizza:kvk'/fall
-    | 'pitsa:kvk'/fall
-    | 'pítsa:kvk'/fall
-    | 'flatbaka:kvk'/fall
-
-QPizzaSixteenWord ->
-    "16"
-    | "sextán"
-
-QPizzaFifteenWord ->
-    "15"
-    | "fimmtán"
-
-QPizzaFourteenPointFiveWord ->
-    QPizzaFourteenWord "komma" QPizzaFiveWord
-
-QPizzaFourteenWord ->
-    "14"
-    | "fjórtán"
-
-QPizzaFiveWord ->
-    "5"
-    | "fimm"
-
-QPizzaTwelveWord ->
-    "12"
-    | "tólf"
-
-QPizzaNineWord ->
-    "9"
-    | "níu"
-
-QPizzaNum/fall →
-    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
-    # töl is an undeclinable number word ('sautján')
-    # tala is a number ('17')
-    to | töl | tala
-
-QPizzaPepperoniWord/fall ->
-    'pepperóní:hk'/fall
-    | "pepperoni"
-    | "pepperóni"
-    | "pepperoní"
-
-QPizzaOliveWord/fall ->
-    'ólífa:kvk'/fall
-    | 'ólíva:kvk'/fall
-
-QPizzaMushroomWord/fall ->
-    'sveppur:kk'/fall
-    | "Sveppi"
-
-"""
+GRAMMAR = read_grammar_file(
+    "pizza",
+)
 
 
 def banned_nonterminals(query: str) -> Set[str]:
@@ -332,6 +185,30 @@ def QPizzaNum(node: Node, params: QueryStateDict, result: Result) -> None:
         result["numbers"] = []
     result.numbers.append(number)
     result.number = number
+
+
+def QPizzaSizeLarge(node: Node, params: QueryStateDict, result: Result) -> None:
+    return
+
+
+def QPizzaSizeMedium(node: Node, params: QueryStateDict, result: Result) -> None:
+    return
+
+
+def QPizzaMediumWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    return
+
+
+def QPizzaSizeSmall(node: Node, params: QueryStateDict, result: Result) -> None:
+    return
+
+
+def QPizzaItalianWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    return
+
+
+def QPizzaClassicWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    return
 
 
 def QPizzaPepperoniWord(node: Node, params: QueryStateDict, result: Result) -> None:
