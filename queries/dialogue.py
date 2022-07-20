@@ -312,8 +312,6 @@ class DialogueStateManager(object):
 
         _add_child_resource(resource)
         # Initialize the resource graph again with the update resources
-        # for i, (rname, resource) in enumerate(self._resources.items()):
-        #     self._resources[rname].order_index = i
         self._initialize_resource_graph()
         self._find_current_resource()
 
