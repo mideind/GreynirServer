@@ -236,14 +236,14 @@ class NumberResource(Resource):
     data: int = 0
 
 
-@dataclass(eq=False, repr=False)
-class OrResource(Resource):
-    exclusive: bool = False  # Only one of the resources should be fulfilled
-
-
 @dataclass(eq=False, repr=False)  # Wrapper when multiple resources are required
 class WrapperResource(Resource):
     ...
+
+
+@dataclass(eq=False, repr=False)
+class OrResource(WrapperResource):
+    exclusive: bool = False  # Only one of the resources should be fulfilled
 
 
 @dataclass(eq=False, repr=False)

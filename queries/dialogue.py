@@ -438,26 +438,35 @@ class DialogueStateManager(object):
         """
         Finds the current resource in the resource graph.
         """
-        curr_res: Resource = self._initial_resource
-        print("Current resource: ", curr_res.name)
-        # If the initial parent is a wrapper, the current resource should be that parent
-        initial_parents = self._resource_graph[curr_res]["parents"]
-        if len(initial_parents) == 1 and isinstance(
-            initial_parents[0], WrapperResource
-        ):
-            curr_res = initial_parents[0]
-        while curr_res.is_confirmed:
-            print("Current resource!!: ", curr_res.name)
-            for parent in self._resource_graph[curr_res]["parents"]:
-                curr_res = parent
-                grandparents = self._resource_graph[parent]["parents"]
-                if len(grandparents) == 1 and isinstance(
-                    grandparents[0], WrapperResource
-                ):
-                    print("!!Current resource!!: ", curr_res.name)
-                    curr_res = grandparents[0]
-                    return curr_res
-        return curr_res
+        curr_res: Optional[Resource] = None
+        wrapper_parent: Optional[Resource] = None
+
+        def _recurse_resources(resource: Resource) -> None:
+            nonlocal curr_res, wrapper_parent
+            if resource.is_confirmed or resource.is_skipped:
+                return
+            else:
+                if isinstance(resource, WrapperResource):
+                    wrapper_parent = resource
+                for child in self._resource_graph[resource]["children"]:
+                    _recurse_resources(child)
+                    if curr_res == child:
+                        # Found a non-confirmed descendant
+                        if (
+                            not isinstance(child, WrapperResource)
+                            and wrapper_parent == resource
+                        ):
+                            # If the direct child of a wrapper resource
+                            # is the current resource (and not a wrapper itself),
+                            # set the wrapper as the current resource
+                            curr_res = resource
+                        return
+                    if curr_res is not None:
+                        return
+                curr_res = resource
+
+        _recurse_resources(self._resources["Final"])
+        return curr_res or self._resources["Final"]
 
     def finish_dialogue(self) -> None:
         """Set the dialogue as finished."""
