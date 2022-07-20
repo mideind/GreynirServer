@@ -23,6 +23,7 @@
 from typing import Optional, Set, cast
 import logging
 import random
+from xxlimited import Str
 
 from query import Query, QueryStateDict
 from tree import Result, Node
@@ -129,7 +130,7 @@ QPizzaWord/fall →
 
 # Toppings that are transcribed in different ways are in separate nonterminals.
 QPizzaToppingsWord/fall ->
-    'sveppur:kk'/fall
+    QPizzaMushroomWord/fall
     | QPizzaPepperoniWord/fall
     | 'ananas:kk'/fall
     | 'skinka:kvk'/fall
@@ -150,6 +151,10 @@ QPizzaPepperoniWord/fall ->
 QPizzaOliveWord/fall ->
     'ólífa:kvk'/fall
     | 'ólíva:kvk'/fall
+
+QPizzaMushroomWord/fall ->
+    'sveppur:kk'/fall
+    | "Sveppi"
 
 """
 
@@ -212,8 +217,18 @@ def QPizzaNumberAnswer(node: Node, params: QueryStateDict, result: Result) -> No
     print("Pizza Count: ", number)
 
 
-def QPizzaToppingsAnswer(node: Node, params: QueryStateDict, result: Result) -> None:
-    ...
+def QPizzaToppingsList(node: Node, params: QueryStateDict, result: Result) -> None:
+    print("Toppings in QPizzaToppingsList: ", result.get("toppings", []))
+
+
+def QPizzaToppingsWord(node: Node, params: QueryStateDict, result: Result) -> None:
+    print("in toppings word with: ", result._root)
+    topping: str = result._root
+    if "toppings" not in result:
+        print("Toppings not in result")
+        result["toppings"] = set()
+    result["toppings"].add(topping)
+    print("Toppings: ", result["toppings"])
 
 
 def QPizzaNum(node: Node, params: QueryStateDict, result: Result) -> None:
