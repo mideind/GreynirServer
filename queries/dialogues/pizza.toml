@@ -27,7 +27,9 @@ prompts.initial_single = "Hvernig pítsu viltu?"
 prompts.toppings = "Hvað álegg viltu á pítsu {number}?"
 prompts.toppings_single = "Hvað álegg viltu á pítsuna?"
 prompts.size = "Hversu stór á pítsa {number} að vera?"
+prompts.size_single = "Hversu stór á pítsan að vera?"
 prompts.crust = "Hvernig botn viltu á pítsu {number}?"
+prompts.crust_single = "Hvernig botn viltu á pítsuna?"
 
 [[dynamic_resources]]
 name = "Type"
@@ -41,9 +43,11 @@ type = "DictResource"
 
 [[dynamic_resources]]
 name = "FromMenu"
+type = "StringResource"
 
 [[dynamic_resources]]
 name = "Size"
+type = "StringResource"
 prompts.initial = "Hvaða stærð af pítsu viltu fá?"
 
 [[dynamic_resource]]
@@ -63,6 +67,7 @@ requires = ["Toppings", "FromMenu"]
 
 [[dynamic_resources]]
 name = "Crust"
+type = "StringResource"
 
 # [[dynamic_resources]]
 # name = "Sides"
