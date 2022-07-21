@@ -474,16 +474,19 @@ class DialogueStateManager:
         using a postorder traversal of the resource graph.
         """
         curr_res: Optional[Resource] = None
-        # TODO: Do we need to prevent repeated reading of the same resource?
+        finished_resources: Set[Resource] = set()
+
         def _recurse_resources(resource: Resource) -> None:
-            nonlocal curr_res
+            nonlocal curr_res, finished_resources
+            finished_resources.add(resource)
             if resource.is_confirmed or resource.is_skipped:
                 # Don't set resource as current if it is confirmed or skipped
                 return
             # Current resource is neither confirmed nor skipped,
             # so we try to find candidates lower in the tree first
             for child in self._resource_graph[resource]["children"]:
-                _recurse_resources(child) # TODO: Unwrap recursion?
+                if child not in finished_resources:
+                    _recurse_resources(child) # TODO: Unwrap recursion?
                 if curr_res is not None:
                     # Found a suitable resource, stop looking
                     return
@@ -493,6 +496,8 @@ class DialogueStateManager:
                 assert len(wrapper_parents) <= 1, "A resource cannot have more than one wrapper parent"
                 if wrapper_parents:
                     curr_res = wrapper_parents[0]
+                else:
+                    break
 
         _recurse_resources(self._resources["Final"])
         return curr_res or self._resources["Final"]
