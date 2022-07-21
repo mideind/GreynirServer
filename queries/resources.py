@@ -68,7 +68,7 @@ class Resource:
     prefer_over_wrapper: bool = False
     # Used for comparing states (which one is earlier/later in the dialogue)
     order_index: int = 0
-    # Extra variables to be used for specific variables
+    # Extra variables to be used for specific situations
     extras: Dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -177,21 +177,6 @@ class ConfirmResource(YesNoResource):
     def set_no(self):
         self.data = False
         self.state = ResourceState.CANCELLED  # TODO: ?
-
-    # def confirm_children(self, dsm: "DialogueStateManager") -> None:
-    #     """Confirm all child/required resources."""
-    #     ConfirmResource._confirm_children(self, dsm)
-
-    # @staticmethod
-    # def _confirm_children(
-    #     res: Resource,
-    #     dsm: "DialogueStateManager",
-    # ) -> None:
-    #     for req in res.requires:
-    #         req_res = dsm.get_resource(req)
-    #         if not isinstance(req_res, ConfirmResource):
-    #             ConfirmResource._confirm_children(req_res, dsm)
-    #             req_res.state = ResourceState.CONFIRMED
 
 
 @dataclass(eq=False, repr=False)

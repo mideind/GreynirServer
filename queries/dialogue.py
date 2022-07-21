@@ -265,6 +265,7 @@ class DialogueStateManager:
             )
             + 1
         )
+        # TODO: Only update index for added dynamic resources (don't loop through all, just the added ones)
         # Adding all dynamic resources to a list
         for dynamic_resource in obj[_DYNAMIC_RESOURCES_KEY]:
             assert "name" in dynamic_resource, f"Name missing for dynamic resource"
@@ -473,7 +474,7 @@ class DialogueStateManager:
         using a postorder traversal of the resource graph.
         """
         curr_res: Optional[Resource] = None
-
+        # TODO: Do we need to prevent repeated reading of the same resource?
         def _recurse_resources(resource: Resource) -> None:
             nonlocal curr_res
             if resource.is_confirmed or resource.is_skipped:
