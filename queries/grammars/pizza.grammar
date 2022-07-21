@@ -98,8 +98,8 @@ QPizzaCompositeAnswer ->
     | QPizzaCompositeRest/nf # e.g. "Tólf tommu pítsa með skinku ananas og með ítölskum botni'."
 
 QPizzaCompositeRest/fall ->
-    QPizzaNum/fall QPizzaSizePhrase/fall QPizzaToppingsCrustPermutation? # e.g. "Ég vil stóra pítsu með ólífum og ananas."
-    | QPizzaNum/fall QPizzaOrMenuWord/fall QPizzaToppingsCrustPermutation? # e.g. "Ég vil tvær margarítur með ítölskum botni."
+    QPizzaNum/fall? QPizzaSizePhrase/fall QPizzaToppingsCrustPermutation? # e.g. "Ég vil stóra pítsu með ólífum og ananas."
+    | QPizzaNum/fall? QPizzaOrMenuWord/fall QPizzaToppingsCrustPermutation? # e.g. "Ég vil tvær margarítur með ítölskum botni."
 
 QPizzaToppingsList/fall ->
     QPizzaToppingsWord/fall QPizzaOgMedToppings/fall*
