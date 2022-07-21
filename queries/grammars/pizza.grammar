@@ -112,7 +112,7 @@ QPizzaSize/fall ->
 QPizzaOgCompositeAnswer ->
     "og:st"? QPizzaCompositeAnswer
 
-QPizzaOgToppings/fall ->
+QPizzaOgMedToppings/fall ->
     'og:st'? 'með:fs'? QPizzaToppingsWord/fall
 
 # It is common to say "miðstærð af pítsu", which is handled separately here.
