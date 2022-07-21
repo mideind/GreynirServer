@@ -387,6 +387,33 @@ class DialogueStateManager(object):
         """Given a resource, returns all children of the resource"""
         return self._resource_graph[resource]["children"]
 
+    def get_ancestors(
+        self, resource: Resource, filter_func: Optional[FilterFuncType] = None
+    ) -> List[Resource]:
+        """
+        Given a resource and an optional filter function
+        (with a resource and the depth in tree as args, returns a boolean),
+        returns all ancestors of the resource that match the function
+        (all of them if filter_func is None).
+        """
+        ancestors: List[Resource] = []
+
+        def _recurse_ancestors(
+            resource: Resource, depth: int, filter_func: FilterFuncType
+        ) -> None:
+            nonlocal ancestors
+            for parent in self._resource_graph[resource]["parents"]:
+                if filter_func(parent, depth):
+                    ancestors.append(parent)
+                _recurse_ancestors(parent, depth + 1, filter_func)
+
+        _recurse_ancestors(resource, 0, filter_func or _ALLOW_ALL_FILTER)
+        return ancestors
+
+    def get_parents(self, resource: Resource) -> List[Resource]:
+        """Given a resource, returns all parents of the resource"""
+        return self._resource_graph[resource]["parents"]
+
     def get_answer(
         self, answering_functions: AnsweringFunctionMap, result: Any
     ) -> Optional[AnswerTuple]:
@@ -447,20 +474,9 @@ class DialogueStateManager(object):
         resource.state = state
         if resource.cascade_state and lowered_state:
             # Find all parent resources and set to corresponding state
-            parents = self._find_parent_resources(self._resources[resource_name])
-            for parent in parents:
-                parent.state = ResourceState.UNFULFILLED
-
-    def _find_parent_resources(self, resource: Resource) -> Set[Resource]:
-        """Find all parent resources of a resource"""
-        all_parents: Set[Resource] = set()
-        resource_parents: list[Resource] = self._resource_graph[resource]["parents"]
-        if len(resource_parents) > 0:
-            for parent in resource_parents:
-                if parent not in all_parents:
-                    all_parents.add(parent)
-                    all_parents.update(self._find_parent_resources(parent))
-        return all_parents
+            ancestors = set(self.get_ancestors(resource))
+            for anc in ancestors:
+                anc.state = ResourceState.UNFULFILLED
 
     def _find_current_resource(self) -> Resource:
         """
@@ -473,9 +489,10 @@ class DialogueStateManager(object):
         def _recurse_resources(resource: Resource) -> None:
             nonlocal curr_res, wrapper_parent
             if resource.is_confirmed or resource.is_skipped:
+                # Don't set resource as current if it is confirmed or skipped
                 return
             # Current resource is neither confirmed nor skipped,
-            # so we try to recurse further
+            # so we try to find candidates lower in the tree first
             if isinstance(resource, WrapperResource):
                 # This resource is a wrapper, keep it in a variable
                 wrapper_parent = resource
@@ -483,25 +500,28 @@ class DialogueStateManager(object):
                 _recurse_resources(child)
                 if (
                     curr_res == child
-                    and not isinstance(child, WrapperResource)
                     and wrapper_parent == resource
+                    and not isinstance(child, WrapperResource)
                     and not child.prefer_over_wrapper
                 ):
-                    # If the direct child of a wrapper resource
-                    # is the current resource, isn't a wrapper itself,
-                    # and isn't preferred over the wrapper,
+                    # If the direct child of a wrapper resource:
+                    # 1. is the current resource
+                    # 2. isn't a wrapper itself
+                    # 3. isn't preferred as current resource over the wrapper
                     # set the wrapper as the current resource instead
                     curr_res = resource
                 if curr_res is not None:
-                    # Found a non-confirmed resource, stop looking
+                    # Found a suitable resource, stop looking
                     return
             curr_res = resource
 
         _recurse_resources(self._resources["Final"])
         return curr_res or self._resources["Final"]
 
+    # TODO: Can we move this function into set_resource_state?
     def skip_other_resources(self, or_resource: OrResource, resource: Resource) -> None:
         """Skips other resources in the or resource"""
+        # TODO: Check whether OrResource is exclusive or not
         assert isinstance(
             or_resource, OrResource
         ), f"{or_resource} is not an OrResource"
@@ -509,6 +529,7 @@ class DialogueStateManager(object):
             if res != resource.name:
                 self.set_resource_state(res, ResourceState.SKIPPED)
 
+    # TODO: Can we move this function into set_resource_state?
     def update_wrapper_state(self, wrapper: WrapperResource) -> None:
         """
         Updates the state of the wrapper resource
