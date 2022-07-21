@@ -94,8 +94,12 @@ QPizzaCompositeAnswerWrapper →
     QPizzaCompositeAnswer QPizzaOgCompositeAnswer*
 
 QPizzaCompositeAnswer ->
-    QPizzaRequestPleasantries? QPizzaNum/þf QPizzaSizePhrase/þf QPizzaToppingsCrustPermutation? # e.g. "Ég vil stóra pítsu með ólífum og ananas."
-    | QPizzaRequestPleasantries? QPizzaNum/þf QPizzaOrMenuWord/þf QPizzaToppingsCrustPermutation? # e.g. "Ég vil tvær margarítur með ítölskum botni."
+    QPizzaRequestPleasantries? QPizzaCompositeRest/þf # e.g. "Ég vil tólf tommu margarítu með ítölskum botni."
+    | QPizzaCompositeRest/nf # e.g. "Tólf tommu pítsa með skinku ananas og með ítölskum botni'."
+
+QPizzaCompositeRest/fall ->
+    QPizzaNum/fall? QPizzaSizePhrase/fall QPizzaToppingsCrustPermutation? # e.g. "Ég vil stóra pítsu með ólífum og ananas."
+    | QPizzaNum/fall? QPizzaOrMenuWord/fall QPizzaToppingsCrustPermutation? # e.g. "Ég vil tvær margarítur með ítölskum botni."
 
 QPizzaToppingsList/fall ->
     QPizzaToppingsWord/fall QPizzaOgMedToppings/fall*
@@ -198,21 +202,21 @@ QPizzaDipsWords/fall ->
 # The actual size is 14.5".
 QPizzaSizeLarge/fall ->
     'stór:lo'/fall
-    | QPizzaSixteenWord 'tomma:kvk'/fall?
-    | QPizzaFifteenWord 'tomma:kvk'/fall?
-    | QPizzaFourteenPointFiveWord 'tomma:kvk'/fall?
+    | QPizzaSixteenWord 'tomma:kvk'/ef?
+    | QPizzaFifteenWord 'tomma:kvk'/ef?
+    | QPizzaFourteenPointFiveWord 'tomma:kvk'/ef?
 
 QPizzaSizeMedium/fall ->
     'millistór:lo'/fall
     | 'meðalstór:lo'/fall
-    | QPizzaTwelveWord 'tomma:kvk'/fall?
+    | QPizzaTwelveWord 'tomma:kvk'/ef?
 
 QPizzaMediumWord/fall ->
     'mið-stærð:kvk'/fall
 
 QPizzaSizeSmall/fall ->
     'lítil:lo'/fall
-    | QPizzaNineWord 'tomma:kvk'/fall?
+    | QPizzaNineWord 'tomma:kvk'/ef?
 
 QPizzaCrustType/fall ->
     QPizzaItalianWord/fall 
