@@ -63,6 +63,9 @@ class Resource:
     prompts: Mapping[str, str] = field(default_factory=dict)
     # When this resource's state is changed, change all parent resource states as well
     cascade_state: bool = False
+    # When set to True, this resource will be used
+    # as the current resource instead of its wrapper
+    prefer_over_wrapper: bool = False
     # Used for comparing states (which one is earlier/later in the dialogue)
     order_index: int = 0
     # Extra variables to be used for specific variables
