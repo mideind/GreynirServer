@@ -149,7 +149,7 @@ QPizzaMenuWords/fall ->
     'prinsessa:kvk'/fall
     | 'dóttir:kvk'/fall
     | QPizzaMargherita/fall
-    | 'kjötveisla:kvk'/fall
+    | 'kjöt-veisla:kvk'/fall
     | 'hvítlauksbrauð:hk'/fall
     | QPizzaTokyo/fall
 
@@ -173,15 +173,15 @@ QPizzaDrinksWords/fall ->
     | QPizzaCokeZero/fall
     | "fanta"
     | 'toppur:kk'_et/fall
-    | 'sítrónutoppur:kk'_et/fall
-    | 'appelsínusvali:kk'_et/fall
-    | 'eplasvali:kk'_et/fall
+    | 'sítrónu-toppur:kk'_et/fall
+    | 'appelsínu-svali:kk'_et/fall
+    | 'epla-svali:kk'_et/fall
     | "monster"
 
 QPizzaDipsWords/fall ->
-    'hvítlauksolía:kvk'_et/fall
-    | 'hvítlaukssósa:kvk'_et/fall
-    | 'brauðstangasósa:kvk'_et/fall
+    'hvítlauks-olía:kvk'_et/fall
+    | 'hvítlauks-sósa:kvk'_et/fall
+    | 'brauð-stanga-sósa:kvk'_et/fall
     | QPizzaBlueCheese/fall
     | 'sterkur:lo'_kvk_et/fall 'sósa:kvk'_et/fall
     | 'kokteilsósa:kvk'_et/fall
@@ -307,12 +307,12 @@ QPizzaTokyo/fall ->
     | "tokyo"
 
 QPizzaLargeBreadsticks/fall ->
-    'stór:lo'_kvk_ft/fall? 'brauðstöng:kvk'_ft/fall
-    | 'brauðstöng:kvk'_ft/fall 'stór:lo'_kvk_ft/fall
+    'stór:lo'_kvk_ft/fall? 'brauð-stöng:kvk'_ft/fall
+    | 'brauð-stöng:kvk'_ft/fall 'stór:lo'_kvk_ft/fall
 
 QPizzaSmallBreadsticks/fall ->
-    'lítill:lo'_kvk_ft/fall 'brauðstöng:kvk'_ft/fall
-    | 'brauðstöng:kvk'_ft/fall 'lítill:lo'_kvk_ft/fall
+    'lítill:lo'_kvk_ft/fall 'brauð-stöng:kvk'_ft/fall
+    | 'brauð-stöng:kvk'_ft/fall 'lítill:lo'_kvk_ft/fall
 
 QPizzaCoke/fall ->
     QPizzaCokeWord/fall
@@ -322,8 +322,8 @@ QPizzaCokeZero/fall ->
     | QPizzaCokeWord/fall "án" 'sykur:kk'_et_ef
 
 QPizzaBlueCheese/fall ->
-    'gráðaostasósa:kvk'_et/fall
-    | 'gráðostasósa:kvk'_et/fall
+    'gráðaosta-sósa:kvk'_et/fall
+    | 'gráðosta-sósa:kvk'_et/fall
     | 'gráðaostur:kk'_et/fall
     | 'gráðostur:kk'_et/fall
 
