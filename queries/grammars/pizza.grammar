@@ -37,6 +37,8 @@ QPizzaPrimeAnswer ->
     | QPizzaSizeAnswer # Answer to the question "What size do you want?"
     | QPizzaCrustAnswer # Answer to the question "What kind of crust do you want?"
     | QPizzaExtrasAnswer # Answer to the question "Do you want anything with your pizzas?"
+    | QPizzaCancel # Request to cancel the order.
+    | QPizzaStatus # Request for the status of the order.
 
 QPizzaNumberAnswer →
     QPizzaRequestPleasantries? QPizzaNum/þf QPizzaWord/þf # e.g. "Ég vil kaupa tvær pítsur."
@@ -68,6 +70,24 @@ QPizzaExtrasAnswer ->
     QPizzaRequestPleasantries? QPizzaExtraWords/þf QPizzaMedPitsunni? # e.g. "Ég vil brauðstangir með pizzunum."
     | QPizzaEgVil "líka" QPizzaExtraWords/þf QPizzaMedPitsunni? # e.g. "Ég vil líka kanilgott með pizzunum."
     | QPizzaExtraWords/nf # e.g. "Kók."
+
+QPizzaCancel → 
+    "ég" "hætti" "við"
+    | QPizzaEgVil? "hætta" "við" 'pöntun:kvk'_et/þf?
+    | "hætta" 'pöntun:kvk'_et/þgf?
+    | "hættu"
+
+QPizzaStatus →
+    "staðan"
+    | "hver" "er" "staðan" "á" 'pöntun:kvk'_et/þgf?
+    | "hver" "er" "staðan"
+    | "segðu" "mér" "stöðuna"
+    | "hvernig" "er" "staðan"
+    | "hvar" "var" "ég"
+    | "hvert" "var" "ég" 'kominn'
+    | "hvert" "var" "ég" 'kominn' "í" 'pöntun:kvk'_et/þgf?
+    | "hver" "var" "staðan" "á"? 'pöntun:kvk'_et/þgf?
+    | QPizzaEgVil? "halda" "áfram" "með" 'pöntun:kvk'_et/þf?
 
 QPizzaCompositeAnswer ->
     QPizzaRequestPleasantries? QPizzaSizePhrase/þf QPizzaToppingsCrustPermutation? # e.g. "Ég vil stóra pítsu með ólífum og ananas."
@@ -182,7 +202,7 @@ QPizzaSizeMedium/fall ->
     | QPizzaTwelveWord 'tomma:kvk'/fall?
 
 QPizzaMediumWord/fall ->
-    "miðstærð"
+    'mið-stærð:kvk'/fall
 
 QPizzaSizeSmall/fall ->
     'lítil:lo'/fall
