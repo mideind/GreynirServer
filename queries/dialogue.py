@@ -23,6 +23,7 @@ except ModuleNotFoundError:
 from queries import AnswerTuple
 from queries.resources import (
     RESOURCE_MAP,
+    OrResource,
     Resource,
     DialogueJSONDecoder,
     DialogueJSONEncoder,
@@ -498,6 +499,47 @@ class DialogueStateManager(object):
 
         _recurse_resources(self._resources["Final"])
         return curr_res or self._resources["Final"]
+
+    def skip_other_resources(self, or_resource: OrResource, resource: Resource) -> None:
+        """Skips other resources in the or resource"""
+        assert isinstance(
+            or_resource, OrResource
+        ), f"{or_resource} is not an OrResource"
+        for res in or_resource.requires:
+            if res != resource.name:
+                self.set_resource_state(res, ResourceState.SKIPPED)
+
+    def update_wrapper_state(self, wrapper: WrapperResource) -> None:
+        """
+        Updates the state of the wrapper resource
+        based on the state of its children.
+        """
+        print("UPDATING WRAPPER STATE", wrapper.state)
+        if wrapper.state == ResourceState.UNFULFILLED:
+            print("Wrapper is unfulfilled")
+            if all(
+                [
+                    child.state == ResourceState.UNFULFILLED
+                    for child in self._resource_graph[wrapper]["children"]
+                ]
+            ):
+                print("All children are unfulfilled")
+                return
+            print("At least one child is fulfilled")
+            self.set_resource_state(wrapper.name, ResourceState.PARTIALLY_FULFILLED)
+        elif wrapper.state == ResourceState.PARTIALLY_FULFILLED:
+            print("Wrapper is partially fulfilled")
+            if any(
+                [
+                    child.state != ResourceState.CONFIRMED
+                    for child in self._resource_graph[wrapper]["children"]
+                ]
+            ):
+                print("At least one child is not confirmed")
+                self.set_resource_state(wrapper.name, ResourceState.PARTIALLY_FULFILLED)
+                return
+            print("All children are confirmed")
+            self.set_resource_state(wrapper.name, ResourceState.FULFILLED)
 
     def finish_dialogue(self) -> None:
         """Set the dialogue as finished."""
