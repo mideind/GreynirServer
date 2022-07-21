@@ -28,6 +28,10 @@ QPizzaRequestBare ->
     QPizzaRequestPleasantries? QPizzaWord/þf
 
 QPizzaDialogue →
+    QPizzaPrimeAnswer # Requests specifying a single thing.
+    > QPizzaCompositeAnswer # Request specifying multiple things at once: size, toppings, crust.
+
+QPizzaPrimeAnswer ->
     QPizzaNumberAnswer # Answer to the question "How many pizzas do you want?"
     | QPizzaMenuOrToppingsAnswer # Answer to the question "What do you want to order?"
     | QPizzaSizeAnswer # Answer to the question "What size do you want?"
@@ -48,17 +52,16 @@ QPizzaMenuAnswer ->
 
 QPizzaToppingsAnswer ->
     QPizzaRequestPleasantries? QPizzaToppingsList/þf QPizzaAPitsunaPhrase? # e.g. "Ég vil skinku, ólífur og pepperóní á pítsuna."
-    | QPizzaRequestPleasantries? QPizzaWord/þf "með" QPizzaToppingsList/þgf # e.g. "Ég vil pizzu með ólífum og ananas."
+    | QPizzaRequestPleasantries? QPizzaWord/þf QPizzaMedToppings # e.g. "Ég vil pizzu með ólífum og ananas."
 
-# It is common to say "miðstærð af pítsu", which is handled separately here.
+# This allows for "Ég vil miðstærð af kjötveislu" to make the composite answer simpler.
 QPizzaSizeAnswer ->
-    QPizzaRequestPleasantries? QPizzaSize/þf QPizzaWord/þf? # e.g. "Ég vil stóra pítsu."
-    | QPizzaSize/nf # e.g. "Tólf tommur."
-    | QPizzaRequestPleasantries? QPizzaMediumWord/þf QPizzaAfPitsuPhrase? # e.g. "Ég vil miðstærð af pítsu."
+    QPizzaRequestPleasantries? QPizzaSizePhrase/þf # e.g. "Ég vil stóra pítsu." or "Ég vil miðstærð af pítsu."
+    | QPizzaSizePhrase/nf # e.g. "Tólf tommur."
 
 QPizzaCrustAnswer ->
-    QPizzaRequestPleasantries? QPizzaCrustPhrase/þf QPizzaAPitsunaPhrase? # e.g. "Ég vil klassískan botn."
-    | QPizzaRequestPleasantries? QPizzaWord/þf "með" QPizzaCrustPhrase/þgf # e.g. "Ég vil pizzu með ítölskum botni."
+    QPizzaRequestPleasantries? QPizzaCrustPhrase/þf QPizzaAPitsunaPhrase? # e.g. "Ég vil klassískan botn á pítsuna."
+    | QPizzaRequestPleasantries? QPizzaWord/þf QPizzaMedCrust # e.g. "Ég vil pizzu með ítölskum botni."
     | QPizzaCrustPhrase/nf # e.g. "Ítalskur botn."
 
 QPizzaExtrasAnswer ->
@@ -66,8 +69,11 @@ QPizzaExtrasAnswer ->
     | QPizzaEgVil "líka" QPizzaExtraWords/þf QPizzaMedPitsunni? # e.g. "Ég vil líka kanilgott með pizzunum."
     | QPizzaExtraWords/nf # e.g. "Kók."
 
+QPizzaCompositeAnswer ->
+    QPizzaRequestPleasantries? QPizzaSizePhrase/þf QPizzaToppingsCrustPermutation? # e.g. "Ég vil stóra pítsu með ólífum og ananas."
+
 QPizzaToppingsList/fall ->
-    QPizzaToppingsWordWrapper/fall* 'og:st'? QPizzaToppingsWord/fall
+    QPizzaToppingsWord/fall QPizzaOgToppings/fall*
 
 QPizzaSize/fall ->
     QPizzaSizeLarge/fall
@@ -76,8 +82,39 @@ QPizzaSize/fall ->
 
 # This wrapper is necessary to prevent the module from reading toppings multiple times.
 # Otherwise, it reads "ananas skinku og pepperóní" as "ananas" "skinka" "pepperóní" and "ananas skinka" (2022/07/20).
-QPizzaToppingsWordWrapper/fall ->
-    QPizzaToppingsWord/fall
+QPizzaOgToppings/fall ->
+    'og:st'? QPizzaToppingsWord/fall
+
+# It is common to say "miðstærð af pítsu", which is handled separately here.
+QPizzaSizePhrase/fall ->
+    QPizzaSize/fall QPizzaOrMenuWord/fall?
+    | QPizzaMediumWord/fall QPizzaAfPitsuPhrase?
+
+QPizzaCrustPhrase/fall ->
+    QPizzaCrustType/fall QPizzaCrustWord/fall?
+
+QPizzaToppingsCrustPermutation ->
+    QPizzaMedToppings? "og"? QPizzaMedCrust
+    | QPizzaMedCrust? "og"? QPizzaMedToppings
+
+QPizzaAfPitsuPhrase ->
+    "af" QPizzaOrMenuWord/þgf
+
+QPizzaAPitsunaPhrase ->
+    "á" QPizzaWord/þf
+
+QPizzaMedPitsunni ->
+    "með" QPizzaWord/þgf
+
+QPizzaMedToppings ->
+    "með" QPizzaToppingsList/þgf
+
+QPizzaMedCrust ->
+    "með" QPizzaCrustPhrase/þgf
+
+QPizzaOrMenuWord/fall ->
+    QPizzaWord/fall
+    | QPizzaMenuWords/fall
 
 # Toppings that are transcribed in different ways are in separate nonterminals for clarity.
 # This also helps standardize the handling of each topping in the module, i.e. not reading "ólífa" and "ólíva" as separate toppings.
@@ -131,18 +168,6 @@ QPizzaDipsWords/fall ->
     | "súkkulaðiglassúr"
     | "glassúr"
 
-QPizzaCrustPhrase/fall ->
-    QPizzaCrustType/fall QPizzaCrustWord/fall?
-
-QPizzaAfPitsuPhrase ->
-    "af" QPizzaWord/þgf
-
-QPizzaAPitsunaPhrase ->
-    "á" QPizzaWord/þgf
-
-QPizzaMedPitsunni ->
-    "með" QPizzaWord/þgf
-
 # A large pizza at Domino's is typically thought to be 16", some believe it to be 15".
 # The actual size is 14.5".
 QPizzaSizeLarge/fall ->
@@ -157,7 +182,7 @@ QPizzaSizeMedium/fall ->
     | QPizzaTwelveWord 'tomma:kvk'/fall?
 
 QPizzaMediumWord/fall ->
-    'miðstærð:kvk'/fall
+    "miðstærð"
 
 QPizzaSizeSmall/fall ->
     'lítil:lo'/fall
@@ -244,6 +269,7 @@ QPizzaMushroom/fall ->
     'sveppur:kk'/fall
     | 'Sveppi:kk'
 
+# "Margaríta" is not recognized by bin, so I hack the grammar here to make it work.
 QPizzaMargherita_nf ->
     "margaríta"
     | "margarita"
