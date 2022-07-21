@@ -180,6 +180,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             )
             song_url = spotify_client.get_song_by_artist()
             response = spotify_client.play_song_on_device()
+            # response = None
             print("RESPONSE FROM SPOTIFY:", response)
             if response is None:
                 q.set_url(song_url)

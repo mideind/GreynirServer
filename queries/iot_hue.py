@@ -194,6 +194,7 @@ def QIoTIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None
 
 def QIoTCooler(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "decrease_colortemp"
+    result.changing_temp = True
     if "hue_obj" not in result:
         result["hue_obj"] = {"ct_inc": -30000}
     else:
@@ -202,6 +203,7 @@ def QIoTCooler(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QIoTWarmer(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "increase_colortemp"
+    result.changing_temp = True
     if "hue_obj" not in result:
         result["hue_obj"] = {"ct_inc": 30000}
     else:
@@ -217,7 +219,7 @@ def QIoTDecreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None
 
 
 def QIoTBrightest(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.action = "decrease_brightness"
+    result.action = "increase_brightness"
     if "hue_obj" not in result:
         result["hue_obj"] = {"bri": 255}
     else:
@@ -252,6 +254,7 @@ def QIoTColorName(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QIoTSceneName(node: Node, params: QueryStateDict, result: Result) -> None:
     result["scene_name"] = result._indefinite
+    result["changing_scene"] = True
     print("scene: " + result.get("scene_name", None))
 
 
@@ -343,11 +346,16 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     changing_color = result.get("changing_color", False)
     changing_scene = result.get("changing_scene", False)
     changing_brightness = result.get("changing_brightness", False)
-    print("error?", sum((changing_color, changing_scene, changing_brightness)) > 1)
+    # changing_temp = result.get("changing_temp", False)
+    print(
+        "error?",
+        sum((changing_color, changing_scene, changing_brightness)) > 1,
+    )
     if (
         sum((changing_color, changing_scene, changing_brightness)) > 1
         or "qtype" not in result
     ):
+        print("ERROR")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 

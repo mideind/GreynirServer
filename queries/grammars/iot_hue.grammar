@@ -259,6 +259,9 @@ QIoTSceneWord/fall ->
     | 'stemning'/fall
     | 'stemming'/fall
     | 'stemmning'/fall
+    | 'sina'/fall
+    | 'Sena'/fall
+    | "Sena"
 
 # Need to ask Hulda how this works.
 QIoTSpyrjaHuldu/fall ->
@@ -309,6 +312,9 @@ QIoTLessDarkerOrLower/fall ->
 
 QIoTWarmer/fall ->
     'hlýr:lo'_mst/fall
+    | 'heitur:lo'_mst/fall
+    | "hlýri"
+
 
 QIoTCooler/fall ->
     'kaldur:lo'_mst/fall

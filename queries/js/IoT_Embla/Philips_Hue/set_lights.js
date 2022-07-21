@@ -1,8 +1,8 @@
 "use strict";
 
 // Constants to be used when setting lights from HTML
-var BRIDGE_IP = "192.168.1.68";
-var USERNAME = "BzdNyxr6mGSHVdQN86UeZP67qp5huJ2Q6TWyTzvz";
+// var BRIDGE_IP = "192.168.1.68";
+// var USERNAME = "BzdNyxr6mGSHVdQN86UeZP67qp5huJ2Q6TWyTzvz";
 
 // TODO: Implement a hotfix for Ikea Tradfri bulbs, since it can only take one argument at a time
 
@@ -55,9 +55,7 @@ function setLights(target, state) {
             targetObject,
             allLights
         );
-        console.log("isTradfriBulb:", isTradfriBulb);
-        if (isTradfriBulb) {
-            console.log("sending request again");
+        if (sceneName && isTradfriBulb) {
             const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
             sleep(450).then(() => {
                 call_api(url, state);
@@ -180,9 +178,12 @@ function check_if_if_ikea_bulb_in_group(groupsObject, all_lights) {
         let lightID = groupsObject.lights[key];
         let light = all_lights[lightID];
         if (
-            light.manufacturername.includes("IKEA") |
-            light.modelid.includes("TRADFRI")
+            light.manufacturername.includes("IKEA") ||
+            light.modelid.includes("TRADFRI") ||
+            light.manufacturername.includes("ikea") ||
+            light.manufacturername.includes("tradfri")
         );
+
         {
             return true;
         }
