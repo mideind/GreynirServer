@@ -246,6 +246,13 @@ class NumberResource(Resource):
     data: int = 0
 
 
+@dataclass(eq=False, repr=False)
+class StringResource(Resource):
+    """Resource representing a string."""
+
+    data: str = ""
+
+
 @dataclass(eq=False, repr=False)  # Wrapper when multiple resources are required
 class WrapperResource(Resource):
     # Wrappers by default prefer to be the current
@@ -284,6 +291,7 @@ RESOURCE_MAP: Mapping[str, Type[Resource]] = {
     "TimeResource": TimeResource,
     "WrapperResource": WrapperResource,
     "YesNoResource": YesNoResource,
+    "StringResource": StringResource,
 }
 
 
