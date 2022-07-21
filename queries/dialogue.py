@@ -51,6 +51,8 @@ AnsweringFunctionType = Callable[
 # TODO: Fix 'Any' in type hint (Callable args are contravariant)
 AnsweringFunctionMap = Mapping[str, AnsweringFunctionType[Any]]
 
+FilterFuncType = Callable[[Resource, int], bool]
+_ALLOW_ALL_FILTER: FilterFuncType = lambda r, i: True
 
 ################################
 #    DIALOGUE STATE MANAGER    #
@@ -356,6 +358,34 @@ class DialogueStateManager(object):
     def timed_out(self) -> bool:
         return self._timed_out
 
+    def get_descendants(
+        self, resource: Resource, filter_func: Optional[FilterFuncType] = None
+    ) -> List[Resource]:
+        """
+        Given a resource and an optional filter function
+        (with a resource and the depth in tree as args, returns a boolean),
+        returns all descendants of the resource that match the function
+        (all of them if filter_func is None).
+        Returns the descendants in preorder
+        """
+        descendants: List[Resource] = []
+
+        def _recurse_descendants(
+            resource: Resource, depth: int, filter_func: FilterFuncType
+        ) -> None:
+            nonlocal descendants
+            for child in self._resource_graph[resource]["children"]:
+                if filter_func(child, depth):
+                    descendants.append(child)
+                _recurse_descendants(child, depth + 1, filter_func)
+
+        _recurse_descendants(resource, 0, filter_func or _ALLOW_ALL_FILTER)
+        return descendants
+
+    def get_children(self, resource: Resource) -> List[Resource]:
+        """Given a resource, returns all children of the resource"""
+        return self._resource_graph[resource]["children"]
+
     def get_answer(
         self, answering_functions: AnsweringFunctionMap, result: Any
     ) -> Optional[AnswerTuple]:
@@ -454,9 +484,11 @@ class DialogueStateManager(object):
                     curr_res == child
                     and not isinstance(child, WrapperResource)
                     and wrapper_parent == resource
+                    and not child.prefer_over_wrapper
                 ):
                     # If the direct child of a wrapper resource
-                    # is the current resource and not a wrapper itself,
+                    # is the current resource, isn't a wrapper itself,
+                    # and isn't preferred over the wrapper,
                     # set the wrapper as the current resource instead
                     curr_res = resource
                 if curr_res is not None:
