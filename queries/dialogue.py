@@ -473,34 +473,25 @@ class DialogueStateManager:
         using a postorder traversal of the resource graph.
         """
         curr_res: Optional[Resource] = None
-        wrapper_parent: Optional[Resource] = None
 
         def _recurse_resources(resource: Resource) -> None:
-            nonlocal curr_res, wrapper_parent
+            nonlocal curr_res
             if resource.is_confirmed or resource.is_skipped:
                 # Don't set resource as current if it is confirmed or skipped
                 return
             # Current resource is neither confirmed nor skipped,
             # so we try to find candidates lower in the tree first
-            if isinstance(resource, WrapperResource):
-                # This resource is a wrapper, keep it in a variable
-                wrapper_parent = resource
             for child in self._resource_graph[resource]["children"]:
-                _recurse_resources(child)
-                if (
-                    curr_res == child
-                    and wrapper_parent == resource
-                    and not child.prefer_over_wrapper
-                ):
-                    # If the direct child of a wrapper resource:
-                    # 1. is the current resource
-                    # 2. isn't preferred as current resource over the wrapper
-                    # set the wrapper parent as the current resource instead
-                    curr_res = wrapper_parent
+                _recurse_resources(child) # TODO: Unwrap recursion?
                 if curr_res is not None:
                     # Found a suitable resource, stop looking
                     return
             curr_res = resource
+            while not curr_res.prefer_over_wrapper:
+                wrapper_parents = [par for par in self._resource_graph[curr_res]["parents"] if isinstance(par, WrapperResource)]
+                assert len(wrapper_parents) <= 1, "A resource cannot have more than one wrapper parent"
+                if wrapper_parents:
+                    curr_res = wrapper_parents[0]
 
         _recurse_resources(self._resources["Final"])
         return curr_res or self._resources["Final"]
