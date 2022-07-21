@@ -26,7 +26,14 @@ import random
 
 from query import Query, QueryStateDict
 from tree import Result, Node
-from queries import AnswerTuple, gen_answer, natlang_seq, parse_num, read_grammar_file
+from queries import (
+    AnswerTuple,
+    gen_answer,
+    natlang_seq,
+    parse_num,
+    read_grammar_file,
+    sing_or_plur,
+)
 from queries.num import number_to_text, numbers_to_ordinal, numbers_to_text
 from queries.resources import (
     FinalResource,
@@ -84,6 +91,21 @@ def banned_nonterminals(query: str) -> Set[str]:
 def _generate_order_answer(
     resource: WrapperResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
+    ans: str = ""
+    if dsm.extras.get("confirmed_pizzas", False):
+        number = dsm.extras["confirmed_pizzas"]
+        print("Confirmed pizzas", number)
+        ans = (
+            resource.prompts["confirmed_pizzas"]
+            .format(
+                pizzas=numbers_to_text(
+                    sing_or_plur(number, "pizzu", "pizzum"), gender="kvk", case="þgf"
+                ),
+            )
+            .capitalize()
+        )
+        dsm.extras["confirmed_pizzas"] = 0
+        return (dict(answer=ans), ans, ans)
     return gen_answer(resource.prompts["initial"])
 
 
@@ -92,14 +114,11 @@ def _generate_pizza_answer(
 ) -> Optional[AnswerTuple]:
     print("Generating pizza answer")
     print("Generate pizza resource name: ", resource.name)
-    index = resource.name.split("_")[-1]
-    type_resource: OrResource = cast(
-        OrResource, dsm.get_resource("Type_{}".format(index))
-    )
+    type_resource: OrResource = cast(OrResource, dsm.get_children(resource)[0])
     print("Type state: {}".format(type_resource.state))
-    size_resource: Resource = dsm.get_resource("Size_{}".format(index))
+    size_resource: Resource = dsm.get_children(resource)[1]
     print("Size state: {}".format(size_resource.state))
-    crust_resource: Resource = dsm.get_resource("Crust_{}".format(index))
+    crust_resource: Resource = dsm.get_children(resource)[2]
     print("Crust state: {}".format(crust_resource.state))
     if resource.is_unfulfilled:
         print("Unfulfilled pizza")
@@ -115,19 +134,6 @@ def _generate_pizza_answer(
             and crust_resource.is_unfulfilled
         ):
             return gen_answer(resource.prompts["crust"])
-
-
-def _generate_type_answer(
-    resource: WrapperResource, dsm: DialogueStateManager, result: Result
-) -> Optional[AnswerTuple]:
-    print("Generating type answer")
-    print("Generate type resource name: ", resource.name)
-    index = resource.name.split("_")[-1]
-    pizza_resource: Resource = dsm.get_resource("Pizza_{}".format(index))
-    print("Pizza state: {}".format(pizza_resource.state))
-    if resource.is_unfulfilled:
-        print("Unfulfilled type")
-        return gen_answer(resource.prompts["initial"])
 
 
 def QPizzaDialogue(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -146,7 +152,6 @@ def QPizzaNumberAnswer(node: Node, params: QueryStateDict, result: Result) -> No
     # resource = dsm.get_resource("PizzaCount")
     number: int = result.get("number", 1)
     for _ in range(number):
-        print("CCCCCCAAAAALLLLLLLLLLLLLL")
         dsm.add_dynamic_resource("Pizza", "PizzaOrder")
     print("Pizza Count: ", number)
 
@@ -155,22 +160,28 @@ def QPizzaToppingsList(node: Node, params: QueryStateDict, result: Result) -> No
     print("Toppings in QPizzaToppingsList: ", result.get("toppings", {}))
     dsm: DialogueStateManager = Query.get_dsm(result)
     toppings: Dict[str, int] = result.get("toppings", {})
-    type_resource: OrResource = cast(OrResource, dsm.current_resource)
-    print("Current resource in topping list: ", type_resource.name)
-    index = type_resource.name.split("_")[-1]
-    toppings_resource = dsm.get_resource("Toppings_{}".format(index))
-    pizza_resource = dsm.get_resource("Pizza_{}".format(index))
-    print("Toppings resource: ", toppings_resource.name)
+    pizza_resource = cast(WrapperResource, dsm.current_resource)
+    print("Pizza resource name: ", pizza_resource.name)
+    type_resource: OrResource = cast(OrResource, dsm.get_children(pizza_resource)[0])
+    print("Type resource name: ", type_resource.name)
+    toppings_resource = cast(DictResource, dsm.get_children(type_resource)[0])
+    print("Toppings resource name: ", toppings_resource.name)
+    print("Current resource in topping list: ", pizza_resource.name)
     for (topping, amount) in toppings.items():
         toppings_resource.data[topping] = amount
     print("Toppings in QPizzaToppingsList: ", toppings_resource.data)
     dsm.skip_other_resources(type_resource, toppings_resource)
+    print("!!!!A")
     dsm.set_resource_state(toppings_resource.name, ResourceState.CONFIRMED)
+    print("!!!!B")
     dsm.set_resource_state(type_resource.name, ResourceState.CONFIRMED)
     print("Updating wrapper state with state: ", pizza_resource.state)
-    dsm.update_wrapper_state(cast(WrapperResource, pizza_resource))
+    dsm.update_wrapper_state(pizza_resource)
     if pizza_resource.state == ResourceState.FULFILLED:
         dsm.set_resource_state(pizza_resource.name, ResourceState.CONFIRMED)
+        print("Adding to confirmed pizzas")
+        dsm.extras["confirmed_pizzas"] = dsm.extras.get("confirmed_pizzas", 0) + 1
+        print("Confirmed pizzas: ", dsm.extras["confirmed_pizzas"])
 
 
 def QPizzaToppingsWord(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -188,19 +199,22 @@ def QPizzaNum(node: Node, params: QueryStateDict, result: Result) -> None:
     result.number = number
 
 
-def QPizzaSizeAnswer(node: Node, params: QueryStateDict, result: Result) -> None:
-    print("In QPizzaSizeAnswer")
+def QPizzaSizePhrase(node: Node, params: QueryStateDict, result: Result) -> None:
+    print("In QPizzaSizePhrase")
     dsm: DialogueStateManager = Query.get_dsm(result)
     # TODO: Maybe some wrappers should not be set as the current resource? (e.g. here, we have to go through extra steps to get the size resource)
     # TODO: Better to use Pizza_1 here, as the current resource might be Type_1 instead of Pizza_1 and cause an error
-    size_resource: Resource = dsm.get_resource(
-        [i for i in dsm.current_resource.requires if i.startswith("Size")][0]
-    )
+    print("Current resource: ", dsm.current_resource.name)
+    size_resource: Resource = dsm.get_children(dsm.current_resource)[1]
+    print("Size resource name: ", size_resource.name)
     size_resource.data = result.get("pizza_size", "")
     dsm.set_resource_state(size_resource.name, ResourceState.CONFIRMED)
     dsm.update_wrapper_state(cast(WrapperResource, dsm.current_resource))
     if dsm.current_resource.state == ResourceState.FULFILLED:
         dsm.set_resource_state(dsm.current_resource.name, ResourceState.CONFIRMED)
+        print("Adding to confirmed pizzas")
+        dsm.extras["confirmed_pizzas"] = dsm.extras.get("confirmed_pizzas", 0) + 1
+        print("Confirmed pizzas: ", dsm.extras["confirmed_pizzas"])
 
 
 def QPizzaSizeLarge(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -221,15 +235,16 @@ def QPizzaSizeSmall(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QPizzaCrustType(node: Node, params: QueryStateDict, result: Result) -> None:
     dsm: DialogueStateManager = Query.get_dsm(result)
-    crust_resource: Resource = dsm.get_resource(
-        [i for i in dsm.current_resource.requires if i.startswith("Crust")][0]
-    )
+    crust_resource: Resource = dsm.get_children(dsm.current_resource)[2]
     crust_resource.data = result._text
     print("Crust resource data: ", crust_resource.data)
     dsm.set_resource_state(crust_resource.name, ResourceState.CONFIRMED)
     dsm.update_wrapper_state(cast(WrapperResource, dsm.current_resource))
     if dsm.current_resource.state == ResourceState.FULFILLED:
         dsm.set_resource_state(dsm.current_resource.name, ResourceState.CONFIRMED)
+        print("Adding to confirmed pizzas")
+        dsm.extras["confirmed_pizzas"] = dsm.extras.get("confirmed_pizzas", 0) + 1
+        print("Confirmed pizzas: ", dsm.extras["confirmed_pizzas"])
 
 
 def QPizzaPepperoniWord(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -247,7 +262,6 @@ def QPizzaMushroomWord(node: Node, params: QueryStateDict, result: Result) -> No
 _ANSWERING_FUNCTIONS: AnsweringFunctionMap = {
     "PizzaOrder": _generate_order_answer,
     "Pizza": _generate_pizza_answer,
-    "Type": _generate_type_answer,
 }
 
 

@@ -3,6 +3,7 @@ name = "PizzaOrder"
 type = "WrapperResource"
 #requires = ["Pizzas"]    #, "Sides", "Sauces", "Drinks"]
 prompts.initial = "Hvað má bjóða þér?"
+prompts.confirmed_pizzas = "{pizzas} var bætt við pöntunina. Var það eitthvað fleira?"
 
 # [[resources]]
 # name = "PickupDelivery"
@@ -21,15 +22,18 @@ prompts.timed_out = "Pítsupöntunin þín rann út á tíma. Vinsamlegast byrja
 name = "Pizza"
 type = "WrapperResource"
 requires = ["Type", "Size", "Crust"]
-prompts.size = "Hvaða stærð af pítsu viltu fá?"
-prompts.crust = "Hvernig botn viltu?"
+prompts.initial = "Hvernig á pítsa {number} að vera?"
+prompts.initial_single = "Hvernig pítsu viltu?"
+prompts.toppings = "Hvað álegg viltu á pítsu {number}?"
+prompts.toppings_single = "Hvað álegg viltu á pítsuna?"
+prompts.size = "Hversu stór á pítsa {number} að vera?"
+prompts.crust = "Hvernig botn viltu á pítsu {number}?"
 
 [[dynamic_resources]]
 name = "Type"
 type = "OrResource"
-requires = ["Toppings", "FromMenu"]         #, "Split"]
+requires = ["Toppings", "FromMenu"] #, "Split"]
 prefer_over_wrapper = false
-prompts.initial = "Hvernig pítsu viltu fá?"
 
 [[dynamic_resources]]
 name = "Toppings"
@@ -40,7 +44,7 @@ name = "FromMenu"
 
 [[dynamic_resources]]
 name = "Size"
-prefer_over_wrapper = true
+prompts.initial = "Hvaða stærð af pítsu viltu fá?"
 
 [[dynamic_resource]]
 name = "Split"
@@ -59,14 +63,13 @@ requires = ["Toppings", "FromMenu"]
 
 [[dynamic_resources]]
 name = "Crust"
-prefer_over_wrapper = true
 
 # [[dynamic_resources]]
 # name = "Sides"
 # type = "ListResource"
 
 # [[dynamic_resources]]
-# name = "Sauces"
+# name = "Dips"
 # type = "ListResource"
 
 # [[dynamic_resources]]
