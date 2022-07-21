@@ -248,7 +248,9 @@ class NumberResource(Resource):
 
 @dataclass(eq=False, repr=False)  # Wrapper when multiple resources are required
 class WrapperResource(Resource):
-    ...
+    # Wrappers by default prefer to be the current
+    # resource rather than a wrapper parent
+    prefer_over_wrapper: bool = True
 
 
 @dataclass(eq=False, repr=False)

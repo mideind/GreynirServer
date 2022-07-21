@@ -107,22 +107,11 @@ class DialogueDBStructure(TypedDict):
     extras: Dict[str, Any]
 
 
-class DialogueStateManager(object):
+class DialogueStateManager:
     DIALOGUE_DATA_KEY = "dialogue"
-    _instance = None
-
-    # TODO: Check if singleton can be done in a better way
-    def __new__(cls, dialogue_data: DialogueDataDict) -> "DialogueStateManager":
-        if cls._instance is None:
-            cls._instance = super(DialogueStateManager, cls).__new__(cls)
-            # Put any initialization here.
-            print(">>>>>>>>Dialogue data in NEW:", dialogue_data)
-            cls._dialogue_data: DialogueDataDict = dialogue_data
-        return cls._instance
 
     def __init__(self, dialogue_data: DialogueDataDict) -> None:
         self._dialogue_data: DialogueDataDict = dialogue_data
-        print(">>>>>>>>Dialogue data in INIT:", dialogue_data)
 
     def load_dialogue(self, dialogue_name: str):
         self._dialogue_name: str = dialogue_name
@@ -501,15 +490,13 @@ class DialogueStateManager(object):
                 if (
                     curr_res == child
                     and wrapper_parent == resource
-                    and not isinstance(child, WrapperResource)
                     and not child.prefer_over_wrapper
                 ):
                     # If the direct child of a wrapper resource:
                     # 1. is the current resource
-                    # 2. isn't a wrapper itself
-                    # 3. isn't preferred as current resource over the wrapper
-                    # set the wrapper as the current resource instead
-                    curr_res = resource
+                    # 2. isn't preferred as current resource over the wrapper
+                    # set the wrapper parent as the current resource instead
+                    curr_res = wrapper_parent
                 if curr_res is not None:
                     # Found a suitable resource, stop looking
                     return

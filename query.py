@@ -408,10 +408,10 @@ class Query:
         # This should be a dict that can be represented in JSON
         self._context: Optional[ContextDict] = None
         # Dialogue state manager and dialogue data, used for dialogue modules
-        self._dsm: DSM = DSM(
+        self._all_dialogue_data = (
             cast(DialogueDataDict, self.client_data(DSM.DIALOGUE_DATA_KEY)) or dict()
         )
-        self._all_dialogue_data: Optional[ClientDataDict] = None
+        self._dsm: DSM = DSM(self._all_dialogue_data)
 
     def _preprocess_query_string(self, q: str) -> str:
         """Preprocess the query string prior to further analysis"""
@@ -968,13 +968,11 @@ class Query:
     @staticmethod
     def get_dsm(result: Result) -> DSM:
         """Fetch DialogueStateManager instance from result object"""
-        dsm = cast(QueryStateDict, result.state)["query"]._dsm
-        assert dsm is not None, "get_dsm called in non-dialogue state"
+        dsm = cast(QueryStateDict, result.state)["query"].dsm
         return dsm
 
     @property
     def dsm(self) -> DSM:
-        assert self._dsm is not None, "dsm property used in non-dialogue state"
         return self._dsm
 
     @property

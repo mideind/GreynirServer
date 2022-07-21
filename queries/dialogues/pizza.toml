@@ -28,6 +28,7 @@ prompts.crust = "Hvernig botn viltu?"
 name = "Type"
 type = "OrResource"
 requires = ["Toppings", "FromMenu"]         #, "Split"]
+prefer_over_wrapper = false
 prompts.initial = "Hvernig pítsu viltu fá?"
 
 [[dynamic_resources]]
@@ -39,6 +40,7 @@ name = "FromMenu"
 
 [[dynamic_resources]]
 name = "Size"
+prefer_over_wrapper = true
 
 [[dynamic_resource]]
 name = "Split"
@@ -57,6 +59,7 @@ requires = ["Toppings", "FromMenu"]
 
 [[dynamic_resources]]
 name = "Crust"
+prefer_over_wrapper = true
 
 # [[dynamic_resources]]
 # name = "Sides"
