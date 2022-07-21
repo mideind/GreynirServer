@@ -735,10 +735,15 @@ class Query:
                                 self._tree.process_sentence(state, query_tree)
                             except ResourceNotFoundError:
                                 pass
+                            print(
+                                "DO WE HAVE AN ANSWER?", self.has_answer(), self._error
+                            )
                             if self.has_answer():
+                                print("HAS ANSWER")
                                 # The processor successfully answered the query: We're done
                                 # Also save any changes to dialogue data, if needed
                                 self.update_dialogue_data()
+                                print("DIALOGUE DATA UPDATED")
                                 return True
             except Exception as e:
                 logging.error(

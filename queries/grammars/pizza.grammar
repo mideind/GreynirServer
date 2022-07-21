@@ -54,7 +54,7 @@ QPizzaMenuAnswer ->
 
 QPizzaToppingsAnswer ->
     QPizzaRequestPleasantries? QPizzaToppingsList/þf QPizzaAPitsunaPhrase? # e.g. "Ég vil skinku, ólífur og pepperóní á pítsuna."
-    | QPizzaRequestPleasantries? QPizzaWord/þf QPizzaMedToppings # e.g. "Ég vil pizzu með ólífum og ananas."
+    | QPizzaRequestPleasantries? QPizzaWord/þf? QPizzaMedToppings # e.g. "Ég vil pizzu með ólífum og ananas."
 
 # This allows for "Ég vil miðstærð af kjötveislu" to make the composite answer simpler.
 QPizzaSizeAnswer ->
