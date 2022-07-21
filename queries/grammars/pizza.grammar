@@ -29,7 +29,7 @@ QPizzaRequestBare ->
 
 QPizzaDialogue →
     QPizzaPrimeAnswer # Requests specifying a single thing.
-    > QPizzaCompositeAnswer # Request specifying multiple things at once: size, toppings, crust.
+    > QPizzaCompositeAnswerWrapper # Request specifying multiple things at once: size, toppings, crust.
 
 QPizzaPrimeAnswer ->
     QPizzaNumberAnswer # Answer to the question "How many pizzas do you want?"
@@ -89,21 +89,27 @@ QPizzaStatus →
     | "hver" "var" "staðan" "á"? 'pöntun:kvk'_et/þgf?
     | QPizzaEgVil? "halda" "áfram" "með" 'pöntun:kvk'_et/þf?
 
+# Wrapper to handle multiple pizza requests at once, "Ég vil kjötveislu með ítölskum botni og stóra margarítu."
+QPizzaCompositeAnswerWrapper →
+    QPizzaCompositeAnswer QPizzaOgCompositeAnswer*
+
 QPizzaCompositeAnswer ->
-    QPizzaRequestPleasantries? QPizzaSizePhrase/þf QPizzaToppingsCrustPermutation? # e.g. "Ég vil stóra pítsu með ólífum og ananas."
+    QPizzaRequestPleasantries? QPizzaNum/þf QPizzaSizePhrase/þf QPizzaToppingsCrustPermutation? # e.g. "Ég vil stóra pítsu með ólífum og ananas."
+    | QPizzaRequestPleasantries? QPizzaNum/þf QPizzaOrMenuWord/þf QPizzaToppingsCrustPermutation? # e.g. "Ég vil tvær margarítur með ítölskum botni."
 
 QPizzaToppingsList/fall ->
-    QPizzaToppingsWord/fall QPizzaOgToppings/fall*
+    QPizzaToppingsWord/fall QPizzaOgMedToppings/fall*
 
 QPizzaSize/fall ->
     QPizzaSizeLarge/fall
     | QPizzaSizeMedium/fall
     | QPizzaSizeSmall/fall
 
-# This wrapper is necessary to prevent the module from reading toppings multiple times.
-# Otherwise, it reads "ananas skinku og pepperóní" as "ananas" "skinka" "pepperóní" and "ananas skinka" (2022/07/20).
+QPizzaOgCompositeAnswer ->
+    "og:st"? QPizzaCompositeAnswer
+
 QPizzaOgToppings/fall ->
-    'og:st'? QPizzaToppingsWord/fall
+    'og:st'? 'með:fs'? QPizzaToppingsWord/fall
 
 # It is common to say "miðstærð af pítsu", which is handled separately here.
 QPizzaSizePhrase/fall ->
@@ -114,8 +120,8 @@ QPizzaCrustPhrase/fall ->
     QPizzaCrustType/fall QPizzaCrustWord/fall?
 
 QPizzaToppingsCrustPermutation ->
-    QPizzaMedToppings? "og"? QPizzaMedCrust
-    | QPizzaMedCrust? "og"? QPizzaMedToppings
+    QPizzaMedToppings "og:st"? 'með:fs'? QPizzaCrustPhrase/þgf?
+    | QPizzaMedCrust "og:st"? 'með:fs'? QPizzaToppingsList/þgf?
 
 QPizzaAfPitsuPhrase ->
     "af" QPizzaOrMenuWord/þgf
