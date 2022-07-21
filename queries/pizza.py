@@ -188,54 +188,35 @@ def QPizzaNum(node: Node, params: QueryStateDict, result: Result) -> None:
     result.number = number
 
 
-def QPizzaSizeLarge(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaSizeAnswer(node: Node, params: QueryStateDict, result: Result) -> None:
+    print("In QPizzaSizeAnswer")
     dsm: DialogueStateManager = Query.get_dsm(result)
     # TODO: Maybe some wrappers should not be set as the current resource? (e.g. here, we have to go through extra steps to get the size resource)
     # TODO: Better to use Pizza_1 here, as the current resource might be Type_1 instead of Pizza_1 and cause an error
     size_resource: Resource = dsm.get_resource(
         [i for i in dsm.current_resource.requires if i.startswith("Size")][0]
     )
-    size_resource.data = "stóra pítsu"
+    size_resource.data = result.get("pizza_size", "")
     dsm.set_resource_state(size_resource.name, ResourceState.CONFIRMED)
     dsm.update_wrapper_state(cast(WrapperResource, dsm.current_resource))
     if dsm.current_resource.state == ResourceState.FULFILLED:
         dsm.set_resource_state(dsm.current_resource.name, ResourceState.CONFIRMED)
+
+
+def QPizzaSizeLarge(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.pizza_size = "stóra pítsu"
 
 
 def QPizzaSizeMedium(node: Node, params: QueryStateDict, result: Result) -> None:
-    dsm: DialogueStateManager = Query.get_dsm(result)
-    size_resource: Resource = dsm.get_resource(
-        [i for i in dsm.current_resource.requires if i.startswith("Size")][0]
-    )
-    size_resource.data = "miðstærð af pítsu"
-    dsm.set_resource_state(size_resource.name, ResourceState.CONFIRMED)
-    dsm.update_wrapper_state(cast(WrapperResource, dsm.current_resource))
-    if dsm.current_resource.state == ResourceState.FULFILLED:
-        dsm.set_resource_state(dsm.current_resource.name, ResourceState.CONFIRMED)
+    result.pizza_size = "miðstærð af pítsu"
 
 
 def QPizzaMediumWord(node: Node, params: QueryStateDict, result: Result) -> None:
-    dsm: DialogueStateManager = Query.get_dsm(result)
-    size_resource: Resource = dsm.get_resource(
-        [i for i in dsm.current_resource.requires if i.startswith("Size")][0]
-    )
-    size_resource.data = "miðstærð af pítsu"
-    dsm.set_resource_state(size_resource.name, ResourceState.CONFIRMED)
-    dsm.update_wrapper_state(cast(WrapperResource, dsm.current_resource))
-    if dsm.current_resource.state == ResourceState.FULFILLED:
-        dsm.set_resource_state(dsm.current_resource.name, ResourceState.CONFIRMED)
+    result.pizza_size = "miðstærð af pítsu"
 
 
 def QPizzaSizeSmall(node: Node, params: QueryStateDict, result: Result) -> None:
-    dsm: DialogueStateManager = Query.get_dsm(result)
-    size_resource: Resource = dsm.get_resource(
-        [i for i in dsm.current_resource.requires if i.startswith("Size")][0]
-    )
-    size_resource.data = "litla pítsu"
-    dsm.set_resource_state(size_resource.name, ResourceState.CONFIRMED)
-    dsm.update_wrapper_state(cast(WrapperResource, dsm.current_resource))
-    if dsm.current_resource.state == ResourceState.FULFILLED:
-        dsm.set_resource_state(dsm.current_resource.name, ResourceState.CONFIRMED)
+    result.pizza_size = "litla pítsu"
 
 
 def QPizzaCrustType(node: Node, params: QueryStateDict, result: Result) -> None:

@@ -157,7 +157,7 @@ QPizzaSizeMedium/fall ->
     | QPizzaTwelveWord 'tomma:kvk'/fall?
 
 QPizzaMediumWord/fall ->
-    'miðstærð:kvk'/fall
+    "miðstærð"
 
 QPizzaSizeSmall/fall ->
     'lítil:lo'/fall
