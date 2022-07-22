@@ -67,6 +67,7 @@ QPizzaNumberAndSpecificationAnswer ->
 
 QPizzaNumberAndSpecification/fall ->
     QPizzaNum/fall? QPizzaSpecification/fall
+    | QPizzaNum/fall QPizzaWord/fall
 
 QPizzaSpecification/fall →
     QPizzaPrimeSpecification/fall # Specifies a single thing.
