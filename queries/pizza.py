@@ -20,6 +20,7 @@
 
     This query module handles dialogue related to ordering pizza.
 """
+from lzma import is_check_supported
 from typing import Dict, Optional, Set, cast
 import logging
 import random
@@ -128,32 +129,74 @@ def _generate_pizza_answer(
     print("Crust state: {}".format(crust_resource.state))
     index = dsm.current_resource.name.split("_")[-1]
     number: int = cast(int, index)
+    # Pizza text formatting
+    pizza_text: str = f"\n"
+    if any(
+        confirmed
+        for confirmed in [
+            type_resource.is_confirmed,
+            size_resource.is_confirmed,
+            crust_resource.is_confirmed,
+        ]
+    ):
+        pizza_text += f"Pítsa {number}:\n"
+    if size_resource.is_confirmed:
+        pizza_text += f"   - {size_resource.data.capitalize()}\n"
+    if crust_resource.is_confirmed:
+        pizza_text += f"   - {crust_resource.data.capitalize()} botn\n"
+    if type_resource.is_confirmed:
+        toppings_resource: DictResource = cast(
+            DictResource, dsm.get_children(type_resource)[0]
+        )
+        if toppings_resource.is_confirmed:
+            pizza_text += f"   - Álegg: \n"
+            for topping in toppings_resource.data:
+                pizza_text += f"      - {topping.capitalize()}\n"
+        else:
+            menu_resource: StringResource = cast(
+                StringResource, dsm.get_children(type_resource)[1]
+            )
+            pizza_text += f"   - Tegund: {menu_resource.data.capitalize()}\n"
     if resource.is_unfulfilled:
         print("Unfulfilled pizza")
         if number == 1:
-            return gen_answer(resource.prompts["initial_single"])
-        return gen_answer(
-            resource.prompts["initial"].format(number=number_to_text(number))
-        )
+            ans = resource.prompts["initial_single"]
+            text_ans = ans + pizza_text
+            return (dict(answer=text_ans), text_ans, ans)
+        ans = resource.prompts["initial"].format(number=number_to_text(number))
+        text_ans = ans + pizza_text
+        return (dict(answer=text_ans), text_ans, ans)
     if resource.is_partially_fulfilled:
         print("Partially fulfilled pizza")
+        if type_resource.is_unfulfilled:
+            if number == 1:
+                ans = resource.prompts["type_single"]
+                text_ans = ans + pizza_text
+                return (dict(answer=text_ans), text_ans, ans)
+            ans = resource.prompts["type"].format(number=number_to_text(number))
+            text_ans = ans + pizza_text
+            return (dict(answer=text_ans), text_ans, ans)
         if type_resource.is_confirmed and size_resource.is_unfulfilled:
             print("Confirmed type, unfulfilled size")
             if number == 1:
-                return gen_answer(resource.prompts["size_single"])
-            return gen_answer(
-                resource.prompts["size"].format(number=number_to_text(number))
-            )
+                ans = resource.prompts["size_single"]
+                text_ans = ans + pizza_text
+                return (dict(answer=text_ans), text_ans, ans)
+            ans = resource.prompts["size"].format(number=number_to_text(number))
+            text_ans = ans + pizza_text
+            return (dict(answer=text_ans), text_ans, ans)
         if (
             type_resource.is_confirmed
             and size_resource.is_confirmed
             and crust_resource.is_unfulfilled
         ):
             if number == 1:
-                return gen_answer(resource.prompts["crust_single"])
-            return gen_answer(
-                resource.prompts["crust"].format(number=number_to_text(number))
-            )
+                ans = resource.prompts["crust_single"]
+                text_ans = ans + pizza_text
+                return (dict(answer=text_ans), text_ans, ans)
+            ans = resource.prompts["crust"].format(number=number_to_text(number))
+            text_ans = ans + pizza_text
+            return (dict(answer=text_ans), text_ans, ans)
 
 
 def QPizzaDialogue(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -183,6 +226,7 @@ def QPizzaToppingsList(node: Node, params: QueryStateDict, result: Result) -> No
     type_resource: OrResource = cast(OrResource, dsm.get_children(pizza_resource)[0])
     toppings_resource = cast(DictResource, dsm.get_children(type_resource)[0])
     for (topping, amount) in toppings.items():
+        print("Topping in for loop: ", topping)
         toppings_resource.data[topping] = amount
     dsm.skip_other_resources(type_resource, toppings_resource)
     dsm.set_resource_state(toppings_resource.name, ResourceState.CONFIRMED)
@@ -191,11 +235,12 @@ def QPizzaToppingsList(node: Node, params: QueryStateDict, result: Result) -> No
     if pizza_resource.state == ResourceState.FULFILLED:
         dsm.set_resource_state(pizza_resource.name, ResourceState.CONFIRMED)
         dsm.extras["confirmed_pizzas"] = dsm.extras.get("confirmed_pizzas", 0) + 1
+    print("Toppings: ", toppings_resource.name, toppings_resource.data)
 
 
 def QPizzaToppingsWord(node: Node, params: QueryStateDict, result: Result) -> None:
     topping: str = result.dict.pop("real_name", result._nominative)
-    if "toppings" not in result:
+    if "toppings in QPizzaToppingsWord" not in result:
         result["toppings"] = {}
     result["toppings"][topping] = 1  # TODO: Add support for extra toppings
 
@@ -216,6 +261,25 @@ def QPizzaMenuWords(node: Node, params: QueryStateDict, result: Result) -> None:
     if pizza_resource.state == ResourceState.FULFILLED:
         dsm.set_resource_state(pizza_resource.name, ResourceState.CONFIRMED)
         dsm.extras["confirmed_pizzas"] = dsm.extras.get("confirmed_pizzas", 0) + 1
+
+
+# def QPizzaCompositeRest(node: Node, params: QueryStateDict, result: Result) -> None:
+#     dsm: DialogueStateManager = Query.get_dsm(result)
+#     pizza_resource: WrapperResource = cast(WrapperResource, dsm.current_resource)
+#     type_resource: OrResource = cast(OrResource, dsm.get_children(pizza_resource)[0])
+#     size_resource: StringResource = cast(
+#         StringResource, dsm.get_children(pizza_resource)[1]
+#     )
+#     crust_resource: StringResource = cast(
+#         StringResource, dsm.get_children(pizza_resource)[2]
+#     )
+#     if (
+#         type_resource.is_confirmed
+#         and size_resource.is_confirmed
+#         and crust_resource.is_confirmed
+#     ):
+#         dsm.set_resource_state(pizza_resource.name, ResourceState.CONFIRMED)
+#         dsm.extras["confirmed_pizzas"] = dsm.extras.get("confirmed_pizzas", 0) + 1
 
 
 def QPizzaNum(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -244,22 +308,23 @@ def QPizzaSizePhrase(node: Node, params: QueryStateDict, result: Result) -> None
         print("Adding to confirmed pizzas")
         dsm.extras["confirmed_pizzas"] = dsm.extras.get("confirmed_pizzas", 0) + 1
         print("Confirmed pizzas: ", dsm.extras["confirmed_pizzas"])
+    print("Size data: ", size_resource.data)
 
 
 def QPizzaSizeLarge(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.pizza_size = "stóra pítsu"
+    result.pizza_size = "stór"
 
 
 def QPizzaSizeMedium(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.pizza_size = "miðstærð af pítsu"
+    result.pizza_size = "miðstærð"
 
 
 def QPizzaMediumWord(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.pizza_size = "miðstærð af pítsu"
+    result.pizza_size = "miðstærð"
 
 
 def QPizzaSizeSmall(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.pizza_size = "litla pítsu"
+    result.pizza_size = "lítil"
 
 
 def QPizzaCrustType(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -267,7 +332,7 @@ def QPizzaCrustType(node: Node, params: QueryStateDict, result: Result) -> None:
     crust_resource: StringResource = cast(
         StringResource, dsm.get_children(dsm.current_resource)[2]
     )
-    crust_resource.data = result._text
+    crust_resource.data = result._root
     print("Crust resource data: ", crust_resource.data)
     dsm.set_resource_state(crust_resource.name, ResourceState.CONFIRMED)
     dsm.update_wrapper_state(cast(WrapperResource, dsm.current_resource))
@@ -278,15 +343,15 @@ def QPizzaCrustType(node: Node, params: QueryStateDict, result: Result) -> None:
         print("Confirmed pizzas: ", dsm.extras["confirmed_pizzas"])
 
 
-def QPizzaPepperoniWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaPepperoni(node: Node, params: QueryStateDict, result: Result) -> None:
     result.real_name = "pepperóní"
 
 
-def QPizzaOliveWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaOlive(node: Node, params: QueryStateDict, result: Result) -> None:
     result.real_name = "ólífur"
 
 
-def QPizzaMushroomWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaMushroom(node: Node, params: QueryStateDict, result: Result) -> None:
     result.real_name = "sveppir"
 
 

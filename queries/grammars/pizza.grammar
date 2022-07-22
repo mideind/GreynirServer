@@ -98,12 +98,12 @@ QPizzaCompositeAnswerWrapper →
 
 QPizzaCompositeAnswer ->
     QPizzaRequestPleasantries? QPizzaCompositeRest/þf # e.g. "Ég vil tólf tommu margarítu með ítölskum botni."
-    | QPizzaCompositeRestTemp/nf # e.g. "Tólf tommu pítsa með skinku ananas og með ítölskum botni'."
+    | QPizzaCompositeRest/nf # e.g. "Tólf tommu pítsa með skinku ananas og með ítölskum botni'."
 
 # Currently, "I want two large pizzas is not accepted here."
 QPizzaCompositeRest/fall ->
     QPizzaNum/fall? QPizzaSizePhrase/fall QPizzaToppingsCrustPermutation # e.g. "Ég vil stóra pítsu með ólífum og ananas."
-    | QPizzaNum/fall? QPizzaMenuWords/fall QPizzaToppingsCrustPermutation # e.g. "Ég vil tvær margarítur með ítölskum botni."
+    | QPizzaNum/fall? QPizzaMenuWords/fall QPizzaToppingsCrustPermutation? # e.g. "Ég vil tvær margarítur með ítölskum botni."
     | QPizzaNum/fall QPizzaWord/fall QPizzaToppingsCrustPermutation # e.g. "Ég vil tvær margarítur með ítölskum botni."
 
 QPizzaToppingsList/fall ->
