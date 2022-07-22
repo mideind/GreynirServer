@@ -734,7 +734,8 @@ class Query:
                             # Yes: hand the query tree over to the processor
                             try:
                                 self._tree.process_sentence(state, query_tree)
-                            except ResourceNotFoundError:
+                            except ResourceNotFoundError as e:
+                                print("Resource not found: ", e)
                                 pass
                             print(
                                 "DO WE HAVE AN ANSWER?", self.has_answer(), self._error

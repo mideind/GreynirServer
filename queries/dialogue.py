@@ -266,6 +266,7 @@ class DialogueStateManager:
             )
             + 1
         )
+        print("<<<<<<<< DYNAMIC INDEX: ", dynamic_resource_index)
         # TODO: Only update index for added dynamic resources (don't loop through all, just the added ones)
         # Adding all dynamic resources to a list
         for dynamic_resource in obj[_DYNAMIC_RESOURCES_KEY]:
@@ -328,10 +329,18 @@ class DialogueStateManager:
             new_resource = copy.deepcopy(resource)
             prefix = "_".join(new_resource.name.split("_")[:-1])
             new_resource.name = prefix + f"_{suffix}"
-            new_resource.requires = ["_".join(rn.split("_")[:-1]) + f"_{suffix}" for rn in new_resource.requires]
+            new_resource.requires = [
+                "_".join(rn.split("_")[:-1]) + f"_{suffix}"
+                for rn in new_resource.requires
+            ]
             self._resources[new_resource.name] = new_resource
             for child in self._resource_graph[resource]["children"]:
                 _recursive_deep_copy(child)
+
+        for parent in self._resource_graph[original]["parents"]:
+            print("!!!Adding to parent !!!: ", parent.name, original.name)
+            parent.requires.append(f"Pizza_{suffix}")
+            print("Parent requirements: ", parent.requires)
 
         _recursive_deep_copy(original)
         # Initialize the resource graph again with the update resources
