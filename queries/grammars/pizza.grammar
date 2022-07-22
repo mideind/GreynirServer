@@ -35,13 +35,13 @@ QPizzaDialogue →
     | QPizzaNumberAndSpecificationAnswer # Answer specifying features of the pizza.
 
 QPizzaExtrasAnswer →
-    QPizzaRequestPleasantries? QPizzaExtraWords/þf QPizzaMedPitsunni? # e.g. "Ég vil brauðstangir með pizzunum."
-    | QPizzaEgVil "líka" QPizzaExtraWords/þf QPizzaMedPitsunni? # e.g. "Ég vil líka kanilgott með pizzunum."
+    QPizzaRequestPleasantries? QPizzaExtraWords/þf QPizzaMedPitsunniPhrase? # e.g. "Ég vil brauðstangir með pizzunum."
+    | QPizzaEgVil "líka" QPizzaExtraWords/þf QPizzaMedPitsunniPhrase? # e.g. "Ég vil líka kanilgott með pizzunum."
     | QPizzaExtraWords/nf # e.g. "Kók."
 
-QTheaterYes → "já" "já"* | "endilega" | "já" "takk" | "játakk" | "já" "þakka" "þér" "fyrir" | "já" "takk" "kærlega" "fyrir"? | "jább" "takk"?
+QPizzaYes → "já" "já"* | "endilega" | "já" "takk" | "játakk" | "já" "þakka" "þér" "fyrir" | "já" "takk" "kærlega" "fyrir"? | "jább" "takk"?
 
-QTheaterNo → "nei" "takk"? | "nei" "nei"* | "neitakk" | "ómögulega"
+QPizzaNo → "nei" "takk"? | "nei" "nei"* | "neitakk" | "ómögulega"
 
 QPizzaCancel → 
     "ég" "hætti" "við"
@@ -61,12 +61,13 @@ QPizzaStatus →
     | "hver" "var" "staðan" "á"? 'pöntun:kvk'_et/þgf?
     | QPizzaEgVil? "halda" "áfram" "með" 'pöntun:kvk'_et/þf?
 
-QPizzaNumberAndSpecificationAnswer ->
+QPizzaNumberAndSpecificationAnswer →
     QPizzaRequestPleasantries? QPizzaNumberAndSpecification/þf
     | QPizzaNumberAndSpecification/nf
 
-QPizzaNumberAndSpecification/fall ->
+QPizzaNumberAndSpecification/fall →
     QPizzaNum/fall? QPizzaSpecification/fall
+    | QPizzaNum/fall QPizzaWord/fall
 
 QPizzaSpecification/fall →
     QPizzaPrimeSpecification/fall # Specifies a single thing.
@@ -86,18 +87,18 @@ QPizzaMenuSpecification/fall →
 
 QPizzaToppingsSpecification/fall →
     QPizzaToppingsList/fall QPizzaAPitsunaPhrase? # e.g. "Skinku, ólífur og pepperóní á pítsuna."
-    | QPizzaWord/fall? QPizzaMedToppings # e.g. "Með ólífum og ananas."
+    | QPizzaWord/fall? QPizzaMedToppingsPhrase # e.g. "Með ólífum og ananas."
 
 QPizzaSizeSpecification/fall →
     QPizzaSizePhrase/fall # e.g. "Tólf tommu pítsa."
 
 QPizzaCrustSpecification/fall →
     QPizzaCrustPhrase/fall QPizzaAPitsunaPhrase? # e.g. "Klassískan botn á pítsuna."
-    | QPizzaWord/fall QPizzaMedCrust # e.g. "Pizza með ítölskum botni."
+    | QPizzaWord/fall QPizzaMedCrustPhrase # e.g. "Pizza með ítölskum botni."
 
 # Wrapper to handle multiple pizza requests at once, "Ég vil kjötveislu með ítölskum botni og stóra margarítu."
 QPizzaCompositeSpecificationWrapper/fall →
-    QPizzaCompositeSpecification/fall QPizzaOgCompositeSpecification/fall* QPizzaIVidbot?
+    QPizzaCompositeSpecification/fall QPizzaOgCompositeSpecification/fall* QPizzaIVidbotPhrase?
 
 QPizzaCompositeSpecification/fall →
     QPizzaCompositeRest/fall # e.g. "Tólf tommu pítsa með skinku ananas og með ítölskum botni'."
@@ -112,7 +113,7 @@ QPizzaSizeOrMenu/fall →
     | QPizzaMenuWords/fall # e.g. "Margaríta."
 
 QPizzaToppingsList/fall →
-    QPizzaToppingsWord/fall QPizzaOgMedToppings/fall*
+    QPizzaToppingsWord/fall QPizzaOgMedToppingsPhrase/fall*
 
 QPizzaSize/fall →
     QPizzaSizeLarge/fall
@@ -122,7 +123,7 @@ QPizzaSize/fall →
 QPizzaOgCompositeSpecification/fall →
     "og:st"? QPizzaCompositeSpecification/fall
 
-QPizzaOgMedToppings/fall →
+QPizzaOgMedToppingsPhrase/fall →
     'og:st'? 'með:fs'? QPizzaToppingsWord/fall
 
 # It is common to say "miðstærð af pítsu", which is handled separately here.
@@ -139,8 +140,8 @@ QPizzaCrustPhrase/fall →
     QPizzaCrustType/fall QPizzaCrustWord/fall?
 
 QPizzaToppingsCrustPermutation →
-    QPizzaMedToppings "og:st"? 'með:fs'? QPizzaCrustPhrase/þgf?
-    | QPizzaMedCrust "og:st"? 'með:fs'? QPizzaToppingsList/þgf?
+    QPizzaMedToppingsPhrase "og:st"? 'með:fs'? QPizzaCrustPhrase/þgf?
+    | QPizzaMedCrustPhrase "og:st"? 'með:fs'? QPizzaToppingsList/þgf?
 
 # This duplicate is a result of difficulties with the composite logic.
 QPizzaAfMenuPhrase →
@@ -149,16 +150,16 @@ QPizzaAfMenuPhrase →
 QPizzaAPitsunaPhrase →
     "á" QPizzaWord/þf
 
-QPizzaMedPitsunni →
+QPizzaMedPitsunniPhrase →
     "með" QPizzaWord/þgf
 
-QPizzaMedToppings →
+QPizzaMedToppingsPhrase →
     "með" QPizzaToppingsList/þgf
 
-QPizzaMedCrust →
+QPizzaMedCrustPhrase →
     "með" QPizzaCrustPhrase/þgf
 
-QPizzaIVidbot →
+QPizzaIVidbotPhrase →
     'í:fs' 'viðbót:kvk'_et/þf
 
 QPizzaAfPitsuPhrase →
