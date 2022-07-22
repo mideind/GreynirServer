@@ -238,7 +238,7 @@ QPizzaMediumWord/fall →
     'mið-stærð:kvk'/fall
 
 QPizzaSizeSmall/fall →
-    'lítil:lo'/fall
+    'lítill:lo'/fall
     | QPizzaNineWord 'tomma:kvk'/ef?
 
 QPizzaCrustType/fall →
