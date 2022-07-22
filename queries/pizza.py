@@ -210,7 +210,13 @@ def QPizzaHotWord(node: Node, params: QueryStateDict, result: Result) -> None:
     Query.get_dsm(result).hotword_activated()
 
 
-def QPizzaNumberAnswer(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaNumberAndSpecification(
+    node: Node, params: QueryStateDict, result: Result
+) -> None:
+    """
+    Dynamically adds a number of pizzas to the query
+    according to the specification.
+    """
     dsm: DialogueStateManager = Query.get_dsm(result)
     # resource = dsm.get_resource("PizzaCount")
     number: int = result.get("number", 1)
