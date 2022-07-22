@@ -15,7 +15,7 @@ name = "Final"
 type = "FinalResource"
 requires = ["PizzaOrder"]
 prompts.final = "Pítsupöntunin þín er móttekin."
-prompts.cancelled = "Móttekið, hætti við pizzu pöntunina."
+prompts.cancelled = "Móttekið, hætti við pítsu pöntunina."
 prompts.timed_out = "Pítsupöntunin þín rann út á tíma. Vinsamlegast byrjaðu aftur."
 
 # Dynamic resources that get created when a user orders a pizza

@@ -103,19 +103,15 @@ def _generate_order_answer(
         total: int = dsm.extras["confirmed_pizzas"]
         number: int = dsm.extras["added_pizzas"]
         print("Added pizzas", number)
-        ans = (
-            resource.prompts["added_pizzas"]
-            .format(
-                pizzas=numbers_to_text(
-                    sing_or_plur(number, "pítsu", "pítsum"), gender="kvk", case="þgf"
-                ),
-                total_pizzas=numbers_to_text(
-                    sing_or_plur(total, "fullkláraða pítsu", "fullkláraðar pítsur"),
-                    gender="kvk",
-                    case="þf",
-                ),
-            )
-            .capitalize()
+        ans = resource.prompts["added_pizzas"].format(
+            pizzas=numbers_to_text(
+                sing_or_plur(number, "pítsu", "pítsum"), gender="kvk", case="þgf"
+            ).capitalize(),
+            total_pizzas=numbers_to_text(
+                sing_or_plur(total, "fullkláraða pítsu", "fullkláraðar pítsur"),
+                gender="kvk",
+                case="þf",
+            ),
         )
         dsm.extras["added_pizzas"] = 0
         return (dict(answer=ans), ans, ans)
@@ -124,7 +120,6 @@ def _generate_order_answer(
         print("Total pizzas: ", total)
         ans = resource.prompts["confirmed_pizzas"]
         return (dict(answer=ans), ans, ans)
-    print("!!!!!!!!!!!!!!!!!!!")
     return gen_answer(resource.prompts["initial"])
 
 
@@ -209,6 +204,15 @@ def _generate_pizza_answer(
             ans = resource.prompts["crust"].format(number=number_to_text(number))
             text_ans = ans + pizza_text
             return (dict(answer=text_ans), text_ans, ans)
+
+
+def _generate_final_answer(
+    resource: FinalResource, dsm: DialogueStateManager, result: Result
+) -> Optional[AnswerTuple]:
+    if resource.is_cancelled:
+        return gen_answer(resource.prompts["cancelled"])
+
+    return gen_answer(resource.prompts["final"])
 
 
 def QPizzaDialogue(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -353,6 +357,15 @@ def QPizzaMushroom(node: Node, params: QueryStateDict, result: Result) -> None:
     result.real_name = "sveppir"
 
 
+def QPizzaNo(node: Node, params: QueryStateDict, result: Result) -> None:
+    dsm: DialogueStateManager = Query.get_dsm(result)
+    resource: WrapperResource = cast(WrapperResource, dsm.current_resource)
+    print("No resource: ", resource.name)
+    if resource.name == "PizzaOrder":
+        dsm.set_resource_state(resource.name, ResourceState.CONFIRMED)
+        dsm.set_resource_state("Final", ResourceState.CONFIRMED)
+
+
 def QPizzaStatus(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = "QPizzaStatus"
     dsm: DialogueStateManager = Query.get_dsm(result)
@@ -400,6 +413,7 @@ def QPizzaStatus(node: Node, params: QueryStateDict, result: Result) -> None:
 _ANSWERING_FUNCTIONS: AnsweringFunctionMap = {
     "PizzaOrder": _generate_order_answer,
     "Pizza": _generate_pizza_answer,
+    "Final": _generate_final_answer,
 }
 
 
