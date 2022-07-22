@@ -332,7 +332,7 @@ class DialogueStateManager:
     @property
     def current_resource(self) -> Resource:
         if self._current_resource is None:
-            self._current_resource = self._find_current_resource()
+            self._find_current_resource()
         return self._current_resource
 
     def get_resource(self, name: str) -> Resource:
@@ -409,7 +409,7 @@ class DialogueStateManager:
     ) -> Optional[AnswerTuple]:
         if self._answer_tuple is not None:
             return self._answer_tuple
-        self._current_resource = self._find_current_resource()
+        self._find_current_resource()
         self._answering_functions = answering_functions
 
         # Check if dialogue was cancelled # TODO: Change this (have separate cancel method)
@@ -468,7 +468,7 @@ class DialogueStateManager:
             for anc in ancestors:
                 anc.state = ResourceState.UNFULFILLED
 
-    def _find_current_resource(self) -> Resource:
+    def _find_current_resource(self) -> None:
         """
         Finds the current resource in the resource graph
         using a postorder traversal of the resource graph.
@@ -506,7 +506,9 @@ class DialogueStateManager:
                     break
 
         _recurse_resources(self._resources["Final"])
-        return curr_res or self._resources["Final"]
+        if curr_res is not None:
+            print("CURRENT RESOURCE IN FIND CURRENT RESOURCE: ", curr_res.name)
+        self._current_resource = curr_res or self._resources["Final"]
 
     # TODO: Can we move this function into set_resource_state?
     def skip_other_resources(self, or_resource: OrResource, resource: Resource) -> None:
