@@ -3,33 +3,40 @@
 # TODO: Fix the toppings being a set. Doesn't handle "Ég vil skinku, ólífur og auka skinku."
 # TODO: Add to PizzaRequestBare, start conversation with an order.
 # TODO: Add the words for margherita to BinPackage
+# TODO: Fix bug where "E_QUERY_NOT_UNDERSTOOD" is stored between trees in a single module.
+# TODO: Fix composite answer limitation.
 
 /þgf = þgf
 /ef = ef
 
 # Currently, the Hotword needs to be top-level, because the QPizza nonterminal is banned.
 Query →
-    QPizzaHotWord '?'?
-    | QPizza '?'?
+    QPizzaHotWord
+    | QPizza
 
 QPizza →
-    QPizzaQuery
+    QPizzaQuery '?'?
 
 QPizzaQuery →
     QPizzaDialogue
 
 # Hotwords are used to initialize the conversation.
 QPizzaHotWord →
-    QPizzaWord/nf # e.g. "Pítsa"
-    | QPizzaRequestBare # e.g. "Ég vil panta pizzu."
+    QPizzaWord/nf '?'? # e.g. "Pítsa"
+    | QLevelZero '?'?
+    | QPizzaRequestBare '?'? # e.g. "Ég vil panta pizzu."
+
+QLevelZero →
+    "pizza"
 
 # Doesn't allow for any order specification, e.g. the number of pizzas: "Ég vil panta tvær flatbökur."
 QPizzaRequestBare ->
     QPizzaRequestPleasantries? QPizzaWord/þf
+    | "rassgat"
 
 QPizzaDialogue →
     QPizzaPrimeAnswer # Requests specifying a single thing.
-    > QPizzaCompositeAnswerWrapper # Request specifying multiple things at once: size, toppings, crust.
+    | QPizzaCompositeAnswerWrapper # Request specifying multiple things at once: size, toppings, crust.
 
 QPizzaPrimeAnswer ->
     QPizzaNumberAnswer # Answer to the question "How many pizzas do you want?"
@@ -97,13 +104,11 @@ QPizzaCompositeAnswer ->
     QPizzaRequestPleasantries? QPizzaCompositeRest/þf # e.g. "Ég vil tólf tommu margarítu með ítölskum botni."
     | QPizzaCompositeRest/nf # e.g. "Tólf tommu pítsa með skinku ananas og með ítölskum botni'."
 
-# Skítamix. Temporary.
-QPizzaCompositeRest/fallxnf ->
-    QPizzaNum/fall? QPizzaSizePhrase/fall QPizzaToppingsCrustPermutation? # e.g. "Ég vil stóra pítsu með ólífum og ananas."
-    | QPizzaNum/fall? QPizzaOrMenuWord/fall QPizzaToppingsCrustPermutation? # e.g. "Ég vil tvær margarítur með ítölskum botni."
-
-QPizzaCompositeRest/nf ->
-    QPizzaNum/fall? QPizzaSizePhrase/fall QPizzaToppingsCrustPermutation? # e.g. "Ég vil stóra pítsu með ólífum og ananas."
+# Currently, "I want two large pizzas is not accepted here."
+QPizzaCompositeRest/fall ->
+    QPizzaNum/fall? QPizzaSizePhrase/fall QPizzaToppingsCrustPermutation # e.g. "Ég vil stóra pítsu með ólífum og ananas."
+    | QPizzaNum/fall? QPizzaMenuWords/fall QPizzaToppingsCrustPermutation # e.g. "Ég vil tvær margarítur með ítölskum botni."
+    | QPizzaNum/fall QPizzaWord/fall QPizzaToppingsCrustPermutation # e.g. "Ég vil tvær margarítur með ítölskum botni."
 
 QPizzaToppingsList/fall ->
     QPizzaToppingsWord/fall QPizzaOgMedToppings/fall*
