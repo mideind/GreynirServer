@@ -1,3 +1,4 @@
+import copy
 from typing import (
     Any,
     Callable,
@@ -308,6 +309,34 @@ class DialogueStateManager:
         self._initialize_resource_graph()
         self._find_current_resource()
 
+    def duplicate_dynamic_resource(self, original: Resource) -> None:
+        suffix = (
+            len(
+                [
+                    i
+                    for i in self._resources
+                    if self.get_resource(i).name.startswith(
+                        original.name.split("_")[0] + "_"
+                    )
+                ]
+            )
+            + 1
+        )
+
+        def _recursive_deep_copy(resource: Resource) -> None:
+            nonlocal suffix, self
+            new_resource = copy.deepcopy(resource)
+            prefix = "_".join(new_resource.name.split("_")[:-1])
+            new_resource.name = prefix + f"_{suffix}"
+            self._resources[new_resource.name] = new_resource
+            for child in self._resource_graph[resource]["children"]:
+                _recursive_deep_copy(child)
+
+        _recursive_deep_copy(original)
+        # Initialize the resource graph again with the update resources
+        self._initialize_resource_graph()
+        self._find_current_resource()
+
     def hotword_activated(self) -> None:
         self._in_this_dialogue = True
         print("In hotword activated")
@@ -505,10 +534,10 @@ class DialogueStateManager:
                 else:
                     break
 
-        _recurse_resources(self._resources["Final"])
+        _recurse_resources(self._resources[_FINAL_RESOURCE_NAME])
         if curr_res is not None:
             print("CURRENT RESOURCE IN FIND CURRENT RESOURCE: ", curr_res.name)
-        self._current_resource = curr_res or self._resources["Final"]
+        self._current_resource = curr_res or self._resources[_FINAL_RESOURCE_NAME]
 
     # TODO: Can we move this function into set_resource_state?
     def skip_other_resources(self, or_resource: OrResource, resource: Resource) -> None:
