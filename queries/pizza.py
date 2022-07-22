@@ -78,13 +78,19 @@ QUERY_NONTERMINALS = {"QPizza"}.union(HOTWORD_NONTERMINALS)
 GRAMMAR = read_grammar_file("pizza")
 
 
-def banned_nonterminals(query: str) -> Set[str]:
+def banned_nonterminals(q: Query) -> Set[str]:
     """
     Returns a set of nonterminals that are not
     allowed due to the state of the dialogue
     """
     # TODO: Implement this
-    return set()
+    banned_nonterminals: set[str] = set()
+    # if q.dsm.dialogue_name != DIALOGUE_NAME:
+    #     print("Not in pizza dialogue, BANNING QPizzaQuery")
+    #     banned_nonterminals.add("QPizzaQuery")
+    #     print("Banned nonterminals: ", banned_nonterminals)
+    #     return banned_nonterminals
+    return banned_nonterminals
 
 
 def _generate_order_answer(
@@ -105,6 +111,7 @@ def _generate_order_answer(
         )
         dsm.extras["confirmed_pizzas"] = 0
         return (dict(answer=ans), ans, ans)
+    print("!!!!!!!!!!!!!!!!!!!")
     return gen_answer(resource.prompts["initial"])
 
 
@@ -294,6 +301,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     q: Query = state["query"]
     dsm: DialogueStateManager = q.dsm
     if dsm.not_in_dialogue():
+        print("Not in dialogue")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
@@ -308,10 +316,14 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             print("No answer generated")
             q.set_error("E_QUERY_NOT_UNDERSTOOD")
             return
-
+        print("E", result.qtype)
         q.set_qtype(result.qtype)
+        print("F", ans)
         q.set_answer(*ans)
+        print("G")
     except Exception as e:
+        print("Exception: ", e)
         logging.warning("Exception while processing random query: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))
         raise
+    return

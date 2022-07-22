@@ -486,14 +486,20 @@ class DialogueStateManager:
             # so we try to find candidates lower in the tree first
             for child in self._resource_graph[resource]["children"]:
                 if child not in finished_resources:
-                    _recurse_resources(child) # TODO: Unwrap recursion?
+                    _recurse_resources(child)  # TODO: Unwrap recursion?
                 if curr_res is not None:
                     # Found a suitable resource, stop looking
                     return
             curr_res = resource
             while not curr_res.prefer_over_wrapper:
-                wrapper_parents = [par for par in self._resource_graph[curr_res]["parents"] if isinstance(par, WrapperResource)]
-                assert len(wrapper_parents) <= 1, "A resource cannot have more than one wrapper parent"
+                wrapper_parents = [
+                    par
+                    for par in self._resource_graph[curr_res]["parents"]
+                    if isinstance(par, WrapperResource)
+                ]
+                assert (
+                    len(wrapper_parents) <= 1
+                ), "A resource cannot have more than one wrapper parent"
                 if wrapper_parents:
                     curr_res = wrapper_parents[0]
                 else:
