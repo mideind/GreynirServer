@@ -537,7 +537,6 @@ class Query:
                         num = Fast_Parser.num_combinations(forest)
                         if num > 1:
                             # Reduce the resulting forest
-                            print(forest._repr(1))
                             forest = rdc.go(forest)
                 except ParseError as e:
                     print("ParseError: ", e)

@@ -94,17 +94,22 @@ QPizzaStatus →
 
 # Wrapper to handle multiple pizza requests at once, "Ég vil kjötveislu með ítölskum botni og stóra margarítu."
 QPizzaCompositeAnswerWrapper →
-    QPizzaCompositeAnswer QPizzaOgCompositeAnswer*
+    QPizzaCompositeAnswer QPizzaOgCompositeAnswer* QPizzaIVidbot?
 
 QPizzaCompositeAnswer ->
     QPizzaRequestPleasantries? QPizzaCompositeRest/þf # e.g. "Ég vil tólf tommu margarítu með ítölskum botni."
-    | QPizzaCompositeRestTemp/nf # e.g. "Tólf tommu pítsa með skinku ananas og með ítölskum botni'."
+    | QPizzaCompositeRest/nf # e.g. "Tólf tommu pítsa með skinku ananas og með ítölskum botni'."
 
-# Currently, "I want two large pizzas is not accepted here."
 QPizzaCompositeRest/fall ->
-    QPizzaNum/fall? QPizzaSizePhrase/fall QPizzaToppingsCrustPermutation # e.g. "Ég vil stóra pítsu með ólífum og ananas."
-    | QPizzaNum/fall? QPizzaMenuWords/fall QPizzaToppingsCrustPermutation # e.g. "Ég vil tvær margarítur með ítölskum botni."
+    QPizzaNum/fall? QPizzaSizeMenuPhrase/fall QPizzaToppingsCrustPermutation? # e.g. "Ég vil stóra margarítu."
+    | QPizzaNum/fall? QPizzaSizeOrMenu/fall QPizzaToppingsCrustPermutation # e.g. "Ég vil tvær margarítur með ítölskum botni."
+    | QPizzaNum/fall QPizzaSizeOrMenu/fall # e.g. "Ég vil tvær stórar pítsur."
     | QPizzaNum/fall QPizzaWord/fall QPizzaToppingsCrustPermutation # e.g. "Ég vil tvær margarítur með ítölskum botni."
+
+# Ways of mentioning the pizza while specifying exactly one feature.
+QPizzaSizeOrMenu/fall ->
+    QPizzaSizePhrase/fall # e.g. "Tólf tommu pitsa."
+    | QPizzaMenuWords/fall # e.g. "Margaríta."
 
 QPizzaToppingsList/fall ->
     QPizzaToppingsWord/fall QPizzaOgMedToppings/fall*
@@ -125,6 +130,11 @@ QPizzaSizePhrase/fall ->
     QPizzaSize/fall QPizzaOrMenuWord/fall?
     | QPizzaMediumWord/fall QPizzaAfPitsuPhrase?
 
+# This duplicate is a result of difficulties with the composite logic.
+QPizzaSizeMenuPhrase/fall ->
+    QPizzaSize/fall QPizzaMenuWords/fall?
+    | QPizzaMediumWord/fall QPizzaAfMenuPhrase?
+
 QPizzaCrustPhrase/fall ->
     QPizzaCrustType/fall QPizzaCrustWord/fall?
 
@@ -133,7 +143,11 @@ QPizzaToppingsCrustPermutation ->
     | QPizzaMedCrust "og:st"? 'með:fs'? QPizzaToppingsList/þgf?
 
 QPizzaAfPitsuPhrase ->
-    "af" QPizzaOrMenuWord/þgf
+    "af" QPizzaWord/þgf
+
+# This duplicate is a result of difficulties with the composite logic.
+QPizzaAfMenuPhrase ->
+    "af" QPizzaMenuWords/þgf
 
 QPizzaAPitsunaPhrase ->
     "á" QPizzaWord/þf
@@ -146,6 +160,9 @@ QPizzaMedToppings ->
 
 QPizzaMedCrust ->
     "með" QPizzaCrustPhrase/þgf
+
+QPizzaIVidbot ->
+    'í:fs' 'viðbót:kvk'_et/þf
 
 QPizzaOrMenuWord/fall ->
     QPizzaWord/fall
