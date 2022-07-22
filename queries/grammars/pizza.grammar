@@ -4,6 +4,7 @@
 # TODO: Add to PizzaRequestBare, start conversation with an order.
 # TODO: Add the words for margherita to BinPackage
 # TODO: Fix bug where "E_QUERY_NOT_UNDERSTOOD" is stored between trees in a single module.
+# TODO: Fix ugly inches hotfix.
 
 /þgf = þgf
 /ef = ef
@@ -29,8 +30,11 @@ QPizzaRequestBare →
     QPizzaRequestPleasantries? QPizzaWord/þf
 
 QPizzaDialogue →
-    QPizzaCancel # Request to cancel the order.
+    QPizzaYes
+    | QPizzaNo
+    | QPizzaCancel # Request to cancel the order.
     | QPizzaStatus # Request for the status of the order.
+    | QPizzaQuestion # Question about the features of a particular pizza.
     | QPizzaExtrasAnswer # Answer to the question "Do you want anything with your pizzas?"
     | QPizzaNumberAndSpecificationAnswer # Answer specifying features of the pizza.
 
@@ -61,17 +65,28 @@ QPizzaStatus →
     | "hver" "var" "staðan" "á"? 'pöntun:kvk'_et/þgf?
     | QPizzaEgVil? "halda" "áfram" "með" 'pöntun:kvk'_et/þf?
 
-QPizzaNumberAndSpecificationAnswer →
-    QPizzaRequestPleasantries? QPizzaNumberAndSpecification/þf
-    | QPizzaNumberAndSpecification/nf
+QPizzaQuestion ->
+    "hvað" "er" "á" QPizzaWord/þgf "númer"? QPizzaNum/nf
+    | "hvernig" "er" QPizzaWord/þgf "númer"? QPizzaNum/nf
+    | QPizzaWord/þgf "númer"? QPizzaNum/nf
 
+QPizzaNumberAndSpecificationAnswer →
+    QPizzaRequestPleasantries? QPizzaNumberAndSpecificationWrapper/þf
+    | QPizzaNumberAndSpecificationWrapper/nf
+
+# Wrapper necessary to account for multiple pizza specifications.
+QPizzaNumberAndSpecificationWrapper/fall →
+    QPizzaNumberAndSpecification/fall QPizzaOgNumberAndSpecification/fall*
+
+# The number is outside of the specification as it specifies the number of pizzas with the given specifications.
+# This clarity makes the handling in the pizza module easier.
 QPizzaNumberAndSpecification/fall →
     QPizzaNum/fall? QPizzaSpecification/fall
     | QPizzaNum/fall QPizzaWord/fall
 
 QPizzaSpecification/fall →
     QPizzaPrimeSpecification/fall # Specifies a single thing.
-    | QPizzaCompositeSpecificationWrapper/fall # Specifies multiple things at once: size, toppings, crust.
+    | QPizzaCompositeSpecification/fall # Specifies multiple things at once: size, toppings, crust.
 
 QPizzaPrimeSpecification/fall →
     QPizzaMenuOrToppingsSpecification/fall # Specifying which menu item to order or custom toppings.
@@ -96,14 +111,7 @@ QPizzaCrustSpecification/fall →
     QPizzaCrustPhrase/fall QPizzaAPitsunaPhrase? # e.g. "Klassískan botn á pítsuna."
     | QPizzaWord/fall QPizzaMedCrustPhrase # e.g. "Pizza með ítölskum botni."
 
-# Wrapper to handle multiple pizza requests at once, "Ég vil kjötveislu með ítölskum botni og stóra margarítu."
-QPizzaCompositeSpecificationWrapper/fall →
-    QPizzaCompositeSpecification/fall QPizzaOgCompositeSpecification/fall* QPizzaIVidbotPhrase?
-
 QPizzaCompositeSpecification/fall →
-    QPizzaCompositeRest/fall # e.g. "Tólf tommu pítsa með skinku ananas og með ítölskum botni'."
-
-QPizzaCompositeRest/fall →
     QPizzaSizeMenuPhrase/fall QPizzaToppingsCrustPermutation? # e.g. "Ég vil stóra margarítu."
     | QPizzaSizeOrMenu/fall QPizzaToppingsCrustPermutation # e.g. "Ég vil tvær margarítur með ítölskum botni."
 
@@ -120,11 +128,11 @@ QPizzaSize/fall →
     | QPizzaSizeMedium/fall
     | QPizzaSizeSmall/fall
 
-QPizzaOgCompositeSpecification/fall →
-    "og:st"? QPizzaCompositeSpecification/fall
+QPizzaOgNumberAndSpecification/fall →
+    "og"? "svo"? "síðan"? "líka"? "einnig"? QPizzaNumberAndSpecification/fall QPizzaIVidbotPhrase?
 
 QPizzaOgMedToppingsPhrase/fall →
-    'og:st'? 'með:fs'? QPizzaToppingsWord/fall
+    "og"? 'með:fs'? QPizzaToppingsWord/fall
 
 # It is common to say "miðstærð af pítsu", which is handled separately here.
 QPizzaSizePhrase/fall →
@@ -225,21 +233,21 @@ QPizzaDipsWords/fall →
 # The actual size is 14.5".
 QPizzaSizeLarge/fall →
     'stór:lo'/fall
-    | QPizzaSixteenWord 'tomma:kvk'/ef?
-    | QPizzaFifteenWord 'tomma:kvk'/ef?
-    | QPizzaFourteenPointFiveWord 'tomma:kvk'/ef?
+    | QPizzaSixteenWord QPizzaInchesWord?
+    | QPizzaFifteenWord QPizzaInchesWord?
+    | QPizzaFourteenPointFiveWord QPizzaInchesWord?
 
 QPizzaSizeMedium/fall →
     'millistór:lo'/fall
     | 'meðalstór:lo'/fall
-    | QPizzaTwelveWord 'tomma:kvk'/ef?
+    | QPizzaTwelveWord QPizzaInchesWord?
 
 QPizzaMediumWord/fall →
     'mið-stærð:kvk'/fall
 
 QPizzaSizeSmall/fall →
     'lítill:lo'/fall
-    | QPizzaNineWord 'tomma:kvk'/ef?
+    | QPizzaNineWord QPizzaInchesWord?
 
 QPizzaCrustType/fall →
     QPizzaItalianWord/fall 
@@ -265,6 +273,13 @@ QPizzaWord/fall →
     | 'pitsa:kvk'/fall
     | 'pítsa:kvk'/fall
     | 'flatbaka:kvk'/fall
+
+# The size nonterminals assume that the word pizza follows them.
+# This creates an issue as that requires the inches word to be in the possessive case.
+# That is not the case when answering the question "Hversu stór á pizzan að vera?", answer "sextán tommur."
+QPizzaInchesWord ->
+    'tomma:kvk'/nf
+    | 'tomma:kvk'/ef
 
 QPizzaSixteenWord →
     "16"
@@ -325,11 +340,29 @@ QPizzaMushroom/fall →
 # "Margaríta" is not recognized by bin, so I hack the grammar here to make it work.
 QPizzaMargherita_nf →
     "margaríta"
+    | "margarítur"
     | "margarita"
+    | "margaritur"
 
-QPizzaMargherita/fallxnf →
+QPizzaMargherita_þf →
     "margarítu"
+    | "margarítur"
     | "margaritu"
+    | "margaritur"
+
+QPizzaMargherita_þgf →
+    "margarítu"
+    | "margarítum"
+    | "margaritu"
+    | "margaritum"
+
+QPizzaMargherita_ef →
+    "margarítu"
+    | "margaríta"
+    | "margarítna"
+    | "margaritu"
+    | "margarita"
+    | "margaritna"
 
 QPizzaTokyo/fall →
     'Tókýó:kvk'/fall
