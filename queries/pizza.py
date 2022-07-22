@@ -98,19 +98,31 @@ def _generate_order_answer(
     resource: WrapperResource, dsm: DialogueStateManager, result: Result
 ) -> Optional[AnswerTuple]:
     ans: str = ""
-    if dsm.extras.get("confirmed_pizzas", False):
-        number = dsm.extras["confirmed_pizzas"]
-        print("Confirmed pizzas", number)
+
+    if dsm.extras.get("added_pizzas", False):
+        total: int = dsm.extras["confirmed_pizzas"]
+        number: int = dsm.extras["added_pizzas"]
+        print("Added pizzas", number)
         ans = (
-            resource.prompts["confirmed_pizzas"]
+            resource.prompts["added_pizzas"]
             .format(
                 pizzas=numbers_to_text(
-                    sing_or_plur(number, "pizzu", "pizzum"), gender="kvk", case="þgf"
+                    sing_or_plur(number, "pítsu", "pítsum"), gender="kvk", case="þgf"
+                ),
+                total_pizzas=numbers_to_text(
+                    sing_or_plur(total, "fullkláraða pítsu", "fullkláraðar pítsur"),
+                    gender="kvk",
+                    case="þf",
                 ),
             )
             .capitalize()
         )
-        dsm.extras["confirmed_pizzas"] = 0
+        dsm.extras["added_pizzas"] = 0
+        return (dict(answer=ans), ans, ans)
+    if dsm.extras.get("confirmed_pizzas", False):
+        total: int = dsm.extras["confirmed_pizzas"]
+        print("Total pizzas: ", total)
+        ans = resource.prompts["confirmed_pizzas"]
         return (dict(answer=ans), ans, ans)
     print("!!!!!!!!!!!!!!!!!!!")
     return gen_answer(resource.prompts["initial"])
@@ -240,13 +252,12 @@ def QPizzaSpecification(node: Node, params: QueryStateDict, result: Result) -> N
         print("Adding new pizza")
         dsm.add_dynamic_resource("Pizza", "PizzaOrder")
         print("Done adding new pizza")
+        dsm.extras["total_pizzas"] = dsm.extras.get("total_pizzas", 0) + 1
+        print("Done adding to total pizzas")
     # Add to the pizza
     pizza_resource: WrapperResource = cast(WrapperResource, dsm.current_resource)
-    print("Pizza resource: ", pizza_resource.name)
     type_resource: OrResource = cast(OrResource, dsm.get_children(pizza_resource)[0])
-    print("Type resource: ", type_resource.name)
     toppings: Optional[Dict[str, int]] = result.get("toppings", None)
-    print("Toppings: ", toppings)
     if toppings:
         toppings_resource = cast(DictResource, dsm.get_children(type_resource)[0])
         for (topping, amount) in toppings.items():
@@ -257,17 +268,14 @@ def QPizzaSpecification(node: Node, params: QueryStateDict, result: Result) -> N
         dsm.set_resource_state(type_resource.name, ResourceState.CONFIRMED)
 
     menu: Optional[str] = result.get("menu", None)
-    print("Menu: ", menu)
     if menu:
         menu_resource: StringResource = cast(
             StringResource, dsm.get_children(type_resource)[1]
         )
         menu_resource.data = menu
-        print("Menu: ", menu_resource.data)
         dsm.skip_other_resources(type_resource, menu_resource)
         dsm.set_resource_state(menu_resource.name, ResourceState.CONFIRMED)
         dsm.set_resource_state(type_resource.name, ResourceState.CONFIRMED)
-
     size: Optional[str] = result.get("pizza_size", None)
     print("Size: ", size)
     if size:
@@ -277,6 +285,7 @@ def QPizzaSpecification(node: Node, params: QueryStateDict, result: Result) -> N
         print("Size resource name: ", size_resource.name)
         size_resource.data = size
         dsm.set_resource_state(size_resource.name, ResourceState.CONFIRMED)
+        print("Size state: ", size_resource.state)
 
     crust: Optional[str] = result.get("crust", None)
     print("Crust: ", crust)
@@ -285,13 +294,12 @@ def QPizzaSpecification(node: Node, params: QueryStateDict, result: Result) -> N
             StringResource, dsm.get_children(dsm.current_resource)[2]
         )
         crust_resource.data = crust
-        print("Crust resource data: ", crust_resource.data)
         dsm.set_resource_state(crust_resource.name, ResourceState.CONFIRMED)
-
     dsm.update_wrapper_state(pizza_resource)
     if pizza_resource.state == ResourceState.FULFILLED:
         dsm.set_resource_state(pizza_resource.name, ResourceState.CONFIRMED)
         dsm.extras["confirmed_pizzas"] = dsm.extras.get("confirmed_pizzas", 0) + 1
+        dsm.extras["added_pizzas"] = dsm.extras.get("added_pizzas", 0) + 1
 
 
 def QPizzaToppingsWord(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -343,6 +351,50 @@ def QPizzaOlive(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QPizzaMushroom(node: Node, params: QueryStateDict, result: Result) -> None:
     result.real_name = "sveppir"
+
+
+def QPizzaStatus(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qtype = "QPizzaStatus"
+    dsm: DialogueStateManager = Query.get_dsm(result)
+    at = dsm.get_answer(_ANSWERING_FUNCTIONS, result)
+    pizza_string: str = ""
+    if "confirmed_pizzas" in dsm.extras:
+        number = dsm.extras["confirmed_pizzas"]
+        if dsm.extras["confirmed_pizzas"] > 0:
+            pizza_string = "Pöntunin þín inniheldur {}".format(
+                numbers_to_text(
+                    sing_or_plur(number, "fullkláraða pítsu", "fullkláraðar pítsur"),
+                    gender="kvk",
+                    case="þf",
+                )
+            )
+    print("Pizza status before total")
+    if "total_pizzas" in dsm.extras:
+        total = dsm.extras["total_pizzas"]
+        confirmed = dsm.extras.get("confirmed_pizzas", 0)
+        if confirmed == 0:
+            pizza_string = "Pöntunin þín inniheldur"
+        elif total - confirmed > 0:
+            pizza_string += " og"
+        if total - confirmed > 0:
+            pizza_string += " {}".format(
+                numbers_to_text(
+                    sing_or_plur(
+                        total - confirmed, "ókláraða pítsu", "ókláraðar pítsur"
+                    ),
+                    gender="kvk",
+                    case="þf",
+                )
+            )
+        if total > 0:
+            pizza_string += ". "
+    if len(pizza_string) == 0:
+        pizza_string = "Hingað til eru engar vörur í pöntuninni. "
+    if at:
+        (_, ans, voice) = at
+        ans = pizza_string + ans
+        voice = pizza_string + voice
+        dsm.set_answer((dict(answer=ans), ans, voice))
 
 
 _ANSWERING_FUNCTIONS: AnsweringFunctionMap = {

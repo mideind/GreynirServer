@@ -527,7 +527,6 @@ class DialogueStateManager:
         Updates the state of the wrapper resource
         based on the state of its children.
         """
-        print("UPDATING WRAPPER STATE", wrapper.state)
         if wrapper.state == ResourceState.UNFULFILLED:
             print("Wrapper is unfulfilled")
             if all(
@@ -540,7 +539,7 @@ class DialogueStateManager:
                 return
             print("At least one child is fulfilled")
             self.set_resource_state(wrapper.name, ResourceState.PARTIALLY_FULFILLED)
-        elif wrapper.state == ResourceState.PARTIALLY_FULFILLED:
+        if wrapper.state == ResourceState.PARTIALLY_FULFILLED:
             print("Wrapper is partially fulfilled")
             if any(
                 [

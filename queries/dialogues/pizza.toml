@@ -3,7 +3,8 @@ name = "PizzaOrder"
 type = "WrapperResource"
 #requires = ["Pizzas"]    #, "Sides", "Sauces", "Drinks"]
 prompts.initial = "Hvað má bjóða þér?"
-prompts.confirmed_pizzas = "{pizzas} var bætt við pöntunina. Var það eitthvað fleira?"
+prompts.added_pizzas = "{pizzas} var bætt við pöntunina. Pöntunin inniheldur {total_pizzas}. Var það eitthvað fleira?"
+prompts.confirmed_pizzas = "Var það eitthvað fleira?"
 
 # [[resources]]
 # name = "PickupDelivery"
