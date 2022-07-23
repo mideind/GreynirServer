@@ -136,13 +136,13 @@ QPizzaOgMedToppingsPhrase/fall →
 
 # It is common to say "miðstærð af pítsu", which is handled separately here.
 QPizzaSizePhrase/fall →
-    QPizzaSize/fall QPizzaOrMenuWord/fall?
+    QPizzaSize/fall QPizzaWord/fall?
     | QPizzaMediumWord/fall QPizzaAfPitsuPhrase?
 
 # This duplicate is a result of difficulties with the composite logic.
 QPizzaSizeMenuPhrase/fall →
-    QPizzaSize/fall QPizzaMenuWords/fall?
-    | QPizzaMediumWord/fall QPizzaAfMenuPhrase?
+    QPizzaSize/fall QPizzaMenuWords/fall
+    | QPizzaMediumWord/fall QPizzaAfMenuPhrase
 
 QPizzaCrustPhrase/fall →
     QPizzaCrustType/fall QPizzaCrustWord/fall?
