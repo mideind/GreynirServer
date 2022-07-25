@@ -21,7 +21,7 @@
     This query module handles dialogue related to ordering pizza.
 """
 from lzma import is_check_supported
-from typing import Dict, Optional, Set, cast
+from typing import Any, Dict, List, Optional, Set, cast
 import logging
 import random
 
@@ -136,13 +136,13 @@ def _generate_pizza_answer(
     print("Generating pizza answer")
     print("Generate pizza resource name: ", resource.name)
     type_resource: OrResource = cast(OrResource, dsm.get_children(resource)[0])
-    print("Type state: {}".format(type_resource.state))
+    print("Type state: {}".format(type_resource.data))
     size_resource: StringResource = cast(StringResource, dsm.get_children(resource)[1])
-    print("Size state: {}".format(size_resource.state))
+    print("Size state: {}".format(size_resource.data))
     crust_resource: StringResource = cast(StringResource, dsm.get_children(resource)[2])
-    print("Crust state: {}".format(crust_resource.state))
-    index = dsm.current_resource.name.split("_")[-1]
-    number: int = cast(int, index)
+    print("Crust state: {}".format(crust_resource.data))
+    index: str = resource.name.split("_")[-1]
+    number: int = int(index)
     # Pizza text formatting
     pizza_text: str = f"\n"
     if any(
@@ -236,8 +236,94 @@ def QPizzaHotWord(node: Node, params: QueryStateDict, result: Result) -> None:
 def QPizzaNumberAndSpecificationWrapper(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
+    print("In number and specification wrapper")
     dsm: DialogueStateManager = Query.get_dsm(result)
-    dsm.extras.pop("adding_pizzas", None)
+    resource: WrapperResource = cast(WrapperResource, dsm.current_resource)
+    pizzas: List[Dict[str, Any]] = result.get("pizzas", [])
+    print("Current resource: ", resource.name)
+    print("Resource.name == PizzaOrder", resource.name == "PizzaOrder")
+    print(
+        "(dsm.extras.pop(adding_pizzas, False): ",
+        (dsm.extras.get("adding_pizzas", False)),
+    )
+    print("Pizzas: ", pizzas)
+    for pizza in pizzas:
+        print("Pizza: ", pizza)
+        if resource.name == "PizzaOrder":
+            # Create a new pizza
+            print("Adding new pizza")
+            dsm.add_dynamic_resource("Pizza", "PizzaOrder")
+            # dsm.extras["adding_pizzas"] = True
+            print("Done adding new pizza", dsm.get_children(resource)[-1])
+            dsm.extras["total_pizzas"] = dsm.extras.get("total_pizzas", 0) + 1
+            print("Done adding to total pizzas")
+            pizza_resource: WrapperResource = cast(
+                WrapperResource, dsm.get_children(resource)[-1]
+            )
+        else:
+            resource = cast(WrapperResource, dsm.get_resource("PizzaOrder"))
+            pizza_resource = cast(WrapperResource, dsm.current_resource)
+        # Add to the pizza
+        print(">>> Pizza resource: , ", pizza_resource.name)
+        type_resource: OrResource = cast(
+            OrResource, dsm.get_children(pizza_resource)[0]
+        )
+        toppings: Optional[Dict[str, int]] = pizza.get("toppings", None)
+        if toppings:
+            toppings_resource = cast(DictResource, dsm.get_children(type_resource)[0])
+            for (topping, amount) in toppings.items():
+                print("Topping in for loop: ", topping)
+                toppings_resource.data[topping] = amount
+            dsm.skip_other_resources(type_resource, toppings_resource)
+            dsm.set_resource_state(toppings_resource.name, ResourceState.CONFIRMED)
+            dsm.set_resource_state(type_resource.name, ResourceState.CONFIRMED)
+
+        menu: Optional[str] = pizza.get("menu", None)
+        if menu:
+            menu_resource: StringResource = cast(
+                StringResource, dsm.get_children(type_resource)[1]
+            )
+            menu_resource.data = menu
+            dsm.skip_other_resources(type_resource, menu_resource)
+            dsm.set_resource_state(menu_resource.name, ResourceState.CONFIRMED)
+            dsm.set_resource_state(type_resource.name, ResourceState.CONFIRMED)
+        size: Optional[str] = pizza.get("size", None)
+        print("Size: ", size)
+        if size:
+            size_resource: StringResource = cast(
+                StringResource, dsm.get_children(pizza_resource)[1]
+            )
+            print("Size resource name: ", size_resource.name)
+            size_resource.data = size
+            dsm.set_resource_state(size_resource.name, ResourceState.CONFIRMED)
+            print("Size state: ", size_resource.state)
+
+        crust: Optional[str] = pizza.get("crust", None)
+        print("Crust: ", crust)
+        if crust:
+            crust_resource: StringResource = cast(
+                StringResource, dsm.get_children(pizza_resource)[2]
+            )
+            crust_resource.data = crust
+            dsm.set_resource_state(crust_resource.name, ResourceState.CONFIRMED)
+        dsm.update_wrapper_state(pizza_resource)
+        if pizza_resource.state == ResourceState.FULFILLED:
+            dsm.set_resource_state(pizza_resource.name, ResourceState.CONFIRMED)
+            dsm.extras["confirmed_pizzas"] = dsm.extras.get("confirmed_pizzas", 0) + 1
+            dsm.extras["added_pizzas"] = dsm.extras.get("added_pizzas", 0) + 1
+        result["new_pizza"] = pizza_resource
+
+        number: int = pizza.get("count", 1) - 1
+        print("Getting new pizza")
+        for _ in range(number):
+            dsm.duplicate_dynamic_resource(pizza_resource)
+            print("Duplicating resource: ", pizza_resource.name)
+            dsm.extras["total_pizzas"] = dsm.extras.get("total_pizzas", 0) + 1
+            if pizza_resource.is_confirmed:
+                dsm.extras["confirmed_pizzas"] = (
+                    dsm.extras.get("confirmed_pizzas", 0) + 1
+                )
+                dsm.extras["added_pizzas"] = dsm.extras.get("added_pizzas", 0) + 1
 
 
 def QPizzaNumberAndSpecification(
@@ -248,19 +334,25 @@ def QPizzaNumberAndSpecification(
     according to the specification that was added in
     QPizzaSpecification.
     """
-    dsm: DialogueStateManager = Query.get_dsm(result)
-    print("Getting new pizza")
-    resource: Resource = result.get("new_pizza", dsm.get_resource("Pizza_1"))
-    print("!!!! New pizza: ", resource.name)
-    number: int = result.get("number", 1) - 1
-    print("!!!! Number: ", number)
-    for _ in range(number):
-        dsm.duplicate_dynamic_resource(resource)
-        print("Duplicating resource: ", resource.name)
-        dsm.extras["total_pizzas"] = dsm.extras.get("total_pizzas", 0) + 1
-        if resource.is_confirmed:
-            dsm.extras["confirmed_pizzas"] = dsm.extras.get("confirmed_pizzas", 0) + 1
-            dsm.extras["added_pizzas"] = dsm.extras.get("added_pizzas", 0) + 1
+    print("QPizzaNumberAndSpecification")
+    toppings: Optional[Dict[str, int]] = result.dict.pop("toppings", None)
+    print("Toppings: ", toppings)
+    menu: Optional[str] = result.dict.pop("menu", None)
+    print("Menu: ", menu)
+    size: Optional[str] = result.dict.pop("pizza_size", None)
+    print("Size: ", size)
+    crust: Optional[str] = result.dict.pop("crust", None)
+    print("Crust: ", crust)
+    number: int = result.get("number", 1)
+    pizza: Dict[str, Any] = {
+        "count": number,
+        "toppings": toppings,
+        "menu": menu,
+        "size": size,
+        "crust": crust,
+    }
+    print("Pizza in QPizzaNumberAndSpecification: ", pizza)
+    result.pizzas = [pizza]
 
 
 def QPizzaSpecification(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -269,74 +361,6 @@ def QPizzaSpecification(node: Node, params: QueryStateDict, result: Result) -> N
     otherwise adds ingredients to the current pizza.
     """
     print("In QPizzaSpecification")
-    if (
-        len(list(node.descendants(lambda x: "QPizzaSpecification" in x.string_self())))
-        != 0
-    ):
-        return
-    dsm: DialogueStateManager = Query.get_dsm(result)
-    resource: WrapperResource = cast(WrapperResource, dsm.current_resource)
-    print("Current resource: ", resource.name)
-    print("Resource.name == PizzaOrder", resource.name == "PizzaOrder")
-    print(
-        "(dsm.extras.pop(adding_pizzas, False): ",
-        (dsm.extras.get("adding_pizzas", False)),
-    )
-    if resource.name == "PizzaOrder" or (dsm.extras.pop("adding_pizzas", False)):
-        # Create a new pizza
-        print("Adding new pizza")
-        dsm.add_dynamic_resource("Pizza", "PizzaOrder")
-        dsm.extras["adding_pizzas"] = True
-        print("Done adding new pizza")
-        dsm.extras["total_pizzas"] = dsm.extras.get("total_pizzas", 0) + 1
-        print("Done adding to total pizzas")
-    # Add to the pizza
-    pizza_resource: WrapperResource = cast(WrapperResource, dsm.current_resource)
-    type_resource: OrResource = cast(OrResource, dsm.get_children(pizza_resource)[0])
-    toppings: Optional[Dict[str, int]] = result.dict.pop("toppings", None)
-    if toppings:
-        toppings_resource = cast(DictResource, dsm.get_children(type_resource)[0])
-        for (topping, amount) in toppings.items():
-            print("Topping in for loop: ", topping)
-            toppings_resource.data[topping] = amount
-        dsm.skip_other_resources(type_resource, toppings_resource)
-        dsm.set_resource_state(toppings_resource.name, ResourceState.CONFIRMED)
-        dsm.set_resource_state(type_resource.name, ResourceState.CONFIRMED)
-
-    menu: Optional[str] = result.dict.pop("menu", None)
-    if menu:
-        menu_resource: StringResource = cast(
-            StringResource, dsm.get_children(type_resource)[1]
-        )
-        menu_resource.data = menu
-        dsm.skip_other_resources(type_resource, menu_resource)
-        dsm.set_resource_state(menu_resource.name, ResourceState.CONFIRMED)
-        dsm.set_resource_state(type_resource.name, ResourceState.CONFIRMED)
-    size: Optional[str] = result.dict.pop("pizza_size", None)
-    print("Size: ", size)
-    if size:
-        size_resource: StringResource = cast(
-            StringResource, dsm.get_children(dsm.current_resource)[1]
-        )
-        print("Size resource name: ", size_resource.name)
-        size_resource.data = size
-        dsm.set_resource_state(size_resource.name, ResourceState.CONFIRMED)
-        print("Size state: ", size_resource.state)
-
-    crust: Optional[str] = result.dict.pop("crust", None)
-    print("Crust: ", crust)
-    if crust:
-        crust_resource: StringResource = cast(
-            StringResource, dsm.get_children(dsm.current_resource)[2]
-        )
-        crust_resource.data = crust
-        dsm.set_resource_state(crust_resource.name, ResourceState.CONFIRMED)
-    dsm.update_wrapper_state(pizza_resource)
-    if pizza_resource.state == ResourceState.FULFILLED:
-        dsm.set_resource_state(pizza_resource.name, ResourceState.CONFIRMED)
-        dsm.extras["confirmed_pizzas"] = dsm.extras.get("confirmed_pizzas", 0) + 1
-        dsm.extras["added_pizzas"] = dsm.extras.get("added_pizzas", 0) + 1
-    result["new_pizza"] = pizza_resource
 
 
 def QPizzaToppingsWord(node: Node, params: QueryStateDict, result: Result) -> None:

@@ -156,7 +156,6 @@ class DialogueStateManager:
         """
         Load dialogue resources from TOML file and update their state from database data.
         """
-        print("Setting up resources")
         # TODO: Only initialize if not hotword activated
         # Fetch empty resources from TOML
         self._initialize_resources(self._dialogue_name)
@@ -178,9 +177,7 @@ class DialogueStateManager:
         if self._saved_state and _EXTRAS_KEY in self._saved_state:
             self._extras = self._saved_state.get(_EXTRAS_KEY) or self._extras
         # Create resource dependency relationship graph
-        print("Initializing resource graph")
         self._initialize_resource_graph()
-        print("Finished setting up resources")
 
     def _initialize_resource_graph(self) -> None:
         """
@@ -189,19 +186,14 @@ class DialogueStateManager:
         to what each resource requires.
         """
         for resource in self._resources.values():
-            print("Initializing resource graph for", resource.name)
             if resource.order_index == 0 and self._initial_resource is None:
                 self._initial_resource = resource
             self._resource_graph[resource] = {"children": [], "parents": []}
-        print("Children/parents set up, starting to fill:")
         for resource in self._resources.values():
-            print("In outer for loop")
             for req in resource.requires:
-                print("Appending parents and children for resource", req)
                 self._resource_graph[self._resources[req]]["parents"].append(resource)
                 self._resource_graph[resource]["children"].append(self._resources[req])
-                print("Done appending parents and children for resource", req)
-        print("Resource graph: ", self._resource_graph)
+        # print("Resource graph: ", self._resource_graph)
 
     def _initialize_resources(self, filename: str) -> None:
         """
@@ -209,10 +201,8 @@ class DialogueStateManager:
         fills self._resources with empty Resource instances.
         """
         if self._saved_state:
-            print("IN IFFFFFF with resources: ", self._saved_state[_RESOURCES_KEY])
             self._resources = {}
             for rname, resource in self._saved_state[_RESOURCES_KEY].items():
-                print("Adding resource", rname)
                 self._resources[rname] = resource
             self._expiration_time = self._saved_state.get(
                 "expiration_time", _DEFAULT_EXPIRATION_TIME
@@ -294,13 +284,11 @@ class DialogueStateManager:
         resource: Resource = dynamic_resources[indexed_resource_name]
         # Appending resource to required list of parent resource
         parent_resource.requires.append(indexed_resource_name)
-        print("Parent resource requirements: ", parent_resource.requires)
 
         def _add_child_resource(resource: Resource) -> None:
             """
             Recursively adds a child resource to the resources list
             """
-            print("Start of add child resource")
             self._resources[resource.name] = resource
             for req in resource.requires:
                 _add_child_resource(dynamic_resources[req])
@@ -339,9 +327,7 @@ class DialogueStateManager:
                 _recursive_deep_copy(child)
 
         for parent in self._resource_graph[original]["parents"]:
-            print("!!!Adding to parent !!!: ", parent.name, original.name)
             parent.requires.append(f"Pizza_{suffix}")
-            print("Parent requirements: ", parent.requires)
 
         _recursive_deep_copy(original)
         # Initialize the resource graph again with the update resources
