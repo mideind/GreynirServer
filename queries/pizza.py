@@ -103,9 +103,9 @@ def _generate_order_answer(
     if dsm.extras.get("added_pizzas", False):
         total: int = dsm.extras["confirmed_pizzas"]
         number: int = dsm.extras["added_pizzas"]
-        r1 = dsm.get_resource("Pizza_1")
-        r2 = dsm.get_resource("Pizza_2")
-        print("Is r1 the same as r2: ", id(r1.state) is id(r2.state))
+        # r1 = dsm.get_resource("Pizza_1")
+        # r2 = dsm.get_resource("Pizza_2")
+        # print("Is r1 the same as r2: ", id(r1.state) is id(r2.state))
         print("Added pizzas", number)
         ans = resource.prompts["added_pizzas"].format(
             pizzas=numbers_to_text(
@@ -233,6 +233,13 @@ def QPizzaHotWord(node: Node, params: QueryStateDict, result: Result) -> None:
     Query.get_dsm(result).hotword_activated()
 
 
+def QPizzaNumberAndSpecificationWrapper(
+    node: Node, params: QueryStateDict, result: Result
+) -> None:
+    dsm: DialogueStateManager = Query.get_dsm(result)
+    dsm.extras.pop("adding_pizzas", None)
+
+
 def QPizzaNumberAndSpecification(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
@@ -270,6 +277,11 @@ def QPizzaSpecification(node: Node, params: QueryStateDict, result: Result) -> N
     dsm: DialogueStateManager = Query.get_dsm(result)
     resource: WrapperResource = cast(WrapperResource, dsm.current_resource)
     print("Current resource: ", resource.name)
+    print("Resource.name == PizzaOrder", resource.name == "PizzaOrder")
+    print(
+        "(dsm.extras.pop(adding_pizzas, False): ",
+        (dsm.extras.get("adding_pizzas", False)),
+    )
     if resource.name == "PizzaOrder" or (dsm.extras.pop("adding_pizzas", False)):
         # Create a new pizza
         print("Adding new pizza")
@@ -335,7 +347,7 @@ def QPizzaToppingsWord(node: Node, params: QueryStateDict, result: Result) -> No
 
 
 def QPizzaMenuWords(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.menu = result._nominative
+    result.menu = result._root
     # TODO: If multiple menu items added at the same time it will be in plural form
 
 

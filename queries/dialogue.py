@@ -326,7 +326,7 @@ class DialogueStateManager:
 
         def _recursive_deep_copy(resource: Resource) -> None:
             nonlocal suffix, self
-            new_resource = copy.deepcopy(resource)
+            new_resource = RESOURCE_MAP[resource.type](**resource.__dict__)
             prefix = "_".join(new_resource.name.split("_")[:-1])
             new_resource.name = prefix + f"_{suffix}"
             new_resource.requires = [
@@ -334,6 +334,7 @@ class DialogueStateManager:
                 for rn in new_resource.requires
             ]
             self._resources[new_resource.name] = new_resource
+            print("!!!!!!New resource: ", new_resource.__dict__)
             for child in self._resource_graph[resource]["children"]:
                 _recursive_deep_copy(child)
 
