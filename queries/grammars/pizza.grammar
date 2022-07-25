@@ -81,8 +81,9 @@ QPizzaNumberAndSpecificationWrapper/fall →
 # The number is outside of the specification as it specifies the number of pizzas with the given specifications.
 # This clarity makes the handling in the pizza module easier.
 QPizzaNumberAndSpecification/fall →
-    QPizzaNum/fall? QPizzaSpecification/fall
+    QPizzaNum/fall? QPizzaCompositeSpecification/fall
     | QPizzaNum/fall QPizzaWord/fall
+    | QPizzaNum/fall QPizzaPrimeSpecification/fall
 
 QPizzaSpecification/fall →
     QPizzaPrimeSpecification/fall # Specifies a single thing.
