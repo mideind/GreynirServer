@@ -83,7 +83,7 @@ QPizzaNumberAndSpecificationWrapper/fall →
 # This clarity makes the handling in the pizza module easier.
 QPizzaNumberAndSpecification/fall →
     QPizzaNum/fall? QPizzaSpecification/fall
-    | QPizzaNum/fall QPizzaWord/fall
+    #| QPizzaNum/fall QPizzaWord/fall
 
 QPizzaSpecification/fall →
     QPizzaPrimeSpecification/fall # Specifies a single thing.
@@ -103,7 +103,7 @@ QPizzaMenuSpecification/fall →
 
 QPizzaToppingsSpecification/fall →
     QPizzaToppingsList/fall QPizzaAPitsunaPhrase? # e.g. "Skinku, ólífur og pepperóní á pítsuna."
-    | QPizzaWord/fall? QPizzaMedToppingsPhrase # e.g. "Með ólífum og ananas."
+    | QPizzaWord/fall QPizzaMedToppingsPhrase # e.g. "Með ólífum og ananas."
 
 QPizzaSizeSpecification/fall →
     QPizzaSizePhrase/fall # e.g. "Tólf tommu pítsa."
@@ -134,10 +134,11 @@ QPizzaOgNumberAndSpecification/fall →
 
 QPizzaOgMedToppingsPhrase/fall →
     "og"? 'með:fs'? QPizzaToppingsWord/fall
+$score(+100) QPizzaOgMedToppingsPhrase/fall
 
 # It is common to say "miðstærð af pítsu", which is handled separately here.
 QPizzaSizePhrase/fall →
-    QPizzaSize/fall QPizzaWord/fall?
+    QPizzaSize/fall QPizzaWord/fall
     | QPizzaMediumWord/fall QPizzaAfPitsuPhrase?
 
 # This duplicate is a result of difficulties with the composite logic.
