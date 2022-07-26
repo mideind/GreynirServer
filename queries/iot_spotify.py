@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Randomness query response module
+    Example of a plain text query processor module.
 
     Copyright (C) 2022 Miðeind ehf.
 
@@ -18,120 +18,43 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
-    This query module handles queries related to the generation
-    of random numbers, e.g. "Kastaðu tengingi", "Nefndu tölu milli 5 og 10", etc.
+
+    This module is an example of a plug-in query response module
+    for the Greynir query subsystem. It handles plain text queries, i.e.
+    ones that do not require parsing the query text. For this purpose
+    it only needs to implement the handle_plain_text() function, as
+    shown below.
+
 
 """
 
-
-# TODO: add "láttu", "hafðu", "litaðu", "kveiktu" functionality.
-# TODO: make the objects of sentences more modular, so that the same structure doesn't need to be written for each action
-# TODO: ditto the previous comment. make the initial non-terminals general and go into specifics at the terminal level instead.
-# TODO: substituion klósett, baðherbergi hugmyndÆ senda lista i javascript og profa i röð
-# TODO: Embla stores old javascript code cached which has caused errors
-# TODO: Cut down javascript sent to Embla
-# TODO: Two specified groups or lights.
-# TODO: No specified location
-# TODO: Fix scene issues
-
-from os import access
-from typing import Dict, Mapping, Optional, cast
-from typing_extensions import TypedDict
-
-import logging
-import random
-import json
-import flask
+from query import Query
 from datetime import datetime, timedelta
+import random
 import re
-
-from reynir.lemmatize import simple_lemmatize
-
-from query import Query, QueryStateDict, AnswerTuple
-from queries import gen_answer, read_jsfile, read_grammar_file
 from queries.spotify import SpotifyClient
-from tree import Result, Node, TerminalNode
-from util import read_api_key
-
-
-_IoT_QTYPE = "IoTSpotify"
-
-# TOPIC_LEMMAS = [
-#     "tónlist",
-#     "spila",
-# ]
+from queries import gen_answer
 
 
 def help_text(lemma: str) -> str:
     """Help text to return when query.py is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég skil þig ef þú segir til dæmis: {0}.".format(
-        random.choice(
-            ("Hækkaðu í tónlistinni", "Kveiktu á tónlist", "Láttu vera tónlist")
-        )
+        random.choice(("Spilaðu Þorparinn með Pálma Gunnarssyni"))
     )
 
-
-# This module wants to handle parse trees for queries
-HANDLE_TREE = True
-
-# The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = {"QIoTSpotify"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 
 _SPOTIFY_REGEXES = [
-    r"^(spilaðu )([\w|\s]+)(með )([\w|\s]+)$",
+    r"^spilaðu ([\w|\s]+) með ([\w|\s]+)$",
+    # r"^spilaðu ([\w|\s]+) með ([\w|\s]+) á spotify?$",
+    r"^spilaðu ([\w|\s]+) á spotify$",
+    r"^spilaðu ([\w|\s]+) á spotify",
 ]
 
-GRAMMAR = f"""
 
-/þgf = þgf
-/ef = ef
-
-Query →
-    QIoTSpotify '?'?
-
-QIoTSpotify →
-    QIoTSpotifyPlaySongByArtist
-
-QIoTSpotifyPlaySongByArtist →
-    QIoTSpotifyPlayVerb QIoTSpotifySongName QIoTSpotifyWithPreposition QIoTSpotifyArtistName
-
-QIoTSpotifyPlayVerb →
-    'spila:so'_bh
-
-QIoTSpotifySongName →
-    Nl
-
-QIoTSpotifyWithPreposition →
-    'með'
-    | 'eftir'
-
-QIoTSpotifyArtistName →
-    Nl
-    | sérnafn
-"""
-
-
-def QIoTSpotify(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qtype = _IoT_QTYPE
-
-
-def QIoTSpotifyPlayVerb(node: Node, params: QueryStateDict, result: Result) -> None:
-    "spotify play function"
-    result.action = "play"
-
-
-def QIoTSpotifySongName(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.song_name = result._text
-
-
-def QIoTSpotifyArtistName(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.artist_name = result._indefinite
-
-
-def get_song_and_artist(q: Query) -> tuple:
+def handle_plain_text(q) -> bool:
     """Handle a plain text query requesting Spotify to play a specific song by a specific artist."""
     # ql = q.query_lower.strip().rstrip("?")
     print("handle_plain_text")
@@ -147,58 +70,58 @@ def get_song_and_artist(q: Query) -> tuple:
         print(m)
         if m:
             (print("MATCH!"))
-            song_name = m.group(2)
-            artist_name = m.group(4).strip()
-            return (song_name, artist_name)
+            song_name = m.group(1)
+            artist_name = m.group(2).strip()
+            print("SONG NAME :", song_name)
+            print("ARTIST NAME :", artist_name)
+            device_data = q.client_data("spotify")
+            if device_data is not None:
+                client_id = str(q.client_id)
+                spotify_client = SpotifyClient(
+                    device_data,
+                    client_id,
+                    song_name=song_name,
+                    artist_name=artist_name,
+                )
+                song_url = spotify_client.get_song_by_artist()
+                response = spotify_client.play_song_on_device()
+                # response = None
+                print("RESPONSE FROM SPOTIFY:", response)
+                answer = "Ég spilaði lagið"
+                if response is None:
+                    q.set_url(song_url)
+                    q.set_answer(*gen_answer(answer))
+
+                return True
+
+            else:
+                answer = "Það vantar að tengja Spotify aðgang."
+                q.set_answer(*gen_answer(answer))
+                return True
     else:
         return False
 
+        # Caching (optional)
+        q.set_expires(datetime.utcnow() + timedelta(hours=24))
 
-def sentence(state: QueryStateDict, result: Result) -> None:
-    """Called when sentence processing is complete"""
-    print("sentence")
-    q: Query = state["query"]
-    if result.action == "play":
-        print("SPOTIFY PLAY")
-        song_artist_tuple = get_song_and_artist(q)
-        print("exited plain text")
-        song_name = song_artist_tuple[0]
-        artist_name = song_artist_tuple[1]
-        print("SONG NAME :", song_name)
-        print("ARTIST NAME :", artist_name)
+        # Context (optional)
+        # q.set_context(dict(subject="Prufuviðfangsefni"))
 
-        print("RESTULT SONG NAME:", result.song_name)
-        print("RESULT ARTIST NAME:", result.artist_name)
-        device_data = q.client_data("spotify")
-        if device_data is not None:
-            client_id = str(q.client_id)
-            spotify_client = SpotifyClient(
-                device_data,
-                client_id,
-                song_name=result.song_name,
-                artist_name=result.artist_name,
-            )
-            song_url = spotify_client.get_song_by_artist()
-            response = spotify_client.play_song_on_device()
-            # response = None
-            print("RESPONSE FROM SPOTIFY:", response)
-            if response is None:
-                q.set_url(song_url)
+        # Source (optional)
+        # q.set_source("Prufumódúll")
 
-            answer = "Ég spilaði lagið"
-        else:
-            answer = "Það vantar að tengja Spotify aðgang."
-            q.set_answer(*gen_answer(answer))
-            return
-        # q.set_url(
-        #     "https://spotify.app.link/?product=open&%24full_url=https%3A%2F%2Fopen.spotify.com%2Ftrack%2F2BSyX4weGuITcvl5r2lLCC%3Fgo%3D1%26sp_cid%3D2a74d03dedb9fa4450d122ddebebcf9b%26fallback%3Dgetapp&feature=organic&_p=c31529c0980b7af1e11b90f9"
-        # )
-        voice_answer, response = answer, dict(answer=answer)
-        q.set_answer(response, answer, voice_answer)
+        # Beautify query for end user display (optional)
+        # q.set_beautified_query(ql.upper())
 
-    else:
-        print("ELSE")
-        q.set_error("E_QUERY_NOT_UNDERSTOOD")
-        return
+        # Javascript command to execute client-side (optional)
+        # q.set_command("2 + 2")
 
-    # # TODO: Need to add check for if there are no registered devices to an account, probably when initilazing the querydata
+        # URL to be opened by client (optional)
+        # q.set_url("https://miðeind.is")
+
+        return True
+
+    return False
+
+
+# def get_song_and_artist(q: Query) -> tuple:
