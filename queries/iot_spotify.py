@@ -90,8 +90,7 @@ def handle_plain_text(q) -> bool:
                 answer = "Ég spilaði lagið"
                 if response is None:
                     q.set_url(song_url)
-                    q.set_answer(*gen_answer(answer))
-
+                q.set_answer({"answer": answer}, answer, "")
                 return True
 
             else:

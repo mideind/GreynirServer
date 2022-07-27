@@ -36,7 +36,6 @@ class SpotifyClient:
         except (KeyError, TypeError):
             self._create_token()
         self._check_token_expiration()
-        self._devices = self._get_devices()
         self._store_credentials()
 
     def _create_token(self):
@@ -100,7 +99,7 @@ class SpotifyClient:
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Authorization": f"Basic {self._encoded_credentials}",
-            # 'Cookie': '__Host-device_id=AQBxVApczxoXIW_roLoJ5nY1ND2wR8StM3lgCAP1SzmApFbSWeNGRpxDLjOtLaGOHTM-CpdxKbWCvXcc77StrhE1N4L5q21o2l0; __Secure-TPASESSION=AQB0Nywu3HtM0ccHT76ksjXMzzeDpIEIbYzytEhvu05ELAEfMRTsc0qyaxUphsBxE8qCN2Vsruz6Mo897xYLznaxfa0ZGdh5Jpw=; sp_sso_csrf_token=013acda7191871a43462f6a67f78e88cb74e9b5bc031363537353339303539343131; sp_tr=false'
+            # "Cookie": "__Host-device_id=AQBxVApczxoXIW_roLoJ5nY1ND2wR8StM3lgCAP1SzmApFbSWeNGRpxDLjOtLaGOHTM-CpdxKbWCvXcc77StrhE1N4L5q21o2l0; __Secure-TPASESSION=AQB0Nywu3HtM0ccHT76ksjXMzzeDpIEIbYzytEhvu05ELAEfMRTsc0qyaxUphsBxE8qCN2Vsruz6Mo897xYLznaxfa0ZGdh5Jpw=; sp_sso_csrf_token=013acda7191871a43462f6a67f78e88cb74e9b5bc031363537353339303539343131; sp_tr=false",
         }
 
         response = post_to_json_api(url, payload, headers)
@@ -162,6 +161,7 @@ class SpotifyClient:
         }
 
         response = query_json_api(url, headers)
+        # print(response)
         self._song_url = response["tracks"]["items"][0]["external_urls"]["spotify"]
         self._song_uri = response["tracks"]["items"][0]["uri"]
         print("SONG URI: ", self._song_uri)
@@ -171,7 +171,8 @@ class SpotifyClient:
     def play_song_on_device(self):
         print("play song from device")
         print("accesss token play song; ", self._access_token)
-        self._device_data = self._get_devices()
+        self._devices = self._get_devices()
+        print("exited get devices")
         url = "https://api.spotify.com/v1/me/player/play"
 
         payload = json.dumps(
@@ -202,7 +203,8 @@ class SpotifyClient:
         }
 
         response = query_json_api(url, headers)
-        return response["devices"]
+        print("devices: ", response)
+        return response.get("devices")
 
     def filter_devices(self):
         print("filter devices")

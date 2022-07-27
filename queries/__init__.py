@@ -485,7 +485,7 @@ def put_to_json_api(
 ) -> Union[None, List[Any], Dict[str, Any]]:
     """Send a POST request to the URL, expecting a JSON response which is
     parsed and returned as a Python data structure."""
-
+    print("put to json api")
     # Send request
     try:
         r = requests.put(url, data=json_data, headers=headers)
@@ -500,8 +500,10 @@ def put_to_json_api(
 
     # Parse json API response
     try:
-        res = json.loads(r.text)
-        return res
+        if r.text:
+            res = json.loads(r.text)
+            return res
+        return {}
     except Exception as e:
         logging.warning("Error parsing JSON API response: {0}".format(e))
     return None
