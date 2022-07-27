@@ -1,5 +1,5 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
+[![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
 [![Build](https://github.com/mideind/Greynir/actions/workflows/python-package.yml/badge.svg)]()
 
 <img src="static/img/greynir-logo-large.png" alt="Greynir" width="200" height="200" align="right" style="margin-left:20px; margin-bottom: 20px;">
@@ -78,7 +78,7 @@ Greynir may in due course be expanded, for instance:
 Greynir is written in [Python 3](https://www.python.org/) except for its core
 Earley-based parser module which is written in C++ and called
 via [CFFI](https://cffi.readthedocs.org/en/latest/index.html).
-Greynir requires Python 3.6 or later, and runs on CPython and
+Greynir requires Python 3.7 or later, and runs on CPython and
 [PyPy](http://pypy.org/), with the latter being recommended for performance reasons.
 
 Greynir works in stages, roughly as follows:
@@ -200,7 +200,7 @@ You should now be able to run Greynir.
 python main.py
 ```
 
-Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be 
+Defaults to running on [`localhost:5000`](http://localhost:5000) but this can be
 changed in [`config/Greynir.conf`](config/Greynir.conf).
 
 ### Web scrapers
@@ -209,7 +209,7 @@ changed in [`config/Greynir.conf`](config/Greynir.conf).
 python scraper.py
 ```
 
-If you are running the scraper on macOS, you may run into problems with Python's `fork()`. 
+If you are running the scraper on macOS, you may run into problems with Python's `fork()`.
 This can be fixed by setting the following environment variable in your shell:
 
 ```
@@ -227,8 +227,8 @@ in the database.
 
 ### Interactive shell
 
-You can launch an [IPython](https://ipython.org) REPL shell with a database session (`s`), the Greynir 
-parser (`r`) and all SQLAlchemy database models preloaded. See [Using the Greynir Shell](docs/shell.md) 
+You can launch an [IPython](https://ipython.org) REPL shell with a database session (`s`), the Greynir
+parser (`r`) and all SQLAlchemy database models preloaded. See [Using the Greynir Shell](docs/shell.md)
 for instructions.
 
 ## Contributing
@@ -240,7 +240,7 @@ See [Contributing to Greynir](CONTRIBUTING.md).
 Greynir is Copyright &copy; 2022 [Miðeind ehf.](https://mideind.is)
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
-<a href="https://mideind.is"><img src="static/img/mideind-horizontal-small.png" alt="Miðeind ehf." 
+<a href="https://mideind.is"><img src="static/img/mideind-horizontal-small.png" alt="Miðeind ehf."
     width="214" height="66" align="right" style="margin-left:20px; margin-bottom: 20px;"></a>
 
 This set of programs is free software: you can redistribute it and/or modify it
