@@ -236,6 +236,11 @@ def QPizzaHotWord(node: Node, params: QueryStateDict, result: Result) -> None:
 def QPizzaNumberAndSpecificationWrapper(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
+    """
+    Dynamically adds a number of pizzas if there is no
+    current pizza, otherwise adds ingredients to the current pizza.
+    The specification of the pizzas is gotten from the result.
+    """
     print("In number and specification wrapper")
     dsm: DialogueStateManager = Query.get_dsm(result)
     resource: WrapperResource = cast(WrapperResource, dsm.current_resource)
@@ -330,9 +335,7 @@ def QPizzaNumberAndSpecification(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
     """
-    Dynamically adds a number of pizzas to the query
-    according to the specification that was added in
-    QPizzaSpecification.
+    Adds pizza information to the result.
     """
     print("QPizzaNumberAndSpecification")
     toppings: Optional[Dict[str, int]] = result.dict.pop("toppings", None)
@@ -356,10 +359,6 @@ def QPizzaNumberAndSpecification(
 
 
 def QPizzaSpecification(node: Node, params: QueryStateDict, result: Result) -> None:
-    """
-    Creates a pizza if there is no current pizza,
-    otherwise adds ingredients to the current pizza.
-    """
     print("In QPizzaSpecification")
 
 
