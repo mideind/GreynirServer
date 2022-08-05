@@ -165,7 +165,7 @@ class SpotifyClient:
         }
 
         response = query_json_api(url, headers)
-        print(response)
+        # print(response)
         try:
             self._song_url = response["tracks"]["items"][0]["external_urls"]["spotify"]
             self._song_uri = response["tracks"]["items"][0]["uri"]
