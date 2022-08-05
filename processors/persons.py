@@ -184,7 +184,7 @@ NOT_EXPLANATION = {"myndskeið"}
 DELIMITERS = {" )": " ( ", " ]": " [ ", " -": " - ", " ,": " , ", " .": " , "}
 
 
-def article_begin(state):
+def article_begin(state: Dict[str, Any]):
     """Called at the beginning of article processing"""
 
     session = state["session"]  # Database session
@@ -193,7 +193,7 @@ def article_begin(state):
     session.execute(Person.table().delete().where(Person.article_url == url))
 
 
-def article_end(state):
+def article_end(state: Dict[str, Any]):
     """Called at the end of article processing"""
     pass
 
