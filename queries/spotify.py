@@ -151,8 +151,12 @@ class SpotifyClient:
         print("accesss token get song; ", self._access_token)
         song_name = self._song_name.replace(" ", "%20")
         artist_name = self._artist_name.replace(" ", "%20")
-
-        url = f"https://api.spotify.com/v1/search?q=track:{song_name}+artist:{artist_name}&type=track"
+        print("song name: ", song_name)
+        print("artist name: ", artist_name)
+        url = (
+            f"https://api.spotify.com/v1/search?type=track&q={song_name}+{artist_name}"
+        )
+        print("url: ", url)
 
         payload = ""
         headers = {
@@ -161,9 +165,13 @@ class SpotifyClient:
         }
 
         response = query_json_api(url, headers)
-        # print(response)
-        self._song_url = response["tracks"]["items"][0]["external_urls"]["spotify"]
-        self._song_uri = response["tracks"]["items"][0]["uri"]
+        print(response)
+        try:
+            self._song_url = response["tracks"]["items"][0]["external_urls"]["spotify"]
+            self._song_uri = response["tracks"]["items"][0]["uri"]
+        except IndexError:
+            print("No song found.")
+            return
         print("SONG URI: ", self._song_uri)
 
         return self._song_url
