@@ -24,7 +24,6 @@ from typing import Optional
 
 import random
 import logging
-from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 from query import Query, QueryStateDict
@@ -106,7 +105,7 @@ def _gen_pic_answer(result: Result, q: Query):
         else:
             # No picture found
             q.set_answer(*gen_answer(f"Engin mynd fannst af {icequote(subj_þgf)}"))
-    except Exception as e:
+    except Exception:
         q.set_answer(*gen_answer(f"Ekki tókst að leita í myndagrunni"))
 
     q.set_key(subj)

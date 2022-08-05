@@ -58,16 +58,13 @@
 # TODO: "hvenær eru páskar 2035"
 # TODO: "Hvað eru margir dagar eftir af árinu?"
 
-import re
 import logging
 import random
 from datetime import datetime, timedelta
-from pytz import timezone
 from calendar import monthrange, isleap
 
 from query import Query, QueryStateDict
 from queries import (
-    timezone4loc,
     gen_answer,
     is_plural,
     sing_or_plur,

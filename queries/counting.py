@@ -23,6 +23,8 @@
 
 """
 
+from typing import Dict, List
+
 import logging
 import random
 from datetime import datetime, timedelta
@@ -106,8 +108,8 @@ def _gen_count(q: Query, result: Result):
         return gen_answer("Ég nenni ekki að telja svona lengi.")
 
     answ = "{0}…{1}".format(num_range[0], num_range[-1])
-    response = dict(answer=answ)
-    components = list()
+    response: Dict[str, str] = dict(answer=answ)
+    components: List[str] = []
     delay = result.get("delay", _DEFAULT_DELAY)
     for n in num_range:
         # Default delay results in roughly 1 sec per number in count

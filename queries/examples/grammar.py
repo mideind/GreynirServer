@@ -29,7 +29,7 @@
 import random
 
 from query import QueryStateDict
-from tree import Result
+from tree import Node, Result
 
 
 # Indicate that this module wants to handle parse trees for queries,
@@ -70,16 +70,16 @@ QGrammarExampleNotTest →
 """
 
 
-def QGrammarExampleQuery(node, params, result):
+def QGrammarExampleQuery(node: Node, params: QueryStateDict, result: Result):
     # Set the query type
     result.qtype = "GrammarTest"
 
 
-def QGrammarExampleTest(node, params, result):
+def QGrammarExampleTest(node: Node, params: QueryStateDict, result: Result):
     result.qkey = "Test"
 
 
-def QGrammarExampleNotTest(node, params, result):
+def QGrammarExampleNotTest(node: Node, params: QueryStateDict, result: Result):
     result.qkey = "NotTest"
 
 

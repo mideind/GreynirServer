@@ -21,7 +21,7 @@
 
 """
 
-from collections import namedtuple
+from typing import Any, Dict, NamedTuple
 from datetime import datetime
 
 from db.models import Location
@@ -33,7 +33,10 @@ MODULE_NAME = __name__
 PROCESSOR_TYPE = "token"
 
 
-Loc = namedtuple("Loc", ["name", "kind"])
+Loc = NamedTuple("Loc", [
+    ("name", str),
+    ("kind", str)
+])
 
 LOCFL = ["lönd", "göt", "örn", "borg"]
 LOCFL_TO_KIND = dict(zip(LOCFL, ["country", "street", "placename", "placename"]))
@@ -152,7 +155,7 @@ STREETNAME_BLACKLIST = frozenset(("Mark", "Á", "Sjáland", "Hús", "Húsið"))
 # COUNTRY_BLACKLIST = frozenset(())
 
 
-def article_begin(state):
+def article_begin(state: Dict[str, Any]):
     """Called at the beginning of article processing"""
 
     session = state["session"]  # Database session
@@ -165,7 +168,7 @@ def article_begin(state):
     state["locations"] = set()
 
 
-def article_end(state):
+def article_end(state: Dict[str, Any]):
     """Called at the end of article processing"""
 
     locs = state.get("locations")
@@ -210,14 +213,14 @@ def article_end(state):
 #     pass
 
 
-def token(state, paragraph, sentence, token, idx):
+def token(state: Dict[str, Any], paragraph, sentence, token, idx):
     """Called for each token in each sentence. idx is the
     index of the token within the sentence."""
     if "m" not in token or len(token["m"]) < 3:
         return
 
-    name = token["m"][0]  # Nominative case
-    fl = token["m"][2]  # BÍN category
+    name: str = token["m"][0]  # Nominative case
+    fl: str = token["m"][2]  # BÍN category
     if fl not in LOCFL and name not in ALWAYS_LOCATION:
         return
 
