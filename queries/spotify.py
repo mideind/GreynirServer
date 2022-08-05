@@ -171,7 +171,7 @@ class SpotifyClient:
     def play_song_on_device(self):
         print("play song from device")
         print("accesss token play song; ", self._access_token)
-        self._devices = self._get_devices()
+        # self._devices = self._get_devices()
         print("exited get devices")
         url = "https://api.spotify.com/v1/me/player/play"
 
@@ -206,10 +206,10 @@ class SpotifyClient:
         print("devices: ", response)
         return response.get("devices")
 
-    def filter_devices(self):
-        print("filter devices")
-        filtered_devices = []
-        for device in self._devices:
-            if device["type"] == "Smartphone":
-                filtered_devices.append(device)
-        return filtered_devices
+    # def filter_devices(self):
+    #     print("filter devices")
+    #     filtered_devices = []
+    #     for device in self._devices:
+    #         if device["type"] == "Smartphone":
+    #             filtered_devices.append(device)
+    #     return filtered_devices
