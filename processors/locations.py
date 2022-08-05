@@ -27,6 +27,7 @@ from datetime import datetime
 from db.models import Location
 from tokenizer import TOK
 from geo import location_info
+from tree import TreeStateDict
 
 
 MODULE_NAME = __name__
@@ -155,7 +156,7 @@ STREETNAME_BLACKLIST = frozenset(("Mark", "Á", "Sjáland", "Hús", "Húsið"))
 # COUNTRY_BLACKLIST = frozenset(())
 
 
-def article_begin(state: Dict[str, Any]):
+def article_begin(state: TreeStateDict) -> None:
     """Called at the beginning of article processing"""
 
     session = state["session"]  # Database session
@@ -168,7 +169,7 @@ def article_begin(state: Dict[str, Any]):
     state["locations"] = set()
 
 
-def article_end(state: Dict[str, Any]):
+def article_end(state: TreeStateDict) -> None:
     """Called at the end of article processing"""
 
     locs = state.get("locations")
