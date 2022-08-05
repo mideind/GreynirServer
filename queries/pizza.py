@@ -499,6 +499,11 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         print("F", ans)
         q.set_answer(*ans)
         print("G")
+        q.set_beautified_query(
+            q.beautified_query.replace("Panta", "panta").replace(
+                "Hver er staðan.", "Hver er staðan?"
+            )
+        )
     except Exception as e:
         print("Exception: ", e)
         logging.warning("Exception while processing random query: {0}".format(e))

@@ -38,6 +38,7 @@ from queries.resources import (
 # TODO: FIX TYPE HINTS (esp. 'Any')
 # TODO: Add specific prompt handling to DSM to remove result from DSM.
 # TODO: Add try-except blocks where appropriate
+# TODO: Add "needs_confirmation" to TOML files (skip fulfilled, go straight to confirmed)
 
 _TOML_FOLDER_NAME = "dialogues"
 _DEFAULT_EXPIRATION_TIME = 30 * 60  # a dialogue expires after 30 minutes
