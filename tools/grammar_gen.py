@@ -78,7 +78,7 @@ def get_wordform(gi: BIN_LiteralTerminal) -> str:
     """
     global strict
     word, cat, variants = gi.first, gi.category, gi.variants
-    if strict:
+    if strict and gi.name != '""':
         assert (
             cat is not None
         ), f"Specify category for single quoted terminal: {gi.name}"
