@@ -60,6 +60,7 @@ from util import read_api_key
 
 # Type definitions
 AnswerTuple = Tuple[Dict[str, str], str, str]
+JsonResponse = Union[None, List[Any], Dict[str, Any]]
 
 
 MONTH_ABBREV_ORDERED: Sequence[str] = (
@@ -426,9 +427,7 @@ def gen_answer(a: str) -> AnswerTuple:
     return dict(answer=a), a, a
 
 
-def query_json_api(
-    url: str, headers: Optional[Dict[str, str]] = None
-) -> Union[None, List[Any], Dict[str, Any]]:
+def query_json_api(url: str, headers: Optional[Dict[str, str]] = None) -> JsonResponse:
     """Request the URL, expecting a JSON response which is
     parsed and returned as a Python data structure."""
 

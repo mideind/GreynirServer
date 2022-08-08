@@ -27,9 +27,7 @@ from typing import List
 
 import logging
 
-from reynir.bindb import GreynirBin
-
-from query import Query, ContextDict, QueryStateDict
+from query import Query, QueryStateDict
 from tree import Result, Node
 
 from queries import query_json_api, gen_answer, cap_first, icequote, read_grammar_file

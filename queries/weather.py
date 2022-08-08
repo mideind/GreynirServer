@@ -53,6 +53,7 @@ from datetime import timedelta, datetime
 
 from query import Query, QueryStateDict
 from queries import (
+    JsonResponse,
     gen_answer,
     query_json_api,
     cap_first,
@@ -157,12 +158,11 @@ def _get_OWM_API_key() -> str:
     return _OWM_API_KEY
 
 
-def _postprocess_owm_data(d):
+def _postprocess_owm_data(d: JsonResponse) -> JsonResponse:
     """Restructure data from OWM API so it matches that provided by
     the iceweather module."""
     if not d:
         return d
-
     return d
 
 
@@ -171,7 +171,7 @@ _OWM_API_URL_BYNAME = (
 )
 
 
-def _query_owm_by_name(city: str, country_code: Optional[str] = None):
+def _query_owm_by_name(city: str, country_code: Optional[str] = None) -> JsonResponse:
     d = query_json_api(
         _OWM_API_URL_BYNAME.format(city, country_code or "", _get_OWM_API_key())
     )
@@ -184,7 +184,7 @@ _OWM_API_URL_BYLOC = (
 )
 
 
-def _query_owm_by_coords(lat: float, lon: float):
+def _query_owm_by_coords(lat: float, lon: float) -> JsonResponse:
     d = query_json_api(_OWM_API_URL_BYLOC.format(lat, lon, _get_OWM_API_key()))
     return _postprocess_owm_data(d)
 
@@ -244,6 +244,7 @@ def _curr_observations(query: Query, result: Result):
     to the location associated with the query (i.e. either user location
     coordinates or a specific placename)"""
     loc = query.location
+    res = None
 
     # User asked about a specific location
     # Try to find a matching Icelandic placename
@@ -281,7 +282,8 @@ def _curr_observations(query: Query, result: Result):
         if loc and loc[0] and loc[1]:
             res = observation_for_closest(loc[0], loc[1])
             if isinstance(res, tuple):
-                res = res[0]
+                # !!! FIXME: The type annotations here should be made more accurate
+                res = res[0]  # type: ignore
         else:
             res = observation_for_station(_RVK_STATION_ID)  # Default to Reykjavík
             result.subject = "Í Reykjavík"
@@ -304,7 +306,7 @@ def _curr_observations(query: Query, result: Result):
 _API_ERRMSG = "Ekki tókst að sækja veðurupplýsingar."
 
 
-def get_currweather_answer(query: Query, result) -> AnswerTuple:
+def get_currweather_answer(query: Query, result: Result) -> AnswerTuple:
     """Handle queries concerning current weather conditions"""
     res = _curr_observations(query, result)
     if not res:
@@ -328,7 +330,7 @@ def get_currweather_answer(query: Query, result) -> AnswerTuple:
 
     # Meters per second string for voice. Say nothing if "logn".
     msec = int(wind_ms_str)
-    msec_numword = number_to_text(msec)
+    # msec_numword = number_to_text(msec)
     voice_ms = (
         ", {0} á sekúndu".format(sing_or_plur(msec, "metri", "metrar"))
         if wind_ms_str != "0"
@@ -383,7 +385,7 @@ _COUNTRY_FC_ID = 2
 _CAPITAL_FC_ID = 3
 
 
-def get_forecast_answer(query: Query, result) -> AnswerTuple:
+def get_forecast_answer(query: Query, result: Result) -> AnswerTuple:
     """Handle weather forecast queries"""
     loc = query.location
     txt_id = _CAPITAL_FC_ID if (loc and near_capital_region(loc)) else _COUNTRY_FC_ID

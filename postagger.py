@@ -189,7 +189,7 @@ class NgramCounter:
     text file."""
 
     def __init__(self) -> None:
-        self._d = defaultdict(int)  # type: Dict[Tuple[str, ...], int]
+        self._d: Dict[Tuple[str, ...], int] = defaultdict(int)
 
     @property
     def size(self) -> int:
@@ -204,7 +204,7 @@ class NgramCounter:
     def store(self, f: TextIO) -> None:
         """Store the ngram dictionary in a compact text format"""
         d = self._d
-        vocab = dict()  # type: Dict[str, int]
+        vocab: Dict[str, int] = dict()
         # First, store the vocabulary (the distinct ngram tags)
         for ngram in d:
             for w in ngram:
@@ -256,9 +256,9 @@ class NgramTagger:
         # self.cnt = defaultdict(int)
         self.cnt = NgramCounter()
         # { lemma: { tag : count} }
-        self.lemma_cnt = defaultdict(
+        self.lemma_cnt: Dict[str, Dict[str, int]] = defaultdict(
             lambda: defaultdict(int)
-        )  # type: Dict[str, Dict[str, int]]
+        )
 
     def lemma_tags(self, lemma: str) -> Dict[str, int]:
         """Return a dict of tags and counts for this lemma"""
