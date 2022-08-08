@@ -1159,11 +1159,11 @@ def test_userloc(client: FlaskClient) -> None:
         return
 
     json = qmcall(client, {"q": "Hvar er ég"}, "UserLocation")
-    assert "Fiskislóð 31" in json["answer"]
+    assert "Fiskislóð" in json["answer"]
     json = qmcall(
         client, {"q": "Hvar í heiminum er ég eiginlega staddur?"}, "UserLocation"
     )
-    assert "Fiskislóð 31" in json["answer"]
+    assert "Fiskislóð" in json["answer"]
 
     json = qmcall(client, {"q": "í hvaða landi er ég?"}, "UserLocation")
     assert "Íslandi" in json["answer"]

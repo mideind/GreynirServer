@@ -1,17 +1,17 @@
 beautifulsoup4>=4.9.3
-werkzeug==2.0.3  # Fix compat with Flask 2.0.1
-Flask==2.0.1
+werkzeug==2.2.1  # Fix compat with Flask 2.0.1
+Flask==2.2.1
 flask-caching>=2.0.0
 Flask-Cors>=3.0.10
 psycopg2cffi==2.9.0
-requests==2.26.0
+requests>=2.28.1
 reynir>=3.5.0
 reynir-correct>=3.2.0
-SQLAlchemy==1.4.23
+SQLAlchemy==1.4.39
 iceaddr>=0.5.3
 country-list>=0.1.1
 cityloc>=0.1.1
-feedparser==6.0.8
+feedparser>=6.0.10
 html2text>=2018.1.9
 striprtf>=0.0.13
 defusedxml>=0.7.1
