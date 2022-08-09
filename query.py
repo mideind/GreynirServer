@@ -301,7 +301,12 @@ class QueryTree(Tree):
             return False
         with self.context(session, processor, query=query) as state:
             for query_tree in self._query_trees:
-                print("Processing query tree", query_tree.string_self(), "in module", processor.__name__)
+                print(
+                    "Processing query tree",
+                    query_tree.string_self(),
+                    "in module",
+                    processor.__name__,
+                )
                 # Is the processor interested in the root nonterminal
                 # of this query tree?
                 if query_tree.string_self() in processor_query_types:
@@ -885,6 +890,30 @@ class Query:
                 logging.error(
                     "Error fetching client '{0}' query data for key '{1}' from db: {2}".format(
                         self.client_id, key, e
+                    )
+                )
+        return None
+
+    @staticmethod
+    # TODO: This is a hack to get the query data for a specific device to render connected iot devices
+    def get_client_data(client_id: str, key: str) -> Optional[ClientDataDict]:
+        """Fetch client_id-associated data stored in the querydata table"""
+        with SessionContext(read_only=True) as session:
+            try:
+                client_data = (
+                    session.query(QueryData)
+                    .filter(QueryData.key == key)
+                    .filter(QueryData.client_id == client_id)
+                ).one_or_none()
+                return (
+                    None
+                    if client_data is None
+                    else cast(ClientDataDict, client_data.data)
+                )
+            except Exception as e:
+                logging.error(
+                    "Error fetching client '{0}' query data for key '{1}' from db: {2}".format(
+                        client_id, key, e
                     )
                 )
         return None

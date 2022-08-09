@@ -818,3 +818,37 @@ def spotify_code(version: int = 1) -> Response:
 #             return better_jsonify(valid=True, msg="Registered sonos code")
 
 #     return better_jsonify(valid=False, errmsg="Error registering sonos code.")
+
+# TODO: Finish functionality to delete iot data from database
+@routes.route("/delete_iot_data.api", methods=["DELETE"])
+@routes.route("/delete_iot_data.api/v<int:version>", methods=["DELETE"])
+def delete_iot_data(version: int = 1) -> Response:
+    """
+    API endpoint to delete IoT data
+    """
+    args = request.args
+    client_id = args.get("client_id")
+
+    if client_id:
+        success = QueryObject.delete_query_data(client_id)
+        if success:
+            return better_jsonify(valid=True, msg="Deleted IoT data")
+    return better_jsonify(valid=False, errmsg="Error deleting IoT data.")
+
+
+@routes.route("/get_iot_devices.api", methods=["GET"])
+@routes.route("/get_iot_devices.api/v<int:version>", methods=["GET"])
+def get_iot_devices(version: int = 1) -> Response:
+    """
+    API endpoint to get IoT devices
+    """
+    args = request.args
+    client_id = args.get("client_id")
+
+    if client_id:
+        data = QueryObject.get_client_data(client_id, "iot_speakers")
+        if data:
+            print("Data: ", data["sonos"])
+            json = better_jsonify(valid=True, data=data)
+            return json
+    return better_jsonify(valid=False, errmsg="Error getting IoT data.")

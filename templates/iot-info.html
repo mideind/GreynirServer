@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="is">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="Content-Language" content="is">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>{{ iot_name }} upplýsingar</title>
+    <!-- <script type="text/javascript">
+        var urlParams = new URLSearchParams(window.location.search);
+        var dark = urlParams.get('dark');
+        if (dark != null) {
+            document.write('<link rel="stylesheet" href="dark.css">');
+        }
+    </script> -->
+    <meta name="robots" content="noindex, nofollow, noimageindex, noarchive">
+    <meta name="googlebot" content="noindex, nofollow, noimageindex, noarchive">
+</head>
+
+<body>
+    <div class="content">
+
+        <h1>{{ iot_name }} </h1>
+
+        <h2>Upplýsingar</h2>
+
+        <p> {{ iot_description }}</p>
+
+
+
+    </div>
+
+    <div style="
+        display: flex;
+        justify-content: center;
+    ">
+        <button id="disconnect_button" style="  background-color: red;
+        border: none;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;">Aftengja</button>
+    </div>
+
+    {% block content %}
+    {% endblock %}
+</body>
+
+<script>
+    // Fetch query parameter (Embla app puts client id in query parameters)
+    let queryParams = new URLSearchParams(window.location.search);
+    // Fetch anchor tag above
+    let disconnectButton = document.getElementById('disconnect_button');
+    // Set href to include client_id
+    disconnectButton.onclick = async function () {
+        //TODO: Delete iot info from database
+        /*fetch(`http://192.168.1.76:5000/delete_iot_data.api`, {
+            method: "DELETE",
+            body: JSON.stringify(data),
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+            .then((resp) => resp.json())
+            .then((obj) => {
+                return obj;
+            })
+            .catch((err) => {
+                console.log("Error while storing user");
+            });
+            */
+    }
+    //yourElement.setAttribute('href', "http://192.168.1.76:5000?client_id=" + queryParams.get('client_id'));
+</script>
+
+</html>

@@ -96,6 +96,24 @@ def analysis():
     return render_template("analysis.html", title="Málgreining", default_text=txt)
 
 
+@routes.route("/iot/<device>")
+@max_age(seconds=60)
+def iot(device: str):
+    """Handler for device connection views."""
+    device_variables: Dict[str, Dict[str, Any]] = {
+        "hue-instructions": {
+            "iot_name": "Philips Hue",
+            "iot_description": "Hue er ein útlægir ljósæki sem er hægt að nota til að styrka ljósæki á Íslandi.",
+        },
+        "sonos-instructions": {
+            "iot_name": "Sonos",
+            "iot_description": "Sonos er hátalari.",
+        },
+    }
+    print("iot", device)
+    return render_template(f"{str(device)}.html", **device_variables.get(device))
+
+
 @routes.route("/correct", methods=["GET", "POST"])
 def correct():
     """Handler for a page for spelling and grammar correction
