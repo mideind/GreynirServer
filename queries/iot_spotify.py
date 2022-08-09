@@ -74,7 +74,7 @@ def handle_plain_text(q) -> bool:
             artist_name = m.group(2).strip()
             print("SONG NAME :", song_name)
             print("ARTIST NAME :", artist_name)
-            device_data = q.client_data("spotify")
+            device_data = q.client_data("iot").get("iot_streaming").get("spotify")
             if device_data is not None:
                 client_id = str(q.client_id)
                 spotify_client = SpotifyClient(

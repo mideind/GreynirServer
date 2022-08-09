@@ -644,15 +644,17 @@ def register_query_data_api(version: int = 1) -> Response:
     Data format example for IoT device from js code:
 
     'client_id': clientID,
-    'key': "iot_lights",
+    'key': "iot",
     'data': {
-        'philips_hue': {
-            'credentials': {
-                'username': username,
-                'ip_address': IP address,
-            },
-            'data': {
-                'groups': {name, id}, {name, id}, ...
+        'iot_lights: {
+            'philips_hue': {
+                'credentials': {
+                    'username': username,
+                    'ip_address': IP address,
+                },
+                'data': {
+                    'groups': {name, id}, {name, id}, ...
+            }
         },
     };
 
@@ -680,7 +682,7 @@ def register_query_data_api(version: int = 1) -> Response:
         return better_jsonify(valid=False, errmsg="Missing parameters.")
 
     success = QueryObject.store_query_data(
-        qdata["client_id"], qdata["key"], qdata["data"]
+        qdata["client_id"], qdata["key"], qdata["data"], update_in_place=True
     )
     if success:
         return better_jsonify(valid=True, msg="Query data registered")
@@ -733,24 +735,24 @@ def sonos_code(version: int = 1) -> Response:
     client_id = args.get("state")
     code = args.get("code")
     code_dict = {
-        "sonos": {"credentials": {"code": code}}
+        "iot_speakers": {"sonos": {"credentials": {"code": code}}}
     }  # create a dictonary with the code
     if client_id and code:
         success = QueryObject.store_query_data(
-            client_id, "iot_speakers", code_dict, update_in_place=True
+            client_id, "iot", code_dict, update_in_place=True
         )
         if success:
-            device_data = code_dict
+            device_data = code_dict["iot_speakers"]
             # Create an instance of the SonosClient class. This will automatically create the rest of the credentials needed.
             sonos_client = SonosClient(device_data, client_id)
             sonos_voice_clip = (
                 f"Hæ! Embla hérna! Ég er búin að tengja þennan Sónos hátalara."
             )
-            sonos_client.play_chime()
-            time.sleep(1.3)
-            sonos_client.play_audio_clip(
-                text_to_audio_url(sonos_voice_clip)
-            )  # Send the above message to the Sonos speaker
+            # sonos_client.play_chime()
+            # time.sleep(1.3)
+            # sonos_client.play_audio_clip(
+            #     text_to_audio_url(sonos_voice_clip)
+            # )  # Send the above message to the Sonos speaker
             return better_jsonify(valid=True, msg="Registered sonos code")
     return better_jsonify(valid=False, errmsg="Error registering sonos code.")
 
@@ -791,13 +793,15 @@ def spotify_code(version: int = 1) -> Response:
     args = request.args
     client_id = args.get("state")
     code = args.get("code")
-    code_dict = {"credentials": {"code": code}}  # create a dictonary with the code
+    code_dict = {
+        "iot_streaming": {"spotify": {"credentials": {"code": code}}}
+    }  # create a dictonary with the code
     if client_id and code:
         success = QueryObject.store_query_data(
-            client_id, "spotify", code_dict, update_in_place=True
+            client_id, "iot", code_dict, update_in_place=True
         )
         if success:
-            device_data = code_dict
+            device_data = code_dict.get("iot_streaming").get("spotify")
             spotify_client = SpotifyClient(device_data, client_id)
             # Create an instance of the SonosClient class. This will automatically create the rest of the credentials needed.
             return better_jsonify(valid=True, msg="Registered spotify code")

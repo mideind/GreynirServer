@@ -98,7 +98,9 @@ class SonosClient:
         self._encoded_credentials = read_api_key("SonosEncodedCredentials")
         self._code = self._device_data["sonos"]["credentials"]["code"]
         print("code :", self._code)
-        self._timestamp = device_data.get("sonos").get("credentials").get("timestamp")
+        self._timestamp = (
+            self._device_data.get("sonos").get("credentials").get("timestamp")
+        )
         print("device data :", self._device_data)
         try:
             self._access_token = self._device_data["sonos"]["credentials"][
@@ -176,7 +178,6 @@ class SonosClient:
         url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={self._code}&redirect_uri=http://{host}/connect_sonos.api"
         headers = {
             "Authorization": f"Basic {self._encoded_credentials}",
-            "Cookie": "JSESSIONID=F710019AF0A3B7126A8702577C883B5F; AWSELB=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBCFB059E28075D83A700FD504C030A53CC28683B515BE3DCA3CC587AFAF606E171; AWSELBCORS=69BFEFC914A689BF6DC8E4652748D7B501ED60290D5EA56F2E543ABD7CF357A5F65186AEBCFB059E28075D83A700FD504C030A53CC28683B515BE3DCA3CC587AFAF606E171",
         }
 
         response = post_to_json_api(url, headers=headers)
@@ -343,9 +344,8 @@ class SonosClient:
         self._store_data(sonos_dict)
 
     def _store_data(self, data):
-        Query.store_query_data(
-            self._client_id, "iot_speakers", data, update_in_place=True
-        )
+        new_dict = {"iot_speakers": data}
+        Query.store_query_data(self._client_id, "iot", new_dict, update_in_place=True)
 
     def _create_groupdict_for_db(self, groups: list):
         print("create_groupdict_for_db")

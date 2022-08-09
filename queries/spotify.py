@@ -107,7 +107,7 @@ class SpotifyClient:
         self._timestamp = str(datetime.now())
 
     def _store_credentials(self):
-        print("_store_smartthings_cred")
+        print("_store_spotify_cred")
         # data_dict = self._create_sonos_data_dict()
         cred_dict = self._create_cred_dict()
         self._store_data(cred_dict)
@@ -124,7 +124,8 @@ class SpotifyClient:
         return cred_dict
 
     def _store_data(self, data):
-        Query.store_query_data(self._client_id, "spotify", data, update_in_place=True)
+        new_dict = {"iot_streaming": {"spotify": data}}
+        Query.store_query_data(self._client_id, "iot", new_dict, update_in_place=True)
 
     def _store_credentials(self):
         print("_store_spotify credentials")

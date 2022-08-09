@@ -361,12 +361,14 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     q.set_qtype(result.qtype)
 
-    smartdevice_type = "iot_lights"
+    smartdevice_type = "iot"
     client_id = str(q.client_id)
     print("client_id:", client_id)
 
     # Fetch relevant data from the device_data table to perform an action on the lights
-    device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
+    device_data = cast(
+        Optional[DeviceData], q.client_data(smartdevice_type).get("iot_lights")
+    )
     print("location :", q.location)
     print("device data :", device_data)
 

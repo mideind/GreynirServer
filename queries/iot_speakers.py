@@ -307,7 +307,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         print("IF QTYPE AND QKEY")
         try:
             q.set_qtype(result.qtype)
-            device_data = q.client_data("iot_speakers")
+            device_data = q.client_data("iot").get("iot_speakers")
             if device_data is not None:
                 print("JUST BEFORE SONOS CLIENT")
                 sonos_client = SonosClient(
