@@ -72,12 +72,14 @@ async function connectHub(clientID, requestURL) {
 
         const data = {
             client_id: clientID,
-            key: "iot_lights",
+            key: "iot",
             data: {
-                philips_hue: {
-                    credentials: {
-                        username: username.success.username,
-                        ip_address: deviceInfo.internalipaddress,
+                iot_lights: {
+                    philips_hue: {
+                        credentials: {
+                            username: username.success.username,
+                            ip_address: deviceInfo.internalipaddress,
+                        },
                     },
                 },
             },

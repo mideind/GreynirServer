@@ -350,9 +350,8 @@ class SonosClient:
         self._store_data(sonos_dict)
 
     def _store_data(self, data):
-        Query.store_query_data(
-            self._client_id, "iot_speakers", data, update_in_place=True
-        )
+        new_dict = {"iot_speakers": data}
+        Query.store_query_data(self._client_id, "iot", new_dict, update_in_place=True)
 
     def _create_groupdict_for_db(self, groups: list):
         print("create_groupdict_for_db")
@@ -368,7 +367,7 @@ class SonosClient:
             players_dict[players[i]["name"]] = players[i]["id"]
         return players_dict
 
-    def _create_or_join_session(self):
+    def _create_or_join_session(self, recursion=None):
         print("_create_or_join_session")
         # group_id = self._get_group_id()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playbackSession/joinOrCreate"
@@ -381,7 +380,19 @@ class SonosClient:
 
         response = post_to_json_api(url, payload, headers)
         print(response)
-        session_id = response["sessionId"]
+        if response is None:
+            self.toggle_pause()
+            if recursion is None:
+                response = self._create_or_join_session(recursion=True)
+            else:
+                return None
+            print("response was none , so we created a new session")
+            session_id = response
+
+        else:
+            session_id = response["sessionId"]
+        print("response after loop:", response)
+        print("session_id :", session_id)
         return session_id
 
     """
@@ -391,6 +402,7 @@ class SonosClient:
     def play_radio_stream(self, radio_url):  #: Optional[str] = self._device_data.get]
         print("play radio stream")
         session_id = self._create_or_join_session()
+        print("exited create or join session")
         if radio_url is None:
             try:
                 radio_url = self._device_data["sonos"]["data"]["last_radio_url"]

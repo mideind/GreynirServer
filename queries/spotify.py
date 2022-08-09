@@ -107,7 +107,7 @@ class SpotifyClient:
         self._timestamp = str(datetime.now())
 
     def _store_credentials(self):
-        print("_store_smartthings_cred")
+        print("_store_spotify_cred")
         # data_dict = self._create_sonos_data_dict()
         cred_dict = self._create_cred_dict()
         self._store_data(cred_dict)
@@ -124,7 +124,8 @@ class SpotifyClient:
         return cred_dict
 
     def _store_data(self, data):
-        Query.store_query_data(self._client_id, "spotify", data, update_in_place=True)
+        new_dict = {"iot_streaming": {"spotify": data}}
+        Query.store_query_data(self._client_id, "iot", new_dict, update_in_place=True)
 
     def _store_credentials(self):
         print("_store_spotify credentials")
@@ -151,8 +152,12 @@ class SpotifyClient:
         print("accesss token get song; ", self._access_token)
         song_name = self._song_name.replace(" ", "%20")
         artist_name = self._artist_name.replace(" ", "%20")
-
-        url = f"https://api.spotify.com/v1/search?q=track:{song_name}+artist:{artist_name}&type=track"
+        print("song name: ", song_name)
+        print("artist name: ", artist_name)
+        url = (
+            f"https://api.spotify.com/v1/search?type=track&q={song_name}+{artist_name}"
+        )
+        print("url: ", url)
 
         payload = ""
         headers = {
@@ -162,8 +167,12 @@ class SpotifyClient:
 
         response = query_json_api(url, headers)
         # print(response)
-        self._song_url = response["tracks"]["items"][0]["external_urls"]["spotify"]
-        self._song_uri = response["tracks"]["items"][0]["uri"]
+        try:
+            self._song_url = response["tracks"]["items"][0]["external_urls"]["spotify"]
+            self._song_uri = response["tracks"]["items"][0]["uri"]
+        except IndexError:
+            print("No song found.")
+            return
         print("SONG URI: ", self._song_uri)
 
         return self._song_url
@@ -171,7 +180,7 @@ class SpotifyClient:
     def play_song_on_device(self):
         print("play song from device")
         print("accesss token play song; ", self._access_token)
-        self._devices = self._get_devices()
+        # self._devices = self._get_devices()
         print("exited get devices")
         url = "https://api.spotify.com/v1/me/player/play"
 
@@ -206,10 +215,10 @@ class SpotifyClient:
         print("devices: ", response)
         return response.get("devices")
 
-    def filter_devices(self):
-        print("filter devices")
-        filtered_devices = []
-        for device in self._devices:
-            if device["type"] == "Smartphone":
-                filtered_devices.append(device)
-        return filtered_devices
+    # def filter_devices(self):
+    #     print("filter devices")
+    #     filtered_devices = []
+    #     for device in self._devices:
+    #         if device["type"] == "Smartphone":
+    #             filtered_devices.append(device)
+    #     return filtered_devices
