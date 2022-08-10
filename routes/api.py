@@ -832,9 +832,12 @@ def delete_iot_data(version: int = 1) -> Response:
     """
     args = request.args
     client_id = args.get("client_id")
+    iot_group = args.get("iot_group")
+    iot_name = args.get("iot_name")
+    print("In delete_iot_data")
 
-    if client_id:
-        success = QueryObject.delete_query_data(client_id)
+    if client_id and iot_group and iot_name:
+        success = QueryObject.delete_iot_data(client_id, iot_group, iot_name)
         if success:
             return better_jsonify(valid=True, msg="Deleted IoT data")
     return better_jsonify(valid=False, errmsg="Error deleting IoT data.")
@@ -850,9 +853,10 @@ def get_iot_devices(version: int = 1) -> Response:
     client_id = args.get("client_id")
 
     if client_id:
-        data = QueryObject.get_client_data(client_id, "iot_speakers")
+        data = QueryObject.get_client_data(client_id, "iot")
+        print("Data: ", data)
         if data:
-            print("Data: ", data["sonos"])
             json = better_jsonify(valid=True, data=data)
             return json
+    print("Error getting IoT devices")
     return better_jsonify(valid=False, errmsg="Error getting IoT data.")
