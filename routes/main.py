@@ -111,7 +111,7 @@ def iot(device: str):
         },
     }
     print("iot", device)
-    return render_template(f"{str(device)}.html", **device_variables.get(device))
+    return render_template(f"{str(device)}.html", **device_variables.get(device, {}))
 
 
 @routes.route("/correct", methods=["GET", "POST"])
