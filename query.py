@@ -971,6 +971,35 @@ class Query:
             logging.error("Error storing query data in db: {0}".format(e))
         return False
 
+    @staticmethod
+    def delete_iot_data(client_id: str, iot_group: str, iot_name: str) -> bool:
+        """Delete iot data for specific iot_group and iot_name for a client"""
+        if not client_id or not iot_group or not iot_name:
+            return False
+        try:
+            with SessionContext(commit=True) as session:
+                rows = (
+                    session.query(QueryData)
+                    .filter(QueryData.client_id == client_id)
+                    .filter(QueryData.key == "iot")
+                    # .filter(QueryData.data.contains(iot_group))
+                    # .filter(QueryData.data.contains(iot_name))
+                ).all()
+                for row in rows:
+                    iot_dict = row.data
+                    if iot_group in iot_dict:
+                        if iot_name in iot_dict[iot_group]:
+                            del iot_dict[iot_group][iot_name]
+                            if not iot_dict[iot_group]:
+                                del iot_dict[iot_group]
+                                if not iot_dict:
+                                    session.delete(row)
+                    Query.store_query_data(client_id, "iot", iot_dict)
+            return True
+        except Exception as e:
+            logging.error("Error deleting iot data from db: {0}".format(e))
+        return False
+
     @classmethod
     def try_to_help(cls, query: str, result: ResponseDict) -> None:
         """Attempt to help the user in the case of a failed query,
