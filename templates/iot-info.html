@@ -36,13 +36,15 @@
         display: flex;
         justify-content: center;
     ">
-        <button id="disconnect_button" style="  background-color: red;
+        <button id="disconnect_button" style="  background-color: #D2827F;
         border: none;
         color: white;
         padding: 15px 32px;
+        margin: 30px;
         text-align: center;
         text-decoration: none;
         display: inline-block;
+        border-radius: 15px;
         font-size: 16px;">Aftengja</button>
     </div>
 
@@ -51,16 +53,20 @@
 </body>
 
 <script>
-    // Fetch query parameter (Embla app puts client id in query parameters)
+    // Fetch query parameters 
+    // (Embla app puts client id, group name and device name in query parameters)
     let queryParams = new URLSearchParams(window.location.search);
+    let clientId = queryParams.get('client_id');
+    let iotName = queryParams.get('iot_name');
+    let iotGroup = queryParams.get('iot_group');
+
     // Fetch anchor tag above
     let disconnectButton = document.getElementById('disconnect_button');
-    // Set href to include client_id
+    // Delete device from database by calling API
     disconnectButton.onclick = async function () {
         //TODO: Delete iot info from database
-        /*fetch(`http://192.168.1.76:5000/delete_iot_data.api`, {
+        fetch(`http://192.168.1.76:5000/delete_iot_data.api?client_id=${clientId}&iot_group=${iotGroup}&iot_name=${iotName}`, {
             method: "DELETE",
-            body: JSON.stringify(data),
             headers: {
                 "Content-Type": "application/json",
             },
@@ -70,11 +76,9 @@
                 return obj;
             })
             .catch((err) => {
-                console.log("Error while storing user");
+                console.log("Error while deleting info from database: " + err);
             });
-            */
     }
-    //yourElement.setAttribute('href', "http://192.168.1.76:5000?client_id=" + queryParams.get('client_id'));
 </script>
 
 </html>
