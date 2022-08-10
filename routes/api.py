@@ -22,11 +22,17 @@
 
 """
 
-from typing import Dict, Any, List, Optional, cast
+from typing import Dict, Any, List, Optional, TypedDict, cast
 
 from datetime import datetime
 import logging
+import os.path
 import time
+
+try:
+    import tomllib  # type: ignore (module not available in Python <3.11)
+except ModuleNotFoundError:
+    import tomli as tomllib  # Used for Python <3.11
 
 from flask import request, abort
 from flask.wrappers import Response
@@ -44,6 +50,7 @@ from article import Article as ArticleProxy
 from query import process_query
 from query import Query as QueryObject
 from doc import SUPPORTED_DOC_MIMETYPES, Document
+from util import read_api_key
 from speech import (
     text_to_audio_url,
     DEFAULT_VOICE,
@@ -860,3 +867,52 @@ def get_iot_devices(version: int = 1) -> Response:
             return json
     print("Error getting IoT devices")
     return better_jsonify(valid=False, errmsg="Error getting IoT data.")
+
+
+class IotSupportedTOMLStructure(TypedDict):
+    """Structure of the iot_supported TOML file."""
+
+    connections: Dict[str, Dict[str, str]]
+
+
+@routes.route("/get_supported_iot_connections.api", methods=["GET"])
+@routes.route("/get_supported_iot_connections.api/v<int:version>", methods=["GET"])
+def get_supported_iot_connections(version: int = 1) -> Response:
+    """
+    API endpoint to get supported IOT devices from iot_supported.toml.
+    Converts it to json and puts it in the repsonse body.
+    """
+    args = request.args
+    client_id: str = args.get("client_id")
+    host: str = args.get("host")
+    print("Host: ", host)
+    basepath, _ = os.path.split(os.path.realpath(__file__))
+    fpath = os.path.join(basepath, "../resources/iot_supported.toml")
+    print("fpath: ", fpath)
+    with open(fpath, mode="r") as file:
+        f = file.read()
+    # Read TOML file containing a list of resources for the dialogue
+    obj: IotSupportedTOMLStructure = tomllib.loads(f)  # type: ignore
+    print("TOML: ", obj)
+    print("Connections: ", obj["connections"])
+    if obj:
+        for (_, connection) in obj["connections"].items():
+            print("Connection: ", connection)
+            webview_home = connection["webview_home"]
+            print("Webview home: ", webview_home)
+            webview_home = webview_home.format(host=host, client_id=client_id)
+            connection.update({"webview_home": webview_home})
+            webview_connect = connection["webview_connect"]
+            if "api_key_filename" in connection:
+                api_key_filename: str = connection["api_key_filename"]
+                api_key = read_api_key(api_key_filename)
+                webview_connect = webview_connect.format(
+                    host=host, client_id=client_id, api_key=api_key
+                )
+            else:
+                webview_connect = webview_connect.format(host=host, client_id=client_id)
+            connection.update({"webview_connect": webview_connect})
+            print("Connection: ", connection)
+        json = better_jsonify(valid=True, data=obj)
+        return json
+    return better_jsonify(valid=False, errmsg="Error getting supported IOT devices.")
