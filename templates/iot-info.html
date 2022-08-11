@@ -64,6 +64,13 @@
     let disconnectButton = document.getElementById('disconnect_button');
     // Delete device from database by calling API
     disconnectButton.onclick = async function () {
+        window.flutter_inappwebview.callHandler("flutter_handler", {
+            "method": "deleteDevice",
+            "clientId": clientId,
+            "iotName": iotName,
+            "iotGroup": iotGroup
+        });
+        return;
         //TODO: Delete iot info from database
         fetch(`http://192.168.1.76:5000/delete_iot_data.api?client_id=${clientId}&iot_group=${iotGroup}&iot_name=${iotName}`, {
             method: "DELETE",
