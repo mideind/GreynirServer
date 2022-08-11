@@ -21,13 +21,19 @@
 
 """
 
-from typing import Dict, Any, List, Optional, Sequence, Tuple, Union, cast
+from typing import Dict, Any, List, Optional, Sequence, Tuple, TypedDict, Union, cast
 
 import platform
+import os.path
 import sys
 import random
 import json
 from datetime import datetime
+
+try:
+    import tomllib  # type: ignore (module not available in Python <3.11)
+except ModuleNotFoundError:
+    import tomli as tomllib  # Used for Python <3.11
 
 from flask import render_template, request, redirect, url_for
 from werkzeug.wrappers import Response
@@ -96,22 +102,33 @@ def analysis():
     return render_template("analysis.html", title="Málgreining", default_text=txt)
 
 
+class IotSupportedTOMLStructure(TypedDict):
+    """Structure of the iot_supported TOML file."""
+
+    connections: Dict[str, Dict[str, str]]
+
+
 @routes.route("/iot/<device>")
 @max_age(seconds=60)
 def iot(device: str):
     """Handler for device connection views."""
-    device_variables: Dict[str, Dict[str, Any]] = {
-        "hue-instructions": {
-            "iot_name": "Philips Hue",
-            "iot_description": "Hue er ein útlægir ljósæki sem er hægt að nota til að styrka ljósæki á Íslandi.",
-        },
-        "sonos-instructions": {
-            "iot_name": "Sonos",
-            "iot_description": "Sonos er hátalari.",
-        },
-    }
-    print("iot", device)
-    return render_template(f"{str(device)}.html", **device_variables.get(device, {}))
+    args = request.args
+    iot_name: str = args.get("iot_name")
+    basepath, _ = os.path.split(os.path.realpath(__file__))
+    fpath = os.path.join(basepath, "../resources/iot_supported.toml")
+    print("fpath: ", fpath)
+    with open(fpath, mode="r") as file:
+        f = file.read()
+    # Read TOML file containing a list of resources for the dialogue
+    obj: IotSupportedTOMLStructure = tomllib.loads(f)  # type: ignore
+    print("TOML: ", obj)
+    if obj:
+        # for (_, connection) in obj["connections"].items():
+        print("Connection: ", obj["connections"])
+        connection_info = obj["connections"][iot_name]
+        print("Display name: ", connection_info)
+    return render_template(f"{str(device)}.html", **connection_info)
+    # device_variables.get(device, {}))
 
 
 @routes.route("/correct", methods=["GET", "POST"])

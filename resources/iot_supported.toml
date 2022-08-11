@@ -19,7 +19,7 @@ db_name = "sonos"
 name = "Sonos"
 brand = "Sonos Inc."
 group = "iot_speakers"
-logp = "sonos.png"
+logo = "sonos.png"
 # speaker_outlined
 icon = 0xf3c1
 webview_home = '{host}/iot/sonos-instructions?client_id={client_id}&iot_group=iot_speakers&iot_name=sonos'
@@ -36,5 +36,5 @@ group = "iot_streaming"
 logo = "spotify.png"
 #music_note_outlined
 icon = 0xf1fb
-webview_home = '{host}/iot/hue-instructions?client_id={client_id}&iot_group=iot_lights&iot_name=philips_hue'
+webview_home = '{host}/iot/spotify-instructions?client_id={client_id}&iot_group=iot_streaming&iot_name=spotify'
 webview_connect = '{host}/iot/hue-connection?client_id={client_id}&request_url={host}'

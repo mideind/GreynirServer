@@ -22,12 +22,9 @@
 <body>
     <div class="content">
 
-        <h1>{{ iot_name }} </h1>
+        <h1>{{ display_name }} </h1>
 
         <h2>Upplýsingar</h2>
-
-        <p> {{ iot_description }}</p>
-
 
 
     </div>
@@ -70,21 +67,21 @@
             "iotName": iotName,
             "iotGroup": iotGroup
         });
-        return;
-        //TODO: Delete iot info from database
-        fetch(`http://192.168.1.76:5000/delete_iot_data.api?client_id=${clientId}&iot_group=${iotGroup}&iot_name=${iotName}`, {
-            method: "DELETE",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        })
-            .then((resp) => resp.json())
-            .then((obj) => {
-                return obj;
-            })
-            .catch((err) => {
-                console.log("Error while deleting info from database: " + err);
-            });
+        // return;
+        // //TODO: Delete iot info from database
+        // fetch(`http://192.168.1.76:5000/delete_iot_data.api?client_id=${clientId}&iot_group=${iotGroup}&iot_name=${iotName}`, {
+        //     method: "DELETE",
+        //     headers: {
+        //         "Content-Type": "application/json",
+        //     },
+        // })
+        //     .then((resp) => resp.json())
+        //     .then((obj) => {
+        //         return obj;
+        //     })
+        //     .catch((err) => {
+        //         console.log("Error while deleting info from database: " + err);
+        //     });
     }
 </script>
 
