@@ -760,6 +760,7 @@ def sonos_code(version: int = 1) -> Response:
             # sonos_client.play_audio_clip(
             #     text_to_audio_url(sonos_voice_clip)
             # )  # Send the above message to the Sonos speaker
+            return render_template("iot-connect-success.html", title="Tenging tókst")
             return better_jsonify(valid=True, msg="Registered sonos code")
     return better_jsonify(valid=False, errmsg="Error registering sonos code.")
 
@@ -786,6 +787,7 @@ def smartthings_code(version: int = 1) -> Response:
             smartthings_client = SmartThingsClient(device_data, client_id)
             # device_data = code
             # Create an instance of the SonosClient class. This will automatically create the rest of the credentials needed.
+            return render_template("iot-connect-success.html", title="Tenging tókst")
             return better_jsonify(valid=True, msg="Registered smartthings code")
     return better_jsonify(valid=False, errmsg="Error registering smartthings code.")
 
