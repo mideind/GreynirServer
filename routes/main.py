@@ -114,19 +114,21 @@ def iot(device: str):
     """Handler for device connection views."""
     args = request.args
     iot_name: str = args.get("iot_name")
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    fpath = os.path.join(basepath, "../resources/iot_supported.toml")
-    print("fpath: ", fpath)
-    with open(fpath, mode="r") as file:
-        f = file.read()
-    # Read TOML file containing a list of resources for the dialogue
-    obj: IotSupportedTOMLStructure = tomllib.loads(f)  # type: ignore
-    print("TOML: ", obj)
-    if obj:
-        # for (_, connection) in obj["connections"].items():
-        print("Connection: ", obj["connections"])
-        connection_info = obj["connections"][iot_name]
-        print("Display name: ", connection_info)
+    connection_info = {}
+    if iot_name:
+        basepath, _ = os.path.split(os.path.realpath(__file__))
+        fpath = os.path.join(basepath, "../resources/iot_supported.toml")
+        print("fpath: ", fpath)
+        with open(fpath, mode="r") as file:
+            f = file.read()
+        # Read TOML file containing a list of resources for the dialogue
+        obj: IotSupportedTOMLStructure = tomllib.loads(f)  # type: ignore
+        print("TOML: ", obj)
+        if obj:
+            # for (_, connection) in obj["connections"].items():
+            print("Connection: ", obj["connections"])
+            connection_info = obj["connections"][iot_name]
+            print("Display name: ", connection_info)
     return render_template(f"{str(device)}.html", **connection_info)
     # device_variables.get(device, {}))
 

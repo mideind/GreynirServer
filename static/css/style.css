@@ -53,6 +53,14 @@ h4 {
   text-align: center;
 }
 
+h5 {
+  text-align: center;
+}
+
+.h2-subsection {
+  font-size: 22px;
+}
+
 .content {
   padding-left: 15px;
   padding-right: 15px;
