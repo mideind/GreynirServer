@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="is">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="Content-Language" content="is">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Philips Hue</title>
+    <!-- <script src="../queries/js/IoT_Embla/Philips_Hue/hub.js"></script> -->
+
+    <meta name="robots" content="noindex, nofollow, noimageindex, noarchive">
+    <meta name="googlebot" content="noindex, nofollow, noimageindex, noarchive">
+</head>
+
+<body>
+    <h1>Sonos</h1>
+    <div style="               
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            " class="content">"
+    </div>
+    <div style="
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            " class="content">
+        <p>Spotify er vinsælasta tónlistarveita heims.<br>
+            Með því að tengja Spotify aðgang þinn getur þú beðið Emblu um að spila lögin sem þú vilt heyra.
+        <h2>Leiðbeiningar</h2>
+        <ol>
+            <li>Veldu "Tengja" hér að neðan og skráðu þig inn með Spotify aðgang þínum</li>
+        </ol>
+
+        <button id="connect_button" style="  background-color: #D2827F;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            margin: 30px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            border-radius: 15px;
+            box-shadow: 0px 5px 10px 0px #000000;
+            font-size: 16px;" onclick="syncConnectHub();">Tengja</button>
+
+    </div>
+
+</body>
+
+
+</html>
