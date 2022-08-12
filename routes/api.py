@@ -34,7 +34,7 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib  # Used for Python <3.11
 
-from flask import request, abort
+from flask import render_template, request, abort
 from flask.wrappers import Response
 
 from settings import Settings
@@ -811,6 +811,7 @@ def spotify_code(version: int = 1) -> Response:
             device_data = code_dict.get("iot_streaming").get("spotify")
             spotify_client = SpotifyClient(device_data, client_id)
             # Create an instance of the SonosClient class. This will automatically create the rest of the credentials needed.
+            return render_template("iot-connect-success.html", title="Tenging tókst")
             return better_jsonify(valid=True, msg="Registered spotify code")
     return better_jsonify(valid=False, errmsg="Error registering spotify code.")
 
