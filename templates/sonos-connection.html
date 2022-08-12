@@ -28,7 +28,8 @@
                 justify-content: center;
             " class="content">
         <p>Hinir geysivinsælu Sonos snjallhálarar eru studdir af radadstýringu Emblu.<br>
-            Með því að tengja Sonos hátalara getur þú beðið Emblu um að kveikja og slökkva á tónlist, setja á útvarpstöðvar og stjórna hljóðstyrk.</p>
+            Með því að tengja Sonos hátalara getur þú beðið Emblu um að kveikja og slökkva á tónlist, setja á
+            útvarpstöðvar og stjórna hljóðstyrk.</p>
         <h2 class="h2-subsection">Leiðbeiningar</h2>
         <ol>
             <li>Náðu í Sonos appið og tengdu hátalarinn þinn við þráðlausa netið á heimilinu.</li>
@@ -49,6 +50,17 @@
             font-size: 16px;" onclick="syncConnectHub();">Tengja</button>
 
     </div>
+
+    <script>
+        const queryParams = new URLSearchParams(window.location.search);
+        const connectUrl = decodeURIComponent(queryParams.get('connect_url'));
+        let connectButton = document.getElementById('connect_button');
+        console.log('connect url: ', connectUrl);
+        connectButton.onclick = function () {
+            console.log('Click happened');
+            window.location.href = connectUrl;
+        }
+    </script>
 
 </body>
 

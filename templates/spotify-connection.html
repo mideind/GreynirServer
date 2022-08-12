@@ -44,9 +44,18 @@
             display: inline-block;
             border-radius: 15px;
             box-shadow: 0px 5px 10px 0px #000000;
-            font-size: 16px;" onclick="syncConnectHub();">Tengja</button>
+            font-size: 16px;">Tengja</button>
 
     </div>
+
+    <script>
+        const queryParams = new URLSearchParams(window.location.search);
+        const connectUrl = decodeURIComponent(queryParams.get('connect_url'));
+        let connectButton = document.getElementById('connect_button');
+        connectButton.onclick = function () {
+            window.location.href = connectUrl;
+        }
+    </script>
 
 </body>
 

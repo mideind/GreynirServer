@@ -903,15 +903,19 @@ def get_supported_iot_connections(version: int = 1) -> Response:
             webview_home = webview_home.format(host=host, client_id=client_id)
             connection.update({"webview_home": webview_home})
             webview_connect = connection["webview_connect"]
-            if "api_key_filename" in connection:
-                api_key_filename: str = connection["api_key_filename"]
-                api_key = read_api_key(api_key_filename)
-                webview_connect = webview_connect.format(
-                    host=host, client_id=client_id, api_key=api_key
-                )
-            else:
-                webview_connect = webview_connect.format(host=host, client_id=client_id)
+            webview_connect = webview_connect.format(host=host, client_id=client_id)
             connection.update({"webview_connect": webview_connect})
+            if "connect_url" in connection:
+                connect_url = connection["connect_url"]
+                if "api_key_filename" in connection:
+                    api_key_filename: str = connection["api_key_filename"]
+                    api_key = read_api_key(api_key_filename)
+                    connect_url = connect_url.format(
+                        host=host, client_id=client_id, api_key=api_key
+                    )
+                else:
+                    connect_url = connect_url.format(host=host, client_id=client_id)
+                connection.update({"connect_url": connect_url})
             print("Connection: ", connection)
         json = better_jsonify(valid=True, data=obj)
         return json

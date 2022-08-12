@@ -23,7 +23,8 @@ logo = "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Sonos-company.
 # speaker_outlined
 icon = 0xf3c1
 webview_home = '{host}/iot/sonos-instructions?client_id={client_id}&iot_group=iot_speakers&iot_name=sonos'
-webview_connect = 'https://api.sonos.com/login/v3/oauth?client_id={api_key}&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri={host}/connect_sonos.api'
+webview_connect = '{host}/iot/sonos-connection?client_id={client_id}&request_url={host}'
+connect_url = 'https://api.sonos.com/login/v3/oauth?client_id={api_key}&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri={host}/connect_sonos.api'
 api_key_filename = "SonosKey"
 
 
@@ -37,5 +38,6 @@ logo = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_w
 #music_note_outlined
 icon = 0xf1fb
 webview_home = '{host}/iot/spotify-instructions?client_id={client_id}&iot_group=iot_streaming&iot_name=spotify'
-webview_connect = 'https://accounts.spotify.com/authorize?client_id={api_key}&response_type=code&redirect_uri={host}/connect_spotify.api&state={client_id}&scope=user-read-playback-state+user-modify-playback-state+user-read-playback-position+user-read-recently-played+app-remote-control+user-top-read+user-read-currently-playing+playlist-read-private+streaming'
+webview_connect = '{host}/iot/spotify-connection?client_id={client_id}&request_url={host}'
+connect_url = 'https://accounts.spotify.com/authorize?client_id={api_key}&response_type=code&redirect_uri={host}/connect_spotify.api&state={client_id}&scope=user-read-playback-state+user-modify-playback-state+user-read-playback-position+user-read-recently-played+app-remote-control+user-top-read+user-read-currently-playing+playlist-read-private+streaming'
 api_key_filename = "SpotifyKey"
