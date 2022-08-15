@@ -78,3 +78,54 @@ h5 {
   text-align: center;
   font-style: italic;
 }
+
+button {
+  position: relative;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  background-color: #D2827F;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  margin: 30px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  border-radius: 25px;
+  font-family: 'Lato', sans-serif;
+  padding: 10px 20px;
+  box-shadow: 0px 2px 5px -1px rgba(0, 0, 0, 0.3), inset 0px 12px 0px -10px rgba(255, 255, 255, 0.3);
+  font-size: 19px;
+  cursor: pointer;
+}
+
+/* Ripple effect */
+/* .btn {
+  background-position: center;
+  transition: background 0.8s;
+}
+
+.btn:hover {
+  background: #d89b9978 radial-gradient(circle, transparent 1%, #d89b9978 1%) center/15000%;
+}
+
+.btn:active {
+  background-color: #d89b99ba;
+  background-size: 100%;
+  transition: background 0s;
+} */
+
+span.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple 800ms linear;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}

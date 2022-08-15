@@ -129,8 +129,15 @@ def iot(device: str):
             print("Connection: ", obj["connections"])
             connection_info = obj["connections"][iot_name]
             print("Display name: ", connection_info)
+    print("Route device: ", device)
     return render_template(f"{str(device)}.html", **connection_info)
     # device_variables.get(device, {}))
+
+
+@routes.route("/iot-connect-success")
+def iot_connect_success():
+    """Handler for successful connection view."""
+    return render_template("iot-connect-success.html", title="Tenging tókst")
 
 
 @routes.route("/correct", methods=["GET", "POST"])

@@ -692,6 +692,7 @@ def register_query_data_api(version: int = 1) -> Response:
         qdata["client_id"], qdata["key"], qdata["data"], update_in_place=True
     )
     if success:
+        print("HUE SUCCESS!!!!!!!!!!!!!!")
         return better_jsonify(valid=True, msg="Query data registered")
 
     return better_jsonify(valid=False, errmsg="Error registering query data.")

@@ -33,7 +33,10 @@
         display: flex;
         justify-content: center;
     ">
-        <button id="disconnect_button" style="  background-color: #D2827F;
+        <button id="disconnect_button" class="btn">Aftengja</button>
+    </div>
+
+    <!-- style="  background-color: #D2827F;
         border: none;
         color: white;
         padding: 15px 32px;
@@ -45,8 +48,7 @@
         font-family: 'Lato', sans-serif;
         padding: 10px 20px;
         box-shadow: 0px 2px 5px -1px rgba(0,0,0,0.3), inset 0px 12px 0px -10px rgba(255,255,255,0.3);
-        font-size: 19px;">Aftengja</button>
-    </div>
+        font-size: 19px;"-->
 
     {% block content %}
     {% endblock %}
@@ -85,6 +87,32 @@
         //     .catch((err) => {
         //         console.log("Error while deleting info from database: " + err);
         //     });
+    }
+
+    function createRipple(event) {
+        const button = event.currentTarget;
+
+        const circle = document.createElement("span");
+        const diameter = Math.max(button.clientWidth, button.clientHeight);
+        const radius = diameter / 2;
+
+        circle.style.width = circle.style.height = `${diameter}px`;
+        circle.style.left = `${event.clientX - button.offsetLeft - radius}px`;
+        circle.style.top = `${event.clientY - button.offsetTop - radius}px`;
+        circle.classList.add("ripple");
+
+        const ripple = button.getElementsByClassName("ripple")[0];
+
+        if (ripple) {
+            ripple.remove();
+        }
+
+        button.appendChild(circle);
+    }
+
+    const buttons = document.getElementsByTagName("button");
+    for (const button of buttons) {
+        button.addEventListener("click", createRipple);
     }
 </script>
 
