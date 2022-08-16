@@ -763,6 +763,7 @@ def sonos_code(version: int = 1) -> Response:
             # )  # Send the above message to the Sonos speaker
             return render_template("iot-connect-success.html", title="Tenging tókst")
             return better_jsonify(valid=True, msg="Registered sonos code")
+    return render_template("iot-connect-error.html", title="Tenging mistókst")
     return better_jsonify(valid=False, errmsg="Error registering sonos code.")
 
 
@@ -794,7 +795,7 @@ def smartthings_code(version: int = 1) -> Response:
 
 
 @routes.route("/connect_spotify.api", methods=["GET"])
-@routes.route("/connect_spotofy.api/v<int:version>", methods=["GET", "POST"])
+@routes.route("/connect_spotify.api/v<int:version>", methods=["GET", "POST"])
 def spotify_code(version: int = 1) -> Response:
     """
     API endpoint to connect Spotify account
@@ -816,6 +817,7 @@ def spotify_code(version: int = 1) -> Response:
             # Create an instance of the SonosClient class. This will automatically create the rest of the credentials needed.
             return render_template("iot-connect-success.html", title="Tenging tókst")
             return better_jsonify(valid=True, msg="Registered spotify code")
+    return render_template("iot-connect-error.html", title="Tenging mistókst")
     return better_jsonify(valid=False, errmsg="Error registering spotify code.")
 
 

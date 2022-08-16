@@ -140,6 +140,12 @@ def iot_connect_success():
     return render_template("iot-connect-success.html", title="Tenging tókst")
 
 
+@routes.route("/iot-connect-error")
+def iot_connect_error():
+    """Handler for unsuccessful connection view."""
+    return render_template("iot-connect-error.html", title="Tenging mistókst")
+
+
 @routes.route("/correct", methods=["GET", "POST"])
 def correct():
     """Handler for a page for spelling and grammar correction

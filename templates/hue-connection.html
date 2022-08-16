@@ -165,6 +165,7 @@
                 return "Tenging við snjalltæki tókst";
             } catch (error) {
                 console.log(error);
+                window.location.href = `${requestURL}/iot-connect-error`;
                 return "Ekki tókst að tengja snjalltæki";
             }
         }
