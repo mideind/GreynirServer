@@ -81,13 +81,23 @@
             // hubArr.push(hubObj);
             // return hubArr[0];
             return fetch(`https://discovery.meethue.com`)
-                .then((resp) => resp.json())
+                .then((resp) => {
+                    console.log("Resp: ", resp);
+                    if (!resp.ok) {
+                        console.log("Resp status: ", resp.status);
+                        throw new Error(resp.status);
+                    }
+                    resp.json();
+                })
                 .then((obj) => {
                     console.log(obj);
                     return obj[0];
                 })
                 .catch((err) => {
-                    console.log("No smart device found!");
+                    console.log("No smart device found!", err.message);
+                    window.flutter_inappwebview.callHandler("flutter_handler", {
+                        "hub_error": parseInt(err.message),
+                    });
                 });
         }
 
@@ -138,6 +148,9 @@
                 let username = await createNewDeveloper(deviceInfo.internalipaddress);
                 console.log("username: ", username);
                 if (!username.success) {
+                    window.flutter_inappwebview.callHandler("flutter_handler", {
+                        "button_press_missing": true,
+                    });
                     return "Ýttu á 'Philips' takkann á tengiboxinu og reyndu aftur";
                 }
 
