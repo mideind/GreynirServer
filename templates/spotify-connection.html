@@ -7,8 +7,14 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="Content-Language" content="is">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
-    <title>Philips Hue</title>
-    <!-- <script src="../queries/js/IoT_Embla/Philips_Hue/hub.js"></script> -->
+    <script type="text/javascript">
+        var urlParams = new URLSearchParams(window.location.search);
+        var dark = urlParams.get('dark');
+        if (dark != null) {
+            document.write(`<link rel="stylesheet" href="{{ url_for('static', filename = 'css/dark.css') }}">`);
+        }
+    </script>
+    <title>Spotify</title>
 
     <meta name="robots" content="noindex, nofollow, noimageindex, noarchive">
     <meta name="googlebot" content="noindex, nofollow, noimageindex, noarchive">
@@ -35,20 +41,6 @@
         </ol>
 
         <button id="connect_button" class="btn">Tengja</button>
-
-        <!--style="  background-color: #D2827F;
-            border: none;
-            color: white;
-            padding: 15px 32px;
-            margin: 30px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            border-radius: 25px;
-            font-family: 'Lato', sans-serif;    
-            padding: 10px 20px;
-            box-shadow: 0px 2px 5px -1px rgba(0,0,0,0.3), inset 0px 12px 0px -10px rgba(255,255,255,0.3);
-            font-size: 19px;"-->
     </div>
 
     <script>
