@@ -7,6 +7,13 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="Content-Language" content="is">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <script type="text/javascript">
+        var urlParams = new URLSearchParams(window.location.search);
+        var dark = urlParams.get('dark');
+        if (dark != null) {
+            document.write(`<link rel="stylesheet" href="{{ url_for('static', filename = 'css/dark.css') }}">`);
+        }
+    </script>
     <title>Philips Hue</title>
     <!-- <script src="../queries/js/IoT_Embla/Philips_Hue/hub.js"></script> -->
 
@@ -41,32 +48,7 @@
 
         <button id="connect_button" class="btn" onclick="syncConnectHub()">Tengja</button>
 
-        <!--style="  background-color: #D2827F;
-            border: none;
-            color: white;
-            padding: 15px 32px;
-            margin: 30px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            border-radius: 25px;
-            font-family: 'Lato', sans-serif;
-            padding: 10px 20px;
-            box-shadow: 0px 2px 5px -1px rgba(0,0,0,0.3), inset 0px 12px 0px -10px rgba(255,255,255,0.3);
-            font-size: 19px;"-->
-
     </div>
-    <!-- <script type="text/javascript">
-        import syncConnectHub from '../queries/js/IoT_Embla/Philips_Hue/hub.js';
-        function connectHue() {
-            console.log("In connectHue");
-            const queryParams = new URLSearchParams(window.location.search);
-            const clientId = queryParams.get('client_id');
-            const requestUrl = queryParams.get('request_url');
-            syncConnectHub(clientId, requestUrl);
-            print("Done connecting");
-        }
-    </script> -->
     <script>
         console.log("!!!!!!! hub.js !!!!!!!!");
         "use strict";
@@ -87,17 +69,21 @@
                         console.log("Resp status: ", resp.status);
                         throw new Error(resp.status);
                     }
+                    console.log("Making json");
                     resp.json();
+                    console.log("json made");
                 })
                 .then((obj) => {
                     console.log(obj);
                     return obj[0];
                 })
                 .catch((err) => {
-                    console.log("No smart device found!", err.message);
-                    window.flutter_inappwebview.callHandler("flutter_handler", {
-                        "hub_error": parseInt(err.message),
-                    });
+                    if (err) {
+                        console.log("No smart device found!", err.message);
+                        window.flutter_inappwebview.callHandler("flutter_handler", {
+                            "hub_error": parseInt(err.message),
+                        });
+                    }
                 });
         }
 
@@ -138,9 +124,14 @@
         }
 
         // clientID = "82AD3C91-7DA2-4502-BB17-075CEC090B14", requestURL = "192.168.1.68")
-        async function connectHub(clientID, requestURL) {
+        async function connectHub(clientID, requestURL, hubIpAddress = null) {
             console.log("connect hub");
-            let deviceInfo = await findHub();
+            let deviceInfo;
+            if (hubIpAddress) {
+                deviceInfo = { internalipaddress: hubIpAddress };
+            } else {
+                deviceInfo = await findHub();
+            }
             console.log("device info: ", deviceInfo);
             console.log("device_ip :", deviceInfo.internalipaddress);
 
@@ -188,7 +179,12 @@
             const queryParams = new URLSearchParams(window.location.search);
             const clientID = queryParams.get('client_id');
             const requestURL = queryParams.get('request_url');
-            connectHub(clientID, requestURL);
+            const hubIpAddress = queryParams.get('hub_ip_address');
+            if (hubIpAddress) {
+                connectHub(clientID, requestURL, hubIpAddress);
+            } else {
+                connectHub(clientID, requestURL);
+            }
             return "Philips Hue miðstöðin hefur verið tengd";
         }
 
