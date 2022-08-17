@@ -99,22 +99,6 @@ button {
   cursor: pointer;
 }
 
-/* Ripple effect */
-/* .btn {
-  background-position: center;
-  transition: background 0.8s;
-}
-
-.btn:hover {
-  background: #d89b9978 radial-gradient(circle, transparent 1%, #d89b9978 1%) center/15000%;
-}
-
-.btn:active {
-  background-color: #d89b99ba;
-  background-size: 100%;
-  transition: background 0s;
-} */
-
 span.ripple {
   position: absolute;
   border-radius: 50%;
