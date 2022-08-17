@@ -22,18 +22,12 @@
 </head>
 
 <body>
-    <h1>Philips Hue Hub</h1>
-    <div style="               
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-            " class="content">
-    </div>
     <div style="
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
-            " class="content">
+                " class="content">
+        <h1>Philips Hue Hub</h1>
         <p>Philips Hue er vinsælasta snjallljósa lausn heims.
             Með því að tengja Philips Hue miðstöðina þína getur þú beðið emblu um að kveikja og slökka á ljósum, breyta
             lit, birtustigi og fleira.</p>
@@ -51,7 +45,7 @@
     </div>
     <script>
         console.log("!!!!!!! hub.js !!!!!!!!");
-        "use strict";
+        // "use strict";
 
         async function findHub() {
             // let hubArr = [];
@@ -65,6 +59,7 @@
             return fetch(`https://discovery.meethue.com`)
                 .then((resp) => {
                     console.log("Resp: ", resp);
+                    console.log("Resp body: ", resp.body);
                     if (!resp.ok) {
                         console.log("Resp status: ", resp.status);
                         throw new Error(resp.status);
@@ -75,13 +70,17 @@
                 })
                 .then((obj) => {
                     console.log(obj);
-                    return obj[0];
+                    if (obj) {
+                        return obj[0];
+                    } else {
+                        throw new Error("no-hub");
+                    }
                 })
                 .catch((err) => {
                     if (err) {
                         console.log("No smart device found!", err.message);
                         window.flutter_inappwebview.callHandler("flutter_handler", {
-                            "hub_error": parseInt(err.message),
+                            "hub_error": err.message,
                         });
                     }
                 });
