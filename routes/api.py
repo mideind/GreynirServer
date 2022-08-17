@@ -815,9 +815,9 @@ def spotify_code(version: int = 1) -> Response:
             device_data = code_dict.get("iot_streaming").get("spotify")
             spotify_client = SpotifyClient(device_data, client_id)
             # Create an instance of the SonosClient class. This will automatically create the rest of the credentials needed.
-            return render_template("iot-connect-error.html", title="Tenging mistókst")
             return render_template("iot-connect-success.html", title="Tenging tókst")
             return better_jsonify(valid=True, msg="Registered spotify code")
+    return render_template("iot-connect-error.html", title="Tenging mistókst")
     return better_jsonify(valid=False, errmsg="Error registering spotify code.")
 
 
