@@ -58,18 +58,12 @@
             // return hubArr[0];
             return fetch(`https://discovery.meethue.com`)
                 .then((resp) => {
-                    console.log("Resp: ", resp);
-                    console.log("Resp body: ", resp.body);
                     if (!resp.ok) {
-                        console.log("Resp status: ", resp.status);
                         throw new Error(resp.status);
                     }
-                    console.log("Making json");
-                    resp.json();
-                    console.log("json made");
+                    return resp.json();
                 })
                 .then((obj) => {
-                    console.log(obj);
                     if (obj) {
                         return obj[0];
                     } else {
