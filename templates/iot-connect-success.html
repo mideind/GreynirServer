@@ -7,9 +7,19 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="Content-Language" content="is">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/dark.css') }}"> -->
+    <script type="text/javascript">
+        document.write(`<link rel="stylesheet" href="{{ url_for('static', filename = 'css/dark.css') }}" id="dark_style" disabled="true">`);
+        window.addEventListener("flutterInAppWebViewPlatformReady", function (event) {
+            window.flutter_inappwebview.callHandler('darkmode_handler')
+                .then(function (result) {
+                    if (result) {
+                        document.getElementById("dark_style").removeAttribute("disabled");
+                    }
+                });
+        });
+    </script>
     <title>Tenging tókst</title>
-    <!-- <script src="../queries/js/IoT_Embla/Philips_Hue/hub.js"></script> -->
-
     <meta name="robots" content="noindex, nofollow, noimageindex, noarchive">
     <meta name="googlebot" content="noindex, nofollow, noimageindex, noarchive">
 </head>
