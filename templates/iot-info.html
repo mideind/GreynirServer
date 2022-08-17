@@ -7,6 +7,13 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="Content-Language" content="is">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <script type="text/javascript">
+        var urlParams = new URLSearchParams(window.location.search);
+        var dark = urlParams.get('dark');
+        if (dark != null) {
+            document.write(`<link rel="stylesheet" href="{{ url_for('static', filename = 'css/dark.css') }}">`);
+        }
+    </script>
     <title>{{ iot_name }} upplýsingar</title>
     <!-- <script type="text/javascript">
         var urlParams = new URLSearchParams(window.location.search);
