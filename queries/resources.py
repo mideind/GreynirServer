@@ -190,7 +190,7 @@ class DateResource(Resource):
 
     @property
     def date(self) -> Optional[datetime.date]:
-        return self.data if self.is_fulfilled else None
+        return self.data if not self.is_unfulfilled else None
 
     def set_date(self, new_date: datetime.date) -> None:
         self.data = new_date
@@ -209,7 +209,7 @@ class TimeResource(Resource):
 
     @property
     def time(self) -> Optional[datetime.time]:
-        return self.data if self.is_fulfilled else None
+        return self.data if self.is_unfulfilled else None
 
     def set_time(self, new_time: datetime.time) -> None:
         self.data = new_time

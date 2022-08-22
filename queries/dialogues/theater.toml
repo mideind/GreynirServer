@@ -2,6 +2,7 @@
 name = "Show"
 type = "ListResource"
 cascade_state = true
+needs_confirmation = true
 prompts.initial = "Hvaða sýningu má bjóða þér að fara á?"
 prompts.options = "Sýningarnar sem eru í boði eru: {options}"
 prompts.confirm = "Þú valdir sýninguna {show}, viltu halda áfram með pöntunina?"
@@ -11,11 +12,13 @@ prompts.no_show_matched_data_exists = "Því miður er þessi sýning ekki í bo
 [[resources]]
 name = "ShowDate"
 type = "DateResource"
+needs_confirmation = true
 requires = ["Show"]
 
 [[resources]]
 name = "ShowTime"
 type = "TimeResource"
+needs_confirmation = true
 requires = ["Show"]
 
 [[resources]]
@@ -23,6 +26,7 @@ name = "ShowDateTime"
 type = "WrapperResource"
 requires = ["ShowDate", "ShowTime"]
 cascade_state = true
+needs_confirmation = true
 prompts.initial = "Hvenær viltu fara á sýninguna {show}? Í boði eru {date_number} dagsetningar.\n{dates}"
 prompts.options = "Í boði eru {date_number} dagsetningar. {options}"
 prompts.confirm = "Þú valdir {date}, viltu halda áfram og velja fjölda sæta?"
@@ -38,6 +42,7 @@ name = "ShowSeatCount"
 type = "NumberResource"
 requires = ["ShowDateTime"]
 cascade_state = true
+needs_confirmation = true
 prompts.initial = "Hversu mörg sæti viltu bóka?"
 prompts.confirm = "Þú valdir {seats} sæti, viltu halda áfram og velja staðsetningu sætanna?"
 prompts.invalid_seat_count = "Fjöldi sæta þarfa að vera hærri en einn. Vinsamlegast reyndu aftur."
@@ -47,6 +52,7 @@ name = "ShowSeatRow"
 type = "ListResource"
 requires = ["ShowSeatCount"]
 cascade_state = true
+needs_confirmation = true
 prompts.initial = "Að minnsta kosti {seats} sæti eru í boði í röðum {seat_rows}. Í hvaða röð viltu sitja?"
 prompts.options = "Raðir {rows} eru með {seats} laus sæti."
 prompts.confirm = "Þú valdir röð {row}, viltu halda áfram?"
@@ -58,6 +64,7 @@ name = "ShowSeatNumber"
 type = "ListResource"
 requires = ["ShowSeatRow"]
 cascade_state = true
+needs_confirmation = true
 prompts.initial = "Sæti {seats} eru í boði í röð {row}, hvaða sæti má bjóða þér?"
 prompts.options = "Sætin sem eru í boði í röð {row} eru {options}"
 prompts.confirm = "Þú valdir sæti {seats}, viltu halda áfram?"

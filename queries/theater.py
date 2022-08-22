@@ -90,76 +90,77 @@ def banned_nonterminals(q: Query) -> Set[str]:
     allowed due to the state of the dialogue
     """
     banned_nonterminals: set[str] = set()
-    if q.dsm.dialogue_name != DIALOGUE_NAME:
-        banned_nonterminals.add("QTheaterQuery")
-        return banned_nonterminals
-    resource: Resource = q.dsm.current_resource
-    if resource.name == "Show":
-        banned_nonterminals.update(
-            {
-                "QTheaterShowDateQuery",
-                "QTheaterMoreDates",
-                "QTheaterPreviousDates",
-                "QTheaterShowSeatCountQuery",
-                "QTheaterShowLocationQuery",
-                "QTheaterDateOptions",
-                "QTheaterRowOptions",
-                "QTheaterSeatOptions",
-            }
-        )
-        if resource.is_unfulfilled:
-            banned_nonterminals.update(
-                {
-                    "QTheaterShowLength",
-                    "QTheaterShowPrice",
-                }
-            )
-    elif resource.name == "ShowDateTime":
-        banned_nonterminals.update(
-            {
-                "QTheaterShowSeatCountQuery",
-                "QTheaterShowLocationQuery",
-                "QTheaterRowOptions",
-                "QTheaterSeatOptions",
-                "QTheaterShowOnlyName",
-            }
-        )
-    elif resource.name == "ShowSeatCount":
-        banned_nonterminals.update(
-            {
-                "QTheaterShowLocationQuery",
-                "QTheaterRowOptions",
-                "QTheaterSeatOptions",
-                "QTheaterRowNum",
-                "QTheaterShowSeatsNum",
-                "QTheaterShowOnlyName",
-            }
-        )
-    elif resource.name == "ShowSeatRow":
-        banned_nonterminals.update(
-            {
-                "QTheaterShowSeats",
-                "QTheaterSeatCountNum",
-                "QTheaterShowSeatsNum",
-                "QTheaterSeatOptions",
-                "QTheaterShowOnlyName",
-            }
-        )
-    elif resource.name == "ShowSeatNumber":
-        banned_nonterminals.update(
-            {
-                "QTheaterSeatCountNum",
-                "QTheaterRowNum",
-                "QTheaterShowOnlyName",
-            }
-        )
-    if resource.is_unfulfilled:
-        banned_nonterminals.update(
-            {
-                "QTheaterYes",
-                "QTheaterNo",
-            }
-        )
+    # TODO: Put this back in when the dsm has access to the active dialogue again.
+    # if q.dsm.dialogue_name != DIALOGUE_NAME:
+    #     banned_nonterminals.add("QTheaterQuery")
+    #     return banned_nonterminals
+    # resource: Resource = q.dsm.current_resource
+    # if resource.name == "Show":
+    #     banned_nonterminals.update(
+    #         {
+    #             "QTheaterShowDateQuery",
+    #             "QTheaterMoreDates",
+    #             "QTheaterPreviousDates",
+    #             "QTheaterShowSeatCountQuery",
+    #             "QTheaterShowLocationQuery",
+    #             "QTheaterDateOptions",
+    #             "QTheaterRowOptions",
+    #             "QTheaterSeatOptions",
+    #         }
+    #     )
+    #     if resource.is_unfulfilled:
+    #         banned_nonterminals.update(
+    #             {
+    #                 "QTheaterShowLength",
+    #                 "QTheaterShowPrice",
+    #             }
+    #         )
+    # elif resource.name == "ShowDateTime":
+    #     banned_nonterminals.update(
+    #         {
+    #             "QTheaterShowSeatCountQuery",
+    #             "QTheaterShowLocationQuery",
+    #             "QTheaterRowOptions",
+    #             "QTheaterSeatOptions",
+    #             "QTheaterShowOnlyName",
+    #         }
+    #     )
+    # elif resource.name == "ShowSeatCount":
+    #     banned_nonterminals.update(
+    #         {
+    #             "QTheaterShowLocationQuery",
+    #             "QTheaterRowOptions",
+    #             "QTheaterSeatOptions",
+    #             "QTheaterRowNum",
+    #             "QTheaterShowSeatsNum",
+    #             "QTheaterShowOnlyName",
+    #         }
+    #     )
+    # elif resource.name == "ShowSeatRow":
+    #     banned_nonterminals.update(
+    #         {
+    #             "QTheaterShowSeats",
+    #             "QTheaterSeatCountNum",
+    #             "QTheaterShowSeatsNum",
+    #             "QTheaterSeatOptions",
+    #             "QTheaterShowOnlyName",
+    #         }
+    #     )
+    # elif resource.name == "ShowSeatNumber":
+    #     banned_nonterminals.update(
+    #         {
+    #             "QTheaterSeatCountNum",
+    #             "QTheaterRowNum",
+    #             "QTheaterShowOnlyName",
+    #         }
+    #     )
+    # if resource.is_unfulfilled:
+    #     banned_nonterminals.update(
+    #         {
+    #             "QTheaterYes",
+    #             "QTheaterNo",
+    #         }
+    #     )
     return banned_nonterminals
 
 
@@ -596,7 +597,6 @@ def _add_date(
                         show_times.append(date.time())
         if len(show_times) == 0:
             dsm.set_answer(gen_answer(datetime_resource.prompts["no_date_matched"]))
-            # result.no_date_matched = True
             return
         if len(show_times) == 1:
             time_resource.set_time(show_times[0])
@@ -624,7 +624,7 @@ def _add_time(
                 if show["title"].lower() == show_title.lower():
                     for date in show["date"]:
                         if (
-                            date_resource.date == date.date()
+                            date_resource.data == date.date()
                             and result["show_time"] == date.time()
                         ):
                             first_matching_date = date
@@ -708,7 +708,6 @@ def QTheaterDate(node: Node, params: QueryStateDict, result: Result) -> None:
                 if m < now.month or (m == now.month and d < now.day):
                     y += 1
             result["show_date"] = datetime.date(day=d, month=m, year=y)
-
             dsm: DialogueStateManager = Query.get_dsm(result)
             _add_date(cast(DateResource, dsm.get_resource("ShowDate")), dsm, result)
             return

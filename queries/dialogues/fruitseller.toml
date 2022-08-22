@@ -3,6 +3,7 @@ expiration_time = 900 # 15 minutes
 [[resources]]
 name = "Fruits"
 type = "ListResource"
+needs_confirmation = true
 # TODO: Keep singular and plural forms of fruits (or options more generally) for formatting answer?
 prompts.initial = "Hvaða ávexti má bjóða þér?"
 prompts.options = "Ávextirnir sem eru í boði eru appelsínur, bananar, epli og perur."
@@ -24,6 +25,7 @@ requires = ["Fruits"]
 name = "DateTime"
 type = "WrapperResource"
 requires = ["Date", "Time"]
+needs_confirmation = true
 prompts.initial = "Hvenær viltu fá ávextina?"
 prompts.time_fulfilled = "Afhendingin verður klukkan {time}. Hvaða dagsetningu viltu fá ávextina?"
 prompts.date_fulfilled = "Afhendingin verður {date}. Klukkan hvað viltu fá ávextina?"

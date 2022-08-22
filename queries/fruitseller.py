@@ -52,19 +52,20 @@ def banned_nonterminals(q: Query) -> Set[str]:
     allowed due to the state of the dialogue
     """
     banned_nonterminals: set[str] = set()
-    if q.dsm.dialogue_name != DIALOGUE_NAME:
-        banned_nonterminals.add("QFruitSellerQuery")
-        return banned_nonterminals
-    resource: Resource = q.dsm.current_resource
-    if resource.name == "Fruits":
-        banned_nonterminals.add("QFruitDateQuery")
-        if resource.is_unfulfilled:
-            banned_nonterminals.add("QFruitYes")
-            banned_nonterminals.add("QFruitNo")
-    elif resource.name == "DateTime":
-        if resource.is_unfulfilled:
-            banned_nonterminals.add("QFruitYes")
-            banned_nonterminals.add("QFruitNo")
+    # TODO: Put this back in when the dsm has access to the active dialogue again.
+    # if q.dsm.dialogue_name != DIALOGUE_NAME:
+    #     banned_nonterminals.add("QFruitSellerQuery")
+    #     return banned_nonterminals
+    # resource: Resource = q.dsm.current_resource
+    # if resource.name == "Fruits":
+    #     banned_nonterminals.add("QFruitDateQuery")
+    #     if resource.is_unfulfilled:
+    #         banned_nonterminals.add("QFruitYes")
+    #         banned_nonterminals.add("QFruitNo")
+    # elif resource.name == "DateTime":
+    #     if resource.is_unfulfilled:
+    #         banned_nonterminals.add("QFruitYes")
+    #         banned_nonterminals.add("QFruitNo")
     return banned_nonterminals
 
 
