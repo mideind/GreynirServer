@@ -737,6 +737,33 @@ class QueryData(Base):
         )
 
 
+class DialogueData(Base):
+    """Represents dialogue data for a given client."""
+
+    __tablename__ = "dialoguedata"
+
+    __table_args__ = (PrimaryKeyConstraint("client_id", name="dialoguedata_pkey"),)
+
+    client_id = Column(String(256), nullable=False)
+
+    # Dialogue key to distinguish between different dialogues that can be stored
+    dialogue_key = Column(String(64), nullable=False)
+
+    # Created timestamp
+    created = Column(DateTime, nullable=False)
+
+    # Last modified timestamp
+    modified = Column(DateTime, nullable=False)
+
+    # JSON data
+    data = Column(JSONB, nullable=False)
+
+    def __repr__(self):
+        return "DialogueData(client_id='{0}', created='{1}', modified='{2}', dialogue_key='{3}', data='{4}')".format(
+            self.client_id, self.created, self.modified, self.dialogue_key, self.data
+        )
+
+
 class Feedback(Base):
     """Represents a feedback form submission."""
 
