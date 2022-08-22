@@ -66,6 +66,9 @@ class Resource:
     # When set to True, this resource will be used
     # as the current resource instead of its wrapper
     prefer_over_wrapper: bool = False
+    # When set to True, this resource will need
+    # to be confirmed before moving on to the next resource
+    needs_confirmation: bool = False
     # Used for comparing states (which one is earlier/later in the dialogue)
     order_index: int = 0
     # Extra variables to be used for specific situations

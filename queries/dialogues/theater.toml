@@ -72,4 +72,5 @@ prompts.final = "Þú bókaðir sæti {seats} í röð {row} fyrir sýninguna {s
 prompts.cancelled = "Móttekið, hætti við leikhús pöntunina."
 prompts.timed_out = "Leikhúsmiðapöntunin þín rann út á tíma. Vinsamlegast byrjaðu aftur."
 
+# TODO: Add needs_confirmation where appropriate
 # TODO: Add a resource for the payment method

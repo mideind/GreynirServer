@@ -489,6 +489,9 @@ class DialogueStateManager:
         resource = self._resources[resource_name]
         lowered_state = resource.state > state
         resource.state = state
+        if state == ResourceState.FULFILLED and not resource.needs_confirmation:
+            resource.state = ResourceState.CONFIRMED
+            return
         if resource.cascade_state and lowered_state:
             # Find all parent resources and set to corresponding state
             ancestors = set(self.get_ancestors(resource))

@@ -47,3 +47,5 @@ requires = ["DateTime"]
 prompts.final = "Pöntunin þín er {fruits} og verður afhent {date_time}."
 prompts.cancelled = "Móttekið, hætti við pöntunina."
 prompts.timed_out = "Ávaxtapöntunin þín rann út á tíma. Vinsamlegast byrjaðu aftur."
+
+# TODO: Add needs_confirmation where appropriate

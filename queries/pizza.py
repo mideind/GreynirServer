@@ -312,8 +312,8 @@ def QPizzaNumberAndSpecificationWrapper(
             crust_resource.data = crust
             dsm.set_resource_state(crust_resource.name, ResourceState.CONFIRMED)
         dsm.update_wrapper_state(pizza_resource)
-        if pizza_resource.state == ResourceState.FULFILLED:
-            dsm.set_resource_state(pizza_resource.name, ResourceState.CONFIRMED)
+        if pizza_resource.state == ResourceState.CONFIRMED:
+            # dsm.set_resource_state(pizza_resource.name, ResourceState.CONFIRMED)
             dsm.extras["confirmed_pizzas"] = dsm.extras.get("confirmed_pizzas", 0) + 1
             dsm.extras["added_pizzas"] = dsm.extras.get("added_pizzas", 0) + 1
         result["new_pizza"] = pizza_resource

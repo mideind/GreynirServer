@@ -2,6 +2,7 @@
 name = "PizzaOrder"
 type = "WrapperResource"
 #requires = ["Pizzas"]    #, "Sides", "Sauces", "Drinks"]
+needs_confirmation = true
 prompts.initial = "Hvað má bjóða þér?"
 prompts.added_pizzas = "{pizzas} var bætt við pöntunina. Pöntunin inniheldur {total_pizzas}. Var það eitthvað fleira?"
 prompts.confirmed_pizzas = "Var það eitthvað fleira?"
