@@ -742,7 +742,9 @@ class DialogueData(Base):
 
     __tablename__ = "dialoguedata"
 
-    __table_args__ = (PrimaryKeyConstraint("client_id", name="dialoguedata_pkey"),)
+    __table_args__ = (
+        PrimaryKeyConstraint("client_id", "dialogue_key", name="dialoguedata_pkey"),
+    )
 
     client_id = Column(String(256), nullable=False)
 
