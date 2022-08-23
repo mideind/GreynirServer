@@ -87,11 +87,11 @@ def banned_nonterminals(q: Query) -> Set[str]:
     """
     # TODO: Implement this
     banned_nonterminals: set[str] = set()
-    # if q.dsm.dialogue_name != DIALOGUE_NAME:
-    #     print("Not in pizza dialogue, BANNING QPizzaQuery")
-    #     banned_nonterminals.add("QPizzaQuery")
-    #     print("Banned nonterminals: ", banned_nonterminals)
-    #     return banned_nonterminals
+    if q.active_dialogue != DIALOGUE_NAME:
+        print("Not in pizza dialogue, BANNING QPizzaQuery")
+        banned_nonterminals.add("QPizzaQuery")
+        print("Banned nonterminals: ", banned_nonterminals)
+        return banned_nonterminals
     return banned_nonterminals
 
 
