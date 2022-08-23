@@ -91,76 +91,76 @@ def banned_nonterminals(q: Query) -> Set[str]:
     """
     banned_nonterminals: set[str] = set()
     # TODO: Put this back in when the dsm has access to the active dialogue again.
-    # if q.dsm.dialogue_name != DIALOGUE_NAME:
-    #     banned_nonterminals.add("QTheaterQuery")
-    #     return banned_nonterminals
-    # resource: Resource = q.dsm.current_resource
-    # if resource.name == "Show":
-    #     banned_nonterminals.update(
-    #         {
-    #             "QTheaterShowDateQuery",
-    #             "QTheaterMoreDates",
-    #             "QTheaterPreviousDates",
-    #             "QTheaterShowSeatCountQuery",
-    #             "QTheaterShowLocationQuery",
-    #             "QTheaterDateOptions",
-    #             "QTheaterRowOptions",
-    #             "QTheaterSeatOptions",
-    #         }
-    #     )
-    #     if resource.is_unfulfilled:
-    #         banned_nonterminals.update(
-    #             {
-    #                 "QTheaterShowLength",
-    #                 "QTheaterShowPrice",
-    #             }
-    #         )
-    # elif resource.name == "ShowDateTime":
-    #     banned_nonterminals.update(
-    #         {
-    #             "QTheaterShowSeatCountQuery",
-    #             "QTheaterShowLocationQuery",
-    #             "QTheaterRowOptions",
-    #             "QTheaterSeatOptions",
-    #             "QTheaterShowOnlyName",
-    #         }
-    #     )
-    # elif resource.name == "ShowSeatCount":
-    #     banned_nonterminals.update(
-    #         {
-    #             "QTheaterShowLocationQuery",
-    #             "QTheaterRowOptions",
-    #             "QTheaterSeatOptions",
-    #             "QTheaterRowNum",
-    #             "QTheaterShowSeatsNum",
-    #             "QTheaterShowOnlyName",
-    #         }
-    #     )
-    # elif resource.name == "ShowSeatRow":
-    #     banned_nonterminals.update(
-    #         {
-    #             "QTheaterShowSeats",
-    #             "QTheaterSeatCountNum",
-    #             "QTheaterShowSeatsNum",
-    #             "QTheaterSeatOptions",
-    #             "QTheaterShowOnlyName",
-    #         }
-    #     )
-    # elif resource.name == "ShowSeatNumber":
-    #     banned_nonterminals.update(
-    #         {
-    #             "QTheaterSeatCountNum",
-    #             "QTheaterRowNum",
-    #             "QTheaterShowOnlyName",
-    #         }
-    #     )
-    # if resource.is_unfulfilled:
-    #     banned_nonterminals.update(
-    #         {
-    #             "QTheaterYes",
-    #             "QTheaterNo",
-    #         }
-    #     )
+    if q.active_dialogue != DIALOGUE_NAME:
+        banned_nonterminals.add("QTheaterQuery")
+        return banned_nonterminals
+    resource: Resource = q.dsm.current_resource
+    if resource.name == "Show":
+        banned_nonterminals.update(
+            {
+                "QTheaterShowDateQuery",
+                "QTheaterMoreDates",
+                "QTheaterPreviousDates",
+                "QTheaterShowSeatCountQuery",
+                "QTheaterShowLocationQuery",
+                "QTheaterDateOptions",
+                "QTheaterRowOptions",
+                "QTheaterSeatOptions",
+            }
+        )
+        if resource.is_unfulfilled:
+            banned_nonterminals.update(
+                {
+                    "QTheaterShowLength",
+                    "QTheaterShowPrice",
+                }
+            )
+    elif resource.name == "ShowDateTime":
+        banned_nonterminals.update(
+            {
+                "QTheaterShowSeatCountQuery",
+                "QTheaterShowLocationQuery",
+                "QTheaterRowOptions",
+                "QTheaterSeatOptions",
+                "QTheaterShowOnlyName",
+            }
+        )
+    elif resource.name == "ShowSeatCount":
+        banned_nonterminals.update(
+            {
+                "QTheaterShowLocationQuery",
+                "QTheaterRowOptions",
+                "QTheaterSeatOptions",
+                "QTheaterRowNum",
+                "QTheaterShowSeatsNum",
+                "QTheaterShowOnlyName",
+            }
+        )
+    elif resource.name == "ShowSeatRow":
+        banned_nonterminals.update(
+            {
+                "QTheaterShowSeats",
+                "QTheaterSeatCountNum",
+                "QTheaterShowSeatsNum",
+                "QTheaterSeatOptions",
+                "QTheaterShowOnlyName",
+            }
+        )
+    elif resource.name == "ShowSeatNumber":
+        banned_nonterminals.update(
+            {
+                "QTheaterSeatCountNum",
+                "QTheaterRowNum",
+                "QTheaterShowOnlyName",
+            }
+        )
+    if resource.is_unfulfilled:
+        banned_nonterminals.update(
+            {
+                "QTheaterYes",
+                "QTheaterNo",
+            }
+        )
     return banned_nonterminals
 
 
