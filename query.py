@@ -736,7 +736,7 @@ class Query:
                     if not self._tree.query_nonterminals.isdisjoint(
                         hotword_nonterminals
                     ):
-                        print("HOTWORDS MATCHED")
+                        print("HOTWORDS MATCHED: ", dialogue_name)
                         # Query's parse forest contains hotwords
                         # set this as the active dialogue
                         self._active_dialogue = dialogue_name
@@ -747,6 +747,8 @@ class Query:
                         self._dsm = DSM(self._dialogue_data)
                     # Query matches this dialogue processor, start DialogueStateManager
                     self.dsm.load_dialogue(dialogue_name)
+                    print("DIALOGUE LOADED: ", dialogue_name)
+                    print("DSM DATA: ", self._dialogue_data)
                     if self.dsm.timed_out:
                         # TODO: If the DialogueStateManager timed out,
                         # set active_dialogue to the last active dialogue
@@ -1236,14 +1238,21 @@ class Query:
                         update_in_place=True,
                     )
                 else:
+                    print("In else with dialogue key: {0}".format(dialogue_key))
                     if data.get(dialogue_key) is None:
-                        # Delete the row
+                        # Data is empty, delete the row
                         session.delete(row)
                         # Update the active dialogue in the query data
                         Query.update_active_dialogue_data(
                             client_id=client_id, old_dialogue_key=dialogue_key
                         )
                         return True
+                    Query.store_query_data(
+                        client_id=client_id,
+                        key=DSM.DIALOGUE_DATA_KEY,
+                        data={"active_dialogue": dialogue_key},
+                        update_in_place=True,
+                    )
                     if update_in_place:
                         stored_data = deepcopy(row.data)
                         data = _merge_two_dicts(stored_data, data)
