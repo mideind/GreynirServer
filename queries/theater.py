@@ -1078,6 +1078,7 @@ QTheaterShowSeatsNum = QTheaterNum
 def QTheaterCancel(node: Node, params: QueryStateDict, result: Result):
     dsm: DialogueStateManager = Query.get_dsm(result)
     dsm.set_resource_state("Final", ResourceState.CANCELLED)
+    dsm.set_answer(gen_answer(dsm.get_resource("Final").prompts["cancelled"]))
     dsm.finish_dialogue()
 
     result.qtype = "QTheaterCancel"
