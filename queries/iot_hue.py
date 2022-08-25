@@ -36,17 +36,14 @@
 # TODO: Add functionality for robot-like commands "ljós í eldhúsinu", "rauður í eldhúsinu"
 # TODO: Heldur að 'gerðu ljósið kaldara' sé senan 'köld'
 
-from typing import Dict, Mapping, Optional, cast, FrozenSet
+from typing import Dict, List, Optional, cast, FrozenSet
 from typing_extensions import TypedDict
 
 import logging
 import random
 import json
-import flask
 
-from reynir.lemmatize import simple_lemmatize
-
-from query import Query, QueryStateDict, AnswerTuple
+from query import Query, QueryStateDict
 from queries import gen_answer, read_jsfile, read_grammar_file
 from tree import Result, Node, TerminalNode
 
@@ -91,29 +88,25 @@ def help_text(lemma: str) -> str:
     )
 
 
-_COLORS = {
-    "gulur": 60 * 65535 / 360,
-    "rauður": 360 * 65535 / 360,
-    "grænn": 120 * 65535 / 360,
-    "blár": 240 * 65535 / 360,
-    "ljósblár": 180 * 65535 / 360,
-    "bleikur": 300 * 65535 / 360,
-    "hvítur": [],
-    "fjólublár": [],
-    "brúnn": [],
-    "appelsínugulur": [],
-}
-
-
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
 
 # The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = {"QIoT"}
 
-# The context-free grammar for the queries recognized by this plug-in module
-# GRAMMAR = read_grammar_file("iot_hue")
+_COLORS: Dict[str, List[float]] = {
+    "appelsínugulur": [0.6195, 0.3624],
+    "bleikur": [0.4443, 0.2006],
+    "blár": [0.1545, 0.0981],
+    "fjólublár": [0.2291, 0.0843],
+    "grænn": [0.2458, 0.6431],
+    "gulur": [0.4833, 0.4647],
+    "hvítur": [0.3085, 0.3275],
+    "ljósblár": [0.1581, 0.2395],
+    "rauður": [0.7, 0.3],
+}
 
+# The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = read_grammar_file(
     "iot_hue", color_names=" | ".join(f"'{color}:lo'" for color in _COLORS.keys())
 )
@@ -158,9 +151,9 @@ def QIoTNewColor(node: Node, params: QueryStateDict, result: Result) -> None:
     print(color_hue)
     if color_hue is not None:
         if "hue_obj" not in result:
-            result["hue_obj"] = {"on": True, "hue": int(color_hue)}
+            result["hue_obj"] = {"on": True, "xy": color_hue}
         else:
-            result["hue_obj"]["hue"] = int(color_hue)
+            result["hue_obj"]["xy"] = color_hue
             result["hue_obj"]["on"] = True
 
 
@@ -271,18 +264,6 @@ def QIoTSpeakerHotwords(node: Node, params: QueryStateDict, result: Result) -> N
     result.abort = True
 
 
-# Convert color name into hue
-# Taken from home.py
-_COLOR_NAME_TO_CIE: Mapping[str, float] = {
-    "gulur": 60 * 65535 / 360,
-    "grænn": 120 * 65535 / 360,
-    "ljósblár": 180 * 65535 / 360,
-    "blár": 240 * 65535 / 360,
-    "bleikur": 300 * 65535 / 360,
-    "rauður": 360 * 65535 / 360,
-    # "Rauð": 360 * 65535 / 360,
-}
-
 _SPEAKER_WORDS: FrozenSet[str] = frozenset(
     (
         "tónlist",
@@ -339,7 +320,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         i[0].root(state, result.params)
         for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))
     )
-    if not _SPEAKER_WORDS.isdisjoint(lemmas):
+    if not lemmas.isdisjoint(_SPEAKER_WORDS):
         print("matched with music word list")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
@@ -403,16 +384,9 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         print("COLOR NAME:", color_name)
         print(result.hue_obj)
         q.set_answer(
-            *gen_answer(
-                "ég var að kveikja ljósin! "
-                # + group_name
-                # + " "
-                # + color_name
-                # + " "
-                # + result.action
-                # + " "
-                # + str(result.hue_obj.get("hue", "enginn litur"))
-            )
+            {"answer": "Skal gert."},
+            "Skal gert.",
+            '<break time="2s"/>',
         )
         js = (
             read_jsfile("IoT_Embla/fuse.js")
@@ -421,7 +395,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             + read_jsfile("IoT_Embla/Philips_Hue/lights.js")
             + read_jsfile("IoT_Embla/Philips_Hue/set_lights.js")
         )
-        js += f"setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
+        js += f"return setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
         q.set_command(js)
     except Exception as e:
         logging.warning("Exception while processing random query: {0}".format(e))

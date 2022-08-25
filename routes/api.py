@@ -22,7 +22,8 @@
 
 """
 
-from typing import Dict, Any, List, Optional, TypedDict, cast
+from typing import Dict, Any, List, Optional, cast
+from typing_extensions import TypedDict
 
 from datetime import datetime
 import logging

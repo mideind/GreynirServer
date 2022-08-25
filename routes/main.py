@@ -21,7 +21,8 @@
 
 """
 
-from typing import Dict, Any, List, Optional, Sequence, Tuple, TypedDict, Union, cast
+from typing import Dict, Any, List, Optional, Sequence, Tuple, Union, cast
+from typing_extensions import TypedDict
 
 import platform
 import os.path
