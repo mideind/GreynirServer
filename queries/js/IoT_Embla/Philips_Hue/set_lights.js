@@ -62,7 +62,6 @@ function setLights(target, state) {
             });
         }
     });
-    return "Ég var að kveikja ljósin.";
 }
 //         fetch(`http://${BRIDGE_IP}/api/${USERNAME}/${url}`, {
 //             method: "PUT",
@@ -100,7 +99,7 @@ function call_api(url, state) {
  * @param {Object} allGroups - an object of all groups from the API
  */
 function getTargetObject(target, allLights, allGroups) {
-    let targetObject, selection, url;
+    let targetObject;
     let lightsResult = philipsFuzzySearch(target, allLights);
     let groupsResult = philipsFuzzySearch(target, allGroups);
 
@@ -149,32 +148,31 @@ function getSceneID(scene_name, allScenes) {
         return;
     }
 }
+// TODO: Remove me
+// /* Tester function for setting lights directly from HTML controls */
+// function setLightsFromHTML() {
+//     let target = document.getElementById("queryInput").value;
+//     let stateObject = new Object();
+//     stateObject.bri_inc = Number(document.getElementById("brightnessInput").value);
+//     stateObject = JSON.stringify(stateObject);
+//     return setLights(target, stateObject);
+// }
 
-/* Tester function for setting lights directly from HTML controls */
-function setLightsFromHTML() {
-    let target = document.getElementById("queryInput").value;
-    let stateObject = new Object();
-    stateObject.bri_inc = Number(
-        document.getElementById("brightnessInput").value
-    );
-    stateObject = JSON.stringify(stateObject);
-    setLights(target, stateObject);
-}
+// /* Tester function for setting lights directly from HTML input fields */
+// function queryTestFromHTML() {
+//     let target = document.getElementById("queryInput").value;
+//     let bool = document.getElementById("boolInput").value;
+//     let scene = document.getElementById("sceneInput").value;
+//     console.log(target);
+//     if (scene === "") {
+//         setLights(target, `{"on": ${bool}}`);
+//     } else {
+//         setLights(target, `{"scene": "${scene}"}`);
+//     }
+// }
 
-/* Tester function for setting lights directly from HTML input fields */
-function queryTestFromHTML() {
-    let target = document.getElementById("queryInput").value;
-    let bool = document.getElementById("boolInput").value;
-    let scene = document.getElementById("sceneInput").value;
-    console.log(target);
-    if (scene === "") {
-        setLights(target, `{"on": ${bool}}`);
-    } else {
-        setLights(target, `{"scene": "${scene}"}`);
-    }
-}
-
-function check_if_if_ikea_bulb_in_group(groupsObject, all_lights) {
+// TODO: Add docstring
+function check_if_ikea_bulb_in_group(groupsObject, all_lights) {
     for (let key in groupsObject.lights) {
         let lightID = groupsObject.lights[key];
         let light = all_lights[lightID];
@@ -189,6 +187,83 @@ function check_if_if_ikea_bulb_in_group(groupsObject, all_lights) {
             return true;
         }
     }
+}
+
+/** Gets a target for the given query and sets the state of the target to the given state using a fetch request.
+ *  @param {String} target - the target to find the target e.g. "eldhús" or "lampi"
+ *  @param {String} state - the state to set the target to e.g. "{"on": true}" or "{"scene": "energize"}"
+ */
+async function setLights(target, state) {
+    let parsedState = JSON.parse(state);
+    let promiseList = [getAllGroups(), getAllLights()];
+    let sceneName;
+    if (parsedState.scene) {
+        sceneName = parsedState.scene;
+        promiseList.push(getAllScenes());
+    }
+    // Get all lights and all groups from the API (and all scenes if "scene" was a paramater)
+    return await Promise.allSettled(promiseList).then((resolvedPromises) => {
+        let allGroups = resolvedPromises[0].value;
+        let allLights = resolvedPromises[1].value;
+        let allScenes;
+        try {
+            allScenes = resolvedPromises[2].value;
+        } catch (e) {
+            console.log("No scene in state");
+        }
+
+        // Get the target object for the given target
+        let targetObject = getTargetObject(target, allLights, allGroups);
+        if (targetObject === undefined) {
+            return "Ekki tókst að finna ljós";
+        }
+
+        // Check if state includes a scene or a brightness change
+        if (sceneName) {
+            let sceneID = getSceneID(parsedState.scene, allScenes);
+            if (sceneID === undefined) {
+                return "Ekki tókst að finna senu";
+            }
+            parsedState.scene = sceneID; // Change the scene parameter to the scene ID
+            state = JSON.stringify(parsedState);
+        } else if (parsedState.bri_inc) {
+            state = JSON.stringify(parsedState);
+        }
+
+        // Send data to API
+        let url = targetObject.url;
+        call_api(url, state);
+
+        let isTradfriBulb = check_if_ikea_bulb_in_group(
+            targetObject,
+            allLights
+        );
+        if (sceneName && isTradfriBulb) {
+            let sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+            sleep(450).then(() => {
+                call_api(url, state);
+            });
+        }
+        if (parsedState.scene) {
+            return "Ég breytti um senu.";
+        }
+        if (parsedState.on == false) {
+            return "Ég slökkti ljósin.";
+        }
+        if (parsedState.on == true && Object.keys(parsedState).length == 1) {
+            return "Ég kveikti ljósin.";
+        }
+        if (parsedState.bri_inc && parsedState.bri_inc > 0) {
+            return "Ég hækkaði birtuna.";
+        }
+        if (parsedState.bri_inc && parsedState.bri_inc < 0) {
+            return "Ég minnkaði birtuna.";
+        }
+        if (parsedState.xy || parsedState.hue) {
+            return "Ég breytti lit ljóssins.";
+        }
+        return "Stillingu hefur verið breytt.";
+    });
 }
 
 // /** Finds a matching light or group and returns an object with the ID, name and url for the target

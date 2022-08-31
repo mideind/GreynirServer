@@ -9,7 +9,7 @@ QIoT →
     QIoTQuery
 
 QIoTQuery ->
-    QIoTMakeVerb QIoTMakeRest
+    QIoTMakeVerb? QIoTMakeRest
     | QIoTSetVerb QIoTSetRest
     | QIoTChangeVerb QIoTChangeRest
     | QIoTLetVerb QIoTLetRest
@@ -197,6 +197,8 @@ QIoTLightName/fall ->
 
 QIoTColorName ->
     {color_names}
+
+$score(+100) QIoTColorName
 
 QIoTSceneName ->
     # QIoTLightsBanwords/fall
