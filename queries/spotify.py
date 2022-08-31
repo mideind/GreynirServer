@@ -123,7 +123,7 @@ class SpotifyClient:
         )
         return cred_dict
 
-    def _store_data(self, data: Dict) -> None:
+    def _store_data(self, data: Dict[str, str]) -> None:
         new_dict = {"iot_streaming": {"spotify": data}}
         Query.store_query_data(self._client_id, "iot", new_dict, update_in_place=True)
 
@@ -134,7 +134,7 @@ class SpotifyClient:
         spotify_dict["credentials"] = cred_dict
         self._store_data(spotify_dict)
 
-    def _create_cred_dict(self) -> Dict[str, str, str]:
+    def _create_cred_dict(self) -> Dict[str, str]:
         print("_create_spotify_cred_dict")
         cred_dict = {}
         cred_dict.update(
@@ -268,16 +268,16 @@ class SpotifyClient:
         print(response)
         return response
 
-    def _get_devices(self) -> Dict:
-        print("get devices")
-        print("accesss token get devices; ", self._access_token)
-        url = f"{self._api_url}/me/player/devices"
+    # def _get_devices(self) -> Dict[str, str]:
+    #     print("get devices")
+    #     print("accesss token get devices; ", self._access_token)
+    #     url = f"{self._api_url}/me/player/devices"
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self._access_token}",
-        }
+    #     headers = {
+    #         "Content-Type": "application/json",
+    #         "Authorization": f"Bearer {self._access_token}",
+    #     }
 
-        response = query_json_api(url, headers)
-        print("devices: ", response)
-        return response.get("devices")
+    #     response = query_json_api(url, headers)
+    #     print("devices: ", response)
+    #     return response.get("devices")

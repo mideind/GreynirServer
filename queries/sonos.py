@@ -91,8 +91,8 @@ class SonosClient:
         self,
         device_data: Dict[str, str],
         client_id: str,
-        group_name=None,
-        radio_name=None,
+        group_name: str = None,
+        radio_name: str = None,
     ):
         self._client_id = client_id
         self._device_data = device_data
@@ -196,7 +196,7 @@ class SonosClient:
         self._timestamp = str(datetime.now())
         return response
 
-    def _get_households(self) -> Dict:
+    def _get_households(self) -> Dict[str, str]:
         """
         Returns the list of households of the user
         """
@@ -221,7 +221,7 @@ class SonosClient:
         response = query_json_api(url, headers)
         return response["households"][0]["id"]
 
-    def _get_groups(self) -> Dict:
+    def _get_groups(self) -> Dict[str, str]:
         """
         Returns the list of groups of the user
         """
@@ -252,7 +252,6 @@ class SonosClient:
             else:
                 print("GROUP NAME IS NONE")
                 if len(self._groups) == 1:
-
                     print("LEN 1")
                     group_name = iter(self._groups[0])
                     return self._groups[0][group_name]
@@ -267,7 +266,7 @@ class SonosClient:
             response = query_json_api(url, headers)
             return response["groups"][0]["id"]
 
-    def _translate_group_name(self):
+    def _translate_group_name(self) -> str:
         """
         Translates the group name to the correct group name
         """
@@ -279,7 +278,7 @@ class SonosClient:
         except (KeyError, TypeError):
             return self._group_name
 
-    def _get_players(self) -> Dict:
+    def _get_players(self) -> Dict[str, str]:
         """
         Returns the list of groups of the user
         """
@@ -311,7 +310,7 @@ class SonosClient:
 
             return response["players"][0]["id"]
 
-    def _create_data_dict(self) -> Dict:
+    def _create_data_dict(self) -> Dict[str, str]:
         print("_create_data_dict")
         data_dict = {"households": self._households}
         for i in range(len(self._households)):
@@ -322,7 +321,7 @@ class SonosClient:
         data_dict["players"] = players_dict
         return data_dict
 
-    def _create_cred_dict(self) -> Dict:
+    def _create_cred_dict(self) -> Dict[str, str]:
         print("_create_cred_dict")
         cred_dict = {}
         cred_dict.update(
@@ -345,14 +344,14 @@ class SonosClient:
         new_dict = {"iot_speakers": data}
         Query.store_query_data(self._client_id, "iot", new_dict, update_in_place=True)
 
-    def _create_groupdict_for_db(self, groups: list) -> Dict:
+    def _create_groupdict_for_db(self, groups: list) -> Dict[str, str]:
         print("create_groupdict_for_db")
         groups_dict = {}
         for i in range(len(groups)):
             groups_dict[groups[i]["name"].casefold()] = groups[i]["id"]
         return groups_dict
 
-    def _create_playerdict_for_db(self, players: list) -> Dict:
+    def _create_playerdict_for_db(self, players: list) -> Dict[str, str]:
         print("create_playerdict_for_db")
         players_dict = {}
         for i in range(len(players)):
