@@ -958,9 +958,9 @@ class Query:
                     if update_in_place:
                         print("update in place")
                         stored_data = deepcopy(row.data)
-                        print("stored data: ", stored_data)
+                        # print("stored data: ", stored_data)
                         data = merge_two_dicts(stored_data, data)
-                        print("merged data :", data)
+                        # print("merged data :", data)
                     # Already present: update
                     row.data = data  # type: ignore
                     row.modified = now  # type: ignore

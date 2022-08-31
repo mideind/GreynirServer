@@ -1,6 +1,83 @@
 "use strict";
 
-async function call_api(url, state) {
+// Constants to be used when setting lights from HTML
+// var BRIDGE_IP = "192.168.1.68";
+// var USERNAME = "BzdNyxr6mGSHVdQN86UeZP67qp5huJ2Q6TWyTzvz";
+
+// TODO: Implement a hotfix for Ikea Tradfri bulbs, since it can only take one argument at a time
+
+/** Gets a target for the given query and sets the state of the target to the given state using a fetch request.
+ *  @param {String} target - the target to find the target e.g. "eldhús" or "lampi"
+ *  @param {String} state - the state to set the target to e.g. "{"on": true}" or "{"scene": "energize"}"
+ */
+function setLights(target, state) {
+    let parsedState = JSON.parse(state);
+    let promiseList = [getAllGroups(), getAllLights()];
+    let sceneName;
+    if (parsedState.scene) {
+        sceneName = parsedState.scene;
+        promiseList.push(getAllScenes());
+    }
+    // Get all lights and all groups from the API (and all scenes if "scene" was a paramater)
+    Promise.allSettled(promiseList).then((resolvedPromises) => {
+        let allGroups = resolvedPromises[0].value;
+        let allLights = resolvedPromises[1].value;
+        let allScenes;
+        try {
+            allScenes = resolvedPromises[2].value;
+        } catch (e) {
+            console.log("No scene in state");
+        }
+
+        // Get the target object for the given target
+        let targetObject = getTargetObject(target, allLights, allGroups);
+        if (targetObject === undefined) {
+            return "Ekki tókst að finna ljós";
+        }
+
+        // Check if state includes a scene or a brightness change
+        if (sceneName) {
+            let sceneID = getSceneID(parsedState.scene, allScenes);
+            if (sceneID === undefined) {
+                return "Ekki tókst að finna senu";
+            } else {
+                parsedState.scene = sceneID; // Change the scene parameter to the scene ID
+                state = JSON.stringify(parsedState);
+            }
+        } else if (parsedState.bri_inc) {
+            state = JSON.stringify(parsedState);
+        }
+
+        // Send data to API
+        let url = targetObject.url;
+        call_api(url, state);
+        let isTradfriBulb = check_if_if_ikea_bulb_in_group(
+            targetObject,
+            allLights
+        );
+        if (sceneName && isTradfriBulb) {
+            const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+            sleep(450).then(() => {
+                call_api(url, state);
+            });
+        }
+    });
+}
+//         fetch(`http://${BRIDGE_IP}/api/${USERNAME}/${url}`, {
+//             method: "PUT",
+//             body: state,
+//         })
+//             .then((resp) => resp.json())
+//             .then((obj) => {
+//                 console.log(obj);
+//             })
+//             .catch((err) => {
+//                 console.log("an error occurred!");
+//             });
+//     });
+// }
+
+function call_api(url, state) {
     console.log("call api");
     fetch(`http://${BRIDGE_IP}/api/${USERNAME}/${url}`, {
         method: "PUT",
@@ -157,7 +234,10 @@ async function setLights(target, state) {
         let url = targetObject.url;
         call_api(url, state);
 
-        let isTradfriBulb = check_if_ikea_bulb_in_group(targetObject, allLights);
+        let isTradfriBulb = check_if_ikea_bulb_in_group(
+            targetObject,
+            allLights
+        );
         if (sceneName && isTradfriBulb) {
             let sleep = (ms) => new Promise((r) => setTimeout(r, ms));
             sleep(450).then(() => {

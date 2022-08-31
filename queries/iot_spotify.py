@@ -47,10 +47,12 @@ def help_text(lemma: str) -> str:
 # The context-free grammar for the queries recognized by this plug-in module
 
 _SPOTIFY_REGEXES = [
-    r"^spilaðu ([\w|\s]+) með ([\w|\s]+)$",
     # r"^spilaðu ([\w|\s]+) með ([\w|\s]+) á spotify?$",
-    r"^spilaðu ([\w|\s]+) á spotify$",
-    r"^spilaðu ([\w|\s]+) á spotify",
+    # r"^spilaðu ([\w|\s]+) á spotify$",
+    # r"^spilaðu ([\w|\s]+) á spotify",
+    r"^spilaðu plötuna ([\w|\s]+) með ([\w|\s]+)$",
+    r"^spilaðu ([\w|\s]+) með ([\w|\s]+)$",
+    # r"^spilaðu plötuna ([\w|\s]+)$ með ([\w|\s]+)$ á spotify$",
 ]
 
 
@@ -74,17 +76,30 @@ def handle_plain_text(q) -> bool:
             artist_name = m.group(2).strip()
             print("SONG NAME :", song_name)
             print("ARTIST NAME :", artist_name)
-            device_data = q.client_data("iot").get("iot_streaming").get("spotify")
+            try:
+                device_data = q.client_data("iot")["iot_streaming"]["spotify"]
+            except AttributeError:
+                device_data = None
+            if "plötuna" in ql:
+                album_name = m.group(1)
+            else:
+                album_name = None
             if device_data is not None:
                 client_id = str(q.client_id)
                 spotify_client = SpotifyClient(
                     device_data,
                     client_id,
-                    song_name=song_name,
+                    song_name=song_name or None,
                     artist_name=artist_name,
+                    album_name=album_name or None,
                 )
-                song_url = spotify_client.get_song_by_artist()
-                response = spotify_client.play_song_on_device()
+                if album_name != None:
+                    song_url = spotify_client.get_album_by_artist()
+                    song_url = spotify_client.get_first_track_on_album()
+                    response = spotify_client.play_song_on_device()
+                else:
+                    song_url = spotify_client.get_song_by_artist()
+                    response = spotify_client.play_song_on_device()
                 # response = None
                 print("RESPONSE FROM SPOTIFY:", response)
                 answer = "Ég spilaði lagið"
