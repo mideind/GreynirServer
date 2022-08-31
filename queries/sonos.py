@@ -1,3 +1,16 @@
+from typing import Dict, Optional, Union, List, Any
+from inspect import getargs
+import requests
+from datetime import datetime, timedelta
+import flask
+import random
+
+from util import read_api_key
+from queries import query_json_api, post_to_json_api
+from query import Query
+
+import json
+
 """
 
     Greynir: Natural language processing for Icelandic
@@ -69,20 +82,10 @@ _GROUPS_DICT = {
 }
 
 
-from inspect import getargs
-import requests
-from datetime import datetime, timedelta
-import flask
-import random
-
-from util import read_api_key
-from queries import query_json_api, post_to_json_api
-from query import Query
-from typing import Dict
-
-import json
-
 # TODO - Decide what should happen if user does not designate a speaker but owns multiple speakers
+# TODO - Remove debug print statements
+# TODO - Testing and proper error handling
+# TODO - Implement a cleaner create_or_join_session function that doesn't rely on recursion
 class SonosClient:
     def __init__(
         self,
@@ -127,7 +130,7 @@ class SonosClient:
     ------------------------------------- PRIVATE METHODS --------------------------------------------------------------------------------
     """
 
-    def _check_token_expiration(self):
+    def _check_token_expiration(self) -> None:
         """
         Checks if access token is expired, and calls a function to refresh it if necessary.
         """
@@ -140,7 +143,7 @@ class SonosClient:
         if (datetime.now() - timestamp) > timedelta(hours=24):
             self._update_sonos_token()
 
-    def _update_sonos_token(self):
+    def _update_sonos_token(self) -> None:
         """
         Updates the access token
         """
@@ -158,7 +161,7 @@ class SonosClient:
 
         self._store_data(sonos_dict)
 
-    def _refresh_expired_token(self):
+    def _refresh_expired_token(self) -> Union[None, List[Any], Dict[str, Any]]:
         """
         Helper function for updating the access token.
         """
@@ -173,7 +176,7 @@ class SonosClient:
 
         return response
 
-    def _create_token(self):
+    def _create_token(self) -> Union[None, List[Any], Dict[str, Any]]:
         """
         Creates a token given a code
         """
@@ -193,21 +196,18 @@ class SonosClient:
         self._timestamp = str(datetime.now())
         return response
 
-    def _get_households(self):
+    def _get_households(self) -> Dict:
         """
         Returns the list of households of the user
         """
         print("get households")
-        # try:
-        #     return self._device_data["sonos"]["data"]["households"]
-        # except (KeyError, TypeError):
         url = f"https://api.ws.sonos.com/control/api/v1/households"
         headers = {"Authorization": f"Bearer {self._access_token}"}
 
         response = query_json_api(url, headers=headers)
         return response["households"]
 
-    def _get_household_id(self):
+    def _get_household_id(self) -> str:
         """
         Returns the household id for the given query
         """
@@ -221,14 +221,11 @@ class SonosClient:
         response = query_json_api(url, headers)
         return response["households"][0]["id"]
 
-    def _get_groups(self):
+    def _get_groups(self) -> Dict:
         """
         Returns the list of groups of the user
         """
         print("get groups")
-        # try:
-        #     return self._device_data["sonos"]["data"]["groups"]
-        # except (KeyError, TypeError):
         for i in range(len(self._households)):
             url = f"https://api.ws.sonos.com/control/api/v1/households/{self._household_id}/groups"
             headers = {"Authorization": f"Bearer {self._access_token}"}
@@ -237,7 +234,7 @@ class SonosClient:
             cleaned_groups_dict = self._create_groupdict_for_db(response["groups"])
         return cleaned_groups_dict
 
-    def _get_group_id(self):
+    def _get_group_id(self) -> str:
         """
         Returns the group id for the given query
         """
@@ -282,15 +279,11 @@ class SonosClient:
         except (KeyError, TypeError):
             return self._group_name
 
-    def _get_players(self):
+    def _get_players(self) -> Dict:
         """
         Returns the list of groups of the user
         """
         print("get players")
-        # try:
-        #     return self._device_data["sonos"]["data"]["players"]
-        # except (KeyError, TypeError):
-        print("keyerror")
         for i in range(len(self._households)):
             url = f"https://api.ws.sonos.com/control/api/v1/households/{self._household_id}/groups"
             headers = {"Authorization": f"Bearer {self._access_token}"}
@@ -299,7 +292,7 @@ class SonosClient:
             cleaned_players_dict = self._create_playerdict_for_db(response["players"])
             return cleaned_players_dict
 
-    def _get_player_id(self):
+    def _get_player_id(self) -> str:
         """
         Returns the player id for the given query
         """
@@ -318,7 +311,7 @@ class SonosClient:
 
             return response["players"][0]["id"]
 
-    def _create_data_dict(self):
+    def _create_data_dict(self) -> Dict:
         print("_create_data_dict")
         data_dict = {"households": self._households}
         for i in range(len(self._households)):
@@ -329,7 +322,7 @@ class SonosClient:
         data_dict["players"] = players_dict
         return data_dict
 
-    def _create_cred_dict(self):
+    def _create_cred_dict(self) -> Dict:
         print("_create_cred_dict")
         cred_dict = {}
         cred_dict.update(
@@ -341,35 +334,33 @@ class SonosClient:
         )
         return cred_dict
 
-    def _store_data_and_credentials(self):
+    def _store_data_and_credentials(self) -> None:
         print("_store_data_and_credentials")
-        # data_dict = self._create_data_dict()
         cred_dict = self._create_cred_dict()
         sonos_dict = {}
         sonos_dict["sonos"] = {"credentials": cred_dict}
         self._store_data(sonos_dict)
 
-    def _store_data(self, data):
+    def _store_data(self, data: Dict) -> None:
         new_dict = {"iot_speakers": data}
         Query.store_query_data(self._client_id, "iot", new_dict, update_in_place=True)
 
-    def _create_groupdict_for_db(self, groups: list):
+    def _create_groupdict_for_db(self, groups: list) -> Dict:
         print("create_groupdict_for_db")
         groups_dict = {}
         for i in range(len(groups)):
             groups_dict[groups[i]["name"].casefold()] = groups[i]["id"]
         return groups_dict
 
-    def _create_playerdict_for_db(self, players: list):
+    def _create_playerdict_for_db(self, players: list) -> Dict:
         print("create_playerdict_for_db")
         players_dict = {}
         for i in range(len(players)):
             players_dict[players[i]["name"]] = players[i]["id"]
         return players_dict
 
-    def _create_or_join_session(self, recursion=None):
+    def _create_or_join_session(self, recursion=None) -> Optional[str]:
         print("_create_or_join_session")
-        # group_id = self._get_group_id()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playbackSession/joinOrCreate"
 
         payload = json.dumps({"appId": "com.mideind.embla", "appContext": "embla123"})
@@ -399,7 +390,7 @@ class SonosClient:
     ------------------------------------- PUBLIC METHODS --------------------------------------------------------------------------------
     """
 
-    def play_radio_stream(self, radio_url):  #: Optional[str] = self._device_data.get]
+    def play_radio_stream(self, radio_url: str) -> Optional[str]:
         print("play radio stream")
         session_id = self._create_or_join_session()
         print("exited create or join session")
@@ -431,9 +422,8 @@ class SonosClient:
         self._store_data(data_dict)
         print(response.get("text"))
 
-    def increase_volume(self):
+    def increase_volume(self) -> None:
         print("increase_volume")
-        # group_id = self._get_group_id()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/groupVolume/relative"
 
         payload = json.dumps({"volumeDelta": 10})
@@ -447,7 +437,7 @@ class SonosClient:
             self._refresh_data("increase_volume")
         print(response.get("text"))
 
-    def decrease_volume(self):
+    def decrease_volume(self) -> None:
         print("decrease volume")
         group_id = self._get_group_id()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/groupVolume/relative"
@@ -463,12 +453,11 @@ class SonosClient:
             return "Group not found"
         print(response.get("text"))
 
-    def toggle_play(self):
+    def toggle_play(self) -> Union[None, List[Any], Dict[str, Any]]:
         """
         Toggles play/pause of a group
         """
         print("toggle playpause")
-        # group_id = self._get_group_id()
         print("exited group_id")
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playback/play"
         headers = {
@@ -476,7 +465,6 @@ class SonosClient:
             "Authorization": f"Bearer {self._access_token}",
         }
 
-        # response = requests.request("POST", url, headers=headers, data=payload)
         response = post_to_json_api(url, headers=headers)
         print("response :", response)
         if response is None:
@@ -484,7 +472,7 @@ class SonosClient:
 
         return response
 
-    def toggle_pause(self):
+    def toggle_pause(self) -> Union[None, List[Any], Dict[str, Any]]:
         """
         Toggles play/pause of a group
         """
@@ -505,7 +493,9 @@ class SonosClient:
 
         return response
 
-    def play_audio_clip(self, audioclip_url: str):
+    def play_audio_clip(
+        self, audioclip_url: str
+    ) -> Union[None, List[Any], Dict[str, Any]]:
         """
         Plays an audioclip from link to .mp3 file
         """
@@ -533,7 +523,7 @@ class SonosClient:
             return "Group not found"
         return response
 
-    def play_chime(self):
+    def play_chime(self) -> Union[None, List[Any], Dict[str, Any]]:
         player_id = self._get_player_id()
         url = f"https://api.ws.sonos.com/control/api/v1/players/{player_id}/audioClip"
 
@@ -555,7 +545,7 @@ class SonosClient:
 
         return response
 
-    def next_song(self):
+    def next_song(self) -> Union[None, List[Any], Dict[str, Any]]:
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playback/skipToNextTrack"
 
         headers = {
@@ -567,7 +557,7 @@ class SonosClient:
 
         return response
 
-    def prev_song(self):
+    def prev_song(self) -> Union[None, List[Any], Dict[str, Any]]:
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playback/skipToPreviousTrack"
 
         headers = {
@@ -578,44 +568,3 @@ class SonosClient:
         response = post_to_json_api(url, headers=headers)
 
         return response
-
-    # def _refresh_data(self, function):
-    #     print("refresh data")
-    #     print("device_data: ", self._device_data)
-    #     # self._device_data["sonos"]["data"] = None
-    #     # print("device_data after deletion: ", self._device_data)
-    #     self._households = self._get_households()
-    #     self._groups = self._get_groups()
-    #     self._players = self._get_players()
-    #     # self._store_data_and_credentials()
-    #     getattr(self, function)()
-
-    # def get_groups_and_players(self):
-    #     """
-    #     Returns the list of groups of the user
-    #     """
-    #     print("get groups and players")
-
-    #     url = f"https://api.ws.sonos.com/control/api/v1/households/{self._household_id}/groups"
-    #     headers = {"Authorization": f"Bearer {self._access_token}"}
-
-    #     response = query_json_api(url, headers)
-    #     return response
-
-    # def set_credentials(self, access_token, refresh_token):
-    #     print("set_credentials")
-    #     self._access_token = access_token
-    #     self._refresh_token = refresh_token
-    #     return
-
-    # def set_data(self):
-    #     print("set_data")
-    #     try:
-    #         self._households = self._get_households()
-    #         self._household_id = self._get_household_id()
-    #         self._groups = self._get_groups()
-    #         self._players = self._get_players()
-    #         self._group_id = self._get_group_id()
-    #     except KeyError:
-    #         print("Missing device data for this account")
-    #     return

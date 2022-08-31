@@ -403,16 +403,9 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         print("COLOR NAME:", color_name)
         print(result.hue_obj)
         q.set_answer(
-            *gen_answer(
-                "ég var að kveikja ljósin! "
-                # + group_name
-                # + " "
-                # + color_name
-                # + " "
-                # + result.action
-                # + " "
-                # + str(result.hue_obj.get("hue", "enginn litur"))
-            )
+            {"answer": "Ég var að kveikja ljósin."},
+            "Ég var að kveikja ljósin.",
+            "Ég var að kveikja ljósin.",
         )
         js = (
             read_jsfile("IoT_Embla/fuse.js")
@@ -421,7 +414,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             + read_jsfile("IoT_Embla/Philips_Hue/lights.js")
             + read_jsfile("IoT_Embla/Philips_Hue/set_lights.js")
         )
-        js += f"setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
+        js += f"return setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
         q.set_command(js)
     except Exception as e:
         logging.warning("Exception while processing random query: {0}".format(e))

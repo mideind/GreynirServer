@@ -62,6 +62,7 @@ function setLights(target, state) {
             });
         }
     });
+    return "Ég var að kveikja ljósin.";
 }
 //         fetch(`http://${BRIDGE_IP}/api/${USERNAME}/${url}`, {
 //             method: "PUT",
