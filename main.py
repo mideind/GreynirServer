@@ -246,13 +246,21 @@ if not RUNNING_AS_SERVER:
 
     # Reload web server when config files change
     extra_files.extend(str(p.resolve()) for p in greynir_dir.glob("config/*.conf"))
-    extra_files.extend(str(p.resolve()) for p in greynirpackage_dir.glob("config/*.conf"))
-    extra_files.extend(str(p.resolve()) for p in reynir_correct_dir.glob("config/*.conf"))
+    extra_files.extend(
+        str(p.resolve()) for p in greynirpackage_dir.glob("config/*.conf")
+    )
+    extra_files.extend(
+        str(p.resolve()) for p in reynir_correct_dir.glob("config/*.conf")
+    )
 
     # Add dialogue TOML files
-    extra_files.extend(str(p.resolve()) for p in greynir_dir.glob("queries/dialogues/*.toml"))
+    extra_files.extend(
+        str(p.resolve()) for p in greynir_dir.glob("queries/dialogues/*.toml")
+    )
     # Add grammar files
-    extra_files.extend(str(p.resolve()) for p in greynir_dir.glob("queries/grammars/*.grammar"))
+    extra_files.extend(
+        str(p.resolve()) for p in greynir_dir.glob("queries/grammars/*.grammar")
+    )
 
     # Add ord.compressed from GreynirPackage
     extra_files.append(
