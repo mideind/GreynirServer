@@ -160,8 +160,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     client_id = str(q.client_id)
 
     if result.qtype == "connect_lights":
-        js = read_jsfile("IoT_Embla/Philips_Hue/hub.js")
-        js += f"syncConnectHub('{client_id}','{host}');"
+        js = read_jsfile("Philips_Hue/hub.js")
+        js += f"return connectHub('{client_id}','{host}');"
         answer = "Philips Hue miðstöðin hefur verið tengd"
         voice_answer = answer
         # audioClip(text_to_audio_url(voice_answer))
@@ -181,7 +181,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             f"https://graph.api.smartthings.com/oauth/confirm_access?response_type=code&scope=devices&client_id={smartthings_key}&redirect_uri=http://{host}/connect_smartthings.api&state={client_id}"
         )
         return
-        # js = read_jsfile("IoT_Embla/Smart_Things/st_connecthub.js")
+        # js = read_jsfile("Smart_Things/st_connecthub.js")
         # js += f"syncConnectHub('{client_id}','{host}');"
         # answer = "Smart Things miðstöðin hefur verið tengd"
         # voice_answer, response = answer, dict(answer=answer)
