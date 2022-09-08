@@ -45,6 +45,7 @@ nnmain.sh
 
 # Various resource files
 resources/*.txt
+resources/*.txt:Zone.Identifier
 !resources/formers.txt
 !resources/last.txt
 !resources/ordalisti.sorted.txt

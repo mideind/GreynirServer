@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="is">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="Content-Language" content="is">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <script type="text/javascript">
+        var urlParams = new URLSearchParams(window.location.search);
+        var dark = urlParams.get('dark');
+        if (dark != null) {
+            document.write(`<link rel="stylesheet" href="{{ url_for('static', filename = 'css/dark.css') }}">`);
+        }
+    </script>
+    <title>{{ iot_name }} upplýsingar</title>
+    <!-- <script type="text/javascript">
+        var urlParams = new URLSearchParams(window.location.search);
+        var dark = urlParams.get('dark');
+        if (dark != null) {
+            document.write('<link rel="stylesheet" href="dark.css">');
+        }
+    </script> -->
+    <meta name="robots" content="noindex, nofollow, noimageindex, noarchive">
+    <meta name="googlebot" content="noindex, nofollow, noimageindex, noarchive">
+</head>
+
+<body>
+    <div class="content">
+
+        <h1>{{ display_name }} </h1>
+
+        <!-- <h2 class="h2-subsection">Upplýsingar</h2> -->
+
+
+    </div>
+
+    <div style="
+        display: flex;
+        justify-content: center;
+    ">
+        <button id="disconnect_button" class="btn">Aftengja</button>
+    </div>
+
+    <!-- style="  background-color: #D2827F;
+        border: none;
+        color: white;
+        padding: 15px 32px;
+        margin: 30px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        border-radius: 25px;
+        font-family: 'Lato', sans-serif;
+        padding: 10px 20px;
+        box-shadow: 0px 2px 5px -1px rgba(0,0,0,0.3), inset 0px 12px 0px -10px rgba(255,255,255,0.3);
+        font-size: 19px;"-->
+
+    {% block content %}
+    {% endblock %}
+</body>
+
+<script>
+    // Fetch query parameters 
+    // (Embla app puts client id, group name and device name in query parameters)
+    let queryParams = new URLSearchParams(window.location.search);
+    let clientId = queryParams.get('client_id');
+    let iotName = queryParams.get('iot_name');
+    let iotGroup = queryParams.get('iot_group');
+
+    // Fetch anchor tag above
+    let disconnectButton = document.getElementById('disconnect_button');
+    // Delete device from database by calling API
+    disconnectButton.onclick = async function () {
+        window.flutter_inappwebview.callHandler("flutter_handler", {
+            "method": "deleteDevice",
+            "clientId": clientId,
+            "iotName": iotName,
+            "iotGroup": iotGroup
+        });
+        // return;
+        // //TODO: Delete iot info from database
+        // fetch(`http://192.168.1.76:5000/delete_iot_data.api?client_id=${clientId}&iot_group=${iotGroup}&iot_name=${iotName}`, {
+        //     method: "DELETE",
+        //     headers: {
+        //         "Content-Type": "application/json",
+        //     },
+        // })
+        //     .then((resp) => resp.json())
+        //     .then((obj) => {
+        //         return obj;
+        //     })
+        //     .catch((err) => {
+        //         console.log("Error while deleting info from database: " + err);
+        //     });
+    }
+
+    function createRipple(event) {
+        const button = event.currentTarget;
+
+        const circle = document.createElement("span");
+        const diameter = Math.max(button.clientWidth, button.clientHeight);
+        const radius = diameter / 2;
+
+        circle.style.width = circle.style.height = `${diameter}px`;
+        circle.style.left = `${event.clientX - button.offsetLeft - radius}px`;
+        circle.style.top = `${event.clientY - button.offsetTop - radius}px`;
+        circle.classList.add("ripple");
+
+        const ripple = button.getElementsByClassName("ripple")[0];
+
+        if (ripple) {
+            ripple.remove();
+        }
+
+        button.appendChild(circle);
+    }
+
+    const buttons = document.getElementsByTagName("button");
+    for (const button of buttons) {
+        button.addEventListener("click", createRipple);
+    }
+</script>
+
+</html>

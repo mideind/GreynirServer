@@ -1,4 +1,3 @@
-
 {% extends "container-normal.html" %}
 
 {% block styles %}
@@ -15,17 +14,18 @@
 
       <div class="col-xs-9 col-sm-10" id="url-div">
 
-         <input class="text-input form-control input-lg" type="text" name="url" id="url" tabindex="1"
-            maxlength=512 autofocus required value="{{ default_text }}">
+         <input class="text-input form-control input-lg" type="text" name="url" id="url" tabindex="1" maxlength=512
+            autofocus required value="{{ default_text }}">
 
       </div>
 
       <!-- The microphone div is not displayed by default.
          It is enabled if the microphone is supported. -->
       <div class="col-xs-2 col-sm-1" style="max-width: 4.2em" id="microphone-div">
-         <button class="btn btn-success btn-lg btn-block" id="microphone"
-            title="Nota hljóðnema" tabindex="2"><!--
-         --><span class="glyphicon glyphicon-microphone"></span> </button>
+         <button class="btn btn-success btn-lg btn-block" id="microphone" title="Nota hljóðnema" tabindex="2">
+            <!--
+         --><span class="glyphicon glyphicon-microphone"></span>
+         </button>
       </div>
 
       <div class="col-xs-3 col-sm-2">
@@ -41,24 +41,25 @@
 
    <div class="panel panel-info guide-empty">
       <div class="panel-heading"><span class="glyphicon glyphicon-info"></span>
-         Sláðu inn <b>leitarstreng</b> eða spurningu um <b>mannanöfn, titla, starfsheiti</b> eða <b>sérnöfn</b> hér að ofan.
+         Sláðu inn <b>leitarstreng</b> eða spurningu um <b>mannanöfn, titla, starfsheiti</b> eða <b>sérnöfn</b> hér að
+         ofan.
       </div>
       <div class="panel-body">
          <p>Leitarvél Greynis byggir á <b>umfjöllunarefnum</b> (þemum) frekar en bókstaflegum
-         leitarorðum. Bestu niðurstöður fást með því að <b>skrifa hnitmiðaðar setningar</b> sem líkjast
-         þeim niðurstöðum sem óskað er eftir. Mannanöfn og sérnöfn hafa þó sérstaka vigt.</p>
+            leitarorðum. Bestu niðurstöður fást með því að <b>skrifa hnitmiðaðar setningar</b> sem líkjast
+            þeim niðurstöðum sem óskað er eftir. Mannanöfn og sérnöfn hafa þó sérstaka vigt.</p>
          <ul class="guide-example-list">
-         <li><b>Dæmi um leitarstrengi:</b>
-            <i>Portúgal sigraði Eurovision með hugljúfu lagi</i>,
-            <i>Einkaneysla fer hraðvaxandi</i>,
-            <i>Mig langar að elda fisk í kvöldmatinn</i>,
-            <i>Verið er að byggja fjölda hótela á landinu</i>
-         </li>
-         <li><b>Dæmi um spurningar:</b>
-            <i>Hver er forseti Finnlands?</i>,
-            <i>Hver er Þórunn Ólafsdóttir?</i>,
-            <i>Hvað er UNESCO?</i>
-         </li>
+            <li><b>Dæmi um leitarstrengi:</b>
+               <i>Portúgal sigraði Eurovision með hugljúfu lagi</i>,
+               <i>Einkaneysla fer hraðvaxandi</i>,
+               <i>Mig langar að elda fisk í kvöldmatinn</i>,
+               <i>Verið er að byggja fjölda hótela á landinu</i>
+            </li>
+            <li><b>Dæmi um spurningar:</b>
+               <i>Hver er forseti Finnlands?</i>,
+               <i>Hver er Þórunn Ólafsdóttir?</i>,
+               <i>Hvað er UNESCO?</i>
+            </li>
          </ul>
          <p>Einnig má slá inn <b>vefslóð</b> til að málgreina texta af vefnum.</p>
       </div>
@@ -116,7 +117,8 @@
 
 {% block endscripts %}
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.devbridge-autocomplete/1.4.9/jquery.autocomplete.min.js"></script>
+<script
+   src="https://cdnjs.cloudflare.com/ajax/libs/jquery.devbridge-autocomplete/1.4.9/jquery.autocomplete.min.js"></script>
 
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>
 <script src="{{ url_for('static', filename='js/front.js') }}"></script>
