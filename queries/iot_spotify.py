@@ -27,11 +27,12 @@
 
 
 """
+# TODO: Make grammar
 
-from query import Query
-from datetime import datetime, timedelta
 import random
 import re
+
+from query import Query
 from queries.spotify import SpotifyClient
 from queries import gen_answer
 
@@ -40,7 +41,7 @@ def help_text(lemma: str) -> str:
     """Help text to return when query.py is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég skil þig ef þú segir til dæmis: {0}.".format(
-        random.choice(("Spilaðu Þorparinn með Pálma Gunnarssyni"))
+        random.choice(("Spilaðu Þorparann með Pálma Gunnarssyni",))
     )
 
 
@@ -51,27 +52,19 @@ _SPOTIFY_REGEXES = [
     # r"^spilaðu ([\w|\s]+) á spotify$",
     # r"^spilaðu ([\w|\s]+) á spotify",
     r"^spilaðu plötuna ([\w|\s]+) með ([\w|\s]+)$",
+    r"^spilaðu lagið ([\w|\s]+) með ([\w|\s]+)$",
     r"^spilaðu ([\w|\s]+) með ([\w|\s]+)$",
     # r"^spilaðu plötuna ([\w|\s]+)$ með ([\w|\s]+)$ á spotify$",
 ]
 
 
-def handle_plain_text(q) -> bool:
+def handle_plain_text(q: Query) -> bool:
     """Handle a plain text query requesting Spotify to play a specific song by a specific artist."""
-    # ql = q.query_lower.strip().rstrip("?")
-    print("handle_plain_text")
     ql = q.query_lower.strip().rstrip("?")
-    print("QL:", ql)
-
-    pfx = None
 
     for rx in _SPOTIFY_REGEXES:
-        print(rx)
-        print("")
         m = re.search(rx, ql)
-        print(m)
         if m:
-            (print("MATCH!"))
             song_name = m.group(1)
             artist_name = m.group(2).strip()
             print("SONG NAME :", song_name)
@@ -100,9 +93,8 @@ def handle_plain_text(q) -> bool:
                 else:
                     song_url = spotify_client.get_song_by_artist()
                     response = spotify_client.play_song_on_device()
-                # response = None
-                print("RESPONSE FROM SPOTIFY:", response)
-                answer = "Ég spilaði lagið"
+
+                answer = "Ég set það í gang."
                 if response is None:
                     q.set_url(song_url)
                 q.set_answer({"answer": answer}, answer, "")
@@ -112,30 +104,4 @@ def handle_plain_text(q) -> bool:
                 answer = "Það vantar að tengja Spotify aðgang."
                 q.set_answer(*gen_answer(answer))
                 return True
-    else:
-        return False
-
-        # Caching (optional)
-        q.set_expires(datetime.utcnow() + timedelta(hours=24))
-
-        # Context (optional)
-        # q.set_context(dict(subject="Prufuviðfangsefni"))
-
-        # Source (optional)
-        # q.set_source("Prufumódúll")
-
-        # Beautify query for end user display (optional)
-        # q.set_beautified_query(ql.upper())
-
-        # Javascript command to execute client-side (optional)
-        # q.set_command("2 + 2")
-
-        # URL to be opened by client (optional)
-        # q.set_url("https://miðeind.is")
-
-        return True
-
     return False
-
-
-# def get_song_and_artist(q: Query) -> tuple:

@@ -20,14 +20,12 @@ function philipsFuzzySearch(query, data) {
     let searchResult = fuse.search(query);
 
     let resultObject = {};
-    console.log("result: ", searchResult);
     if (searchResult[0] === undefined) {
-        console.log("no match found");
         return null;
     }
     // Structure the return object to be in the form of {result: (Object), score: (Number)}
     resultObject.result = searchResult[0].item;
     resultObject.score = searchResult[0].score;
-    console.log("resultObject :", resultObject);
+
     return resultObject;
 }

@@ -26,15 +26,14 @@
 # TODO: add "láttu", "hafðu", "litaðu", "kveiktu" functionality.
 # TODO: make the objects of sentences more modular, so that the same structure doesn't need to be written for each action
 # TODO: ditto the previous comment. make the initial non-terminals general and go into specifics at the terminal level instead.
-# TODO: substituion klósett, baðherbergi hugmyndÆ senda lista i javascript og profa i röð
-# TODO: Embla stores old javascript code cached which has caused errors
+# TODO: substitution klósett -> baðherbergi, for common room names and alternative ways of saying
 # TODO: Cut down javascript sent to Embla
 # TODO: Two specified groups or lights.
 # TODO: No specified location
 # TODO: Fix scene issues
 # TODO: Turning on lights without using "turn on"
-# TODO: Add functionality for robot-like commands "ljós í eldhúsinu", "rauður í eldhúsinu"
-# TODO: Heldur að 'gerðu ljósið kaldara' sé senan 'köld'
+# TODO: Add functionality for robot-like commands "ljós í eldhúsinu", "rautt í eldhúsinu"
+# TODO: Mistakes 'gerðu ljósið kaldara' for the scene 'köld'
 
 from typing import Dict, List, Optional, cast, FrozenSet
 from typing_extensions import TypedDict
@@ -146,9 +145,8 @@ def QIoTTurnOffLightsRest(node: Node, params: QueryStateDict, result: Result) ->
 
 def QIoTNewColor(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "set_color"
-    print(result.color_name)
     color_hue = _COLORS.get(result.color_name, None)
-    print(color_hue)
+
     if color_hue is not None:
         if "hue_obj" not in result:
             result["hue_obj"] = {"on": True, "xy": color_hue}
@@ -230,7 +228,6 @@ def QIoTDarkest(node: Node, params: QueryStateDict, result: Result) -> None:
 def QIoTNewScene(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "set_scene"
     scene_name = result.get("scene_name", None)
-    print("scene: " + scene_name)
     if scene_name is not None:
         if "hue_obj" not in result:
             result["hue_obj"] = {"on": True, "scene": scene_name}
@@ -240,9 +237,9 @@ def QIoTNewScene(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QIoTColorName(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["color_name"] = (
-        node.first_child(lambda x: True).string_self().strip("'").split(":")[0]
-    )
+    fc = node.first_child(lambda x: True)
+    if fc:
+        result["color_name"] = fc.string_self().strip("'").split(":")[0]
 
 
 def QIoTSceneName(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -311,55 +308,45 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
-    print("start of sentence")
     if result.get("abort"):
-        print("aborted")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
+
+    # Extract matched terminals in grammar (used like lemmas in this case)
     lemmas = set(
         i[0].root(state, result.params)
         for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))
     )
     if not lemmas.isdisjoint(_SPEAKER_WORDS):
-        print("matched with music word list")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
     changing_color = result.get("changing_color", False)
     changing_scene = result.get("changing_scene", False)
     changing_brightness = result.get("changing_brightness", False)
     # changing_temp = result.get("changing_temp", False)
-    print(
-        "error?",
-        sum((changing_color, changing_scene, changing_brightness)) > 1,
-    )
     if (
         sum((changing_color, changing_scene, changing_brightness)) > 1
         or "qtype" not in result
     ):
-        print("ERROR")
+        print("Multiple options error?")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
     q.set_qtype(result.qtype)
 
     smartdevice_type = "iot"
-    client_id = str(q.client_id)
-    print("client_id:", client_id)
+    cd = q.client_data(smartdevice_type)
+    device_data = None
+    if cd:
+        # Fetch relevant data from the device_data table to perform an action on the lights
+        device_data = cast(Optional[DeviceData], cd.get("iot_lights"))
 
-    # Fetch relevant data from the device_data table to perform an action on the lights
-    device_data = cast(
-        Optional[DeviceData], q.client_data(smartdevice_type).get("iot_lights")
-    )
-    print("location :", q.location)
-    print("device data :", device_data)
-
-    selected_light: Optional[str] = None
-    print("selected light:", selected_light)
     hue_credentials: Optional[Dict[str, str]] = None
 
     if device_data is not None:
         dev = device_data
         assert dev is not None
+        # TODO: Better error checking
         light = dev.get("philips_hue")
         hue_credentials = light.get("credentials")
         bridge_ip = hue_credentials.get("ip_address")
@@ -370,19 +357,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_answer(*gen_answer(answer))
         return
 
-    # Successfully matched a query type
-    print("bridge_ip: ", bridge_ip)
-    print("username: ", username)
-    print("selected light :", selected_light)
-    print("hue credentials :", hue_credentials)
-
     try:
-        # kalla í javascripts stuff
+        # TODO: What if light and group is empty?
         light_or_group_name = result.get("light_name", result.get("group_name", ""))
-        color_name = result.get("color_name", "")
-        print("GROUP NAME:", light_or_group_name)
-        print("COLOR NAME:", color_name)
-        print(result.hue_obj)
+
         q.set_answer(
             {"answer": "Skal gert."},
             "Skal gert.",
@@ -401,6 +379,3 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         logging.warning("Exception while processing random query: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))
         raise
-
-
-# f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'p3obluiXT13IbHMpp4X63ZvZnpNRdbqqMt723gy2';"

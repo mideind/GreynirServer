@@ -22,8 +22,27 @@
     of random numbers, e.g. "Kastaðu tengingi", "Nefndu tölu milli 5 og 10", etc.
 
 """
+# TODO: add "láttu", "hafðu", "litaðu", "kveiktu" functionality.
+# TODO: make the objects of sentences more modular, so that the same structure doesn't need to be written for each action
+# TODO: ditto the previous comment. make the initial non-terminals general and go into specifics at the terminal level instead.
+# TODO: substituion klósett, baðherbergi hugmyndÆ senda lista i javascript og profa i röð
+# TODO: Embla stores old javascript code cached which has caused errors
+# TODO: Cut down javascript sent to Embla
+# TODO: Two specified groups or lights.
+# TODO: No specified location
+# TODO: Fix scene issues
+from typing import Dict
+
+import logging
+import random
+
+from query import Query, QueryStateDict
+from queries import read_grammar_file
+from queries.sonos import SonosClient
+from tree import Result, Node
+
 # Dictionary of radio stations and their stream urls
-_RADIO_STREAMS = {
+_RADIO_STREAMS: Dict[str, str] = {
     "Rás 1": "http://netradio.ruv.is/ras1.mp3",
     "Rás 2": "http://netradio.ruv.is/ras2.mp3",
     "Rondó": "http://netradio.ruv.is/rondo.mp3",
@@ -49,41 +68,9 @@ _RADIO_STREAMS = {
 }
 
 
-# TODO: add "láttu", "hafðu", "litaðu", "kveiktu" functionality.
-# TODO: make the objects of sentences more modular, so that the same structure doesn't need to be written for each action
-# TODO: ditto the previous comment. make the initial non-terminals general and go into specifics at the terminal level instead.
-# TODO: substituion klósett, baðherbergi hugmyndÆ senda lista i javascript og profa i röð
-# TODO: Embla stores old javascript code cached which has caused errors
-# TODO: Cut down javascript sent to Embla
-# TODO: Two specified groups or lights.
-# TODO: No specified location
-# TODO: Fix scene issues
-
-from os import access
-from typing import Dict, Mapping, Optional, cast
-from typing_extensions import TypedDict
-
-import logging
-import random
-import json
-import flask
-from datetime import datetime, timedelta
-
-from reynir.lemmatize import simple_lemmatize
-
-from query import Query, QueryStateDict, AnswerTuple
-from queries import gen_answer, read_jsfile, read_grammar_file
-from queries.sonos import SonosClient
-from tree import Result, Node, TerminalNode
-from util import read_api_key
-
-
 _IoT_QTYPE = "IoTSpeakers"
 
-TOPIC_LEMMAS = [
-    "tónlist",
-    "spila",
-]
+TOPIC_LEMMAS = ["tónlist", "spila", "útvarp", "útvarpsstöð"]
 
 
 def help_text(lemma: str) -> str:
@@ -91,7 +78,10 @@ def help_text(lemma: str) -> str:
     one of the above lemmas is found in it"""
     return "Ég skil þig ef þú segir til dæmis: {0}.".format(
         random.choice(
-            ("Hækkaðu í tónlistinni", "Kveiktu á tónlist", "Láttu vera tónlist")
+            (
+                "Hækkaðu í tónlistinni",
+                "Kveiktu á tónlist",
+            )
         )
     )
 
@@ -103,10 +93,7 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QIoTSpeaker", "QIoTSpeakerQuery"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-
-GRAMMAR = read_grammar_file(
-    "iot_speakers",
-)
+GRAMMAR = read_grammar_file("iot_speakers")
 
 
 def QIoTSpeaker(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -297,35 +284,35 @@ def QIoTSpeakerUtvarpSudurland(
 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
-    print("sentence")
     q: Query = state["query"]
     if "qkey" not in result:
         result.qkey = "turn_on"
     if result.qkey == "turn_on" and result.get("target") == "radio":
         result.qkey = "radio"
     if "qtype" in result:
-        print("IF QTYPE AND QKEY")
         try:
             q.set_qtype(result.qtype)
-            device_data = q.client_data("iot").get("iot_speakers")
+            cd = q.client_data("iot")
+            device_data = None
+            if cd:
+                device_data = cd.get("iot_speakers")
             if device_data is not None:
-                print("JUST BEFORE SONOS CLIENT")
                 sonos_client = SonosClient(
                     device_data, q.client_id, group_name=result.get("group_name")
                 )
-                print("JUST AFTER SONOS CLIENT")
+
                 # Map of query keys to handler functions and the corresponding answer string for Embla
                 radio_url = _RADIO_STREAMS.get(result.get("station"))
                 handler_map = {
                     "turn_on": [
                         sonos_client.toggle_play,
                         [],
-                        "Ég kveikti á tónlist",
+                        "Ég kveikti á tónlistinni",
                     ],
                     "turn_off": [
                         sonos_client.toggle_pause,
                         [],
-                        "Ég slökkti á tónlist",
+                        "Ég slökkti á tónlistinni",
                     ],
                     "increase_volume": [
                         sonos_client.increase_volume,
@@ -345,12 +332,12 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                     "next_song": [
                         sonos_client.next_song,
                         [],
-                        "Ég hötta á næsta tón",
+                        "Ég skipti á næsta lag",
                     ],
                     "prev_song": [
                         sonos_client.prev_song,
                         [],
-                        "Ég hötta á fyrri tón",
+                        "Ég hötta á fyrri tón",  # TODO: wtf
                     ],
                 }
                 handler, args, answer = handler_map.get(result.qkey)
@@ -358,14 +345,12 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 if response == "Group not found":
                     text_ans = f"Herbergið '{result.group_name}' fannst ekki. Vinsamlegast athugaðu í Sonos appinu hvort nafnið sé rétt."
                 else:
-                    handler_answer = answer
-                    text_ans = handler_answer
-                answer = (
+                    text_ans = answer
+                q.set_answer(
                     dict(answer=text_ans),
                     text_ans,
                     text_ans.replace("Sonos", "Sónos"),
                 )
-                q.set_answer(*answer)
                 return
             else:
                 print("No device data found for this account")
@@ -379,4 +364,4 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
-    # # TODO: Need to add check for if there are no registered devices to an account, probably when initilazing the querydata
+    # TODO: Need to add check for if there are no registered devices to an account, probably when initilazing the querydata

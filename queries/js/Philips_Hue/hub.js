@@ -1,45 +1,29 @@
 "use strict";
 
 async function findHub() {
-    // let hubArr = [];
-    // let hubObj = new Object();
-    // hubObj.id = "ecb5fafffe1be1a4";
-    // hubObj.internalipaddress = "192.168.1.68";
-    // hubObj.port = "443";
-    // console.log(hubObj);
-    // hubArr.push(hubObj);
-    // return hubArr[0];
     return fetch(`https://discovery.meethue.com`)
         .then((resp) => resp.json())
         .then((obj) => {
-            console.log(obj);
             return obj[0];
         })
-        .catch((err) => {
-            console.log("No smart device found!");
-        });
+        .catch((err) => {});
 }
 
 async function createNewDeveloper(ipAddress) {
-    console.log("create new developer");
-    const body = JSON.stringify({
-        devicetype: "mideind_hue_communication#smartdevice",
-    });
     return fetch(`http://${ipAddress}/api`, {
         method: "POST",
-        body: body,
+        body: JSON.stringify({
+            devicetype: "Embla",
+        }),
     })
         .then((resp) => resp.json())
         .then((obj) => {
             return obj[0];
         })
-        .catch((err) => {
-            console.log(err);
-        });
+        .catch((err) => {});
 }
 
 async function storeDevice(data, requestURL) {
-    console.log("store device");
     return fetch(`http://${requestURL}/register_query_data.api`, {
         method: "POST",
         body: JSON.stringify(data),
@@ -51,23 +35,16 @@ async function storeDevice(data, requestURL) {
         .then((obj) => {
             return obj;
         })
-        .catch((err) => {
-            console.log("Error while storing user");
-        });
+        .catch((err) => {});
 }
 
-// clientID = "82AD3C91-7DA2-4502-BB17-075CEC090B14", requestURL = "192.168.1.68")
 async function connectHub(clientID, requestURL) {
-    console.log("connect hub");
     let deviceInfo = await findHub();
-    console.log("device info: ", deviceInfo);
-    console.log("device_ip :", deviceInfo.internalipaddress);
 
     try {
         let username = await createNewDeveloper(deviceInfo.internalipaddress);
-        console.log("username: ", username);
         if (!username.success) {
-            return "Ýttu á 'Philips' takkann á tengiboxinu og reyndu aftur";
+            return "Ýttu á 'Philips' takkann á miðstöðinni og reyndu aftur";
         }
 
         const data = {
@@ -85,16 +62,9 @@ async function connectHub(clientID, requestURL) {
             },
         };
 
-        const result = await storeDevice(data, requestURL);
-        console.log("result: ", result);
-        return "Tenging við snjalltæki tókst";
+        await storeDevice(data, requestURL);
+        return "Tenging við Philips Hue miðstöðina tókst!";
     } catch (error) {
-        console.log(error);
-        return "Ekki tókst að tengja snjalltæki";
+        return "Ekki tókst að tengja Philips Hue miðstöðina.";
     }
-}
-
-async function syncConnectHub(clientID, requestURL) {
-    connectHub(clientID, requestURL);
-    return "Philips Hue miðstöðin hefur verið tengd";
 }
