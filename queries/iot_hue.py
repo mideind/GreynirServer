@@ -26,24 +26,25 @@
 # TODO: add "láttu", "hafðu", "litaðu", "kveiktu" functionality.
 # TODO: make the objects of sentences more modular, so that the same structure doesn't need to be written for each action
 # TODO: ditto the previous comment. make the initial non-terminals general and go into specifics at the terminal level instead.
-# TODO: substituion klósett, baðherbergi hugmyndÆ senda lista i javascript og profa i röð
-# TODO: Embla stores old javascript code cached which has caused errors
+# TODO: substitution klósett -> baðherbergi, for common room names and alternative ways of saying
 # TODO: Cut down javascript sent to Embla
 # TODO: Two specified groups or lights.
 # TODO: No specified location
 # TODO: Fix scene issues
+# TODO: Turning on lights without using "turn on"
+# TODO: Add functionality for robot-like commands "ljós í eldhúsinu", "rautt í eldhúsinu"
+# TODO: Mistakes 'gerðu ljósið kaldara' for the scene 'köld'
 
-from typing import Dict, Mapping, Optional, cast
+from typing import Dict, List, Optional, cast, FrozenSet
 from typing_extensions import TypedDict
 
 import logging
 import random
 import json
-import flask
 
-from query import Query, QueryStateDict, AnswerTuple
+from query import Query, QueryStateDict
 from queries import gen_answer, read_jsfile, read_grammar_file
-from tree import Result, Node
+from tree import Result, Node, TerminalNode
 
 
 class SmartLights(TypedDict):
@@ -86,356 +87,32 @@ def help_text(lemma: str) -> str:
     )
 
 
-_COLORS = {
-    "gulur": 60 * 65535 / 360,
-    "rauður": 360 * 65535 / 360,
-    "grænn": 120 * 65535 / 360,
-    "blár": 240 * 65535 / 360,
-    "ljósblár": 180 * 65535 / 360,
-    "bleikur": 300 * 65535 / 360,
-    "hvítur": [],
-    "fjólublár": [],
-    "brúnn": [],
-    "appelsínugulur": [],
-}
-
-
 # This module wants to handle parse trees for queries
 HANDLE_TREE = True
 
 # The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = {"QIoT"}
 
+_COLORS: Dict[str, List[float]] = {
+    "appelsínugulur": [0.6195, 0.3624],
+    "bleikur": [0.4443, 0.2006],
+    "blár": [0.1545, 0.0981],
+    "fjólublár": [0.2291, 0.0843],
+    "grænn": [0.2458, 0.6431],
+    "gulur": [0.4833, 0.4647],
+    "hvítur": [0.3085, 0.3275],
+    "ljósblár": [0.1581, 0.2395],
+    "rauður": [0.7, 0.3],
+}
+
 # The context-free grammar for the queries recognized by this plug-in module
-# GRAMMAR = read_grammar_file("iot_hue")
+GRAMMAR = read_grammar_file(
+    "iot_hue", color_names=" | ".join(f"'{color}:lo'" for color in _COLORS.keys())
+)
 
-GRAMMAR = f"""
 
-/þgf = þgf
-/ef = ef
-
-Query →
-    QIoT
-
-QIoT → 
-    QIoTQuery '?'? 
-    | QIoTConnectLights '?'?
-
-QIoTConnectLights →
-    "tengdu" "ljósin"
-
-QIoTQuery ->
-    QIoTMakeVerb QIoTMakeRest
-    | QIoTSetVerb QIoTSetRest
-    | QIoTChangeVerb QIoTChangeRest
-    | QIoTLetVerb QIoTLetRest
-    | QIoTTurnOnVerb QIoTTurnOnRest
-    | QIoTTurnOffVerb QIoTTurnOffRest
-    | QIoTIncreaseOrDecreaseVerb QIoTIncreaseOrDecreaseRest
-
-QIoTMakeVerb ->
-    'gera:so'_bh
-
-QIoTSetVerb ->
-    'setja:so'_bh
-    | 'stilla:so'_bh
-
-QIoTChangeVerb ->
-    'breyta:so'_bh
-
-QIoTLetVerb ->
-    'láta:so'_bh
-
-QIoTTurnOnVerb ->
-    'kveikja:so'_bh
-
-QIoTTurnOffVerb ->
-    'slökkva:so'_bh
-
-QIoTIncreaseOrDecreaseVerb ->
-    QIoTIncreaseVerb
-    | QIoTDecreaseVerb
-
-QIoTIncreaseVerb ->
-    'hækka:so'_bh
-    | 'auka:so'_bh
-
-QIoTDecreaseVerb ->
-    'lækka:so'_bh
-    | 'minnka:so'_bh
-
-QIoTMakeRest ->
-    QIoTSubject/þf QIoTHvar? QIoTHvernigMake
-    | QIoTSubject/þf QIoTHvernigMake QIoTHvar?
-    | QIoTHvar? QIoTSubject/þf QIoTHvernigMake
-    | QIoTHvar? QIoTHvernigMake QIoTSubject/þf
-    | QIoTHvernigMake QIoTSubject/þf QIoTHvar?
-    | QIoTHvernigMake QIoTHvar? QIoTSubject/þf
-
-# TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
-QIoTSetRest ->
-    QIoTSubject/þf QIoTHvar? QIoTHvernigSet
-    | QIoTSubject/þf QIoTHvernigSet QIoTHvar?
-    | QIoTHvar? QIoTSubject/þf QIoTHvernigSet
-    | QIoTHvar? QIoTHvernigSet QIoTSubject/þf
-    | QIoTHvernigSet QIoTSubject/þf QIoTHvar?
-    | QIoTHvernigSet QIoTHvar? QIoTSubject/þf
-
-QIoTChangeRest ->
-    QIoTSubjectOne/þgf QIoTHvar? QIoTHvernigChange
-    | QIoTSubjectOne/þgf QIoTHvernigChange QIoTHvar?
-    | QIoTHvar? QIoTSubjectOne/þgf QIoTHvernigChange
-    | QIoTHvar? QIoTHvernigChange QIoTSubjectOne/þgf
-    | QIoTHvernigChange QIoTSubjectOne/þgf QIoTHvar?
-    | QIoTHvernigChange QIoTHvar? QIoTSubjectOne/þgf
-
-QIoTLetRest ->
-    QIoTSubject/þf QIoTHvar? QIoTHvernigLet
-    | QIoTSubject/þf QIoTHvernigLet QIoTHvar?
-    | QIoTHvar? QIoTSubject/þf QIoTHvernigLet
-    | QIoTHvar? QIoTHvernigLet QIoTSubject/þf
-    | QIoTHvernigLet QIoTSubject/þf QIoTHvar?
-    | QIoTHvernigLet QIoTHvar? QIoTSubject/þf
-
-QIoTTurnOnRest ->
-    QIoTTurnOnLightsRest
-    | QIoTAHverju QIoTHvar?
-    | QIoTHvar? QIoTAHverju
-
-QIoTTurnOnLightsRest ->
-    QIoTLightSubject/þf QIoTHvar?
-    | QIoTHvar QIoTLightSubject/þf?
-
-# Would be good to add "slökktu á rauða litnum" functionality
-QIoTTurnOffRest ->
-    QIoTTurnOffLightsRest
-
-QIoTTurnOffLightsRest ->
-    QIoTLightSubject/þf QIoTHvar?
-    | QIoTHvar QIoTLightSubject/þf?
-
-# TODO: Make the subject categorization cleaner
-QIoTIncreaseOrDecreaseRest ->
-    QIoTLightSubject/þf QIoTHvar?
-    | QIoTBrightnessSubject/þf QIoTHvar?
-
-QIoTSubject/fall ->
-    QIoTSubjectOne/fall
-    | QIoTSubjectTwo/fall
-
-# TODO: Decide whether LightSubject/þgf should be accepted
-QIoTSubjectOne/fall ->
-    QIoTLightSubject/fall
-    | QIoTColorSubject/fall
-    | QIoTBrightnessSubject/fall
-    | QIoTSceneSubject/fall
-
-QIoTSubjectTwo/fall ->
-    QIoTGroupNameSubject/fall # á bara að styðja "gerðu eldhúsið rautt", "gerðu eldhúsið rómó" "gerðu eldhúsið bjartara", t.d.
-
-QIoTHvar ->
-    QIoTLocationPreposition QIoTGroupName/þgf
-
-QIoTHvernigMake ->
-    QIoTAnnadAndlag # gerðu litinn rauðan í eldhúsinu EÐA gerðu birtuna meiri í eldhúsinu
-    | QIoTAdHverju # gerðu litinn að rauðum í eldhúsinu
-    | QIoTThannigAd
-
-QIoTHvernigSet ->
-    QIoTAHvad
-    | QIoTThannigAd
-
-QIoTHvernigChange ->
-    QIoTIHvad
-    | QIoTThannigAd
-
-QIoTHvernigLet ->
-    QIoTBecome QIoTSomethingOrSomehow
-    | QIoTBe QIoTSomehow
-
-QIoTThannigAd ->
-    "þannig" "að"? pfn_nf QIoTBeOrBecomeSubjunctive QIoTAnnadAndlag
-
-# I think these verbs only appear in these forms. 
-# In which case these terminals should be deleted and a direct reference should be made in the relevant non-terminals.
-QIoTBe ->
-    "vera"
-
-QIoTBecome ->
-    "verða"
-
-QIoTBeOrBecomeSubjunctive ->
-    "verði"
-    | "sé"
-
-QIoTLightSubject/fall ->
-    QIoTLight/fall
-
-QIoTColorSubject/fall ->
-    QIoTColorWord/fall QIoTLight/ef?
-    | QIoTColorWord/fall "á" QIoTLight/þgf
-
-QIoTBrightnessSubject/fall ->
-    QIoTBrightnessWord/fall QIoTLight/ef?
-    | QIoTBrightnessWord/fall "á" QIoTLight/þgf
-
-QIoTSceneSubject/fall ->
-    QIoTSceneWord/fall
-
-QIoTGroupNameSubject/fall ->
-    QIoTGroupName/fall
-
-QIoTLocationPreposition ->
-    QIoTLocationPrepositionFirstPart? QIoTLocationPrepositionSecondPart
-
-# The latter proverbs are grammatically incorrect, but common errors, both in speech and transcription.
-# The list provided is taken from StefnuAtv in Greynir.grammar. That includes "aftur:ao", which is not applicable here.
-QIoTLocationPrepositionFirstPart ->
-    StaðarAtv
-    | "fram:ao"
-    | "inn:ao"
-    | "niður:ao"
-    | "upp:ao"
-    | "út:ao"
-
-QIoTLocationPrepositionSecondPart ->
-    "á" | "í"
-
-QIoTGroupName/fall ->
-    no/fall
-
-QIoTLightName/fall ->
-    no/fall
-
-QIoTColorName ->
-    {" | ".join(f"'{color}:lo'" for color in _COLORS.keys())}
-
-QIoTSceneName ->
-    no
-    | lo
-
-QIoTAnnadAndlag ->
-    QIoTNewSetting/nf
-    | QIoTSpyrjaHuldu/nf
-
-QIoTAdHverju ->
-    "að" QIoTNewSetting/þgf
-
-QIoTAHvad ->
-    "á" QIoTNewSetting/þf
-
-QIoTIHvad ->
-    "í" QIoTNewSetting/þf
-
-QIoTAHverju ->
-    "á" QIoTLight/þgf
-    | "á" QIoTNewSetting/þgf
-
-QIoTSomethingOrSomehow ->
-    QIoTAnnadAndlag
-    | QIoTAdHverju
-
-QIoTSomehow ->
-    QIoTAnnadAndlag
-    | QIoTThannigAd
-
-QIoTLight/fall ->
-    QIoTLightName/fall
-    | QIoTLightWord/fall
-
-# Should 'birta' be included
-QIoTLightWord/fall ->
-    'ljós'/fall
-    | 'lýsing'/fall
-    | 'birta'/fall
-    | 'Birta'/fall
-
-QIoTColorWord/fall ->
-    'litur'/fall
-    | 'litblær'/fall
-    | 'blær'/fall
-
-QIoTBrightnessWords/fall ->
-    'bjartur'/fall
-    | QIoTBrightnessWord/fall
-
-QIoTBrightnessWord/fall ->
-    'birta'/fall
-    | 'Birta'/fall
-    | 'birtustig'/fall
-
-QIoTSceneWord/fall ->
-    'sena'/fall
-    | 'stemning'/fall
-    | 'stemming'/fall
-    | 'stemmning'/fall
-
-# Need to ask Hulda how this works.
-QIoTSpyrjaHuldu/fall ->
-    # QIoTHuldaColor/fall
-    QIoTHuldaBrightness/fall
-    # | QIoTHuldaScene/fall
-
-# Do I need a "new light state" non-terminal?
-QIoTNewSetting/fall ->
-    QIoTNewColor/fall
-    | QIoTNewBrightness/fall
-    | QIoTNewScene/fall
-
-# Missing "meira dimmt"
-QIoTHuldaBrightness/fall ->
-    QIoTMoreBrighterOrHigher/fall QIoTBrightnessWords/fall?
-    | QIoTLessDarkerOrLower/fall QIoTBrightnessWords/fall?
-
-#Unsure about whether to include /fall after QIoTColorName
-QIoTNewColor/fall ->
-    QIoTColorWord/fall QIoTColorName
-    | QIoTColorName QIoTColorWord/fall?
-
-QIoTNewBrightness/fall ->
-    'sá'/fall? QIoTBrightestOrDarkest/fall
-    | QIoTBrightestOrDarkest/fall QIoTBrightnessOrSettingWord/fall
-
-QIoTNewScene/fall ->
-    QIoTSceneWord/fall QIoTSceneName
-    | QIoTSceneName QIoTSceneWord/fall?
-
-QIoTMoreBrighterOrHigher/fall ->
-    'mikill:lo'_mst/fall
-    | 'bjartur:lo'_mst/fall
-    | 'ljós:lo'_mst/fall
-    | 'hár:lo'_mst/fall
-
-QIoTLessDarkerOrLower/fall ->
-    'lítill:lo'_mst/fall
-    | 'dökkur:lo'_mst/fall
-    | 'dimmur:lo'_mst/fall
-    | 'lágur:lo'_mst/fall
-
-QIoTBrightestOrDarkest/fall ->
-    QIoTBrightest/fall
-    | QIoTDarkest/fall
-
-QIoTBrightest/fall ->
-    'bjartur:lo'_evb
-    | 'bjartur:lo'_esb
-    | 'ljós:lo'_evb
-    | 'ljós:lo'_esb
-
-QIoTDarkest/fall ->
-    'dimmur:lo'_evb
-    | 'dimmur:lo'_esb
-    | 'dökkur:lo'_evb
-    | 'dökkur:lo'_esb
-
-QIoTBrightnessOrSettingWord/fall ->
-    QIoTBrightnessWord/fall
-    | QIoTSettingWord/fall
-
-QIoTSettingWord/fall ->
-    'stilling'/fall
-
-"""
+def QIoTQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qtype = _IoT_QTYPE
 
 
 def QIoTColorWord(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -448,10 +125,6 @@ def QIoTSceneWord(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QIoTBrightnessWord(node: Node, params: QueryStateDict, result: Result) -> None:
     result.changing_brightness = True
-
-
-def QIoTQuery(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qtype = _IoT_QTYPE
 
 
 def QIoTTurnOnLightsRest(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -472,14 +145,13 @@ def QIoTTurnOffLightsRest(node: Node, params: QueryStateDict, result: Result) ->
 
 def QIoTNewColor(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "set_color"
-    print(result.color_name)
     color_hue = _COLORS.get(result.color_name, None)
-    print(color_hue)
+
     if color_hue is not None:
         if "hue_obj" not in result:
-            result["hue_obj"] = {"on": True, "hue": int(color_hue)}
+            result["hue_obj"] = {"on": True, "xy": color_hue}
         else:
-            result["hue_obj"]["hue"] = int(color_hue)
+            result["hue_obj"]["xy"] = color_hue
             result["hue_obj"]["on"] = True
 
 
@@ -511,6 +183,24 @@ def QIoTIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None
         result["hue_obj"]["on"] = True
 
 
+def QIoTCooler(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.action = "decrease_colortemp"
+    result.changing_temp = True
+    if "hue_obj" not in result:
+        result["hue_obj"] = {"ct_inc": -30000}
+    else:
+        result["hue_obj"]["ct_inc"] = -30000
+
+
+def QIoTWarmer(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.action = "increase_colortemp"
+    result.changing_temp = True
+    if "hue_obj" not in result:
+        result["hue_obj"] = {"ct_inc": 30000}
+    else:
+        result["hue_obj"]["ct_inc"] = 30000
+
+
 def QIoTDecreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "decrease_brightness"
     if "hue_obj" not in result:
@@ -520,7 +210,7 @@ def QIoTDecreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None
 
 
 def QIoTBrightest(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.action = "decrease_brightness"
+    result.action = "increase_brightness"
     if "hue_obj" not in result:
         result["hue_obj"] = {"bri": 255}
     else:
@@ -538,7 +228,6 @@ def QIoTDarkest(node: Node, params: QueryStateDict, result: Result) -> None:
 def QIoTNewScene(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "set_scene"
     scene_name = result.get("scene_name", None)
-    print(scene_name)
     if scene_name is not None:
         if "hue_obj" not in result:
             result["hue_obj"] = {"on": True, "scene": scene_name}
@@ -548,14 +237,15 @@ def QIoTNewScene(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QIoTColorName(node: Node, params: QueryStateDict, result: Result) -> None:
-    result["color_name"] = (
-        node.first_child(lambda x: True).string_self().strip("'").split(":")[0]
-    )
+    fc = node.first_child(lambda x: True)
+    if fc:
+        result["color_name"] = fc.string_self().strip("'").split(":")[0]
 
 
 def QIoTSceneName(node: Node, params: QueryStateDict, result: Result) -> None:
     result["scene_name"] = result._indefinite
-    print(result.get("scene_name", None))
+    result["changing_scene"] = True
+    print("scene: " + result.get("scene_name", None))
 
 
 def QIoTGroupName(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -566,72 +256,100 @@ def QIoTLightName(node: Node, params: QueryStateDict, result: Result) -> None:
     result["light_name"] = result._indefinite
 
 
-def QIoTConnectLights(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qtype = "connect_lights"
-    result.action = "connect_lights"
+def QIoTSpeakerHotwords(node: Node, params: QueryStateDict, result: Result) -> None:
+    print("lights banwords")
+    result.abort = True
 
 
-# Convert color name into hue
-# Taken from home.py
-_COLOR_NAME_TO_CIE: Mapping[str, float] = {
-    "gulur": 60 * 65535 / 360,
-    "grænn": 120 * 65535 / 360,
-    "ljósblár": 180 * 65535 / 360,
-    "blár": 240 * 65535 / 360,
-    "bleikur": 300 * 65535 / 360,
-    "rauður": 360 * 65535 / 360,
-    # "Rauð": 360 * 65535 / 360,
-}
+_SPEAKER_WORDS: FrozenSet[str] = frozenset(
+    (
+        "tónlist",
+        "lag",
+        "hátalari",
+        "bylgja",
+        "útvarp",
+        "útvarpsstöð",
+        "útvarp saga",
+        "gullbylgja",
+        "x-ið",
+        "léttbylgjan",
+        "rás 1",
+        "rás 2",
+        "rondo",
+        "rondó",
+        "fm 957",
+        "fm957",
+        "fm-957",
+        "k-100",
+        "k 100",
+        "kk 100",
+        "k hundrað",
+        "kk hundrað",
+        "x977",
+        "x 977",
+        "x-977",
+        "x-ið 977",
+        "x-ið",
+        "retro",
+        "kiss fm",
+        "flassbakk",
+        "flassbakk fm",
+        "útvarp hundraðið",
+        "útvarp 101",
+        "útvarp hundraðogeinn",
+        "útvarp hundrað og einn",
+        "útvarp hundrað einn",
+        "útvarp hundrað 1",
+        "útvarp",
+    )
+)
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
+    if result.get("abort"):
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        return
+
+    # Extract matched terminals in grammar (used like lemmas in this case)
+    lemmas = set(
+        i[0].root(state, result.params)
+        for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))
+    )
+    if not lemmas.isdisjoint(_SPEAKER_WORDS):
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        return
     changing_color = result.get("changing_color", False)
     changing_scene = result.get("changing_scene", False)
     changing_brightness = result.get("changing_brightness", False)
-    print("error?", sum((changing_color, changing_scene, changing_brightness)) > 1)
+    # changing_temp = result.get("changing_temp", False)
     if (
         sum((changing_color, changing_scene, changing_brightness)) > 1
         or "qtype" not in result
     ):
+        print("Multiple options error?")
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
     q.set_qtype(result.qtype)
-    if result.qtype == "connect_lights":
-        host = str(flask.request.host)
-        print("host: ", host)
-        smartdevice_type = "smartlights"
-        client_id = str(q.client_id)
-        print("client_id:", client_id)
-        js = read_jsfile("IoT_Embla/Philips_Hue/hub.js")
-        js += f"syncConnectHub('{client_id}','{host}');"
-        answer = "Philips Hue miðstöðin hefur verið tengd"
-        voice_answer = answer
-        response = dict(answer=answer)
-        q.set_answer(response, answer, voice_answer)
-        q.set_command(js)
 
-        return
+    smartdevice_type = "iot"
+    cd = q.client_data(smartdevice_type)
+    device_data = None
+    if cd:
+        # Fetch relevant data from the device_data table to perform an action on the lights
+        device_data = cast(Optional[DeviceData], cd.get("iot_lights"))
 
-    smartdevice_type = "smartlights"
-    client_id = str(q.client_id)
-    print("client_id:", client_id)
-
-    # Fetch relevant data from the device_data table to perform an action on the lights
-    device_data = cast(Optional[DeviceData], q.client_data(smartdevice_type))
-    print("device data :", device_data)
-
-    selected_light: Optional[str] = None
     hue_credentials: Optional[Dict[str, str]] = None
 
-    if device_data is not None and smartdevice_type in device_data:
-        dev = device_data[smartdevice_type]
+    if device_data is not None:
+        dev = device_data
         assert dev is not None
-        selected_light = dev.get("selected_light")
-        hue_credentials = dev.get("philips_hue")
-        bridge_ip = hue_credentials.get("ipAddress")
+        # TODO: Better error checking
+        light = dev.get("philips_hue")
+        hue_credentials = light.get("credentials")
+        bridge_ip = hue_credentials.get("ip_address")
         username = hue_credentials.get("username")
 
     if not device_data or not hue_credentials:
@@ -639,43 +357,25 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_answer(*gen_answer(answer))
         return
 
-    # Successfully matched a query type
-    print("bridge_ip: ", bridge_ip)
-    print("username: ", username)
-    print("selected light :", selected_light)
-    print("hue credentials :", hue_credentials)
-
     try:
-        # kalla í javascripts stuff
+        # TODO: What if light and group is empty?
         light_or_group_name = result.get("light_name", result.get("group_name", ""))
-        color_name = result.get("color_name", "")
-        print("GROUP NAME:", light_or_group_name)
-        print("COLOR NAME:", color_name)
-        print(result.hue_obj)
+
         q.set_answer(
-            *gen_answer(
-                "ég var að kveikja ljósin! "
-                # + group_name
-                # + " "
-                # + color_name
-                # + " "
-                # + result.action
-                # + " "
-                # + str(result.hue_obj.get("hue", "enginn litur"))
-            )
+            {"answer": "Skal gert."},
+            "Skal gert.",
+            '<break time="2s"/>',
         )
         js = (
-            read_jsfile("IoT_Embla/fuse.js")
+            read_jsfile("Libraries/fuse.js")
             + f"var BRIDGE_IP = '{bridge_ip}';var USERNAME = '{username}';"
-            + read_jsfile("IoT_Embla/Philips_Hue/fuse_search.js")
-            + read_jsfile("IoT_Embla/Philips_Hue/lights.js")
-            + read_jsfile("IoT_Embla/Philips_Hue/set_lights.js")
+            + read_jsfile("Philips_Hue/fuse_search.js")
+            + read_jsfile("Philips_Hue/lights.js")
+            + read_jsfile("Philips_Hue/set_lights.js")
         )
-        js += f"setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
+        js += f"return setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
         q.set_command(js)
     except Exception as e:
         logging.warning("Exception while processing random query: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))
         raise
-
-    # f"var BRIDGE_IP = '192.168.1.68';var USERNAME = 'p3obluiXT13IbHMpp4X63ZvZnpNRdbqqMt723gy2';"

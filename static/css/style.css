@@ -1,0 +1,115 @@
+/* latin-ext */
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: local('Lato'),
+    url("Lato-Regular.woff2") format('woff2'),
+    url("Lato-Regular.ttf") format('truetype');
+}
+
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: local('Lato Bold'),
+    url("Lato-Bold.woff2") format('woff2');
+}
+
+@font-face {
+  font-family: 'Lato';
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+  src: local('Lato Italic'),
+    url("Lato-Italic.woff2") format('woff2');
+}
+
+body {
+  background-color: rgba(249, 249, 249, 1.0);
+  font-family: "Lato";
+  font-size: 21px;
+  /*  text-align: center;*/
+  color: rgba(51, 51, 51, 1.0);
+}
+
+a {
+  color: #E8302C;
+}
+
+h1 {
+  font-size: 24px;
+  margin-top: 4px;
+}
+
+h2 {
+  font-size: 18px;
+  margin-top: 4px;
+}
+
+h4 {
+  text-align: center;
+}
+
+h5 {
+  text-align: center;
+}
+
+.h2-subsection {
+  font-size: 22px;
+}
+
+.content {
+  padding-left: 15px;
+  padding-right: 15px;
+  max-width: 800px;
+  margin: auto;
+  display: inline-block;
+}
+
+.content ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.content ul li {
+  text-align: center;
+  font-style: italic;
+}
+
+button {
+  position: relative;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  background-color: #D2827F;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  margin: 30px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  border-radius: 25px;
+  font-family: 'Lato', sans-serif;
+  padding: 10px 20px;
+  box-shadow: 0px 2px 5px -1px rgba(0, 0, 0, 0.3), inset 0px 12px 0px -10px rgba(255, 255, 255, 0.3);
+  font-size: 19px;
+  cursor: pointer;
+}
+
+span.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple 800ms linear;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}

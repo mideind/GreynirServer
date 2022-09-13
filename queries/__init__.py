@@ -454,6 +454,62 @@ def query_json_api(
     return None
 
 
+def post_to_json_api(
+    url: str, json_data: Optional[Any] = None, headers: Optional[Dict[str, str]] = None
+) -> Union[None, List[Any], Dict[str, Any]]:
+    """Send a POST request to the URL, expecting a JSON response which is
+    parsed and returned as a Python data structure."""
+
+    # Send request
+    try:
+        r = requests.post(url, data=json_data, headers=headers)
+    except Exception as e:
+        logging.warning(str(e))
+        return None
+
+    # Verify that status is OK
+    if r.status_code not in range(200, 300):
+        logging.warning("Received status {0} from API server".format(r.status_code))
+        return None
+
+    # Parse json API response
+    try:
+        res = json.loads(r.text)
+        return res
+    except Exception as e:
+        logging.warning("Error parsing JSON API response: {0}".format(e))
+    return None
+
+
+def put_to_json_api(
+    url: str, json_data: Optional[Any] = None, headers: Optional[Dict[str, str]] = None
+) -> Union[None, List[Any], Dict[str, Any]]:
+    """Send a POST request to the URL, expecting a JSON response which is
+    parsed and returned as a Python data structure."""
+    print("put to json api")
+    # Send request
+    try:
+        r = requests.put(url, data=json_data, headers=headers)
+    except Exception as e:
+        logging.warning(str(e))
+        return None
+
+    # Verify that status is OK
+    if r.status_code not in range(200, 300):
+        logging.warning("Received status {0} from API server".format(r.status_code))
+        return None
+
+    # Parse json API response
+    try:
+        if r.text:
+            res = json.loads(r.text)
+            return res
+        return {}
+    except Exception as e:
+        logging.warning("Error parsing JSON API response: {0}".format(e))
+    return None
+
+
 def query_xml_api(url: str) -> Any:
     """Request the URL, expecting an XML response which is
     parsed and returned as an XML document object."""

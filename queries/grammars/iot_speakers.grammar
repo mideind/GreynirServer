@@ -1,0 +1,473 @@
+# TODO: Fix music hardcoding
+# TODO: Check whether to force determinate form
+# TODO: "Settu á útvarpið", which station to play?
+# TODO: "Kveiktu á tónlist í hátalarnum"
+
+/þgf = þgf
+/ef = ef
+
+Query →
+    QIoTSpeaker '?'?
+
+QIoTSpeaker →
+    QIoTSpeakerQuery
+
+# TODO: Flesh out skip queries
+QIoTSpeakerQuery →
+    QIoTSpeakerMakeVerb QIoTSpeakerMakeRest
+    | QIoTSpeakerSetVerb QIoTSpeakerSetRest
+    | QIoTSpeakerLetVerb QIoTSpeakerLetRest
+    | QIoTSpeakerTurnOnOrOffVerb QIoTSpeakerTurnOrOffOnRest
+    | QIoTSpeakerPlayOrPauseVerb QIoTSpeakerPlayOrPauseRest
+    | QIoTSpeakerIncreaseOrDecreaseVerb QIoTSpeakerIncreaseOrDecreaseRest
+    | QIoTSpeakerSkipVerb
+    | QIoTSpeakerNewSetting/fall
+
+QIoTSpeakerMakeVerb →
+    'gera:so'_bh
+
+QIoTSpeakerSetVerb →
+    'setja:so'_bh
+    | 'stilla:so'_bh
+    | 'láta:so'_bh
+
+QIoTSpeakerChangeVerb →
+    'breyta:so'_bh
+
+QIoTSpeakerLetVerb →
+    'láta:so'_bh
+
+QIoTSpeakerTurnOnOrOffVerb ->
+    QIoTSpeakerTurnOnVerb
+    | QIoTSpeakerTurnOffVerb
+
+QIoTSpeakerTurnOnVerb →
+    'kveikja:so'_bh
+    | "kveiktu"
+
+QIoTSpeakerTurnOffVerb →
+    'slökkva:so'_bh
+
+QIoTSpeakerPlayOrPauseVerb →
+    QIoTSpeakerPlayVerb
+    | QIoTSpeakerPauseVerb
+
+QIoTSpeakerPlayVerb →
+    'spila:so'_bh
+
+# "pása", as a verb, is not recognized by Árnastofnun's database, but is relatively common in casual speech.
+QIoTSpeakerPauseVerb →
+    'stöðva:so'_bh
+    | 'stoppa:so'_bh
+    | "pásaðu"
+
+QIoTSpeakerIncreaseOrDecreaseVerb →
+    QIoTSpeakerIncreaseVerb
+    | QIoTSpeakerDecreaseVerb
+
+QIoTSpeakerIncreaseVerb →
+    'hækka:so'_bh
+    | 'auka:so'_bh
+
+QIoTSpeakerDecreaseVerb →
+    'lækka:so'_bh
+    | 'minnka:so'_bh
+
+QIoTSpeakerSkipVerb ->
+    'skippa:so'_bh
+
+QIoTSpeakerMakeRest →
+    QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerComparative/nf QIoTSpeakerHvar
+    | QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerHvar? QIoTSpeakerComparative/nf
+    | QIoTSpeakerMusicWord/þf QIoTSpeakerComparative/nf QIoTSpeakerHvarWithSpeaker
+    | QIoTSpeakerSoundWord/þf QIoTSpeakerComparative/nf QIoTSpeakerHvarWithAppliance
+
+QIoTSpeakerSetRest →
+    QIoTSpeakerApplianceWord/þf? QIoTSpeakerAHvad QIoTSpeakerHvar
+    | QIoTSpeakerApplianceWord/þf? QIoTSpeakerHvar? QIoTSpeakerAHvad
+
+QIoTSpeakerLetRest →
+    QIoTSpeakerBeOrBecome QIoTSpeakerMusicWord/nf QIoTSpeakerHvarWithSpeaker?
+    | QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerHvar QIoTSpeakerBeOrBecome QIoTSpeakerComparative/nf
+    | QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerBeOrBecome QIoTSpeakerComparative/nf QIoTSpeakerHvar?
+    | QIoTSpeakerMusicWord/þf QIoTSpeakerBeOrBecome QIoTSpeakerComparative/nf QIoTSpeakerHvarWithSpeaker
+    | QIoTSpeakerSoundWord/þf QIoTSpeakerBeOrBecome QIoTSpeakerComparative/nf QIoTSpeakerHvarWithAppliance
+
+QIoTSpeakerTurnOrOffOnRest →
+    QIoTSpeakerAHverju QIoTSpeakerHvarWithSpeaker?
+
+QIoTSpeakerPlayOrPauseRest →
+    QIoTSpeakerMusicWord/þf QIoTSpeakerHvarWithSpeaker?
+    | QIoTSpeakerNewRadio/þf QIoTSpeakerHvarWithSpeaker?
+    | QIoTSpeakerNewNextOrPrevious/þf QIoTSpeakerHvarWithSpeaker?
+
+QIoTSpeakerIncreaseOrDecreaseRest →
+    QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerHvar?
+    | "í" QIoTSpeakerMusicOrApplianceWord/þgf QIoTSpeakerHvar?
+    | "í" QIoTSpeakerRadioStationName QIoTSpeakerHvar?
+
+QIoTSpeakerComparative/fall →
+    QIoTSpeakerMoreOrHigher/fall
+    | QIoTSpeakerLessOrLower/fall
+
+# Sometimes "á" is not registered by Embla
+QIoTSpeakerAHvad →
+    "yfir"? "á"? QIoTSpeakerMusicOrRadioWord/þf
+    | "yfir"? "á"? QIoTSpeakerNewSetting/þf
+
+QIoTSpeakerAHverju →
+    "á" QIoTSpeakerMusicOrApplianceWord/þgf
+    | "á" QIoTSpeakerNewRadio/þgf
+    | "á" QIoTSpeakerMusicOrRadioWord/þgf
+    | "á" QIoTSpeakerNewNextOrPrevious/fall
+
+QIoTSpeakerNewSetting/fall →
+    QIoTSpeakerNewRadio/fall
+    | QIoTSpeakerNewPlayOrPause/fall
+    | QIoTSpeakerNewNextOrPrevious/fall
+
+QIoTSpeakerNewRadio/fall →
+    QIoTSpeakerRadioStationWord/fall? QIoTSpeakerRadioStationName
+
+QIoTSpeakerNewPlayOrPause/fall ->
+    QIoTSpeakerNewPlay/fall
+    | QIoTSpeakerNewPause/fall
+
+QIoTSpeakerNewPlay/fall →
+    "play"
+    | "plei"
+    | "pley"
+
+QIoTSpeakerNewPause/fall →
+    'pása'/fall
+    | 'stopp'/fall
+
+QIoTSpeakerNewNextOrPrevious/fall ->
+    QIoTSpeakerNewNext/fall
+    | QIoTSpeakerNewPrevious/fall
+
+QIoTSpeakerNewNext/fall ->
+    'næstur:lo'_kvk/fall 'lag:hk'_et/fall
+    | 'lag:hk'_et_gr/fall "á" "eftir"
+    # | "næsta" "lagið"
+
+QIoTSpeakerNewPrevious/fall ->
+    'seinastur:lo'_kvk/fall 'lag:hk'_et/fall
+    | 'síðastur:lo'_kvk/fall 'lag:hk'_et/fall
+    | 'fyrri:lo'_kvk/fall 'lag:hk'_et/fall
+    | 'lag:hk'_et_gr/fall "á" "undan"
+
+QIoTSpeakerMusicOrSoundPhrase/fall →
+    QIoTSpeakerMusicPhrase/fall
+    | QIoTSpeakerSoundPhrase/fall
+
+QIoTSpeakerMusicPhrase/fall →
+    QIoTSpeakerMusicWord/fall QIoTSpeakerApplianceWord/ef?
+    | QIoTSpeakerMusicWord/fall "í" QIoTSpeakerApplianceWord/þgf
+
+QIoTSpeakerSoundPhrase/fall →
+    QIoTSpeakerSoundWord/fall? QIoTSpeakerMusicOrApplianceWord/ef?
+    | QIoTSpeakerSoundWord/fall "í" QIoTSpeakerMusicOrApplianceWord/þgf?
+
+QIoTSpeakerSoundWord/fall →
+    QIoTSpeakerVolumeWord/fall
+    | QIoTSpeakerNoiseWord/fall
+
+QIoTSpeakerMusicOrApplianceWord/fall →
+    QIoTSpeakerMusicWord/fall
+    | QIoTSpeakerApplianceWord/fall
+
+QIoTSpeakerRadioStationWord/fall →
+    'útvarpsstöð'/fall
+
+QIoTSpeakerMusicWord/fall →
+    'tónlist'/fall
+
+QIoTSpeakerVolumeWord/fall →
+    'hljóð'/fall
+    | 'hljóðstyrkur'/fall
+
+QIoTSpeakerNoiseWord/fall →
+    'læti'/fall
+    | 'hávaði'/fall
+
+QIoTSpeakerApplianceWord/fall →
+    QIoTSpeakerSpeakerWord/fall
+    | QIoTSpeakerRadioWord/fall
+
+QIoTSpeakerMusicOrRadioWord/fall →
+    QIoTSpeakerMusicWord/fall
+    | QIoTSpeakerRadioWord/fall
+
+QIoTSpeakerSpeakerWord/fall →
+    'hátalari'/fall
+
+QIoTSpeakerRadioWord/fall →
+    'útvarp'/fall
+
+QIoTSpeakerMoreOrHigher/fall →
+    'mikill:lo'_mst/fall
+    | 'ljós:lo'_mst/fall
+    | 'hár:lo'_mst/fall
+
+QIoTSpeakerLessOrLower/fall →
+    'lítill:lo'_mst/fall
+    | 'dimmur:lo'_mst/fall
+    | 'lágur:lo'_mst/fall
+
+QIoTSpeakerHvarWithAppliance →
+    "í" QIoTSpeakerApplianceWord/þgf QIoTSpeakerHvar
+    > QIoTSpeakerHvar
+
+QIoTSpeakerHvarWithSpeaker ->
+    "í" QIoTSpeakerSpeakerWord/þgf QIoTSpeakerHvar
+    > QIoTSpeakerHvar
+
+QIoTSpeakerHvar →
+    QIoTSpeakerLocationPreposition QIoTSpeakerGroupName/þgf
+    > QIoTSpeakerAllGroups
+
+QIoTSpeakerLocationPreposition →
+    QIoTSpeakerLocationPrepositionFirstPart? QIoTSpeakerLocationPrepositionSecondPart
+
+# The latter proverbs are grammatically incorrect, but common errors, both in speech and transcription.
+# The list provided is taken from StefnuAtv in Greynir.grammar. That includes "aftur:ao", which is not applicable here.
+QIoTSpeakerLocationPrepositionFirstPart →
+    StaðarAtv
+    | "fram:ao"
+    | "inn:ao"
+    | "niður:ao"
+    | "upp:ao"
+    | "út:ao"
+
+QIoTSpeakerLocationPrepositionSecondPart →
+    "á" | "í"
+
+QIoTSpeakerGroupName/fall →
+    no/fall
+    | sérnafn/fall
+
+QIoTSpeakerAllGroups ->
+    QIoTSpeakerLocationPreposition QIoTSpeakerHouse/þgf
+    | QIoTSpeakerEverywhere 
+
+QIoTSpeakerHouse/fall ->
+    'allur:fn'_et_hk/fall? 'hús'_et/fall
+
+QIoTSpeakerEverywhere ->
+    "alls_staðar"
+    | "alstaðar"
+    | "allstaðar"
+    | "allsstaðar"
+    | "alsstaðar"
+
+QIoTSpeakerBeOrBecome →
+    QIoTSpeakerBe
+    | QIoTSpeakerBecome
+
+QIoTSpeakerBe →
+    'vera:so'_nh
+
+QIoTSpeakerBecome →
+    'verða:so'_nh
+
+QIoTSpeakerRadioStationName →
+    QIoTSpeakerBylgjan
+    | QIoTSpeakerGullbylgjan
+    | QIoTSpeakerLettbylgjan
+    | QIoTSpeakerIslenskaBylgjan
+    | QIoTSpeaker80sBylgjan
+    | QIoTSpeakerRas1
+    | QIoTSpeakerRas2
+    | QIoTSpeakerRondo
+    | QIoTSpeakerUtvarpSaga
+    | QIoTSpeakerXid
+    | QIoTSpeakerFm957
+    | QIoTSpeakerK100
+    | QIoTSpeakerRetro
+    | QIoTSpeakerKissFm
+    | QIoTSpeakerUtvarp101
+    | QIoTSpeakerApparatid
+    | QIoTSpeakerFmExtra
+    | QIoTSpeakerUtvarpSudurland
+    | QIoTSpeakerFlashbackWord
+    | QIoTSpeaker70sFlashback
+    | QIoTSpeaker80sFlashback
+    | QIoTSpeaker90sFlashback
+
+QIoTSpeakerBylgjan →
+    "Bylgjan"
+    | "Bylgjuna"
+    | "Bylgjunni"
+    | "Bylgjunnar"
+    | "bylgjan"
+    | "bylgjuna"
+    | "bylgjunni"
+    | "bylgjunnar"
+
+QIoTSpeakerUtvarpSaga →
+    "Útvarp" "Saga"
+    | "Útvarp" "Sögu"
+    | "Útvarpi" "Sögu"
+    | "Útvarp" "Sögu"
+    | "Útvarps" "Sögu"
+    | "útvarp" "saga"
+    | "útvarp" "sögu"
+    | "útvarpi" "sögu"
+    | "útvarp" "sögu"
+    | "útvarps" "sögu"
+    | "útvarpssaga"
+    | "útvarpssögu"
+
+QIoTSpeakerGullbylgjan →
+    "Gullbylgjan"
+    | "Gullbylgjuna"
+    | "Gullbylgjunni"
+    | "Gullbylgjunnar"
+    | "gullbylgjan"
+    | "gullbylgjuna"
+    | "gullbylgjunni"
+    | "gullbylgjunnar"
+    | "gull" "bylgjan"
+    | "gull" "bylgjuna"
+    | "gull" "bylgjunni"
+    | "gull" "bylgjunnar"
+
+QIoTSpeakerLettbylgjan →
+    "Léttbylgjan"
+    | "Léttbylgjuna"
+    | "Léttbylgjunni"
+    | "Léttbylgjunnar"
+    | "léttbylgjan"
+    | "léttbylgjuna"
+    | "léttbylgjunni"
+    | "léttbylgjunnar"
+    | "létt" "bylgjan"
+    | "létt" "bylgjuna"
+    | "létt" "bylgjunni"
+    | "létt" "bylgjunnar"
+
+QIoTSpeakerXid →
+    "X-ið" "977"?
+    | "X-inu" "977"?
+    | "X-ins" "977"?
+    | "x-ið" "977"?
+    | "x-inu" "977"?
+    | "x-ins" "977"?
+    | "x" "977"
+    | "x977"
+    | "x" "níu" "sjö" "sjö"
+    | "x-977"
+
+QIoTSpeakerRas1 →
+    "rás" "1"
+    | "rás" "eitt"
+
+QIoTSpeakerRas2 →
+    "rás" "2"
+    | "rás" "tvö"
+
+QIoTSpeakerRondo →
+    "rondo" "fm"?
+    | "rondó" "fm"?
+
+QIoTSpeakerFm957 →
+    "fm" "957"
+    | "fm957"
+
+QIoTSpeakerK100 →
+    "k" "100"
+    | "k" "hundrað"
+    | "k100"
+    | "k-hundrað"
+    | "k-100"
+    | "kk" "hundrað"
+    | "kk" "100"
+
+QIoTSpeakerRetro →
+    "retro" "fm"?
+    | "retró" "fm"?
+
+QIoTSpeakerKissFm →
+    "kiss" "fm"?
+
+QIoTSpeakerFlashback →
+    "flassbakk" "fm"?
+    | "flass" "bakk" "fm"?
+
+QIoTSpeakerUtvarp101 →
+    "útvarp"? "101"
+    | "útvarp"? "hundrað" "og" "einn"
+    | "útvarp"? "hundrað" "og" "eitt"
+    | "útvarp"? "hundrað" "einn"
+    | "útvarp"? "hundrað" "1"
+
+QIoTSpeaker80sBylgjan →
+    QIoTSpeaker80s "Bylgjan"
+    | QIoTSpeaker80s "Bylgjuna"
+    | QIoTSpeaker80s "Bylgjunni"
+    | QIoTSpeaker80s "Bylgjunnar"
+    | QIoTSpeaker80s "bylgjan"
+    | QIoTSpeaker80s "bylgjuna"
+    | QIoTSpeaker80s "bylgjunni"
+    | QIoTSpeaker80s "bylgjunnar"
+
+QIoTSpeakerIslenskaBylgjan →
+    "íslenska" "Bylgjan"
+    | "íslensku" "Bylgjuna"
+    | "íslensku" "Bylgjunni"
+    | "íslensku" "Bylgjunnar"
+    | "íslenska" "bylgjan"
+    | "íslensku" "bylgjuna"
+    | "íslensku" "bylgjunni"
+    | "íslensku" "bylgjunnar"
+
+QIoTSpeakerApparatid →
+    'apparat'_gr
+
+QIoTSpeakerFmExtra →
+    "fm" "extra"
+
+QIoTSpeakerUtvarpSudurland →
+    "útvarp"? "suðurland"
+    | "útvarp"? "suðurland"
+    | "útvarps"? "suðurlands"
+
+QIoTSpeaker70sFlashback →
+    QIoTSpeaker70s QIoTSpeakerFlashbackWord
+
+QIoTSpeaker80sFlashback →
+    QIoTSpeaker80s QIoTSpeakerFlashbackWord
+
+QIoTSpeaker90sFlashback →
+    QIoTSpeaker90s QIoTSpeakerFlashbackWord
+
+QIoTSpeakerFlashbackWord ->
+    "flassbakk"
+    | "flass" "bakk"
+    | "bakk"
+
+QIoTSpeaker70s →
+    "seventís"
+    | "seventies"
+
+QIoTSpeaker80s →
+    "eitís"
+    | "Eydís"
+    | "eydís"
+    | "Eidís"
+    | "eidís"
+    | "eighties"
+
+QIoTSpeaker90s →
+    "næntís"
+    | "nineties"
+
+# TODO: Fix the song hotword
+# Hotwords to block other similarly phrased query modules from catching queries belonging to iot_speakers
+# QIoTSpeakerHotwords/fall ->
+#     QIoTSpeakerMusicOrApplianceWord/fall
+#     | QIoTSpeakerSoundWord/fall
+#     | QIoTSpeakerRadioStationName
+#     | 'lag:no'
+#     | QIoTSpeakerNewSetting/fall

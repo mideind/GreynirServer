@@ -51,7 +51,6 @@ from datetime import datetime, timedelta
 import json
 import re
 import random
-from copy import deepcopy
 from collections import defaultdict
 from queries.dialogue import (
     DialogueStateManager as DSM,
@@ -85,6 +84,8 @@ from tree import Tree, TreeStateDict, Node, Result
 from images import get_image_url
 from processor import modules_in_dir
 from geo import LatLonTuple
+
+from util import merge_two_dicts
 
 # Query response
 ResponseDict = Dict[str, Any]
@@ -308,6 +309,12 @@ class QueryTree(Tree):
             return False
         with self.context(session, processor, query=query) as state:
             for query_tree in self._query_trees:
+                print(
+                    "Processing query tree",
+                    query_tree.string_self(),
+                    "in module",
+                    processor.__name__,
+                )
                 # Is the processor interested in the root nonterminal
                 # of this query tree?
                 if query_tree.string_self() in processor_query_types:
@@ -1100,6 +1107,30 @@ class Query:
                 )
         return None
 
+    @staticmethod
+    # TODO: This is a hack to get the query data for a specific device to render connected iot devices
+    def get_client_data(client_id: str, key: str) -> Optional[ClientDataDict]:
+        """Fetch client_id-associated data stored in the querydata table"""
+        with SessionContext(read_only=True) as session:
+            try:
+                client_data = (
+                    session.query(QueryData)
+                    .filter(QueryData.key == key)
+                    .filter(QueryData.client_id == client_id)
+                ).one_or_none()
+                return (
+                    None
+                    if client_data is None
+                    else cast(ClientDataDict, client_data.data)
+                )
+            except Exception as e:
+                logging.error(
+                    "Error fetching client '{0}' query data for key '{1}' from db: {2}".format(
+                        client_id, key, e
+                    )
+                )
+        return None
+
     def set_client_data(
         self, key: str, data: ClientDataDict, *, update_in_place: bool = False
     ) -> None:
@@ -1144,6 +1175,7 @@ class Query:
                     row.data = data  # type: ignore
                     row.modified = now  # type: ignore
             # The session is auto-committed upon exit from the context manager
+            print("return True")
             return True
         except Exception as e:
             logging.error("Error storing query data in db: {0}".format(e))
@@ -1315,6 +1347,35 @@ class Query:
             return True
         except Exception as e:
             logging.error("Error storing dialogue data in db: {0}".format(e))
+        return False
+
+    @staticmethod
+    def delete_iot_data(client_id: str, iot_group: str, iot_name: str) -> bool:
+        """Delete iot data for specific iot_group and iot_name for a client"""
+        if not client_id or not iot_group or not iot_name:
+            return False
+        try:
+            with SessionContext(commit=True) as session:
+                rows = (
+                    session.query(QueryData)
+                    .filter(QueryData.client_id == client_id)
+                    .filter(QueryData.key == "iot")
+                    # .filter(QueryData.data.contains(iot_group))
+                    # .filter(QueryData.data.contains(iot_name))
+                ).all()
+                for row in rows:
+                    iot_dict = row.data
+                    if iot_group in iot_dict:
+                        if iot_name in iot_dict[iot_group]:
+                            del iot_dict[iot_group][iot_name]
+                            if not iot_dict[iot_group]:
+                                del iot_dict[iot_group]
+                                if not iot_dict:
+                                    session.delete(row)
+                    Query.store_query_data(client_id, "iot", iot_dict)
+            return True
+        except Exception as e:
+            logging.error("Error deleting iot data from db: {0}".format(e))
         return False
 
     @classmethod

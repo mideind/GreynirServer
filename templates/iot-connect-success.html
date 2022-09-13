@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="is">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="Content-Language" content="is">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/dark.css') }}"> -->
+    <script type="text/javascript">
+        document.write(`<link rel="stylesheet" href="{{ url_for('static', filename = 'css/dark.css') }}" id="dark_style" disabled="true">`);
+        window.addEventListener("flutterInAppWebViewPlatformReady", function (event) {
+            window.flutter_inappwebview.callHandler('darkmode_handler')
+                .then(function (result) {
+                    if (result) {
+                        document.getElementById("dark_style").removeAttribute("disabled");
+                    }
+                });
+        });
+    </script>
+    <title>Tenging tókst</title>
+    <meta name="robots" content="noindex, nofollow, noimageindex, noarchive">
+    <meta name="googlebot" content="noindex, nofollow, noimageindex, noarchive">
+</head>
+
+<body>
+    <div style="
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 90vh;
+            " class="content">
+
+        <img src="{{ url_for('static', filename='img/checkmark.gif') }}" alt="Tenging tókst" style="width: 50%;">
+
+        <p>Tenging tókst!</p>
+
+        <button id="return_button" class="btn">Aftur á Emblu snjallheimili</button>
+
+    </div>
+
+    <script>
+        let returnButton = document.getElementById('return_button');
+        returnButton.onclick = function () {
+            window.flutter_inappwebview.callHandler("flutter_handler", {
+            });
+        }
+
+        function createRipple(event) {
+            const button = event.currentTarget;
+
+            const circle = document.createElement("span");
+            const diameter = Math.max(button.clientWidth, button.clientHeight);
+            const radius = diameter / 2;
+
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `${event.clientX - button.offsetLeft - radius}px`;
+            circle.style.top = `${event.clientY - button.offsetTop - radius}px`;
+            circle.classList.add("ripple");
+
+            const ripple = button.getElementsByClassName("ripple")[0];
+
+            if (ripple) {
+                ripple.remove();
+            }
+
+            button.appendChild(circle);
+        }
+
+        const buttons = document.getElementsByTagName("button");
+        for (const button of buttons) {
+            button.addEventListener("click", createRipple);
+        }
+    </script>
+
+</body>
+
+
+</html>

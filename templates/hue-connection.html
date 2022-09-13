@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="is">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="Content-Language" content="is">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <script type="text/javascript">
+        var urlParams = new URLSearchParams(window.location.search);
+        var dark = urlParams.get('dark');
+        if (dark != null) {
+            document.write(`<link rel="stylesheet" href="{{ url_for('static', filename = 'css/dark.css') }}">`);
+        }
+    </script>
+    <title>Philips Hue</title>
+
+    <meta name="robots" content="noindex, nofollow, noimageindex, noarchive">
+    <meta name="googlebot" content="noindex, nofollow, noimageindex, noarchive">
+</head>
+
+<body>
+    <div style="
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                " class="content">
+        <h1>Philips Hue Hub</h1>
+        <p>Philips Hue eru meðal vinsælustu snjallljósa heims.
+            Með því að tengja Philips Hue miðstöðina þína getur þú beðið Emblu um að kveikja og slökka á ljósum, breyta
+            lit, birtustigi og fleira.</p>
+
+        <h2 class="h2-subsection">Leiðbeiningar</h2>
+        <ol>
+            <li>Tengdu Philips Hue miðstöðina með netsnúru.</li>
+            <li>Gættu þess að miðstöðin sé tengd sama neti og síminn þinn.</li>
+            <li>Ýttu á takkann á Hue miðstöðinni þinni.</li>
+            <li>Veldu „Tengja“ innan 30 sekúndna frá því þú ýttir á takkann.</li>
+        </ol>
+
+        <button id="connect_button" class="btn" onclick="syncConnectHub()">Tengja</button>
+
+    </div>
+    <script>
+        console.log("!!!!!!! hub.js !!!!!!!!");
+        // "use strict";
+
+        async function findHub() {
+            // let hubArr = [];
+            // let hubObj = new Object();
+            // hubObj.id = "ecb5fafffe1be1a4";
+            // hubObj.internalipaddress = "192.168.1.68";
+            // hubObj.port = "443";
+            // console.log(hubObj);
+            // hubArr.push(hubObj);
+            // return hubArr[0];
+            return fetch(`https://discovery.meethue.com`)
+                .then((resp) => {
+                    if (!resp.ok) {
+                        throw new Error(resp.status);
+                    }
+                    return resp.json();
+                })
+                .then((obj) => {
+                    if (obj) {
+                        return obj[0];
+                    } else {
+                        throw new Error("no-hub");
+                    }
+                })
+                .catch((err) => {
+                    if (err) {
+                        console.log("No smart device found!", err.message);
+                        window.flutter_inappwebview.callHandler("flutter_handler", {
+                            "hub_error": err.message,
+                        });
+                    }
+                });
+        }
+
+        async function createNewDeveloper(ipAddress) {
+            console.log("create new developer");
+            const body = JSON.stringify({
+                devicetype: "mideind_hue_communication#smartdevice",
+            });
+            return fetch(`http://${ipAddress}/api`, {
+                method: "POST",
+                body: body,
+            })
+                .then((resp) => resp.json())
+                .then((obj) => {
+                    return obj[0];
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
+        }
+
+        async function storeDevice(data, requestURL) {
+            console.log("store device");
+            return fetch(`${requestURL}/register_query_data.api`, {
+                method: "POST",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            })
+                .then((resp) => resp.json())
+                .then((obj) => {
+                    return obj;
+                })
+                .catch((err) => {
+                    console.log("Error while storing user");
+                });
+        }
+
+        // clientID = "82AD3C91-7DA2-4502-BB17-075CEC090B14", requestURL = "192.168.1.68")
+        async function connectHub(clientID, requestURL, hubIpAddress = null) {
+            console.log("connect hub");
+            let deviceInfo;
+            if (hubIpAddress) {
+                deviceInfo = { internalipaddress: hubIpAddress };
+            } else {
+                deviceInfo = await findHub();
+            }
+            console.log("device info: ", deviceInfo);
+            console.log("device_ip :", deviceInfo.internalipaddress);
+
+            try {
+                let username = await createNewDeveloper(deviceInfo.internalipaddress);
+                console.log("username: ", username);
+                if (!username.success) {
+                    window.flutter_inappwebview.callHandler("flutter_handler", {
+                        "button_press_missing": true,
+                    });
+                    return "Ýttu á 'Philips' takkann á tengiboxinu og reyndu aftur";
+                }
+
+                const data = {
+                    client_id: clientID,
+                    key: "iot",
+                    data: {
+                        iot_lights: {
+                            philips_hue: {
+                                credentials: {
+                                    username: username.success.username,
+                                    ip_address: deviceInfo.internalipaddress,
+                                },
+                            },
+                        },
+                    },
+                };
+
+                const result = await storeDevice(data, requestURL);
+                console.log("result: ", result);
+                if (result.valid === true) {
+                    console.log("Request url in valid check: ", requestURL);
+                    window.location.href = `${requestURL}/iot-connect-success`;
+                }
+                return "Tenging við snjalltæki tókst";
+            } catch (error) {
+                console.log(error);
+                window.location.href = `${requestURL}/iot-connect-error`;
+                return "Ekki tókst að tengja snjalltæki";
+            }
+        }
+
+        function syncConnectHub() {
+
+            const queryParams = new URLSearchParams(window.location.search);
+            const clientID = queryParams.get('client_id');
+            const requestURL = queryParams.get('request_url');
+            const hubIpAddress = queryParams.get('hub_ip_address');
+            if (hubIpAddress) {
+                connectHub(clientID, requestURL, hubIpAddress);
+            } else {
+                connectHub(clientID, requestURL);
+            }
+            return "Philips Hue miðstöðin hefur verið tengd";
+        }
+
+        function createRipple(event) {
+            const button = event.currentTarget;
+
+            const circle = document.createElement("span");
+            const diameter = Math.max(button.clientWidth, button.clientHeight);
+            const radius = diameter / 2;
+
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `${event.clientX - button.offsetLeft - radius}px`;
+            circle.style.top = `${event.clientY - button.offsetTop - radius}px`;
+            circle.classList.add("ripple");
+
+            const ripple = button.getElementsByClassName("ripple")[0];
+
+            if (ripple) {
+                ripple.remove();
+            }
+
+            button.appendChild(circle);
+        }
+
+        const buttons = document.getElementsByTagName("button");
+        for (const button of buttons) {
+            button.addEventListener("click", createRipple);
+        }
+    </script>
+</body>
+
+
+</html>

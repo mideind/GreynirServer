@@ -1,18 +1,15 @@
+
 /þgf = þgf
 /ef = ef
 
 Query →
-    QIoT
+    QIoT '?'?
 
 QIoT → 
-    QIoTQuery '?'? 
-    | QIoTConnectLights '?'?
-
-QIoTConnectLights →
-    "tengdu" "ljósin"
+    QIoTQuery
 
 QIoTQuery ->
-    QIoTMakeVerb QIoTMakeRest
+    QIoTMakeVerb? QIoTMakeRest
     | QIoTSetVerb QIoTSetRest
     | QIoTChangeVerb QIoTChangeRest
     | QIoTLetVerb QIoTLetRest
@@ -80,9 +77,9 @@ QIoTLetRest ->
     QIoTSubject/þf QIoTHvar? QIoTHvernigLet
     | QIoTSubject/þf QIoTHvernigLet QIoTHvar?
     | QIoTHvar? QIoTSubject/þf QIoTHvernigLet
-    | QIoTHvar? QIoTHvernigLet QIoTSubject/þf
-    | QIoTHvernigLet QIoTSubject/þf QIoTHvar?
-    | QIoTHvernigLet QIoTHvar? QIoTSubject/þf
+    # | QIoTHvar? QIoTHvernigLet QIoTSubject/þf
+    # | QIoTHvernigLet QIoTSubject/þf QIoTHvar?
+    # | QIoTHvernigLet QIoTHvar? QIoTSubject/þf
 
 QIoTTurnOnRest ->
     QIoTTurnOnLightsRest
@@ -189,17 +186,25 @@ QIoTLocationPrepositionSecondPart ->
     "á" | "í"
 
 QIoTGroupName/fall ->
+    # QIoTLightsBanwords/fall
     no/fall
+    | sérnafn/fall
 
 QIoTLightName/fall ->
+    # QIoTLightsBanwords/fall
     no/fall
+    | sérnafn/fall
 
 QIoTColorName ->
-    {" | ".join(f"'{color}:lo'" for color in _COLORS.keys())}
+    {color_names}
+
+$score(+100) QIoTColorName
 
 QIoTSceneName ->
+    # QIoTLightsBanwords/fall
     no
     | lo
+    | sérnafn/fall
 
 QIoTAnnadAndlag ->
     QIoTNewSetting/nf
@@ -256,12 +261,16 @@ QIoTSceneWord/fall ->
     | 'stemning'/fall
     | 'stemming'/fall
     | 'stemmning'/fall
+    | 'sina'/fall
+    | 'Sena'/fall
+    | "Sena"
 
 # Need to ask Hulda how this works.
 QIoTSpyrjaHuldu/fall ->
     # QIoTHuldaColor/fall
     QIoTHuldaBrightness/fall
     # | QIoTHuldaScene/fall
+    | QIoTHuldaTemp/fall
 
 # Do I need a "new light state" non-terminal?
 QIoTNewSetting/fall ->
@@ -273,6 +282,10 @@ QIoTNewSetting/fall ->
 QIoTHuldaBrightness/fall ->
     QIoTMoreBrighterOrHigher/fall QIoTBrightnessWords/fall?
     | QIoTLessDarkerOrLower/fall QIoTBrightnessWords/fall?
+
+QIoTHuldaTemp/fall ->
+    QIoTWarmer/fall
+    | QIoTCooler/fall 
 
 #Unsure about whether to include /fall after QIoTColorName
 QIoTNewColor/fall ->
@@ -299,6 +312,15 @@ QIoTLessDarkerOrLower/fall ->
     | 'dimmur:lo'_mst/fall
     | 'lágur:lo'_mst/fall
 
+QIoTWarmer/fall ->
+    'hlýr:lo'_mst/fall
+    | 'heitur:lo'_mst/fall
+    | "hlýri"
+
+
+QIoTCooler/fall ->
+    'kaldur:lo'_mst/fall
+
 QIoTBrightestOrDarkest/fall ->
     QIoTBrightest/fall
     | QIoTDarkest/fall
@@ -321,3 +343,7 @@ QIoTBrightnessOrSettingWord/fall ->
 
 QIoTSettingWord/fall ->
     'stilling'/fall
+
+# Catching hotwords from iot_speakers
+# QIoTLightsBanwords/fall ->
+#     QIoTSpeakerHotwords/fall
