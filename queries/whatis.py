@@ -30,6 +30,7 @@
 from typing import Set
 
 from query import ResponseType, QueryStateDict
+from queries import read_grammar_file
 from tree import Node, ParamList, Result
 
 # --- Begin "magic" module constants ---
@@ -46,47 +47,7 @@ PRIORITY = 1
 
 QUERY_NONTERMINALS: Set[str] = set()  # { "QWhatIsQuery" }
 
-GRAMMAR = """
-
-# ----------------------------------------------
-#
-# Query grammar
-#
-# The following grammar is used for queries only
-#
-# ----------------------------------------------
-
-Query →
-    QWhatIsQuery
-
-QWhatIsQuery →
-    # Það þarf að gera ráð fyrir sérstökum punkti í
-    # enda fyrirspurnarinnar þar sem punktur á eftir 'hf.'
-    # eða 'ehf.' í enda setningar er skilinn frá
-    # skammstöfunar-tókanum.
-    QWhatIsPrefix/fall/tala QWhatIsEntity/fall/tala "."? "?"?
-
-QWhatIsEntity/fall/tala → Nl/fall/tala
-
-$tag(keep) QWhatIsEntity/fall/tala
-
-QWhatIsPrefix_nf_et →
-    "hvað" "er"
-
-QWhatIsPrefix_nf_ft →
-    "hvað" "eru"
-
-QWhatIsPrefix_þf/tala →
-    "hvað" "veistu" "um"
-    | "hvað" "geturðu" "sagt" "mér"? "um"
-
-QWhatIsPrefix_þgf/tala →
-    "segðu" "mér"? "frá"
-
-QWhatIsPrefix_ef/tala →
-    ""
-
-"""
+GRAMMAR = read_grammar_file("whatis")
 
 # --- End of "magic" module constants ---
 

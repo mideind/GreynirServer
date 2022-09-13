@@ -1,0 +1,38 @@
+# Grammar for the counting query module
+
+Query →
+    QCounting
+
+QCounting → QCountingQuery '?'?
+
+QCountingQuery →
+    QCountingUp | QCountingDown | QCountingBetween
+
+QCountingUp →
+    "teldu" QCountingSpeed? QCountingUpTo QCountingFirstNumber QCountingSpeed?
+    | QCountingCanYouCount QCountingSpeed? QCountingUpTo QCountingFirstNumber QCountingSpeed?
+
+QCountingDown →
+    "teldu" QCountingSpeed? "niður" "frá" QCountingFirstNumber QCountingSpeed?
+    | QCountingCanYouCount QCountingSpeed? "niður" "frá" QCountingFirstNumber QCountingSpeed?
+
+QCountingBetween →
+    "teldu" QCountingSpeed? "frá" QCountingFirstNumber QCountingUpTo QCountingSecondNumber QCountingSpeed?
+    | QCountingCanYouCount QCountingSpeed? "frá" QCountingFirstNumber QCountingUpTo QCountingSecondNumber QCountingSpeed?
+
+QCountingFirstNumber →
+    to | töl | tala
+
+QCountingSecondNumber →
+    to | töl | tala
+
+QCountingSpeed →
+    "mjög" "hægt" | "hægt" | "hratt" | "mjög" "hratt"
+
+QCountingUpTo →
+    "upp"? "að" | "upp"? "í" | "upp"? "til"
+
+QCountingCanYouCount →
+    "geturðu" "talið" | "getur" "þú" "talið" | "nennirðu" "að" "telja" | "nennir" "þú" "að" "telja"
+
+$score(+35) QCounting

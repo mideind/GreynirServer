@@ -35,7 +35,7 @@ import re
 import random
 from datetime import datetime, timedelta
 
-from queries import query_json_api, gen_answer, cap_first
+from queries import query_json_api, gen_answer, cap_first, read_grammar_file
 from query import Query, QueryStateDict, ContextDict
 from tree import Result, Node
 
@@ -108,92 +108,8 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QWiki"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QWiki
-
-QWiki →
-    QWikiQuery '?'? | QWikiWhatIsQuery '?'?
-
-QWikiQuery →
-    # These take the subject in the nominative case
-    QWikiSubjectNf "í" QWikipedia
-
-    # These take the subject in the accusative case
-    | "hvað" "segir" QWikipedia "um"? QWikiSubjectÞf
-    | "hvað" "stendur" "í" QWikipedia "um" QWikiSubjectÞf
-    | "hvað" "stendur" "á" QWikipedia "um" QWikiSubjectÞf
-    | "hvað" "stendur" "um" QWikiSubjectÞf "í" QWikipedia
-    | "hvað" "getur" "þú" "sagt" QWikiMeOrUsÞgf? "um" QWikiSubjectÞf
-    | "hvað" "geturðu" "sagt" QWikiMeOrUsÞgf? "um" QWikiSubjectÞf
-    | "hvað" "getur" QWikipedia "sagt" QWikiMeOrUsÞgf? "um" QWikiSubjectÞf
-    | "hvaða" "upplýsingar" "ert" "þú" "með" "um" QWikiSubjectÞf
-    | "hvaða" "upplýsingar" "ertu" "með" "um" QWikiSubjectÞf
-    | "hvaða" "upplýsingar" "er" QWikipedia "með" "um" QWikiSubjectÞf
-    | "hvaða" "upplýsingum" "býr" QWikipedia "yfir" "varðandi" QWikiSubjectÞf
-    | "hvaða" "upplýsingum" "býrðu" "yfir" "varðandi" QWikiSubjectÞf
-    | "hvað" "myndi" QWikipedia "segja" QWikiMeOrUsÞgf? "um" QWikiSubjectÞf
-    | "fræddu" QWikiMeOrUsÞf "um" QWikiSubjectÞf
-    | "geturðu" "frætt" QWikiMeOrUsÞf "um" QWikiSubjectÞf
-    | "nennirðu" "að" "fræða" QWikiMeOrUsÞf "um" QWikiSubjectÞf
-
-    # These take the subject in the dative case
-    | "segðu" QWikiMeOrUsÞgf "frá" QWikiSubjectÞgf
-    | "segðu" QWikiMeOrUsÞgf "eitthvað" "um" QWikiSubjectÞf
-    | "flettu" "upp" QWikiSubjectÞgf "í" QWikipedia
-    | "geturðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
-    | "nennirðu" "að" "fletta" "upp" QWikiSubjectÞgf "í" QWikipedia
-    | "gætirðu" "flett" "upp" QWikiSubjectÞgf "í" QWikipedia
-
-QWikiWhatIsQuery →
-    "hvað" "er" QWikiSubjectNlNf |
-    "hvað" "eru" QWikiSubjectNlNf
-
-QWikiMeOrUsÞgf →
-    "mér" | "okkur"
-
-QWikiMeOrUsÞf →
-    "mig" | "okkur"
-
-QWikiSubjectNf →
-    QWikiPrevSubjectNf | QWikiSubjectNlNf
-
-QWikiSubjectNlNf →
-    Nl_nf
-
-QWikiSubjectÞf →
-    QWikiPrevSubjectÞf | QWikiSubjectNlÞf
-
-QWikiSubjectNlÞf →
-    Nl_þf
-
-QWikiSubjectÞgf →
-    QWikiPrevSubjectÞgf | QWikiSubjectNlÞgf
-
-QWikiSubjectNlÞgf →
-    Nl_þgf
-
-QWikiPrevSubjectNf →
-    "hann" | "hún" | "það"
-
-QWikiPrevSubjectÞf →
-    "hann" | "hana" | "það"
-
-QWikiPrevSubjectÞgf →
-    "honum" | "henni" | "því"
-
-QWikipedia →
-    {0}
-
-$score(+35) QWikiPrevSubjectNf
-$score(+35) QWikiPrevSubjectÞf
-$score(+35) QWikiPrevSubjectÞf
-
-$score(+35) QWikiQuery
-
-""".format(
-    " | ".join('"' + v + '"' for v in _WIKI_VARIATIONS)
+GRAMMAR = read_grammar_file(
+    "wiki", wikipedia_variations=" | ".join('"' + v + '"' for v in _WIKI_VARIATIONS)
 )
 
 
@@ -250,7 +166,18 @@ def FsMeðFallstjórn(node: Node, params: QueryStateDict, result: Result) -> Non
     """Don't change the case of prepositional clauses"""
     result._nominative = result._text
 
-_MULTIPLE_MEANINGS_RE = re.compile(r"(hefur ýmsar merkingar:|getur átt við:)\s+")
+
+_DISAMBIG_INDICATORS = [
+    "hefur ýmsar merkingar:",
+    "getur átt við",
+    "getur átt við:",
+    "getur átt við eftirfarandi:",
+    "getur vísað til:",
+]
+
+
+_MULTIPLE_MEANINGS_RE = re.compile(r"({})\s+".format("|".join(_DISAMBIG_INDICATORS)))
+
 
 def _clean_answer(answer: str) -> str:
     # Check if answer is a multiple meaning answer
@@ -281,8 +208,10 @@ def _clean_answer(answer: str) -> str:
     a = a.replace("[heimild vantar]", "")
     return a
 
+
 _BREAK_LENGTH = 0.5  # Seconds
 _BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
+
 
 def _clean_voice_answer(answer: str) -> str:
     a = answer.replace(" m.a. ", " meðal annars ")

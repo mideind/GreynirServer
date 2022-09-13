@@ -61,7 +61,7 @@ from sqlalchemy.orm import Session
 from tokenizer import BIN_Tuple
 from reynir.bindb import GreynirBin
 from reynir.binparser import BIN_Token
-from reynir.simpletree import SimpleTree, SimpleTreeBuilder
+from reynir.simpletree import SimpleTree, SimpleTreeBuilder, NonterminalMap, IdMap
 from reynir.cache import LRU_Cache
 
 
@@ -96,6 +96,7 @@ VisitFunction = Callable[[TreeStateDict, "Node"], bool]
 ParamList = List[Optional["Result"]]
 NonterminalFunction = Callable[["Node", ParamList, "Result"], None]
 ChildTuple = Tuple["Node", Optional["Result"]]
+LookupSignature = Tuple[str, bool, str]
 
 BIN_ORDFL: Mapping[str, Set[str]] = {
     "no": {"kk", "kvk", "hk"},
@@ -396,7 +397,7 @@ class Result:
                 d[key] = val
             else:
                 # Combine lists and dictionaries
-                left = d[key]
+                left: Union[List[Any], Set[Any], Dict[str, Any]] = d[key]
                 if isinstance(left, list) and isinstance(val, list):
                     # Extend lists
                     left.extend(val)
@@ -886,7 +887,9 @@ class TerminalNode(Node):
             return self.text
         return self._root_cache(self.text, self._at_start, self.td.terminal)
 
-    def _lazy_eval_root(self) -> Union[str, Tuple[Callable, Tuple[str, bool, str]]]:
+    def _lazy_eval_root(
+        self,
+    ) -> Union[str, Tuple[Callable[[LookupSignature], str], LookupSignature]]:
         """Return a word root (stem) function object, with arguments, that can be
         used for lazy evaluation of word stems."""
         if (not self.is_word) or self.is_literal:
@@ -894,7 +897,10 @@ class TerminalNode(Node):
         return self._root_cache, (self.text, self._at_start, self.td.terminal)
 
     def lookup_alternative(
-        self, bin_db: GreynirBin, replace_func, sort_func=None
+        self,
+        bin_db: GreynirBin,
+        replace_func: Callable[[str], str],
+        sort_func: Optional[Callable[[BinMeaning], Union[str, int]]] = None,
     ) -> str:
         """Return a different (but always nominative case) word form, if available,
         by altering the beyging spec via the given replace_func function"""
@@ -1167,8 +1173,9 @@ class PersonNode(TerminalNode):
         gender = self.td.gender or None
         case = self.td.case or None
         # Aux contains a JSON-encoded list of tuples: (name, gender, case)
-        fn_list = self._aux = json.loads(aux) if aux else []
-        assert fn_list is not None
+        self._aux = json.loads(aux) if aux else []
+        assert self._aux is not None
+        fn_list: List[Tuple[str, str, str]] = self._aux
         # Collect the potential full names that are available in nominative
         # case and match the gender of the terminal
         self.fullnames = [
@@ -1386,7 +1393,10 @@ class TreeBase:
         return self.lengths.get(n, 0)
 
     def simple_trees(
-        self, nt_map=None, id_map=None, terminal_map=None
+        self,
+        nt_map: Optional[NonterminalMap] = None,
+        id_map: Optional[IdMap] = None,
+        terminal_map: Optional[Mapping[str, str]] = None,
     ) -> Iterator[Tuple[int, SimpleTree]]:
         """Generate simple trees out of the sentences in this tree"""
         # Hack to allow nodes to access the BIN database
@@ -1405,13 +1415,13 @@ class TreeBase:
         if n == len(self.stack):
             # First child of parent
             if n:
-                parent = cast(Node, self.stack[n - 1])
+                parent = self.stack[n - 1]
                 parent.set_child(node)
             self.stack.append(node)
         else:
             assert n < len(self.stack)
             # Next child of parent
-            parent = cast(Node, self.stack[n])
+            parent = self.stack[n]
             parent.set_next(node)
             self.stack[n] = node
             if n + 1 < len(self.stack):
@@ -1446,7 +1456,7 @@ class TreeBase:
         assert self.n is not None
         assert self.n not in self.s
         assert self.stack is not None
-        self.s[self.n] = cast(Node, self.stack[0])
+        self.s[self.n] = self.stack[0]
         self.stack = None
         self.n = None
 

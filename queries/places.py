@@ -45,11 +45,11 @@ from queries import (
     query_places_api,
     query_place_details,
     icequote,
+    AnswerTuple,
+    read_grammar_file,
 )
 from queries.num import numbers_to_text
 from tree import Result, Node
-
-from . import AnswerTuple
 
 
 _PLACES_QTYPE = "Places"
@@ -79,102 +79,7 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QPlaces"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QPlaces
-
-QPlaces →
-    QPlacesQuery '?'?
-
-QPlacesQuery →
-    QPlacesOpeningHoursNow | QPlacesIsOpen | QPlacesIsClosed | QPlacesAddress
-
-QPlacesOpeningHoursNow →
-    QPlacesOpeningHours QPlToday?
-
-QPlacesOpeningHours →
-    "hvað" "er" "opið" "lengi" QPlacesPrepAndSubject
-    | "hvað" "er" "lengi" "opið" QPlacesPrepAndSubject
-    | "hverjir" "eru" "opnunartímar" QPlacesPrepAndSubject
-    | "hverjir" "eru" "opnunartímar" QPlacesSubject_ef
-    | "hvaða" "opnunartímar" "eru" QPlacesPrepAndSubject
-    | "hversu" "lengi" "er" "opið" QPlacesPrepAndSubject
-    | "hve" "lengi" "er" "opið" QPlacesPrepAndSubject
-    | "klukkan" "hvað" "opnar" QPlacesPrepAndSubject
-    | "klukkan" "hvað" "opnar" QPlacesSubject_nf
-    | "hvenær" "lokar" QPlacesPrepAndSubject
-    | "hvenær" "lokar" QPlacesSubject_nf
-    | "hvenær" "opnar" QPlacesPrepAndSubject
-    | "hvenær" "opnar" QPlacesSubject_nf
-    | "klukkan" "hvað" "lokar" QPlacesPrepAndSubject
-    | "klukkan" "hvað" "lokar" QPlacesSubject_nf
-    | "hversu" "langt" "er" "í" "lokun" QPlacesPrepAndSubject
-    | "hversu" "langt" "er" "í" "lokun" QPlacesSubject_ef
-    | "hvað" "er" "langt" "í" "lokun" QPlacesPrepAndSubject
-    | "hvað" "er" "langt" "í" "lokun" QPlacesSubject_ef
-    | "hvenær" "er" "opið" QPlacesPrepAndSubject
-    | "hvað" "er" QPlacesSubject_nf QPlOpen "lengi"
-    | "hve" "lengi" "er" QPlacesSubject_nf QPlOpen
-    | "hversu" "lengi" "er" QPlacesSubject_nf QPlOpen
-    | "hvenær" "er" QPlacesSubject_nf QPlOpen
-
-QPlacesIsOpen →
-    "er"? "opið" QPlacesPrepAndSubject QPlNow?
-    | "er"? QPlacesSubject_nf QPlOpen QPlNow?
-
-QPlacesIsClosed →
-    "er"? "lokað" QPlacesPrepAndSubject QPlNow?
-    | "er"? QPlacesSubject_nf QPlClosed QPlNow?
-
-QPlacesWhatIs →
-    "hvert" "er" | "hvað" "er"
-
-QPlacesAddress →
-    QPlacesWhatIs? "heimilisfangið" QPlacesPrepAndSubject
-    | QPlacesWhatIs? "heimilisfang" QPlacesSubject_ef
-    | "hvar" "er" QPlacesSubject_nf "til" "húsa"
-    | "hvar" "er" QPlacesSubject_nf "staðsett"
-    | "hvar" "er" QPlacesSubject_nf "staðsettur"
-    | QPlacesPreposition "hvaða" "götu" "er" QPlacesSubject_nf
-    | QPlacesPreposition "hvaða" "stræti" "er" QPlacesSubject_nf
-
-QPlacesPrepAndSubject →
-    QPlacesPrepWithÞgf QPlacesSubject_þgf
-    | QPlacesPrepWithÞf QPlacesSubject_þf
-
-QPlacesSubject/fall →
-    Nl/fall
-
-$tag(keep) QPlacesSubject/fall
-
-QPlacesPreposition →
-    QPlacesPrepWithÞf | QPlacesPrepWithÞgf
-
-QPlacesPrepWithÞgf →
-    "á" | "í" | "hjá"
-
-QPlacesPrepWithÞf →
-    "við" | "fyrir"
-
-QPlOpen →
-    "opið" | "opin" | "opinn"
-
-QPlClosed →
-    "lokað" | "lokuð" | "lokaður"
-
-QPlNow →
-    "núna" | "í" "augnablikinu" | "eins" "og" "stendur" | "nú"
-
-QPlToday →
-    "núna"? "í" "dag" | "núna"? "í_kvöld" # | "núna"? 'í_dag'
-
-QPlacesCloseBy →
-    "í" "grenndinni" | "nálægt" "mér"? | "nálægt" "okkur"
-
-$score(+35) QPlacesQuery
-
-"""
+GRAMMAR = read_grammar_file("places")
 
 
 _PLACENAME_MAP: Dict[str, str] = {}

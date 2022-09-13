@@ -20,7 +20,7 @@ topic models, TF-IDF and LSI.
 In addition to the files found here in this repository,
 you will need the following:
 
-*  A CPython >=3.6 virtualenv within the `vectors` folder, typically
+*  A CPython >=3.7 virtualenv within the `vectors` folder, typically
    called `venv`. (PyPy presently doesn't support
    `numpy` and `gensim` adequately for this purpose,
    so CPython is required.)

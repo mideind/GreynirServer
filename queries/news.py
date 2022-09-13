@@ -34,7 +34,7 @@ import cachetools  # type: ignore
 import random
 
 from query import Query, QueryStateDict, AnswerTuple
-from queries import gen_answer, query_json_api
+from queries import gen_answer, query_json_api, read_grammar_file
 from tree import Result, Node
 
 
@@ -44,7 +44,7 @@ _NEWS_QTYPE = "News"
 TOPIC_LEMMAS = ["fréttir", "fregnir", "frétta"]
 
 
-def help_text(lemma) -> str:
+def help_text(lemma: str) -> str:
     """Help text to return when query.py is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég skil þig ef þú spyrð til dæmis: {0}?".format(
@@ -60,55 +60,7 @@ QUERY_NONTERMINALS = {"QNewsQuery"}
 HANDLE_TREE = True
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QNewsQuery '?'?
-
-QNewsQuery →
-    QNewsLatest
-
-QNewsLatest →
-    QNewsTellMe? QNewsQualifiersDef? "fréttir"
-    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttum" QNewsRUV? QNewsNow?
-    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "í" "fréttunum" QNewsRUV? QNewsNow?
-    | QNewsTellMe? "hvað" "er" QNewsQualifiers? "að" "frétta" QNewsRUV? QNewsNow?
-    | QNewsTellMe? "hvað" "er" "að" "gerast" QNewsNow?
-    | QNewsTellMe? "hvaða" "fréttir" "eru" QNewsQualifiers? QNewsRUV QNewsNow?
-    | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttir" QNewsRUV? QNewsNow?
-    | QNewsTellMe? "hverjar" "eru" QNewsQualifiersDef? "fréttirnar" QNewsRUV? QNewsNow?
-    | QNewsCanYou "lesið" "fyrir" "mig" QNewsQualifiersDef? "fréttir" QNewsRUV?
-    | QNewsCanYou "lesið" QNewsQualifiersDef? QNewsRUV? "fréttir" "fyrir" "mig"
-
-QNewsTellMe →
-    "segðu" "mér"? | "geturðu" "sagt" "mér"?
-
-QNewsCanYou →
-    "geturðu" | "getur" "þú"
-
-QNewsNow →
-    "núna" | "þessa_stundina" | "í" "dag" # | 'í_dag'
-
-QNewsQualifiers →
-    "helst" | "eiginlega" | "núna" | "nýjast"
-
-QNewsQualifiersDef →
-    "helstu" | "nýjustu" | "síðustu" | "allranýjustu" | "seinustu"
-
-QNewsRUV →
-    "á"? "rúv"
-    | "í" "rúv"
-    | "hjá" "rúv"
-    | "í" "ríkisútvarpinu"
-    | "á" "ríkisútvarpinu"
-    | "hjá" "ríkisútvarpinu"
-    | "á" "vef" "rúv"
-    | "á" "vef" "ríkisútvarpsins"
-    | "ríkisútvarpsins"
-
-$score(+35) QNewsQuery
-
-"""
+GRAMMAR = read_grammar_file("news")
 
 
 def QNewsQuery(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -120,7 +72,7 @@ _NEWS_CACHE_TTL = 300  # seconds, ttl = 5 mins
 
 
 @cachetools.cached(cachetools.TTLCache(1, _NEWS_CACHE_TTL))
-def _get_news_data(max_items: int = 8) -> Optional[List[Dict]]:
+def _get_news_data(max_items: int = 8) -> Optional[List[Dict[str, str]]]:
     """Fetch news headline data from RÚV, preprocess it."""
     res = query_json_api(_NEWS_API)
     if not isinstance(res, dict) or "nodes" not in res or not len(res["nodes"]):

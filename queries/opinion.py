@@ -27,7 +27,7 @@
 from datetime import datetime, timedelta
 
 from query import Query, QueryStateDict
-from queries import gen_answer
+from queries import gen_answer, read_grammar_file
 from tree import Result, Node
 
 
@@ -42,42 +42,7 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QOpinion"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QOpinion
-
-QOpinion →
-    QOpinionQuery '?'?
-
-QOpinionQuery →
-    "hvað" "finnst" "þér" "eiginlega"? "um" QOpinionSubject_þf
-    | "hvað" "þykir" "þér" "eiginlega"? "um" QOpinionSubject_þf
-    | "hvaða" "skoðun" QOpinionWhichDoYouHave "eiginlega"? "á" QOpinionSubject_þgf
-    | "hver" "er" "skoðun" "þín" "á" QOpinionSubject_þgf
-    | "hvaða" "skoðanir" QOpinionWhichDoYouHave? "eiginlega"? "á" QOpinionSubject_þgf
-    | "hvert" "er" "álit" "þitt" "á" QOpinionSubject_þgf
-    | "hvaða" "álit" QOpinionWhichDoYouHave? "eiginlega"? "á" QOpinionSubject_þgf
-    | QOpinionAreYou QOpinionEmotions QOpinionDueTo QOpinionSubject_þgf
-
-QOpinionSubject/fall →
-    Nl/fall
-
-QOpinionAreYou →
-    "ertu" | "ert" "þú"
-
-QOpinionWhichDoYouHave →
-    "hefurðu" | "hefur" "þú" | "ertu" "með" | "ertu" "þú" "með"
-
-QOpinionEmotions →
-    "reið" | "bitur" | "í" "uppnámi" | "brjáluð" | "vonsvikin"
-
-QOpinionDueTo →
-    "út" "af" | "yfir"
-
-$tag(keep) QOpinionSubject/fall
-
-"""
+GRAMMAR = read_grammar_file("opinion")
 
 
 def QOpinionQuery(node: Node, params: QueryStateDict, result: Result) -> None:

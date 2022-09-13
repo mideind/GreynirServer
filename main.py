@@ -88,7 +88,7 @@ app.app_context().push()
 
 # Set up caching
 # Caching is disabled if app is invoked via the command line
-cache_type = "simple" if RUNNING_AS_SERVER else "null"
+cache_type = "SimpleCache" if RUNNING_AS_SERVER else "null"
 app.config["CACHE"] = Cache(app, config={"CACHE_TYPE": cache_type})
 
 # Register blueprint routes

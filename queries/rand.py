@@ -29,7 +29,7 @@ import logging
 import random
 
 from query import Query, QueryStateDict, AnswerTuple
-from queries import gen_answer
+from queries import gen_answer, read_grammar_file
 from queries.arithmetic import add_num, terminal_num
 from queries.num import number_to_text
 from tree import Result, Node
@@ -64,70 +64,7 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QRandom"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QRandom
-
-QRandom → QRandomQuery '?'?
-
-QRandomQuery →
-    QRandomDiceRoll | QRandomBetween | QRandomHeadsOrTails
-
-QRandomHeadsOrTails →
-    "fiskur" "eða" "skjaldarmerki" | "skjaldarmerki" "eða" "fiskur"
-    | "kastaðu" "upp"? "peningi" | "kastaðu" "upp"? "pening" | "kastaðu" "upp"? "krónu"
-
-QRandomDiceRoll →
-    "kastaðu" QRandomDiceSides? QRandomDie QRandomForMe?
-    | "kastaðu" QRandomForMe? QRandomDiceSides? QRandomDie
-    | "kasta" QRandomDiceSides? QRandomDie QRandomForMe?
-    | "nennirðu" "að" "kasta" QRandomDiceSides? QRandomDie QRandomForMe?
-    | "geturðu" "kastað" QRandomDiceSides? QRandomDie QRandomForMe?
-    | "geturðu" "kastað" QRandomForMe? QRandomDiceSides? QRandomDie
-    | "kastaðu" "upp" "á" "teningnum" QRandomForMe?
-    | "kastaðu" "upp" "á" "teningi" QRandomForMe?
-
-QRandomForMe →
-    "fyrir" "mig"
-
-QRandomDie →
-    # Allow "tening" (accusative) to make it a bit more robust. Common error.
-    "teningi" | "tening" | "teningnum" | "teningunum"
-
-QRandomDiceSides →
-    QRandNumber "hliða"
-
-QRandomBetween →
-    QRandAction "tölu" "á"? "milli" QRandNumber "og" QRandNumber QRandRand?
-    | QRandAction "tölu" QRandRand? "á"? "milli" QRandNumber "og" QRandNumber
-    | QRandAction QRandRand? "tölu" "á"? "milli" QRandNumber "og" QRandNumber
-
-QRandAction →
-    "veldu" | "veldu" "fyrir" "mig" | "veldu" "handa" "mér" | "veldu" "fyrir" "okkur"
-    | "geturðu" "valið" "fyrir" "mig" | "getur" "þú" "valið" "fyrir" "mig"
-    | "gætir" "þú" "valið" "fyrir" "mig" | "værirðu" "til" "í" "að" "velja" "fyrir" "mig"
-    | "nefndu" | "nefndu" "fyrir" "mig" | "nefndu" "fyrir" "okkur"
-    | "komdu" "með"
-    | "geturðu" "komið" "með" | "getur" "þú" "komið" "með"
-    | "gætirðu" "komið" "með" | "gætir" "þú" "komið" "með"
-    | "gefðu" "mér"
-    | "geturðu" "gefið" "mér" |  "getur" "þú" "gefið" "mér"
-    | "gætirðu" "gefið" "mér" |  "gætir" "þú" "gefið" "mér"
-
-QRandRand →
-    # "Að handahófi" is incorrect but we'll allow it
-    "af" "handahófi" | "að" "handahófi"
-
-QRandNumber →
-    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
-    # töl is an undeclinable number word ('sautján')
-    # tala is a number ('17')
-    to | töl | tala | "núll"
-
-$score(+35) QRandom
-
-"""
+GRAMMAR = read_grammar_file("rand")
 
 
 def QRandomQuery(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -142,7 +79,7 @@ def QRandomBetween(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "randbtwn"
 
 
-def QRandomDiceRoll(node: Node, params: QueryStateDict, result: Result) -> None:
+def QRandomDieRoll(node: Node, params: QueryStateDict, result: Result) -> None:
     result.action = "dieroll"
 
 
@@ -156,6 +93,11 @@ def QRandNumber(node: Node, params: QueryStateDict, result: Result) -> None:
         add_num(terminal_num(d), result)
     else:
         add_num(result._nominative, result)
+
+
+def gen_multiple_die_rolls_answer(q: Query, result):
+    # TODO: Implement me
+    pass
 
 
 def gen_random_answer(q: Query, result):
@@ -196,7 +138,7 @@ def heads_or_tails(q: Query, result) -> AnswerTuple:
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
-    if "qtype" not in result:
+    if "qtype" not in result or "action" not in result:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 

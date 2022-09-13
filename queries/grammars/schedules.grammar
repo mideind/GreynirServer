@@ -1,0 +1,197 @@
+# Grammar for the schedules query module
+
+Query →
+    QSchedule
+
+QSchedule →
+    QScheduleQuery '?'?
+
+# Examples:
+# Hvað er verið að spila á rás eitt?
+# Hvað verður á dagskrá á Stöð 2 klukkan 21:00?
+QScheduleQuery →
+    # 'Hvað er í sjónvarpinu?'
+    QSchWhatIsWillWas QSchEiginlega? QSchBeingShown? QSchOnScheduleOnStation QSchWhen?
+    | QSchWhatIsWillWas QSchEiginlega? QSchBeingShown? QSchWhen? QSchOnScheduleOnStation
+    # Dagskrá Stöð 2 klukkan 18:00
+    | 'dagskrá:kvk' QSchWhen? QSchOn? QSchStation QSchWhen?
+    | QSchNextShow
+
+# Queries asking about next program in schedule:
+# Hvað er eiginlega verið að sýna næst á RÚV?
+# Hvað er næst á dagskrá í sjónvarpinu?
+QSchNextShow →
+    QSchWhatIsWillWas QSchEiginlega? QSchNext? QSchBeingShown? QSchNext? QSchOnScheduleOnStation
+
+QSchBeingShown →
+    "verið" "að" "spila"
+    | "verið" "að" "sýna"
+    | "í" "gangi"
+    | "í" "spilun"
+
+QSchWhatIsWillWas →
+    "hvað" QSchIsWillWas
+    | "hver" QSchIsWillWas
+    | "hvað" "mun" QSchIsWillWas
+    | "hvaða" 'þáttur:kk'_et/fall QSchIsWillWas
+    | "hvaða" 'dagskrárliður:kk'_et/fall QSchIsWillWas
+    | "hvaða" 'efni:hk'/fall QSchIsWillWas
+
+QSchIsWillWas →
+    'vera:so'
+    | QSchWill
+
+QSchWill →
+    'verða:so'
+
+QSchOnScheduleOnStation →
+    QSchOnSchedule QSchOn? 'sjónvarpsstöð:kvk'/fall? QSchStation
+    | QSchOn 'sjónvarpsstöð:kvk'/fall? QSchStation
+
+QSchNext →
+    'næstur:lo'
+    | "næsti" "þáttur"
+    | "næsti" "dagskrárliður"
+    | "næsta" "efni"
+
+QSchEiginlega →
+    "eiginlega"
+
+QSchOnSchedule →
+    "á" 'dagskrá:kvk'_þgf
+    | "í" 'dagskrá:kvk'_þgf
+    | "í" "gangi"
+    | "verið" "að" "sýna"
+
+QSchOn →
+    "á" | "í" | "hjá"
+
+
+QSchStation →
+    QSchRUV
+    | QSchRUV2
+    | QSchStod2
+    | QSchStod2Sport
+    | QSchStod2Sport2
+    | QSchStod2Bio
+    | QSchStod3
+    | QSchRas1
+    | QSchRas2
+    | QSchSérnafn
+
+# Catch entities such as "Stöð 2 Sport"
+QSchSérnafn →
+    Sérnafn
+
+###############
+# TV stations #
+###############
+
+QSchRUV →
+    'sjónvarp:hk'/fall
+    | "rúv"
+    | 'RÚV'
+    | 'ríkissjónvarp:hk'/fall
+    | 'stöð:kvk' "eitt"
+    | 'stöð:kvk' "1"
+
+QSchRUV2 →
+    "rúv" "2"
+    | "rúv" 'tveir:to'
+    | "rúv" 'íþrótt:kvk'/fall
+    | 'RÚV' "2"
+    | 'RÚV' 'tveir:to'
+    | "RÚV" 'íþrótt:kvk'/fall
+
+QSchStod2 →
+    'stöð:kvk' "tvö"
+    | 'stöð:kvk' "2"
+    | 'Stöð_2'
+
+QSchStod2Sport →
+    QSchStod2 "sport"
+
+QSchStod2Sport2 →
+    QSchStod2Sport "tvö"
+    | QSchStod2Sport "2"
+
+QSchStod2Bio →
+    QSchStod2 "bíó"
+
+QSchStod3 →
+    'stöð:kvk' "þrjú"
+    | 'stöð:kvk' "3"
+    | QSchStod2 'fjölskylda:kvk'
+
+##################
+# Radio stations #
+##################
+
+QSchRas1 →
+    'rás:kvk' "eitt"
+    | 'rás:kvk' "1"
+    | 'Rás_1'
+    | 'útvarp:hk'/fall
+    | 'ríkisútvarp:hk'/fall
+
+QSchRas2 →
+    'rás:kvk' "tvö"
+    | 'rás:kvk' "2"
+    | 'Rás_2'
+
+##################
+
+QSchWhen →
+    QSchNow
+    | QSchTime? QSchDay?
+    | QSchDay? QSchTime?
+
+QSchNow →
+    "nákvæmlega"? "núna"
+    | "í" "augnablikinu"
+    | "eins" "og" "stendur"
+
+QSchTime →
+    "klukkan"? tími
+
+QSchDay →
+    QSchThisMorning
+    | QSchThisEvening
+    | QSchTomorrow
+    | QSchTomorrowEvening
+    | QSchYesterday
+    | QSchYesterdayEvening
+
+QSchThisMorning →
+    'í_morgun:ao'
+    | QSchToday?
+
+QSchThisEvening →
+    "seinna"? 'í_kvöld'
+    | "seinna"? QSchToday
+
+QSchToday →
+    QSchAMPM? "í" "dag" QSchAMPM?
+
+QSchTomorrow →
+    QSchAMPM? 'á_morgun' QSchAMPM?
+
+QSchTomorrowEvening →
+    "annað" "kvöld"
+
+QSchYesterday →
+    QSchAMPM? 'í_gær' QSchAMPM?
+
+QSchYesterdayEvening →
+    'í_gærkvöld' | 'í_gærkvöldi'
+
+QSchAMPM →
+    QSchAM | QSchPM
+
+QSchAM →
+    "fyrir" "hádegi"
+
+QSchPM →
+    "eftir" "hádegi"
+
+$score(+55) QSchedule

@@ -52,14 +52,21 @@ import random
 from datetime import timedelta, datetime
 
 from query import Query, QueryStateDict
-from queries import gen_answer, query_json_api, cap_first, sing_or_plur
+from queries import (
+    JsonResponse,
+    gen_answer,
+    query_json_api,
+    cap_first,
+    sing_or_plur,
+    AnswerTuple,
+    read_grammar_file,
+)
 from tree import Result, Node
 from geo import in_iceland, RVK_COORDS, near_capital_region, ICE_PLACENAME_BLACKLIST
 from iceaddr import placename_lookup  # type: ignore
 from iceweather import observation_for_closest, observation_for_station, forecast_text  # type: ignore
 
-from . import AnswerTuple
-from .num import number_to_text
+from queries.num import number_to_text
 
 _WEATHER_QTYPE = "Weather"
 
@@ -123,181 +130,7 @@ def help_text(lemma: str) -> str:
 QUERY_NONTERMINALS = {"QWeather"}
 
 # The context-free grammar for the queries recognized by this module
-GRAMMAR = """
-
-Query →
-    QWeather
-
-QWeather → QWeatherQuery '?'?
-
-QWeatherQuery →
-    QWeatherCurrent
-    | QWeatherForecast
-    | QWeatherTemperature
-    | QWeatherWind
-
-QWeatherCurrent →
-    QWeatherHowIs? "veðrið" QWeatherAnyLoc? QWeatherNow?
-    | QWeatherHowIs? "veðrið" QWeatherNow? QWeatherAnyLoc?
-    | "hvernig" "veður" "er" QWeatherAnyLoc? QWeatherNow?
-    | "hvernig" "viðrar" QWeatherAnyLoc? QWeatherNow?
-    | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
-    | QWeatherWhatCanYouTellMeAbout "veðrið" QWeatherAnyLoc? QWeatherNow?
-
-QWeatherWhatCanYouTellMeAbout →
-    "hvað" "geturðu" "sagt" "mér"? "um"
-    | "hvað" "getur" "þú" "sagt" "mér"? "um"
-    | "hvað" "geturðu" "sagt" "mér"? "varðandi"
-    | "hvað" "getur" "þú" "sagt" "mér"? "varðandi"
-
-QWeatherForecast →
-    QWeatherWhatIs QWeatherConditionSingular QWeatherLocation? QWeatherNextDays?
-    | QWeatherHowIs QWeatherConditionSingular QWeatherLocation? QWeatherNextDays?
-    | QWeatherConditionSingular
-
-    | QWeatherHowAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?
-    | QWeatherWhatAre QWeatherConditionPlural QWeatherLocation? QWeatherNextDays?
-
-    | "hvernig" QWeatherIsWill "veðrið" QWeatherLocation? QWeatherNextDays
-
-    | QWeatherWhatKindOfWeather "er" "spáð" QWeatherLocation? QWeatherNextDays?
-    | QWeatherWhatKindOfWeather "má" "búast" "við" QWeatherLocation? QWeatherNextDays?
-
-    | "ert" "þú" "með" "veðurspá" QWeatherNextDays?
-    | "ertu" "með" "veðurspá" QWeatherNextDays?
-
-QWeatherWhatKindOfWeather →
-    "hvers" "konar" "veðri" | "hverskonar" "veðri"
-    | "hvers" "kyns" "veðri" | "hvernig" "veðri"
-
-QWeatherConditionSingular →
-    "veðurspáin" | "spáin" | "veðurspá"
-
-QWeatherConditionPlural →
-    "veðurhorfur" | "veður" "horfur"
-    | "veðurhorfurnar" | "veður" "horfurnar"
-    | "horfur" | "horfurnar"
-
-QWeatherIsWill →
-    "er" | "verður"
-
-QWeatherWhatIs →
-    "hver" "er" | "hvað" "er"
-
-QWeatherHowIs →
-    "hvernig" "er"
-
-QWeatherHowAre →
-    "hvernig" "eru"
-
-QWeatherWhatAre →
-    "hverjar" "eru"
-
-QWeatherTemperature →
-    "hvert" "er" "hitastigið" QWeatherAnyLoc? QWeatherNow?
-    | "hvað" "er" "hitastigið" QWeatherAnyLoc? QWeatherNow?
-    | "hversu" "heitt" "er" QWeatherAnyLoc? QWeatherNow?
-    | "hvað" "er" "heitt" QWeatherAnyLoc? QWeatherNow?
-    | "hvaða" "hitastig" "er" QWeatherAnyLoc? QWeatherNow
-    | "hversu" "hlýtt" "er" QWeatherAnyLoc? QWeatherNow?
-    | "hversu" "heitt" "er" QWeatherAnyLoc? QWeatherNow?
-    | "hversu" "kalt" "er" QWeatherAnyLoc? QWeatherNow?
-    | "hversu" "mikið" "frost" "er" QWeatherAnyLoc? QWeatherNow?
-    | "hvað" "er" "kalt" QWeatherAnyLoc? QWeatherNow
-    | "hvað" "er" "hlýtt" QWeatherAnyLoc? QWeatherNow
-    | "hvað" "er" "margra" "stiga" "hiti" QWeatherAnyLoc? QWeatherNow?
-    | "hvað" "er" "mikið" "frost" QWeatherAnyLoc? QWeatherNow?
-    | "hvað" "er" "margra" "stiga" "frost" QWeatherAnyLoc? QWeatherNow?
-    | "hversu" "margra" "stiga" "hiti" "er" QWeatherAnyLoc? QWeatherNow?
-    | "hversu" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
-    | "hve" "margra" "stiga" "hiti" "er" QWeatherAnyLoc? QWeatherNow?
-    | "hve" "margra" "stiga" "frost" "er" QWeatherAnyLoc? QWeatherNow?
-    | "er" "mjög"? "heitt" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" "mjög"? "kalt" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" "mikill"? "kuldi" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" "mikill"? "hiti" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" "mikið"? "frost" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" QWeatherHotCold? "fyrir_ofan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
-    | "er" QWeatherHotCold? "fyrir_neðan" "frostmark" "úti"? QWeatherAnyLoc? QWeatherNow?
-
-QWeatherHotCold →
-    "hiti" | "hitinn" | "kuldi" | "kuldinn" | "hitastig" | "hitastigið"
-
-QWeatherWind →
-    "hvað"? "er" "mikið"? "rok" QWeatherAnyLoc? QWeatherNow?
-    | "hversu" "mikið" "rok" "er" QWeatherAnyLoc? QWeatherNow?
-    | "hve" "mikið" "rok" "er" QWeatherAnyLoc? QWeatherNow?
-    | "hversu" "hvasst" "er" QWeatherAnyLoc? QWeatherNow?
-    | "hvað" "er" "hvasst" QWeatherAnyLoc? QWeatherNow?
-    | "er" "mjög"? "hvasst" QWeatherAnyLoc? QWeatherNow?
-    | "hvað"? "eru" "mörg" "vindstig" QWeatherAnyLoc? QWeatherNow?
-    | "hversu"? "mörg" "vindstig" "eru"? QWeatherAnyLoc? QWeatherNow?
-    | "hvað"? "er" "mikill" "vindur" QWeatherAnyLoc? QWeatherNow?
-    | "hvað"? "er" "mikill" "vindhraði" QWeatherAnyLoc? QWeatherNow?
-    | "hver" "er" "vindhraðinn" QWeatherAnyLoc? QWeatherNow?
-    | "hvaða"? "vindhraði" "er"? QWeatherAnyLoc? QWeatherNow?
-
-QWeatherUmbrella →
-    "þarf" QWeatherOne? "regnhlíf" QWeatherNow
-    | "þarf" "ég" "að" "taka" "með" "mér" "regnhlíf" QWeatherNow
-    | "þarf" "maður" "að" "taka" "með" "sér" "regnhlíf" QWeatherNow
-    | "væri" "regnhlíf" "gagnleg" QWeatherForMe? QWeatherNow
-    | "væri" "gagn" "af" "regnhlíf" QWeatherForMe? QWeatherNow
-    | "kæmi" "regnhlíf" "að" "gagni" QWeatherForMe? QWeatherNow
-    | "myndi" "regnhlíf" "gagnast" "mér" QWeatherNow
-
-QWeatherOne →
-    "ég" | "maður"
-
-QWeatherForMe →
-    "fyrir" "mig"
-
-QWeatherNow →
-    "úti"
-    | "úti"? "í" "dag"
-    # | "úti"? 'í_dag'
-    | "úti"? "núna"
-    | "úti"? "í" "augnablikinu"
-    | "úti"? "eins" "og" "stendur"
-
-QWeatherNextDays →
-    "á_næstunni"
-    | "næstu" "daga"
-    | "næstu" "dagana"
-    | "fyrir" "næstu" "daga"
-    | "á" "næstu" "dögum"
-    | "þessa" "viku"
-    | "þessa" "vikuna"
-    | "út" "vikuna"
-    | "í" "vikunni"
-    | "á_morgun"
-    | "í" "fyrramálið"
-    | "fyrir" "morgundaginn"
-
-QWeatherCountry →
-    "á" "landinu" | "á" "íslandi" | "hér_á_landi" | "á" "landsvísu"
-    | "um" "landið" "allt" | "um" "allt" "land" | "fyrir" "allt" "landið"
-    | "á" "fróni" | "heima"
-
-QWeatherCapitalRegion →
-    "á" "höfuðborgarsvæðinu" | "fyrir" "höfuðborgarsvæðið"
-    | "í" "reykjavík" | "fyrir" "reykjavík"
-    | "í" "höfuðborginni" | "fyrir" "höfuðborgina"
-    | "á" "reykjavíkursvæðinu" | "fyrir" "reykjavíkursvæðið"
-    | "í" "borginni" | "fyrir" "borgina"
-
-QWeatherAnyLoc →
-    QWeatherCountry > QWeatherCapitalRegion > QWeatherOpenLoc
-
-QWeatherOpenLoc →
-    fs_þgf Nl_þgf
-
-QWeatherLocation →
-    QWeatherCountry | QWeatherCapitalRegion
-
-$score(+55) QWeather
-
-"""
+GRAMMAR = read_grammar_file("weather")
 
 
 # The OpenWeatherMap API key (you must obtain your
@@ -325,12 +158,11 @@ def _get_OWM_API_key() -> str:
     return _OWM_API_KEY
 
 
-def _postprocess_owm_data(d):
+def _postprocess_owm_data(d: JsonResponse) -> JsonResponse:
     """Restructure data from OWM API so it matches that provided by
     the iceweather module."""
     if not d:
         return d
-
     return d
 
 
@@ -339,7 +171,7 @@ _OWM_API_URL_BYNAME = (
 )
 
 
-def _query_owm_by_name(city: str, country_code: Optional[str] = None):
+def _query_owm_by_name(city: str, country_code: Optional[str] = None) -> JsonResponse:
     d = query_json_api(
         _OWM_API_URL_BYNAME.format(city, country_code or "", _get_OWM_API_key())
     )
@@ -352,7 +184,7 @@ _OWM_API_URL_BYLOC = (
 )
 
 
-def _query_owm_by_coords(lat: float, lon: float):
+def _query_owm_by_coords(lat: float, lon: float) -> JsonResponse:
     d = query_json_api(_OWM_API_URL_BYLOC.format(lat, lon, _get_OWM_API_key()))
     return _postprocess_owm_data(d)
 
@@ -412,6 +244,7 @@ def _curr_observations(query: Query, result: Result):
     to the location associated with the query (i.e. either user location
     coordinates or a specific placename)"""
     loc = query.location
+    res = None
 
     # User asked about a specific location
     # Try to find a matching Icelandic placename
@@ -449,7 +282,8 @@ def _curr_observations(query: Query, result: Result):
         if loc and loc[0] and loc[1]:
             res = observation_for_closest(loc[0], loc[1])
             if isinstance(res, tuple):
-                res = res[0]
+                # !!! FIXME: The type annotations here should be made more accurate
+                res = res[0]  # type: ignore
         else:
             res = observation_for_station(_RVK_STATION_ID)  # Default to Reykjavík
             result.subject = "Í Reykjavík"
@@ -472,7 +306,7 @@ def _curr_observations(query: Query, result: Result):
 _API_ERRMSG = "Ekki tókst að sækja veðurupplýsingar."
 
 
-def get_currweather_answer(query: Query, result) -> AnswerTuple:
+def get_currweather_answer(query: Query, result: Result) -> AnswerTuple:
     """Handle queries concerning current weather conditions"""
     res = _curr_observations(query, result)
     if not res:
@@ -496,7 +330,7 @@ def get_currweather_answer(query: Query, result) -> AnswerTuple:
 
     # Meters per second string for voice. Say nothing if "logn".
     msec = int(wind_ms_str)
-    msec_numword = number_to_text(msec)
+    # msec_numword = number_to_text(msec)
     voice_ms = (
         ", {0} á sekúndu".format(sing_or_plur(msec, "metri", "metrar"))
         if wind_ms_str != "0"
@@ -551,7 +385,7 @@ _COUNTRY_FC_ID = 2
 _CAPITAL_FC_ID = 3
 
 
-def get_forecast_answer(query: Query, result) -> AnswerTuple:
+def get_forecast_answer(query: Query, result: Result) -> AnswerTuple:
     """Handle weather forecast queries"""
     loc = query.location
     txt_id = _CAPITAL_FC_ID if (loc and near_capital_region(loc)) else _COUNTRY_FC_ID

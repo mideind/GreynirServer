@@ -1,0 +1,31 @@
+# Grammar for the whatis query module
+
+Query →
+    QWhatIsQuery
+
+QWhatIsQuery →
+    # Það þarf að gera ráð fyrir sérstökum punkti í
+    # enda fyrirspurnarinnar þar sem punktur á eftir 'hf.'
+    # eða 'ehf.' í enda setningar er skilinn frá
+    # skammstöfunar-tókanum.
+    QWhatIsPrefix/fall/tala QWhatIsEntity/fall/tala "."? "?"?
+
+QWhatIsEntity/fall/tala → Nl/fall/tala
+
+$tag(keep) QWhatIsEntity/fall/tala
+
+QWhatIsPrefix_nf_et →
+    "hvað" "er"
+
+QWhatIsPrefix_nf_ft →
+    "hvað" "eru"
+
+QWhatIsPrefix_þf/tala →
+    "hvað" "veistu" "um"
+    | "hvað" "geturðu" "sagt" "mér"? "um"
+
+QWhatIsPrefix_þgf/tala →
+    "segðu" "mér"? "frá"
+
+QWhatIsPrefix_ef/tala →
+    ""
