@@ -1,0 +1,90 @@
+[[resources]]
+name = "PizzaOrder"
+type = "WrapperResource"
+#requires = ["Pizzas"]    #, "Sides", "Sauces", "Drinks"]
+needs_confirmation = true
+prompts.initial = "Hvað má bjóða þér?"
+prompts.added_pizzas = "{pizzas} var bætt við pöntunina. Pöntunin inniheldur {total_pizzas}. Var það eitthvað fleira?"
+prompts.confirmed_pizzas = "Var það eitthvað fleira?"
+
+# [[resources]]
+# name = "PickupDelivery"
+# type = "OrResource"
+
+[[resources]]
+name = "Final"
+type = "FinalResource"
+requires = ["PizzaOrder"]
+prompts.final = "Pítsupöntunin þín er móttekin."
+prompts.cancelled = "Móttekið, hætti við pítsu pöntunina."
+prompts.timed_out = "Pítsupöntunin þín rann út á tíma. Vinsamlegast byrjaðu aftur."
+
+# Dynamic resources that get created when a user orders a pizza
+[[dynamic_resources]]
+name = "Pizza"
+type = "WrapperResource"
+requires = ["Type", "Size", "Crust"]
+prompts.initial = "Hvernig á pítsa {number} að vera?"
+prompts.initial_single = "Hvernig pítsu viltu?"
+prompts.type = "Hvað viltu hafa á pítsu {number}?"
+prompts.type_single = "Hvað viltu hafa á pítsunni"
+prompts.size = "Hversu stór á pítsa {number} að vera?"
+prompts.size_single = "Hversu stór á pítsan að vera?"
+prompts.crust = "Hvernig botn viltu á pítsu {number}?"
+prompts.crust_single = "Hvernig botn viltu á pítsuna?"
+
+[[dynamic_resources]]
+name = "Type"
+type = "OrResource"
+requires = ["Toppings", "FromMenu"] #, "Split"]
+prefer_over_wrapper = false
+
+[[dynamic_resources]]
+name = "Toppings"
+type = "DictResource"
+
+[[dynamic_resources]]
+name = "FromMenu"
+type = "StringResource"
+
+[[dynamic_resources]]
+name = "Size"
+type = "StringResource"
+prompts.initial = "Hvaða stærð af pítsu viltu fá?"
+
+[[dynamic_resource]]
+name = "Split"
+type = "WrapperResource"
+requires = ["Side1", "Side2"]
+
+[[dynamic_resource]]
+name = "Side1"
+type = "OrResource"
+requires = ["Toppings", "FromMenu"]
+
+[[dynamic_resource]]
+name = "Side2"
+type = "OrResource"
+requires = ["Toppings", "FromMenu"]
+
+[[dynamic_resources]]
+name = "Crust"
+type = "StringResource"
+
+# [[dynamic_resources]]
+# name = "Sides"
+# type = "ListResource"
+
+# [[dynamic_resources]]
+# name = "Dips"
+# type = "ListResource"
+
+# [[dynamic_resources]]
+# name = "Drinks"
+# type = "ListResource"
+
+# [[dynamic_resources]]
+# name = "Pickup"
+
+# [[dynamic_resources]]
+# name = "Delivery"

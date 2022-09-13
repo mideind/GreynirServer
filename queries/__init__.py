@@ -44,6 +44,7 @@ import json
 import os
 import re
 import locale
+
 from urllib.parse import urlencode
 from functools import lru_cache
 from xml.dom import minidom  # type: ignore
@@ -717,7 +718,7 @@ def timezone4loc(
     return None
 
 
-# @lru_cache(maxsize=32)
+@lru_cache(maxsize=32)
 def read_jsfile(filename: str) -> str:
     """Read and return a minified JavaScript (.js) file"""
     # The file is read from the directory 'js' within the directory

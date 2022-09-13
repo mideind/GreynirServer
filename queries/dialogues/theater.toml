@@ -1,0 +1,83 @@
+[[resources]]
+name = "Show"
+type = "ListResource"
+cascade_state = true
+needs_confirmation = true
+prompts.initial = "Hvaða sýningu má bjóða þér að fara á?"
+prompts.options = "Sýningarnar sem eru í boði eru: {options}"
+prompts.confirm = "Þú valdir sýninguna {show}, viltu halda áfram með pöntunina?"
+prompts.no_show_matched = "Því miður er þessi sýning ekki í boði. Vinsamlegast reyndu aftur."
+prompts.no_show_matched_data_exists = "Því miður er þessi sýning ekki í boði. Síðasta valda sýning var {show}, viltu halda áfram með hana?"
+
+[[resources]]
+name = "ShowDate"
+type = "DateResource"
+needs_confirmation = true
+requires = ["Show"]
+
+[[resources]]
+name = "ShowTime"
+type = "TimeResource"
+needs_confirmation = true
+requires = ["Show"]
+
+[[resources]]
+name = "ShowDateTime"
+type = "WrapperResource"
+requires = ["ShowDate", "ShowTime"]
+cascade_state = true
+needs_confirmation = true
+prompts.initial = "Hvenær viltu fara á sýninguna {show}? Í boði eru {date_number} dagsetningar.\n{dates}"
+prompts.options = "Í boði eru {date_number} dagsetningar. {options}"
+prompts.confirm = "Þú valdir {date}, viltu halda áfram og velja fjölda sæta?"
+prompts.many_matching_times = "Margar dagsetningar pössuðu við gefna tímasetningu, vinsamlegast reyndu aftur."
+prompts.multiple_times_for_date = "Fyrir dagsetninguna sem þú valdir eru nokkrar tímasetningar, hverja af þeim viltu bóka?\nValmöguleikarnir eru:{times}"
+prompts.no_date_matched = "Engin sýning er í boði fyrir gefna dagsetningu, vinsamlegast reyndu aftur."
+prompts.no_time_matched = "Engin sýning er í boði fyrir gefna tímasetningu, vinsamlegast reyndu aftur."
+prompts.no_date_available = "{show} hefur engar dagsetningar í boði. Vinsamlegast veldu aðra sýningu."
+prompts.no_date_chosen = "Vinsamlegast veldu dagsetningu til að fá mögulegar tímasetningar."
+
+[[resources]]
+name = "ShowSeatCount"
+type = "NumberResource"
+requires = ["ShowDateTime"]
+cascade_state = true
+needs_confirmation = true
+prompts.initial = "Hversu mörg sæti viltu bóka?"
+prompts.confirm = "Þú valdir {seats} sæti, viltu halda áfram og velja staðsetningu sætanna?"
+prompts.invalid_seat_count = "Fjöldi sæta þarfa að vera hærri en einn. Vinsamlegast reyndu aftur."
+
+[[resources]]
+name = "ShowSeatRow"
+type = "ListResource"
+requires = ["ShowSeatCount"]
+cascade_state = true
+needs_confirmation = true
+prompts.initial = "Að minnsta kosti {seats} sæti eru í boði í röðum {seat_rows}. Í hvaða röð viltu sitja?"
+prompts.options = "Raðir {rows} eru með {seats} laus sæti."
+prompts.confirm = "Þú valdir röð {row}, viltu halda áfram?"
+prompts.no_row_matched = "Því miður er þessi röð ekki með {seats} laus sæti. Vinsamlegast reyndu aftur."
+prompts.not_enough_seats = "Því miður er engin röð með {seats} laus sæti á þessari sýningu, vinsamlegast prófaðu aðra dagsetningu."
+
+[[resources]]
+name = "ShowSeatNumber"
+type = "ListResource"
+requires = ["ShowSeatRow"]
+cascade_state = true
+needs_confirmation = true
+prompts.initial = "Sæti {seats} eru í boði í röð {row}, hvaða sæti má bjóða þér?"
+prompts.options = "Sætin sem eru í boði í röð {row} eru {options}"
+prompts.confirm = "Þú valdir sæti {seats}, viltu halda áfram?"
+prompts.wrong_number_seats_selected = "Þú valdir {chosen_seats} sæti, en þú baðst um {seats}. Vinsamlegast reyndu aftur."
+prompts.seats_unavailable = "Valin sæti eru ekki laus, vinsamlegast reyndu aftur."
+
+[[resources]]
+name = "Final"
+type = "FinalResource"
+requires = ["ShowSeatNumber"]
+prompts.final = "Þú bókaðir sæti {seats} í röð {row} fyrir sýninguna {show} {date_time}."
+prompts.cancelled = "Móttekið, hætti við leikhús pöntunina."
+prompts.timed_out = "Leikhúsmiðapöntunin þín rann út á tíma. Vinsamlegast byrjaðu aftur."
+
+# TODO: Add needs_confirmation where appropriate
+# TODO: Add a resource for the payment method

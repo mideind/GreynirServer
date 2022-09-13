@@ -57,7 +57,6 @@ class SpotifyClient:
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Authorization": f"Basic {self._encoded_credentials}",
-            # "Cookie": "__Host-device_id=AQBxVApczxoXIW_roLoJ5nY1ND2wR8StM3lgCAP1SzmApFbSWeNGRpxDLjOtLaGOHTM-CpdxKbWCvXcc77StrhE1N4L5q21o2l0; __Secure-TPASESSION=AQB0Nywu3HtM0ccHT76ksjXMzzeDpIEIbYzytEhvu05ELAEfMRTsc0qyaxUphsBxE8qCN2Vsruz6Mo897xYLznaxfa0ZGdh5Jpw=; sp_sso_csrf_token=013acda7191871a43462f6a67f78e88cb74e9b5bc031363537353339303539343131; sp_tr=false",
         }
 
         response = post_to_json_api(url, payload, headers)
@@ -100,7 +99,6 @@ class SpotifyClient:
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Authorization": f"Basic {self._encoded_credentials}",
-            # "Cookie": "__Host-device_id=AQBxVApczxoXIW_roLoJ5nY1ND2wR8StM3lgCAP1SzmApFbSWeNGRpxDLjOtLaGOHTM-CpdxKbWCvXcc77StrhE1N4L5q21o2l0; __Secure-TPASESSION=AQB0Nywu3HtM0ccHT76ksjXMzzeDpIEIbYzytEhvu05ELAEfMRTsc0qyaxUphsBxE8qCN2Vsruz6Mo897xYLznaxfa0ZGdh5Jpw=; sp_sso_csrf_token=013acda7191871a43462f6a67f78e88cb74e9b5bc031363537353339303539343131; sp_tr=false",
         }
 
         response = post_to_json_api(url, payload, headers)
@@ -267,17 +265,3 @@ class SpotifyClient:
 
         print(response)
         return response
-
-    # def _get_devices(self) -> Dict[str, str]:
-    #     print("get devices")
-    #     print("accesss token get devices; ", self._access_token)
-    #     url = f"{self._api_url}/me/player/devices"
-
-    #     headers = {
-    #         "Content-Type": "application/json",
-    #         "Authorization": f"Bearer {self._access_token}",
-    #     }
-
-    #     response = query_json_api(url, headers)
-    #     print("devices: ", response)
-    #     return response.get("devices")

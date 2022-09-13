@@ -1,0 +1,53 @@
+expiration_time = 900 # 15 minutes
+
+[[resources]]
+name = "Fruits"
+type = "ListResource"
+needs_confirmation = true
+# TODO: Keep singular and plural forms of fruits (or options more generally) for formatting answer?
+prompts.initial = "Hvaða ávexti má bjóða þér?"
+prompts.options = "Ávextirnir sem eru í boði eru appelsínur, bananar, epli og perur."
+prompts.empty = "Karfan er núna tóm. Hvaða ávexti má bjóða þér?"
+prompts.confirm = "Viltu staðfesta ávextina {list_items}?"
+prompts.repeat = "Pöntunin samanstendur af {list_items}. Verður það eitthvað fleira?"
+
+[[resources]]
+name = "Date"
+type = "DateResource"
+requires = ["Fruits"]
+
+[[resources]]
+name = "Time"
+type = "TimeResource"
+requires = ["Fruits"]
+
+[[resources]]
+name = "DateTime"
+type = "WrapperResource"
+requires = ["Date", "Time"]
+needs_confirmation = true
+prompts.initial = "Hvenær viltu fá ávextina?"
+prompts.time_fulfilled = "Afhendingin verður klukkan {time}. Hvaða dagsetningu viltu fá ávextina?"
+prompts.date_fulfilled = "Afhendingin verður {date}. Klukkan hvað viltu fá ávextina?"
+prompts.confirm = "Afhending pöntunar er {date_time}. Viltu staðfesta afhendinguna?"
+
+# [[resources]]
+# name = "Date"
+# type = "DatetimeResource"
+# requires = ["Fruits"]
+
+# [[resources]]
+# name = "ConfirmOrder"
+# type = "YesNoResource"
+# prompt = "Viltu staðfesta þessa pöntun?"
+# requires = ["Fruits", "Date"]
+
+[[resources]]
+name = "Final"
+type = "FinalResource"
+requires = ["DateTime"]
+prompts.final = "Pöntunin þín er {fruits} og verður afhent {date_time}."
+prompts.cancelled = "Móttekið, hætti við pöntunina."
+prompts.timed_out = "Ávaxtapöntunin þín rann út á tíma. Vinsamlegast byrjaðu aftur."
+
+# TODO: Add needs_confirmation where appropriate

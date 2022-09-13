@@ -31,12 +31,13 @@
 
 """
 
-from typing import Callable, Dict, Pattern, Optional, Union
+from typing import Dict, List, Pattern, Optional, Union
 
 import sys
 import os
 import re
 import logging
+from pathlib import Path
 from datetime import datetime
 
 from flask import Flask, send_from_directory, render_template
@@ -236,45 +237,34 @@ if not RUNNING_AS_SERVER:
 
     # Additional files that should cause a reload of the web server application
     # Note: Greynir.grammar is automatically reloaded if its timestamp changes
-    extra_files = [
-        "Greynir.conf",
-        "GreynirPackage.conf",
-        "Index.conf",
-        "Verbs.conf",
-        "Adjectives.conf",
-        "AdjectivePredicates.conf",
-        "Prepositions.conf",
-        "Prefs.conf",
-        "Phrases.conf",
-        "Vocab.conf",
-        "Names.conf",
-        "GreynirCorrect.conf",
-    ]
+    extra_files: List[str] = []
 
-    # Hack to satisfy the Mypy type checker, which sometimes confuses str and AnyStr
-    _dirname: Callable[[str], str] = lambda s: os.path.dirname(s)
+    # Parent directories of our modules
+    greynir_dir = Path(__file__).parent
+    greynirpackage_dir = Path(reynir.__file__).parent
+    reynir_correct_dir = Path(reynir_correct.__file__).parent
 
-    dirs = list(map(_dirname, [__file__, reynir.__file__, reynir_correct.__file__]))
-    for i, fname in enumerate(extra_files):
-        # Look for the extra file in the different package directories
-        for directory in dirs:
-            path = os.path.join(directory, "config", fname)
-            path = os.path.realpath(path)
-            if os.path.isfile(path):
-                extra_files[i] = path
-                break
-        else:
-            print("Extra file '{0}' not found".format(fname))
+    # Reload web server when config files change
+    extra_files.extend(str(p.resolve()) for p in greynir_dir.glob("config/*.conf"))
+    extra_files.extend(
+        str(p.resolve()) for p in greynirpackage_dir.glob("config/*.conf")
+    )
+    extra_files.extend(
+        str(p.resolve()) for p in reynir_correct_dir.glob("config/*.conf")
+    )
 
-    # Add ord.compressed from GeynirPackage
+    # Add dialogue TOML files
+    extra_files.extend(
+        str(p.resolve()) for p in greynir_dir.glob("queries/dialogues/*.toml")
+    )
+    # Add grammar files
+    extra_files.extend(
+        str(p.resolve()) for p in greynir_dir.glob("queries/grammars/*.grammar")
+    )
+
+    # Add ord.compressed from GreynirPackage
     extra_files.append(
-        os.path.join(
-            os.path.dirname(reynir.__file__),
-            "src",
-            "reynir",
-            "resources",
-            "ord.compressed",
-        )
+        str(greynirpackage_dir / "src" / "reynir" / "resources" / "ord.compressed")
     )
 
     from socket import error as socket_error

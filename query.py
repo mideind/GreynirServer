@@ -52,13 +52,17 @@ import json
 import re
 import random
 from collections import defaultdict
-from copy import deepcopy
+from queries.dialogue import (
+    DialogueStateManager as DSM,
+    ResourceNotFoundError,
+    DialogueDataDict,
+)
 
 from settings import Settings
 
 from db import SessionContext, Session, desc
 from db.models import Query as QueryRow
-from db.models import QueryData, QueryLog
+from db.models import QueryData, QueryLog, DialogueData
 
 from reynir import TOK, Tok, tokenize, correct_spaces
 from reynir.fastparser import (
@@ -74,7 +78,7 @@ from reynir.bindb import GreynirBin
 from reynir.grammar import GrammarError
 from islenska.bindb import BinFilterFunc
 
-from tree import Tree, TreeStateDict, Node
+from tree import Tree, TreeStateDict, Node, Result
 
 # from nertokenizer import recognize_entities
 from images import get_image_url
@@ -93,6 +97,9 @@ ContextDict = Dict[str, Any]
 
 # Client data
 ClientDataDict = Dict[str, Union[str, int, float, bool, Dict[str, str]]]
+
+# Dialogue data
+DialogueDatabaseDict = Dict[str, Union[str, int, float, bool, Dict[str, str]]]
 
 # Answer tuple (corresponds to parameter list of Query.set_answer())
 AnswerTuple = Tuple[ResponseType, str, Optional[str]]
@@ -296,6 +303,7 @@ class QueryTree(Tree):
         # For development, we allow processors to be disinterested in any query
         # assert len(processor_query_types) > 0
         if self.query_nonterminals.isdisjoint(processor_query_types):
+            print("!!!!!No query trees to process in this processor!!!!!")
             # But this processor is not interested in any of the nonterminals
             # in this query's parse forest: don't waste more cycles on it
             return False
@@ -314,8 +322,27 @@ class QueryTree(Tree):
                     self.process_sentence(state, query_tree)
                     if query.has_answer():
                         # The processor successfully answered the query: We're done
+                        # Also save any changes to dialogue data, if needed
                         return True
         return False
+
+
+def _merge_two_dicts(dict_a: Dict[str, Any], dict_b: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Recursively merge two dicts,
+    updating dict_a with values from dict_b,
+    leaving other values intact.
+    """
+    for key in dict_b:
+        if (
+            key in dict_a
+            and isinstance(dict_a[key], dict)
+            and isinstance(dict_b[key], dict)
+        ):
+            _merge_two_dicts(dict_a[key], dict_b[key])
+        else:
+            dict_a[key] = dict_b[key]
+    return dict_a
 
 
 class Query:
@@ -390,6 +417,28 @@ class Query:
         # Query context, which is None until fetched via self.fetch_context()
         # This should be a dict that can be represented in JSON
         self._context: Optional[ContextDict] = None
+        # Dialogue state manager and dialogue data, used for dialogue modules
+        # The name of the active dialogue, None if no dialogue is active
+        active_dialogue_dict: Optional[DialogueDataDict] = self.client_data(
+            DSM.DIALOGUE_DATA_KEY
+        )
+        self._active_dialogue: Optional[str] = (
+            None
+            if not active_dialogue_dict
+            else (active_dialogue_dict.get("active_dialogue"))
+        )
+        # The active dialogue data, empty dict if no dialogue is active
+        self._dialogue_data: DialogueDataDict = (
+            cast(
+                DialogueDataDict, self.dialogue_data(dialogue_key=self.active_dialogue)
+            )
+            or dict()
+        )
+        # The dialogue state manager
+        self._dsm: DSM = DSM(self._dialogue_data)
+        # Load the dialogue for the active dialogue if present
+        if self._active_dialogue:
+            self._dsm.load_dialogue(self._active_dialogue)
 
     def _preprocess_query_string(self, q: str) -> str:
         """Preprocess the query string prior to further analysis"""
@@ -412,6 +461,7 @@ class Query:
         all_procs: List[ModuleType] = []
         tree_procs: List[Tuple[int, ModuleType]] = []
         text_procs: List[Tuple[int, Callable[["Query"], bool]]] = []
+        dialogue_procs: List[Tuple[int, ModuleType]] = []
         # Load the query processor modules found in the
         # queries directory. The modules can be tree and/or text processors,
         # and we sort them into two lists, accordingly.
@@ -426,6 +476,10 @@ class Query:
                     # This is a tree processor
                     is_proc = True
                     tree_procs.append((priority, m))
+                if getattr(m, "HANDLE_DIALOGUE", False):
+                    # This is a dialogue processor
+                    is_proc = True
+                    dialogue_procs.append((priority, m))
                 handle_plain_text = getattr(m, "handle_plain_text", None)
                 if handle_plain_text is not None:
                     # This is a text processor:
@@ -442,11 +496,14 @@ class Query:
         # so that the higher-priority ones get invoked bfore the lower-priority ones
         cls._tree_processors = [t[1] for t in sorted(tree_procs, key=lambda x: -x[0])]
         cls._text_processors = [t[1] for t in sorted(text_procs, key=lambda x: -x[0])]
+        cls._dialogue_processors = [
+            t[1] for t in sorted(dialogue_procs, key=lambda x: -x[0])
+        ]
 
         # Obtain query grammar fragments from the tree processors
         grammar_fragments: List[str] = []
-        for processor in cls._tree_processors:
-            # Check whether this tree processor supplies a query grammar fragment
+        for processor in cls._dialogue_processors + cls._tree_processors:
+            # Check whether this dialogue/tree processor supplies a query grammar fragment
             fragment = getattr(processor, "GRAMMAR", None)
             if fragment and isinstance(fragment, str):
                 # Looks legit: add it to our list
@@ -475,13 +532,15 @@ class Query:
         cls._parser = QueryParser(grammar_additions)
 
     @staticmethod
-    def _parse(toklist: Iterable[Tok]) -> Tuple[ResponseDict, Dict[int, str]]:
+    def _parse(
+        toklist: Iterable[Tok], banned_nonterminals: Optional[Set[str]] = None
+    ) -> Tuple[ResponseDict, Dict[int, str]]:
         """Parse a token list as a query"""
         bp = Query._parser
         assert bp is not None
         num_sent = 0
         num_parsed_sent = 0
-        rdc = Reducer(bp.grammar)
+        rdc = Reducer(bp.grammar, banned_nonterminals=banned_nonterminals)
         trees: Dict[int, str] = dict()
         sent: List[Tok] = []
 
@@ -506,7 +565,8 @@ class Query:
                         if num > 1:
                             # Reduce the resulting forest
                             forest = rdc.go(forest)
-                except ParseError:
+                except ParseError as e:
+                    print("ParseError: ", e)
                     forest = None
                     num = 0
                 if num > 0:
@@ -572,8 +632,15 @@ class Query:
             # Log the query string as seen by the parser
             print("Query is: '{0}'".format(actual_q))
 
+        banned_nonterminals: Set[str] = set()
+        for t in Query._dialogue_processors:
+            f = getattr(t, "banned_nonterminals", None)
+            if f is not None:
+                banned_nonterminals.update(f(self))
         try:
-            parse_result, trees = Query._parse(toklist)
+            parse_result, trees = Query._parse(
+                toklist, banned_nonterminals=banned_nonterminals
+            )
         except ParseError:
             self.set_error("E_PARSE_ERROR")
             return False
@@ -617,6 +684,117 @@ class Query:
         return any(
             handle_plain_text(self) for handle_plain_text in self._text_processors
         )
+
+    def execute_from_dialogue(self) -> bool:
+        """Execute the query or queries contained in the previously parsed tree;
+        return True if successful"""
+        if self._tree is None:
+            self.set_error("E_QUERY_NOT_PARSED")
+            return False
+        # Try each dialogue processor in turn, in priority order (highest priority first)
+        for processor in self._dialogue_processors:
+            self._error = None
+            self._qtype = None
+            # Process the dialogue, which has only one sentence, but may
+            # have multiple matching query nonterminals
+            # (children of Query in the grammar)
+            try:
+                # Note that passing query=self here means that the
+                # "query" field of the TreeStateDict is populated,
+                # turning it into a QueryStateDict.
+                processor_query_types: Set[str] = getattr(
+                    processor, "QUERY_NONTERMINALS", set()
+                )
+                if self._tree.query_nonterminals.isdisjoint(processor_query_types):
+                    print("!!!!!No query trees to process in this processor!!!!!")
+                    # But this processor is not interested in any of the nonterminals
+                    # in this query's parse forest: don't waste more cycles on it
+                    continue
+                dialogue_name: Optional[str] = getattr(processor, "DIALOGUE_NAME", None)
+                if dialogue_name:
+                    # This processor uses dialogue functionality,
+                    # check if it wants to process this query
+                    hotword_nonterminals: Set[str] = getattr(
+                        processor, "HOTWORD_NONTERMINALS", set()
+                    )
+                    # Dialogue modules must have at least one
+                    # hotword nonterminal for activating dialogue
+                    assert isinstance(hotword_nonterminals, set)
+                    assert len(hotword_nonterminals) > 0
+                    print(
+                        "CHECKING WHETHER PROCESSOR IS INTERESTED IN DIALOGUE:",
+                        not (
+                            self._tree.query_nonterminals.isdisjoint(
+                                hotword_nonterminals
+                            )
+                            and dialogue_name != self._active_dialogue
+                        ),
+                    )
+                    # Fetch saved dialogue state
+                    if (
+                        self._tree.query_nonterminals.isdisjoint(hotword_nonterminals)
+                        and dialogue_name != self._active_dialogue
+                    ):
+                        print("NOT ACTIVE DIALOGUE AND NO HOTWORDS MATCHED")
+                        # Query's parse forest doesn't contain hotwords
+                        # and has no saved data for this dialogue,
+                        # not interested in this query
+                        continue
+                    if not self._tree.query_nonterminals.isdisjoint(
+                        hotword_nonterminals
+                    ):
+                        print("HOTWORDS MATCHED: ", dialogue_name)
+                        # Query's parse forest contains hotwords
+                        # set this as the active dialogue
+                        self._active_dialogue = dialogue_name
+                        self._dialogue_data = (
+                            cast(DialogueDataDict, self.dialogue_data(dialogue_name))
+                            or dict()
+                        )
+                        self._dsm = DSM(self._dialogue_data)
+                    # Query matches this dialogue processor, start DialogueStateManager
+                    self.dsm.load_dialogue(dialogue_name)
+                    print("DIALOGUE LOADED: ", dialogue_name)
+                    print("DSM DATA: ", self._dialogue_data)
+                    if self.dsm.timed_out:
+                        # TODO: If the DialogueStateManager timed out,
+                        # set active_dialogue to the last active dialogue
+                        #
+                        timed_out_ans = self.dsm.get_resource("Final").prompts[
+                            "timed_out"
+                        ]
+                        ans = (dict(answer=timed_out_ans), timed_out_ans, timed_out_ans)
+                        self.set_answer(*ans)
+                        self.update_dialogue_data()
+                        return True
+                with self._tree.context(self._session, processor, query=self) as state:
+                    for query_tree in self._tree._query_trees:
+                        # Is the processor interested in the root nonterminal
+                        # of this query tree?
+                        if query_tree.string_self() in processor_query_types:
+                            # Yes: hand the query tree over to the processor
+                            try:
+                                self._tree.process_sentence(state, query_tree)
+                            except ResourceNotFoundError as e:
+                                print("Resource not found: ", e)
+                                pass
+                            print(
+                                "DO WE HAVE AN ANSWER?", self.has_answer(), self._error
+                            )
+                            if self.has_answer():
+                                print("HAS ANSWER")
+                                # The processor successfully answered the query: We're done
+                                # Also save any changes to dialogue data, if needed
+                                self.update_dialogue_data()
+                                print("DIALOGUE DATA UPDATED")
+                                return True
+            except Exception as e:
+                logging.error(
+                    f"Exception in execute_from_dialogue('{processor.__name__}') "
+                    f"for query '{self._query}': {repr(e)}"
+                )
+        # No processor was able to answer the query
+        return False
 
     def execute_from_tree(self) -> bool:
         """Execute the query or queries contained in the previously parsed tree;
@@ -835,6 +1013,41 @@ class Query:
         """Return client version string, e.g. "1.0.3" """
         return self._client_version
 
+    @staticmethod
+    def get_dsm(result: Result) -> DSM:
+        """Fetch DialogueStateManager instance from result object"""
+        dsm = cast(QueryStateDict, result.state)["query"].dsm
+        return dsm
+
+    @property
+    def dsm(self) -> DSM:
+        return self._dsm
+
+    @property
+    def active_dialogue(self) -> Optional[str]:
+        if self._active_dialogue is None:
+            # Fetch the active dialogue for the given client, or set it to None
+            active_dialogue_dict: Optional[DialogueDataDict] = self.client_data(
+                DSM.DIALOGUE_DATA_KEY
+            )
+            if active_dialogue_dict:
+                self._active_dialogue = active_dialogue_dict.get("active_dialogue")
+            else:
+                self._active_dialogue = None
+        return self._active_dialogue
+
+    def update_dialogue_data(self) -> None:
+        """Update the dialogue data for the given client if a dialogue module was used"""
+        if self._dsm is not None:
+            # Save the dialogue state when a dialogue module query
+            # is successfully processed
+            if self._active_dialogue:
+                self.set_dialogue_data(
+                    self._active_dialogue,
+                    cast(DialogueDatabaseDict, self._dsm.serialize_data()),
+                    update_in_place=True,
+                )
+
     def response(self) -> Optional[ResponseType]:
         """Return the detailed query answer"""
         return self._response
@@ -870,7 +1083,7 @@ class Query:
         to the next query from the same client"""
         self._context = ctx
 
-    def client_data(self, key: str) -> Optional[ClientDataDict]:
+    def client_data(self, key: str) -> Optional[DialogueDataDict]:
         """Fetch client_id-associated data stored in the querydata table"""
         if not self.client_id:
             return None
@@ -884,7 +1097,7 @@ class Query:
                 return (
                     None
                     if client_data is None
-                    else cast(ClientDataDict, client_data.data)
+                    else cast(DialogueDataDict, client_data.data)
                 )
             except Exception as e:
                 logging.error(
@@ -919,7 +1132,7 @@ class Query:
         return None
 
     def set_client_data(
-        self, key: str, data: ClientDataDict, update_in_place=False
+        self, key: str, data: ClientDataDict, *, update_in_place: bool = False
     ) -> None:
         """Setter for client query data"""
         if not self.client_id or not key:
@@ -931,7 +1144,7 @@ class Query:
 
     @staticmethod
     def store_query_data(
-        client_id: str, key: str, data: ClientDataDict, update_in_place=False
+        client_id: str, key: str, data: ClientDataDict, *, update_in_place: bool = False
     ) -> bool:
         """Save client query data in the database, under the given key"""
         if not client_id or not key:
@@ -956,11 +1169,8 @@ class Query:
                     session.add(row)
                 else:
                     if update_in_place:
-                        print("update in place")
                         stored_data = deepcopy(row.data)
-                        # print("stored data: ", stored_data)
-                        data = merge_two_dicts(stored_data, data)
-                        # print("merged data :", data)
+                        data = _merge_two_dicts(stored_data, data)
                     # Already present: update
                     row.data = data  # type: ignore
                     row.modified = now  # type: ignore
@@ -969,6 +1179,174 @@ class Query:
             return True
         except Exception as e:
             logging.error("Error storing query data in db: {0}".format(e))
+        return False
+
+    def dialogue_data(
+        self, dialogue_key: Optional[str]
+    ) -> Optional[DialogueDatabaseDict]:
+        """
+        Fetch client_id-associated dialogue data stored
+        in the dialoguedata table based on the dialogue key
+        """
+        if not self.client_id or not dialogue_key:
+            return None
+        with SessionContext(read_only=True) as session:
+            try:
+                dialogue_data = (
+                    session.query(DialogueData)
+                    .filter(DialogueData.dialogue_key == dialogue_key)
+                    .filter(DialogueData.client_id == self.client_id)
+                ).one_or_none()
+                return (
+                    None
+                    if dialogue_data is None
+                    else cast(DialogueDatabaseDict, dialogue_data.data)
+                )
+            except Exception as e:
+                logging.error(
+                    "Error fetching client '{0}' query data for key '{1}' from db: {2}".format(
+                        self.client_id, dialogue_key, e
+                    )
+                )
+        return None
+
+    def set_dialogue_data(
+        self,
+        dialogue_key: str,
+        data: DialogueDatabaseDict,
+        *,
+        update_in_place: bool = False,
+    ) -> None:
+        """
+        Setter for client dialogue data.
+        Also sets the active dialogue in the query data.
+        """
+        if not self.client_id or not dialogue_key:
+            logging.warning("Couldn't save query data, no client ID or key")
+            return
+        Query.store_dialogue_data(
+            self.client_id, dialogue_key, data, update_in_place=update_in_place
+        )
+        # Query.store_query_data(
+        #     self.client_id,
+        #     DSM.DIALOGUE_DATA_KEY,
+        #     {"active_dialogue": dialogue_key},
+        #     update_in_place=True,
+        # )
+
+    @staticmethod
+    def store_dialogue_data(
+        client_id: str,
+        dialogue_key: str,
+        data: DialogueDatabaseDict,
+        *,
+        update_in_place: bool = False,
+    ) -> bool:
+        """Save client dialogue data in the database, under the given dialogue key"""
+        if not client_id or not dialogue_key:
+            return False
+        now = datetime.utcnow()
+        try:
+            with SessionContext(commit=True) as session:
+                row = (
+                    session.query(DialogueData)
+                    .filter(DialogueData.dialogue_key == dialogue_key)
+                    .filter(DialogueData.client_id == client_id)
+                ).one_or_none()
+                if row is None:
+                    # Not already present: insert
+                    row = DialogueData(
+                        client_id=client_id,
+                        dialogue_key=dialogue_key,
+                        created=now,
+                        modified=now,
+                        data=data,
+                    )
+                    session.add(row)
+                    Query.store_query_data(
+                        client_id,
+                        DSM.DIALOGUE_DATA_KEY,
+                        {"active_dialogue": dialogue_key},
+                        update_in_place=True,
+                    )
+                else:
+                    print("In else with dialogue key: {0}".format(dialogue_key))
+                    if data.get(dialogue_key) is None:
+                        # Data is empty, delete the row
+                        session.delete(row)
+                        # Update the active dialogue in the query data
+                        Query.update_active_dialogue_data(
+                            client_id=client_id, old_dialogue_key=dialogue_key
+                        )
+                        return True
+                    Query.store_query_data(
+                        client_id=client_id,
+                        key=DSM.DIALOGUE_DATA_KEY,
+                        data={"active_dialogue": dialogue_key},
+                        update_in_place=True,
+                    )
+                    if update_in_place:
+                        stored_data = deepcopy(row.data)
+                        data = _merge_two_dicts(stored_data, data)
+                    # Already present: update
+                    row.data = data  # type: ignore
+                    row.modified = now  # type: ignore
+            # The session is auto-committed upon exit from the context manager
+            return True
+        except Exception as e:
+            logging.error("Error storing dialogue data in db: {0}".format(e))
+        return False
+
+    @staticmethod
+    def update_active_dialogue_data(
+        client_id: str,
+        old_dialogue_key: str,
+    ) -> bool:
+        """
+        Update the active dialogue data in the query data.
+        """
+        if not client_id:
+            return False
+        try:
+            with SessionContext(commit=True) as session:
+                rows = (
+                    session.query(DialogueData)
+                    .filter(DialogueData.client_id == client_id)
+                    .filter(DialogueData.dialogue_key != old_dialogue_key)
+                ).all()
+                latest_row = None
+                for row in rows:
+                    if latest_row is None or row.modified > latest_row.modified:
+                        latest_row = row
+                active_row = (
+                    session.query(QueryData)
+                    .filter(QueryData.key == DSM.DIALOGUE_DATA_KEY)
+                    .filter(QueryData.client_id == client_id)
+                ).one_or_none()
+
+                if active_row is None:
+                    # Not already present: insert if there is a row in the dialogue data table
+                    if latest_row:
+                        active_row = QueryData(
+                            client_id=client_id,
+                            key=DSM.DIALOGUE_DATA_KEY,
+                            created=datetime.utcnow(),
+                            modified=datetime.utcnow(),
+                            data={"active_dialogue": latest_row.dialogue_key},
+                        )
+                        session.add(active_row)
+                elif latest_row is None:
+                    # No row in the dialogue data table: delete the active dialogue data if it exists
+                    if active_row:
+                        session.delete(active_row)
+                else:
+                    # Update the active dialogue in the query data
+                    active_row.data = {"active_dialogue": latest_row.dialogue_key}
+                    active_row.modified = datetime.utcnow()
+            # The session is auto-committed upon exit from the context manager
+            return True
+        except Exception as e:
+            logging.error("Error storing dialogue data in db: {0}".format(e))
         return False
 
     @staticmethod
@@ -1056,7 +1434,7 @@ class Query:
                     result["error"] = err
                 result["valid"] = False
                 return result
-            if not self.execute_from_tree():
+            if not self.execute_from_dialogue() and not self.execute_from_tree():
                 # This is a query, but its execution failed for some reason:
                 # return the error
                 # if Settings.DEBUG:

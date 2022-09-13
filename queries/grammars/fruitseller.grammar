@@ -1,0 +1,113 @@
+Query →
+    QFruitStartQuery | QFruitSeller
+
+QFruitSeller →
+    QFruitSellerQuery
+
+QFruitSellerQuery →
+    QFruitQuery '?'?
+    | QFruitDateQuery '?'?
+    | QFruitInfoQuery '?'?
+
+QFruitInfoQuery →
+    "hver"? "er"? "staðan" "á"? "ávaxtapöntuninni"?
+
+QFruitStartQuery →
+    "ávöxtur" '?'?
+    | "postur" '?'?
+    | "póstur" '?'?
+    | "ég" "vill" "kaupa"? "ávexti" '?'?
+    | "ég" "vil" "kaupa"? "ávexti" '?'?
+    | "mig" "langar" "að" "kaupa" "ávexti" "hjá"? "þér"? '?'?
+    | "mig" "langar" "að" "panta" "ávexti" "hjá"? "þér"? '?'?
+    | "get" "ég" "keypt" "ávexti" "hjá" "þér" '?'?
+
+QFruitQuery →
+    QAddFruitQuery
+    | QRemoveFruitQuery
+    | QChangeFruitQuery
+    | QFruitOptionsQuery
+    | QFruitYes
+    | QFruitNo
+    | QFruitCancelOrder
+
+QAddFruitQuery →
+    "já"? "má"? "ég"? "fá"? QFruitList
+    | "já"? "get" "ég" "fengið" QFruitList
+    | "já"? "gæti" "ég" "fengið" QFruitList
+    | "já"? "ég" "vil" "fá" QFruitList
+    | "já"? "ég" "vill" "fá" QFruitList
+    | "já"? "ég" "vil" "panta" QFruitList
+    | "já"? "ég" "vill" "panta" QFruitList
+    | "já"? "ég" "vil" "kaupa" QFruitList
+    | "já"? "ég" "vill" "kaupa" QFruitList
+    | "já"? "mig" "langar" "að" "fá" QFruitList
+    | "já"? "mig" "langar" "að" "kaupa" QFruitList
+    | "já"? "mig" "langar" "að" "panta" QFruitList
+
+QRemoveFruitQuery →
+    "taktu" "út" QFruitList
+    | "slepptu" QFruitList
+    | "ég"? "vil"? "sleppa" QFruitList
+    | "ég" "vill" "sleppa" QFruitList
+    | "ég" "hætti" "við" QFruitList
+    | "ég" "vil" "ekki" QFruitList
+    | "ég" "vill" "ekki" QFruitList
+
+QChangeFruitQuery →
+    QChangeStart QFruitList QChangeConnector QFruitList
+
+QChangeStart →
+    "breyttu"
+    | "ég" "vil" "frekar"
+    | "ég" "vill" "frekar"
+    | "ég" "vil" "skipta" "út"
+    | "ég" "vill" "skipta" "út"
+    | "ég" "vil" "breyta"
+    | "ég" "vill" "breyta"
+
+QChangeConnector →
+    "en" | "í" "staðinn" "fyrir"
+
+QFruitOptionsQuery →
+    "hvað" "er" "í" "boði"
+    | "hverjir" "eru" "valmöguleikarnir"
+    | "hvaða" "valmöguleikar" "eru" "í" "boði"
+    | "hvaða" "valmöguleikar" "eru" "til"
+    | "hvaða" "ávexti" "ertu" "með"
+    | "hvaða" "ávextir" "eru" "í" "boði"
+
+QFruitList → QFruitNumOfFruit QFruitNumOfFruit*
+
+QFruitNumOfFruit → QFruitNum? QFruit "og"?
+
+QFruitNum →
+    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
+    # töl is an undeclinable number word ('sautján')
+    # tala is a number ('17')
+    to | töl | tala
+
+QFruit → 'banani' | 'epli' | 'pera' | 'appelsína'
+
+QFruitYes → "já" "já"* | "endilega" | "já" "takk" | "játakk" | "já" "þakka" "þér" "fyrir" | "já" "takk" "kærlega" "fyrir"? | "jább" "takk"?
+
+QFruitNo → "nei" "takk"? | "nei" "nei"* | "neitakk" | "ómögulega"
+
+QFruitCancelOrder → "ég" "hætti" "við"
+    | "ég" "vil" "hætta" "við" "pöntunina"?
+    | "ég" "vill" "hætta" "við" "pöntunina"
+
+QFruitDateQuery →
+    QFruitDateTime
+    | QFruitDate
+    | QFruitTime
+
+QFruitDateTime →
+    tímapunkturafs
+
+QFruitDate →
+    dagsafs
+    | dagsföst
+
+QFruitTime →
+    "klukkan"? tími
