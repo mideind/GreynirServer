@@ -20,7 +20,6 @@
 
     This query module handles dialogue related to ordering pizza.
 """
-from lzma import is_check_supported
 from typing import Any, Dict, List, Optional, Set, cast
 import logging
 import random

@@ -892,21 +892,18 @@ def get_supported_iot_connections(version: int = 1) -> Response:
     args = request.args
     client_id: str = args.get("client_id")
     host: str = args.get("host")
-    print("Host: ", host)
+
     basepath, _ = os.path.split(os.path.realpath(__file__))
     fpath = os.path.join(basepath, "../resources/iot_supported.toml")
-    print("fpath: ", fpath)
+
     with open(fpath, mode="r") as file:
         f = file.read()
     # Read TOML file containing a list of resources for the dialogue
     obj: IotSupportedTOMLStructure = tomllib.loads(f)  # type: ignore
-    print("TOML: ", obj)
-    print("Connections: ", obj["connections"])
+
     if obj:
         for (_, connection) in obj["connections"].items():
-            print("Connection: ", connection)
             webview_home = connection["webview_home"]
-            print("Webview home: ", webview_home)
             webview_home = webview_home.format(host=host, client_id=client_id)
             connection.update({"webview_home": webview_home})
             webview_connect = connection["webview_connect"]
@@ -923,7 +920,6 @@ def get_supported_iot_connections(version: int = 1) -> Response:
                 else:
                     connect_url = connect_url.format(host=host, client_id=client_id)
                 connection.update({"connect_url": connect_url})
-            print("Connection: ", connection)
         json = better_jsonify(valid=True, data=obj)
         return json
     return better_jsonify(valid=False, errmsg="Error getting supported IOT devices.")

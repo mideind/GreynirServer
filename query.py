@@ -73,9 +73,18 @@ from reynir.fastparser import (
 )
 from tokenizer import BIN_Tuple
 from reynir.binparser import BIN_Grammar, BIN_Token
-from reynir.reducer import Reducer
+from reynir.reducer import (
+    NULL_SC,
+    ChildDict,
+    KeyTuple,
+    ParseForestReducer,
+    Reducer,
+    ResultDict,
+    ScoreDict,
+)
 from reynir.bindb import GreynirBin
-from reynir.grammar import GrammarError
+from reynir.fastparser import Node as SPPF_Node
+from reynir.grammar import GrammarError, Production
 from islenska.bindb import BinFilterFunc
 
 from tree import Tree, TreeStateDict, Node, Result
@@ -221,6 +230,159 @@ class QueryGrammar(BIN_Grammar):
             )
         except (IOError, OSError):
             raise GrammarError("Unable to open or read grammar file", fname, 0)
+
+
+class QueryReductionScope:
+
+    """Class to accumulate information about a nonterminal and its
+    child productions during reduction"""
+
+    def __init__(self, reducer: "QueryParseForestReducer", node: SPPF_Node) -> None:
+        self.reducer = reducer
+        # Child tree scores
+        self.sc: ChildDict = defaultdict(lambda: {"sc": 0})
+        # Verb/preposition matching stuff
+        self.pushed_prep_bonus = False
+
+    def start_family(self, ix: int, prod: Production) -> None:
+        """Start the processing of a production (numbered ix) of a nonterminal"""
+        # Initialize the score of this family of children, so that productions
+        # with higher priorities (more negative prio values) get a starting bonus
+        self.sc[ix]["sc"] = -10 * prod.priority
+
+    def add_child(self, ix: int, rd: ResultDict) -> None:
+        """Add a child node's score to the parent family's score,
+        where the parent family has index ix (0..n)"""
+        d = self.sc[ix]
+        assert "sc" in d
+        d["sc"] += rd.get("sc", 0)
+        # Carry information about contained verbs ("so") up the tree
+        for key in ("so", "sl"):
+            if key in rd:
+                if key in d:
+                    d[key].extend(rd[key])  # type: ignore
+                else:
+                    d[key] = rd[key][:]  # type: ignore
+
+    def process(self, node: SPPF_Node) -> ResultDict:
+        """After accumulating scores for all possible productions
+        of this nonterminal (families of children), find the
+        highest scoring one and reduce the tree to that child only"""
+
+        csc = self.sc
+        if not csc:
+            # Empty node
+            return NULL_SC
+
+        nt = node.nonterminal if node.is_completed else None
+
+        if len(csc) == 1:
+            # Not ambiguous: only one result, do a shortcut
+            # Will raise an exception if not exactly one value
+            [sc] = csc.values()
+        else:
+            # Eliminate all families except the best scoring one
+            # Sort in decreasing order by score, using the family index
+            # as a tie-breaker for determinism
+            s = sorted(csc.items(), key=lambda x: (x[1]["sc"], -x[0]), reverse=True)
+            # This is the best scoring family
+            # (and the one with the lowest index
+            # if there are many with the same score)
+            ix, sc = s[0]
+            # If the node nonterminal is marked as "no_reduce",
+            # we leave the child families in place. This feature
+            # is used in query processing.
+            if nt is None or not nt.no_reduce:
+                # And now for the key action of the reducer:
+                # Eliminate all other families
+                node.reduce_to(ix)
+
+        if nt is not None:
+            # We will be adjusting the result: make sure we do so on
+            # a separate dict copy (we don't want to clobber the child's dict)
+            # Get score adjustment for this nonterminal, if any
+            # (This is the $score(+/-N) pragma from Greynir.grammar)
+            sc["sc"] += self.reducer._score_adj.get(nt, 0)
+
+        return sc
+
+
+class QueryParseForestReducer(ParseForestReducer):
+    def __init__(self, grammar: BIN_Grammar, scores: ScoreDict, query: "Query"):
+        super().__init__(grammar, scores)
+        self._q = query
+
+    def go(self, root_node: SPPF_Node) -> ResultDict:
+        """Perform the reduction"""
+        # TODO:
+        # - Less greedy Nl, prefer optional nts
+        # - Banned/reduced score for nts
+
+        # Memoization/caching dict, keyed by node and memoization key
+        visited: Dict[KeyTuple, ResultDict] = dict()
+        # Current memoization key
+        current_key = 0
+        # Next memoization key to use
+        next_key = 0
+
+        def calc_score(w: SPPF_Node) -> ResultDict:
+            """Navigate from (w, current_key) where w is a node and current_key
+            is an integer navigation key, carefully controlling the memoization
+            of already visited nodes.
+            """
+            nonlocal current_key, next_key
+            # Has this (node, current_key) tuple been memoized?
+            v = visited.get((w, current_key))
+            if v is not None:
+                # Yes: return the previously calculated result
+                return v
+            # We have not seen this (node, current_key) combination before:
+            # reduce it, calculate its score and memoize it
+            if w._token is not None:
+                # Return the score of this terminal option
+                v = self.visit_token(w)
+            elif w.is_span and w._families:
+                # We have a nonempty nonterminal node with one or more families
+                # of children, i.e. multiple possible derivations:
+                # Init container for family results
+                scope = QueryReductionScope(self, w)
+                # Go through each family and calculate its score
+                for family_ix, (prod, children) in enumerate(w._families):
+                    scope.start_family(family_ix, prod)
+                    for ch in children:
+                        if ch is not None:
+                            scope.add_child(family_ix, calc_score(ch))
+                # Return a dict describing the winning family of children
+                # (derivation) including an "sc" field for its score.
+                # !!! TODO: We might be pruning the parse forest too
+                # !!! early here - there could be a different verb scope
+                # !!! above this node that would cause a different child
+                # !!! to be culled. However a test case to demonstrate this
+                # !!! has yet to be identified/created.
+                v = scope.process(w)
+                # The winning family is now the only remaining family
+                # of children of this node; the others have been culled.
+            else:
+                v = NULL_SC
+            # Memoize the result for this (node, current_key) combination
+            visited[(w, current_key)] = v
+            w.score = v["sc"]
+            return v
+
+        # Start the scoring and reduction process at the root
+        if root_node is None:
+            return NULL_SC
+        return calc_score(root_node)
+
+
+class QueryReducer(Reducer):
+    def __init__(self, grammar: BIN_Grammar, query: "Query"):
+        self._grammar = grammar
+        self._q = query
+
+    def _reduce(self, w: SPPF_Node, scores: ScoreDict) -> ResultDict:
+        """Reduce a forest with a root in w based on subtree scores"""
+        return QueryParseForestReducer(self._grammar, scores, self._q).go(w)
 
 
 class QueryParser(Fast_Parser):
@@ -531,16 +693,13 @@ class Query:
         # with the nonterminal 'QueryRoot' as the grammar root
         cls._parser = QueryParser(grammar_additions)
 
-    @staticmethod
-    def _parse(
-        toklist: Iterable[Tok], banned_nonterminals: Optional[Set[str]] = None
-    ) -> Tuple[ResponseDict, Dict[int, str]]:
+    def _parse(self, toklist: Iterable[Tok]) -> Tuple[ResponseDict, Dict[int, str]]:
         """Parse a token list as a query"""
         bp = Query._parser
         assert bp is not None
         num_sent = 0
         num_parsed_sent = 0
-        rdc = Reducer(bp.grammar, banned_nonterminals=banned_nonterminals)
+        rdc = QueryReducer(bp.grammar, self)
         trees: Dict[int, str] = dict()
         sent: List[Tok] = []
 
@@ -565,8 +724,10 @@ class Query:
                         if num > 1:
                             # Reduce the resulting forest
                             forest = rdc.go(forest)
-                except ParseError as e:
-                    print("ParseError: ", e)
+                            if forest is None:
+                                # In case the entire forest was pruned
+                                num = 0
+                except ParseError:
                     forest = None
                     num = 0
                 if num > 0:
@@ -638,9 +799,7 @@ class Query:
             if f is not None:
                 banned_nonterminals.update(f(self))
         try:
-            parse_result, trees = Query._parse(
-                toklist, banned_nonterminals=banned_nonterminals
-            )
+            parse_result, trees = self._parse(toklist)
         except ParseError:
             self.set_error("E_PARSE_ERROR")
             return False

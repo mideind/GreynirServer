@@ -191,6 +191,7 @@ class DialogueStateManager:
                 self._initial_resource = resource
             self._resource_graph[resource] = {"children": [], "parents": []}
         for resource in self._resources.values():
+            # TODO: If OrResource, do something else
             for req in resource.requires:
                 self._resource_graph[self._resources[req]]["parents"].append(resource)
                 self._resource_graph[resource]["children"].append(self._resources[req])

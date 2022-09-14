@@ -124,15 +124,11 @@ def iot(device: str):
             f = file.read()
         # Read TOML file containing a list of resources for the dialogue
         obj: IotSupportedTOMLStructure = tomllib.loads(f)  # type: ignore
-        print("TOML: ", obj)
         if obj:
             # for (_, connection) in obj["connections"].items():
-            print("Connection: ", obj["connections"])
             connection_info = obj["connections"][iot_name]
-            print("Display name: ", connection_info)
     print("Route device: ", device)
     return render_template(f"{str(device)}.html", **connection_info)
-    # device_variables.get(device, {}))
 
 
 @routes.route("/iot-connect-success")

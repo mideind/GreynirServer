@@ -134,7 +134,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     q.set_qtype(result.qtype)
     host = str(flask.request.host)
-    client_id = str(q.client_id)
+    client_id = q.client_id
+    assert client_id is not None
 
     if result.qtype == "connect_lights":
         js = read_jsfile("Philips_Hue/hub.js")

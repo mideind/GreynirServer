@@ -22,7 +22,7 @@ function getTargetObject(target, allLights, allGroups) {
     let groupsResult = philipsFuzzySearch(target, allGroups);
 
     if (lightsResult != null && groupsResult != null) {
-        // Found a match for a light group and a light+
+        // Found a match for a light group and a light
         targetObject =
             lightsResult.score < groupsResult.score // Select the light with the highest score
                 ? {

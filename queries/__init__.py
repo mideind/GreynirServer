@@ -483,9 +483,9 @@ def post_to_json_api(
 def put_to_json_api(
     url: str, json_data: Optional[Any] = None, headers: Optional[Dict[str, str]] = None
 ) -> Union[None, List[Any], Dict[str, Any]]:
-    """Send a POST request to the URL, expecting a JSON response which is
+    """Send a PUT request to the URL, expecting a JSON response which is
     parsed and returned as a Python data structure."""
-    print("put to json api")
+
     # Send request
     try:
         r = requests.put(url, data=json_data, headers=headers)
