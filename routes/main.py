@@ -25,10 +25,10 @@ from typing import Dict, Any, List, Optional, Sequence, Tuple, Union, cast
 from typing_extensions import TypedDict
 
 import platform
-import os.path
 import sys
 import random
 import json
+from pathlib import Path
 from datetime import datetime
 
 try:
@@ -110,18 +110,16 @@ class IotSupportedTOMLStructure(TypedDict):
 
 
 @routes.route("/iot/<device>")
-@max_age(seconds=60)
+@max_age(seconds=300)
 def iot(device: str):
     """Handler for device connection views."""
     args = request.args
     iot_name: str = args.get("iot_name")
     connection_info = {}
     if iot_name:
-        basepath, _ = os.path.split(os.path.realpath(__file__))
-        fpath = os.path.join(basepath, "../resources/iot_supported.toml")
-        print("fpath: ", fpath)
-        with open(fpath, mode="r") as file:
-            f = file.read()
+        fpath = Path(__file__).parent.parent / "resources" / "iot_supported.toml"
+        f = fpath.read_text()
+
         # Read TOML file containing a list of resources for the dialogue
         obj: IotSupportedTOMLStructure = tomllib.loads(f)  # type: ignore
         if obj:

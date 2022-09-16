@@ -30,7 +30,7 @@ import flask
 
 from query import Query, QueryStateDict
 from queries import gen_answer, read_jsfile
-from queries.sonos import SonosClient
+from queries.extras.sonos import SonosClient
 from tree import Result, Node
 
 from util import read_api_key

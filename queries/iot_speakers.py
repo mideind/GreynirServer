@@ -38,7 +38,7 @@ import random
 
 from query import Query, QueryStateDict
 from queries import read_grammar_file
-from queries.sonos import SonosClient
+from queries.extras.sonos import SonosClient
 from tree import Result, Node
 
 # Dictionary of radio stations and their stream urls

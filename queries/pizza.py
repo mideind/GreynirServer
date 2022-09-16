@@ -35,7 +35,7 @@ from queries import (
     sing_or_plur,
 )
 from queries.num import number_to_text, numbers_to_ordinal, numbers_to_text
-from queries.resources import (
+from queries.extras.resources import (
     FinalResource,
     ListResource,
     DictResource,
@@ -45,7 +45,7 @@ from queries.resources import (
     StringResource,
     WrapperResource,
 )
-from queries.dialogue import (
+from queries.extras.dialogue import (
     AnsweringFunctionMap,
     DialogueStateManager,
 )

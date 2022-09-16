@@ -1,15 +1,96 @@
+"""
+
+    Greynir: Natural language processing for Icelandic
+
+    Copyright (C) 2022 Miðeind ehf.
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+
+    Class which encapsulates communication with the Spotify API.
+
+"""
 from typing import Dict, Optional, Union, List, Any
-from inspect import getargs
+
+import logging
+import json
+import flask
 import requests
 from datetime import datetime, timedelta
-import flask
-import random
 
 from util import read_api_key
-from queries import query_json_api, post_to_json_api, put_to_json_api
+from queries import query_json_api
 from query import Query
 
-import json
+
+def post_to_json_api(
+    url: str,
+    *,
+    form_data: Optional[Any] = None,
+    json_data: Optional[Any] = None,
+    headers: Optional[Dict[str, str]] = None,
+) -> Union[None, List[Any], Dict[str, Any]]:
+    """Send a POST request to the URL, expecting a JSON response which is
+    parsed and returned as a Python data structure."""
+
+    # Send request
+    try:
+        r = requests.post(url, data=form_data, json=json_data, headers=headers)
+    except Exception as e:
+        logging.warning(str(e))
+        return None
+
+    # Verify that status is OK
+    if r.status_code not in range(200, 300):
+        logging.warning("Received status {0} from API server".format(r.status_code))
+        return None
+
+    # Parse json API response
+    try:
+        res = json.loads(r.text)
+        return res
+    except Exception as e:
+        logging.warning("Error parsing JSON API response: {0}".format(e))
+    return None
+
+def put_to_json_api(
+    url: str, json_data: Optional[Any] = None, headers: Optional[Dict[str, str]] = None
+) -> Union[None, List[Any], Dict[str, Any]]:
+    """Send a PUT request to the URL, expecting a JSON response which is
+    parsed and returned as a Python data structure."""
+
+    # Send request
+    try:
+        r = requests.put(url, data=json_data, headers=headers)
+    except Exception as e:
+        logging.warning(str(e))
+        return None
+
+    # Verify that status is OK
+    if r.status_code not in range(200, 300):
+        logging.warning("Received status {0} from API server".format(r.status_code))
+        return None
+
+    # Parse json API response
+    try:
+        if r.text:
+            res = json.loads(r.text)
+            return res
+        return {}
+    except Exception as e:
+        logging.warning("Error parsing JSON API response: {0}".format(e))
+    return None
+
 
 # TODO Find a better way to play albums
 # TODO - Remove debug print statements
@@ -59,7 +140,7 @@ class SpotifyClient:
             "Authorization": f"Basic {self._encoded_credentials}",
         }
 
-        response = post_to_json_api(url, payload, headers)
+        response = post_to_json_api(url, form_data=payload, headers=headers)
         self._access_token = response.get("access_token")
         self._refresh_token = response.get("refresh_token")
         self._timestamp = str(datetime.now())
@@ -101,7 +182,7 @@ class SpotifyClient:
             "Authorization": f"Basic {self._encoded_credentials}",
         }
 
-        response = post_to_json_api(url, payload, headers)
+        response = post_to_json_api(url, form_data=payload, headers=headers)
         self._access_token = response.get("access_token")
         self._timestamp = str(datetime.now())
 
@@ -247,8 +328,6 @@ class SpotifyClient:
         return response
 
     def play_album_on_device(self) -> Union[None, List[Any], Dict[str, Any]]:
-        print("play song from device")
-        print("accesss token play song; ", self._access_token)
         url = f"{self._api_url}/me/player/play"
 
         payload = json.dumps(

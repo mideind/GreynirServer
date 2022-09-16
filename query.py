@@ -47,12 +47,13 @@ from types import ModuleType
 
 import importlib
 import logging
+from copy import deepcopy
 from datetime import datetime, timedelta
 import json
 import re
 import random
 from collections import defaultdict
-from queries.dialogue import (
+from queries.extras.dialogue import (
     DialogueStateManager as DSM,
     ResourceNotFoundError,
     DialogueDataDict,
@@ -465,7 +466,6 @@ class QueryTree(Tree):
         # For development, we allow processors to be disinterested in any query
         # assert len(processor_query_types) > 0
         if self.query_nonterminals.isdisjoint(processor_query_types):
-            print("!!!!!No query trees to process in this processor!!!!!")
             # But this processor is not interested in any of the nonterminals
             # in this query's parse forest: don't waste more cycles on it
             return False
@@ -865,7 +865,6 @@ class Query:
                     processor, "QUERY_NONTERMINALS", set()
                 )
                 if self._tree.query_nonterminals.isdisjoint(processor_query_types):
-                    print("!!!!!No query trees to process in this processor!!!!!")
                     # But this processor is not interested in any of the nonterminals
                     # in this query's parse forest: don't waste more cycles on it
                     continue

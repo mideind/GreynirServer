@@ -207,12 +207,10 @@ QIoTSpeakerRadioWord/fall →
 
 QIoTSpeakerMoreOrHigher/fall →
     'mikill:lo'_mst/fall
-    | 'ljós:lo'_mst/fall
     | 'hár:lo'_mst/fall
 
 QIoTSpeakerLessOrLower/fall →
     'lítill:lo'_mst/fall
-    | 'dimmur:lo'_mst/fall
     | 'lágur:lo'_mst/fall
 
 QIoTSpeakerHvarWithAppliance →

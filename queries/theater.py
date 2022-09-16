@@ -40,7 +40,7 @@ from queries import (
     time_period_desc,
 )
 from queries.num import number_to_text, numbers_to_ordinal, numbers_to_text
-from queries.resources import (
+from queries.extras.resources import (
     DateResource,
     FinalResource,
     ListResource,
@@ -50,7 +50,7 @@ from queries.resources import (
     TimeResource,
     WrapperResource,
 )
-from queries.dialogue import (
+from queries.extras.dialogue import (
     AnsweringFunctionMap,
     DialogueStateManager,
 )

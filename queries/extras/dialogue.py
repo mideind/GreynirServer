@@ -1,4 +1,25 @@
-import copy
+"""
+
+    Greynir: Natural language processing for Icelandic
+
+    Copyright (C) 2022 Miðeind ehf.
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+
+    Class for dialogue management.
+
+"""
 from typing import (
     Any,
     Callable,
@@ -7,30 +28,22 @@ from typing import (
     Set,
     List,
     Optional,
-    TypeVar,
     cast,
 )
-from typing_extensions import TypedDict, NotRequired
+from typing_extensions import TypedDict
 
-import os.path
 import json
 import datetime
+from pathlib import Path
 
 try:
     import tomllib  # type: ignore (module not available in Python <3.11)
 except ModuleNotFoundError:
     import tomli as tomllib  # Used for Python <3.11
 
+import queries.extras.resources as res
 from queries import AnswerTuple
-from queries.resources import (
-    RESOURCE_MAP,
-    OrResource,
-    Resource,
-    DialogueJSONDecoder,
-    DialogueJSONEncoder,
-    ResourceState,
-    WrapperResource,
-)
+
 
 # TODO:? Delegate answering from a resource to another resource or to another dialogue
 # TODO:? í ávaxtasamtali "ég vil panta flug" "viltu að ég geymi ávaxtapöntunina eða eyði henni?" ...
@@ -44,17 +57,15 @@ _TOML_FOLDER_NAME = "dialogues"
 _DEFAULT_EXPIRATION_TIME = 30 * 60  # a dialogue expires after 30 minutes
 _FINAL_RESOURCE_NAME = "Final"
 
-# Generic resource type
-ResourceType_co = TypeVar("ResourceType_co", bound="Resource")
+# Functions for generating prompts/answers
+# Arguments: resource, DSM, result object
+AnsweringFunctionType = Callable[..., Optional[AnswerTuple]]
 
-# Types for use in generating prompts/answers
-AnsweringFunctionType = Callable[
-    [ResourceType_co, "DialogueStateManager", Any], Optional[AnswerTuple]
-]
-# TODO: Fix 'Any' in type hint (Callable args are contravariant)
-AnsweringFunctionMap = Mapping[str, AnsweringFunctionType[Any]]
+# Difficult to type this correctly as the
+# Callable type is contravariant in the parameters
+AnsweringFunctionMap = Mapping[str, AnsweringFunctionType]
 
-FilterFuncType = Callable[[Resource, int], bool]
+FilterFuncType = Callable[[res.Resource, int], bool]
 _ALLOW_ALL_FILTER: FilterFuncType = lambda r, i: True
 
 ################################
@@ -69,20 +80,19 @@ class ResourceNotFoundError(Exception):
 class ResourceGraphItem(TypedDict):
     """Type for a node in the resource graph."""
 
-    children: List[Resource]
-    parents: List[Resource]
+    children: List[res.Resource]
+    parents: List[res.Resource]
 
 
 # Dependency relationship graph type for resources
-ResourceGraph = Dict[Resource, ResourceGraphItem]
+ResourceGraph = Dict[res.Resource, ResourceGraphItem]
 
 
-class DialogueTOMLStructure(TypedDict):
+class DialogueTOMLStructure(TypedDict, total=False):
     """Structure of a dialogue TOML file."""
 
     resources: List[Dict[str, Any]]
     dynamic_resources: List[Dict[str, Any]]
-    expiration_time: NotRequired[int]
 
 
 # Keys for accessing saved client data for dialogues
@@ -104,7 +114,7 @@ class DialogueDBStructure(TypedDict):
     as it is saved to the database.
     """
 
-    resources: Dict[str, Resource]
+    resources: Dict[str, res.Resource]
     modified: datetime.datetime
     extras: Dict[str, Any]
 
@@ -118,7 +128,7 @@ class DialogueStateManager:
     def load_dialogue(self, dialogue_name: str):
         self._dialogue_name: str = dialogue_name
         # Dict mapping resource name to resource instance
-        self._resources: Dict[str, Resource] = {}
+        self._resources: Dict[str, res.Resource] = {}
         # Boolean indicating if the client is in this dialogue
         self._in_this_dialogue: bool = False
         # Extra information saved with the dialogue state
@@ -126,7 +136,7 @@ class DialogueStateManager:
         # Answer for the current query
         self._answer_tuple: Optional[AnswerTuple] = None
         # Latest non-confirmed resource
-        self._current_resource: Optional[Resource] = None
+        self._current_resource: Optional[res.Resource] = None
         # Dependency graph for the resources
         self._resource_graph: ResourceGraph = {}
         # Database data for this dialogue, if any
@@ -143,7 +153,7 @@ class DialogueStateManager:
         if isinstance(dialogue_saved_state, str):
             self._saved_state = cast(
                 DialogueDBStructure,
-                json.loads(dialogue_saved_state, cls=DialogueJSONDecoder),
+                json.loads(dialogue_saved_state, cls=res.DialogueJSONDecoder),
             )
 
             # Check that we have saved data for this dialogue and that it is not expired
@@ -173,7 +183,7 @@ class DialogueStateManager:
             if self._saved_state and rname in self._saved_state["resources"]:
                 resource.update(self._saved_state[_RESOURCES_KEY][rname])
             # Change from int to enum type
-            resource.state = ResourceState(resource.state)
+            resource.state = res.ResourceState(resource.state)
         # Set extra data from database
         if self._saved_state and _EXTRAS_KEY in self._saved_state:
             self._extras = self._saved_state.get(_EXTRAS_KEY) or self._extras
@@ -191,11 +201,9 @@ class DialogueStateManager:
                 self._initial_resource = resource
             self._resource_graph[resource] = {"children": [], "parents": []}
         for resource in self._resources.values():
-            # TODO: If OrResource, do something else
             for req in resource.requires:
                 self._resource_graph[self._resources[req]]["parents"].append(resource)
                 self._resource_graph[resource]["children"].append(self._resources[req])
-        # print("Resource graph: ", self._resource_graph)
 
     def _initialize_resources(self, filename: str) -> None:
         """
@@ -207,13 +215,11 @@ class DialogueStateManager:
             for rname, resource in self._saved_state[_RESOURCES_KEY].items():
                 self._resources[rname] = resource
             self._expiration_time = self._saved_state.get(
-                "expiration_time", _DEFAULT_EXPIRATION_TIME
+                _EXPIRATION_TIME_KEY, _DEFAULT_EXPIRATION_TIME
             )
         else:
-            basepath, _ = os.path.split(os.path.realpath(__file__))
-            fpath = os.path.join(basepath, _TOML_FOLDER_NAME, filename + ".toml")
-            with open(fpath, mode="r") as file:
-                f = file.read()
+            p = Path(__file__).parent.parent.resolve() / _TOML_FOLDER_NAME / f"{filename}.toml"
+            f = p.read_text()
             # Read TOML file containing a list of resources for the dialogue
             obj: DialogueTOMLStructure = tomllib.loads(f)  # type: ignore
             assert _RESOURCES_KEY in obj, f"No resources found in TOML file {f}"
@@ -223,10 +229,12 @@ class DialogueStateManager:
                 if "type" not in resource:
                     resource["type"] = "Resource"
                 # Create instances of Resource classes (and its subclasses)
-                self._resources[resource["name"]] = RESOURCE_MAP[resource["type"]](
+                self._resources[resource["name"]] = res.RESOURCE_MAP[resource["type"]](
                     **resource, order_index=i
                 )
-            self._expiration_time = obj.get("expiration_time", _DEFAULT_EXPIRATION_TIME)
+            self._expiration_time = obj.get(
+                _EXPIRATION_TIME_KEY, _DEFAULT_EXPIRATION_TIME
+            )
 
     def add_dynamic_resource(self, resource_name: str, parent_name: str) -> None:
         """
@@ -235,18 +243,20 @@ class DialogueStateManager:
         """
         # TODO: should dynamic resources be loaded from TOML at initialization?
         # Loading dynamic resources from TOML
-        basepath, _ = os.path.split(os.path.realpath(__file__))
-        fpath = os.path.join(basepath, _TOML_FOLDER_NAME, self._dialogue_name + ".toml")
-        with open(fpath, mode="r") as file:
-            f = file.read()
+        p = (
+            Path(__file__).parent.parent.resolve()
+            / _TOML_FOLDER_NAME
+            / f"{self._dialogue_name}.toml"
+        )
+        f = p.read_text()
 
         obj: DialogueTOMLStructure = tomllib.loads(f)  # type: ignore
         assert (
             _DYNAMIC_RESOURCES_KEY in obj
         ), f"No dynamic resources found in TOML file {f}"
-        parent_resource: Resource = self.get_resource(parent_name)
+        parent_resource: res.Resource = self.get_resource(parent_name)
         order_index: int = parent_resource.order_index
-        dynamic_resources: Dict[str, Resource] = {}
+        dynamic_resources: Dict[str, res.Resource] = {}
         # Index of dynamic resource
         dynamic_resource_index = (
             len(
@@ -267,15 +277,15 @@ class DialogueStateManager:
                 dynamic_resource["type"] = "Resource"
             # Updating required resources to have indexed name
             dynamic_resource["requires"] = [
-                f"{res}_{dynamic_resource_index}"
-                for res in dynamic_resource.get("requires", [])
+                f"{r}_{dynamic_resource_index}"
+                for r in dynamic_resource.get("requires", [])
             ]
             # Updating dynamic resource name to have indexed name
             dynamic_resource["name"] = (
                 f"{dynamic_resource['name']}_" f"{dynamic_resource_index}"
             )
             # Adding dynamic resource to list
-            dynamic_resources[dynamic_resource["name"]] = RESOURCE_MAP[
+            dynamic_resources[dynamic_resource["name"]] = res.RESOURCE_MAP[
                 dynamic_resource["type"]
             ](
                 **dynamic_resource,
@@ -283,11 +293,11 @@ class DialogueStateManager:
             )
         # Indexed resource name of the dynamic resource
         indexed_resource_name = f"{resource_name}_{dynamic_resource_index}"
-        resource: Resource = dynamic_resources[indexed_resource_name]
+        resource: res.Resource = dynamic_resources[indexed_resource_name]
         # Appending resource to required list of parent resource
         parent_resource.requires.append(indexed_resource_name)
 
-        def _add_child_resource(resource: Resource) -> None:
+        def _add_child_resource(resource: res.Resource) -> None:
             """
             Recursively adds a child resource to the resources list
             """
@@ -300,7 +310,7 @@ class DialogueStateManager:
         self._initialize_resource_graph()
         self._find_current_resource()
 
-    def duplicate_dynamic_resource(self, original: Resource) -> None:
+    def duplicate_dynamic_resource(self, original: res.Resource) -> None:
         suffix = (
             len(
                 [
@@ -314,9 +324,9 @@ class DialogueStateManager:
             + 1
         )
 
-        def _recursive_deep_copy(resource: Resource) -> None:
+        def _recursive_deep_copy(resource: res.Resource) -> None:
             nonlocal suffix, self
-            new_resource = RESOURCE_MAP[resource.type](**resource.__dict__)
+            new_resource = res.RESOURCE_MAP[resource.type](**resource.__dict__)
             prefix = "_".join(new_resource.name.split("_")[:-1])
             new_resource.name = prefix + f"_{suffix}"
             new_resource.requires = [
@@ -358,12 +368,13 @@ class DialogueStateManager:
         return None
 
     @property
-    def current_resource(self) -> Resource:
+    def current_resource(self) -> res.Resource:
         if self._current_resource is None:
             self._find_current_resource()
+        assert self._current_resource is not None
         return self._current_resource
 
-    def get_resource(self, name: str) -> Resource:
+    def get_resource(self, name: str) -> res.Resource:
         try:
             return self._resources[name]
         except KeyError:
@@ -378,8 +389,8 @@ class DialogueStateManager:
         return self._timed_out
 
     def get_descendants(
-        self, resource: Resource, filter_func: Optional[FilterFuncType] = None
-    ) -> List[Resource]:
+        self, resource: res.Resource, filter_func: Optional[FilterFuncType] = None
+    ) -> List[res.Resource]:
         """
         Given a resource and an optional filter function
         (with a resource and the depth in tree as args, returns a boolean),
@@ -387,10 +398,10 @@ class DialogueStateManager:
         (all of them if filter_func is None).
         Returns the descendants in preorder
         """
-        descendants: List[Resource] = []
+        descendants: List[res.Resource] = []
 
         def _recurse_descendants(
-            resource: Resource, depth: int, filter_func: FilterFuncType
+            resource: res.Resource, depth: int, filter_func: FilterFuncType
         ) -> None:
             nonlocal descendants
             for child in self._resource_graph[resource]["children"]:
@@ -401,23 +412,23 @@ class DialogueStateManager:
         _recurse_descendants(resource, 0, filter_func or _ALLOW_ALL_FILTER)
         return descendants
 
-    def get_children(self, resource: Resource) -> List[Resource]:
+    def get_children(self, resource: res.Resource) -> List[res.Resource]:
         """Given a resource, returns all children of the resource"""
         return self._resource_graph[resource]["children"]
 
     def get_ancestors(
-        self, resource: Resource, filter_func: Optional[FilterFuncType] = None
-    ) -> List[Resource]:
+        self, resource: res.Resource, filter_func: Optional[FilterFuncType] = None
+    ) -> List[res.Resource]:
         """
         Given a resource and an optional filter function
         (with a resource and the depth in tree as args, returns a boolean),
         returns all ancestors of the resource that match the function
         (all of them if filter_func is None).
         """
-        ancestors: List[Resource] = []
+        ancestors: List[res.Resource] = []
 
         def _recurse_ancestors(
-            resource: Resource, depth: int, filter_func: FilterFuncType
+            resource: res.Resource, depth: int, filter_func: FilterFuncType
         ) -> None:
             nonlocal ancestors
             for parent in self._resource_graph[resource]["parents"]:
@@ -428,7 +439,7 @@ class DialogueStateManager:
         _recurse_ancestors(resource, 0, filter_func or _ALLOW_ALL_FILTER)
         return ancestors
 
-    def get_parents(self, resource: Resource) -> List[Resource]:
+    def get_parents(self, resource: res.Resource) -> List[res.Resource]:
         """Given a resource, returns all parents of the resource"""
         return self._resource_graph[resource]["parents"]
 
@@ -438,6 +449,7 @@ class DialogueStateManager:
         if self._answer_tuple is not None:
             return self._answer_tuple
         self._find_current_resource()
+        assert self._current_resource is not None
         self._answering_functions = answering_functions
 
         # Check if dialogue was cancelled # TODO: Change this (have separate cancel method)
@@ -464,7 +476,7 @@ class DialogueStateManager:
 
     # TODO: Can we remove this function?
     def _get_answer(
-        self, curr_resource: Resource, result: Any, finished: Set[Resource]
+        self, curr_resource: res.Resource, result: Any, finished: Set[res.Resource]
     ) -> Optional[AnswerTuple]:
         for resource in self._resource_graph[curr_resource]["children"]:
             if resource not in finished:
@@ -481,7 +493,7 @@ class DialogueStateManager:
     def set_answer(self, answer: AnswerTuple) -> None:
         self._answer_tuple = answer
 
-    def set_resource_state(self, resource_name: str, state: ResourceState):
+    def set_resource_state(self, resource_name: str, state: res.ResourceState):
         """
         Set the state of a resource.
         Sets state of all parent resources to unfulfilled
@@ -490,24 +502,24 @@ class DialogueStateManager:
         resource = self._resources[resource_name]
         lowered_state = resource.state > state
         resource.state = state
-        if state == ResourceState.FULFILLED and not resource.needs_confirmation:
-            resource.state = ResourceState.CONFIRMED
+        if state == res.ResourceState.FULFILLED and not resource.needs_confirmation:
+            resource.state = res.ResourceState.CONFIRMED
             return
         if resource.cascade_state and lowered_state:
             # Find all parent resources and set to corresponding state
             ancestors = set(self.get_ancestors(resource))
             for anc in ancestors:
-                anc.state = ResourceState.UNFULFILLED
+                anc.state = res.ResourceState.UNFULFILLED
 
     def _find_current_resource(self) -> None:
         """
         Finds the current resource in the resource graph
         using a postorder traversal of the resource graph.
         """
-        curr_res: Optional[Resource] = None
-        finished_resources: Set[Resource] = set()
+        curr_res: Optional[res.Resource] = None
+        finished_resources: Set[res.Resource] = set()
 
-        def _recurse_resources(resource: Resource) -> None:
+        def _recurse_resources(resource: res.Resource) -> None:
             nonlocal curr_res, finished_resources
             finished_resources.add(resource)
             if resource.is_confirmed or resource.is_skipped:
@@ -526,7 +538,7 @@ class DialogueStateManager:
                 wrapper_parents = [
                     par
                     for par in self._resource_graph[curr_res]["parents"]
-                    if isinstance(par, WrapperResource)
+                    if isinstance(par, res.WrapperResource)
                 ]
                 assert (
                     len(wrapper_parents) <= 1
@@ -542,47 +554,51 @@ class DialogueStateManager:
         self._current_resource = curr_res or self._resources[_FINAL_RESOURCE_NAME]
 
     # TODO: Can we move this function into set_resource_state?
-    def skip_other_resources(self, or_resource: OrResource, resource: Resource) -> None:
+    def skip_other_resources(
+        self, or_resource: res.OrResource, resource: res.Resource
+    ) -> None:
         """Skips other resources in the or resource"""
         # TODO: Check whether OrResource is exclusive or not
         assert isinstance(
-            or_resource, OrResource
+            or_resource, res.OrResource
         ), f"{or_resource} is not an OrResource"
-        for res in or_resource.requires:
-            if res != resource.name:
-                self.set_resource_state(res, ResourceState.SKIPPED)
+        for r in or_resource.requires:
+            if r != resource.name:
+                self.set_resource_state(r, res.ResourceState.SKIPPED)
 
     # TODO: Can we move this function into set_resource_state?
-    def update_wrapper_state(self, wrapper: WrapperResource) -> None:
+    def update_wrapper_state(self, wrapper: res.WrapperResource) -> None:
         """
         Updates the state of the wrapper resource
         based on the state of its children.
         """
-        if wrapper.state == ResourceState.UNFULFILLED:
+        if wrapper.state == res.ResourceState.UNFULFILLED:
             print("Wrapper is unfulfilled")
             if all(
                 [
-                    child.state == ResourceState.UNFULFILLED
+                    child.state == res.ResourceState.UNFULFILLED
                     for child in self._resource_graph[wrapper]["children"]
                 ]
             ):
                 print("All children are unfulfilled")
                 return
             print("At least one child is fulfilled")
-            self.set_resource_state(wrapper.name, ResourceState.PARTIALLY_FULFILLED)
-        if wrapper.state == ResourceState.PARTIALLY_FULFILLED:
+            self.set_resource_state(wrapper.name, res.ResourceState.PARTIALLY_FULFILLED)
+        if wrapper.state == res.ResourceState.PARTIALLY_FULFILLED:
             print("Wrapper is partially fulfilled")
             if any(
                 [
-                    child.state != ResourceState.CONFIRMED
+                    child.state != res.ResourceState.CONFIRMED
                     for child in self._resource_graph[wrapper]["children"]
                 ]
             ):
                 print("At least one child is not confirmed")
-                self.set_resource_state(wrapper.name, ResourceState.PARTIALLY_FULFILLED)
+                self.set_resource_state(
+                    wrapper.name, res.ResourceState.PARTIALLY_FULFILLED
+                )
                 return
             print("All children are confirmed")
-            self.set_resource_state(wrapper.name, ResourceState.FULFILLED)
+            self.set_resource_state(wrapper.name, res.ResourceState.FULFILLED)
 
     def finish_dialogue(self) -> None:
         """Set the dialogue as finished."""
@@ -602,7 +618,7 @@ class DialogueStateManager:
                     _MODIFIED_KEY: datetime.datetime.now(),
                     _EXTRAS_KEY: self._extras,
                 },
-                cls=DialogueJSONEncoder,
+                cls=res.DialogueJSONEncoder,
             )
         # Wrap data before saving dialogue state into client data
         # (due to custom JSON serialization)

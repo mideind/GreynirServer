@@ -1,10 +1,9 @@
 "use strict";
 
-/* 
-Fuzzy search function that returns an object in the form of {result: (Object), score: (Number)} 
-* @param {String} query - The search term
-* @param {Object} data - The data to search
-*/
+/** Fuzzy search function that returns an object in the form of {result: (Object), score: (Number)}
+ * @param {String} query - The search term
+ * @param {Object} data - The data to search
+ */
 function philipsFuzzySearch(query, data) {
     // Restructure data to be searchable by name
     let newData = Object.keys(data).map(function (key) {

@@ -33,7 +33,7 @@ import random
 import re
 
 from query import Query
-from queries.spotify import SpotifyClient
+from queries.extras.spotify import SpotifyClient
 from queries import gen_answer
 
 

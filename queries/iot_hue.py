@@ -370,7 +370,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             read_jsfile("Libraries/fuse.js")
             + f"var BRIDGE_IP = '{bridge_ip}';var USERNAME = '{username}';"
             + read_jsfile("Philips_Hue/fuse_search.js")
-            + read_jsfile("Philips_Hue/lights.js")
             + read_jsfile("Philips_Hue/set_lights.js")
         )
         js += f"return setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"

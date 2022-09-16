@@ -14,11 +14,11 @@ from queries import (
     read_grammar_file,
     sing_or_plur,
 )
-from queries.dialogue import (
+from queries.extras.dialogue import (
     AnsweringFunctionMap,
     DialogueStateManager,
 )
-from queries.resources import (
+from queries.extras.resources import (
     DateResource,
     ListResource,
     Resource,

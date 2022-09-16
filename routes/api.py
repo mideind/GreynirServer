@@ -27,8 +27,7 @@ from typing_extensions import TypedDict
 
 from datetime import datetime
 import logging
-import os.path
-import time
+from pathlib import Path
 
 try:
     import tomllib  # type: ignore (module not available in Python <3.11)
@@ -59,9 +58,8 @@ from speech import (
     RECOMMENDED_VOICES,
 )
 from util import read_api_key, icelandic_asciify
-from queries.sonos import SonosClient
-from queries.smartthings import SmartThingsClient
-from queries.spotify import SpotifyClient
+from queries.extras.sonos import SonosClient
+from queries.extras.spotify import SpotifyClient
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH
@@ -693,9 +691,7 @@ def register_query_data_api(version: int = 1) -> Response:
         qdata["client_id"], qdata["key"], qdata["data"], update_in_place=True
     )
     if success:
-        print("HUE SUCCESS!!!!!!!!!!!!!!")
         return better_jsonify(valid=True, msg="Query data registered")
-
     return better_jsonify(valid=False, errmsg="Error registering query data.")
 
 
@@ -735,69 +731,31 @@ def upload_speech_audio(version: int = 1) -> Response:
 
 @routes.route("/connect_sonos.api", methods=["GET"])
 @routes.route("/connect_sonos.api/v<int:version>", methods=["GET", "POST"])
-def sonos_code(version: int = 1) -> Response:
+def sonos_code(version: int = 1) -> str:
     """
     API endpoint to connect to Sonos speakers
     """
-    print("sonos code")
     args = request.args
     client_id = args.get("state")
     code = args.get("code")
-    code_dict = {
-        "iot_speakers": {"sonos": {"credentials": {"code": code}}}
-    }  # create a dictonary with the code
+
     if client_id and code:
+        code_dict = {"iot_speakers": {"sonos": {"credentials": {"code": code}}}}
         success = QueryObject.store_query_data(
             client_id, "iot", code_dict, update_in_place=True
         )
         if success:
             device_data = code_dict["iot_speakers"]
-            # Create an instance of the SonosClient class. This will automatically create the rest of the credentials needed.
-            sonos_client = SonosClient(device_data, client_id)
-            sonos_voice_clip = (
-                f"Hæ! Embla hérna! Ég er búin að tengja þennan Sónos hátalara."
-            )
-            # sonos_client.play_chime()
-            # time.sleep(1.3)
-            # sonos_client.play_audio_clip(
-            #     text_to_audio_url(sonos_voice_clip)
-            # )  # Send the above message to the Sonos speaker
+            # Create an instance of the SonosClient class.
+            # This will automatically create the rest of the credentials needed.
+            SonosClient(device_data, client_id)
             return render_template("iot-connect-success.html", title="Tenging tókst")
-            return better_jsonify(valid=True, msg="Registered sonos code")
     return render_template("iot-connect-error.html", title="Tenging mistókst")
-    return better_jsonify(valid=False, errmsg="Error registering sonos code.")
-
-
-@routes.route("/connect_smartthings.api", methods=["GET"])
-@routes.route("/connect_smartthings.api/v<int:version>", methods=["GET", "POST"])
-def smartthings_code(version: int = 1) -> Response:
-    """
-    API endpoint to connect to Sonos speakers
-    """
-    print("smartthings code")
-    args = request.args
-    client_id = args.get("state")
-    code = args.get("code")
-    code_dict = {
-        "smartthings": {"credentials": {"code": code}}
-    }  # create a dictonary with the code
-    if client_id and code:
-        success = QueryObject.store_query_data(
-            client_id, "iot_hubs", code_dict, update_in_place=True
-        )
-        if success:
-            device_data = code_dict
-            smartthings_client = SmartThingsClient(device_data, client_id)
-            # device_data = code
-            # Create an instance of the SonosClient class. This will automatically create the rest of the credentials needed.
-            return render_template("iot-connect-success.html", title="Tenging tókst")
-            return better_jsonify(valid=True, msg="Registered smartthings code")
-    return better_jsonify(valid=False, errmsg="Error registering smartthings code.")
 
 
 @routes.route("/connect_spotify.api", methods=["GET"])
 @routes.route("/connect_spotify.api/v<int:version>", methods=["GET", "POST"])
-def spotify_code(version: int = 1) -> Response:
+def spotify_code(version: int = 1) -> str:
     """
     API endpoint to connect Spotify account
     """
@@ -814,28 +772,12 @@ def spotify_code(version: int = 1) -> Response:
         )
         if success:
             device_data = code_dict.get("iot_streaming").get("spotify")
-            spotify_client = SpotifyClient(device_data, client_id)
-            # Create an instance of the SonosClient class. This will automatically create the rest of the credentials needed.
+            # Create an instance of the SonosClient class.
+            # This will automatically create the rest of the credentials needed.
+            SpotifyClient(device_data, client_id)
             return render_template("iot-connect-success.html", title="Tenging tókst")
-            return better_jsonify(valid=True, msg="Registered spotify code")
     return render_template("iot-connect-error.html", title="Tenging mistókst")
-    return better_jsonify(valid=False, errmsg="Error registering spotify code.")
 
-
-# def sonos_code2(version: int = 1) -> Response:
-#     print("sonos code")
-#     args = request.args
-#     client_id = args.get("state")
-#     code = args.get("code")
-#     code = {"sonos": {"credentials": {"code": code}}}
-#     if client_id and code:
-#         success = QueryObject.store_query_data(
-#             client_id, "iot_speakers", code, update_in_place=True
-#         )
-#         if success:
-#             return better_jsonify(valid=True, msg="Registered sonos code")
-
-#     return better_jsonify(valid=False, errmsg="Error registering sonos code.")
 
 # TODO: Finish functionality to delete iot data from database
 @routes.route("/delete_iot_data.api", methods=["DELETE"])
@@ -893,11 +835,9 @@ def get_supported_iot_connections(version: int = 1) -> Response:
     client_id: str = args.get("client_id")
     host: str = args.get("host")
 
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    fpath = os.path.join(basepath, "../resources/iot_supported.toml")
+    fpath = Path(__file__).parent.parent / "resources" / "iot_supported.toml"
+    f = fpath.read_text()
 
-    with open(fpath, mode="r") as file:
-        f = file.read()
     # Read TOML file containing a list of resources for the dialogue
     obj: IotSupportedTOMLStructure = tomllib.loads(f)  # type: ignore
 

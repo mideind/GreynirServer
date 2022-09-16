@@ -1,16 +1,3 @@
-from typing import Dict, Optional, Union, List, Any
-from inspect import getargs
-import requests
-from datetime import datetime, timedelta
-import flask
-import random
-
-from util import read_api_key
-from queries import query_json_api, post_to_json_api
-from query import Query
-
-import json
-
 """
 
     Greynir: Natural language processing for Icelandic
@@ -30,11 +17,51 @@ import json
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    API routes
-    Note: All routes ending with .api are configured not to be cached by nginx
+    Class which encapsulates communication with the Sonos API.
 
 """
+from typing import Dict, Optional, Union, List, Any
 
+import logging
+import json
+import flask
+import requests
+from datetime import datetime, timedelta
+
+from util import read_api_key
+from queries import query_json_api
+from query import Query
+
+
+def post_to_json_api(
+    url: str,
+    *,
+    form_data: Optional[Any] = None,
+    json_data: Optional[Any] = None,
+    headers: Optional[Dict[str, str]] = None,
+) -> Union[None, List[Any], Dict[str, Any]]:
+    """Send a POST request to the URL, expecting a JSON response which is
+    parsed and returned as a Python data structure."""
+
+    # Send request
+    try:
+        r = requests.post(url, data=form_data, json=json_data, headers=headers)
+    except Exception as e:
+        logging.warning(str(e))
+        return None
+
+    # Verify that status is OK
+    if r.status_code not in range(200, 300):
+        logging.warning("Received status {0} from API server".format(r.status_code))
+        return None
+
+    # Parse json API response
+    try:
+        res = json.loads(r.text)
+        return res
+    except Exception as e:
+        logging.warning("Error parsing JSON API response: {0}".format(e))
+    return None
 _GROUPS_DICT = {
     "fjölskylduherbergi": "Family Room",
     "fjölskyldu herbergi": "Family Room",
@@ -367,7 +394,7 @@ class SonosClient:
             "Authorization": f"Bearer {self._access_token}",
         }
 
-        response = post_to_json_api(url, payload, headers)
+        response = post_to_json_api(url, form_data=payload, headers=headers)
         print(response)
         if response is None:
             self.toggle_pause()
@@ -413,7 +440,7 @@ class SonosClient:
             "Authorization": f"Bearer {self._access_token}",
         }
 
-        response = post_to_json_api(url, payload, headers)
+        response = post_to_json_api(url, form_data=payload, headers=headers)
         if response is None:
             return "Group not found"
         data_dict = {"sonos": {"data": {"last_radio_url": radio_url}}}
@@ -430,7 +457,7 @@ class SonosClient:
             "Authorization": f"Bearer {self._access_token}",
         }
 
-        response = post_to_json_api(url, payload, headers)
+        response = post_to_json_api(url, form_data=payload, headers=headers)
         if response is None:
             self._refresh_data("increase_volume")
         print(response.get("text"))
@@ -446,7 +473,7 @@ class SonosClient:
             "Authorization": f"Bearer {self._access_token}",
         }
 
-        response = post_to_json_api(url, payload, headers)
+        response = post_to_json_api(url, form_data=payload, headers=headers)
         if response is None:
             return "Group not found"
         print(response.get("text"))
@@ -516,7 +543,7 @@ class SonosClient:
             "Authorization": f"Bearer {self._access_token}",
         }
 
-        response = post_to_json_api(url, payload, headers)
+        response = post_to_json_api(url, form_data=payload, headers=headers)
         if response is None:
             return "Group not found"
         return response
@@ -539,7 +566,7 @@ class SonosClient:
             "Authorization": f"Bearer {self._access_token}",
         }
 
-        response = post_to_json_api(url, payload, headers)
+        response = post_to_json_api(url, form_data=payload, headers=headers)
 
         return response
 
