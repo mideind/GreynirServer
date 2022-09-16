@@ -309,7 +309,7 @@ def _generate_all(
 # match them with this regex and skip traversal
 # (note: there are probably more recursive
 # nonterminals, they can be added here)
-_RECURSIVE_NT = re.compile(r"^Nl([/_]\w+)*$")
+_RECURSIVE_NT = re.compile(r"^Nl([/_][a-zA-Z0-9]+)*$")
 
 
 def _generate_one(
