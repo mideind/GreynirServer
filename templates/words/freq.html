@@ -1,4 +1,3 @@
-
 {% extends "container-normal.html" %}
 
 
@@ -38,36 +37,36 @@
 
 <div role="tabpanel" class="tab-pane active">
 
-<div class="panel panel-default">
-   <div class="panel-heading">
-      Orðtíðni í fréttum vefmiðla
-      <br>
-      <small>Sláðu inn eitt eða fleiri orð aðgreind með kommu, og veldu síðan tímabil</small>
+   <div class="panel panel-default">
+      <div class="panel-heading">
+         Orðtíðni í fréttum vefmiðla
+         <br>
+         <small>Sláðu inn eitt eða fleiri orð aðgreind með kommu, og veldu síðan tímabil</small>
+      </div>
+      <div style="padding:10px;">
+         <span>
+            Orð <input id="words" name="words" value="veira, smit" style="margin-right: 10px; width:450px;">
+         </span>
+         <span>
+            Tímabil <input name="daterange" id="daterange" style="width:210px; margin-right: 10px;">
+            <input id="datefield" type="button" value="Sækja" onClick="reloadData();">
+            <span id="in-progress" style="margin-left:10px;"></span>
+         </span>
+      </div>
+      <hr style="margin:0">
+      <div style="padding:25px; padding-top: 15px;">
+         <canvas id="wfreq_chart_canvas"></canvas>
+      </div>
    </div>
-   <div style="padding:10px;">
-      <span>
-         Orð <input id="words" name="words" value="veira, smit" style="margin-right: 10px; width:450px;">
-      </span>
-      <span>
-         Tímabil <input name="daterange" id="daterange" style="width:210px; margin-right: 10px;">
-         <input id="datefield" type="button" value="Sækja" onClick="reloadData();">
-         <span id="in-progress" style="margin-left:10px;"></span>
-      </span>
-   </div>
-   <hr style="margin:0">
-   <div style="padding:25px; padding-top: 15px;">
-      <canvas id="wfreq_chart_canvas"></canvas>
-   </div>
-</div>
 
-<div id="wfreq-details-container" style="display:none;">
-   <h3>
-      <span id="wfreq-period-text"></span>
-      <span id="art-progress" style="margin-left:10px;"></span>
-   </h3>
+   <div id="wfreq-details-container" style="display:none;">
+      <h3>
+         <span id="wfreq-period-text"></span>
+         <span id="art-progress" style="margin-left:10px;"></span>
+      </h3>
 
-   <div id="wfreq-details"></div>
-</div>
+      <div id="wfreq-details"></div>
+   </div>
 
 </div>
 
@@ -75,7 +74,8 @@
 
 {% block endscripts %}
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"
+   integrity="sha384-e4YKd0O/y4TmH7qskMQzKnOrqN83RJ7TmJ4RsBLHodJ6jHOE30I7J1uZfLdvybhc" crossorigin="anonymous"></script>
 
 <script>
 
@@ -115,7 +115,7 @@
          fetchDetails.request.abort();
       }
       // Make ajax call to web app, get full list of articles
-      fetchDetails.request = $.getJSON("/wordfreq_details?" + $.param(params), function(r) {
+      fetchDetails.request = $.getJSON("/wordfreq_details?" + $.param(params), function (r) {
          if (r["err"] === false) {
             // Stop off progress indicator
             $("#art-progress").html("");
@@ -126,7 +126,7 @@
          } else {
             $("#art-progress").html(errMsg);
          }
-      }).fail(function() {
+      }).fail(function () {
          $("#art-progress").html(errMsg);
       });
    }
@@ -167,7 +167,7 @@
             }
          }
       };
-      var wfreqCtx =  $("#wfreq_chart_canvas").get(0).getContext("2d");
+      var wfreqCtx = $("#wfreq_chart_canvas").get(0).getContext("2d");
       wfreqChart = new Chart(wfreqCtx, config);
    }
 
@@ -182,15 +182,15 @@
 
       // Icelandic localization
       var locale = {
-        "format": "YYYY-MM-DD",
-        "separator": " - ",
-        "applyLabel": "Vista",
-        "cancelLabel": "Hætta við",
-        "fromLabel": "Frá",
-        "toLabel": "til",
-        "customRangeLabel": "Velja",
-        "weekLabel": "V",
-        "daysOfWeek": [
+         "format": "YYYY-MM-DD",
+         "separator": " - ",
+         "applyLabel": "Vista",
+         "cancelLabel": "Hætta við",
+         "fromLabel": "Frá",
+         "toLabel": "til",
+         "customRangeLabel": "Velja",
+         "weekLabel": "V",
+         "daysOfWeek": [
             "Sun",
             "Mán",
             "Þri",
@@ -198,8 +198,8 @@
             "Fim",
             "Fös",
             "Lau"
-        ],
-        "monthNames": [
+         ],
+         "monthNames": [
             "Janúar",
             "Febrúar",
             "Mars",
@@ -212,8 +212,8 @@
             "Oktober",
             "November",
             "Desember"
-        ],
-        "firstDay": 1
+         ],
+         "firstDay": 1
       };
 
       // Init Date Picker
@@ -225,11 +225,11 @@
             "days": 365
          },
          ranges: {
-           "Síðastliðin vika": [moment().subtract(6, "days"), moment()],
-           "Síðustu 30 dagar": [moment().subtract(29, "days"), moment()],
-           "Síðustu 3 mánuðir": [moment().subtract(89, "days"), moment()],
-           "Síðustu 6 mánuðir": [moment().subtract(182, "days"), moment()],
-           "Síðasta ár": [moment().subtract(364, "days"), moment()],
+            "Síðastliðin vika": [moment().subtract(6, "days"), moment()],
+            "Síðustu 30 dagar": [moment().subtract(29, "days"), moment()],
+            "Síðustu 3 mánuðir": [moment().subtract(89, "days"), moment()],
+            "Síðustu 6 mánuðir": [moment().subtract(182, "days"), moment()],
+            "Síðasta ár": [moment().subtract(364, "days"), moment()],
          }
       });
 
@@ -259,8 +259,8 @@
          date_to: res[1].trim(),
       };
       // Send request
-      reloadData.request = $.getJSON("/wordfreq?" + $.param(params), function(r) {
-         if (r["err"] === false) { 
+      reloadData.request = $.getJSON("/wordfreq?" + $.param(params), function (r) {
+         if (r["err"] === false) {
             // Update word input field w. string from server
             $("#words").val(r["words"]);
             // Save latest loaded words as data attr on input elm
@@ -271,12 +271,12 @@
          } else {
             $("#in-progress").html(errMsg);
          }
-      }).fail(function() {
+      }).fail(function () {
          $("#in-progress").html(errMsg);
       });
    }
 
-   $(document).ready(function() {
+   $(document).ready(function () {
       // Activate the top navbar
       $("#navid-words").addClass("active");
 
@@ -287,7 +287,7 @@
       // Reload on Enter when focus in word/date input fields
       $("#words, #datefield").keypress(function rld(event) {
          var keycode = (event.keyCode ? event.keyCode : event.which);
-         if (keycode == '13'){
+         if (keycode == '13') {
             reloadData();
          }
       });
@@ -296,4 +296,3 @@
 </script>
 
 {% endblock %}
-
