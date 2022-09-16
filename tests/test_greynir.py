@@ -83,6 +83,8 @@ SKIP_ROUTES = frozenset(
         "/exit.api",
         "/salescloud/nyskraning",
         "/salescloud/breyting",
+        "/correct.task",
+        "/register_query_data.api",
     )
 )
 
@@ -123,7 +125,7 @@ def test_api(client: FlaskClient):
         # BUG: As-is, this makes pretty little sense
         # since no data is posted to the APIs
         resp = client.post(str(r))
-        assert resp.content_type.startswith(API_CONTENT_TYPE)
+        assert resp.content_type.startswith(API_CONTENT_TYPE) == True
 
 
 def test_postag_api(client: FlaskClient):
