@@ -29,6 +29,7 @@
 """
 from typing import Callable, Iterable, Iterator, List, Optional, Union
 
+import re
 import sys
 import itertools
 from pathlib import Path
@@ -52,7 +53,6 @@ from query import QueryGrammar
 
 # TODO: Create random traversal functionality (itertools.dropwhile?)
 # TODO: Allow replacing special terminals (no, sérnafn, lo, ...) with words
-# TODO: Add assertion: must specify category of word if lookup_lemmas finds more than one meaning (e.g. vættur)
 
 ColorF = Callable[[str], str]
 _reset: str = "\033[0m"
@@ -305,14 +305,21 @@ def _generate_all(
         yield []
 
 
+# Recursive nonterminals raise a recursion error,
+# match them with this regex and skip traversal
+# (note: there are probably more recursive
+# nonterminals, they can be added here)
+_RECURSIVE_NT = re.compile(r"^Nl([/_]\w+)*$")
+
+
 def _generate_one(
     grammar: QueryGrammar, gi: _GIType, depth: int
 ) -> Iterator[List[str]]:
     if depth > 0:
-        if gi.name == "Nl":
+        if _RECURSIVE_NT.fullmatch(gi.name):
             # Special handling of Nl nonterminal,
             # since it is recursive
-            yield [pink("<Nl>")]
+            yield [pink(f"<{gi.name}>")]
         elif isinstance(gi, Nonterminal):
             if gi.is_optional and gi.name.endswith("*"):
                 # Star nonterminal, signify using brackets and '...'
