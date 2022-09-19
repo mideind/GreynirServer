@@ -46,28 +46,24 @@ QUERY_NONTERMINALS = {"QFruitSeller"}.union(HOTWORD_NONTERMINALS)
 GRAMMAR = read_grammar_file("fruitseller")
 
 
-def banned_nonterminals(q: Query) -> Set[str]:
+def banned_nonterminals(q: Query) -> None:
     """
     Returns a set of nonterminals that are not
     allowed due to the state of the dialogue
     """
-    banned_nonterminals: set[str] = set()
-    # TODO: Put this back in when the dsm has access to the active dialogue again.
-    print("Fruitseller dsm dialogue name: ", q.dsm.dialogue_name)
     if q.active_dialogue != DIALOGUE_NAME:
-        banned_nonterminals.add("QFruitSellerQuery")
-        return banned_nonterminals
+        q.ban_nonterminal("QFruitSellerQuery")
+        return
     resource: Resource = q.dsm.current_resource
     if resource.name == "Fruits":
-        banned_nonterminals.add("QFruitDateQuery")
+        q.ban_nonterminal("QFruitDateQuery")
         if resource.is_unfulfilled:
-            banned_nonterminals.add("QFruitYes")
-            banned_nonterminals.add("QFruitNo")
+            q.ban_nonterminal("QFruitYes")
+            q.ban_nonterminal("QFruitNo")
     elif resource.name == "DateTime":
         if resource.is_unfulfilled:
-            banned_nonterminals.add("QFruitYes")
-            banned_nonterminals.add("QFruitNo")
-    return banned_nonterminals
+            q.ban_nonterminal("QFruitYes")
+            q.ban_nonterminal("QFruitNo")
 
 
 def _generate_fruit_answer(

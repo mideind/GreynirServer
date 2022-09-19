@@ -85,7 +85,7 @@ from reynir.reducer import (
 )
 from reynir.bindb import GreynirBin
 from reynir.fastparser import Node as SPPF_Node
-from reynir.grammar import GrammarError, Production
+from reynir.grammar import GrammarError, Nonterminal
 from islenska.bindb import BinFilterFunc
 
 from tree import Tree, TreeStateDict, Node, Result
@@ -95,7 +95,6 @@ from images import get_image_url
 from processor import modules_in_dir
 from geo import LatLonTuple
 
-from util import merge_two_dicts
 
 # Query response
 ResponseDict = Dict[str, Any]
@@ -233,79 +232,11 @@ class QueryGrammar(BIN_Grammar):
             raise GrammarError("Unable to open or read grammar file", fname, 0)
 
 
-class QueryReductionScope:
+class BannedForestException(Exception):
+    ...
 
-    """Class to accumulate information about a nonterminal and its
-    child productions during reduction"""
 
-    def __init__(self, reducer: "QueryParseForestReducer", node: SPPF_Node) -> None:
-        self.reducer = reducer
-        # Child tree scores
-        self.sc: ChildDict = defaultdict(lambda: {"sc": 0})
-        # Verb/preposition matching stuff
-        self.pushed_prep_bonus = False
-
-    def start_family(self, ix: int, prod: Production) -> None:
-        """Start the processing of a production (numbered ix) of a nonterminal"""
-        # Initialize the score of this family of children, so that productions
-        # with higher priorities (more negative prio values) get a starting bonus
-        self.sc[ix]["sc"] = -10 * prod.priority
-
-    def add_child(self, ix: int, rd: ResultDict) -> None:
-        """Add a child node's score to the parent family's score,
-        where the parent family has index ix (0..n)"""
-        d = self.sc[ix]
-        assert "sc" in d
-        d["sc"] += rd.get("sc", 0)
-        # Carry information about contained verbs ("so") up the tree
-        for key in ("so", "sl"):
-            if key in rd:
-                if key in d:
-                    d[key].extend(rd[key])  # type: ignore
-                else:
-                    d[key] = rd[key][:]  # type: ignore
-
-    def process(self, node: SPPF_Node) -> ResultDict:
-        """After accumulating scores for all possible productions
-        of this nonterminal (families of children), find the
-        highest scoring one and reduce the tree to that child only"""
-
-        csc = self.sc
-        if not csc:
-            # Empty node
-            return NULL_SC
-
-        nt = node.nonterminal if node.is_completed else None
-
-        if len(csc) == 1:
-            # Not ambiguous: only one result, do a shortcut
-            # Will raise an exception if not exactly one value
-            [sc] = csc.values()
-        else:
-            # Eliminate all families except the best scoring one
-            # Sort in decreasing order by score, using the family index
-            # as a tie-breaker for determinism
-            s = sorted(csc.items(), key=lambda x: (x[1]["sc"], -x[0]), reverse=True)
-            # This is the best scoring family
-            # (and the one with the lowest index
-            # if there are many with the same score)
-            ix, sc = s[0]
-            # If the node nonterminal is marked as "no_reduce",
-            # we leave the child families in place. This feature
-            # is used in query processing.
-            if nt is None or not nt.no_reduce:
-                # And now for the key action of the reducer:
-                # Eliminate all other families
-                node.reduce_to(ix)
-
-        if nt is not None:
-            # We will be adjusting the result: make sure we do so on
-            # a separate dict copy (we don't want to clobber the child's dict)
-            # Get score adjustment for this nonterminal, if any
-            # (This is the $score(+/-N) pragma from Greynir.grammar)
-            sc["sc"] += self.reducer._score_adj.get(nt, 0)
-
-        return sc
+_BANNED_RD: ResultDict = cast(ResultDict, {"sc": 0, "ban": True})
 
 
 class QueryParseForestReducer(ParseForestReducer):
@@ -317,7 +248,6 @@ class QueryParseForestReducer(ParseForestReducer):
         """Perform the reduction"""
         # TODO:
         # - Less greedy Nl, prefer optional nts
-        # - Banned/reduced score for nts
 
         # Memoization/caching dict, keyed by node and memoization key
         visited: Dict[KeyTuple, ResultDict] = dict()
@@ -337,6 +267,12 @@ class QueryParseForestReducer(ParseForestReducer):
             if v is not None:
                 # Yes: return the previously calculated result
                 return v
+
+            # Is this nonterminal banned for this specific query?
+            if w.nonterminal and self._q.is_nonterminal_banned(w.nonterminal):
+                # Yes: return ResultDict with ban set to True
+                return _BANNED_RD
+
             # We have not seen this (node, current_key) combination before:
             # reduce it, calculate its score and memoize it
             if w._token is not None:
@@ -344,23 +280,82 @@ class QueryParseForestReducer(ParseForestReducer):
                 v = self.visit_token(w)
             elif w.is_span and w._families:
                 # We have a nonempty nonterminal node with one or more families
-                # of children, i.e. multiple possible derivations:
-                # Init container for family results
-                scope = QueryReductionScope(self, w)
+                # of children, i.e. multiple possible derivations
+                child_scores: ChildDict = defaultdict(lambda: {"sc": 0})
                 # Go through each family and calculate its score
-                for family_ix, (prod, children) in enumerate(w._families):
-                    scope.start_family(family_ix, prod)
+                for fam_ix, (prod, children) in enumerate(w._families):
+                    # Initialize the score of this family of children, so that productions
+                    # with higher priorities (more negative prio values) get a starting bonus
+                    child_scores[fam_ix]["sc"] = -10 * prod.priority
+                    # TODO: Is this ^^^ needed?
                     for ch in children:
                         if ch is not None:
-                            scope.add_child(family_ix, calc_score(ch))
-                # Return a dict describing the winning family of children
-                # (derivation) including an "sc" field for its score.
-                # !!! TODO: We might be pruning the parse forest too
-                # !!! early here - there could be a different verb scope
-                # !!! above this node that would cause a different child
-                # !!! to be culled. However a test case to demonstrate this
-                # !!! has yet to be identified/created.
-                v = scope.process(w)
+                            rd = calc_score(ch)
+                            d = child_scores[fam_ix]
+                            d["sc"] += rd["sc"]
+                            if "ban" in rd:
+                                d["ban"] = rd["ban"]
+                            # TODO: Is this needed?
+                            # Carry information about contained verbs ("so") up the tree
+                            for key in ("so", "sl"):
+                                if key in rd:
+                                    if key in d:
+                                        d[key].extend(rd[key])  # type: ignore
+                                    else:
+                                        d[key] = rd[key][:]  # type: ignore
+
+                if not child_scores:
+                    # Empty node
+                    return NULL_SC
+
+                nt: Optional[Nonterminal] = w.nonterminal if w.is_completed else None
+                if len(child_scores) == 1:
+                    # Not ambiguous: only one result, do a shortcut
+                    # Will raise an exception if not exactly one value
+                    [v] = child_scores.values()
+                else:
+                    # Eliminate all families except the best scoring one
+                    # Sort by ban-status (non-banned first),
+                    # then score in decreasing order,
+                    # and then using the family index
+                    # as a tie-breaker for determinism
+                    s = sorted(
+                        child_scores.items(),
+                        key=lambda x: (
+                            0 if x[1].get("ban") else 1,
+                            x[1]["sc"],
+                            -x[0],
+                        ),
+                        reverse=True,
+                    )
+
+                    if not s[0][1].get("ban") and s[-1][1].get("ban"):
+                        # We have a blend of non-banned and banned families,
+                        # prune the banned ones (even for no-reduce nonterminals)
+                        w._families = [
+                            w._families[x[0]] for x in s if not x[1].get("ban")
+                        ]
+
+                    # This is the best scoring family
+                    # (and the one with the lowest index
+                    # if there are many with the same score)
+                    ix, v = s[0]
+
+                    # If the node nonterminal is marked as "no_reduce",
+                    # we leave the child families in place. This feature
+                    # is used in query processing.
+                    if nt is None or not nt.no_reduce:
+                        # And now for the key action of the reducer:
+                        # Eliminate all other families
+                        w.reduce_to(ix)
+
+                if nt is not None:
+                    # We will be adjusting the result: make sure we do so on
+                    # a separate dict copy (we don't want to clobber the child's dict)
+                    # Get score adjustment for this nonterminal, if any
+                    # (This is the $score(+/-N) pragma from Greynir.grammar)
+                    v["sc"] += self._score_adj.get(nt, 0)
+
                 # The winning family is now the only remaining family
                 # of children of this node; the others have been culled.
             else:
@@ -373,7 +368,13 @@ class QueryParseForestReducer(ParseForestReducer):
         # Start the scoring and reduction process at the root
         if root_node is None:
             return NULL_SC
-        return calc_score(root_node)
+
+        root_score = calc_score(root_node)
+        if "ban" in root_score:
+            # Best family is banned, which means that
+            # no non-banned families were found
+            raise BannedForestException("Entire parse forest for this query is banned")
+        return root_score
 
 
 class QueryReducer(Reducer):
@@ -400,7 +401,7 @@ class QueryParser(Fast_Parser):
     # QueryParser. This Python sleight-of-hand overrides
     # class attributes that are defined in BIN_Parser, see binparser.py.
     _grammar_ts: Optional[float] = None
-    _grammar = None
+    _grammar: Optional[QueryGrammar] = None
     _grammar_class = QueryGrammar
 
     # Also keep separate class instances of the C grammar and its timestamp
@@ -579,6 +580,10 @@ class Query:
         # Query context, which is None until fetched via self.fetch_context()
         # This should be a dict that can be represented in JSON
         self._context: Optional[ContextDict] = None
+        # Banned nonterminals for this query,
+        # dynamically generated from query modules
+        self._banned_nonterminals: Set[str] = set()
+        # TODO: Simplify this
         # Dialogue state manager and dialogue data, used for dialogue modules
         # The name of the active dialogue, None if no dialogue is active
         active_dialogue_dict: Optional[DialogueDataDict] = self.client_data(
@@ -724,10 +729,7 @@ class Query:
                         if num > 1:
                             # Reduce the resulting forest
                             forest = rdc.go(forest)
-                            if forest is None:
-                                # In case the entire forest was pruned
-                                num = 0
-                except ParseError:
+                except (ParseError, BannedForestException):
                     forest = None
                     num = 0
                 if num > 0:
@@ -742,7 +744,6 @@ class Query:
                 pass
             else:
                 sent.append(t)
-
         result: ResponseDict = dict(num_sent=num_sent, num_parsed_sent=num_parsed_sent)
         return result, trees
 
@@ -793,11 +794,12 @@ class Query:
             # Log the query string as seen by the parser
             print("Query is: '{0}'".format(actual_q))
 
-        banned_nonterminals: Set[str] = set()
+        # Ban certain nonterminals for this query
         for t in Query._dialogue_processors:
-            f = getattr(t, "banned_nonterminals", None)
-            if f is not None:
-                banned_nonterminals.update(f(self))
+            ban_func = getattr(t, "banned_nonterminals", None)
+            if ban_func is not None:
+                ban_func(self)
+
         try:
             parse_result, trees = self._parse(toklist)
         except ParseError:
@@ -1127,6 +1129,32 @@ class Query:
     def qtype(self) -> Optional[str]:
         """Return the query type"""
         return self._qtype
+
+    def ban_nonterminal(self, nonterminal: str) -> None:
+        """
+        Add a nonterminal to the set of
+        banned nonterminals for this query.
+        """
+        assert nonterminal in self._parser._grammar.nonterminals, (
+            f"ban_nonterminal: {nonterminal} doesn't "
+            "correspond to a nonterminal in the grammar"
+        )
+        self._banned_nonterminals.add(nonterminal)
+
+    def ban_nonterminals(self, nonterminals: Set[str]) -> None:
+        """
+        Add a set of nonterminals to the set of
+        banned nonterminals for this query.
+        """
+        diff = nonterminals.difference(self._parser._grammar.nonterminals)
+        assert len(diff) == 0, (
+            f"ban_nonterminals: nonterminals {diff} don't"
+            "correspond to a nonterminal in the grammar"
+        )
+        self._banned_nonterminals.update(nonterminals)
+
+    def is_nonterminal_banned(self, nt: Nonterminal) -> bool:
+        return str(nt) in self._banned_nonterminals
 
     def set_qtype(self, qtype: str) -> None:
         """Set the query type ('Person', 'Title', 'Company', 'Entity'...)"""

@@ -79,19 +79,14 @@ QUERY_NONTERMINALS = {"QPizza"}.union(HOTWORD_NONTERMINALS)
 GRAMMAR = read_grammar_file("pizza")
 
 
-def banned_nonterminals(q: Query) -> Set[str]:
+def banned_nonterminals(q: Query) -> None:
     """
     Returns a set of nonterminals that are not
     allowed due to the state of the dialogue
     """
     # TODO: Implement this
-    banned_nonterminals: set[str] = set()
     if q.active_dialogue != DIALOGUE_NAME:
-        print("Not in pizza dialogue, BANNING QPizzaQuery")
-        banned_nonterminals.add("QPizzaQuery")
-        print("Banned nonterminals: ", banned_nonterminals)
-        return banned_nonterminals
-    return banned_nonterminals
+        q.ban_nonterminal("QPizzaQuery")
 
 
 def _generate_order_answer(
