@@ -21,17 +21,16 @@
 
 """
 
-import os
+from pathlib import Path
 from functools import lru_cache
 
 
 @lru_cache(maxsize=32)
 def read_api_key(key_name: str) -> str:
     """Read the given key from a text file in resources directory. Cached."""
-    path = os.path.join(os.path.dirname(__file__), "resources", key_name + ".txt")
+    api_file = Path(__file__).parent.resolve() / "resources" / f"{key_name}.txt"
     try:
-        with open(path) as f:
-            return f.read().strip()
+        return api_file.read_text().strip()
     except FileNotFoundError:
         pass
     return ""
@@ -73,15 +72,3 @@ def icelandic_asciify(text: str) -> str:
     t = t.encode("ascii", "ignore").decode()
 
     return t
-
-
-def merge_two_dicts(dict_a, dict_b):
-    for key in dict_b:
-        if key in dict_a:
-            if isinstance(dict_a[key], dict) and isinstance(dict_b[key], dict):
-                merge_two_dicts(dict_a[key], dict_b[key])
-            else:
-                dict_a[key] = dict_b[key]
-        else:
-            dict_a[key] = dict_b[key]
-    return dict_a

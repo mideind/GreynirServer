@@ -41,9 +41,9 @@ from tree import Node
 import logging
 import requests
 import json
-import os
 import re
 import locale
+from pathlib import Path
 
 from urllib.parse import urlencode
 from functools import lru_cache
@@ -668,10 +668,8 @@ def read_jsfile(filename: str) -> str:
     # containing this __init__.py file
     from rjsmin import jsmin  # type: ignore
 
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    fpath = os.path.join(basepath, "js", filename)
-    with open(fpath, mode="r") as file:
-        return cast(str, jsmin(file.read()))
+    jsfile = Path(__file__).parent.resolve() / "js" / filename
+    return cast(str, jsmin(jsfile.read_text()))
 
 
 def read_grammar_file(filename: str, **format_kwargs: str) -> str:
@@ -679,12 +677,9 @@ def read_grammar_file(filename: str, **format_kwargs: str) -> str:
     Read and return a grammar file from the 'grammars' folder.
     Optionally specify keyword arguments for str.format() call
     """
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    fpath = os.path.join(basepath, "grammars", filename + ".grammar")
+    gfile = Path(__file__).parent.resolve() / "grammars" / f"{filename}.grammar"
 
-    grammar = ""
-    with open(fpath, mode="r") as file:
-        grammar = file.read()
+    grammar = gfile.read_text()
     if len(format_kwargs) > 0:
         grammar = grammar.format(**format_kwargs)
     return grammar
@@ -695,12 +690,9 @@ def join_grammar_files(folder: str) -> str:
     Given a folder name, return a string containing
     the contents of all '.grammar' files within the folder
     """
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    fpath = os.path.join(basepath, folder)
+    gdir = Path(__file__).parent.resolve() / folder
 
     grammar: List[str] = []
-    for fname in os.listdir(fpath):
-        if fname.endswith(".grammar"):
-            with open(os.path.join(fpath, fname), mode="r") as file:
-                grammar.append(file.read())
+    for gfile in gdir.glob("*.grammar"):
+        grammar.append(gfile.read_text())
     return "\n".join(grammar)
