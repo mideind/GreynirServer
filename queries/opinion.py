@@ -28,7 +28,7 @@ from datetime import datetime, timedelta
 
 from query import Query, QueryStateDict
 from queries import gen_answer, read_grammar_file
-from tree import Result, Node
+from tree import ParamList, Result, Node
 
 
 _OPINION_QTYPE = "Opinion"
@@ -45,11 +45,11 @@ QUERY_NONTERMINALS = {"QOpinion"}
 GRAMMAR = read_grammar_file("opinion")
 
 
-def QOpinionQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QOpinionQuery(node: Node, params: ParamList, result: Result) -> None:
     result["qtype"] = _OPINION_QTYPE
 
 
-def QOpinionSubject(node: Node, params: QueryStateDict, result: Result) -> None:
+def QOpinionSubject(node: Node, params: ParamList, result: Result) -> None:
     result["subject_nom"] = result._nominative
 
 

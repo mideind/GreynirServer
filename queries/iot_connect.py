@@ -32,7 +32,7 @@ from pathlib import Path
 from query import Query, QueryStateDict
 from queries import gen_answer, read_jsfile
 from queries.extras.sonos import SonosClient
-from tree import Result, Node
+from tree import ParamList, Result, Node
 
 from util import read_api_key
 from speech import text_to_audio_url
@@ -103,24 +103,24 @@ QIoTConnectSpotify →
 """
 
 
-def QIoTConnectLights(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTConnectLights(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = "connect_lights"
     result.action = "connect_lights"
 
 
-def QIoTConnectSpeaker(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTConnectSpeaker(node: Node, params: ParamList, result: Result) -> None:
     print("Connect Speaker")
     result.qtype = "connect_speaker"
     result.action = "connect_speaker"
 
 
-def QIoTCreateSpeakerToken(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTCreateSpeakerToken(node: Node, params: ParamList, result: Result) -> None:
     print("Create Token")
     result.qtype = "create_speaker_token"
     result.action = "create_speaker_token"
 
 
-def QIoTConnectSpotify(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTConnectSpotify(node: Node, params: ParamList, result: Result) -> None:
     print("Connect Spotify")
     result.qtype = "connect_spotify"
     result.action = "connect_spotify"

@@ -45,7 +45,7 @@ from pathlib import Path
 
 from query import Query, QueryStateDict
 from queries import gen_answer, read_jsfile, read_grammar_file
-from tree import Result, Node, TerminalNode
+from tree import ParamList, Result, Node, TerminalNode
 
 
 class SmartLights(TypedDict):
@@ -112,23 +112,23 @@ GRAMMAR = read_grammar_file(
 )
 
 
-def QIoTQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTQuery(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = _IoT_QTYPE
 
 
-def QIoTColorWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTColorWord(node: Node, params: ParamList, result: Result) -> None:
     result.changing_color = True
 
 
-def QIoTSceneWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTSceneWord(node: Node, params: ParamList, result: Result) -> None:
     result.changing_scene = True
 
 
-def QIoTBrightnessWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTBrightnessWord(node: Node, params: ParamList, result: Result) -> None:
     result.changing_brightness = True
 
 
-def QIoTTurnOnLightsRest(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTTurnOnLightsRest(node: Node, params: ParamList, result: Result) -> None:
     result.action = "turn_on"
     if "hue_obj" not in result:
         result["hue_obj"] = {"on": True}
@@ -136,7 +136,7 @@ def QIoTTurnOnLightsRest(node: Node, params: QueryStateDict, result: Result) -> 
         result["hue_obj"]["on"] = True
 
 
-def QIoTTurnOffLightsRest(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTTurnOffLightsRest(node: Node, params: ParamList, result: Result) -> None:
     result.action = "turn_off"
     if "hue_obj" not in result:
         result["hue_obj"] = {"on": False}
@@ -144,7 +144,7 @@ def QIoTTurnOffLightsRest(node: Node, params: QueryStateDict, result: Result) ->
         result["hue_obj"]["on"] = False
 
 
-def QIoTNewColor(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTNewColor(node: Node, params: ParamList, result: Result) -> None:
     result.action = "set_color"
     color_hue = _COLORS.get(result.color_name, None)
 
@@ -156,9 +156,7 @@ def QIoTNewColor(node: Node, params: QueryStateDict, result: Result) -> None:
             result["hue_obj"]["on"] = True
 
 
-def QIoTMoreBrighterOrHigher(
-    node: Node, params: QueryStateDict, result: Result
-) -> None:
+def QIoTMoreBrighterOrHigher(node: Node, params: ParamList, result: Result) -> None:
     result.action = "increase_brightness"
     if "hue_obj" not in result:
         result["hue_obj"] = {"on": True, "bri_inc": 64}
@@ -167,7 +165,7 @@ def QIoTMoreBrighterOrHigher(
         result["hue_obj"]["on"] = True
 
 
-def QIoTLessDarkerOrLower(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTLessDarkerOrLower(node: Node, params: ParamList, result: Result) -> None:
     result.action = "decrease_brightness"
     if "hue_obj" not in result:
         result["hue_obj"] = {"bri_inc": -64}
@@ -175,7 +173,7 @@ def QIoTLessDarkerOrLower(node: Node, params: QueryStateDict, result: Result) ->
         result["hue_obj"]["bri_inc"] = -64
 
 
-def QIoTIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTIncreaseVerb(node: Node, params: ParamList, result: Result) -> None:
     result.action = "increase_brightness"
     if "hue_obj" not in result:
         result["hue_obj"] = {"on": True, "bri_inc": 64}
@@ -184,7 +182,7 @@ def QIoTIncreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None
         result["hue_obj"]["on"] = True
 
 
-def QIoTCooler(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTCooler(node: Node, params: ParamList, result: Result) -> None:
     result.action = "decrease_colortemp"
     result.changing_temp = True
     if "hue_obj" not in result:
@@ -193,7 +191,7 @@ def QIoTCooler(node: Node, params: QueryStateDict, result: Result) -> None:
         result["hue_obj"]["ct_inc"] = -30000
 
 
-def QIoTWarmer(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTWarmer(node: Node, params: ParamList, result: Result) -> None:
     result.action = "increase_colortemp"
     result.changing_temp = True
     if "hue_obj" not in result:
@@ -202,7 +200,7 @@ def QIoTWarmer(node: Node, params: QueryStateDict, result: Result) -> None:
         result["hue_obj"]["ct_inc"] = 30000
 
 
-def QIoTDecreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTDecreaseVerb(node: Node, params: ParamList, result: Result) -> None:
     result.action = "decrease_brightness"
     if "hue_obj" not in result:
         result["hue_obj"] = {"bri_inc": -64}
@@ -210,7 +208,7 @@ def QIoTDecreaseVerb(node: Node, params: QueryStateDict, result: Result) -> None
         result["hue_obj"]["bri_inc"] = -64
 
 
-def QIoTBrightest(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTBrightest(node: Node, params: ParamList, result: Result) -> None:
     result.action = "increase_brightness"
     if "hue_obj" not in result:
         result["hue_obj"] = {"bri": 255}
@@ -218,7 +216,7 @@ def QIoTBrightest(node: Node, params: QueryStateDict, result: Result) -> None:
         result["hue_obj"]["bri"] = 255
 
 
-def QIoTDarkest(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTDarkest(node: Node, params: ParamList, result: Result) -> None:
     result.action = "decrease_brightness"
     if "hue_obj" not in result:
         result["hue_obj"] = {"bri": 0}
@@ -226,7 +224,7 @@ def QIoTDarkest(node: Node, params: QueryStateDict, result: Result) -> None:
         result["hue_obj"]["bri"] = 0
 
 
-def QIoTNewScene(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTNewScene(node: Node, params: ParamList, result: Result) -> None:
     result.action = "set_scene"
     scene_name = result.get("scene_name", None)
     if scene_name is not None:
@@ -237,27 +235,27 @@ def QIoTNewScene(node: Node, params: QueryStateDict, result: Result) -> None:
             result["hue_obj"]["on"] = True
 
 
-def QIoTColorName(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTColorName(node: Node, params: ParamList, result: Result) -> None:
     fc = node.first_child(lambda x: True)
     if fc:
         result["color_name"] = fc.string_self().strip("'").split(":")[0]
 
 
-def QIoTSceneName(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTSceneName(node: Node, params: ParamList, result: Result) -> None:
     result["scene_name"] = result._indefinite
     result["changing_scene"] = True
     print("scene: " + result.get("scene_name", None))
 
 
-def QIoTGroupName(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTGroupName(node: Node, params: ParamList, result: Result) -> None:
     result["group_name"] = result._indefinite
 
 
-def QIoTLightName(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTLightName(node: Node, params: ParamList, result: Result) -> None:
     result["light_name"] = result._indefinite
 
 
-def QIoTSpeakerHotwords(node: Node, params: QueryStateDict, result: Result) -> None:
+def QIoTSpeakerHotwords(node: Node, params: ParamList, result: Result) -> None:
     print("lights banwords")
     result.abort = True
 

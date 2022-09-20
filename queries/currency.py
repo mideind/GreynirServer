@@ -42,7 +42,7 @@ from queries import (
     read_grammar_file,
 )
 from settings import Settings
-from tree import Result, Node, NonterminalNode
+from tree import Result, Node, NonterminalNode, ParamList
 from queries.num import float_to_text
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
@@ -178,17 +178,17 @@ def add_currency(curr: str, result: Result) -> None:
     result.currencies.append(curr)
 
 
-def QCurrency(node: Node, params: QueryStateDict, result: Result) -> None:
+def QCurrency(node: Node, params: ParamList, result: Result) -> None:
     """Currency query"""
     result.qtype = "Currency"
     result.qkey = result._canonical
 
 
-def QCurNumberWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QCurNumberWord(node: Node, params: ParamList, result: Result) -> None:
     add_num(result._canonical, result)
 
 
-def QCurUnit(node: Node, params: QueryStateDict, result: Result) -> None:
+def QCurUnit(node: Node, params: ParamList, result: Result) -> None:
     """Obtain the ISO currency code from the last three
     letters in the child nonterminal name."""
     child = cast(NonterminalNode, node.child)
@@ -196,28 +196,28 @@ def QCurUnit(node: Node, params: QueryStateDict, result: Result) -> None:
     add_currency(currency, result)
 
 
-def QCurExchangeRate(node: Node, params: QueryStateDict, result: Result) -> None:
+def QCurExchangeRate(node: Node, params: ParamList, result: Result) -> None:
     result.op = "exchange"
     result.desc = result._text
 
 
-def QCurGeneralRate(node: Node, params: QueryStateDict, result: Result) -> None:
+def QCurGeneralRate(node: Node, params: ParamList, result: Result) -> None:
     result.op = "general"
     result.desc = result._text
 
 
-def QCurGeneralCost(node: Node, params: QueryStateDict, result: Result) -> None:
+def QCurGeneralCost(node: Node, params: ParamList, result: Result) -> None:
     result.op = "general"
     result.desc = result._text
 
 
-def QCurCurrencyIndex(node: Node, params: QueryStateDict, result: Result) -> None:
+def QCurCurrencyIndex(node: Node, params: ParamList, result: Result) -> None:
     result.op = "index"
     result.desc = result._text
     add_currency("GVT", result)
 
 
-def QCurConvertAmount(node: Node, params: QueryStateDict, result: Result) -> None:
+def QCurConvertAmount(node: Node, params: ParamList, result: Result) -> None:
     # Hvað eru [X] margir [Y] - this is the X part
     amount: Optional[Node] = node.first_child(lambda n: n.has_t_base("amount"))
     if amount is not None:
@@ -237,12 +237,12 @@ def QCurConvertAmount(node: Node, params: QueryStateDict, result: Result) -> Non
     result.desc = result._text
 
 
-def QCurConvertTo(node: Node, params: QueryStateDict, result: Result) -> None:
+def QCurConvertTo(node: Node, params: ParamList, result: Result) -> None:
     # Hvað eru [X] margir [Y] - this is the Y part
     result.currency = result._nominative
 
 
-def QCurMuch(node: Node, params: QueryStateDict, result: Result) -> None:
+def QCurMuch(node: Node, params: ParamList, result: Result) -> None:
     # 'Hvað eru þrír dollarar mikið [í evrum]?'
     # We assume that this means conversion to ISK if no currency is specified
     if "currency" not in result:
@@ -250,7 +250,7 @@ def QCurMuch(node: Node, params: QueryStateDict, result: Result) -> None:
         add_currency("ISK", result)
 
 
-def QCurAmountConversion(node: Node, params: QueryStateDict, result: Result) -> None:
+def QCurAmountConversion(node: Node, params: ParamList, result: Result) -> None:
     result.op = "convert"
 
 

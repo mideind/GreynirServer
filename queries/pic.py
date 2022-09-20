@@ -29,7 +29,7 @@ from urllib.parse import urlparse
 from query import Query, QueryStateDict
 from queries import gen_answer, icequote, read_grammar_file
 from reynir import NounPhrase
-from tree import Result, Node
+from tree import ParamList, Result, Node
 from images import get_image_url, Img
 
 
@@ -62,7 +62,7 @@ QUERY_NONTERMINALS = {"QPic"}
 GRAMMAR = read_grammar_file("pic")
 
 
-def QPicQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPicQuery(node: Node, params: ParamList, result: Result) -> None:
     # Set the query type
     result.qtype = _PIC_QTYPE
 
@@ -71,14 +71,14 @@ def _preprocess(s: str) -> str:
     return s
 
 
-def QPicSubject(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPicSubject(node: Node, params: ParamList, result: Result) -> None:
     n = _preprocess(result._text)
     nom = NounPhrase(n).nominative or n
     result.subject = nom
     result.subject_þgf = result._text
 
 
-def QPicWrongPictureQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPicWrongPictureQuery(node: Node, params: ParamList, result: Result) -> None:
     result.wrong = True
 
 

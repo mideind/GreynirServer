@@ -39,7 +39,7 @@ from queries import query_json_api, gen_answer, icequote, read_grammar_file
 from queries.num import numbers_to_text, digits_to_text
 
 from query import AnswerTuple, Query, QueryStateDict
-from tree import Result, Node
+from tree import ParamList, Result, Node
 from geo import iceprep_for_street
 from util import read_api_key
 
@@ -57,20 +57,20 @@ QUERY_NONTERMINALS = {"QJaQuery"}
 GRAMMAR = read_grammar_file("ja")
 
 
-def QJaSubject(node: Node, params: QueryStateDict, result: Result) -> None:
+def QJaSubject(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = result._nominative
 
 
-def QJaPhoneNum(node: Node, params: QueryStateDict, result: Result) -> None:
+def QJaPhoneNum(node: Node, params: ParamList, result: Result) -> None:
     result.phone_number = result._nominative
     result.qkey = result.phone_number
 
 
-def QJaName4PhoneNumQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QJaName4PhoneNumQuery(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = "Name4PhoneNum"
 
 
-def QJaPhoneNum4NameQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QJaPhoneNum4NameQuery(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = "PhoneNum4Name"
 
 

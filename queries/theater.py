@@ -21,7 +21,7 @@
     This query module handles dialogue related to theater tickets.
 """
 
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 from typing_extensions import TypedDict
 import json
 import logging
@@ -30,7 +30,7 @@ import datetime
 
 from settings import changedlocale
 from query import Query, QueryStateDict
-from tree import Result, Node, TerminalNode
+from tree import ParamList, Result, Node, TerminalNode
 from queries import (
     AnswerTuple,
     gen_answer,
@@ -502,18 +502,18 @@ def _generate_final_answer(
     return (dict(answer=text_ans), text_ans, voice_ans)
 
 
-def QTheaterDialogue(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterDialogue(node: Node, params: ParamList, result: Result) -> None:
     if "qtype" not in result:
         result.qtype = _THEATER_QTYPE
 
 
-def QTheaterHotWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterHotWord(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = _START_DIALOGUE_QTYPE
     print("ACTIVATING THEATER MODULE")
     Query.get_dsm(result).hotword_activated()
 
 
-def QTheaterShowQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterShowQuery(node: Node, params: ParamList, result: Result) -> None:
     dsm: DialogueStateManager = Query.get_dsm(result)
     selected_show: str = result.show_name
     resource: ListResource = cast(ListResource, dsm.get_resource("Show"))
@@ -539,7 +539,7 @@ def QTheaterShowQuery(node: Node, params: QueryStateDict, result: Result) -> Non
             # result.no_show_matched_data_exists = True
 
 
-def QTheaterShowPrice(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterShowPrice(node: Node, params: ParamList, result: Result) -> None:
     dsm = Query.get_dsm(result)
     show = dsm.get_resource("Show")
     if show.is_confirmed:
@@ -558,7 +558,7 @@ def QTheaterShowPrice(node: Node, params: QueryStateDict, result: Result) -> Non
         dsm.set_answer(gen_answer("Þú hefur ekki valið sýningu."))
 
 
-def QTheaterShowLength(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterShowLength(node: Node, params: ParamList, result: Result) -> None:
     dsm = Query.get_dsm(result)
     show = dsm.get_resource("Show")
     if show.is_confirmed:
@@ -664,7 +664,7 @@ def _add_time(
             # result.no_time_matched = True
 
 
-def QTheaterDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterDateTime(node: Node, params: ParamList, result: Result) -> None:
     datetimenode = node.first_child(lambda n: True)
     assert isinstance(datetimenode, TerminalNode)
     now = datetime.datetime.now()
@@ -690,7 +690,7 @@ def QTheaterDateTime(node: Node, params: QueryStateDict, result: Result) -> None
     _add_time(cast(TimeResource, dsm.get_resource("ShowTime")), dsm, result)
 
 
-def QTheaterDate(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterDate(node: Node, params: ParamList, result: Result) -> None:
     datenode = node.first_child(lambda n: True)
     assert isinstance(datenode, TerminalNode)
     cdate = datenode.contained_date
@@ -712,7 +712,7 @@ def QTheaterDate(node: Node, params: QueryStateDict, result: Result) -> None:
     raise ValueError("No date in {0}".format(str(datenode)))
 
 
-def QTheaterTime(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterTime(node: Node, params: ParamList, result: Result) -> None:
     # Extract time from time terminal nodes
     tnode = cast(TerminalNode, node.first_child(lambda n: n.has_t_base("tími")))
     if tnode:
@@ -728,7 +728,7 @@ def QTheaterTime(node: Node, params: QueryStateDict, result: Result) -> None:
         _add_time(cast(TimeResource, dsm.get_resource("ShowTime")), dsm, result)
 
 
-def QTheaterMoreDates(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterMoreDates(node: Node, params: ParamList, result: Result) -> None:
     dsm: DialogueStateManager = Query.get_dsm(result)
     if dsm.current_resource.name == "ShowDate":
         extras: Dict[str, Any] = dsm.extras
@@ -738,7 +738,7 @@ def QTheaterMoreDates(node: Node, params: QueryStateDict, result: Result) -> Non
             extras["page_index"] = 3
 
 
-def QTheaterPreviousDates(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterPreviousDates(node: Node, params: ParamList, result: Result) -> None:
     dsm: DialogueStateManager = Query.get_dsm(result)
     if dsm.current_resource.name == "ShowDate":
         extras: Dict[str, Any] = dsm.extras
@@ -748,9 +748,7 @@ def QTheaterPreviousDates(node: Node, params: QueryStateDict, result: Result) ->
             extras["page_index"] = 0
 
 
-def QTheaterShowSeatCountQuery(
-    node: Node, params: QueryStateDict, result: Result
-) -> None:
+def QTheaterShowSeatCountQuery(node: Node, params: ParamList, result: Result) -> None:
     dsm: DialogueStateManager = Query.get_dsm(result)
     if dsm.get_resource("ShowDateTime").is_confirmed:
         resource: NumberResource = cast(
@@ -789,7 +787,7 @@ def _add_available_rows_to_result(
     result.text_available_rows = text_available_rows
 
 
-def QTheaterShowRow(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterShowRow(node: Node, params: ParamList, result: Result) -> None:
     dsm: DialogueStateManager = Query.get_dsm(result)
     if dsm.get_resource("ShowSeatCount").is_confirmed:
         title: str = dsm.get_resource("Show").data[0]
@@ -824,7 +822,7 @@ def QTheaterShowRow(node: Node, params: QueryStateDict, result: Result) -> None:
             dsm.set_answer((dict(answer=text_ans), text_ans, voice_ans))
 
 
-def QTheaterShowSeats(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterShowSeats(node: Node, params: ParamList, result: Result) -> None:
     dsm: DialogueStateManager = Query.get_dsm(result)
     if dsm.get_resource("ShowSeatRow").is_confirmed:
         resource: ListResource = cast(ListResource, dsm.get_resource("ShowSeatNumber"))
@@ -878,7 +876,7 @@ def QTheaterShowSeats(node: Node, params: QueryStateDict, result: Result) -> Non
             dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
 
 
-def QTheaterGeneralOptions(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterGeneralOptions(node: Node, params: ParamList, result: Result) -> None:
     result.options_info = True
     dsm: DialogueStateManager = Query.get_dsm(result)
     resource = dsm.current_resource
@@ -892,7 +890,7 @@ def QTheaterGeneralOptions(node: Node, params: QueryStateDict, result: Result) -
         QTheaterSeatOptions(node, params, result)
 
 
-def QTheaterShowOptions(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterShowOptions(node: Node, params: ParamList, result: Result) -> None:
     # result.show_options = True
     dsm: DialogueStateManager = Query.get_dsm(result)
     if result.get("options_info"):
@@ -911,7 +909,7 @@ def QTheaterShowOptions(node: Node, params: QueryStateDict, result: Result) -> N
         dsm.set_answer((dict(answer=text_ans), text_ans, voice_ans))
 
 
-def QTheaterDateOptions(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterDateOptions(node: Node, params: ParamList, result: Result) -> None:
     # result.date_options = True
     dsm: DialogueStateManager = Query.get_dsm(result)
     if result.get("options_info"):
@@ -979,7 +977,7 @@ def QTheaterDateOptions(node: Node, params: QueryStateDict, result: Result) -> N
             )
 
 
-def QTheaterRowOptions(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterRowOptions(node: Node, params: ParamList, result: Result) -> None:
     # result.row_options = True
     dsm: DialogueStateManager = Query.get_dsm(result)
     if result.get("options_info"):
@@ -1019,7 +1017,7 @@ def QTheaterRowOptions(node: Node, params: QueryStateDict, result: Result) -> No
         dsm.set_answer((dict(answer=text_ans), text_ans, voice_ans))
 
 
-def QTheaterSeatOptions(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterSeatOptions(node: Node, params: ParamList, result: Result) -> None:
     result.seat_options = True
     dsm: DialogueStateManager = Query.get_dsm(result)
     if result.get("options_info"):
@@ -1052,7 +1050,7 @@ def QTheaterSeatOptions(node: Node, params: QueryStateDict, result: Result) -> N
             dsm.set_answer((dict(answer=text_ans), text_ans, voice_ans))
 
 
-def QTheaterShowName(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTheaterShowName(node: Node, params: ParamList, result: Result) -> None:
     result.show_name = (
         " ".join(result._text.split()[1:])
         if result._text.startswith("sýning")
@@ -1060,7 +1058,7 @@ def QTheaterShowName(node: Node, params: QueryStateDict, result: Result) -> None
     )
 
 
-def QTheaterNum(node: Node, params: QueryStateDict, result: Result):
+def QTheaterNum(node: Node, params: ParamList, result: Result):
     number: int = int(parse_num(node, result._nominative))
     if "numbers" not in result:
         result["numbers"] = []
@@ -1073,7 +1071,7 @@ QTheaterRowNum = QTheaterNum
 QTheaterShowSeatsNum = QTheaterNum
 
 
-def QTheaterCancel(node: Node, params: QueryStateDict, result: Result):
+def QTheaterCancel(node: Node, params: ParamList, result: Result):
     dsm: DialogueStateManager = Query.get_dsm(result)
     dsm.set_resource_state("Final", ResourceState.CANCELLED)
     dsm.set_answer(gen_answer(dsm.get_resource("Final").prompts["cancelled"]))
@@ -1082,7 +1080,7 @@ def QTheaterCancel(node: Node, params: QueryStateDict, result: Result):
     result.qtype = "QTheaterCancel"
 
 
-def QTheaterYes(node: Node, params: QueryStateDict, result: Result):
+def QTheaterYes(node: Node, params: ParamList, result: Result):
     dsm: DialogueStateManager = Query.get_dsm(result)
     current_resource = dsm.current_resource
     if (
@@ -1102,7 +1100,7 @@ def QTheaterYes(node: Node, params: QueryStateDict, result: Result):
                 dsm.get_resource(rname).state = ResourceState.CONFIRMED
 
 
-def QTheaterNo(node: Node, params: QueryStateDict, result: Result):
+def QTheaterNo(node: Node, params: ParamList, result: Result):
     dsm: DialogueStateManager = Query.get_dsm(result)
     resource = dsm.current_resource
     if (
@@ -1122,7 +1120,7 @@ def QTheaterNo(node: Node, params: QueryStateDict, result: Result):
                 dsm.set_resource_state(rname, ResourceState.UNFULFILLED)
 
 
-def QTheaterStatus(node: Node, params: QueryStateDict, result: Result):
+def QTheaterStatus(node: Node, params: ParamList, result: Result):
     # TODO: Handle QTheaterStatus again with dsm in query
     result.qtype = "QTheaterStatus"
     dsm: DialogueStateManager = Query.get_dsm(result)

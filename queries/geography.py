@@ -46,7 +46,7 @@ from geo import (
     location_info,
     capitalize_placename,
 )
-from tree import Result, Node
+from tree import ParamList, Result, Node
 
 
 _GEO_QTYPE = "Geography"
@@ -80,24 +80,24 @@ QUERY_NONTERMINALS = {"QGeo"}
 GRAMMAR = read_grammar_file("geography")
 
 
-def QGeoQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QGeoQuery(node: Node, params: ParamList, result: Result) -> None:
     # Set the query type
     result.qtype = _GEO_QTYPE
 
 
-def QGeoCapitalQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QGeoCapitalQuery(node: Node, params: ParamList, result: Result) -> None:
     result["geo_qtype"] = "capital"
 
 
-def QGeoCountryQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QGeoCountryQuery(node: Node, params: ParamList, result: Result) -> None:
     result["geo_qtype"] = "country"
 
 
-def QGeoContinentQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QGeoContinentQuery(node: Node, params: ParamList, result: Result) -> None:
     result["geo_qtype"] = "continent"
 
 
-def QGeoLocationDescQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QGeoLocationDescQuery(node: Node, params: ParamList, result: Result) -> None:
     result["geo_qtype"] = "loc_desc"
 
 
@@ -119,7 +119,7 @@ def _preprocess(name: str) -> str:
     return fixed
 
 
-def QGeoSubject(node: Node, params: QueryStateDict, result: Result) -> None:
+def QGeoSubject(node: Node, params: ParamList, result: Result) -> None:
     n = capitalize_placename(_preprocess(result._text))
     nom = NounPhrase(n).nominative or n
     result.subject = nom

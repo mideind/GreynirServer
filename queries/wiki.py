@@ -37,7 +37,7 @@ from datetime import datetime, timedelta
 
 from queries import query_json_api, gen_answer, cap_first, read_grammar_file
 from query import Query, QueryStateDict, ContextDict
-from tree import Result, Node
+from tree import ParamList, Result, Node
 
 
 _WIKI_QTYPE = "Wikipedia"
@@ -113,7 +113,7 @@ GRAMMAR = read_grammar_file(
 )
 
 
-def QWikiQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWikiQuery(node: Node, params: ParamList, result: Result) -> None:
     # Set the query type
     result.qtype = _WIKI_QTYPE
     result.qkey = result.get("subject_nom")
@@ -121,13 +121,13 @@ def QWikiQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result["explicit_wikipedia"] = True
 
 
-def QWikiWhatIsQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWikiWhatIsQuery(node: Node, params: ParamList, result: Result) -> None:
     # Set the query type
     result.qtype = _WIKI_QTYPE
     result.qkey = result.get("subject_nom")
 
 
-def QWikiSubjectNlNf(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWikiSubjectNlNf(node: Node, params: ParamList, result: Result) -> None:
     result["subject_nom"] = result._nominative
 
 
@@ -135,7 +135,7 @@ def QWikiSubjectNlNf(node: Node, params: QueryStateDict, result: Result) -> None
 QWikiSubjectNlÞf = QWikiSubjectNlÞgf = QWikiSubjectNlNf
 
 
-def QWikiPrevSubjectNf(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWikiPrevSubjectNf(node: Node, params: ParamList, result: Result) -> None:
     """Reference to previous result, usually via personal
     pronouns ('Hvað segir Wikipedía um hann/hana/það?')."""
     q: Optional[Query] = result.state.get("query")
@@ -157,12 +157,12 @@ def QWikiPrevSubjectNf(node: Node, params: QueryStateDict, result: Result) -> No
 QWikiPrevSubjectÞgf = QWikiPrevSubjectÞf = QWikiPrevSubjectNf
 
 
-def EfLiður(node: Node, params: QueryStateDict, result: Result) -> None:
+def EfLiður(node: Node, params: ParamList, result: Result) -> None:
     """Don't change the case of possessive clauses"""
     result._nominative = result._text
 
 
-def FsMeðFallstjórn(node: Node, params: QueryStateDict, result: Result) -> None:
+def FsMeðFallstjórn(node: Node, params: ParamList, result: Result) -> None:
     """Don't change the case of prepositional clauses"""
     result._nominative = result._text
 

@@ -36,7 +36,6 @@ import random
 from datetime import datetime
 
 from reynir import NounPhrase
-from iceaddr import nearest_addr, nearest_placenames
 
 from geo import in_iceland, iceprep_for_street, LatLonTuple
 from query import Query, QueryStateDict
@@ -49,7 +48,7 @@ from queries import (
     read_grammar_file,
 )
 from queries.num import numbers_to_text
-from tree import Result, Node
+from tree import ParamList, Result, Node
 
 
 _PLACES_QTYPE = "Places"
@@ -90,27 +89,27 @@ def _fix_placename(pn: str) -> str:
     return _PLACENAME_MAP.get(p, p)
 
 
-def QPlacesQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPlacesQuery(node: Node, params: ParamList, result: Result) -> None:
     result["qtype"] = _PLACES_QTYPE
 
 
-def QPlacesOpeningHours(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPlacesOpeningHours(node: Node, params: ParamList, result: Result) -> None:
     result["qkey"] = "OpeningHours"
 
 
-def QPlacesIsOpen(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPlacesIsOpen(node: Node, params: ParamList, result: Result) -> None:
     result["qkey"] = "IsOpen"
 
 
-def QPlacesIsClosed(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPlacesIsClosed(node: Node, params: ParamList, result: Result) -> None:
     result["qkey"] = "IsClosed"
 
 
-def QPlacesAddress(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPlacesAddress(node: Node, params: ParamList, result: Result) -> None:
     result["qkey"] = "PlaceAddress"
 
 
-def QPlacesSubject(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPlacesSubject(node: Node, params: ParamList, result: Result) -> None:
     result["subject_nom"] = _fix_placename(result._nominative)
 
 

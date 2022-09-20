@@ -35,7 +35,7 @@ import random
 
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, query_json_api, read_grammar_file
-from tree import Result, Node
+from tree import ParamList, Result, Node
 
 
 _NEWS_QTYPE = "News"
@@ -63,7 +63,7 @@ HANDLE_TREE = True
 GRAMMAR = read_grammar_file("news")
 
 
-def QNewsQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QNewsQuery(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = _NEWS_QTYPE
 
 

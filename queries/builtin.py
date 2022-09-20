@@ -45,7 +45,7 @@ from reynir.bintokenizer import stems_of_token
 from search import Search
 from query import AnswerTuple, Query, ResponseDict, ResponseType, QueryStateDict
 from queries import read_grammar_file
-from tree import Result, Node
+from tree import Result, Node, ParamList
 
 from queries import cap_first
 
@@ -892,7 +892,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 # and are called during tree processing (depth-first, i.e. bottom-up navigation)
 
 
-def QPerson(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPerson(node: Node, params: ParamList, result: Result) -> None:
     """Person query"""
     result.qtype = "Person"
     if "mannsnafn" in result:
@@ -905,87 +905,87 @@ def QPerson(node: Node, params: QueryStateDict, result: Result) -> None:
         assert False
 
 
-def QPersonPronoun(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPersonPronoun(node: Node, params: ParamList, result: Result) -> None:
     """Persónufornafn: hann, hún, það"""
     result.persónufornafn = result._nominative
 
 
-def QCompany(node: Node, params: QueryStateDict, result: Result) -> None:
+def QCompany(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = "Company"
     result.qkey = result.fyrirtæki
 
 
-def QEntity(node: Node, params: QueryStateDict, result: Result) -> None:
+def QEntity(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = "Entity"
     assert "qkey" in result
 
 
-def QTitle(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTitle(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = "Title"
     result.qkey = result.titill
 
 
-def QWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWord(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = "Word"
     assert "qkey" in result
 
 
-def QSearch(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSearch(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = "Search"
     # Return the entire query text as the search key
     result.qkey = result._text
 
 
-def QRepeat(node: Node, params: QueryStateDict, result: Result) -> None:
+def QRepeat(node: Node, params: ParamList, result: Result) -> None:
     """Request to repeat the last query answer"""
     result.qkey = ""
     result.qtype = "Repeat"
 
 
-def Sérnafn(node: Node, params: QueryStateDict, result: Result) -> None:
+def Sérnafn(node: Node, params: ParamList, result: Result) -> None:
     """Sérnafn, stutt eða langt"""
     result.sérnafn = result._nominative
 
 
-def Fyrirtæki(node: Node, params: QueryStateDict, result: Result) -> None:
+def Fyrirtæki(node: Node, params: ParamList, result: Result) -> None:
     """Fyrirtækisnafn, þ.e. sérnafn + ehf./hf./Inc. o.s.frv."""
     result.fyrirtæki = result._nominative
 
 
-def Mannsnafn(node: Node, params: QueryStateDict, result: Result) -> None:
+def Mannsnafn(node: Node, params: ParamList, result: Result) -> None:
     """Hreint mannsnafn, þ.e. án ávarps og titils"""
     result.mannsnafn = result._nominative
 
 
-def EfLiður(node: Node, params: QueryStateDict, result: Result) -> None:
+def EfLiður(node: Node, params: ParamList, result: Result) -> None:
     """Eignarfallsliðir haldast óbreyttir,
     þ.e. þeim á ekki að breyta í nefnifall"""
     result._nominative = result._text
 
 
-def FsMeðFallstjórn(node: Node, params: QueryStateDict, result: Result) -> None:
+def FsMeðFallstjórn(node: Node, params: ParamList, result: Result) -> None:
     """Forsetningarliðir haldast óbreyttir,
     þ.e. þeim á ekki að breyta í nefnifall"""
     result._nominative = result._text
 
 
-def QEntityKey(node: Node, params: QueryStateDict, result: Result) -> None:
+def QEntityKey(node: Node, params: ParamList, result: Result) -> None:
     if "sérnafn" in result:
         result.qkey = result.sérnafn
     else:
         result.qkey = result._nominative
 
 
-def QTitleKey(node: Node, params: QueryStateDict, result: Result) -> None:
+def QTitleKey(node: Node, params: ParamList, result: Result) -> None:
     """Titill"""
     result.titill = result._nominative
 
 
-def QWordNounKey(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWordNounKey(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = result._canonical
 
 
-def QWordPersonKey(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWordPersonKey(node: Node, params: ParamList, result: Result) -> None:
     if "mannsnafn" in result:
         result.qkey = result.mannsnafn
     elif "sérnafn" in result:
@@ -994,9 +994,9 @@ def QWordPersonKey(node: Node, params: QueryStateDict, result: Result) -> None:
         result.qkey = result._nominative
 
 
-def QWordEntityKey(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWordEntityKey(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = result._nominative
 
 
-def QWordVerbKey(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWordVerbKey(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = result._root

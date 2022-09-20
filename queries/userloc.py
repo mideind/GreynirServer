@@ -37,14 +37,12 @@ from queries import (
     read_grammar_file,
 )
 from queries.num import numbers_to_text
-from tree import Result, Node
+from tree import ParamList, Result, Node
 from iceaddr import iceaddr_lookup, postcodes  # type: ignore
 from geo import (
     iceprep_for_placename,
     iceprep_for_street,
-    iceprep_for_cc,
     in_iceland,
-    country_name_for_isocode,
     LatLonTuple,
 )
 
@@ -62,19 +60,19 @@ QUERY_NONTERMINALS = {"QUserLocation"}
 GRAMMAR = read_grammar_file("userloc")
 
 
-def QUserLocationQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QUserLocationQuery(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = _LOC_QTYPE
 
 
-def QUserLocationCurrent(node: Node, params: QueryStateDict, result: Result) -> None:
+def QUserLocationCurrent(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "CurrentLocation"
 
 
-def QUserLocationPostcode(node: Node, params: QueryStateDict, result: Result) -> None:
+def QUserLocationPostcode(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "CurrentPostcode"
 
 
-def QUserLocationCountry(node: Node, params: QueryStateDict, result: Result) -> None:
+def QUserLocationCountry(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "CurrentCountry"
 
 

@@ -20,27 +20,24 @@
 
     This query module handles dialogue related to ordering pizza.
 """
-from typing import Any, Dict, List, Optional, Set, cast
+from typing import Any, Dict, List, Optional, cast
 import logging
 import random
 
 from query import Query, QueryStateDict
-from tree import Result, Node
+from tree import ParamList, Result, Node
 from queries import (
     AnswerTuple,
     gen_answer,
-    natlang_seq,
     parse_num,
     read_grammar_file,
     sing_or_plur,
 )
-from queries.num import number_to_text, numbers_to_ordinal, numbers_to_text
+from queries.num import number_to_text, numbers_to_text
 from queries.extras.resources import (
     FinalResource,
-    ListResource,
     DictResource,
     OrResource,
-    Resource,
     ResourceState,
     StringResource,
     WrapperResource,
@@ -216,19 +213,19 @@ def _generate_final_answer(
     return gen_answer(resource.prompts["final"])
 
 
-def QPizzaDialogue(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaDialogue(node: Node, params: ParamList, result: Result) -> None:
     if "qtype" not in result:
         result.qtype = _PIZZA_QTYPE
 
 
-def QPizzaHotWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaHotWord(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = _START_DIALOGUE_QTYPE
     print("ACTIVATING PIZZA MODULE")
     Query.get_dsm(result).hotword_activated()
 
 
 def QPizzaNumberAndSpecificationWrapper(
-    node: Node, params: QueryStateDict, result: Result
+    node: Node, params: ParamList, result: Result
 ) -> None:
     """
     Dynamically adds a number of pizzas if there is no
@@ -325,9 +322,7 @@ def QPizzaNumberAndSpecificationWrapper(
                 dsm.extras["added_pizzas"] = dsm.extras.get("added_pizzas", 0) + 1
 
 
-def QPizzaNumberAndSpecification(
-    node: Node, params: QueryStateDict, result: Result
-) -> None:
+def QPizzaNumberAndSpecification(node: Node, params: ParamList, result: Result) -> None:
     """
     Adds pizza information to the result.
     """
@@ -352,23 +347,23 @@ def QPizzaNumberAndSpecification(
     result.pizzas = [pizza]
 
 
-def QPizzaSpecification(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaSpecification(node: Node, params: ParamList, result: Result) -> None:
     print("In QPizzaSpecification")
 
 
-def QPizzaToppingsWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaToppingsWord(node: Node, params: ParamList, result: Result) -> None:
     topping: str = result.dict.pop("real_name", result._nominative)
     if "toppings in QPizzaToppingsWord" not in result:
         result["toppings"] = {}
     result["toppings"][topping] = 1  # TODO: Add support for extra toppings
 
 
-def QPizzaMenuWords(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaMenuWords(node: Node, params: ParamList, result: Result) -> None:
     result.menu = result._root
     # TODO: If multiple menu items added at the same time it will be in plural form
 
 
-def QPizzaNum(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaNum(node: Node, params: ParamList, result: Result) -> None:
     number: int = int(parse_num(node, result._nominative))
     if "numbers" not in result:
         result["numbers"] = []
@@ -376,39 +371,39 @@ def QPizzaNum(node: Node, params: QueryStateDict, result: Result) -> None:
     result.number = number
 
 
-def QPizzaSizeLarge(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaSizeLarge(node: Node, params: ParamList, result: Result) -> None:
     result.pizza_size = "stór"
 
 
-def QPizzaSizeMedium(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaSizeMedium(node: Node, params: ParamList, result: Result) -> None:
     result.pizza_size = "miðstærð"
 
 
-def QPizzaMediumWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaMediumWord(node: Node, params: ParamList, result: Result) -> None:
     result.pizza_size = "miðstærð"
 
 
-def QPizzaSizeSmall(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaSizeSmall(node: Node, params: ParamList, result: Result) -> None:
     result.pizza_size = "lítil"
 
 
-def QPizzaCrustType(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaCrustType(node: Node, params: ParamList, result: Result) -> None:
     result.crust = result._root
 
 
-def QPizzaPepperoni(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaPepperoni(node: Node, params: ParamList, result: Result) -> None:
     result.real_name = "pepperóní"
 
 
-def QPizzaOlive(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaOlive(node: Node, params: ParamList, result: Result) -> None:
     result.real_name = "ólífur"
 
 
-def QPizzaMushroom(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaMushroom(node: Node, params: ParamList, result: Result) -> None:
     result.real_name = "sveppir"
 
 
-def QPizzaNo(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaNo(node: Node, params: ParamList, result: Result) -> None:
     dsm: DialogueStateManager = Query.get_dsm(result)
     resource: WrapperResource = cast(WrapperResource, dsm.current_resource)
     print("No resource: ", resource.name)
@@ -417,7 +412,7 @@ def QPizzaNo(node: Node, params: QueryStateDict, result: Result) -> None:
         dsm.set_resource_state("Final", ResourceState.CONFIRMED)
 
 
-def QPizzaStatus(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPizzaStatus(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = "QPizzaStatus"
     dsm: DialogueStateManager = Query.get_dsm(result)
     at = dsm.get_answer(_ANSWERING_FUNCTIONS, result)
