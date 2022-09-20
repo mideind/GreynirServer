@@ -167,7 +167,6 @@ def world_map_data(days=_TOP_LOC_PERIOD):
 
 @routes.route("/locations", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="locations", query_string=True)
-@max_age(seconds=30 * 60)
 def locations():
     """Render locations page."""
     kind = request.args.get("kind")
@@ -231,7 +230,7 @@ def staticmap():
     imgdata = get_staticmap_image(lat, lon, zoom=zoom)
     if imgdata:
         fn = "{0}_{1}_{2}.png".format(lat, lon, zoom)
-        return send_file(imgdata, attachment_filename=fn, mimetype="image/png")
+        return send_file(imgdata, download_name=fn, mimetype="image/png")
 
     return abort(404)
 
