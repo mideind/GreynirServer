@@ -53,6 +53,7 @@ import json
 import re
 import random
 from collections import defaultdict
+from itertools import takewhile
 from queries.extras.dialogue import (
     DialogueStateManager as DSM,
     ResourceNotFoundError,
@@ -246,9 +247,6 @@ class QueryParseForestReducer(ParseForestReducer):
 
     def go(self, root_node: SPPF_Node) -> ResultDict:
         """Perform the reduction"""
-        # TODO:
-        # - Less greedy Nl, prefer optional nts
-
         # Memoization/caching dict, keyed by node and memoization key
         visited: Dict[KeyTuple, ResultDict] = dict()
         # Current memoization key
@@ -287,15 +285,13 @@ class QueryParseForestReducer(ParseForestReducer):
                     # Initialize the score of this family of children, so that productions
                     # with higher priorities (more negative prio values) get a starting bonus
                     child_scores[fam_ix]["sc"] = -10 * prod.priority
-                    # TODO: Is this ^^^ needed?
                     for ch in children:
                         if ch is not None:
                             rd = calc_score(ch)
                             d = child_scores[fam_ix]
                             d["sc"] += rd["sc"]
-                            if "ban" in rd:
-                                d["ban"] = rd["ban"]
-                            # TODO: Is this needed?
+                            if "ban" in rd:  # Carry ban status up the tree
+                                d["ban"] = rd["ban"]  # type: ignore
                             # Carry information about contained verbs ("so") up the tree
                             for key in ("so", "sl"):
                                 if key in rd:
@@ -322,9 +318,9 @@ class QueryParseForestReducer(ParseForestReducer):
                     s = sorted(
                         child_scores.items(),
                         key=lambda x: (
-                            0 if x[1].get("ban") else 1,
-                            x[1]["sc"],
-                            -x[0],
+                            0 if x[1].get("ban") else 1,  # Non-banned first
+                            x[1]["sc"],  # Score (descending)
+                            -x[0],  # Index (for determinism)
                         ),
                         reverse=True,
                     )
@@ -333,13 +329,18 @@ class QueryParseForestReducer(ParseForestReducer):
                         # We have a blend of non-banned and banned families,
                         # prune the banned ones (even for no-reduce nonterminals)
                         w._families = [
-                            w._families[x[0]] for x in s if not x[1].get("ban")
+                            w._families[x[0]]
+                            for x in takewhile(lambda y: not y[1].get("ban"), s)
                         ]
 
                     # This is the best scoring family
                     # (and the one with the lowest index
                     # if there are many with the same score)
                     ix, v = s[0]
+
+                    # Note: at this point the best scoring family
+                    # might be banned or not, we deal with this issue
+                    # when returning the root score from go()
 
                     # If the node nonterminal is marked as "no_reduce",
                     # we leave the child families in place. This feature

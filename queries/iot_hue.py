@@ -41,6 +41,7 @@ from typing_extensions import TypedDict
 import logging
 import random
 import json
+from pathlib import Path
 
 from query import Query, QueryStateDict
 from queries import gen_answer, read_jsfile, read_grammar_file
@@ -367,10 +368,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             '<break time="2s"/>',
         )
         js = (
-            read_jsfile("Libraries/fuse.js")
+            read_jsfile(str(Path("Libraries", "fuse.js")))
             + f"var BRIDGE_IP = '{bridge_ip}';var USERNAME = '{username}';"
-            + read_jsfile("Philips_Hue/fuse_search.js")
-            + read_jsfile("Philips_Hue/set_lights.js")
+            + read_jsfile(str(Path("Philips_Hue", "fuse_search.js")))
+            + read_jsfile(str(Path("Philips_Hue", "set_lights.js")))
         )
         js += f"return setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
         q.set_command(js)

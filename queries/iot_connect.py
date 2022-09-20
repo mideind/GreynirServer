@@ -27,6 +27,7 @@ from typing_extensions import TypedDict
 
 import random
 import flask
+from pathlib import Path
 
 from query import Query, QueryStateDict
 from queries import gen_answer, read_jsfile
@@ -138,7 +139,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     assert client_id is not None
 
     if result.qtype == "connect_lights":
-        js = read_jsfile("Philips_Hue/hub.js")
+        js = read_jsfile(str(Path("Philips_Hue", "hub.js")))
         js += f"return connectHub('{client_id}','{host}');"
         q.set_answer(*gen_answer("Philips Hue miðstöðin hefur verið tengd."))
         q.set_command(js)
