@@ -47,14 +47,6 @@
         // "use strict";
 
         async function findHub() {
-            // let hubArr = [];
-            // let hubObj = new Object();
-            // hubObj.id = "ecb5fafffe1be1a4";
-            // hubObj.internalipaddress = "192.168.1.68";
-            // hubObj.port = "443";
-            // console.log(hubObj);
-            // hubArr.push(hubObj);
-            // return hubArr[0];
             return fetch(`https://discovery.meethue.com`)
                 .then((resp) => {
                     if (!resp.ok) {
@@ -82,7 +74,7 @@
         async function createNewDeveloper(ipAddress) {
             console.log("create new developer");
             const body = JSON.stringify({
-                devicetype: "mideind_hue_communication#smartdevice",
+                devicetype: "Embla",
             });
             return fetch(`http://${ipAddress}/api`, {
                 method: "POST",
@@ -115,7 +107,6 @@
                 });
         }
 
-        // clientID = "82AD3C91-7DA2-4502-BB17-075CEC090B14", requestURL = "192.168.1.68")
         async function connectHub(clientID, requestURL, hubIpAddress = null) {
             console.log("connect hub");
             let deviceInfo;

@@ -127,23 +127,17 @@ class SonosClient:
         self._radio_name = radio_name
         self._encoded_credentials = read_api_key("SonosEncodedCredentials")
         self._code = self._device_data["sonos"]["credentials"]["code"]
-        print("code :", self._code)
         self._timestamp = (
             self._device_data.get("sonos").get("credentials").get("timestamp")
         )
-        print("device data :", self._device_data)
         try:
-            print("Trying to get access token")
             self._access_token = self._device_data["sonos"]["credentials"][
                 "access_token"
             ]
-            print("access token :", self._access_token)
             self._refresh_token = self._device_data["sonos"]["credentials"][
                 "refresh_token"
             ]
-            print("refresh token :", self._refresh_token)
         except (KeyError, TypeError):
-            print("No access token found for Sonos.")
             self._create_token()
         self._check_token_expiration()
         self._households = self._get_households()
@@ -164,7 +158,6 @@ class SonosClient:
         try:
             timestamp = self._device_data["sonos"]["credentials"]["timestamp"]
         except (KeyError, TypeError):
-            print("No timestamp found for Sonos token.")
             return
         timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
         if (datetime.now() - timestamp) > timedelta(hours=24):
@@ -174,7 +167,6 @@ class SonosClient:
         """
         Updates the access token
         """
-        print("update sonos token")
         self._encoded_credentials = read_api_key("SonosEncodedCredentials")
         self._refresh_expired_token()
         sonos_dict = {
@@ -192,7 +184,6 @@ class SonosClient:
         """
         Helper function for updating the access token.
         """
-        print("_refresh_expired_token")
         url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=refresh_token&refresh_token={self._refresh_token}"
         headers = {"Authorization": f"Basic {self._encoded_credentials}"}
 
@@ -207,7 +198,6 @@ class SonosClient:
         """
         Creates a token given a code
         """
-        print("_create_token")
         host = str(flask.request.host)
         url = f"https://api.sonos.com/login/v3/oauth/access?grant_type=authorization_code&code={self._code}&redirect_uri=http://{host}/connect_sonos.api"
         headers = {
@@ -215,9 +205,7 @@ class SonosClient:
         }
 
         response = post_to_json_api(url, headers=headers)
-        print("Reponse :", response)
         self._access_token = response.get("access_token")
-        print("access token :", self._access_token)
         self._refresh_token = response.get("refresh_token")
         self._timestamp = str(datetime.now())
         return response
@@ -226,7 +214,6 @@ class SonosClient:
         """
         Returns the list of households of the user
         """
-        print("get households")
         url = f"https://api.ws.sonos.com/control/api/v1/households"
         headers = {"Authorization": f"Bearer {self._access_token}"}
 
@@ -237,7 +224,6 @@ class SonosClient:
         """
         Returns the household id for the given query
         """
-        print("get household id")
         url = f"https://api.ws.sonos.com/control/api/v1/households"
         headers = {
             "Content-Type": "application/json",
@@ -251,7 +237,6 @@ class SonosClient:
         """
         Returns the list of groups of the user
         """
-        print("get groups")
         for i in range(len(self._households)):
             url = f"https://api.ws.sonos.com/control/api/v1/households/{self._household_id}/groups"
             headers = {"Authorization": f"Bearer {self._access_token}"}
@@ -264,25 +249,16 @@ class SonosClient:
         """
         Returns the group id for the given query
         """
-        print("get group_id")
         try:
             if self._group_name is not None:
-                print("GROUP NAME NOT NONE")
                 translated_group_name = self._translate_group_name()
-                print("Self groups :", self._groups)
-                print("GROUP NAME :", self._group_name)
-                print("GROUPS NAME :", self._group_name)
                 group_id = self._groups.get(translated_group_name.casefold())
-                print("GROUP ID :", group_id)
                 return group_id
             else:
-                print("GROUP NAME IS NONE")
                 if len(self._groups) == 1:
-                    print("LEN 1")
                     group_name = iter(self._groups[0])
                     return self._groups[0][group_name]
         except (KeyError, TypeError):
-            print("GROUP EXCEPT")
             url = f"https://api.ws.sonos.com/control/api/v1/households/{self._household_id}/groups"
             headers = {
                 "Content-Type": "application/json",
@@ -296,10 +272,8 @@ class SonosClient:
         """
         Translates the group name to the correct group name
         """
-        print("Translate group name")
         try:
             english_group_name = _GROUPS_DICT[self._group_name]
-            print("TRANSLATED GROUP NAME :", english_group_name)
             return english_group_name
         except (KeyError, TypeError):
             return self._group_name
@@ -308,7 +282,6 @@ class SonosClient:
         """
         Returns the list of groups of the user
         """
-        print("get players")
         for i in range(len(self._households)):
             url = f"https://api.ws.sonos.com/control/api/v1/households/{self._household_id}/groups"
             headers = {"Authorization": f"Bearer {self._access_token}"}
@@ -321,7 +294,6 @@ class SonosClient:
         """
         Returns the player id for the given query
         """
-        print("get player_id")
         try:
             player_id = self._players[0]["id"]
             return player_id
@@ -337,7 +309,6 @@ class SonosClient:
             return response["players"][0]["id"]
 
     def _create_data_dict(self) -> Dict[str, str]:
-        print("_create_data_dict")
         data_dict = {"households": self._households}
         for i in range(len(self._households)):
             groups_dict = self._groups
@@ -348,7 +319,6 @@ class SonosClient:
         return data_dict
 
     def _create_cred_dict(self) -> Dict[str, str]:
-        print("_create_cred_dict")
         cred_dict = {}
         cred_dict.update(
             {
@@ -360,7 +330,6 @@ class SonosClient:
         return cred_dict
 
     def _store_data_and_credentials(self) -> None:
-        print("_store_data_and_credentials")
         cred_dict = self._create_cred_dict()
         sonos_dict = {}
         sonos_dict["sonos"] = {"credentials": cred_dict}
@@ -371,44 +340,37 @@ class SonosClient:
         Query.store_query_data(self._client_id, "iot", new_dict, update_in_place=True)
 
     def _create_groupdict_for_db(self, groups: list) -> Dict[str, str]:
-        print("create_groupdict_for_db")
         groups_dict = {}
         for i in range(len(groups)):
             groups_dict[groups[i]["name"].casefold()] = groups[i]["id"]
         return groups_dict
 
     def _create_playerdict_for_db(self, players: list) -> Dict[str, str]:
-        print("create_playerdict_for_db")
         players_dict = {}
         for i in range(len(players)):
             players_dict[players[i]["name"]] = players[i]["id"]
         return players_dict
 
     def _create_or_join_session(self, recursion=None) -> Optional[str]:
-        print("_create_or_join_session")
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playbackSession/joinOrCreate"
 
-        payload = json.dumps({"appId": "com.mideind.embla", "appContext": "embla123"})
+        payload = json.dumps({"appId": "com.mideind.embla", "appContext": "embla123"}) # FIXME: Use something else than embla123
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self._access_token}",
         }
 
         response = post_to_json_api(url, form_data=payload, headers=headers)
-        print(response)
         if response is None:
             self.toggle_pause()
             if recursion is None:
                 response = self._create_or_join_session(recursion=True)
             else:
                 return None
-            print("response was none , so we created a new session")
             session_id = response
 
         else:
             session_id = response["sessionId"]
-        print("response after loop:", response)
-        print("session_id :", session_id)
         return session_id
 
     """
@@ -416,17 +378,14 @@ class SonosClient:
     """
 
     def play_radio_stream(self, radio_url: str) -> Optional[str]:
-        print("play radio stream")
         session_id = self._create_or_join_session()
-        print("exited create or join session")
         if radio_url is None:
             try:
                 radio_url = self._device_data["sonos"]["data"]["last_radio_url"]
             except KeyError:
                 radio_url = "http://netradio.ruv.is/rondo.mp3"
 
-        url = f"https://api.ws.sonos.com/control/api/v1//playbackSessions/{session_id}/playbackSession/loadStreamUrl?"
-        print("RADIO URL :", radio_url)
+        url = f"https://api.ws.sonos.com/control/api/v1/groups/playbackSessions/{session_id}/playbackSession/loadStreamUrl?"
         payload = json.dumps(
             {
                 "streamUrl": f"{radio_url}",
@@ -445,10 +404,8 @@ class SonosClient:
             return "Group not found"
         data_dict = {"sonos": {"data": {"last_radio_url": radio_url}}}
         self._store_data(data_dict)
-        print(response.get("text"))
 
     def increase_volume(self) -> None:
-        print("increase_volume")
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/groupVolume/relative"
 
         payload = json.dumps({"volumeDelta": 10})
@@ -460,10 +417,8 @@ class SonosClient:
         response = post_to_json_api(url, form_data=payload, headers=headers)
         if response is None:
             self._refresh_data("increase_volume")
-        print(response.get("text"))
 
     def decrease_volume(self) -> None:
-        print("decrease volume")
         group_id = self._get_group_id()
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{group_id}/groupVolume/relative"
 
@@ -476,14 +431,11 @@ class SonosClient:
         response = post_to_json_api(url, form_data=payload, headers=headers)
         if response is None:
             return "Group not found"
-        print(response.get("text"))
 
     def toggle_play(self) -> Union[None, List[Any], Dict[str, Any]]:
         """
         Toggles play/pause of a group
         """
-        print("toggle playpause")
-        print("exited group_id")
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playback/play"
         headers = {
             "Content-Type": "application/json",
@@ -491,7 +443,6 @@ class SonosClient:
         }
 
         response = post_to_json_api(url, headers=headers)
-        print("response :", response)
         if response is None:
             return "Group not found"
 
@@ -501,9 +452,7 @@ class SonosClient:
         """
         Toggles play/pause of a group
         """
-        print("toggle playpause")
         # group_id = self._get_group_id()
-        print("exited group_id")
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playback/pause"
         headers = {
             "Content-Type": "application/json",
@@ -512,7 +461,6 @@ class SonosClient:
 
         # response = requests.request("POST", url, headers=headers, data=payload)
         response = post_to_json_api(url, headers=headers)
-        print("response :", response)
         if response is None:
             return "Group not found"
 
@@ -524,7 +472,6 @@ class SonosClient:
         """
         Plays an audioclip from link to .mp3 file
         """
-        print("play_audio_clip")
         player_id = self._get_player_id()
         url = f"https://api.ws.sonos.com/control/api/v1/players/{player_id}/audioClip"
 
