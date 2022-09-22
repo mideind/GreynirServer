@@ -28,11 +28,13 @@ from typing import (
     Set,
     List,
     Optional,
+    Union,
     cast,
 )
 from typing_extensions import TypedDict
 
 import json
+import logging
 import datetime
 from pathlib import Path
 
@@ -41,7 +43,11 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib  # Used for Python <3.11
 
+from db import SessionContext
+from db.models import DialogueData
+
 import queries.extras.resources as res
+import queries.extras.dialogue_db as dialogue_db
 from queries import AnswerTuple
 
 
@@ -54,7 +60,7 @@ from queries import AnswerTuple
 # TODO: Add "needs_confirmation" to TOML files (skip fulfilled, go straight to confirmed)
 
 _TOML_FOLDER_NAME = "dialogues"
-_DEFAULT_EXPIRATION_TIME = 30 * 60  # a dialogue expires after 30 minutes
+_DEFAULT_EXPIRATION_TIME = 30 * 60  # By default a dialogue expires after 30 minutes
 _FINAL_RESOURCE_NAME = "Final"
 
 # Functions for generating prompts/answers
@@ -62,19 +68,13 @@ _FINAL_RESOURCE_NAME = "Final"
 AnsweringFunctionType = Callable[..., Optional[AnswerTuple]]
 
 # Difficult to type this correctly as the
-# Callable type is contravariant in the parameters
+# Callable type is contravariant in its arguments parameter
 AnsweringFunctionMap = Mapping[str, AnsweringFunctionType]
 
+# Filter functions for filtering nodes
+# when searching resource graph
 FilterFuncType = Callable[[res.Resource, int], bool]
 _ALLOW_ALL_FILTER: FilterFuncType = lambda r, i: True
-
-################################
-#    DIALOGUE STATE MANAGER    #
-################################
-
-
-class ResourceNotFoundError(Exception):
-    ...
 
 
 class ResourceGraphItem(TypedDict):
@@ -104,28 +104,27 @@ _EXTRAS_KEY = "extras"
 _EXPIRATION_TIME_KEY = "expiration_time"
 
 
-# Dialogue data
-DialogueDataDict = Dict[str, str]
+# List of active dialogues, kept in querydata table
+ActiveDialogueList = List[str]
 
 
-class DialogueDBStructure(TypedDict):
-    """
-    Representation of the dialogue structure,
-    as it is saved to the database.
-    """
+class ResourceNotFoundError(Exception):
+    ...
 
-    resources: Dict[str, res.Resource]
-    modified: datetime.datetime
-    extras: Dict[str, Any]
+
+################################
+#    DIALOGUE STATE MANAGER    #
+################################
 
 
 class DialogueStateManager:
-    DIALOGUE_DATA_KEY = "dialogue"
+    ACTIVE_DIALOGUE_KEY = "dialogue"
 
-    def __init__(self, dialogue_data: DialogueDataDict) -> None:
-        self._dialogue_data: DialogueDataDict = dialogue_data
+    def __init__(self, client_id: Optional[str]) -> None:
+        self._client_id = client_id
 
     def load_dialogue(self, dialogue_name: str):
+        # TODO: This should load dialogue data from dialoguedata table
         self._dialogue_name: str = dialogue_name
         # Dict mapping resource name to resource instance
         self._resources: Dict[str, res.Resource] = {}
@@ -139,18 +138,16 @@ class DialogueStateManager:
         self._current_resource: Optional[res.Resource] = None
         # Dependency graph for the resources
         self._resource_graph: ResourceGraph = {}
-        # Database data for this dialogue, if any
-        self._saved_state: Optional[DialogueDBStructure] = None
         # Whether this dialogue is finished (successful/cancelled) or not
         self._finished: bool = False
         self._expiration_time: int = _DEFAULT_EXPIRATION_TIME
         self._timed_out: bool = False
         self._initial_resource = None
 
-        dialogue_saved_state: Optional[str] = self._dialogue_data.get(
-            dialogue_name, None
+        dialogue_saved_state: Optional[DialogueDatabaseDict] = self.dialogue_data(
+            dialogue_name
         )
-        if isinstance(dialogue_saved_state, str):
+        if dialogue_saved_state:
             self._saved_state = cast(
                 DialogueDBStructure,
                 json.loads(dialogue_saved_state, cls=res.DialogueJSONDecoder),
@@ -218,7 +215,11 @@ class DialogueStateManager:
                 _EXPIRATION_TIME_KEY, _DEFAULT_EXPIRATION_TIME
             )
         else:
-            p = Path(__file__).parent.parent.resolve() / _TOML_FOLDER_NAME / f"{filename}.toml"
+            p = (
+                Path(__file__).parent.parent.resolve()
+                / _TOML_FOLDER_NAME
+                / f"{filename}.toml"
+            )
             f = p.read_text()
             # Read TOML file containing a list of resources for the dialogue
             obj: DialogueTOMLStructure = tomllib.loads(f)  # type: ignore
@@ -624,3 +625,35 @@ class DialogueStateManager:
         # (due to custom JSON serialization)
         cd: Dict[str, Optional[str]] = {self._dialogue_name: ds_json}
         return cd
+
+    ################################
+    #        Database functions    #
+    ################################
+    def dialogue_data(
+        self, dialogue_key: Optional[str]
+    ) -> Optional[DialogueDatabaseDict]:
+        """
+        Fetch client_id-associated dialogue data stored
+        in the dialoguedata table based on the dialogue key
+        """
+        if not self._client_id or not dialogue_key:
+            return None
+        with SessionContext(read_only=True) as session:
+            try:
+                dialogue_data = (
+                    session.query(DialogueData)
+                    .filter(DialogueData.dialogue_key == dialogue_key)
+                    .filter(DialogueData.client_id == self._client_id)
+                ).one_or_none()
+                return (
+                    None
+                    if dialogue_data is None
+                    else cast(DialogueDatabaseDict, dialogue_data.data)
+                )
+            except Exception as e:
+                logging.error(
+                    "Error fetching client '{0}' query data for key '{1}' from db: {2}".format(
+                        self._client_id, dialogue_key, e
+                    )
+                )
+        return None

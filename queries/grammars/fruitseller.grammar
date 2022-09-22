@@ -1,8 +1,9 @@
 Query →
-    QFruitStartQuery | QFruitSeller
+    QFruitSeller '?'?
 
 QFruitSeller →
     QFruitSellerQuery
+    | QFruitHotWord
 
 QFruitSellerQuery →
     QFruitQuery '?'?
@@ -12,12 +13,13 @@ QFruitSellerQuery →
 QFruitInfoQuery →
     "hver"? "er"? "staðan" "á"? "ávaxtapöntuninni"?
 
-QFruitStartQuery →
+QFruitHotWord →
     "ávöxtur" '?'?
     | "postur" '?'?
     | "póstur" '?'?
     | "ég" "vill" "kaupa"? "ávexti" '?'?
     | "ég" "vil" "kaupa"? "ávexti" '?'?
+    | "ég" "vil" "panta"? "ávexti" '?'?
     | "mig" "langar" "að" "kaupa" "ávexti" "hjá"? "þér"? '?'?
     | "mig" "langar" "að" "panta" "ávexti" "hjá"? "þér"? '?'?
     | "get" "ég" "keypt" "ávexti" "hjá" "þér" '?'?

@@ -1,10 +1,11 @@
-from typing import Any, List, Optional, Set, cast
+from typing import Any, List, Optional, cast
+
 import json
 import logging
 import datetime
 
 from query import Query, QueryStateDict
-from tree import Result, Node, TerminalNode
+from tree import ParamList, Result, Node, TerminalNode
 from reynir import NounPhrase
 from queries import (
     gen_answer,
@@ -28,19 +29,13 @@ from queries.extras.resources import (
     WrapperResource,
 )
 
-_START_DIALOGUE_QTYPE = "QFruitStartQuery"
-_DIALOGUE_NAME = "fruitseller"
-
 # Indicate that this module wants to handle dialogue parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_DIALOGUE = True
-
 DIALOGUE_NAME = "fruitseller"
-HOTWORD_NONTERMINALS = {"QFruitStartQuery"}
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = {"QFruitSeller"}.union(HOTWORD_NONTERMINALS)
-
+QUERY_NONTERMINALS = {"QFruitSeller"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = read_grammar_file("fruitseller")
@@ -51,7 +46,7 @@ def banned_nonterminals(q: Query) -> None:
     Returns a set of nonterminals that are not
     allowed due to the state of the dialogue
     """
-    if q.active_dialogue != DIALOGUE_NAME:
+    if not q.in_dialogue(DIALOGUE_NAME):
         q.ban_nonterminal("QFruitSellerQuery")
         return
     resource: Resource = q.dsm.current_resource
@@ -150,12 +145,11 @@ def _list_items(items: Any) -> str:
     return natlang_seq(item_list)
 
 
-def QFruitStartQuery(node: Node, params: QueryStateDict, result: Result):
-    result.qtype = _START_DIALOGUE_QTYPE
+def QFruitStartQuery(node: Node, params: ParamList, result: Result):
     Query.get_dsm(result).hotword_activated()
 
 
-def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
+def QAddFruitQuery(node: Node, params: ParamList, result: Result):
     result.qtype = "QAddFruitQuery"
     dsm: DialogueStateManager = Query.get_dsm(result)
     resource: ListResource = cast(ListResource, dsm.get_resource("Fruits"))
@@ -176,7 +170,7 @@ def QAddFruitQuery(node: Node, params: QueryStateDict, result: Result):
     dsm.set_resource_state(resource.name, ResourceState.PARTIALLY_FULFILLED)
 
 
-def QRemoveFruitQuery(node: Node, params: QueryStateDict, result: Result):
+def QRemoveFruitQuery(node: Node, params: ParamList, result: Result):
     result.qtype = "QRemoveFruitQuery"
     dsm: DialogueStateManager = Query.get_dsm(result)
     resource: ListResource = cast(ListResource, dsm.get_resource("Fruits"))
@@ -195,7 +189,7 @@ def QRemoveFruitQuery(node: Node, params: QueryStateDict, result: Result):
         dsm.set_resource_state(resource.name, ResourceState.PARTIALLY_FULFILLED)
 
 
-def QFruitCancelOrder(node: Node, params: QueryStateDict, result: Result):
+def QFruitCancelOrder(node: Node, params: ParamList, result: Result):
     dsm: DialogueStateManager = Query.get_dsm(result)
     dsm.set_resource_state("Final", ResourceState.CANCELLED)
     dsm.set_answer(gen_answer(dsm.get_resource("Final").prompts["cancelled"]))
@@ -203,13 +197,13 @@ def QFruitCancelOrder(node: Node, params: QueryStateDict, result: Result):
     result.qtype = "QFruitCancel"
 
 
-def QFruitOptionsQuery(node: Node, params: QueryStateDict, result: Result):
+def QFruitOptionsQuery(node: Node, params: ParamList, result: Result):
     result.qtype = "QFruitOptionsQuery"
     result.answer_key = ("Fruits", "options")
     result.fruitOptions = True
 
 
-def QFruitYes(node: Node, params: QueryStateDict, result: Result):
+def QFruitYes(node: Node, params: ParamList, result: Result):
 
     result.qtype = "QFruitYes"
     dsm: DialogueStateManager = Query.get_dsm(result)
@@ -223,7 +217,7 @@ def QFruitYes(node: Node, params: QueryStateDict, result: Result):
                 dsm.get_resource(rname).state = ResourceState.CONFIRMED
 
 
-def QFruitNo(node: Node, params: QueryStateDict, result: Result):
+def QFruitNo(node: Node, params: ParamList, result: Result):
     result.qtype = "QFruitNo"
     dsm: DialogueStateManager = Query.get_dsm(result)
     resource = dsm.current_resource
@@ -234,7 +228,7 @@ def QFruitNo(node: Node, params: QueryStateDict, result: Result):
             resource.state = ResourceState.PARTIALLY_FULFILLED
 
 
-def QFruitNumOfFruit(node: Node, params: QueryStateDict, result: Result):
+def QFruitNumOfFruit(node: Node, params: ParamList, result: Result):
     if "queryfruits" not in result:
         result["queryfruits"] = []
     if "fruitnumber" not in result:
@@ -243,7 +237,7 @@ def QFruitNumOfFruit(node: Node, params: QueryStateDict, result: Result):
         result.queryfruits.append([result.fruitnumber, result.fruit])
 
 
-def QFruitNum(node: Node, params: QueryStateDict, result: Result):
+def QFruitNum(node: Node, params: ParamList, result: Result):
     fruitnumber = int(parse_num(node, result._nominative))
     if fruitnumber is not None:
         result.fruitnumber = fruitnumber
@@ -251,7 +245,7 @@ def QFruitNum(node: Node, params: QueryStateDict, result: Result):
         result.fruitnumber = 1
 
 
-def QFruit(node: Node, params: QueryStateDict, result: Result):
+def QFruit(node: Node, params: ParamList, result: Result):
     fruit = result._root
     if fruit is not None:
         result.fruit = fruit
@@ -271,7 +265,7 @@ def _add_date(
             datetime_resource.state = ResourceState.PARTIALLY_FULFILLED
 
 
-def QFruitDate(node: Node, params: QueryStateDict, result: Result) -> None:
+def QFruitDate(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = "bull"
     datenode = node.first_child(lambda n: True)
     assert isinstance(datenode, TerminalNode)
@@ -309,7 +303,7 @@ def _add_time(
             datetime_resource.state = ResourceState.PARTIALLY_FULFILLED
 
 
-def QFruitTime(node: Node, params: QueryStateDict, result: Result):
+def QFruitTime(node: Node, params: ParamList, result: Result):
     result.qtype = "bull"
     # Extract time from time terminal nodes
     tnode = cast(TerminalNode, node.first_child(lambda n: n.has_t_base("tími")))
@@ -325,7 +319,7 @@ def QFruitTime(node: Node, params: QueryStateDict, result: Result):
             result["parse_error"] = True
 
 
-def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
+def QFruitDateTime(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = "bull"
     datetimenode = node.first_child(lambda n: True)
     assert isinstance(datetimenode, TerminalNode)
@@ -347,7 +341,7 @@ def QFruitDateTime(node: Node, params: QueryStateDict, result: Result) -> None:
             _add_time(cast(TimeResource, dsm.get_resource("Time")), dsm, result)
 
 
-def QFruitInfoQuery(node: Node, params: QueryStateDict, result: Result):
+def QFruitInfoQuery(node: Node, params: ParamList, result: Result):
     result.qtype = "QFruitInfo"
     dsm: DialogueStateManager = Query.get_dsm(result)
     at = dsm.get_answer(_ANSWERING_FUNCTIONS, result)
@@ -376,24 +370,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     # Successfully matched a query type
     try:
-        # if result.qtype == "QFruitInfo":
-        #     # Example info handling functionality
-        #     # ans = "Ávaxtapöntunin þín er bara flott. "
-        #     # f = dsm.get_resource("Fruits")
-        #     # ans += str(f.data)
-        #     ans = dsm.get_answer()
-        #     if not ans:
-        #         print("No answer generated")
-        #         q.set_error("E_QUERY_NOT_UNDERSTOOD")
-        #         return
-
-        #     q.set_answer(*ans)
-        #     return
-
         ans = dsm.get_answer(_ANSWERING_FUNCTIONS, result)
-        print("FRUIT ANS: ", ans)
         if not ans:
-            print("No answer generated")
             q.set_error("E_QUERY_NOT_UNDERSTOOD")
             return
 

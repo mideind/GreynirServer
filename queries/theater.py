@@ -95,7 +95,7 @@ def banned_nonterminals(q: Query) -> None:
         return
     resource: Resource = q.dsm.current_resource
     if resource.name == "Show":
-        q.ban_nonterminals(
+        q.ban_nonterminal_set(
             {
                 "QTheaterShowDateQuery",
                 "QTheaterMoreDates",
@@ -108,14 +108,14 @@ def banned_nonterminals(q: Query) -> None:
             }
         )
         if resource.is_unfulfilled:
-            q.ban_nonterminals(
+            q.ban_nonterminal_set(
                 {
                     "QTheaterShowLength",
                     "QTheaterShowPrice",
                 }
             )
     elif resource.name == "ShowDateTime":
-        q.ban_nonterminals(
+        q.ban_nonterminal_set(
             {
                 "QTheaterShowSeatCountQuery",
                 "QTheaterShowLocationQuery",
@@ -125,7 +125,7 @@ def banned_nonterminals(q: Query) -> None:
             }
         )
     elif resource.name == "ShowSeatCount":
-        q.ban_nonterminals(
+        q.ban_nonterminal_set(
             {
                 "QTheaterShowLocationQuery",
                 "QTheaterRowOptions",
@@ -136,7 +136,7 @@ def banned_nonterminals(q: Query) -> None:
             }
         )
     elif resource.name == "ShowSeatRow":
-        q.ban_nonterminals(
+        q.ban_nonterminal_set(
             {
                 "QTheaterShowSeats",
                 "QTheaterSeatCountNum",
@@ -146,7 +146,7 @@ def banned_nonterminals(q: Query) -> None:
             }
         )
     elif resource.name == "ShowSeatNumber":
-        q.ban_nonterminals(
+        q.ban_nonterminal_set(
             {
                 "QTheaterSeatCountNum",
                 "QTheaterRowNum",
@@ -154,7 +154,7 @@ def banned_nonterminals(q: Query) -> None:
             }
         )
     if resource.is_unfulfilled:
-        q.ban_nonterminals(
+        q.ban_nonterminal_set(
             {
                 "QTheaterYes",
                 "QTheaterNo",

@@ -23,13 +23,12 @@
 
 """
 
-from db import Session
 from typing import Any, Optional, cast
 
 from datetime import datetime
 from sqlalchemy import text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, Session
 from sqlalchemy import (
     Column,
     Integer,

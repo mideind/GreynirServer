@@ -23,18 +23,21 @@
 """
 from typing import (
     Any,
-    Callable,
     Dict,
     Mapping,
     List,
+    MutableMapping,
     Optional,
     Type,
+    Union,
 )
 
-import json
 import datetime
 from enum import IntFlag, auto
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field as data_field
+from marshmallow import Schema, fields, post_load
+
+_json_types = Union[None, int, bool, str, List["_json_types"], Dict[str, "_json_types"]]
 
 
 class ResourceState(IntFlag):
@@ -60,6 +63,10 @@ class ResourceState(IntFlag):
     )
 
 
+# Map resource name to type (for encoding/decoding)
+RESOURCE_MAP: MutableMapping[str, Type["Resource"]] = {}
+RESOURCE_SCHEMAS: MutableMapping[str, Type["ResourceSchema"]] = {}
+
 ##########################
 #    RESOURCE CLASSES    #
 ##########################
@@ -75,15 +82,15 @@ class Resource:
     # Name of resource
     name: str = ""
     # Type (child class) of Resource
-    type: str = ""
+    type: str = "Resource"
     # Contained data
     data: Any = None
     # Resource state (unfulfilled, partially fulfilled, etc.)
     state: ResourceState = ResourceState.UNFULFILLED
     # Resources that must be confirmed before moving on to this resource
-    requires: List[str] = field(default_factory=list)
+    requires: List[str] = data_field(default_factory=list)
     # Dictionary containing different prompts/responses
-    prompts: Mapping[str, str] = field(default_factory=dict)
+    prompts: Mapping[str, str] = data_field(default_factory=dict)
     # When this resource's state is changed, change all parent resource states as well
     cascade_state: bool = False
     # When set to True, this resource will be used
@@ -95,7 +102,7 @@ class Resource:
     # Used for comparing states (which one is earlier/later in the dialogue)
     order_index: int = 0
     # Extra variables to be used for specific situations
-    extras: Dict[str, Any] = field(default_factory=dict)
+    extras: Dict[str, Any] = data_field(default_factory=dict)
 
     @property
     def is_unfulfilled(self) -> bool:
@@ -130,13 +137,6 @@ class Resource:
         if new_data:
             self.__dict__.update(new_data.__dict__)
 
-    def format_data(self, format_func: Optional[Callable[[Any], str]] = None) -> str:
-        """
-        Function to format data for display,
-        optionally taking in a formatting function.
-        """
-        return format_func(self.data) if format_func else self.data
-
     def __hash__(self) -> int:
         return hash(self.name)
 
@@ -150,24 +150,65 @@ class Resource:
         return f"<{self.name}>"
 
 
+class ResourceSchema(Schema):
+    """
+    Marshmallow schema for validation and
+    serialization/deserialization of a resource class.
+    """
+
+    name = fields.Str(required=True)
+    type = fields.Str(required=True)
+    data = fields.Raw()
+    state = fields.Enum(IntFlag, by_value=True, required=True)
+    requires = fields.List(fields.Str(), required=True)
+    prompts = fields.Mapping(fields.Str(), fields.Str())
+    cascade_state = fields.Bool()
+    prefer_over_wrapper = fields.Bool()
+    needs_confirmation = fields.Bool()
+    order_index = fields.Int()
+    extras = fields.Dict(fields.Str(), fields.Inferred())
+
+    @post_load
+    def instantiate(self, data: Dict[str, Any], **kwargs: Dict[str, Any]):
+        return RESOURCE_MAP[data["type"]](**data)
+
+
+# Add resource to RESOURCE_MAP,
+# should always be done for new Resource classes
+RESOURCE_MAP[Resource.__name__] = Resource
+# Add schema to RESOURCE_SCHEMAS,
+# should also be done for new Resource classes
+RESOURCE_SCHEMAS[Resource.__name__] = ResourceSchema
+
+
 @dataclass(eq=False, repr=False)
 class ListResource(Resource):
     """Resource representing a list of items."""
 
-    data: List[Any] = field(default_factory=list)
+    data: List[Any] = data_field(default_factory=list)
 
-    def format_data(self, format_func: Optional[Callable[[Any], str]] = None) -> str:
-        if format_func:
-            return format_func(self.data)
-        return ",".join(str(x) for x in self.data)
+
+class ListResourceSchema(ResourceSchema):
+    data = fields.List(fields.Inferred())
+
+
+RESOURCE_MAP[ListResource.__name__] = ListResource
+RESOURCE_SCHEMAS[ListResource.__name__] = ListResourceSchema
 
 
 @dataclass(eq=False, repr=False)
 class DictResource(Resource):
     """Resource representing a dictionary of items."""
 
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: Dict[str, Any] = data_field(default_factory=dict)
 
+
+class DictResourceSchema(ResourceSchema):
+    data = fields.Dict(fields.Str(), fields.Inferred())
+
+
+RESOURCE_MAP[DictResource.__name__] = DictResource
+RESOURCE_SCHEMAS[DictResource.__name__] = DictResourceSchema
 
 # TODO: ?
 # ExactlyOneResource (choose one resource from options)
@@ -182,65 +223,43 @@ class YesNoResource(Resource):
 
     data: bool = False
 
-    def set_yes(self):
-        self.data = True
-        self.state = ResourceState.CONFIRMED
 
-    def set_no(self):
-        self.data = False
-        self.state = ResourceState.CONFIRMED
-
-    def format_data(self, format_func: Optional[Callable[[Any], str]] = None) -> str:
-        if format_func:
-            return format_func(self.data)
-        return "já" if self.data else "nei"
+class YesNoResourceSchema(ResourceSchema):
+    data = fields.Bool()
 
 
-# @dataclass(eq=False, repr=False)
-# class ConfirmResource(YesNoResource):
-#     """Resource representing a confirmation of other resources."""
-
-#     def set_no(self):
-#         self.data = False
-#         self.state = ResourceState.CANCELLED  # TODO: ?
+RESOURCE_MAP[YesNoResource.__name__] = YesNoResource
+RESOURCE_SCHEMAS[YesNoResource.__name__] = YesNoResourceSchema
 
 
 @dataclass(eq=False, repr=False)
 class DateResource(Resource):
     """Resource representing a date."""
 
-    data: datetime.date = field(default_factory=datetime.date.today)
+    data: datetime.date = data_field(default_factory=datetime.date.today)
 
-    @property
-    def date(self) -> Optional[datetime.date]:
-        return self.data if not self.is_unfulfilled else None
 
-    def set_date(self, new_date: datetime.date) -> None:
-        self.data = new_date
+class DateResourceSchema(ResourceSchema):
+    data = fields.Date()
 
-    def format_data(self, format_func: Optional[Callable[[Any], str]] = None) -> str:
-        if format_func:
-            return format_func(self.data)
-        return self.data.strftime("%x")
+
+RESOURCE_MAP[DateResource.__name__] = DateResource
+RESOURCE_SCHEMAS[DateResource.__name__] = DateResourceSchema
 
 
 @dataclass(eq=False, repr=False)
 class TimeResource(Resource):
     """Resource representing a time (00:00-23:59)."""
 
-    data: datetime.time = field(default_factory=datetime.time)
+    data: datetime.time = data_field(default_factory=datetime.time)
 
-    @property
-    def time(self) -> Optional[datetime.time]:
-        return self.data if self.is_unfulfilled else None
 
-    def set_time(self, new_time: datetime.time) -> None:
-        self.data = new_time
+class TimeResourceSchema(ResourceSchema):
+    data = fields.Time()
 
-    def format_data(self, format_func: Optional[Callable[[Any], str]] = None) -> str:
-        if format_func:
-            return format_func(self.data)
-        return self.data.strftime("%X")
+
+RESOURCE_MAP[TimeResource.__name__] = TimeResource
+RESOURCE_SCHEMAS[TimeResource.__name__] = TimeResourceSchema
 
 
 @dataclass(eq=False, repr=False)
@@ -250,11 +269,27 @@ class DatetimeResource(Resource):
     ...
 
 
+class DatetimeResourceSchema(ResourceSchema):
+    data = fields.NaiveDateTime()
+
+
+RESOURCE_MAP[DatetimeResource.__name__] = DatetimeResource
+RESOURCE_SCHEMAS[DatetimeResource.__name__] = DatetimeResourceSchema
+
+
 @dataclass(eq=False, repr=False)
 class NumberResource(Resource):
     """Resource representing a number."""
 
     data: int = 0
+
+
+class NumberResourceSchema(ResourceSchema):
+    data = fields.Int()
+
+
+RESOURCE_MAP[NumberResource.__name__] = NumberResource
+RESOURCE_SCHEMAS[NumberResource.__name__] = NumberResourceSchema
 
 
 @dataclass(eq=False, repr=False)
@@ -264,17 +299,40 @@ class StringResource(Resource):
     data: str = ""
 
 
-@dataclass(eq=False, repr=False)  # Wrapper when multiple resources are required
+class StringResourceSchema(ResourceSchema):
+    data = fields.Str()
+
+
+RESOURCE_MAP[StringResource.__name__] = StringResource
+RESOURCE_SCHEMAS[StringResource.__name__] = StringResourceSchema
+
+# Wrapper, when multiple resources are required
+@dataclass(eq=False, repr=False)
 class WrapperResource(Resource):
     # Wrappers by default prefer to be the current
     # resource rather than a wrapper parent
     prefer_over_wrapper: bool = True
 
 
+class WrapperResourceSchema(ResourceSchema):
+    ...
+
+
+RESOURCE_MAP[WrapperResource.__name__] = WrapperResource
+RESOURCE_SCHEMAS[WrapperResource.__name__] = WrapperResourceSchema
+
+
 @dataclass(eq=False, repr=False)
 class OrResource(WrapperResource):
-    exclusive: bool = False  # Only one of the resources should be fulfilled
-    # TODO: Add choose_resource() method to skip other options
+    ...
+
+
+class OrResourceSchema(ResourceSchema):
+    ...
+
+
+RESOURCE_MAP[OrResource.__name__] = OrResource
+RESOURCE_SCHEMAS[OrResource.__name__] = OrResourceSchema
 
 
 @dataclass(eq=False, repr=False)
@@ -284,84 +342,9 @@ class FinalResource(Resource):
     data: Any = None
 
 
-###################################
-#    ENCODING/DECODING CLASSES    #
-###################################
+class FinalResourceSchema(ResourceSchema):
+    ...
 
 
-# Add any new resource types here (for encoding/decoding)
-RESOURCE_MAP: Mapping[str, Type[Resource]] = {
-    "Resource": Resource,
-    "DateResource": DateResource,
-    "DatetimeResource": DatetimeResource,
-    "FinalResource": FinalResource,
-    "ListResource": ListResource,
-    "DictResource": DictResource,
-    "NumberResource": NumberResource,
-    "OrResource": OrResource,
-    "TimeResource": TimeResource,
-    "WrapperResource": WrapperResource,
-    "YesNoResource": YesNoResource,
-    "StringResource": StringResource,
-}
-
-
-class DialogueJSONEncoder(json.JSONEncoder):
-    def default(self, o: Any) -> Any:
-        # Add JSON encoding for any new classes here
-
-        if isinstance(o, Resource):
-            # CLASSES THAT INHERIT FROM RESOURCE
-            d = o.__dict__.copy()
-            for key in list(d.keys()):
-                # Skip serializing attributes that start with an underscore
-                if key.startswith("_"):
-                    del d[key]
-            d["__type__"] = o.__class__.__name__
-            return d
-        if isinstance(o, datetime.datetime):
-            return {
-                "__type__": "datetime",
-                "year": o.year,
-                "month": o.month,
-                "day": o.day,
-                "hour": o.hour,
-                "minute": o.minute,
-                "second": o.second,
-                "microsecond": o.microsecond,
-            }
-        if isinstance(o, datetime.date):
-            return {
-                "__type__": "date",
-                "year": o.year,
-                "month": o.month,
-                "day": o.day,
-            }
-        if isinstance(o, datetime.time):
-            return {
-                "__type__": "time",
-                "hour": o.hour,
-                "minute": o.minute,
-                "second": o.second,
-                "microsecond": o.microsecond,
-            }
-        return json.JSONEncoder.default(self, o)
-
-
-class DialogueJSONDecoder(json.JSONDecoder):
-    def __init__(self, *args: Any, **kwargs: Any):
-        json.JSONDecoder.__init__(
-            self, object_hook=self.dialogue_decoding, *args, **kwargs
-        )
-
-    def dialogue_decoding(self, d: Dict[Any, Any]) -> Any:
-        if "__type__" not in d:
-            return d
-        t = d.pop("__type__")
-        if t == "datetime":
-            return datetime.datetime(**d)
-        if t == "date":
-            return datetime.date(**d)
-        if t == "time":
-            return datetime.time(**d)
-        return RESOURCE_MAP[t](**d)
+RESOURCE_MAP[FinalResource.__name__] = FinalResource
+RESOURCE_SCHEMAS[FinalResource.__name__] = FinalResourceSchema
