@@ -747,7 +747,7 @@ class DialogueData(Base):
 
     client_id = Column(String(256), nullable=False)
 
-    # Dialogue key to distinguish between different dialogues that can be stored
+    # Dialogue key/name to distinguish between different dialogues that can be stored
     dialogue_key = Column(String(64), nullable=False)
 
     # Created timestamp
@@ -759,9 +759,17 @@ class DialogueData(Base):
     # JSON data
     data = Column(JSONB, nullable=False)
 
+    # Expires at timestamp
+    expires_at = Column(DateTime, nullable=False)
+
     def __repr__(self):
-        return "DialogueData(client_id='{0}', created='{1}', modified='{2}', dialogue_key='{3}', data='{4}')".format(
-            self.client_id, self.created, self.modified, self.dialogue_key, self.data
+        return "DialogueData(client_id='{0}', created='{1}', modified='{2}', dialogue_key='{3}', data='{4}', expires_at='{5}')".format(
+            self.client_id,
+            self.created,
+            self.modified,
+            self.dialogue_key,
+            self.data,
+            self.expires_at,
         )
 
 

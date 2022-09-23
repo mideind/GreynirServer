@@ -47,7 +47,6 @@ from queries.extras.dialogue import (
     DialogueStateManager,
 )
 
-_DIALOGUE_NAME = "pizza"
 _PIZZA_QTYPE = "pizza"
 _START_DIALOGUE_QTYPE = "pizza_start"
 
@@ -62,15 +61,13 @@ def help_text(lemma: str) -> str:
     )
 
 
-# This module wants to handle dialogue parse trees for queries
-HANDLE_DIALOGUE = True
+HANDLE_TREE = True
 
 # This module involves dialogue functionality
 DIALOGUE_NAME = "pizza"
-HOTWORD_NONTERMINALS = {"QPizzaHotWord"}
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = {"QPizza"}.union(HOTWORD_NONTERMINALS)
+QUERY_NONTERMINALS = {"QPizza"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = read_grammar_file("pizza")
@@ -82,7 +79,7 @@ def banned_nonterminals(q: Query) -> None:
     allowed due to the state of the dialogue
     """
     # TODO: Implement this
-    if q.active_dialogue != DIALOGUE_NAME:
+    if not q.in_dialogue(DIALOGUE_NAME):
         q.ban_nonterminal("QPizzaQuery")
 
 

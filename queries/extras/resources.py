@@ -29,15 +29,12 @@ from typing import (
     MutableMapping,
     Optional,
     Type,
-    Union,
 )
 
 import datetime
 from enum import IntFlag, auto
 from dataclasses import dataclass, field as data_field
 from marshmallow import Schema, fields, post_load
-
-_json_types = Union[None, int, bool, str, List["_json_types"], Dict[str, "_json_types"]]
 
 
 class ResourceState(IntFlag):
@@ -158,10 +155,10 @@ class ResourceSchema(Schema):
 
     name = fields.Str(required=True)
     type = fields.Str(required=True)
-    data = fields.Raw()
+    data = fields.Raw(allow_none=True)
     state = fields.Enum(IntFlag, by_value=True, required=True)
     requires = fields.List(fields.Str(), required=True)
-    prompts = fields.Mapping(fields.Str(), fields.Str())
+    prompts = fields.Mapping(fields.Str(), fields.Str(), allow_none=True)
     cascade_state = fields.Bool()
     prefer_over_wrapper = fields.Bool()
     needs_confirmation = fields.Bool()
@@ -270,7 +267,7 @@ class DatetimeResource(Resource):
 
 
 class DatetimeResourceSchema(ResourceSchema):
-    data = fields.NaiveDateTime()
+    data = fields.NaiveDateTime(allow_none=True)
 
 
 RESOURCE_MAP[DatetimeResource.__name__] = DatetimeResource

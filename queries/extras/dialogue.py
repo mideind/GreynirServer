@@ -24,37 +24,38 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
     Mapping,
     Set,
     List,
     Optional,
+    Tuple,
+    Type,
     Union,
     cast,
 )
-from typing_extensions import TypedDict
+from typing_extensions import Required, TypedDict
 
 import json
 import logging
 import datetime
 from pathlib import Path
+from functools import lru_cache
 
 try:
     import tomllib  # type: ignore (module not available in Python <3.11)
 except ModuleNotFoundError:
     import tomli as tomllib  # Used for Python <3.11
 
-from db import SessionContext
-from db.models import DialogueData
+from db import SessionContext, Session
+from db.models import DialogueData as DB_DialogueData, QueryData as DB_QueryData
 
 import queries.extras.resources as res
-import queries.extras.dialogue_db as dialogue_db
 from queries import AnswerTuple
 
 
 # TODO:? Delegate answering from a resource to another resource or to another dialogue
 # TODO:? í ávaxtasamtali "ég vil panta flug" "viltu að ég geymi ávaxtapöntunina eða eyði henni?" ...
-# TODO: Add timezone info to json encoding/decoding?
-# TODO: FIX TYPE HINTS (esp. 'Any')
 # TODO: Add specific prompt handling to DSM to remove result from DSM.
 # TODO: Add try-except blocks where appropriate
 # TODO: Add "needs_confirmation" to TOML files (skip fulfilled, go straight to confirmed)
@@ -63,13 +64,177 @@ _TOML_FOLDER_NAME = "dialogues"
 _DEFAULT_EXPIRATION_TIME = 30 * 60  # By default a dialogue expires after 30 minutes
 _FINAL_RESOURCE_NAME = "Final"
 
+_JSONTypes = Union[None, int, bool, str, List["_JSONTypes"], Dict[str, "_JSONTypes"]]
+_TOMLTypes = Union[
+    int,
+    float,
+    bool,
+    str,
+    datetime.datetime,
+    datetime.date,
+    datetime.time,
+    List["_TOMLTypes"],
+    Dict[str, "_TOMLTypes"],
+]
+
+
+class _ExtrasType(Dict[str, _TOMLTypes], TypedDict, total=False):
+    """Structure of 'extras' key in dialogue TOML files."""
+
+    expiration_time: int
+
+
+class DialogueTOMLStructure(TypedDict):
+    """Structure of a dialogue TOML file."""
+
+    resources: Required[List[Dict[str, _TOMLTypes]]]
+    dynamic_resources: List[Dict[str, _TOMLTypes]]
+    extras: _ExtrasType
+
+
+# Keys for accessing saved client data for dialogues
+_ACTIVE_DIALOGUE_KEY = "dialogue"
+_RESOURCES_KEY = "resources"
+_DYNAMIC_RESOURCES_KEY = "dynamic_resources"
+_MODIFIED_KEY = "modified"
+_EXTRAS_KEY = "extras"
+_EXPIRATION_TIME_KEY = "expiration_time"
+
+# List of active dialogues, kept in querydata table
+# (newer dialogues have higher indexes)
+ActiveDialogueList = List[Tuple[str, str]]
+
+
+class SerializedResource(Dict[str, _JSONTypes], TypedDict, total=False):
+    """
+    Representation of the required keys of a serialized resource.
+    """
+
+    name: Required[str]
+    type: Required[str]
+    state: Required[int]
+
+
+class DialogueDeserialized(TypedDict):
+    """
+    Representation of the dialogue structure,
+    after it is loaded from the database and parsed.
+    """
+
+    resources: Iterable[res.Resource]
+    extras: _ExtrasType
+
+
+class DialogueSerialized(TypedDict):
+    """
+    Representation of the dialogue structure,
+    before it is saved to the database.
+    """
+
+    resources: Iterable[SerializedResource]
+    extras: str
+
+
+class DialogueDataRow(TypedDict):
+    data: DialogueSerialized
+    expires_at: datetime.datetime
+
+
+def _dialogue_serializer(data: DialogueDeserialized) -> DialogueSerialized:
+    """
+    Prepare the dialogue data for writing into the database.
+    """
+    return {
+        _RESOURCES_KEY: [
+            cast(SerializedResource, res.RESOURCE_SCHEMAS[s.type]().dump(s))
+            for s in data[_RESOURCES_KEY]
+        ],
+        # We just dump the entire extras dict as a string
+        _EXTRAS_KEY: json.dumps(data[_EXTRAS_KEY], cls=TOMLtoJSONEncoder),
+    }
+
+
+def _dialogue_deserializer(data: DialogueSerialized) -> DialogueDeserialized:
+    """
+    Prepare the dialogue data for working with
+    after it has been loaded from the database.
+    """
+    return {
+        _RESOURCES_KEY: [
+            cast(res.Resource, res.RESOURCE_SCHEMAS[s["type"]]().load(s))
+            for s in data[_RESOURCES_KEY]
+        ],
+        # Load the extras dictionary from a JSON serialized string
+        _EXTRAS_KEY: json.loads(data[_EXTRAS_KEY], cls=JSONtoTOMLDecoder),
+    }
+
+
+class TOMLtoJSONEncoder(json.JSONEncoder):
+    # Map TOML type to a JSON serialized form
+    _serializer_functions: Mapping[Type[Any], Callable[[Any], _JSONTypes]] = {
+        datetime.datetime: lambda o: {
+            "__type__": "datetime",
+            "year": o.year,
+            "month": o.month,
+            "day": o.day,
+            "hour": o.hour,
+            "minute": o.minute,
+            "second": o.second,
+            "microsecond": o.microsecond,
+        },
+        datetime.date: lambda o: {
+            "__type__": "date",
+            "year": o.year,
+            "month": o.month,
+            "day": o.day,
+        },
+        datetime.time: lambda o: {
+            "__type__": "time",
+            "hour": o.hour,
+            "minute": o.minute,
+            "second": o.second,
+            "microsecond": o.microsecond,
+        },
+    }
+
+    def default(self, o: _TOMLTypes) -> _JSONTypes:
+        f = self._serializer_functions.get(type(o))
+        return f(o) if f else json.JSONEncoder.default(self, o)
+
+
+class JSONtoTOMLDecoder(json.JSONDecoder):
+    # Map __type__ to nonserialized form
+    _type_conversions: Mapping[str, Type[_TOMLTypes]] = {
+        "datetime": datetime.datetime,
+        "date": datetime.date,
+        "time": datetime.time,
+    }
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        json.JSONDecoder.__init__(
+            self, object_hook=self.dialogue_decoding, *args, **kwargs
+        )
+
+    def dialogue_decoding(self, d: Dict[str, Any]) -> _TOMLTypes:
+        if "__type__" not in d:
+            return d
+        t: str = d.pop("__type__")
+
+        c = self._type_conversions.get(t)
+        if c:
+            return c(**d)
+        logging.warning(f"No class found for __type__: {t}")
+        d["__type__"] = t
+        return d
+
+
 # Functions for generating prompts/answers
 # Arguments: resource, DSM, result object
-AnsweringFunctionType = Callable[..., Optional[AnswerTuple]]
+_AnsweringFunctionType = Callable[..., Optional[AnswerTuple]]
 
 # Difficult to type this correctly as the
 # Callable type is contravariant in its arguments parameter
-AnsweringFunctionMap = Mapping[str, AnsweringFunctionType]
+AnsweringFunctionMap = Mapping[str, _AnsweringFunctionType]
 
 # Filter functions for filtering nodes
 # when searching resource graph
@@ -88,50 +253,45 @@ class ResourceGraphItem(TypedDict):
 ResourceGraph = Dict[res.Resource, ResourceGraphItem]
 
 
-class DialogueTOMLStructure(TypedDict, total=False):
-    """Structure of a dialogue TOML file."""
-
-    resources: List[Dict[str, Any]]
-    dynamic_resources: List[Dict[str, Any]]
-
-
-# Keys for accessing saved client data for dialogues
-# (must match typed dict attributes below)
-_RESOURCES_KEY = "resources"
-_DYNAMIC_RESOURCES_KEY = "dynamic_resources"
-_MODIFIED_KEY = "modified"
-_EXTRAS_KEY = "extras"
-_EXPIRATION_TIME_KEY = "expiration_time"
-
-
-# List of active dialogues, kept in querydata table
-ActiveDialogueList = List[str]
-
-
-class ResourceNotFoundError(Exception):
-    ...
-
-
 ################################
 #    DIALOGUE STATE MANAGER    #
 ################################
 
 
 class DialogueStateManager:
-    ACTIVE_DIALOGUE_KEY = "dialogue"
-
-    def __init__(self, client_id: Optional[str]) -> None:
+    def __init__(self, client_id: Optional[str], db_session: Session) -> None:
+        """Initialize DSM instance and fetch tthe active dialogues for a client."""
         self._client_id = client_id
+        self._db_session = db_session  # Database session of parent Query class
+        # Fetch active dialogues for this client
+        self._active_dialogues: ActiveDialogueList = self._get_active_dialogues()
 
-    def load_dialogue(self, dialogue_name: str):
-        # TODO: This should load dialogue data from dialoguedata table
+    def get_next_active_resource(self, dialogue_name: str) -> str:
+        """
+        Fetch the next current resource for a given dialogue.
+        Used for banning nonterminals.
+        """
+        for x, y in self._active_dialogues:
+            if x == dialogue_name:
+                return y
+        raise ValueError(
+            "get_last_active_resource called "
+            f"for non-active dialogue: {dialogue_name}"
+        )
+
+    def prepare_dialogue(self, dialogue_name: str):
+        """
+        Prepare DSM instance for a specific dialogue.
+        Fetches saved state from database if dialogue is active.
+        """
+        print("PREPARING DIALOGUE!")
         self._dialogue_name: str = dialogue_name
         # Dict mapping resource name to resource instance
         self._resources: Dict[str, res.Resource] = {}
         # Boolean indicating if the client is in this dialogue
         self._in_this_dialogue: bool = False
         # Extra information saved with the dialogue state
-        self._extras: Dict[str, Any] = {}
+        self._extras: _ExtrasType = {}
         # Answer for the current query
         self._answer_tuple: Optional[AnswerTuple] = None
         # Latest non-confirmed resource
@@ -144,46 +304,76 @@ class DialogueStateManager:
         self._timed_out: bool = False
         self._initial_resource = None
 
-        dialogue_saved_state: Optional[DialogueDatabaseDict] = self.dialogue_data(
-            dialogue_name
+        # If dialogue is active, the saved state is loaded,
+        # otherwise wait for hotword_activated() to be called
+        if self._dialogue_name in (x for x, _ in self._active_dialogues):
+            print("loading saved state...")
+            self._in_this_dialogue = True
+            self._load_saved_state()
+        print("done preparing dialogue!")
+
+    @lru_cache(maxsize=30)
+    def _read_toml_file(self, dialogue_name: str) -> DialogueTOMLStructure:
+        """Read TOML file for given dialogue."""
+        p = (
+            Path(__file__).parent.parent.resolve()
+            / _TOML_FOLDER_NAME
+            / f"{dialogue_name}.toml"
         )
-        if dialogue_saved_state:
-            self._saved_state = cast(
-                DialogueDBStructure,
-                json.loads(dialogue_saved_state, cls=res.DialogueJSONDecoder),
-            )
+        f = p.read_text()
 
-            # Check that we have saved data for this dialogue and that it is not expired
-            if self._saved_state[_RESOURCES_KEY]:
-                self._in_this_dialogue = True
-                self.setup_resources()
-        else:
-            print("NO DIALOGUE DATA FOR", dialogue_name)
+        obj: DialogueTOMLStructure = tomllib.loads(f)  # type: ignore
+        return obj
 
-    def setup_resources(self) -> None:
+    def _initialize_resources(self) -> None:
         """
-        Load dialogue resources from TOML file and update their state from database data.
+        Loads dialogue structure from TOML file and
+        fills self._resources with empty Resource instances.
         """
-        # TODO: Only initialize if not hotword activated
-        # Fetch empty resources from TOML
-        self._initialize_resources(self._dialogue_name)
-        if self._saved_state:
-            time_from_last_interaction = (
-                datetime.datetime.now() - self._saved_state[_MODIFIED_KEY]
+        print("Reading TOML file...")
+        # Read TOML file containing a list of resources for the dialogue
+        obj: DialogueTOMLStructure = self._read_toml_file(self._dialogue_name)
+        assert (
+            _RESOURCES_KEY in obj
+        ), f"No resources found in TOML file {self._dialogue_name}.toml"
+        print("creating resources...")
+        # Create resource instances from TOML data and return as a dict
+        for i, resource in enumerate(obj[_RESOURCES_KEY]):
+            assert "name" in resource, f"Name missing for resource {i+1}"
+            if "type" not in resource:
+                resource["type"] = "Resource"
+            # Create instances of Resource classes (and its subclasses)
+            # TODO: Maybe fix the type hinting
+            self._resources[resource["name"]] = res.RESOURCE_MAP[resource["type"]](  # type: ignore
+                **resource, order_index=i
             )
-            # The dialogue timed out, nothing should be done
-            if time_from_last_interaction.total_seconds() >= self._expiration_time:
-                self._timed_out = True
-                return
-        # Update empty resources with data from database
-        for rname, resource in self._resources.items():
-            if self._saved_state and rname in self._saved_state["resources"]:
-                resource.update(self._saved_state[_RESOURCES_KEY][rname])
-            # Change from int to enum type
-            resource.state = res.ResourceState(resource.state)
-        # Set extra data from database
-        if self._saved_state and _EXTRAS_KEY in self._saved_state:
-            self._extras = self._saved_state.get(_EXTRAS_KEY) or self._extras
+        print(f"Resources created: {self._resources}")
+        # TODO: Create dynamic resource blueprints (factory)!!!!!
+        self._extras = obj.get(_EXTRAS_KEY, dict())
+        # Get expiration time duration for this dialogue
+        self._expiration_time = self._extras.get(
+            _EXPIRATION_TIME_KEY, _DEFAULT_EXPIRATION_TIME
+        )
+        # Create resource dependency relationship graph
+        self._initialize_resource_graph()
+
+    def _load_saved_state(self) -> None:
+        """
+        Fetch saved data from database for this
+        dialogue and restore resource class instances.
+        """
+        saved_row = self._dialogue_data()
+        assert saved_row is not None
+        self._timed_out: bool = datetime.datetime.now() > saved_row["expires_at"]
+        if self._timed_out:
+            # TODO: Do something when a dialogue times out
+            logging.warning("THIS DIALOGUE IS TIMED OUT!!!")
+            return
+        saved_state: DialogueDeserialized = _dialogue_deserializer(saved_row["data"])
+        # Load resources from saved state
+        self._resources = {r.name: r for r in saved_state["resources"]}
+        self._extras = saved_state["extras"]
+
         # Create resource dependency relationship graph
         self._initialize_resource_graph()
 
@@ -193,6 +383,7 @@ class DialogueStateManager:
         resource having children and parents according
         to what each resource requires.
         """
+        print("Creating resource graph...")
         for resource in self._resources.values():
             if resource.order_index == 0 and self._initial_resource is None:
                 self._initial_resource = resource
@@ -201,60 +392,15 @@ class DialogueStateManager:
             for req in resource.requires:
                 self._resource_graph[self._resources[req]]["parents"].append(resource)
                 self._resource_graph[resource]["children"].append(self._resources[req])
-
-    def _initialize_resources(self, filename: str) -> None:
-        """
-        Loads dialogue structure from TOML file and
-        fills self._resources with empty Resource instances.
-        """
-        if self._saved_state:
-            self._resources = {}
-            for rname, resource in self._saved_state[_RESOURCES_KEY].items():
-                self._resources[rname] = resource
-            self._expiration_time = self._saved_state.get(
-                _EXPIRATION_TIME_KEY, _DEFAULT_EXPIRATION_TIME
-            )
-        else:
-            p = (
-                Path(__file__).parent.parent.resolve()
-                / _TOML_FOLDER_NAME
-                / f"{filename}.toml"
-            )
-            f = p.read_text()
-            # Read TOML file containing a list of resources for the dialogue
-            obj: DialogueTOMLStructure = tomllib.loads(f)  # type: ignore
-            assert _RESOURCES_KEY in obj, f"No resources found in TOML file {f}"
-            # Create resource instances from TOML data and return as a dict
-            for i, resource in enumerate(obj[_RESOURCES_KEY]):
-                assert "name" in resource, f"Name missing for resource {i+1}"
-                if "type" not in resource:
-                    resource["type"] = "Resource"
-                # Create instances of Resource classes (and its subclasses)
-                self._resources[resource["name"]] = res.RESOURCE_MAP[resource["type"]](
-                    **resource, order_index=i
-                )
-            self._expiration_time = obj.get(
-                _EXPIRATION_TIME_KEY, _DEFAULT_EXPIRATION_TIME
-            )
+        print("Finished resource graph!")
 
     def add_dynamic_resource(self, resource_name: str, parent_name: str) -> None:
         """
         Adds a dynamic resource to the dialogue from TOML file and
         updates the requirements of it's parents.
         """
-        # TODO: should dynamic resources be loaded from TOML at initialization?
-        # Loading dynamic resources from TOML
-        p = (
-            Path(__file__).parent.parent.resolve()
-            / _TOML_FOLDER_NAME
-            / f"{self._dialogue_name}.toml"
-        )
-        f = p.read_text()
-
-        obj: DialogueTOMLStructure = tomllib.loads(f)  # type: ignore
-        assert (
-            _DYNAMIC_RESOURCES_KEY in obj
-        ), f"No dynamic resources found in TOML file {f}"
+        raise NotImplementedError()
+        # TODO: Create separate blueprint factory class for creating dynamic resources
         parent_resource: res.Resource = self.get_resource(parent_name)
         order_index: int = parent_resource.order_index
         dynamic_resources: Dict[str, res.Resource] = {}
@@ -312,6 +458,7 @@ class DialogueStateManager:
         self._find_current_resource()
 
     def duplicate_dynamic_resource(self, original: res.Resource) -> None:
+        raise NotImplementedError()
         suffix = (
             len(
                 [
@@ -348,9 +495,12 @@ class DialogueStateManager:
         self._find_current_resource()
 
     def hotword_activated(self) -> None:
+        # TODO: Add some checks if we accidentally go into this while the dialogue is ongoing
         self._in_this_dialogue = True
-        print("In hotword activated")
-        self.setup_resources()
+        # Set up resources for working with them
+        self._initialize_resources()
+        # Set dialogue as newest active dialogue
+        self._active_dialogues.append((self._dialogue_name, self.current_resource.name))
 
     def pause_dialogue(self) -> None:
         ...  # TODO
@@ -369,6 +519,10 @@ class DialogueStateManager:
         return None
 
     @property
+    def active_dialogue(self) -> Optional[str]:
+        return self._active_dialogues[-1][0] if self._active_dialogues else None
+
+    @property
     def current_resource(self) -> res.Resource:
         if self._current_resource is None:
             self._find_current_resource()
@@ -376,10 +530,7 @@ class DialogueStateManager:
         return self._current_resource
 
     def get_resource(self, name: str) -> res.Resource:
-        try:
-            return self._resources[name]
-        except KeyError:
-            raise ResourceNotFoundError(f"Resource {name} not found")
+        return self._resources[name]
 
     @property
     def extras(self) -> Dict[str, Any]:
@@ -616,10 +767,8 @@ class DialogueStateManager:
             ds_json = json.dumps(
                 {
                     _RESOURCES_KEY: self._resources,
-                    _MODIFIED_KEY: datetime.datetime.now(),
                     _EXTRAS_KEY: self._extras,
                 },
-                cls=res.DialogueJSONEncoder,
             )
         # Wrap data before saving dialogue state into client data
         # (due to custom JSON serialization)
@@ -629,31 +778,138 @@ class DialogueStateManager:
     ################################
     #        Database functions    #
     ################################
-    def dialogue_data(
-        self, dialogue_key: Optional[str]
-    ) -> Optional[DialogueDatabaseDict]:
-        """
-        Fetch client_id-associated dialogue data stored
-        in the dialoguedata table based on the dialogue key
-        """
-        if not self._client_id or not dialogue_key:
-            return None
-        with SessionContext(read_only=True) as session:
+
+    def _get_active_dialogues(self) -> ActiveDialogueList:
+        """Get list of active dialogues from database for current client."""
+        assert self._client_id, "_get_active_dialogues() called without client ID!"
+
+        active: ActiveDialogueList = []
+        with SessionContext(session=self._db_session, read_only=True) as session:
             try:
-                dialogue_data = (
-                    session.query(DialogueData)
-                    .filter(DialogueData.dialogue_key == dialogue_key)
-                    .filter(DialogueData.client_id == self._client_id)
+                row: Optional[DB_QueryData] = (
+                    session.query(DB_QueryData)
+                    .filter(DB_QueryData.client_id == self._client_id)  # type: ignore
+                    .filter(DB_QueryData.key == _ACTIVE_DIALOGUE_KEY)
                 ).one_or_none()
-                return (
-                    None
-                    if dialogue_data is None
-                    else cast(DialogueDatabaseDict, dialogue_data.data)
-                )
+                if row is not None:
+                    active = cast(ActiveDialogueList, row.data)
             except Exception as e:
                 logging.error(
                     "Error fetching client '{0}' query data for key '{1}' from db: {2}".format(
-                        self._client_id, dialogue_key, e
+                        self._client_id, _ACTIVE_DIALOGUE_KEY, e
+                    )
+                )
+        return active
+
+    def _dialogue_data(self) -> Optional[DialogueDataRow]:
+        """
+        Fetch client_id-associated dialogue data stored
+        in the dialoguedata table based on the dialogue key.
+        """
+        assert (
+            self._client_id and self._dialogue_name
+        ), "_dialogue_data() called without client ID or dialogue name!"
+
+        with SessionContext(session=self._db_session, read_only=True) as session:
+            try:
+                row: Optional[DB_DialogueData] = (
+                    session.query(DB_DialogueData)
+                    .filter(DB_DialogueData.dialogue_key == self._dialogue_name)  # type: ignore
+                    .filter(DB_DialogueData.client_id == self._client_id)
+                ).one_or_none()
+                if row:
+                    return {
+                        "data": row.data,
+                        "expires_at": row.expires_at,
+                    }
+            except Exception as e:
+                logging.error(
+                    "Error fetching client '{0}' dialogue data for key '{1}' from db: {2}".format(
+                        self._client_id, self._dialogue_name, e
                     )
                 )
         return None
+
+    def update_dialogue_data(self) -> None:
+        """
+        Save current state of dialogue to dialoguedata table in database,
+        along with updating list of active dialogues in querydata table.
+        """
+        assert (
+            self._client_id and self._dialogue_name
+        ), "_dialogue_data() called without client ID or dialogue name!"
+
+        now = datetime.datetime.now()
+        expires_at = now + datetime.timedelta(seconds=self._expiration_time)
+        with SessionContext(session=self._db_session, commit=True) as session:
+            try:
+                existing_dd_row: Optional[DB_DialogueData] = session.get(  # type: ignore
+                    DB_DialogueData, (self._client_id, self._dialogue_name)
+                )
+                # Write data to dialoguedata table
+                if existing_dd_row:
+                    # UPDATE existing row
+                    existing_dd_row.modified = now  # type: ignore
+                    existing_dd_row.data = _dialogue_serializer(  # type: ignore
+                        {
+                            _RESOURCES_KEY: self._resources.values(),
+                            _EXTRAS_KEY: self._extras,
+                        }
+                    )
+                    existing_dd_row.expires_at = expires_at  # type: ignore
+                else:
+                    # INSERT new row
+                    dialogue_row = DB_DialogueData(
+                        client_id=self._client_id,
+                        dialogue_key=self._dialogue_name,
+                        created=now,
+                        modified=now,
+                        data=_dialogue_serializer(
+                            {
+                                _RESOURCES_KEY: self._resources.values(),
+                                _EXTRAS_KEY: self._extras,
+                            }
+                        ),
+                        expires_at=expires_at,
+                    )
+                    session.add(dialogue_row)  # type: ignore
+            except Exception as e:
+                logging.error(
+                    "Error upserting client '{0}' dialogue data for key '{1}' into db: {2}".format(
+                        self._client_id, self._dialogue_name, e
+                    )
+                )
+            try:
+                # Write active dialogues to querydata table
+                existing_qd_row: Optional[DB_QueryData] = session.get(  # type: ignore
+                    DB_QueryData, (self._client_id, _ACTIVE_DIALOGUE_KEY)
+                )
+                if existing_qd_row:
+                    # TODO: Move this into some prettier place
+                    # Make sure the (dialogue name, current resource) pair is up to date for this dialogue
+                    self._active_dialogues = [
+                        (x, y)
+                        if x != self._dialogue_name
+                        else (x, self.current_resource.name)
+                        for x, y in self._active_dialogues
+                    ]
+                    # UPDATE existing row
+                    existing_qd_row.data = self._active_dialogues  # type: ignore
+                    existing_qd_row.modified = now  # type: ignore
+                else:
+                    # INSERT new row
+                    querydata_row = DB_QueryData(
+                        client_id=self._client_id,
+                        key=_ACTIVE_DIALOGUE_KEY,
+                        created=now,
+                        modified=now,
+                        data=self._active_dialogues,
+                    )
+                    session.add(querydata_row)  # type: ignore
+            except Exception as e:
+                logging.error(
+                    "Error upserting client '{0}' dialogue data for key '{1}' into db: {2}".format(
+                        self._client_id, self._dialogue_name, e
+                    )
+                )
+        return

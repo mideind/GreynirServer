@@ -1,3 +1,4 @@
+[extras]
 expiration_time = 900 # 15 minutes
 
 [[resources]]

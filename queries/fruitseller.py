@@ -29,9 +29,8 @@ from queries.extras.resources import (
     WrapperResource,
 )
 
-# Indicate that this module wants to handle dialogue parse trees for queries,
-# as opposed to simple literal text strings
-HANDLE_DIALOGUE = True
+HANDLE_TREE = True
+
 DIALOGUE_NAME = "fruitseller"
 
 # The grammar nonterminals this module wants to handle
@@ -49,16 +48,9 @@ def banned_nonterminals(q: Query) -> None:
     if not q.in_dialogue(DIALOGUE_NAME):
         q.ban_nonterminal("QFruitSellerQuery")
         return
-    resource: Resource = q.dsm.current_resource
-    if resource.name == "Fruits":
+    resource_name: str = q.dsm.get_next_active_resource(DIALOGUE_NAME)
+    if resource_name == "Fruits":
         q.ban_nonterminal("QFruitDateQuery")
-        if resource.is_unfulfilled:
-            q.ban_nonterminal("QFruitYes")
-            q.ban_nonterminal("QFruitNo")
-    elif resource.name == "DateTime":
-        if resource.is_unfulfilled:
-            q.ban_nonterminal("QFruitYes")
-            q.ban_nonterminal("QFruitNo")
 
 
 def _generate_fruit_answer(
@@ -145,7 +137,9 @@ def _list_items(items: Any) -> str:
     return natlang_seq(item_list)
 
 
-def QFruitStartQuery(node: Node, params: ParamList, result: Result):
+def QFruitHotWord(node: Node, params: ParamList, result: Result):
+    result.qtype = "QFRUITACTIVE"
+    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSFDDFS")
     Query.get_dsm(result).hotword_activated()
 
 
@@ -255,7 +249,7 @@ def _add_date(
     resource: DateResource, dsm: DialogueStateManager, result: Result
 ) -> None:
     if dsm.get_resource("Fruits").is_confirmed:
-        resource.set_date(result["delivery_date"])
+        resource.data = result["delivery_date"]
         resource.state = ResourceState.FULFILLED
         time_resource = dsm.get_resource("Time")
         datetime_resource = dsm.get_resource("DateTime")
@@ -293,7 +287,7 @@ def _add_time(
     resource: TimeResource, dsm: DialogueStateManager, result: Result
 ) -> None:
     if dsm.get_resource("Fruits").is_confirmed:
-        resource.set_time(result["delivery_time"])
+        resource.data = result["delivery_time"]
         resource.state = ResourceState.FULFILLED
         date_resource = dsm.get_resource("Date")
         datetime_resource = dsm.get_resource("DateTime")
@@ -363,14 +357,16 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
     dsm: DialogueStateManager = q.dsm
-
+    print("Wtf, checking if im in this dialogue")
     if dsm.not_in_dialogue():
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
     # Successfully matched a query type
     try:
+        print("Getting answer...")
         ans = dsm.get_answer(_ANSWERING_FUNCTIONS, result)
+        print("GOT IT...")
         if not ans:
             q.set_error("E_QUERY_NOT_UNDERSTOOD")
             return

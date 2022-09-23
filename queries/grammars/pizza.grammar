@@ -10,21 +10,20 @@
 /þgf = þgf
 /ef = ef
 
-# Currently, the Hotword needs to be top-level, because the QPizza nonterminal is banned.
 Query →
-    QPizzaHotWord
-    | QPizza
+    QPizza '?'?
 
 QPizza →
-    QPizzaQuery '?'?
+    QPizzaQuery
+    | QPizzaHotWord
 
 QPizzaQuery →
-    QPizzaDialogue '?'?
+    QPizzaDialogue
 
 # Hotwords are used to initialize the conversation.
 QPizzaHotWord →
-    QPizzaWord/nf '?'? # e.g. "Pítsa"
-    | QPizzaRequestBare '?'? # e.g. "Ég vil panta pizzu."
+    QPizzaWord/nf # e.g. "Pítsa"
+    | QPizzaRequestBare # e.g. "Ég vil panta pizzu."
 
 # Doesn't allow for any order specification, e.g. the number of pizzas, only "Ég vil pizzu."
 QPizzaRequestBare →

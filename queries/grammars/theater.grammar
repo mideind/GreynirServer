@@ -1,18 +1,20 @@
 Query →
-    QTheaterHotWord | QTheater
+    QTheater '?'?
 
-QTheater → QTheaterQuery
+QTheater →
+    QTheaterQuery
+    | QTheaterHotWord
 
 QTheaterQuery →
-    QTheaterDialogue '?'?
+    QTheaterDialogue
 
 QTheaterHotWord →
-    QTheaterNames '?'?
-    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "leikhúsmiða" '?'?
-    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "miða" "í" QTheaterNames '?'?
-    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "miða" "á" QTheaterNames "sýningu" '?'?
-    | QTheaterEgVil? QTheaterKaupaFaraFaPanta QTheaterNames '?'?
-    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "leikhússýningu" '?'?
+    QTheaterNames
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "leikhúsmiða"
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "miða" "í" QTheaterNames
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "miða" "á" QTheaterNames "sýningu"
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta QTheaterNames
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "leikhússýningu"
 
 QTheaterNames →
     'leikhús'

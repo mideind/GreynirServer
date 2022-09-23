@@ -70,15 +70,13 @@ def help_text(lemma: str) -> str:
     )
 
 
-# This module wants to handle dialogue parse trees for queries
-HANDLE_DIALOGUE = True
+HANDLE_TREE = True
 
 # This module involves dialogue functionality
 DIALOGUE_NAME = "theater"
-HOTWORD_NONTERMINALS = {"QTheaterHotWord"}
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = {"QTheater"}.union(HOTWORD_NONTERMINALS)
+QUERY_NONTERMINALS = {"QTheater"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = read_grammar_file("theater")
@@ -90,11 +88,11 @@ def banned_nonterminals(q: Query) -> None:
     allowed due to the state of the dialogue
     """
     # TODO: Put this back in when the dsm has access to the active dialogue again.
-    if q.active_dialogue != DIALOGUE_NAME:
+    if not q.in_dialogue(DIALOGUE_NAME):
         q.ban_nonterminal("QTheaterQuery")
         return
-    resource: Resource = q.dsm.current_resource
-    if resource.name == "Show":
+    resource:str = q.dsm.get_next_active_resource(DIALOGUE_NAME)
+    if resource == "Show":
         q.ban_nonterminal_set(
             {
                 "QTheaterShowDateQuery",
@@ -107,14 +105,7 @@ def banned_nonterminals(q: Query) -> None:
                 "QTheaterSeatOptions",
             }
         )
-        if resource.is_unfulfilled:
-            q.ban_nonterminal_set(
-                {
-                    "QTheaterShowLength",
-                    "QTheaterShowPrice",
-                }
-            )
-    elif resource.name == "ShowDateTime":
+    elif resource == "ShowDateTime":
         q.ban_nonterminal_set(
             {
                 "QTheaterShowSeatCountQuery",
@@ -124,7 +115,7 @@ def banned_nonterminals(q: Query) -> None:
                 "QTheaterShowOnlyName",
             }
         )
-    elif resource.name == "ShowSeatCount":
+    elif resource == "ShowSeatCount":
         q.ban_nonterminal_set(
             {
                 "QTheaterShowLocationQuery",
@@ -135,7 +126,7 @@ def banned_nonterminals(q: Query) -> None:
                 "QTheaterShowOnlyName",
             }
         )
-    elif resource.name == "ShowSeatRow":
+    elif resource == "ShowSeatRow":
         q.ban_nonterminal_set(
             {
                 "QTheaterShowSeats",
@@ -145,7 +136,7 @@ def banned_nonterminals(q: Query) -> None:
                 "QTheaterShowOnlyName",
             }
         )
-    elif resource.name == "ShowSeatNumber":
+    elif resource == "ShowSeatNumber":
         q.ban_nonterminal_set(
             {
                 "QTheaterSeatCountNum",
@@ -153,14 +144,6 @@ def banned_nonterminals(q: Query) -> None:
                 "QTheaterShowOnlyName",
             }
         )
-    if resource.is_unfulfilled:
-        q.ban_nonterminal_set(
-            {
-                "QTheaterYes",
-                "QTheaterNo",
-            }
-        )
-
 
 class ShowType(TypedDict):
     title: str
