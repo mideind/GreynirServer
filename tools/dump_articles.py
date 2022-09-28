@@ -57,7 +57,7 @@ def main():
         aft = datetime(2020, 7, 27, 0, 0, 1)
         q = (
             session.query(
-                Article.url, Article.timestamp, Article.heading, Article.tokens
+                Article.url, Article.timestamp, Article.heading, Article.tokens  # type: ignore
             )
             .filter(Article.timestamp > bef)
             .filter(Article.timestamp < aft)
