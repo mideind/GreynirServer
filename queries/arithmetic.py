@@ -24,6 +24,7 @@
 """
 
 # TODO: Hvað er X með Y aukastöfum?
+# TODO: Styðja hvað er X þúsund "kall" með vask?
 
 from typing import Dict, Any, List, Mapping, Optional, Sequence, Union, cast
 

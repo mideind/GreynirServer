@@ -21,7 +21,7 @@ QArithmeticQuery →
     # 'Hver er summan af X og Y'
     | QArAnyPrefix QArSum
 
-    # 'Hvað er tvisvar/þrisvar/fjórum sinnum Y'
+    # 'Hvað er tvisvar sinnum Y'
     | QArAnyPrefix QArMult
 
     # 'Hver/Hvað er kvaðratrótin af X'
