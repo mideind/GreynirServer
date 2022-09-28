@@ -23,19 +23,10 @@ QIoTSpeakerQuery →
     | QIoTSpeakerSkipVerb
     | QIoTSpeakerNewSetting/fall
 
-QIoTSpeakerMakeVerb →
-    'gera:so'_bh
-
-QIoTSpeakerSetVerb →
-    'setja:so'_bh
-    | 'stilla:so'_bh
-    | 'láta:so'_bh
-
-QIoTSpeakerChangeVerb →
-    'breyta:so'_bh
-
-QIoTSpeakerLetVerb →
-    'láta:so'_bh
+QIoTSpeakerMakeVerb → "gerðu"
+QIoTSpeakerSetVerb → "settu" | "stilltu" | "láttu"
+QIoTSpeakerChangeVerb → "breyttu"
+QIoTSpeakerLetVerb → "láttu"
 
 QIoTSpeakerTurnOnOrOffVerb ->
     QIoTSpeakerTurnOnVerb
@@ -45,36 +36,29 @@ QIoTSpeakerTurnOnVerb →
     'kveikja:so'_bh
     | "kveiktu"
 
-QIoTSpeakerTurnOffVerb →
-    'slökkva:so'_bh
+QIoTSpeakerTurnOffVerb → 'slökkva:so'_bh
 
 QIoTSpeakerPlayOrPauseVerb →
     QIoTSpeakerPlayVerb
     | QIoTSpeakerPauseVerb
 
-QIoTSpeakerPlayVerb →
-    'spila:so'_bh
+QIoTSpeakerPlayVerb → 'spila:so'_bh
 
 # "pása", as a verb, is not recognized by Árnastofnun's database, but is relatively common in casual speech.
 QIoTSpeakerPauseVerb →
-    'stöðva:so'_bh
-    | 'stoppa:so'_bh
+    "stöðvaðu"
+    | "stoppaðu"
     | "pásaðu"
 
 QIoTSpeakerIncreaseOrDecreaseVerb →
     QIoTSpeakerIncreaseVerb
     | QIoTSpeakerDecreaseVerb
 
-QIoTSpeakerIncreaseVerb →
-    'hækka:so'_bh
-    | 'auka:so'_bh
+QIoTSpeakerIncreaseVerb → "hækkaðu" | "auktu"
 
-QIoTSpeakerDecreaseVerb →
-    'lækka:so'_bh
-    | 'minnka:so'_bh
+QIoTSpeakerDecreaseVerb → "lækkaðu" | "minnkaðu"
 
-QIoTSpeakerSkipVerb ->
-    'skippa:so'_bh
+QIoTSpeakerSkipVerb -> "skippaðu"
 
 QIoTSpeakerMakeRest →
     QIoTSpeakerMusicOrSoundPhrase/þf QIoTSpeakerComparative/nf QIoTSpeakerHvar
@@ -263,11 +247,9 @@ QIoTSpeakerBeOrBecome →
     QIoTSpeakerBe
     | QIoTSpeakerBecome
 
-QIoTSpeakerBe →
-    'vera:so'_nh
+QIoTSpeakerBe → "vera"
 
-QIoTSpeakerBecome →
-    'verða:so'_nh
+QIoTSpeakerBecome → "verða"
 
 QIoTSpeakerRadioStationName →
     QIoTSpeakerBylgjan
@@ -420,11 +402,9 @@ QIoTSpeakerIslenskaBylgjan →
     | "íslensku" "bylgjunni"
     | "íslensku" "bylgjunnar"
 
-QIoTSpeakerApparatid →
-    'apparat'_gr
+QIoTSpeakerApparatid → "apparatið"
 
-QIoTSpeakerFmExtra →
-    "fm" "extra"
+QIoTSpeakerFmExtra → "fm" "extra"
 
 QIoTSpeakerUtvarpSudurland →
     "útvarp"? "suðurland"

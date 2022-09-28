@@ -285,7 +285,9 @@ class QueryParseForestReducer(ParseForestReducer):
                         if ch is not None:
                             rd = calc_score(ch)
                             d = child_scores[fam_ix]
-                            if "ban" in rd:  # Carry ban status up the tree
+                            if "ban" in rd:
+                                # If this child/family is completely banned,
+                                # carry its ban status on up into child_scores dict
                                 d["ban"] = rd["ban"]  # type: ignore
                             else:  # Otherwise modify score
                                 d["sc"] += rd["sc"]
@@ -368,7 +370,7 @@ class QueryParseForestReducer(ParseForestReducer):
             return NULL_SC
 
         root_score = calc_score(root_node)
-        if "ban" in root_score:
+        if root_score.get("ban"):
             # Best family is banned, which means that
             # no non-banned families were found
             raise BannedForestException("Entire parse forest for this query is banned")
@@ -489,7 +491,10 @@ class QueryTree(Tree):
                     self.process_sentence(state, query_tree)
                     if query.has_answer():
                         # The processor successfully answered the query: We're done
-                        query.dsm.update_dialogue_data()
+                        if dialogue_name:
+                            # Update dialogue data if appropriate
+                            # TODO: This should be hidden within the dsm.get_answer
+                            query.dsm.update_dialogue_data()
                         return True
         return False
 
@@ -1020,7 +1025,7 @@ class Query:
         """
         diff = nonterminals.difference(self._parser._grammar.nonterminals)
         assert len(diff) == 0, (
-            f"ban_nonterminals: nonterminals {diff} don't"
+            f"ban_nonterminals: nonterminals {diff} don't "
             "correspond to a nonterminal in the grammar"
         )
         self._banned_nonterminals.update(nonterminals)

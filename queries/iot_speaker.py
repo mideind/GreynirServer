@@ -70,7 +70,12 @@ _RADIO_STREAMS: Dict[str, str] = {
 
 _IoT_QTYPE = "IoTSpeakers"
 
-TOPIC_LEMMAS = ["tónlist", "spila", "útvarp", "útvarpsstöð"]
+TOPIC_LEMMAS = [
+    "tónlist",
+    "spila",
+    "útvarp",
+    "útvarpsstöð",
+]
 
 
 def help_text(lemma: str) -> str:
@@ -93,7 +98,7 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QIoTSpeaker", "QIoTSpeakerQuery"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = read_grammar_file("iot_speakers")
+GRAMMAR = read_grammar_file("iot_speaker")
 
 
 def QIoTSpeaker(node: Node, params: ParamList, result: Result) -> None:

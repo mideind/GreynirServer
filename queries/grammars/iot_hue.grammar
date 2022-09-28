@@ -1,180 +1,189 @@
 
+/þf = þf
 /þgf = þgf
 /ef = ef
 
-Query →
-    QIoT '?'?
+Query → QHue
+QHue → QHueQuery '?'?
+QHueQuery →
+    QHueTurnOnLights
+    | QHueTurnOffLights
+    | QHueIncreaseBrightness
+    | QHueDecreaseBrightness
+    | QHueChangeColor
+    | QHueChangeScene
 
-QIoT → 
-    QIoTQuery
+# Some verbs
+QHueKveiktu → "kveiktu" | "kveikja"
+QHueSlökktu → "slökktu" | "slökkva"
+QHueGerðu → "gerðu" | "gera"
+QHueStilltuSettu → "stilltu" | "settu" | "stilla" | "setja"
+QHueBreyttuSkiptu → "breyttu" | "skiptu" | "breyta" | "skipta"
+QHueLáttu → "láttu" | "láta"
+QHueHækkaðuAuktu → "hækkaðu" | "auktu" | "hækka" | "auka"
+QHueLækkaðuMinnkaðu → "lækkaðu" | "minnkaðu" | "lækka" | "minnka"
 
-QIoTQuery ->
-    QIoTMakeVerb? QIoTMakeRest
-    | QIoTSetVerb QIoTSetRest
-    | QIoTChangeVerb QIoTChangeRest
-    | QIoTLetVerb QIoTLetRest
-    | QIoTTurnOnVerb QIoTTurnOnRest
-    | QIoTTurnOffVerb QIoTTurnOffRest
-    | QIoTIncreaseOrDecreaseVerb QIoTIncreaseOrDecreaseRest
+# Commands for turning on lights
+QHueTurnOnLights → QHueKveiktu QHueKveiktuX
 
-QIoTMakeVerb ->
-    'gera:so'_bh
+# Commands for turning off lights
+QHueTurnOffLights → QHueSlökktu QHueSlökktuX
 
-QIoTSetVerb ->
-    'setja:so'_bh
-    | 'stilla:so'_bh
+QHueMeiri → "meiri" | "meira"
 
-QIoTChangeVerb ->
-    'breyta:so'_bh
+# Commands for increasing light brightness
+QHueIncreaseBrightness →
+    QHueHækkaðuAuktu QHueHækkaðuX
+    | QHueGerðu QHueMeiri QHueBrightnessWord/þf QHueHvar
+    | QHueGerðu QHueBrightnessWord/þf QHueMeiri QHueHvar?
+    | QHueGerðu QHueBrightnessWord/þf QHueHvar QHueMeiri
 
-QIoTLetVerb ->
-    'láta:so'_bh
+QHueMinni → "minni" | "minna"
 
-QIoTTurnOnVerb ->
-    'kveikja:so'_bh
+# Commands for decreasing light brightness
+QHueDecreaseBrightness →
+    QHueLækkaðuMinnkaðu QHueLækkaðuX
+    | QHueGerðu QHueBrightnessWord/þf QHueMinni QHueHvar?
+    | QHueGerðu QHueBrightnessWord/þf QHueHvar QHueMinni
+    | QHueGerðu QHueMinni QHueBrightnessWord/þf QHueHvar
 
-QIoTTurnOffVerb ->
-    'slökkva:so'_bh
+QHueÁLitinn → "á" "litinn" | "á" "lit"
 
-QIoTIncreaseOrDecreaseVerb ->
-    QIoTIncreaseVerb
-    | QIoTDecreaseVerb
+# Commands for changing the current color
+QHueChangeColor →
+    QHueGerðu QHueLight/þf QHueHvar? QHueColorName/þf QHueÁLitinn?
+    | QHueGerðu QHueLight/þf QHueColorName/þf QHueÁLitinn? QHueHvar
+    | QHueLáttu QHueLight/þf QHueHvar? QHueVeraVerða QHueColorName/þf QHueÁLitinn?
+    | QHueLáttu QHueLight/þf QHueVeraVerða QHueColorName/þf QHueÁLitinn? QHueHvar
+    | QHueStilltuSettu "á" QHueNewColor/þf QHueHvar
+    | QHueBreyttuSkiptu "yfir"? "í" QHueNewColor/þf QHueHvar
+    | QHueBreyttuSkiptu "litnum" "á" QHueLight/þgf QHueHvar? "í" "litinn"? QHueColorName/þf
 
-QIoTIncreaseVerb ->
-    'hækka:so'_bh
-    | 'auka:so'_bh
+# Commands for changing the current scene
+QHueChangeScene →
+    QHueKveiktu "á" QHueNewScene/þgf QHueHvar?
+    | QHueStilltuSettu "á" QHueNewScene/þf
+    | QHueBreyttuSkiptu "yfir"? "í" QHueNewScene/þf
 
-QIoTDecreaseVerb ->
-    'lækka:so'_bh
-    | 'minnka:so'_bh
+QHueKveiktuX →
+    QHueLight/þf? QHueHvar    # ... ljósið í eldhúsinu
+    | "á" QHueLight/þgf QHueHvar?    # ... á lampanum í stofunni
 
-QIoTMakeRest ->
-    QIoTSubject/þf QIoTHvar? QIoTHvernigMake
-    | QIoTSubject/þf QIoTHvernigMake QIoTHvar?
-    | QIoTHvar? QIoTSubject/þf QIoTHvernigMake
-    | QIoTHvar? QIoTHvernigMake QIoTSubject/þf
-    | QIoTHvernigMake QIoTSubject/þf QIoTHvar?
-    | QIoTHvernigMake QIoTHvar? QIoTSubject/þf
+QHueSlökktuX →
+    QHueLight/þf? QHueHvar    # ... ljósið í eldhúsinu
+    | "á" QHueLight/þgf QHueHvar?    # ... á lampanum í stofunni
+
+QHueHækkaðuX →
+    QHueLjósTegund/þf QHueHvar?
+    | QHueBrightnessSubject/þf QHueHvar?
+
+QHueLækkaðuX →
+    QHueLight/þf QHueHvar?
+    | QHueBrightnessSubject/þf QHueHvar?
+
+QHueGerðuX →
+    QHueSubject/þf QHueHvar? QHueHvernigMake
+    | QHueSubject/þf QHueHvernigMake QHueHvar?
+    | QHueHvar? QHueSubject/þf QHueHvernigMake
+    | QHueHvar? QHueHvernigMake QHueSubject/þf
+    | QHueHvernigMake QHueSubject/þf QHueHvar?
+    | QHueHvernigMake QHueHvar? QHueSubject/þf
 
 # TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
-QIoTSetRest ->
-    QIoTSubject/þf QIoTHvar? QIoTHvernigSet
-    | QIoTSubject/þf QIoTHvernigSet QIoTHvar?
-    | QIoTHvar? QIoTSubject/þf QIoTHvernigSet
-    | QIoTHvar? QIoTHvernigSet QIoTSubject/þf
-    | QIoTHvernigSet QIoTSubject/þf QIoTHvar?
-    | QIoTHvernigSet QIoTHvar? QIoTSubject/þf
+QHueSettuX →
+    QHueSubject/þf QHueHvar? QHueHvernigSet
+    | QHueSubject/þf QHueHvernigSet QHueHvar?
+    | QHueHvar? QHueSubject/þf QHueHvernigSet
+    | QHueHvar? QHueHvernigSet QHueSubject/þf
+    | QHueHvernigSet QHueSubject/þf QHueHvar?
+    | QHueHvernigSet QHueHvar? QHueSubject/þf
 
-QIoTChangeRest ->
-    QIoTSubjectOne/þgf QIoTHvar? QIoTHvernigChange
-    | QIoTSubjectOne/þgf QIoTHvernigChange QIoTHvar?
-    | QIoTHvar? QIoTSubjectOne/þgf QIoTHvernigChange
-    | QIoTHvar? QIoTHvernigChange QIoTSubjectOne/þgf
-    | QIoTHvernigChange QIoTSubjectOne/þgf QIoTHvar?
-    | QIoTHvernigChange QIoTHvar? QIoTSubjectOne/þgf
+QHueBreyttuX →
+    QHueSubjectOne/þgf QHueHvar? QHueHvernigChange
+    | QHueSubjectOne/þgf QHueHvernigChange QHueHvar?
+    | QHueHvar? QHueSubjectOne/þgf QHueHvernigChange
+    | QHueHvar? QHueHvernigChange QHueSubjectOne/þgf
+    | QHueHvernigChange QHueSubjectOne/þgf QHueHvar?
+    | QHueHvernigChange QHueHvar? QHueSubjectOne/þgf
 
-QIoTLetRest ->
-    QIoTSubject/þf QIoTHvar? QIoTHvernigLet
-    | QIoTSubject/þf QIoTHvernigLet QIoTHvar?
-    | QIoTHvar? QIoTSubject/þf QIoTHvernigLet
-    # | QIoTHvar? QIoTHvernigLet QIoTSubject/þf
-    # | QIoTHvernigLet QIoTSubject/þf QIoTHvar?
-    # | QIoTHvernigLet QIoTHvar? QIoTSubject/þf
+QHueLáttuX →
+    QHueSubject/þf QHueHvar? QHueHvernigLet
+    | QHueSubject/þf QHueHvernigLet QHueHvar?
+    | QHueHvar? QHueSubject/þf QHueHvernigLet
+    # | QHueHvar? QHueHvernigLet QHueSubject/þf
+    # | QHueHvernigLet QHueSubject/þf QHueHvar?
+    # | QHueHvernigLet QHueHvar? QHueSubject/þf
 
-QIoTTurnOnRest ->
-    QIoTTurnOnLightsRest
-    | QIoTAHverju QIoTHvar?
-    | QIoTHvar? QIoTAHverju
-
-QIoTTurnOnLightsRest ->
-    QIoTLightSubject/þf QIoTHvar?
-    | QIoTHvar QIoTLightSubject/þf?
-
-# Would be good to add "slökktu á rauða litnum" functionality
-QIoTTurnOffRest ->
-    QIoTTurnOffLightsRest
-
-QIoTTurnOffLightsRest ->
-    QIoTLightSubject/þf QIoTHvar?
-    | QIoTHvar QIoTLightSubject/þf?
-
-# TODO: Make the subject categorization cleaner
-QIoTIncreaseOrDecreaseRest ->
-    QIoTLightSubject/þf QIoTHvar?
-    | QIoTBrightnessSubject/þf QIoTHvar?
-
-QIoTSubject/fall ->
-    QIoTSubjectOne/fall
-    | QIoTSubjectTwo/fall
+QHueSubject/fall →
+    QHueSubjectOne/fall
+    | QHueSubjectTwo/fall
 
 # TODO: Decide whether LightSubject/þgf should be accepted
-QIoTSubjectOne/fall ->
-    QIoTLightSubject/fall
-    | QIoTColorSubject/fall
-    | QIoTBrightnessSubject/fall
-    | QIoTSceneSubject/fall
+QHueSubjectOne/fall →
+    QHueLight/fall
+    | QHueColorSubject/fall
+    | QHueBrightnessSubject/fall
+    | QHueSceneSubject/fall
 
-QIoTSubjectTwo/fall ->
-    QIoTGroupNameSubject/fall # á bara að styðja "gerðu eldhúsið rautt", "gerðu eldhúsið rómó" "gerðu eldhúsið bjartara", t.d.
+QHueSubjectTwo/fall →
+    QHueGroupNameSubject/fall # á bara að styðja "gerðu eldhúsið rautt", "gerðu eldhúsið rómó" "gerðu eldhúsið bjartara", t.d.
 
-QIoTHvar ->
-    QIoTLocationPreposition QIoTGroupName/þgf
+QHueHvar →
+    QHueLocationPreposition QHueGroupName/þgf
 
-QIoTHvernigMake ->
-    QIoTAnnadAndlag # gerðu litinn rauðan í eldhúsinu EÐA gerðu birtuna meiri í eldhúsinu
-    | QIoTAdHverju # gerðu litinn að rauðum í eldhúsinu
-    | QIoTThannigAd
+QHueHvernigMake →
+    QHueAnnaðAndlag # gerðu litinn rauðan í eldhúsinu EÐA gerðu birtuna meiri í eldhúsinu
+    | QHueAðHverju # gerðu litinn að rauðum í eldhúsinu
+    | QHueÞannigAð
 
-QIoTHvernigSet ->
-    QIoTAHvad
-    | QIoTThannigAd
+QHueHvernigSet →
+    QHueÁHvað
+    | QHueÞannigAð
 
-QIoTHvernigChange ->
-    QIoTIHvad
-    | QIoTThannigAd
+QHueHvernigChange →
+    QHueÍHvað
+    | QHueÞannigAð
 
-QIoTHvernigLet ->
-    QIoTBecome QIoTSomethingOrSomehow
-    | QIoTBe QIoTSomehow
+QHueHvernigLet →
+    QHueVerða QHueSomethingOrSomehow
+    | QHueVera QHueSomehow
 
-QIoTThannigAd ->
-    "þannig" "að"? pfn_nf QIoTBeOrBecomeSubjunctive QIoTAnnadAndlag
+QHueÞannigAð →
+    "þannig" "að"? pfn_nf QHueBeOrBecomeSubjunctive QHueAnnaðAndlag
 
 # I think these verbs only appear in these forms. 
 # In which case these terminals should be deleted and a direct reference should be made in the relevant non-terminals.
-QIoTBe ->
+QHueVeraVerða →
+    QHueVera | QHueVerða
+
+QHueVera →
     "vera"
 
-QIoTBecome ->
+QHueVerða →
     "verða"
 
-QIoTBeOrBecomeSubjunctive ->
+QHueBeOrBecomeSubjunctive →
     "verði"
     | "sé"
 
-QIoTLightSubject/fall ->
-    QIoTLight/fall
+QHueColorSubject/fall →
+    QHueColorWord/fall QHueLight/ef?
+    | QHueColorWord/fall "á" QHueLight/þgf
 
-QIoTColorSubject/fall ->
-    QIoTColorWord/fall QIoTLight/ef?
-    | QIoTColorWord/fall "á" QIoTLight/þgf
+QHueBrightnessSubject/fall →
+    QHueBrightnessWord/fall QHueLight/ef?
+    | QHueBrightnessWord/fall "á" QHueLight/þgf
 
-QIoTBrightnessSubject/fall ->
-    QIoTBrightnessWord/fall QIoTLight/ef?
-    | QIoTBrightnessWord/fall "á" QIoTLight/þgf
+QHueSceneSubject/fall → QHueSceneWord/fall
 
-QIoTSceneSubject/fall ->
-    QIoTSceneWord/fall
+QHueGroupNameSubject/fall → QHueGroupName/fall
 
-QIoTGroupNameSubject/fall ->
-    QIoTGroupName/fall
-
-QIoTLocationPreposition ->
-    QIoTLocationPrepositionFirstPart? QIoTLocationPrepositionSecondPart
+QHueLocationPreposition →
+    QHueLocationPrepositionFirstPart? QHueLocationPrepositionSecondPart
 
 # The latter proverbs are grammatically incorrect, but common errors, both in speech and transcription.
 # The list provided is taken from StefnuAtv in Greynir.grammar. That includes "aftur:ao", which is not applicable here.
-QIoTLocationPrepositionFirstPart ->
+QHueLocationPrepositionFirstPart →
     StaðarAtv
     | "fram:ao"
     | "inn:ao"
@@ -182,168 +191,168 @@ QIoTLocationPrepositionFirstPart ->
     | "upp:ao"
     | "út:ao"
 
-QIoTLocationPrepositionSecondPart ->
+QHueLocationPrepositionSecondPart →
     "á" | "í"
 
-QIoTGroupName/fall ->
-    # QIoTLightsBanwords/fall
-    no/fall
-    | sérnafn/fall
+QHueGroupName/fall →
+    no/fall #| QHueBanwords/fall
+    # | sérnafn/fall
 
-QIoTLightName/fall ->
-    # QIoTLightsBanwords/fall
-    no/fall
-    | sérnafn/fall
+QHueLightName/fall →
+    no/fall #| QHueBanwords/fall
+    # | sérnafn/fall
 
-QIoTColorName ->
+QHueColorName/fall →
     {color_names}
 
-$score(+100) QIoTColorName
+QHueSceneName →
+    no | lo #| QHueBanwords/fall
+    # | sérnafn/fall
 
-QIoTSceneName ->
-    # QIoTLightsBanwords/fall
-    no
-    | lo
-    | sérnafn/fall
+QHueAnnaðAndlag →
+    QHueNewSetting/nf
+    | QHueSpyrjaHuldu/nf
 
-QIoTAnnadAndlag ->
-    QIoTNewSetting/nf
-    | QIoTSpyrjaHuldu/nf
+QHueAðHverju →
+    "að" QHueNewSetting/þgf
 
-QIoTAdHverju ->
-    "að" QIoTNewSetting/þgf
+QHueÁHvað →
+    "á" QHueNewSetting/þf
 
-QIoTAHvad ->
-    "á" QIoTNewSetting/þf
+QHueÍHvað →
+    "í" QHueNewSetting/þf
 
-QIoTIHvad ->
-    "í" QIoTNewSetting/þf
+QHueÁHverju →
+    "á" QHueLight/þgf
+    # | "á" QHueNewSetting/þgf
 
-QIoTAHverju ->
-    "á" QIoTLight/þgf
-    | "á" QIoTNewSetting/þgf
+QHueSomethingOrSomehow →
+    QHueAnnaðAndlag
+    | QHueAðHverju
 
-QIoTSomethingOrSomehow ->
-    QIoTAnnadAndlag
-    | QIoTAdHverju
+QHueSomehow →
+    QHueAnnaðAndlag
+    | QHueÞannigAð
 
-QIoTSomehow ->
-    QIoTAnnadAndlag
-    | QIoTThannigAd
+QHueLight/fall →
+    QHueLjósTegund/fall
+    | QHueLightName/fall
 
-QIoTLight/fall ->
-    QIoTLightName/fall
-    | QIoTLightWord/fall
-
-# Should 'birta' be included
-QIoTLightWord/fall ->
+QHueLjósTegund/fall →
     'ljós'/fall
-    | 'lýsing'/fall
-    | 'birta'/fall
-    | 'Birta'/fall
+    | 'lampi'/fall
+    # | 'útiljós'/fall
+    # | 'leslampi'/fall
+    # | 'borðlampi'/fall
+    # | 'gólflampi'/fall
+    # | 'lýsing'/fall
+    # | 'birta'/fall
+    # | 'Birta'/fall
 
-QIoTColorWord/fall ->
+QHueColorWord/fall →
     'litur'/fall
     | 'litblær'/fall
     | 'blær'/fall
 
-QIoTBrightnessWords/fall ->
+QHueBrightnessWords/fall →
     'bjartur'/fall
-    | QIoTBrightnessWord/fall
+    | QHueBrightnessWord/fall
 
-QIoTBrightnessWord/fall ->
-    'birta'/fall
+QHueBrightnessWord/fall →
+    'birta:kvk'/fall
     | 'Birta'/fall
     | 'birtustig'/fall
 
-QIoTSceneWord/fall ->
+QHueSceneWord/fall →
     'sena'/fall
     | 'stemning'/fall
     | 'stemming'/fall
     | 'stemmning'/fall
-    | 'sina'/fall
-    | 'Sena'/fall
-    | "Sena"
+    # | 'sina'/fall
+    # | 'Sena'/fall
+    # | "Sena"
 
 # Need to ask Hulda how this works.
-QIoTSpyrjaHuldu/fall ->
-    # QIoTHuldaColor/fall
-    QIoTHuldaBrightness/fall
-    # | QIoTHuldaScene/fall
-    | QIoTHuldaTemp/fall
+QHueSpyrjaHuldu/fall →
+    # QHueHuldaColor/fall
+    QHueHuldaBrightness/fall
+    # | QHueHuldaScene/fall
+    | QHueHuldaTemp/fall
 
 # Do I need a "new light state" non-terminal?
-QIoTNewSetting/fall ->
-    QIoTNewColor/fall
-    | QIoTNewBrightness/fall
-    | QIoTNewScene/fall
+QHueNewSetting/fall →
+    QHueNewColor/fall
+    | QHueNewBrightness/fall
+    | QHueNewScene/fall
 
-# Missing "meira dimmt"
-QIoTHuldaBrightness/fall ->
-    QIoTMoreBrighterOrHigher/fall QIoTBrightnessWords/fall?
-    | QIoTLessDarkerOrLower/fall QIoTBrightnessWords/fall?
+# TODO: Missing "meira dimmt"
+QHueHuldaBrightness/fall →
+    QHueMoreBrighterOrHigher/fall QHueBrightnessWords/fall?
+    | QHueLessDarkerOrLower/fall QHueBrightnessWords/fall?
 
-QIoTHuldaTemp/fall ->
-    QIoTWarmer/fall
-    | QIoTCooler/fall 
+QHueHuldaTemp/fall →
+    QHueWarmer/fall
+    | QHueCooler/fall 
 
-#Unsure about whether to include /fall after QIoTColorName
-QIoTNewColor/fall ->
-    QIoTColorWord/fall QIoTColorName
-    | QIoTColorName QIoTColorWord/fall?
+# TODO: Unsure about whether to include /fall after QHueColorName
+QHueNewColor/fall →
+    QHueColorWord/fall QHueColorName/fall
+    | QHueColorName/fall QHueColorWord/fall?
 
-QIoTNewBrightness/fall ->
-    'sá'/fall? QIoTBrightestOrDarkest/fall
-    | QIoTBrightestOrDarkest/fall QIoTBrightnessOrSettingWord/fall
+QHueNewBrightness/fall →
+    'sá'/fall? QHueBrightestOrDarkest/fall
+    | QHueBrightestOrDarkest/fall QHueBrightnessOrSettingWord/fall
 
-QIoTNewScene/fall ->
-    QIoTSceneWord/fall QIoTSceneName
-    | QIoTSceneName QIoTSceneWord/fall?
+QHueNewScene/fall →
+    QHueSceneWord/fall QHueSceneName
+    | QHueSceneName QHueSceneWord/fall?
 
-QIoTMoreBrighterOrHigher/fall ->
+QHueMoreBrighterOrHigher/fall →
     'mikill:lo'_mst/fall
     | 'bjartur:lo'_mst/fall
     | 'ljós:lo'_mst/fall
     | 'hár:lo'_mst/fall
 
-QIoTLessDarkerOrLower/fall ->
+QHueLessDarkerOrLower/fall →
     'lítill:lo'_mst/fall
     | 'dökkur:lo'_mst/fall
     | 'dimmur:lo'_mst/fall
     | 'lágur:lo'_mst/fall
 
-QIoTWarmer/fall ->
+QHueWarmer/fall →
     'hlýr:lo'_mst/fall
     | 'heitur:lo'_mst/fall
     | "hlýri"
 
-
-QIoTCooler/fall ->
+QHueCooler/fall →
     'kaldur:lo'_mst/fall
 
-QIoTBrightestOrDarkest/fall ->
-    QIoTBrightest/fall
-    | QIoTDarkest/fall
+QHueBrightestOrDarkest/fall →
+    QHueBrightest/fall
+    | QHueDarkest/fall
 
-QIoTBrightest/fall ->
+QHueBrightest/fall →
     'bjartur:lo'_evb
     | 'bjartur:lo'_esb
     | 'ljós:lo'_evb
     | 'ljós:lo'_esb
 
-QIoTDarkest/fall ->
+QHueDarkest/fall →
     'dimmur:lo'_evb
     | 'dimmur:lo'_esb
     | 'dökkur:lo'_evb
     | 'dökkur:lo'_esb
 
-QIoTBrightnessOrSettingWord/fall ->
-    QIoTBrightnessWord/fall
-    | QIoTSettingWord/fall
+QHueBrightnessOrSettingWord/fall →
+    QHueBrightnessWord/fall
+    | QHueStilling/fall
 
-QIoTSettingWord/fall ->
+QHueStilling/fall →
     'stilling'/fall
 
 # Catching hotwords from iot_speakers
-# QIoTLightsBanwords/fall ->
+# QHueBanwords/fall →
 #     QIoTSpeakerHotwords/fall
+
+# $tag(keep) QHueBanwords/fall
+# $tag(module_banwords) QHueBanwords/fall

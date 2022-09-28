@@ -27,7 +27,7 @@
     Use --help to see more information on usage.
 
 """
-from typing import Callable, Iterable, Iterator, List, Optional, Union
+from typing import Callable, Iterable, Iterator, List, Optional, Union, Match
 
 import re
 import sys
@@ -186,8 +186,6 @@ def get_wordform(gi: BIN_LiteralTerminal) -> str:
             assert (
                 len(variants) > 0
             ), f"Specify variant for single quoted terminal: {gi.name}"
-        else:
-            assert len(variants) == 0, f"Too many variants for atviksorð: {gi.name}"
 
     if not cat and len(ll[1]) > 0:
         # Guess category from lemma lookup
@@ -310,6 +308,9 @@ def _generate_all(
 # (note: there are probably more recursive
 # nonterminals, they can be added here)
 _RECURSIVE_NT = re.compile(r"^Nl([/_][a-zA-Z0-9]+)*$")
+_PLACEHOLDER_RE = re.compile(r"{([\w]+?)}")
+_PLACEHOLDER_PREFIX = "GENERATORPLACEHOLDER_"
+_PLACEHOLDER_PREFIX_LEN = len(_PLACEHOLDER_PREFIX)
 
 
 def _generate_one(
@@ -320,6 +321,9 @@ def _generate_one(
             # Special handling of Nl nonterminal,
             # since it is recursive
             yield [pink(f"<{gi.name}>")]
+        elif gi.name.startswith(_PLACEHOLDER_PREFIX):
+            # Placeholder nonterminal (replaces)
+            yield [blue(f"{{{gi.name[_PLACEHOLDER_PREFIX_LEN:]}}}")]
         elif isinstance(gi, Nonterminal):
             if gi.is_optional and gi.name.endswith("*"):
                 # Star nonterminal, signify using brackets and '...'
@@ -416,16 +420,13 @@ if __name__ == "__main__":
     if args.output:
         p = args.output
         assert isinstance(p, Path)
-        try:
-            p.touch(exist_ok=False)  # Raise error if we are overwriting a file
-        except FileExistsError:
-            if not args.force:
-                print("Output file already exists!")
-                exit(1)
+        if (p.is_file() or p.exists()) and not args.force:
+            print("Output file already exists!")
+            exit(1)
 
     if not args.color or p is not None:
-        # Undefine color functions
         useless: ColorF = lambda s: s
+        # Undefine color functions
         [
             bold,
             black,
@@ -446,10 +447,29 @@ if __name__ == "__main__":
         ] = [useless] * 16
 
     grammar_fragments: str = PREAMBLE
+
+    # We replace {...} format strings with a placeholder
+    placeholder_defs: str = ""
+
+    def placeholder_func(m: Match[str]) -> str:
+        """
+        Replaces {...} format strings in grammar with an empty nonterminal.
+        We then handle these nonterminals specifically in _generate_one().
+        """
+        global placeholder_defs
+        new_nt = f"{_PLACEHOLDER_PREFIX}{m.group(1)}"
+        # Create empty production for this nonterminal ('keep' tag just in case)
+        placeholder_defs += f"\n{new_nt} → ∅\n$tag(keep) {new_nt}\n"
+        # Replace format string with reference to new nonterminal
+        return new_nt
+
     for file in [BIN_Parser._GRAMMAR_FILE] + args.files:  # type: ignore
         with open(file, "r") as f:
             grammar_fragments += "\n"
-            grammar_fragments += f.read()
+            grammar_fragments += _PLACEHOLDER_RE.sub(placeholder_func, f.read())
+
+    # Add all the placeholder nonterminal definitions we added
+    grammar_fragments += placeholder_defs
 
     # Initialize QueryGrammar class from grammar files
     grammar = QueryGrammar()

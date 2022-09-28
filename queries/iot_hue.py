@@ -35,7 +35,7 @@
 # TODO: Add functionality for robot-like commands "ljós í eldhúsinu", "rautt í eldhúsinu"
 # TODO: Mistakes 'gerðu ljósið kaldara' for the scene 'köld'
 
-from typing import Dict, List, Optional, cast, FrozenSet
+from typing import Any, Callable, Dict, List, Optional, cast, FrozenSet
 from typing_extensions import TypedDict
 
 import logging
@@ -44,29 +44,37 @@ import json
 from pathlib import Path
 
 from query import Query, QueryStateDict
-from queries import gen_answer, read_jsfile, read_grammar_file
+from queries import read_jsfile, read_grammar_file
 from tree import ParamList, Result, Node, TerminalNode
 
 
-class SmartLights(TypedDict):
-    selected_light: str
-    philips_hue: Dict[str, str]
+class _Creds(TypedDict):
+    username: str
+    ip_address: str
 
 
-class DeviceData(TypedDict):
-    smartlights: SmartLights
+class _PhilipsHueData(TypedDict):
+    credentials: _Creds
 
 
-_IoT_QTYPE = "IoT"
+class _IoTDeviceData(TypedDict):
+    philips_hue: _PhilipsHueData
+
+
+_HUE_QTYPE = "Hue"
 
 TOPIC_LEMMAS = [
     "ljós",
+    "lampi",
+    "útiljós",
     "kveikja",
+    "slökkva",
     "litur",
     "birta",
     "hækka",
-    "stemmning",
+    "lækka",
     "sena",
+    "stemmning",
     "stemming",
     "stemning",
 ]
@@ -78,11 +86,11 @@ def help_text(lemma: str) -> str:
     return "Ég skil þig ef þú segir til dæmis: {0}.".format(
         random.choice(
             (
-                "Kveiktu á ljósunum inni í eldhúsi",
-                "Slökktu á leslampanum",
                 "Breyttu lit lýsingarinnar í stofunni í bláan",
                 "Gerðu ljósið í borðstofunni bjartara",
                 "Stilltu á bjartasta niðri í kjallara",
+                "Kveiktu á ljósunum inni í eldhúsi",
+                "Slökktu á leslampanum",
             )
         )
     )
@@ -92,7 +100,7 @@ def help_text(lemma: str) -> str:
 HANDLE_TREE = True
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = {"QIoT"}
+QUERY_NONTERMINALS = {"QHue"}
 
 _COLORS: Dict[str, List[float]] = {
     "appelsínugulur": [0.6195, 0.3624],
@@ -108,123 +116,41 @@ _COLORS: Dict[str, List[float]] = {
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = read_grammar_file(
-    "iot_hue", color_names=" | ".join(f"'{color}:lo'" for color in _COLORS.keys())
+    "iot_hue", color_names=" | ".join(f"'{color}:lo'/fall" for color in _COLORS.keys())
 )
 
 
-def QIoTQuery(node: Node, params: ParamList, result: Result) -> None:
-    result.qtype = _IoT_QTYPE
+# Insert or update hue object kept in result
+_upsert_hue_obj: Callable[[Result, Dict[str, Any]], None] = (
+    lambda r, d: r.__setattr__("hue_obj", d)
+    if "hue_obj" not in r
+    else cast(Dict[str, Any], r["hue_obj"]).update(d)
+)
 
 
-def QIoTColorWord(node: Node, params: ParamList, result: Result) -> None:
-    result.changing_color = True
+def QHueQuery(node: Node, params: ParamList, result: Result) -> None:
+    result.qtype = _HUE_QTYPE
 
 
-def QIoTSceneWord(node: Node, params: ParamList, result: Result) -> None:
-    result.changing_scene = True
-
-
-def QIoTBrightnessWord(node: Node, params: ParamList, result: Result) -> None:
-    result.changing_brightness = True
-
-
-def QIoTTurnOnLightsRest(node: Node, params: ParamList, result: Result) -> None:
+def QHueTurnOnLights(node: Node, params: ParamList, result: Result) -> None:
     result.action = "turn_on"
-    if "hue_obj" not in result:
-        result["hue_obj"] = {"on": True}
-    else:
-        result["hue_obj"]["on"] = True
+    _upsert_hue_obj(result, {"on": True})
 
 
-def QIoTTurnOffLightsRest(node: Node, params: ParamList, result: Result) -> None:
+def QHueTurnOffLights(node: Node, params: ParamList, result: Result) -> None:
     result.action = "turn_off"
-    if "hue_obj" not in result:
-        result["hue_obj"] = {"on": False}
-    else:
-        result["hue_obj"]["on"] = False
+    _upsert_hue_obj(result, {"on": False})
 
 
-def QIoTNewColor(node: Node, params: ParamList, result: Result) -> None:
+def QHueChangeColor(node: Node, params: ParamList, result: Result) -> None:
     result.action = "set_color"
     color_hue = _COLORS.get(result.color_name, None)
 
     if color_hue is not None:
-        if "hue_obj" not in result:
-            result["hue_obj"] = {"on": True, "xy": color_hue}
-        else:
-            result["hue_obj"]["xy"] = color_hue
-            result["hue_obj"]["on"] = True
+        _upsert_hue_obj(result, {"on": True, "xy": color_hue})
 
 
-def QIoTMoreBrighterOrHigher(node: Node, params: ParamList, result: Result) -> None:
-    result.action = "increase_brightness"
-    if "hue_obj" not in result:
-        result["hue_obj"] = {"on": True, "bri_inc": 64}
-    else:
-        result["hue_obj"]["bri_inc"] = 64
-        result["hue_obj"]["on"] = True
-
-
-def QIoTLessDarkerOrLower(node: Node, params: ParamList, result: Result) -> None:
-    result.action = "decrease_brightness"
-    if "hue_obj" not in result:
-        result["hue_obj"] = {"bri_inc": -64}
-    else:
-        result["hue_obj"]["bri_inc"] = -64
-
-
-def QIoTIncreaseVerb(node: Node, params: ParamList, result: Result) -> None:
-    result.action = "increase_brightness"
-    if "hue_obj" not in result:
-        result["hue_obj"] = {"on": True, "bri_inc": 64}
-    else:
-        result["hue_obj"]["bri_inc"] = 64
-        result["hue_obj"]["on"] = True
-
-
-def QIoTCooler(node: Node, params: ParamList, result: Result) -> None:
-    result.action = "decrease_colortemp"
-    result.changing_temp = True
-    if "hue_obj" not in result:
-        result["hue_obj"] = {"ct_inc": -30000}
-    else:
-        result["hue_obj"]["ct_inc"] = -30000
-
-
-def QIoTWarmer(node: Node, params: ParamList, result: Result) -> None:
-    result.action = "increase_colortemp"
-    result.changing_temp = True
-    if "hue_obj" not in result:
-        result["hue_obj"] = {"ct_inc": 30000}
-    else:
-        result["hue_obj"]["ct_inc"] = 30000
-
-
-def QIoTDecreaseVerb(node: Node, params: ParamList, result: Result) -> None:
-    result.action = "decrease_brightness"
-    if "hue_obj" not in result:
-        result["hue_obj"] = {"bri_inc": -64}
-    else:
-        result["hue_obj"]["bri_inc"] = -64
-
-
-def QIoTBrightest(node: Node, params: ParamList, result: Result) -> None:
-    result.action = "increase_brightness"
-    if "hue_obj" not in result:
-        result["hue_obj"] = {"bri": 255}
-    else:
-        result["hue_obj"]["bri"] = 255
-
-
-def QIoTDarkest(node: Node, params: ParamList, result: Result) -> None:
-    result.action = "decrease_brightness"
-    if "hue_obj" not in result:
-        result["hue_obj"] = {"bri": 0}
-    else:
-        result["hue_obj"]["bri"] = 0
-
-
-def QIoTNewScene(node: Node, params: ParamList, result: Result) -> None:
+def QHueChangeScene(node: Node, params: ParamList, result: Result) -> None:
     result.action = "set_scene"
     scene_name = result.get("scene_name", None)
     if scene_name is not None:
@@ -235,29 +161,55 @@ def QIoTNewScene(node: Node, params: ParamList, result: Result) -> None:
             result["hue_obj"]["on"] = True
 
 
-def QIoTColorName(node: Node, params: ParamList, result: Result) -> None:
+def QHueIncreaseBrightness(node: Node, params: ParamList, result: Result) -> None:
+    result.action = "increase_brightness"
+    _upsert_hue_obj(result, {"on": True, "bri_inc": 64})
+
+
+def QHueDecreaseBrightness(node: Node, params: ParamList, result: Result) -> None:
+    result.action = "decrease_brightness"
+    _upsert_hue_obj(result, {"bri_inc": -64})
+
+
+def QHueCooler(node: Node, params: ParamList, result: Result) -> None:
+    result.action = "decrease_colortemp"
+    result.changing_temp = True
+    _upsert_hue_obj(result, {"ct_inc": -30000})
+
+
+def QHueWarmer(node: Node, params: ParamList, result: Result) -> None:
+    result.action = "increase_colortemp"
+    result.changing_temp = True
+    _upsert_hue_obj(result, {"ct_inc": 30000})
+
+
+def QHueBrightest(node: Node, params: ParamList, result: Result) -> None:
+    result.action = "increase_brightness"
+    _upsert_hue_obj(result, {"bri": 255})
+
+
+def QHueDarkest(node: Node, params: ParamList, result: Result) -> None:
+    result.action = "decrease_brightness"
+    _upsert_hue_obj(result, {"bri": 0})
+
+
+def QHueColorName(node: Node, params: ParamList, result: Result) -> None:
     fc = node.first_child(lambda x: True)
     if fc:
         result["color_name"] = fc.string_self().strip("'").split(":")[0]
 
 
-def QIoTSceneName(node: Node, params: ParamList, result: Result) -> None:
+def QHueSceneName(node: Node, params: ParamList, result: Result) -> None:
     result["scene_name"] = result._indefinite
     result["changing_scene"] = True
-    print("scene: " + result.get("scene_name", None))
 
 
-def QIoTGroupName(node: Node, params: ParamList, result: Result) -> None:
+def QHueGroupName(node: Node, params: ParamList, result: Result) -> None:
     result["group_name"] = result._indefinite
 
 
-def QIoTLightName(node: Node, params: ParamList, result: Result) -> None:
+def QHueLightName(node: Node, params: ParamList, result: Result) -> None:
     result["light_name"] = result._indefinite
-
-
-def QIoTSpeakerHotwords(node: Node, params: ParamList, result: Result) -> None:
-    print("lights banwords")
-    result.abort = True
 
 
 _SPEAKER_WORDS: FrozenSet[str] = frozenset(
@@ -265,10 +217,10 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
         "tónlist",
         "lag",
         "hátalari",
-        "bylgja",
         "útvarp",
         "útvarpsstöð",
         "útvarp saga",
+        "bylgja",
         "gullbylgja",
         "x-ið",
         "léttbylgjan",
@@ -299,7 +251,6 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
         "útvarp hundrað og einn",
         "útvarp hundrað einn",
         "útvarp hundrað 1",
-        "útvarp",
     )
 )
 
@@ -307,53 +258,37 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
-    if result.get("abort"):
-        q.set_error("E_QUERY_NOT_UNDERSTOOD")
-        return
 
     # Extract matched terminals in grammar (used like lemmas in this case)
     lemmas = set(
         i[0].root(state, result.params)
         for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))
     )
-    if not lemmas.isdisjoint(_SPEAKER_WORDS):
-        q.set_error("E_QUERY_NOT_UNDERSTOOD")
-        return
-    changing_color = result.get("changing_color", False)
-    changing_scene = result.get("changing_scene", False)
-    changing_brightness = result.get("changing_brightness", False)
-    # changing_temp = result.get("changing_temp", False)
-    if (
-        sum((changing_color, changing_scene, changing_brightness)) > 1
-        or "qtype" not in result
-    ):
-        print("Multiple options error?")
+    if not lemmas.isdisjoint(_SPEAKER_WORDS) or result.qtype != _HUE_QTYPE:
+        # Uses a word that is associated with the sonos module
+        # (or incorrect qtype)
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
     q.set_qtype(result.qtype)
 
-    smartdevice_type = "iot"
-    cd = q.client_data(smartdevice_type)
-    device_data = None
-    if cd:
-        # Fetch relevant data from the device_data table to perform an action on the lights
-        device_data = cast(Optional[DeviceData], cd.get("iot_lights"))
+    # TODO: Caching?
+    cd = q.client_data("iot")
+    device_data = cast(Optional[_IoTDeviceData], cd.get("iot_lights")) if cd else None
 
-    hue_credentials: Optional[Dict[str, str]] = None
-
+    bridge_ip: Optional[str] = None
+    username: Optional[str] = None
     if device_data is not None:
-        dev = device_data
-        assert dev is not None
-        # TODO: Better error checking
-        light = dev.get("philips_hue")
-        hue_credentials = light.get("credentials")
-        bridge_ip = hue_credentials.get("ip_address")
-        username = hue_credentials.get("username")
+        # TODO: Error checking
+        bridge_ip = device_data["philips_hue"]["credentials"]["ip_address"]
+        username = device_data["philips_hue"]["credentials"]["username"]
 
-    if not device_data or not hue_credentials:
-        answer = "Það vantar að tengja Philips Hub-inn."
-        q.set_answer(*gen_answer(answer))
+    if not device_data or not (bridge_ip and username):
+        q.set_answer(
+            {"answer": "Það vantar að tengja Philips Hue miðstöðina."},
+            "Það vantar að tengja Philips Hue miðstöðina.",
+            "Það vantar að tengja filips hjú miðstöðina.",
+        )
         return
 
     try:
@@ -370,10 +305,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             + f"var BRIDGE_IP = '{bridge_ip}';var USERNAME = '{username}';"
             + read_jsfile(str(Path("Philips_Hue", "fuse_search.js")))
             + read_jsfile(str(Path("Philips_Hue", "set_lights.js")))
+            + f"return setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
         )
-        js += f"return setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
         q.set_command(js)
     except Exception as e:
-        logging.warning("Exception while processing random query: {0}".format(e))
+        logging.warning("Exception while processing iot_hue query: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))
         raise

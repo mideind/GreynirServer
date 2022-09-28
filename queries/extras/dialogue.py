@@ -263,7 +263,7 @@ class DialogueStateManager:
         """Initialize DSM instance and fetch tthe active dialogues for a client."""
         self._client_id = client_id
         self._db_session = db_session  # Database session of parent Query class
-        # Fetch active dialogues for this client
+        # Fetch active dialogues for this client (empty list if no client ID provided)
         self._active_dialogues: ActiveDialogueList = self._get_active_dialogues()
 
     def get_next_active_resource(self, dialogue_name: str) -> str:
@@ -284,7 +284,6 @@ class DialogueStateManager:
         Prepare DSM instance for a specific dialogue.
         Fetches saved state from database if dialogue is active.
         """
-        print("PREPARING DIALOGUE!")
         self._dialogue_name: str = dialogue_name
         # Dict mapping resource name to resource instance
         self._resources: Dict[str, res.Resource] = {}
@@ -364,7 +363,7 @@ class DialogueStateManager:
         """
         saved_row = self._dialogue_data()
         assert saved_row is not None
-        self._timed_out: bool = datetime.datetime.now() > saved_row["expires_at"]
+        self._timed_out = datetime.datetime.now() > saved_row["expires_at"]
         if self._timed_out:
             # TODO: Do something when a dialogue times out
             logging.warning("THIS DIALOGUE IS TIMED OUT!!!")
@@ -781,24 +780,24 @@ class DialogueStateManager:
 
     def _get_active_dialogues(self) -> ActiveDialogueList:
         """Get list of active dialogues from database for current client."""
-        assert self._client_id, "_get_active_dialogues() called without client ID!"
-
         active: ActiveDialogueList = []
-        with SessionContext(session=self._db_session, read_only=True) as session:
-            try:
-                row: Optional[DB_QueryData] = (
-                    session.query(DB_QueryData)
-                    .filter(DB_QueryData.client_id == self._client_id)  # type: ignore
-                    .filter(DB_QueryData.key == _ACTIVE_DIALOGUE_KEY)
-                ).one_or_none()
-                if row is not None:
-                    active = cast(ActiveDialogueList, row.data)
-            except Exception as e:
-                logging.error(
-                    "Error fetching client '{0}' query data for key '{1}' from db: {2}".format(
-                        self._client_id, _ACTIVE_DIALOGUE_KEY, e
+
+        if self._client_id:
+            with SessionContext(session=self._db_session, read_only=True) as session:
+                try:
+                    row: Optional[DB_QueryData] = (
+                        session.query(DB_QueryData)
+                        .filter(DB_QueryData.client_id == self._client_id)  # type: ignore
+                        .filter(DB_QueryData.key == _ACTIVE_DIALOGUE_KEY)
+                    ).one_or_none()
+                    if row is not None:
+                        active = cast(ActiveDialogueList, row.data)
+                except Exception as e:
+                    logging.error(
+                        "Error fetching client '{0}' query data for key '{1}' from db: {2}".format(
+                            self._client_id, _ACTIVE_DIALOGUE_KEY, e
+                        )
                     )
-                )
         return active
 
     def _dialogue_data(self) -> Optional[DialogueDataRow]:
@@ -819,8 +818,8 @@ class DialogueStateManager:
                 ).one_or_none()
                 if row:
                     return {
-                        "data": row.data,
-                        "expires_at": row.expires_at,
+                        "data": cast(DialogueSerialized, row.data),
+                        "expires_at": cast(datetime.datetime, row.expires_at),
                     }
             except Exception as e:
                 logging.error(
@@ -835,9 +834,9 @@ class DialogueStateManager:
         Save current state of dialogue to dialoguedata table in database,
         along with updating list of active dialogues in querydata table.
         """
-        assert (
-            self._client_id and self._dialogue_name
-        ), "_dialogue_data() called without client ID or dialogue name!"
+        if not self._client_id or not self._dialogue_name:
+            # Need both client ID and dialogue name to save any state
+            return
 
         now = datetime.datetime.now()
         expires_at = now + datetime.timedelta(seconds=self._expiration_time)
