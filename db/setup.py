@@ -114,15 +114,6 @@ ROOTS = [
         "StjornarradScraper",
         True,
     ),
-    # (
-    #     "http://reykjanes.local",
-    #     "reykjanes.local",
-    #     "Reykjanesbær",
-    #     1.0,
-    #     "scrapers.reykjanes",
-    #     "ReykjanesScraper",
-    #     False,
-    # ),
     (
         "https://althingi.is",
         "althingi.is",

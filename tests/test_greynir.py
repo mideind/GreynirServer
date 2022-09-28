@@ -415,3 +415,18 @@ def test_doc():
 
     # Change back to previous directory
     os.chdir(prev_dir)
+
+
+def test_util():
+    """Test utility functions."""
+
+    from util import icelandic_asciify
+
+    assert icelandic_asciify("Sveinbjörn Þórðarson") == "Sveinbjorn THordarson"
+    assert icelandic_asciify("sveinbjörn þórðarson") == "sveinbjorn thordarson"
+    assert icelandic_asciify("Þetta er prófun") == "THetta er profun"
+    assert (
+        icelandic_asciify("örn flýgur hægt suður við ána")
+        == "orn flygur haegt sudur vid ana"
+    )
+    assert icelandic_asciify("ÞJÓFUR PRÓFAR ÍSVÉL") == "THJOFUR PROFAR ISVEL"
