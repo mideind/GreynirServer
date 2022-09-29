@@ -24,6 +24,7 @@ from typing import Dict, Optional, Union, List, Any
 
 import logging
 import json
+from typing_extensions import TypedDict
 import flask
 import requests
 from datetime import datetime, timedelta
@@ -62,6 +63,8 @@ def post_to_json_api(
     except Exception as e:
         logging.warning("Error parsing JSON API response: {0}".format(e))
     return None
+
+
 _GROUPS_DICT = {
     "fjölskylduherbergi": "Family Room",
     "fjölskyldu herbergi": "Family Room",
@@ -109,6 +112,21 @@ _GROUPS_DICT = {
 }
 
 
+class _Creds(TypedDict):
+    code: str
+    timestamp: str
+    access_token: str
+    refresh_token: str
+
+
+class _SonosSpeakerData(TypedDict):
+    credentials: _Creds
+
+
+class SonosDeviceData(TypedDict):
+    sonos: _SonosSpeakerData
+
+
 # TODO - Decide what should happen if user does not designate a speaker but owns multiple speakers
 # TODO - Remove debug print statements
 # TODO - Testing and proper error handling
@@ -116,10 +134,10 @@ _GROUPS_DICT = {
 class SonosClient:
     def __init__(
         self,
-        device_data: Dict[str, str],
+        device_data: SonosDeviceData,
         client_id: str,
-        group_name: str = None,
-        radio_name: str = None,
+        group_name: Optional[str] = None,
+        radio_name: Optional[str] = None,
     ):
         self._client_id = client_id
         self._device_data = device_data
@@ -127,9 +145,8 @@ class SonosClient:
         self._radio_name = radio_name
         self._encoded_credentials = read_api_key("SonosEncodedCredentials")
         self._code = self._device_data["sonos"]["credentials"]["code"]
-        self._timestamp = (
-            self._device_data.get("sonos").get("credentials").get("timestamp")
-        )
+        self._timestamp = self._device_data["sonos"]["credentials"]["timestamp"]
+
         try:
             self._access_token = self._device_data["sonos"]["credentials"][
                 "access_token"
@@ -147,19 +164,11 @@ class SonosClient:
         self._group_id = self._get_group_id()
         self._store_data_and_credentials()
 
-    """
-    ------------------------------------- PRIVATE METHODS --------------------------------------------------------------------------------
-    """
-
     def _check_token_expiration(self) -> None:
         """
         Checks if access token is expired, and calls a function to refresh it if necessary.
         """
-        try:
-            timestamp = self._device_data["sonos"]["credentials"]["timestamp"]
-        except (KeyError, TypeError):
-            return
-        timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
+        timestamp = datetime.strptime(self._timestamp, "%Y-%m-%d %H:%M:%S.%f")
         if (datetime.now() - timestamp) > timedelta(hours=24):
             self._update_sonos_token()
 
@@ -169,7 +178,8 @@ class SonosClient:
         """
         self._encoded_credentials = read_api_key("SonosEncodedCredentials")
         self._refresh_expired_token()
-        sonos_dict = {
+
+        sonos_dict: SonosDeviceData = {
             "sonos": {
                 "credentials": {
                     "access_token": self._access_token,
@@ -210,7 +220,7 @@ class SonosClient:
         self._timestamp = str(datetime.now())
         return response
 
-    def _get_households(self) -> Dict[str, str]:
+    def _get_households(self) -> List[Dict[str, str]]:
         """
         Returns the list of households of the user
         """
@@ -219,19 +229,6 @@ class SonosClient:
 
         response = query_json_api(url, headers=headers)
         return response["households"]
-
-    def _get_household_id(self) -> str:
-        """
-        Returns the household id for the given query
-        """
-        url = f"https://api.ws.sonos.com/control/api/v1/households"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self._access_token}",
-        }
-
-        response = query_json_api(url, headers)
-        return response["households"][0]["id"]
 
     def _get_groups(self) -> Dict[str, str]:
         """
@@ -335,7 +332,7 @@ class SonosClient:
         sonos_dict["sonos"] = {"credentials": cred_dict}
         self._store_data(sonos_dict)
 
-    def _store_data(self, data: Dict) -> None:
+    def _store_data(self, data: SonosDeviceData) -> None:
         new_dict = {"iot_speakers": data}
         Query.store_query_data(self._client_id, "iot", new_dict, update_in_place=True)
 
@@ -354,7 +351,9 @@ class SonosClient:
     def _create_or_join_session(self, recursion=None) -> Optional[str]:
         url = f"https://api.ws.sonos.com/control/api/v1/groups/{self._group_id}/playbackSession/joinOrCreate"
 
-        payload = json.dumps({"appId": "com.mideind.embla", "appContext": "embla123"}) # FIXME: Use something else than embla123
+        payload = json.dumps(
+            {"appId": "com.mideind.embla", "appContext": "embla123"}
+        )  # FIXME: Use something else than embla123
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self._access_token}",
@@ -373,10 +372,6 @@ class SonosClient:
             session_id = response["sessionId"]
         return session_id
 
-    """
-    ------------------------------------- PUBLIC METHODS --------------------------------------------------------------------------------
-    """
-
     def play_radio_stream(self, radio_url: str) -> Optional[str]:
         session_id = self._create_or_join_session()
         if radio_url is None:
@@ -385,10 +380,11 @@ class SonosClient:
             except KeyError:
                 radio_url = "http://netradio.ruv.is/rondo.mp3"
 
-        url = f"https://api.ws.sonos.com/control/api/v1/groups/playbackSessions/{session_id}/playbackSession/loadStreamUrl?"
+        url = f"https://api.ws.sonos.com/control/api/v1/playbackSessions/{session_id}/playbackSession/loadStreamUrl"
+        
         payload = json.dumps(
             {
-                "streamUrl": f"{radio_url}",
+                "streamUrl": radio_url,
                 "playOnCompletion": True,
                 # "stationMetadata": {"name": f"{radio_name}"},
                 "itemId": "StreamItemId",

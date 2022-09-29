@@ -22,6 +22,7 @@ QHueBreyttuSkiptu → "breyttu" | "skiptu" | "breyta" | "skipta"
 QHueLáttu → "láttu" | "láta"
 QHueHækkaðuAuktu → "hækkaðu" | "auktu" | "hækka" | "auka"
 QHueLækkaðuMinnkaðu → "lækkaðu" | "minnkaðu" | "lækka" | "minnka"
+QHueVeraVerða → "vera" | "verða"
 
 # Commands for turning on lights
 QHueTurnOnLights → QHueKveiktu QHueKveiktuX
@@ -62,121 +63,113 @@ QHueChangeColor →
 # Commands for changing the current scene
 QHueChangeScene →
     QHueKveiktu "á" QHueNewScene/þgf QHueHvar?
-    | QHueStilltuSettu "á" QHueNewScene/þf
-    | QHueBreyttuSkiptu "yfir"? "í" QHueNewScene/þf
+    | QHueStilltuSettu "á" QHueNewScene/þf QHueHvar?
+    | QHueBreyttuSkiptu "yfir"? "í" QHueNewScene/þf QHueHvar?
 
 QHueKveiktuX →
     QHueLight/þf? QHueHvar    # ... ljósið í eldhúsinu
     | "á" QHueLight/þgf QHueHvar?    # ... á lampanum í stofunni
+    | QHueAllLights # ... öll ljósin
 
 QHueSlökktuX →
     QHueLight/þf? QHueHvar    # ... ljósið í eldhúsinu
     | "á" QHueLight/þgf QHueHvar?    # ... á lampanum í stofunni
+    | QHueAllLights # ... öll ljósin
 
 QHueHækkaðuX →
-    QHueLjósTegund/þf QHueHvar?
+    QHueLight/þf QHueHvar? # TODO
     | QHueBrightnessSubject/þf QHueHvar?
 
 QHueLækkaðuX →
     QHueLight/þf QHueHvar?
     | QHueBrightnessSubject/þf QHueHvar?
 
-QHueGerðuX →
-    QHueSubject/þf QHueHvar? QHueHvernigMake
-    | QHueSubject/þf QHueHvernigMake QHueHvar?
-    | QHueHvar? QHueSubject/þf QHueHvernigMake
-    | QHueHvar? QHueHvernigMake QHueSubject/þf
-    | QHueHvernigMake QHueSubject/þf QHueHvar?
-    | QHueHvernigMake QHueHvar? QHueSubject/þf
+# QHueGerðuX →
+#     QHueSubject/þf QHueHvar? QHueHvernigMake
+#     | QHueSubject/þf QHueHvernigMake QHueHvar?
+#     | QHueHvar? QHueSubject/þf QHueHvernigMake
+#     | QHueHvar? QHueHvernigMake QHueSubject/þf
+#     | QHueHvernigMake QHueSubject/þf QHueHvar?
+#     | QHueHvernigMake QHueHvar? QHueSubject/þf
 
-# TODO: Add support for "stilltu rauðan lit á ljósið í eldhúsinu"
-QHueSettuX →
-    QHueSubject/þf QHueHvar? QHueHvernigSet
-    | QHueSubject/þf QHueHvernigSet QHueHvar?
-    | QHueHvar? QHueSubject/þf QHueHvernigSet
-    | QHueHvar? QHueHvernigSet QHueSubject/þf
-    | QHueHvernigSet QHueSubject/þf QHueHvar?
-    | QHueHvernigSet QHueHvar? QHueSubject/þf
+# QHueSettuX →
+#     QHueSubject/þf QHueHvar? QHueHvernigSet
+#     | QHueSubject/þf QHueHvernigSet QHueHvar?
+#     | QHueHvar? QHueSubject/þf QHueHvernigSet
+#     | QHueHvar? QHueHvernigSet QHueSubject/þf
+#     | QHueHvernigSet QHueSubject/þf QHueHvar?
+#     | QHueHvernigSet QHueHvar? QHueSubject/þf
 
-QHueBreyttuX →
-    QHueSubjectOne/þgf QHueHvar? QHueHvernigChange
-    | QHueSubjectOne/þgf QHueHvernigChange QHueHvar?
-    | QHueHvar? QHueSubjectOne/þgf QHueHvernigChange
-    | QHueHvar? QHueHvernigChange QHueSubjectOne/þgf
-    | QHueHvernigChange QHueSubjectOne/þgf QHueHvar?
-    | QHueHvernigChange QHueHvar? QHueSubjectOne/þgf
+# QHueBreyttuX →
+#     QHueSubjectOne/þgf QHueHvar? QHueHvernigChange
+#     | QHueSubjectOne/þgf QHueHvernigChange QHueHvar?
+#     | QHueHvar? QHueSubjectOne/þgf QHueHvernigChange
+#     | QHueHvar? QHueHvernigChange QHueSubjectOne/þgf
+#     | QHueHvernigChange QHueSubjectOne/þgf QHueHvar?
+#     | QHueHvernigChange QHueHvar? QHueSubjectOne/þgf
 
-QHueLáttuX →
-    QHueSubject/þf QHueHvar? QHueHvernigLet
-    | QHueSubject/þf QHueHvernigLet QHueHvar?
-    | QHueHvar? QHueSubject/þf QHueHvernigLet
-    # | QHueHvar? QHueHvernigLet QHueSubject/þf
-    # | QHueHvernigLet QHueSubject/þf QHueHvar?
-    # | QHueHvernigLet QHueHvar? QHueSubject/þf
+# QHueLáttuX →
+#     QHueSubject/þf QHueHvar? QHueHvernigLet
+#     | QHueSubject/þf QHueHvernigLet QHueHvar?
+#     | QHueHvar? QHueSubject/þf QHueHvernigLet
+#     | QHueHvar? QHueHvernigLet QHueSubject/þf
+#     | QHueHvernigLet QHueSubject/þf QHueHvar?
+#     | QHueHvernigLet QHueHvar? QHueSubject/þf
 
-QHueSubject/fall →
-    QHueSubjectOne/fall
-    | QHueSubjectTwo/fall
+# QHueÁHverju
+# QHueSpyrjaHuldu_þf
+# QHueSpyrjaHuldu_þgf
+# QHueSpyrjaHuldu_ef
+# QHueNewSetting_ef
 
-# TODO: Decide whether LightSubject/þgf should be accepted
-QHueSubjectOne/fall →
-    QHueLight/fall
-    | QHueColorSubject/fall
-    | QHueBrightnessSubject/fall
-    | QHueSceneSubject/fall
+# QHueSubject/fall →
+#     QHueSubjectOne/fall
+#     | QHueSubjectTwo/fall
 
-QHueSubjectTwo/fall →
-    QHueGroupNameSubject/fall # á bara að styðja "gerðu eldhúsið rautt", "gerðu eldhúsið rómó" "gerðu eldhúsið bjartara", t.d.
+# # TODO: Decide whether LightSubject/þgf should be accepted
+# QHueSubjectOne/fall →
+#     QHueLight/fall
+#     | QHueColorSubject/fall
+#     | QHueBrightnessSubject/fall
+#     | QHueSceneWord/fall
+
+# QHueSubjectTwo/fall →
+#     QHueGroupName/fall # á bara að styðja "gerðu eldhúsið rautt", "gerðu eldhúsið rómó" "gerðu eldhúsið bjartara", t.d.
 
 QHueHvar →
     QHueLocationPreposition QHueGroupName/þgf
+    | QHueEverywhere
 
-QHueHvernigMake →
-    QHueAnnaðAndlag # gerðu litinn rauðan í eldhúsinu EÐA gerðu birtuna meiri í eldhúsinu
-    | QHueAðHverju # gerðu litinn að rauðum í eldhúsinu
-    | QHueÞannigAð
+# QHueHvernigMake →
+#     QHueAnnaðAndlag # gerðu litinn rauðan í eldhúsinu EÐA gerðu birtuna meiri í eldhúsinu
+#     | QHueAðHverju # gerðu litinn að rauðum í eldhúsinu
+#     | QHueÞannigAð
 
-QHueHvernigSet →
-    QHueÁHvað
-    | QHueÞannigAð
+# QHueHvernigSet →
+#     QHueÁHvað
+#     | QHueÞannigAð
 
-QHueHvernigChange →
-    QHueÍHvað
-    | QHueÞannigAð
+# QHueHvernigChange →
+#     QHueÍHvað
+#     | QHueÞannigAð
 
-QHueHvernigLet →
-    QHueVerða QHueSomethingOrSomehow
-    | QHueVera QHueSomehow
+# QHueHvernigLet →
+#     QHueVerða QHueSomethingOrSomehow
+#     | QHueVera QHueSomehow
 
-QHueÞannigAð →
-    "þannig" "að"? pfn_nf QHueBeOrBecomeSubjunctive QHueAnnaðAndlag
+# QHueÞannigAð →
+#     "þannig" "að"? pfn_nf QHueBeOrBecomeSubjunctive QHueAnnaðAndlag
 
-# I think these verbs only appear in these forms. 
-# In which case these terminals should be deleted and a direct reference should be made in the relevant non-terminals.
-QHueVeraVerða →
-    QHueVera | QHueVerða
+# QHueBeOrBecomeSubjunctive →
+#     "verði" | "sé"
 
-QHueVera →
-    "vera"
-
-QHueVerða →
-    "verða"
-
-QHueBeOrBecomeSubjunctive →
-    "verði"
-    | "sé"
-
-QHueColorSubject/fall →
-    QHueColorWord/fall QHueLight/ef?
-    | QHueColorWord/fall "á" QHueLight/þgf
+# QHueColorSubject/fall →
+#     QHueColorWord/fall QHueLight/ef?
+#     | QHueColorWord/fall "á" QHueLight/þgf
 
 QHueBrightnessSubject/fall →
     QHueBrightnessWord/fall QHueLight/ef?
     | QHueBrightnessWord/fall "á" QHueLight/þgf
-
-QHueSceneSubject/fall → QHueSceneWord/fall
-
-QHueGroupNameSubject/fall → QHueGroupName/fall
 
 QHueLocationPreposition →
     QHueLocationPrepositionFirstPart? QHueLocationPrepositionSecondPart
@@ -191,63 +184,73 @@ QHueLocationPrepositionFirstPart →
     | "upp:ao"
     | "út:ao"
 
-QHueLocationPrepositionSecondPart →
-    "á" | "í"
-
-QHueGroupName/fall →
-    no/fall #| QHueBanwords/fall
-    # | sérnafn/fall
-
-QHueLightName/fall →
-    no/fall #| QHueBanwords/fall
-    # | sérnafn/fall
-
-QHueColorName/fall →
-    {color_names}
-
-QHueSceneName →
-    no | lo #| QHueBanwords/fall
-    # | sérnafn/fall
-
-QHueAnnaðAndlag →
-    QHueNewSetting/nf
-    | QHueSpyrjaHuldu/nf
-
-QHueAðHverju →
-    "að" QHueNewSetting/þgf
-
-QHueÁHvað →
-    "á" QHueNewSetting/þf
-
-QHueÍHvað →
-    "í" QHueNewSetting/þf
-
-QHueÁHverju →
-    "á" QHueLight/þgf
-    # | "á" QHueNewSetting/þgf
-
-QHueSomethingOrSomehow →
-    QHueAnnaðAndlag
-    | QHueAðHverju
-
-QHueSomehow →
-    QHueAnnaðAndlag
-    | QHueÞannigAð
+QHueLocationPrepositionSecondPart → "á" | "í"
 
 QHueLight/fall →
-    QHueLjósTegund/fall
+    'ljós:no'/fall
     | QHueLightName/fall
 
-QHueLjósTegund/fall →
-    'ljós'/fall
-    | 'lampi'/fall
-    # | 'útiljós'/fall
-    # | 'leslampi'/fall
-    # | 'borðlampi'/fall
-    # | 'gólflampi'/fall
-    # | 'lýsing'/fall
-    # | 'birta'/fall
-    # | 'Birta'/fall
+# QHueLjósTegund/fall →
+#     | 'lampi:no'/fall
+#     | 'útiljós'/fall
+#     | 'leslampi'/fall
+#     | 'borðlampi'/fall
+#     | 'gólflampi'/fall
+#     | 'lýsing'/fall
+#     | 'birta'/fall
+#     | 'Birta'/fall
+
+QHueGroupName/fall → no/fall
+    # | sérnafn/fall
+    # | QHueBanwords/fall
+
+# Note: don't use this for 'öll ljósin í svefnherberginu'
+# as this 
+QHueAllLights →
+    "öll" "ljósin"
+
+QHueEverywhere →
+    "alls_staðar"
+    | "alstaðar"
+    | "allstaðar"
+    | "allsstaðar"
+    | "alsstaðar"
+    | "öllu" "húsinu"
+
+QHueLightName/fall → no/fall
+    # | sérnafn/fall
+    # | QHueBanwords/fall
+
+QHueColorName/fall → {color_names}
+
+QHueSceneName → no | lo
+    # | sérnafn/fall
+    # | QHueBanwords/fall
+
+# QHueAnnaðAndlag →
+#     QHueNewSetting/nf
+#     | QHueSpyrjaHuldu/nf
+
+# QHueAðHverju →
+#     "að" QHueNewSetting/þgf
+
+# QHueÁHvað →
+#     "á" QHueNewSetting/þf
+
+# QHueÍHvað →
+#     "í" QHueNewSetting/þf
+
+# QHueÁHverju →
+#     "á" QHueLight/þgf
+    # | "á" QHueNewSetting/þgf
+
+# QHueSomethingOrSomehow →
+#     QHueAnnaðAndlag
+#     | QHueAðHverju
+
+# QHueSomehow →
+#     QHueAnnaðAndlag
+#     | QHueÞannigAð
 
 QHueColorWord/fall →
     'litur'/fall
@@ -255,7 +258,7 @@ QHueColorWord/fall →
     | 'blær'/fall
 
 QHueBrightnessWords/fall →
-    'bjartur'/fall
+    'bjartur:lo'/fall
     | QHueBrightnessWord/fall
 
 QHueBrightnessWord/fall →
@@ -273,82 +276,82 @@ QHueSceneWord/fall →
     # | "Sena"
 
 # Need to ask Hulda how this works.
-QHueSpyrjaHuldu/fall →
-    # QHueHuldaColor/fall
-    QHueHuldaBrightness/fall
-    # | QHueHuldaScene/fall
-    | QHueHuldaTemp/fall
+# QHueSpyrjaHuldu/fall →
+#     # QHueHuldaColor/fall
+#     QHueHuldaBrightness/fall
+#     # | QHueHuldaScene/fall
+#     | QHueHuldaTemp/fall
 
 # Do I need a "new light state" non-terminal?
-QHueNewSetting/fall →
-    QHueNewColor/fall
-    | QHueNewBrightness/fall
-    | QHueNewScene/fall
+# QHueNewSetting/fall →
+#     QHueNewColor/fall
+#     | QHueNewBrightness/fall
+#     | QHueNewScene/fall
 
-# TODO: Missing "meira dimmt"
-QHueHuldaBrightness/fall →
-    QHueMoreBrighterOrHigher/fall QHueBrightnessWords/fall?
-    | QHueLessDarkerOrLower/fall QHueBrightnessWords/fall?
+# # TODO: Missing "meira dimmt"
+# QHueHuldaBrightness/fall →
+#     QHueMoreBrighterOrHigher/fall QHueBrightnessWords/fall?
+#     | QHueLessDarkerOrLower/fall QHueBrightnessWords/fall?
 
-QHueHuldaTemp/fall →
-    QHueWarmer/fall
-    | QHueCooler/fall 
+# QHueHuldaTemp/fall →
+#     QHueWarmer/fall
+#     | QHueCooler/fall
 
-# TODO: Unsure about whether to include /fall after QHueColorName
+# # TODO: Unsure about whether to include /fall after QHueColorName
 QHueNewColor/fall →
     QHueColorWord/fall QHueColorName/fall
     | QHueColorName/fall QHueColorWord/fall?
 
-QHueNewBrightness/fall →
-    'sá'/fall? QHueBrightestOrDarkest/fall
-    | QHueBrightestOrDarkest/fall QHueBrightnessOrSettingWord/fall
+# QHueNewBrightness/fall →
+#     'sá'/fall? QHueBrightestOrDarkest/fall
+#     | QHueBrightestOrDarkest/fall QHueBrightnessOrSettingWord/fall
 
 QHueNewScene/fall →
     QHueSceneWord/fall QHueSceneName
-    | QHueSceneName QHueSceneWord/fall?
+    # | QHueSceneName QHueSceneWord/fall?
 
-QHueMoreBrighterOrHigher/fall →
-    'mikill:lo'_mst/fall
-    | 'bjartur:lo'_mst/fall
-    | 'ljós:lo'_mst/fall
-    | 'hár:lo'_mst/fall
+# QHueMoreBrighterOrHigher/fall →
+#     'mikill:lo'_mst/fall
+#     | 'bjartur:lo'_mst/fall
+#     | 'ljós:lo'_mst/fall
+#     | 'hár:lo'_mst/fall
 
-QHueLessDarkerOrLower/fall →
-    'lítill:lo'_mst/fall
-    | 'dökkur:lo'_mst/fall
-    | 'dimmur:lo'_mst/fall
-    | 'lágur:lo'_mst/fall
+# QHueLessDarkerOrLower/fall →
+#     'lítill:lo'_mst/fall
+#     | 'dökkur:lo'_mst/fall
+#     | 'dimmur:lo'_mst/fall
+#     | 'lágur:lo'_mst/fall
 
-QHueWarmer/fall →
-    'hlýr:lo'_mst/fall
-    | 'heitur:lo'_mst/fall
-    | "hlýri"
+# QHueWarmer/fall →
+#     'hlýr:lo'_mst/fall
+#     | 'heitur:lo'_mst/fall
+#     | "hlýri"
 
-QHueCooler/fall →
-    'kaldur:lo'_mst/fall
+# QHueCooler/fall →
+#     'kaldur:lo'_mst/fall
 
-QHueBrightestOrDarkest/fall →
-    QHueBrightest/fall
-    | QHueDarkest/fall
+# QHueBrightestOrDarkest/fall →
+#     QHueBrightest/fall
+#     | QHueDarkest/fall
 
-QHueBrightest/fall →
-    'bjartur:lo'_evb
-    | 'bjartur:lo'_esb
-    | 'ljós:lo'_evb
-    | 'ljós:lo'_esb
+# QHueBrightest/fall →
+#     'bjartur:lo'_evb
+#     | 'bjartur:lo'_esb
+#     | 'ljós:lo'_evb
+#     | 'ljós:lo'_esb
 
-QHueDarkest/fall →
-    'dimmur:lo'_evb
-    | 'dimmur:lo'_esb
-    | 'dökkur:lo'_evb
-    | 'dökkur:lo'_esb
+# QHueDarkest/fall →
+#     'dimmur:lo'_evb
+#     | 'dimmur:lo'_esb
+#     | 'dökkur:lo'_evb
+#     | 'dökkur:lo'_esb
 
-QHueBrightnessOrSettingWord/fall →
-    QHueBrightnessWord/fall
-    | QHueStilling/fall
+# QHueBrightnessOrSettingWord/fall →
+#     QHueBrightnessWord/fall
+#     | QHueStilling/fall
 
-QHueStilling/fall →
-    'stilling'/fall
+# QHueStilling/fall →
+#     'stilling'/fall
 
 # Catching hotwords from iot_speakers
 # QHueBanwords/fall →

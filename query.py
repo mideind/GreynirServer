@@ -1368,15 +1368,24 @@ class Query:
         result["valid"] = True
         if Settings.DEBUG:
             # Dump query results to the console
-            def converter(o):
+            def converter(o: object):
                 """Ensure that datetime is output in ISO format to JSON"""
                 if isinstance(o, datetime):
                     return o.isoformat()[0:16]
                 return None
 
             print(
-                "{0}".format(
-                    json.dumps(result, indent=3, ensure_ascii=False, default=converter)
+                json.dumps(
+                    {
+                        k: (f"{v[:100]} ... {v[-100:]}")
+                        if isinstance(v, str) and len(v) > 1000
+                        else v
+                        for k, v in result.items()
+                        # This ^ is just to shorten very long lines
+                    },
+                    indent=3,
+                    ensure_ascii=False,
+                    default=converter,
                 )
             )
         return result

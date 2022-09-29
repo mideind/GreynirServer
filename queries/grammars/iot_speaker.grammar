@@ -47,8 +47,12 @@ QIoTSpeakerPlayVerb → 'spila:so'_bh
 # "pása", as a verb, is not recognized by Árnastofnun's database, but is relatively common in casual speech.
 QIoTSpeakerPauseVerb →
     "stöðvaðu"
+    | "stöðva"
     | "stoppaðu"
+    | "stoppa"
     | "pásaðu"
+    | "pása"
+    | "gerðu" "hlé" "á"
 
 QIoTSpeakerIncreaseOrDecreaseVerb →
     QIoTSpeakerIncreaseVerb
@@ -350,6 +354,7 @@ QIoTSpeakerRas2 →
 QIoTSpeakerRondo →
     "rondo" "fm"?
     | "rondó" "fm"?
+    | "róndó" "fm"?
 
 QIoTSpeakerFm957 →
     "fm" "957"

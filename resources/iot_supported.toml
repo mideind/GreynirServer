@@ -35,7 +35,7 @@ name = "Spotify"
 brand = "Spotify"
 group = "iot_streaming"
 logo = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/168px-Spotify_logo_without_text.svg.png"
-#music_note_outlined
+# music_note_outlined
 icon = 0xf1fb
 webview_home = '{host}/iot/spotify-instructions?client_id={client_id}&iot_group=iot_streaming&iot_name=spotify'
 webview_connect = '{host}/iot/spotify-connection?client_id={client_id}&request_url={host}'

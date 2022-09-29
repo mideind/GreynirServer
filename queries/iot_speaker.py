@@ -31,14 +31,14 @@
 # TODO: Two specified groups or lights.
 # TODO: No specified location
 # TODO: Fix scene issues
-from typing import Dict
+from typing import Dict, cast
 
 import logging
 import random
 
 from query import Query, QueryStateDict
 from queries import read_grammar_file
-from queries.extras.sonos import SonosClient
+from queries.extras.sonos import SonosClient, SonosDeviceData
 from tree import ParamList, Result, Node
 
 # Dictionary of radio stations and their stream urls
@@ -68,7 +68,7 @@ _RADIO_STREAMS: Dict[str, str] = {
 }
 
 
-_IoT_QTYPE = "IoTSpeakers"
+_SPEAKER_QTYPE = "IoTSpeakers"
 
 TOPIC_LEMMAS = [
     "tónlist",
@@ -102,7 +102,7 @@ GRAMMAR = read_grammar_file("iot_speaker")
 
 
 def QIoTSpeaker(node: Node, params: ParamList, result: Result) -> None:
-    result.qtype = _IoT_QTYPE
+    result.qtype = _SPEAKER_QTYPE
 
 
 def QIoTSpeakerTurnOnVerb(node: Node, params: ParamList, result: Result) -> None:
@@ -286,83 +286,69 @@ def QIoTSpeakerUtvarpSudurland(node: Node, params: ParamList, result: Result) ->
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
     q: Query = state["query"]
+
+    if result.get("qtype") != _SPEAKER_QTYPE or not q.client_id:
+        q.set_error("E_QUERY_NOT_UNDERSTOOD")
+        return
+
     if "qkey" not in result:
         result.qkey = "turn_on"
-    if result.qkey == "turn_on" and result.get("target") == "radio":
-        result.qkey = "radio"
-    if "qtype" in result:
-        try:
-            q.set_qtype(result.qtype)
-            cd = q.client_data("iot")
-            device_data = None
-            if cd:
-                device_data = cd.get("iot_speakers")
-            if device_data is not None:
-                sonos_client = SonosClient(
-                    device_data, q.client_id, group_name=result.get("group_name")
-                )
 
-                # Map of query keys to handler functions and the corresponding answer string for Embla
-                radio_url = _RADIO_STREAMS.get(result.get("station"))
-                handler_map = {
-                    "turn_on": [
-                        sonos_client.toggle_play,
-                        [],
-                        "Ég kveikti á tónlistinni",
-                    ],
-                    "turn_off": [
-                        sonos_client.toggle_pause,
-                        [],
-                        "Ég slökkti á tónlistinni",
-                    ],
-                    "increase_volume": [
-                        sonos_client.increase_volume,
-                        [],
-                        "Ég hækkaði í tónlistinni",
-                    ],
-                    "decrease_volume": [
-                        sonos_client.decrease_volume,
-                        [],
-                        "Ég lækkaði í tónlistinni",
-                    ],
-                    "radio": [
-                        sonos_client.play_radio_stream,
-                        [radio_url],
-                        "Ég setti á útvarpstöðina",
-                    ],
-                    "next_song": [
-                        sonos_client.next_song,
-                        [],
-                        "Ég skipti á næsta lag",
-                    ],
-                    "prev_song": [
-                        sonos_client.prev_song,
-                        [],
-                        "Ég hötta á fyrri tón",  # TODO: wtf
-                    ],
-                }
-                handler, args, answer = handler_map.get(result.qkey)
-                response = handler(*args)
-                if response == "Group not found":
-                    text_ans = f"Herbergið '{result.group_name}' fannst ekki. Vinsamlegast athugaðu í Sonos appinu hvort nafnið sé rétt."
-                else:
-                    text_ans = answer
-                q.set_answer(
-                    dict(answer=text_ans),
-                    text_ans,
-                    text_ans.replace("Sonos", "Sónos"),
-                )
-                return
+    qk: str = result.qkey
+    if qk == "turn_on" and result.get("target") == "radio":
+        qk = "radio"
+
+    try:
+        q.set_qtype(result.qtype)
+        cd = q.client_data("iot")
+        device_data = None
+        if cd:
+            device_data = cd.get("iot_speakers")
+        if device_data is not None:
+            sonos_client = SonosClient(
+                cast(SonosDeviceData, device_data),
+                q.client_id,
+                group_name=result.get("group_name"),
+            )
+
+            answer: str
+            if qk == "turn_on":
+                sonos_client.toggle_play()
+                answer = "Ég kveikti á tónlistinni"
+            elif qk == "turn_off":
+                sonos_client.toggle_pause()
+                answer = "Ég slökkti á tónlistinni"
+            elif qk == "increase_volume":
+                sonos_client.increase_volume()
+                answer = "Ég hækkaði í tónlistinni"
+            elif qk == "decrease_volume":
+                sonos_client.decrease_volume()
+                answer = "Ég lækkaði í tónlistinni"
+            elif qk == "radio":
+                # TODO: Error checking
+                station = result.get("station")
+                radio_url = _RADIO_STREAMS[station]
+                sonos_client.play_radio_stream(radio_url)
+                answer = "Ég setti á útvarpstöðina"
+            elif qk == "next_song":
+                sonos_client.next_song()
+                answer = "Ég skipti í næsta lag"
+            elif qk == "prev_song":
+                sonos_client.prev_song()
+                answer = "Ég skipti í fyrra lag"
             else:
-                print("No device data found for this account")
+                logging.warning("Incorrect qkey in speaker module")
                 return
-        except Exception as e:
-            logging.warning("Exception answering iot_speakers query: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+
+            q.set_answer(
+                dict(answer=answer),
+                answer,
+                answer.replace("Sonos", "Sónos"),
+            )
             return
-    else:
-        print("ELSE")
-        q.set_error("E_QUERY_NOT_UNDERSTOOD")
+    except Exception as e:
+        logging.warning("Exception answering iot_speakers query: {0}".format(e))
+        q.set_error("E_EXCEPTION: {0}".format(e))
         return
 
     # TODO: Need to add check for if there are no registered devices to an account, probably when initilazing the querydata

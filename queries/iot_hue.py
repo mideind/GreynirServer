@@ -116,7 +116,8 @@ _COLORS: Dict[str, List[float]] = {
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = read_grammar_file(
-    "iot_hue", color_names=" | ".join(f"'{color}:lo'/fall" for color in _COLORS.keys())
+    "iot_hue",
+    color_names=" | ".join(f"'{color}:lo'/fall" for color in _COLORS.keys()),
 )
 
 
@@ -153,12 +154,9 @@ def QHueChangeColor(node: Node, params: ParamList, result: Result) -> None:
 def QHueChangeScene(node: Node, params: ParamList, result: Result) -> None:
     result.action = "set_scene"
     scene_name = result.get("scene_name", None)
+
     if scene_name is not None:
-        if "hue_obj" not in result:
-            result["hue_obj"] = {"on": True, "scene": scene_name}
-        else:
-            result["hue_obj"]["scene"] = scene_name
-            result["hue_obj"]["on"] = True
+        _upsert_hue_obj(result, {"on": True, "scene": scene_name})
 
 
 def QHueIncreaseBrightness(node: Node, params: ParamList, result: Result) -> None:
@@ -173,13 +171,11 @@ def QHueDecreaseBrightness(node: Node, params: ParamList, result: Result) -> Non
 
 def QHueCooler(node: Node, params: ParamList, result: Result) -> None:
     result.action = "decrease_colortemp"
-    result.changing_temp = True
     _upsert_hue_obj(result, {"ct_inc": -30000})
 
 
 def QHueWarmer(node: Node, params: ParamList, result: Result) -> None:
     result.action = "increase_colortemp"
-    result.changing_temp = True
     _upsert_hue_obj(result, {"ct_inc": 30000})
 
 
@@ -206,6 +202,14 @@ def QHueSceneName(node: Node, params: ParamList, result: Result) -> None:
 
 def QHueGroupName(node: Node, params: ParamList, result: Result) -> None:
     result["group_name"] = result._indefinite
+
+
+def QHueEverywhere(node: Node, params: ParamList, result: Result) -> None:
+    result["everywhere"] = True
+
+
+def QHueAllLights(node: Node, params: ParamList, result: Result) -> None:
+    result["everywhere"] = True
 
 
 def QHueLightName(node: Node, params: ParamList, result: Result) -> None:
@@ -254,6 +258,20 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
     )
 )
 
+_PROBABLY_LIGHT_NAME: FrozenSet[str] = frozenset(
+    (
+        "ljós",
+        "loftljós",
+        "gólfljós",
+        "veggljós",
+        "lampi",
+        "lampar",
+        "borðlampi",
+        "gólflampi",
+        "vegglampi",
+    )
+)
+
 
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called when sentence processing is complete"""
@@ -271,29 +289,44 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         return
 
     q.set_qtype(result.qtype)
-
-    # TODO: Caching?
-    cd = q.client_data("iot")
-    device_data = cast(Optional[_IoTDeviceData], cd.get("iot_lights")) if cd else None
-
-    bridge_ip: Optional[str] = None
-    username: Optional[str] = None
-    if device_data is not None:
-        # TODO: Error checking
-        bridge_ip = device_data["philips_hue"]["credentials"]["ip_address"]
-        username = device_data["philips_hue"]["credentials"]["username"]
-
-    if not device_data or not (bridge_ip and username):
-        q.set_answer(
-            {"answer": "Það vantar að tengja Philips Hue miðstöðina."},
-            "Það vantar að tengja Philips Hue miðstöðina.",
-            "Það vantar að tengja filips hjú miðstöðina.",
-        )
-        return
+    if "action" in result:
+        q.set_key(result.action)
 
     try:
-        # TODO: What if light and group is empty?
-        light_or_group_name = result.get("light_name", result.get("group_name", ""))
+        # TODO: Caching?
+        cd = q.client_data("iot")
+        device_data = (
+            cast(Optional[_IoTDeviceData], cd.get("iot_lights")) if cd else None
+        )
+
+        bridge_ip: Optional[str] = None
+        username: Optional[str] = None
+        if device_data is not None:
+            # TODO: Error checking
+            bridge_ip = device_data["philips_hue"]["credentials"]["ip_address"]
+            username = device_data["philips_hue"]["credentials"]["username"]
+
+        if not device_data or not (bridge_ip and username):
+            q.set_answer(
+                {"answer": "Það vantar að tengja Philips Hue miðstöðina."},
+                "Það vantar að tengja Philips Hue miðstöðina.",
+                "Það vantar að tengja filips hjú miðstöðina.",
+            )
+            return
+
+        light = result.get("light_name", "*")
+        if light == "ljós":
+            # Non-specific word for light, so we match all
+            light = "*"
+
+        group = result.get("group_name", "")
+        if result.get("everywhere"):
+            # Specifically asked for everywhere, match every group
+            group = "*"
+
+        # If group or scene name is more like the name of a light
+        if group in _PROBABLY_LIGHT_NAME:
+            light, group = group, light
 
         q.set_answer(
             {"answer": "Skal gert."},
@@ -302,10 +335,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         )
         js = (
             read_jsfile(str(Path("Libraries", "fuse.js")))
-            + f"var BRIDGE_IP = '{bridge_ip}';var USERNAME = '{username}';"
-            + read_jsfile(str(Path("Philips_Hue", "fuse_search.js")))
             + read_jsfile(str(Path("Philips_Hue", "set_lights.js")))
-            + f"return setLights('{light_or_group_name}', '{json.dumps(result.hue_obj)}');"
+            + f"return await setLights('{bridge_ip}','{username}','{light}','{group}','{json.dumps(result.hue_obj)}');"
         )
         q.set_command(js)
     except Exception as e:
