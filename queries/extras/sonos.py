@@ -139,14 +139,16 @@ class SonosClient:
         group_name: Optional[str] = None,
         radio_name: Optional[str] = None,
     ):
-        self._client_id = client_id
+        self._client_id: str = client_id
         self._device_data = device_data
-        self._group_name = group_name
-        self._radio_name = radio_name
-        self._encoded_credentials = read_api_key("SonosEncodedCredentials")
-        self._code = self._device_data["sonos"]["credentials"]["code"]
-        self._timestamp = self._device_data["sonos"]["credentials"]["timestamp"]
+        self._group_name: Optional[str] = group_name
+        self._radio_name: Optional[str] = radio_name
+        self._encoded_credentials: str = read_api_key("SonosEncodedCredentials")
+        self._code: str = self._device_data["sonos"]["credentials"]["code"]
+        self._timestamp: str = self._device_data["sonos"]["credentials"]["timestamp"]
 
+        self._access_token: str
+        self._refresh_token: str
         try:
             self._access_token = self._device_data["sonos"]["credentials"][
                 "access_token"
@@ -182,8 +184,10 @@ class SonosClient:
         sonos_dict: SonosDeviceData = {
             "sonos": {
                 "credentials": {
-                    "access_token": self._access_token,
+                    "code": self._code,
                     "timestamp": self._timestamp,
+                    "access_token": self._access_token,
+                    "refresh_token": self._refresh_token,
                 }
             }
         }
@@ -198,7 +202,7 @@ class SonosClient:
         headers = {"Authorization": f"Basic {self._encoded_credentials}"}
 
         response = post_to_json_api(url, headers=headers)
-
+        assert isinstance(response, dict) and "access_token" in response
         self._access_token = response["access_token"]
         self._timestamp = str(datetime.now())
 
@@ -381,7 +385,7 @@ class SonosClient:
                 radio_url = "http://netradio.ruv.is/rondo.mp3"
 
         url = f"https://api.ws.sonos.com/control/api/v1/playbackSessions/{session_id}/playbackSession/loadStreamUrl"
-        
+
         payload = json.dumps(
             {
                 "streamUrl": radio_url,

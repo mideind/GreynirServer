@@ -42,7 +42,7 @@ QIoTSpeakerPlayOrPauseVerb →
     QIoTSpeakerPlayVerb
     | QIoTSpeakerPauseVerb
 
-QIoTSpeakerPlayVerb → 'spila:so'_bh
+QIoTSpeakerPlayVerb → 'spila:so'_bh "áfram"?
 
 # "pása", as a verb, is not recognized by Árnastofnun's database, but is relatively common in casual speech.
 QIoTSpeakerPauseVerb →
@@ -86,6 +86,7 @@ QIoTSpeakerTurnOrOffOnRest →
 
 QIoTSpeakerPlayOrPauseRest →
     QIoTSpeakerMusicWord/þf QIoTSpeakerHvarWithSpeaker?
+    | "útvarpið" QIoTSpeakerHvarWithSpeaker?
     | QIoTSpeakerNewRadio/þf QIoTSpeakerHvarWithSpeaker?
     | QIoTSpeakerNewNextOrPrevious/þf QIoTSpeakerHvarWithSpeaker?
 

@@ -113,8 +113,8 @@ def QIoTSpeakerTurnOffVerb(node: Node, params: ParamList, result: Result) -> Non
     result.qkey = "turn_off"
 
 
-def QIoTSpeakerPlayVerb(node: Node, params: ParamList, result: Result) -> None:
-    result.qkey = "turn_on"
+# def QIoTSpeakerPlayVerb(node: Node, params: ParamList, result: Result) -> None:
+#     result.qkey = "turn_on"
 
 
 def QIoTSpeakerPauseVerb(node: Node, params: ParamList, result: Result) -> None:
@@ -293,7 +293,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     if "qkey" not in result:
         result.qkey = "turn_on"
-
+    print(result.qkey)
     qk: str = result.qkey
     if qk == "turn_on" and result.get("target") == "radio":
         qk = "radio"
