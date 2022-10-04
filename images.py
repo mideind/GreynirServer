@@ -314,7 +314,6 @@ def get_staticmap_image(
         return None
 
     url = STATICMAP_URL.format(zoom, width, height, key, latitude, longitude)
-    # TODO: Use urllib instead of requests here
     try:
         r = requests.get(url, stream=True)
     except Exception as e:

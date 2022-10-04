@@ -382,6 +382,7 @@ def process_articles(
 
     t0 = time.time()
 
+    proc = None
     try:
         # Run all processors in the processors directory, or the single processor given
         proc = Processor(
@@ -391,7 +392,8 @@ def process_articles(
         )
         proc.go(from_date, limit=limit, force=force, update=update, title=title)
     finally:
-        del proc
+        if proc is not None:
+            del proc
         Processor.cleanup()
 
     t1 = time.time()
@@ -404,11 +406,13 @@ def process_articles(
 
 def process_article(url: str, processor: Optional[str] = None) -> None:
     """Process a single article, eventually with a single processor"""
+    proc = None
     try:
         proc = Processor(processor_directory="processors", single_processor=processor)
         proc.go_single(url)
     finally:
-        del proc
+        if proc is not None:
+            del proc
         Processor.cleanup()
 
 
