@@ -1,6 +1,7 @@
 # Grammar for the arithmetic query module
 
 Query →
+    # Reiknidæmi
     QArithmetic
     # 'Hvaða tala er pí'
     | QArPi

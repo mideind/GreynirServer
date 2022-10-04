@@ -140,7 +140,7 @@ def icemap_markers(days=_TOP_LOC_PERIOD):
             .filter(Location.latitude != None)
             .filter(Location.longitude != None)
         )
-        markers = list(set((l.name, l.latitude, l.longitude) for l in q.all()))
+        markers = list(set((i.name, i.latitude, i.longitude) for i in q.all()))
 
         return markers
 
