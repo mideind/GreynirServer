@@ -30,8 +30,10 @@
 
 from datetime import datetime, timedelta
 
+from query import Query
 
-def handle_plain_text(q) -> bool:
+
+def handle_plain_text(q: Query) -> bool:
     """Handle a plain text query, contained in the q parameter
     which is an instance of the query.Query class.
     Returns True if the query was handled, and in that case

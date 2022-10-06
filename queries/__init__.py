@@ -60,6 +60,7 @@ from util import read_api_key
 
 # Type definitions
 AnswerTuple = Tuple[Dict[str, str], str, str]
+JsonResponse = Union[None, List[Any], Dict[str, Any]]
 
 
 MONTH_ABBREV_ORDERED: Sequence[str] = (
@@ -426,9 +427,7 @@ def gen_answer(a: str) -> AnswerTuple:
     return dict(answer=a), a, a
 
 
-def query_json_api(
-    url: str, headers: Optional[Dict[str, str]] = None
-) -> Union[None, List[Any], Dict[str, Any]]:
+def query_json_api(url: str, headers: Optional[Dict[str, str]] = None) -> JsonResponse:
     """Request the URL, expecting a JSON response which is
     parsed and returned as a Python data structure."""
 
@@ -672,3 +671,35 @@ def read_jsfile(filename: str) -> str:
     fpath = os.path.join(basepath, "js", filename)
     with open(fpath, mode="r") as file:
         return cast(str, jsmin(file.read()))
+
+
+def read_grammar_file(filename: str, **format_kwargs: str) -> str:
+    """
+    Read and return a grammar file from the 'grammars' folder.
+    Optionally specify keyword arguments for str.format() call
+    """
+    basepath, _ = os.path.split(os.path.realpath(__file__))
+    fpath = os.path.join(basepath, "grammars", filename + ".grammar")
+
+    grammar = ""
+    with open(fpath, mode="r") as file:
+        grammar = file.read()
+    if len(format_kwargs) > 0:
+        grammar = grammar.format(**format_kwargs)
+    return grammar
+
+
+def join_grammar_files(folder: str) -> str:
+    """
+    Given a folder name, return a string containing
+    the contents of all '.grammar' files within the folder
+    """
+    basepath, _ = os.path.split(os.path.realpath(__file__))
+    fpath = os.path.join(basepath, folder)
+
+    grammar: List[str] = []
+    for fname in os.listdir(fpath):
+        if fname.endswith(".grammar"):
+            with open(os.path.join(fpath, fname), mode="r") as file:
+                grammar.append(file.read())
+    return "\n".join(grammar)

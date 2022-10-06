@@ -1,0 +1,191 @@
+# Grammar for the currency query module
+
+Query →
+    QCurrency
+
+QCurrency →
+    QCurrencyQuery '?'?
+
+$score(+35) QCurrency
+
+QCurrencyQuery →
+    # "Hver er gengisvísitalan?"
+    QCurSpecificPrefix? QCurCurrencyIndex_nf QCurNow?
+    # "Hvert/hvað/hvernig er gengi X?"
+    | QCurAnyPrefix? QCurGeneralRate QCurNow?
+    # "Hvað kostar X?"
+    | QCurCostPrefix QCurGeneralCost "mikið"? QCurInKronas? QCurNow?
+
+    # "Hvert/hvað/hvernig er gengi X gagnvart Y?"
+    | QCurAnyPrefix? QCurExchangeRate QCurNow?
+
+    # "Hvað eru NUM X margir/margar/mörg Y?"
+    | QCurGenericPrefix? QCurAmountConversion
+
+    # "Hvað fæ ég marga/margar/mörg X fyrir NUM Y?"
+    # |
+
+QCurGenericPrefix → "hvað" "er" | "hvað" "eru" | "hvernig" "er"
+QCurSpecificPrefix → "hvert" "er" | "hvernig" "er" | "hver" "er"
+QCurAnyPrefix → QCurGenericPrefix | QCurSpecificPrefix
+QCurCostPrefix → "hvað" "kostar" | "hversu" "mikið" "kostar" | "hve" "mikið" "kostar"
+QCurInKronas → "í" "krónum"
+
+QCurNow → "núna" | "nú" | "í" "augnablikinu" | "eins" "og" "stendur" | "í" "dag" # | 'í_dag'
+
+# Supported currencies
+# Note: All child productions of QCurUnit must have valid
+# ISO currency codes as the last three letters in their name
+QCurUnit/fall →
+    QCurISK/fall | QCurUSD/fall | QCurEUR/fall | QCurGBP/fall
+    | QCurJPY/fall | QCurRUB/fall | QCurCHF/fall | QCurCAD/fall
+    | QCurZAR/fall | QCurPLN/fall | QCurRUB/fall | QCurCNY/fall
+    | QCurNOK/fall | QCurDKK/fall | QCurSEK/fall
+
+QCurISK/fall →
+    'íslenskur:lo'_kvk/fall? 'króna:kvk'/fall
+    | currency_isk/fall
+
+QCurNOK/fall →
+    'norskur:lo'_kvk/fall 'króna:kvk'/fall
+    | currency_nok/fall
+
+QCurDKK/fall →
+    'danskur:lo'_kvk/fall 'króna:kvk'/fall
+    | currency_dkk/fall
+
+QCurSEK/fall →
+    'sænskur:lo'_kvk/fall 'króna:kvk'/fall
+    | currency_sek/fall
+
+QCurUSD/fall →
+    'bandaríkjadalur:kk'/fall
+    | 'dalur:kk'/fall
+    | 'bandarískur:lo'_kk/fall? 'dollari:kk'/fall
+    | currency_usd/fall
+    | "dollar" # Common mistake
+    | "bandaríkjadollar" # Common mistake
+
+QCurUSD_þgf →
+    "bandaríkjadollara" | "bandaríkjadollaranum" | "bandaríkjadollarnum"
+
+QCurUSD_ef →
+    "bandaríkjadollara"
+    | "bandaríkjadollarans"
+    | "bandaríkjadollars"
+    | "bandarísks"? "dollars"
+
+QCurEUR/fall →
+    'evra:kvk'/fall
+    | currency_eur/fall
+
+QCurGBP/fall →
+    'breskur:lo'_hk/fall? 'pund:hk'/fall
+    | 'breskur:lo'_sb_hk/fall? 'pund:hk'_gr/fall
+    | 'sterlingspund:hk'/fall
+    | currency_gbp/fall
+
+QCurJPY/fall →
+    'japanskur:lo'_hk/fall? 'jen:hk'/fall
+    | currency_jpy/fall
+
+QCurCHF/fall →
+    'svissneskur:lo'_kk/fall? 'franki:kk'/fall
+    | currency_chf/fall
+
+QCurCAD/fall →
+    | 'kanadískur:lo'_kk/fall 'dollari:kk'/fall
+    | 'kanadadalur:kk'_kk/fall
+    | 'kanadadollari:kk'_kk/fall
+    | "kanadadollar" # Common mistake
+    | currency_cad/fall
+
+QCurCAD_nf →
+    "kanadadalur" | "kanadadalurinn"
+    | "kanadadollari" | "kanadadollarinn"
+
+QCurCAD_þgf →
+    "kanadadal" | "kanadadalnum"
+    | "kanadadollara" | "kanadadollaranum"
+
+QCurCAD_ef →
+    "kanadadals" | "kanadadalsins"
+    | "kanadadollars" | "kanadísks" "dollars"
+    | "kanadadollara" | "kanadadollarans"
+
+QCurZAR/fall →
+    'suðurafrískur:lo'_hk/fall? 'rand:hk'/fall
+    | currency_zar/fall
+
+QCurPLN/fall →
+    'pólskur:lo'_hk/fall? 'slot:hk'/fall
+    | "zloty"
+    | "slotí"
+    | "slot" "í"  # Algeng villa í raddgreiningu
+    | currency_pln/fall
+
+QCurPLN_ef →
+    'pólskur:lo'_sb_hk_ef? "slotís"
+    | 'pólskur:lo'_vb_hk_ef? "slotísins"
+
+QCurRUB/fall →
+    'rússneskur:lo'_kvk/fall? 'rúbla:kvk'/fall
+    | currency_rub/fall
+
+QCurCNY/fall →
+    'kínverskur:lo'_hk/fall? 'júan:hk'/fall
+    | "yuan"
+    | "júan"
+    | currency_cny/fall
+
+QCurNumberWord →
+    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
+    # töl is an undeclinable number word ('sautján')
+    # tala is a number ('17')
+    to | töl | tala
+
+QCurCurrencyIndex/fall →
+    'gengisvísitala:kvk'_et/fall QCurISK_ef?
+
+QCurVisAVis → "gagnvart" | "á" "móti" | "gegn"
+
+QCurXch → "gengi" | "gengið"
+
+QCurExchangeRate →
+    QCurXch QCurUnit_ef QCurVisAVis QCurUnit_þgf
+    | "gengið" "á" QCurUnit_þgf QCurVisAVis QCurUnit_þgf
+
+QCurGeneralRate →
+    QCurXch QCurUnit_ef
+    | "gengið" "á" QCurUnit_þgf
+
+QCurGeneralCost →
+    QCurUnit_nf
+
+QCurConvertAmount →
+    QCurNumberWord QCurUnit_nf
+    | amount
+
+QCurMany →
+    "margir" | "margar" | "mörg"
+
+QCurConvertTo/fall →
+    QCurUnit/fall
+
+$tag(keep) QCurConvertTo/fall # Keep this from being optimized away
+
+QCurMuch →
+    "mikið" QCurMuchIn?
+
+QCurMuchIn →
+    "í" QCurConvertTo_þgf
+
+QCurAmountConversion →
+    # Hvað eru 10 dollarar margar krónur?
+    QCurConvertAmount QCurMany QCurConvertTo_nf
+    # Hvað eru 10 dollarar í íslenskum krónum?
+    | QCurConvertAmount QCurMuchIn
+    # Hvað eru 10 dollarar mikið [í evrum]?
+    | QCurConvertAmount QCurMuch
+    # Hvað fæ ég margar krónur fyrir 10 dollara?
+    # | "hvað" "fæ" "ég" QCurMany "krónur" "fyrir"

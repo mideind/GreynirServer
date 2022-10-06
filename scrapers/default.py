@@ -21,20 +21,21 @@
 
     This module implements a set of default scraping helpers for
     a number of Icelandic websites. The particular scraping module and
-    class to be used for each root website is selected in the roots
+    class to be used for each root website is specified in the roots
     table of the scraper database.
 
 """
 
+from typing import Any, Iterable, Match, Optional, Sequence, Union, List
+
 import re
 import logging
-from typing import Any, Iterable, Match, Optional, Sequence, Union
 import urllib.parse as urlparse
 import requests
 from datetime import datetime
 
 from bs4 import BeautifulSoup
-from bs4.element import Tag, NavigableString
+from bs4.element import Tag, NavigableString, PageElement
 
 MODULE_NAME = __name__
 
@@ -118,7 +119,7 @@ class ScrapeHelper:
         """Return True if this URL should not be scraped"""
         return False  # Scrape all URLs by default
 
-    def skip_rss_entry(self, entry):
+    def skip_rss_entry(self, entry) -> bool:
         """Return True if URL in RSS feed entry should be skipped"""
         return False
 
@@ -145,11 +146,11 @@ class ScrapeHelper:
         )
 
     @staticmethod
-    def _get_body(soup: BeautifulSoup):
+    def _get_body(soup: BeautifulSoup) -> Tag:
         """Can be overridden in subclasses in special situations"""
         return soup.html.body
 
-    def get_content(self, soup: BeautifulSoup):
+    def get_content(self, soup: BeautifulSoup) -> Optional[Tag]:
         """Find the actual article content within an HTML soup
         and return its parent node"""
         if not soup or not soup.html or not soup.html.body:
@@ -190,7 +191,7 @@ class ScrapeHelper:
         return self._author
 
     @property
-    def feeds(self):
+    def feeds(self) -> List[str]:
         return self._feeds
 
     @property
@@ -254,7 +255,7 @@ class ScrapeHelper:
     @staticmethod
     def meta_property(
         soup: BeautifulSoup, property_name: str, prop_attr: str = "property"
-    ):
+    ) -> Optional[str]:
         try:
             f = lambda tag: ScrapeHelper.meta_property_filter(
                 tag, property_name, prop_attr
@@ -283,7 +284,9 @@ class ScrapeHelper:
         return soup.find(lambda t: ScrapeHelper.general_filter(t, tag, prop, val))
 
     @staticmethod
-    def tag_class(soup: BeautifulSoup, tag: Tag, cls: Union[str, Iterable[str]]):
+    def tag_class(
+        soup: BeautifulSoup, tag: Tag, cls: Union[str, Iterable[str]]
+    ) -> Union[Tag, NavigableString, None]:
         """Find a tag of a given type with a particular class"""
         return ScrapeHelper.tag_prop_val(soup, tag, "class", cls)
 
@@ -292,15 +295,16 @@ class ScrapeHelper:
         """Find a div with a particular class/set of classes within the
         HTML soup, recursively within its parent if more than one
         div spec is given"""
+        if not soup:
+            return None
+        s = soup
         for cls in argv:
-            if not soup:
-                return None
             f = lambda tag: ScrapeHelper.div_class_filter(tag, cls)
-            soup = soup.find(f)
-        return soup
+            s = soup.find(f)
+        return s
 
     @staticmethod
-    def nested_tag(soup: BeautifulSoup, *argv: Any):
+    def nested_tag(soup: BeautifulSoup, *argv: Any) -> Optional[BeautifulSoup]:
         """Find a tag within a nested hierarchy of tags"""
         for next_tag in argv:
             if not soup:
@@ -328,7 +332,7 @@ class ScrapeHelper:
             s = ScrapeHelper.tag_prop_val(soup, tag, prop, val)
             if s is None:
                 break
-            s.decompose()
+            s.extract()
 
     @staticmethod
     def del_div_class(soup: BeautifulSoup, *argv: Any):
@@ -339,7 +343,7 @@ class ScrapeHelper:
             s = ScrapeHelper.div_class(soup, *argv)
             if s is None:
                 break
-            s.decompose()
+            s.extract()
 
     @staticmethod
     def del_tag(soup: BeautifulSoup, tag_name: str):
@@ -350,7 +354,7 @@ class ScrapeHelper:
             s = soup.find(lambda tag: tag.name == tag_name)
             if s is None:
                 break
-            s.decompose()
+            s.extract()
 
     @staticmethod
     def del_social_embeds(soup: BeautifulSoup):
@@ -433,7 +437,7 @@ class KjarninnScraper(ScrapeHelper):
         # Delete div.container.title-container tags from the content
         title_cont = ScrapeHelper.div_class(article, ("container", "title-container"))
         if title_cont is not None:
-            title_cont.decompose()
+            title_cont.extract()
 
         # Delete div.container.quote-container tags from the content
         ScrapeHelper.del_div_class(article, ("container", "quote-container"))
@@ -854,7 +858,7 @@ class VisirScraper(ScrapeHelper):
 
         # Author
         author = ScrapeHelper.tag_prop_val(soup, "a", "itemprop", "author")
-        if author:
+        if author and isinstance(author, Tag):
             author = author.string
         else:
             # Check for an author name at the start of the article
@@ -878,11 +882,12 @@ class VisirScraper(ScrapeHelper):
                             pass
         if not author:
             author = "Ritstjórn visir.is"
-        else:
+        elif isinstance(author, str):
             author = author.strip()
             if author.endswith(" skrifar"):
                 # 'Jón Jónsson skrifar'
                 author = author[0:-8]
+
         metadata.heading = heading.strip()
         metadata.author = author
         metadata.timestamp = timestamp
@@ -988,11 +993,11 @@ class EyjanScraper(ScrapeHelper):
         # Remove the dateline from the content
         soup = ScrapeHelper.tag_class(article, "span", "date")
         if soup is not None:
-            soup.decompose()
+            soup.extract()
         # Remove the heading
         soup = ScrapeHelper.tag_class(article, "h2", "headline_article")
         if soup is not None:
-            soup.decompose()
+            soup.extract()
         # Remove picture caption, if any
         soup = ScrapeHelper.div_class(article, "wp-caption")
         if soup is not None:
@@ -1025,15 +1030,15 @@ class StjornlagaradScraper(ScrapeHelper):
         # Delete div#header
         soup = ScrapeHelper.div_id(soup_body, "header")
         if soup is not None:
-            soup.decompose()
+            soup.extract()
         # Delete div#samskiptasattmali
         soup = ScrapeHelper.div_id(soup_body, "samskiptasattmali")
         if soup is not None:
-            soup.decompose()
+            soup.extract()
         # Delete div#mjog-stor-footer
         soup = ScrapeHelper.div_id(soup_body, "mjog-stor-footer")
         if soup is not None:
-            soup.decompose()
+            soup.extract()
         return soup_body
 
 
@@ -1154,9 +1159,10 @@ class KvennabladidScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         article = ScrapeHelper.div_class(soup_body, "blog-content")
-        # Delete all captions
-        ScrapeHelper.del_div_class(article, "wp-caption")
-        ScrapeHelper.del_tag_prop_val(article, "p", "class", "wp-caption-text")
+        if article:
+            # Delete all captions
+            ScrapeHelper.del_div_class(article, "wp-caption")
+            ScrapeHelper.del_tag_prop_val(article, "p", "class", "wp-caption-text")
         return article
 
 
@@ -1224,16 +1230,16 @@ class StundinScraper(ScrapeHelper):
         timestamp = datetime.utcnow()
         try:
             time_el = soup.find("time", {"class": "datetime"})
-            ts = time_el["datetime"]
-
-            # Example: "2019-01-18 09:55"
-            timestamp = datetime(
-                year=int(ts[0:4]),
-                month=int(ts[5:7]),
-                day=int(ts[8:10]),
-                hour=int(ts[11:13]),
-                minute=int(ts[14:16]),
-            )
+            ts: Optional[str] = time_el["datetime"]  # type: ignore
+            if ts:
+                # Example: "2019-01-18 09:55"
+                timestamp = datetime(
+                    year=int(ts[0:4]),
+                    month=int(ts[5:7]),
+                    day=int(ts[8:10]),
+                    hour=int(ts[11:13]),
+                    minute=int(ts[14:16]),
+                )
         except Exception as e:
             logging.warning(
                 "Exception obtaining date of stundin.is article: {0}".format(e)
@@ -1248,13 +1254,13 @@ class StundinScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         article = ScrapeHelper.div_class(soup_body, "article__body__text")
-
-        # Delete these elements
-        ScrapeHelper.del_tag(article, "figure")
-        ScrapeHelper.del_tag(article, "aside")
-        ScrapeHelper.del_tag(article, "h2")
-        ScrapeHelper.del_tag(article, "h3")
-        ScrapeHelper.del_div_class(article, "inline-wrap")
+        if article:
+            # Delete these elements
+            ScrapeHelper.del_tag(article, "figure")
+            ScrapeHelper.del_tag(article, "aside")
+            ScrapeHelper.del_tag(article, "h2")
+            ScrapeHelper.del_tag(article, "h3")
+            ScrapeHelper.del_div_class(article, "inline-wrap")
 
         return article
 
@@ -1286,8 +1292,8 @@ class HringbrautScraper(ScrapeHelper):
 
         if date_span:
             # Example: "17. janúar 2019 - 11:58"
-            datestr = date_span.get_text().rstrip()
             try:
+                datestr = date_span.get_text().rstrip()  # type: ignore
                 (mday, m, y, _, hm) = datestr.split()
                 (hour, mins) = hm.split(":")
                 mday = mday.replace(".", "")
@@ -1468,7 +1474,7 @@ class FrettabladidScraper(ScrapeHelper):
         span = content.find("span", {"class": "article-dropcap"})
         if span:
             firstchar = span.get_text()
-            span.decompose()
+            span.extract()
 
         for div in content.find_all("div", {"class": "read-more-block"}):
             div.decompose()
@@ -1534,7 +1540,7 @@ class HagstofanScraper(ScrapeHelper):
 
         if date_span:
             # Example: "22. mars 2019"
-            datestr = date_span.get_text().rstrip()
+            datestr = date_span.get_text().rstrip()  # type: ignore
             try:
                 (mday, m, y) = datestr.split()
                 mday = mday.replace(".", "")
@@ -1612,7 +1618,7 @@ class DVScraper(ScrapeHelper):
         try:
             info_div = soup.find("div", {"class": "grein_upplysingar"})
             if info_div:
-                author = info_div.find("strong").get_text()
+                author = info_div.find("strong").get_text()  # type: ignore
         except Exception as e:
             logging.warning(
                 "Exception obtaining author of dv.is article: {0}".format(e)
@@ -1811,9 +1817,9 @@ class MannlifScraper(ScrapeHelper):
         try:
             # Extract date (no timestamp available) from pubdate tag
             time_tag = soup.find("time", {"class": "entry-date"})
-            ts = None
+            ts: Optional[str] = None
             if time_tag:
-                ts = time_tag["datetime"]
+                ts = time_tag["datetime"]  # type: ignore
             if ts:
                 timestamp = datetime(
                     year=int(ts[0:4]),
@@ -1840,8 +1846,9 @@ class MannlifScraper(ScrapeHelper):
     def _get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "tdb_single_content")
-        ScrapeHelper.del_div_class(content, "td-a-ad")
-        ScrapeHelper.del_tag(content, "figure")
+        if content:
+            ScrapeHelper.del_div_class(content, "td-a-ad")
+            ScrapeHelper.del_tag(content, "figure")
         return content
 
 
@@ -1882,7 +1889,7 @@ class VisindavefurScraper(ScrapeHelper):
             pubdate_tag = soup.find("div", {"class": "publish-date"})
             dtxt = None
             if pubdate_tag:
-                d = list(pubdate_tag.find_all("p"))
+                d = list(pubdate_tag.find_all("p"))  # type: ignore
                 if d:
                     dtxt = d[0].get_text()
             if dtxt:
@@ -2046,30 +2053,31 @@ class VidskiptabladidScraper(ScrapeHelper):
         try:
             datestr = None
             div = soup.find("div", {"class": "article-pubdate"})
-            cat = div.find("span", {"class": "category"})
-            if cat:
-                cat.decompose()
-            auth = div.find("span", {"class": "float-end"})
-            if auth:
-                auth.decompose()
+            if div:
+                cat = div.find("span", {"class": "category"})
+                if isinstance(cat, Tag):
+                    cat.decompose()
+                auth = div.find("span", {"class": "float-end"})
+                if isinstance(auth, Tag):
+                    auth.decompose()
 
-            datestr = div.text.strip()
+                datestr = div.text.strip()
 
-            if datestr:
-                # Parse date
-                # Example: "17. janúar 2019 14:30"
-                (mday, m, y, hm) = datestr.split()
-                (hour, mins) = hm.split(":")
-                mday = mday.replace(".", "")
-                month = MONTHS.index(m) + 1
+                if datestr:
+                    # Parse date
+                    # Example: "17. janúar 2019 14:30"
+                    (mday, m, y, hm) = datestr.split()
+                    (hour, mins) = hm.split(":")
+                    mday = mday.replace(".", "")
+                    month = MONTHS.index(m) + 1
 
-                timestamp = datetime(
-                    year=int(y),
-                    month=int(month),
-                    day=int(mday),
-                    hour=int(hour),
-                    minute=int(mins),
-                )
+                    timestamp = datetime(
+                        year=int(y),
+                        month=int(month),
+                        day=int(mday),
+                        hour=int(hour),
+                        minute=int(mins),
+                    )
         except Exception as e:
             logging.warning(f"Exception obtaining date of vb.is article: {e}")
 
@@ -2084,7 +2092,8 @@ class VidskiptabladidScraper(ScrapeHelper):
         content = ScrapeHelper.div_class(soup_body, "article-body")
         if not content:
             content = ScrapeHelper.div_class(soup_body, "entry_content_text")
-        lock = ScrapeHelper.div_class(content, "article-lock")
-        if lock:
-            lock.decompose()
+        if content:
+            lock = ScrapeHelper.div_class(content, "article-lock")
+            if lock:
+                lock.decompose()
         return content

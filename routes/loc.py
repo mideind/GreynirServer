@@ -140,7 +140,7 @@ def icemap_markers(days=_TOP_LOC_PERIOD):
             .filter(Location.latitude != None)
             .filter(Location.longitude != None)
         )
-        markers = list(set((l.name, l.latitude, l.longitude) for l in q.all()))
+        markers = list(set((i.name, i.latitude, i.longitude) for i in q.all()))
 
         return markers
 
@@ -167,7 +167,6 @@ def world_map_data(days=_TOP_LOC_PERIOD):
 
 @routes.route("/locations", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="locations", query_string=True)
-@max_age(seconds=30 * 60)
 def locations():
     """Render locations page."""
     kind = request.args.get("kind")
@@ -231,7 +230,7 @@ def staticmap():
     imgdata = get_staticmap_image(lat, lon, zoom=zoom)
     if imgdata:
         fn = "{0}_{1}_{2}.png".format(lat, lon, zoom)
-        return send_file(imgdata, attachment_filename=fn, mimetype="image/png")
+        return send_file(imgdata, download_name=fn, mimetype="image/png")
 
     return abort(404)
 

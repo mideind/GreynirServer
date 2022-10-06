@@ -42,22 +42,20 @@ from typing import (
 import time
 
 from sqlalchemy.orm.session import Session
-from tokenizer.definitions import PersonNameList, PersonNameTuple
+from tokenizer.definitions import PersonNameList, PersonNameTuple, BIN_Tuple
 
 from nertokenizer import recognize_entities
 
 from reynir import TOK, Tok, mark_paragraphs, tokenize
+from reynir.bintokenizer import CanonicalTokenDict, TokenDict
 from reynir.binparser import (
     BIN_Terminal,
-    BIN_Tuple,
-    CanonicalTokenDict,
     augment_terminal,
     describe_token,
-    TokenDict,
 )
 from reynir.fastparser import Fast_Parser, Node
 from reynir.incparser import IncrementalParser
-from reynir.simpletree import Annotator, SimpleTreeNode, Simplifier
+from reynir.simpletree import Annotator, SimpleTreeNode, Simplifier, NonterminalMap, TerminalMap, IdMap
 
 if TYPE_CHECKING:
     from reynir.simpletree import TerminalMap
@@ -150,7 +148,7 @@ _TEST_TERMINAL_MAP = {
     "gr": "DET",
 }
 
-_TEST_ID_MAP = {  # Til að prófa í parse_text_to_bracket_form()
+_TEST_ID_MAP: IdMap = {  # Til að prófa í parse_text_to_bracket_form()
     "M": dict(name="Málsgrein"),  # Breytti úr P til að forðast rugling
     "S": dict(name="Setning", subject_to={"S", "S-EXPLAIN"}),
     "S-COND": dict(name="Skilyrði", overrides="S"),  # Condition
@@ -331,9 +329,9 @@ class TreeUtility:
     def _simplify_tree(
         tokens: List[Tok],
         tree: Optional[Node],
-        nt_map=None,
-        id_map=None,
-        terminal_map=None,
+        nt_map: Optional[NonterminalMap]=None,
+        id_map: Optional[IdMap]=None,
+        terminal_map: Optional[Mapping[str, str]]=None,
     ) -> Optional[CanonicalTokenDict]:
         """Return a simplified parse tree for a sentence, including POS-tagged,
         normalized terminal leaves"""
@@ -507,7 +505,7 @@ class TreeUtility:
                 # Return an empty string for sentences that don't parse
                 return ""
             # Successfully parsed: obtain a simplified tree for the sentence
-            result = []
+            result: List[str] = []
 
             def push(node: Optional[CanonicalTokenDict]) -> None:
                 """Append information about a node to the result list"""
@@ -588,8 +586,8 @@ class TreeUtility:
             or any("err" in t for t in pgs[0][0])
         ):
             # The first sentence didn't parse: let's not beat around the bush with that fact
-            return (None, None, stats)
+            return None, None, stats
 
         # Return the simplified tree, full tree and stats
         assert full_tree is not None
-        return (pgs[0][0], full_tree, stats)
+        return pgs[0][0], full_tree, stats

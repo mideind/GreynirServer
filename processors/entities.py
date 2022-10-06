@@ -39,7 +39,7 @@ from db.models import Entity
 from tokenizer import Abbreviations
 
 from query import QueryStateDict
-from tree import Result
+from tree import Result, TreeStateDict
 
 
 MODULE_NAME = __name__
@@ -380,7 +380,7 @@ ALLOWED_PARTS = frozenset(
 )
 
 
-def article_begin(state):
+def article_begin(state: TreeStateDict) -> None:
     """Called at the beginning of article processing"""
     session = state["session"]  # Database session
     url = state["url"]  # URL of the article being processed
@@ -388,10 +388,11 @@ def article_begin(state):
     # pylint: disable=no-member
     session.execute(Entity.table().delete().where(Entity.article_url == url))
     # Create a name mapping dict for the article
-    state["names"] = dict()  # Last name -> full name
+    # Last name -> full name
+    state["names"] = dict()  # type: ignore
 
 
-def article_end(state):
+def article_end(state: TreeStateDict) -> None:
     """Called at the end of article processing"""
     pass
 

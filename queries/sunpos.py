@@ -35,6 +35,7 @@ from queries import (
     AnswerTuple,
     LatLonTuple,
     MONTH_ABBREV_ORDERED,
+    read_grammar_file,
     sing_or_plur,
     gen_answer,
 )
@@ -101,119 +102,7 @@ def help_text(lemma: str) -> str:
 
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QSunQuery '?'?
-
-QSunQuery →
-    # Hvenær er birting    í Reykjavík á morgun
-    # Klukkan hvað var myrkur á Norðfirði í gær
-    QSunWhen QSunPositions QSunPlaceAndTime?
-    | QSunSunheight QSunPlaceAndTime?
-
-QSunPlaceAndTime →
-    QSunDate QSunLocation?
-    > QSunLocation QSunDate
-    > QSunLocation
-
-QSunWhen →
-    "hvenær" | "klukkan" "hvað"
-
-QSunIsWillWas →
-    'vera' | 'verða'
-
-
-QSunSunheight →
-    "hver" QSunIsWillWas QSunSólarhæð
-
-QSunSólarhæð →
-    'sólarhæð'
-    | "hæð" 'sól'
-    | "hæð" 'Sól'
-    | 'Hæð' 'Sól'
-
-QSunPositions →
-    QSunMiðnætti
-    | QSunDögun
-    | QSunBirting
-    | QSunSólris
-    | QSunHádegi
-    | QSunSólarlag
-    | QSunMyrkur
-    | QSunDagsetur
-
-QSunMiðnætti →
-    QSunIsWillWas "miðnætti"
-
-QSunDögun →
-    QSunIsWillWas "dögun"
-
-QSunBirting →
-    QSunIsWillWas "birting"
-    | "mun" "birta"
-
-QSunSólris →
-    'rísa' "sólin"
-    | "mun" "sólin" "rísa"
-    | QSunIsWillWas "sólarupprás"
-    | "kemur" "sólin" "upp"
-    | "kom" "sólin" "upp"
-    | "fór" "sólin" "upp"
-    | "fer" "sólin" "upp"
-
-QSunHádegi →
-    QSunIsWillWas "hádegi"
-
-QSunSólarlag →
-    "sest" "sólin"
-    | "settist" "sólin"
-    | "mun" "sólin" "setjast"
-    | "fer" "sólin" "niður"
-    | "fór" "sólin" "niður"
-    | QSunIsWillWas 'sólsetur'
-    | QSunIsWillWas "sólarlag"
-
-QSunMyrkur →
-    QSunIsWillWas "myrkur"
-
-QSunDagsetur →
-    QSunIsWillWas "dagsetur"
-
-
-QSunDate →
-    QSunToday
-    | QSunYesterday
-    | QSunTomorrow
-
-QSunToday →
-    "í" "dag" | "í_kvöld" | "í_morgun" | "í" "nótt" | 'Í' 'Dag'
-
-QSunYesterday →
-    "í_gær"
-
-QSunTomorrow →
-    "á_morgun"
-
-
-QSunLocation →
-    QSunCapitalRegion
-    | QSunInArbitraryLocation
-
-QSunCapitalRegion →
-    "á" "höfuðborgarsvæðinu" | "fyrir" "höfuðborgarsvæðið"
-    | "í" "reykjavík" | "fyrir" "reykjavík"
-    | "í" "höfuðborginni" | "fyrir" "höfuðborgina"
-    | "á" "reykjavíkursvæðinu" | "fyrir" "reykjavíkursvæðið"
-    | "í" "borginni" | "fyrir" "borgina"
-
-QSunInArbitraryLocation →
-    fs_þgf QSunArbitraryLocation
-
-QSunArbitraryLocation →
-    Nl_þgf
-
-"""
+GRAMMAR = read_grammar_file("sunpos")
 
 
 class _SOLAR_POSITIONS:
@@ -541,7 +430,7 @@ def _answer_city_solar_data(
             is_will_was = "var"
 
         degrees = cast(Union[int, float], data[city][closest_date][sun_pos])
-        answer = f"Sólarhæð um hádegi {when} {is_will_was} um {sing_or_plur(degrees, 'gráða', 'gráður')}."
+        answer = f"Sólarhæð um hádegi {when} {is_will_was} um {sing_or_plur(float(degrees), 'gráða', 'gráður')}."
 
     else:
         time: Optional[datetime.time] = cast(
@@ -594,7 +483,12 @@ def _answer_city_solar_data(
     # Convert date ordinals to text for voice
     voice = numbers_to_ordinal(answer, case="þf", gender="kk")
     # Convert degrees to text for voice when asking about height of sun
-    voice = floats_to_text(voice, gender="kvk")
+    voice = floats_to_text(
+        voice,
+        gender="kvk",
+        regex=r"(?<= )(\d?\d?\d\.)*\d+(,\d+)?(?= )",
+        comma_null=False,
+    )
     return {"answer": answer, "voice": voice}, answer, voice
 
 

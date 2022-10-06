@@ -1,0 +1,34 @@
+# Grammar for the opinion query module
+
+Query →
+    QOpinion
+
+QOpinion →
+    QOpinionQuery '?'?
+
+QOpinionQuery →
+    "hvað" "finnst" "þér" "eiginlega"? "um" QOpinionSubject_þf
+    | "hvað" "þykir" "þér" "eiginlega"? "um" QOpinionSubject_þf
+    | "hvaða" "skoðun" QOpinionWhichDoYouHave "eiginlega"? "á" QOpinionSubject_þgf
+    | "hver" "er" "skoðun" "þín" "á" QOpinionSubject_þgf
+    | "hvaða" "skoðanir" QOpinionWhichDoYouHave? "eiginlega"? "á" QOpinionSubject_þgf
+    | "hvert" "er" "álit" "þitt" "á" QOpinionSubject_þgf
+    | "hvaða" "álit" QOpinionWhichDoYouHave? "eiginlega"? "á" QOpinionSubject_þgf
+    | QOpinionAreYou QOpinionEmotions QOpinionDueTo QOpinionSubject_þgf
+
+QOpinionSubject/fall →
+    Nl/fall
+
+QOpinionAreYou →
+    "ertu" | "ert" "þú"
+
+QOpinionWhichDoYouHave →
+    "hefurðu" | "hefur" "þú" | "ertu" "með" | "ertu" "þú" "með"
+
+QOpinionEmotions →
+    "reið" | "bitur" | "í" "uppnámi" | "brjáluð" | "vonsvikin"
+
+QOpinionDueTo →
+    "út" "af" | "yfir"
+
+$tag(keep) QOpinionSubject/fall

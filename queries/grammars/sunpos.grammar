@@ -1,0 +1,111 @@
+# Grammar for the sunpos query module
+
+Query →
+    QSunQuery '?'?
+
+QSunQuery →
+    # Hvenær er birting    í Reykjavík á morgun
+    # Klukkan hvað var myrkur á Norðfirði í gær
+    QSunWhen QSunPositions QSunPlaceAndTime?
+    | QSunSunheight QSunPlaceAndTime?
+
+QSunPlaceAndTime →
+    QSunDate QSunLocation?
+    > QSunLocation QSunDate
+    > QSunLocation
+
+QSunWhen →
+    "hvenær" | "klukkan" "hvað"
+
+QSunIsWillWas →
+    'vera' | 'verða'
+
+
+QSunSunheight →
+    "hver" QSunIsWillWas QSunSólarhæð
+
+QSunSólarhæð →
+    'sólarhæð'
+    | "hæð" 'sól'
+    | "hæð" 'Sól'
+    | 'Hæð' 'Sól'
+
+QSunPositions →
+    QSunMiðnætti
+    | QSunDögun
+    | QSunBirting
+    | QSunSólris
+    | QSunHádegi
+    | QSunSólarlag
+    | QSunMyrkur
+    | QSunDagsetur
+
+QSunMiðnætti →
+    QSunIsWillWas "miðnætti"
+
+QSunDögun →
+    QSunIsWillWas "dögun"
+
+QSunBirting →
+    QSunIsWillWas "birting"
+    | "mun" "birta"
+
+QSunSólris →
+    'rísa' "sólin"
+    | "mun" "sólin" "rísa"
+    | QSunIsWillWas "sólarupprás"
+    | "kemur" "sólin" "upp"
+    | "kom" "sólin" "upp"
+    | "fór" "sólin" "upp"
+    | "fer" "sólin" "upp"
+
+QSunHádegi →
+    QSunIsWillWas "hádegi"
+
+QSunSólarlag →
+    "sest" "sólin"
+    | "settist" "sólin"
+    | "mun" "sólin" "setjast"
+    | "fer" "sólin" "niður"
+    | "fór" "sólin" "niður"
+    | QSunIsWillWas 'sólsetur'
+    | QSunIsWillWas "sólarlag"
+
+QSunMyrkur →
+    QSunIsWillWas "myrkur"
+
+QSunDagsetur →
+    QSunIsWillWas "dagsetur"
+
+
+QSunDate →
+    QSunToday
+    | QSunYesterday
+    | QSunTomorrow
+
+QSunToday →
+    "í" "dag" | "í_kvöld" | "í_morgun" | "í" "nótt" | 'Í' 'Dag'
+
+QSunYesterday →
+    "í_gær"
+
+QSunTomorrow →
+    "á_morgun"
+
+
+QSunLocation →
+    QSunCapitalRegion
+    | QSunInArbitraryLocation
+
+QSunCapitalRegion →
+    "á" "höfuðborgarsvæðinu" | "fyrir" "höfuðborgarsvæðið"
+    | "í" "reykjavík" | "fyrir" "reykjavík"
+    | "í" "höfuðborginni" | "fyrir" "höfuðborgina"
+    | "á" "reykjavíkursvæðinu" | "fyrir" "reykjavíkursvæðið"
+    | "í" "borginni" | "fyrir" "borgina"
+
+QSunInArbitraryLocation →
+    fs_þgf QSunArbitraryLocation
+
+QSunArbitraryLocation →
+    Nl_þgf

@@ -19,7 +19,7 @@ from db.models import Article
 
 with SessionContext(read_only=True) as session:
     q = (
-        session.query(Article.id, Article.timestamp, Article.tokens)
+        session.query(Article.id, Article.timestamp, Article.tokens)  # type: ignore
         .filter(Article.tree != None)
         .filter(Article.timestamp != None)
         .filter(Article.timestamp <= datetime.utcnow())

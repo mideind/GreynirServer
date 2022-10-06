@@ -1,0 +1,35 @@
+# Grammar for the pic query module
+
+Query →
+    QPic
+
+QPic →
+    QPicQuery '?'?
+
+QPicQuery →
+    QPicShowMePictureQuery | QPicWrongPictureQuery
+
+QPicShowMe →
+    "sýndu" | "getur" "þú" "sýnt" | "geturðu" "sýnt" | "viltu" "sýna" |
+    "nennirðu" "að" "sýna" | "nennir" "þú" "að" "sýna"
+
+QPicShowMePictureQuery →
+    QPicShowMe QPicMeOrUs? QPicPictureOrPhoto "af" QPicSubject
+
+QPicPictureOrPhoto →
+    "ljósmynd" | "mynd" | "ljósmyndir" | "myndir"
+
+QPicMeOrUs →
+    "mér" | "okkur"
+
+QPicSubject →
+    Nl_þgf
+
+QPicWrongPictureQuery →
+    "þetta" QPicIsWas QPicWrong QPicPictureOrPhoto
+
+QPicWrong →
+    "röng" | "vitlaus" | "ekki" "rétt"
+
+QPicIsWas →
+    "er" | "var"

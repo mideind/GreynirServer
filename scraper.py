@@ -615,6 +615,8 @@ def main(argv=None):
             elif o in ("-l", "--limit"):
                 # Maximum number of articles to parse
                 limit = parse_int(a)
+                if not limit:
+                    raise Usage(f"Invalid limit: {a}")
             elif o in ("-u", "--urls"):
                 # Text file with list of URLs
                 urls = a

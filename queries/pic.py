@@ -24,11 +24,10 @@ from typing import Optional
 
 import random
 import logging
-from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 from query import Query, QueryStateDict
-from queries import gen_answer, icequote
+from queries import gen_answer, icequote, read_grammar_file
 from reynir import NounPhrase
 from tree import Result, Node
 from images import get_image_url, Img
@@ -60,43 +59,7 @@ HANDLE_TREE = True
 QUERY_NONTERMINALS = {"QPic"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = """
-
-Query →
-    QPic
-
-QPic →
-    QPicQuery '?'?
-
-QPicQuery →
-    QPicShowMePictureQuery | QPicWrongPictureQuery
-
-QPicShowMe →
-    "sýndu" | "getur" "þú" "sýnt" | "geturðu" "sýnt" | "viltu" "sýna" |
-    "nennirðu" "að" "sýna" | "nennir" "þú" "að" "sýna"
-
-QPicShowMePictureQuery →
-    QPicShowMe QPicMeOrUs? QPicPictureOrPhoto "af" QPicSubject
-
-QPicPictureOrPhoto →
-    "ljósmynd" | "mynd" | "ljósmyndir" | "myndir"
-
-QPicMeOrUs →
-    "mér" | "okkur"
-
-QPicSubject →
-    Nl_þgf
-
-QPicWrongPictureQuery →
-    "þetta" QPicIsWas QPicWrong QPicPictureOrPhoto
-
-QPicWrong →
-    "röng" | "vitlaus" | "ekki" "rétt"
-
-QPicIsWas →
-    "er" | "var"
-
-"""
+GRAMMAR = read_grammar_file("pic")
 
 
 def QPicQuery(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -142,7 +105,7 @@ def _gen_pic_answer(result: Result, q: Query):
         else:
             # No picture found
             q.set_answer(*gen_answer(f"Engin mynd fannst af {icequote(subj_þgf)}"))
-    except Exception as e:
+    except Exception:
         q.set_answer(*gen_answer(f"Ekki tókst að leita í myndagrunni"))
 
     q.set_key(subj)

@@ -30,7 +30,7 @@ import logging
 from threading import Lock
 
 import requests
-import cachetools  # type: ignore
+import cachetools
 import boto3  # type: ignore
 from botocore.exceptions import ClientError  # type: ignore
 
@@ -73,7 +73,7 @@ def _initialize_aws_client() -> Optional[boto3.Session]:
                 return None
             _api_client = boto3.Session(**aws_config).client("polly")
         # Return client instance
-        return _api_client
+        return _api_client  # type: ignore
 
 
 # Time to live (in seconds) for synthesised text URL caching

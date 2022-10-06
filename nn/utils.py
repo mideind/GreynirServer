@@ -39,15 +39,15 @@ def index_text(text: str) -> Tuple[Dict[int, List[int]], Dict[int, str]]:
     tok_stream = bintokenizer.tokenize(text)
 
     pgs = tokenizer.paragraphs(tok_stream)
-    pg_idx_to_sent_idx = dict()  # type: Dict[int, List[int]]
-    sent_idx_to_sent = dict()  # type: Dict[int, str]
+    pg_idx_to_sent_idx: Dict[int, List[int]] = dict()
+    sent_idx_to_sent: Dict[int, str] = dict()
     curr_sent_idx = 0
     curr_pg_idx = 0
 
     for pg in pgs:
         sent_idxs: List[int] = []
         for _, sent in pg:
-            curr_sent = list(filter(BIN_Token.is_understood, sent))  # type: List[Tok]
+            curr_sent: List[Tok] = list(filter(BIN_Token.is_understood, sent))
             curr_sent_text = tokenizer.normalized_text_from_tokens(curr_sent)
             sent_idxs.append(curr_sent_idx)
             sent_idx_to_sent[curr_sent_idx] = curr_sent_text
@@ -64,9 +64,9 @@ def split_text(text: str) -> List[List[str]]:
     text = prep_text_for_tokenizer(text)
     tok_stream = bintokenizer.tokenize(text)
     pgs = tokenizer.paragraphs(tok_stream)
-    data = []  # type: List[List[str]]
+    data: List[List[str]] = []
     for pg in pgs:
-        pg_data = []  # type: List[str]
+        pg_data: List[str] = []
         for _, sentence in pg:
             sentence = list(filter(BIN_Token.is_understood, sentence))
             sentence_text = tokenizer.normalized_text_from_tokens(sentence)

@@ -81,7 +81,7 @@ from datetime import datetime
 from db.models import Person
 
 from query import QueryStateDict
-from tree import Result
+from tree import Result, TreeStateDict
 
 
 MODULE_NAME = __name__
@@ -184,7 +184,7 @@ NOT_EXPLANATION = {"myndskeið"}
 DELIMITERS = {" )": " ( ", " ]": " [ ", " -": " - ", " ,": " , ", " .": " , "}
 
 
-def article_begin(state):
+def article_begin(state: TreeStateDict) -> None:
     """Called at the beginning of article processing"""
 
     session = state["session"]  # Database session
@@ -193,7 +193,7 @@ def article_begin(state):
     session.execute(Person.table().delete().where(Person.article_url == url))
 
 
-def article_end(state):
+def article_end(state: TreeStateDict) -> None:
     """Called at the end of article processing"""
     pass
 

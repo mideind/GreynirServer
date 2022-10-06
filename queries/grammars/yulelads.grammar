@@ -1,0 +1,163 @@
+# Grammar for the yulelads query module
+
+Query →
+    QYuleQuery
+
+QYuleQuery →
+    # Hvenær kemur Skyrgámur / fyrsti jólasveinninn?
+    QYuleDate '?'?
+    # Hvaða jólasveinn kemur 19. desember / [þann] nítjánda?
+    | QYuleLad '?'?
+
+$score(+35) QYuleQuery
+
+QYuleComes_nf →
+    "kemur" | "birtist"
+
+QYuleComes_þf →
+    ""  # Never matches
+
+QYuleComes_þgf →
+    "er" "von" "á"
+    | "má" "búast" "við"
+    | "má" "reikna" "með"
+
+QYuleComes_ef →
+    ""  # Never matches
+
+QYuleLadFirst/fall →
+    'fyrstur:lo'_vb_kk_et/fall? 'jólasveinn:kk'_gr_et/fall
+
+QYuleLadLast/fall →
+    'síðari:lo'_vb_kk_et/fall 'jólasveinn:kk'_gr_et/fall
+
+QYuleLadId/fall →
+    QYuleLadFirst/fall
+    | QYuleLadLast/fall
+    | QYuleLadName/fall
+
+QYuleLadName/fall →
+    {yulelad_names}
+
+QYuleSuffix →
+    "til" "byggða"
+    | "úr" "fjöllunum"
+    | "til" "bæja"
+    | "til" "borgarinnar"
+
+QYuleDate →
+    "hvenær" QYuleComes/fall QYuleLadId/fall QYuleSuffix?
+
+QYuleDateRel →
+    dagsafs
+
+$score(-4) QYuleDateRel
+
+QYuleNumberOrdinal →
+    raðtala | tala
+
+QYuleValidOrdinal →
+    "ellefta"
+    | "tólfta"
+    | "þrettánda"
+    | "fjórtánda"
+    | "fimmtánda"
+    | "sextánda"
+    | "sautjánda"
+    | "átjánda"
+    | "nítjánda"
+    | "tuttugasta"
+    | "tuttugasta" "og" "fyrsta"
+    | "tuttugasta" "og" "annan"
+    | "tuttugasta" "og" "þriðja"
+    | "tuttugasta" "og" "fjórða"
+
+$score(+4) QYuleValidOrdinal
+
+QYuleTwentyOrdinal →
+    tala
+    | tala "og" QYuleTwentyPart
+
+QYuleTwentyPart →
+    "fyrsta"
+    | "annan"
+    | "þriðja"
+    | "fjórða"
+
+QYuleInvalidOrdinal →
+    "fyrsta"
+    | "annan"
+    | "þriðja"
+    | "fjórða"
+    | "fimmta"
+    | "sjötta"
+    | "sjöunda"
+    | "áttunda"
+    | "níunda"
+    | "tíunda"
+    | "tuttugasta" "og" "fimmta"
+    | "tuttugasta" "og" "sjötta"
+    | "tuttugasta" "og" "sjöunda"
+    | "tuttugasta" "og" "áttunda"
+    | "tuttugasta" "og" "níunda"
+    | "þrítugasta"
+    | "þrítugasta" "og" "fyrsta"
+
+QYuleOrdinal →
+    QYuleNumberOrdinal | QYuleValidOrdinal | QYuleInvalidOrdinal | QYuleTwentyOrdinal
+
+QYuleWhichLad →
+    "hvaða" "jólasveinn"
+    | "hver" "af" "jólasveinunum"
+    | "hver" "jólasveinanna"
+
+QYuleToday →
+    "í" "dag"
+    # | 'í_dag'
+    | "í_kvöld"
+    | "í" "nótt"
+
+QYuleTomorrow →
+    "á_morgun"
+    | "annað" "kvöld"
+    | "aðra" "nótt"
+
+QYuleDay23 →
+    "á" "þorláksmessu"
+
+QYuleDay24 →
+    "á" "aðfangadag"
+
+QYuleDay →
+    "þann"? QYuleOrdinal "desember"?
+    | "þann"? QYuleDateRel
+    | QYuleDay23
+    | QYuleDay24
+    | QYuleToday
+    | QYuleTomorrow
+
+QYuleLadByDate →
+    QYuleWhichLad QYuleComes_nf QYuleSuffix? QYuleDay
+
+QYuleLadFirst →
+    QYuleWhichLad "er" "fyrstur"
+    | QYuleWhichLad "kemur" "fyrstur"
+    | QYuleWhichLad "kemur" "fyrst"
+    | "hver" "er" "fyrsti" "jólasveinninn"
+    | "hver" "er" "fyrstur" "jólasveinanna"
+    | "hvenær" "á" "maður"? "að" "setja" 'skór:kk'_þf "út"? "í" 'gluggi:kk'_et_þf
+    | "hvenær" "setur" "maður" 'skór:kk'_þf "út"? "í" 'gluggi:kk'_et_þf
+    | "hvenær" "fer" 'skór:kk'_et_nf "út"? "í" 'gluggi:kk'_et_þf
+    | "hvenær" "fara" 'skór:kk'_ft_nf "út"? "í" 'gluggi:kk'_et_þf
+
+QYuleLadLast →
+    QYuleWhichLad "er" "síðastur"
+    | QYuleWhichLad "kemur" "síðastur"
+    | QYuleWhichLad "kemur" "síðast"
+    | "hver" "er" "síðasti" "jólasveinninn"
+    | "hver" "er" "síðastur" "jólasveinanna"
+
+QYuleLad →
+    QYuleLadByDate
+    | QYuleLadFirst QYuleSuffix?
+    | QYuleLadLast QYuleSuffix?
