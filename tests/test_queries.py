@@ -1516,7 +1516,11 @@ def test_query_utility_functions() -> None:
 def test_numbers() -> None:
     """Test number handling functionality in queries"""
 
-    from queries.num import number_to_neutral, number_to_text, numbers_to_text
+    from queries.utility.number_utils import (
+        number_to_neutral,
+        number_to_text,
+        numbers_to_text,
+    )
 
     assert number_to_neutral(2) == "tvö"
     assert number_to_neutral(1100) == "eitt þúsund og eitt hundrað"
@@ -1733,7 +1737,7 @@ def test_numbers() -> None:
 def test_years() -> None:
     """Test number to written year conversion."""
 
-    from queries.num import year_to_text, years_to_text
+    from queries.utility.number_utils import year_to_text, years_to_text
 
     assert year_to_text(1999) == "nítján hundruð níutíu og níu"
     assert year_to_text(2004) == "tvö þúsund og fjögur"
@@ -1762,7 +1766,7 @@ def test_years() -> None:
 def test_ordinals() -> None:
     """Test number to written ordinal conversion."""
 
-    from queries.num import number_to_ordinal, numbers_to_ordinal
+    from queries.utility.number_utils import number_to_ordinal, numbers_to_ordinal
 
     assert number_to_ordinal(0) == "núllti"
     assert number_to_ordinal(22, case="þgf", gender="kvk") == "tuttugustu og annarri"
@@ -1805,7 +1809,7 @@ def test_ordinals() -> None:
 def test_floats() -> None:
     """Test float to written text conversion."""
 
-    from queries.num import float_to_text, floats_to_text
+    from queries.utility.number_utils import float_to_text, floats_to_text
 
     assert float_to_text(-0.12) == "mínus núll komma tólf"
     assert float_to_text(-0.1012) == "mínus núll komma eitt núll eitt tvö"
@@ -1835,7 +1839,7 @@ def test_floats() -> None:
 def test_digits() -> None:
     """Test digit string to written text conversion."""
 
-    from queries.num import digits_to_text
+    from queries.utility.number_utils import digits_to_text
 
     assert digits_to_text("5885522") == "fimm átta átta fimm fimm tveir tveir"
     assert digits_to_text("112") == "einn einn tveir"

@@ -1,0 +1,174 @@
+"""
+
+    Greynir: Natural language processing for Icelandic
+
+    Number parsing utility.
+
+    Copyright (C) 2022 Miðeind ehf.
+
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       (at your option) any later version.
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+
+    Utility module.
+    Exposes nonterminal "UHeilTala" for extracting
+    numbers either written in natural language or in digits.
+    Returns the number values in the list result["numbers"].
+
+"""
+
+# TODO: Deal with cases and genders of numbers (/fall/kyn/tala)
+# TODO: Allow "tólf hundruð þúsund" & "milljón milljónir"
+# TODO: 1 - Floats
+# TODO: 2 - Ordinal numbers
+# TODO: 3 - Fractions
+
+from typing import Any
+
+from functools import reduce
+from operator import mul
+
+from tree import Result
+from queries import read_grammar_file
+
+# The context-free grammar for number utterances recognized by this utility module
+GRAMMAR = read_grammar_file("numbers")
+
+_NUMBERS = {
+    "núll": 0,
+    "einn": 1,
+    "tveir": 2,
+    "þrír": 3,
+    "fjórir": 4,
+    "fimm": 5,
+    "sex": 6,
+    "sjö": 7,
+    "átta": 8,
+    "níu": 9,
+    "tíu": 10,
+    "ellefu": 11,
+    "tólf": 12,
+    "þrettán": 13,
+    "fjórtán": 14,
+    "fimmtán": 15,
+    "sextán": 16,
+    "sautján": 17,
+    "seytján": 17,
+    "átján": 18,
+    "nítján": 19,
+    "tuttugu": 20,
+    "þrjátíu": 30,
+    "fjörutíu": 40,
+    "fimmtíu": 50,
+    "sextíu": 60,
+    "sjötíu": 70,
+    "áttatíu": 80,
+    "níutíu": 90,
+    "hundrað": 100,
+    "þúsund": 1000,
+    "milljón": 10**6,
+    "miljarður": 10**9,
+    "milljarður": 10**9,
+    "billjón": 10**12,
+    "billjarður": 10**15,
+    "trilljón": 10**18,
+    "trilljarður": 10**21,
+    "kvaðrilljón": 10**24,
+    "kvaðrilljarður": 10**27,
+    "kvintilljón": 10**30,
+    "sextilljón": 10**36,
+    "septilljón": 10**42,
+    "oktilljón": 10**48,
+}
+
+
+# Function for nonterminals which have children that should be multiplied together
+# e.g. "fimm" (5) and "hundruð" (100) -> "fimm hundruð" (500)
+def _multiply_children(node: Any, params: Any, result: Result) -> None:
+    if "numbers" in result:
+        result["numbers"] = [reduce(mul, result["numbers"])]
+
+
+# Plural named functions ("UTöluðTalaMilljónir") take the product of the children nodes
+(
+    UTöluðTalaHundruð,
+    UTöluðTala10Til19Hundruð,
+    UTöluðTalaÞúsundir,
+    UTöluðTalaMilljónir,
+    UTöluðTalaMilljarðar,
+    UTöluðTalaBilljónir,
+    UTöluðTalaBilljarðar,
+    UTöluðTalaTrilljónir,
+    UTöluðTalaTrilljarðar,
+    UTöluðTalaKvaðrilljónir,
+    UTöluðTalaKvaðrilljarðar,
+    UTöluðTalaKvintilljónir,
+    UTöluðTalaSextilljónir,
+    UTöluðTalaSeptilljónir,
+    UTöluðTalaOktilljónir,
+) = [_multiply_children] * 15
+
+# Function for nonterminals which have children that should be added together
+# e.g. "sextíu" (60) and "átta" (8) -> "sextíu (og) átta" (68)
+def _sum_children(node: Any, params: Any, result: Result) -> None:
+    if "numbers" in result:
+        result["numbers"] = [sum(result["numbers"])]
+
+
+# "UTöluðTalaUndirX" functions take the sum of the children nodes,
+# along with the root "UTöluðTala"
+(
+    UTöluðTala,
+    UTöluðTalaUndirHundrað,
+    UTöluðTalaUndirÞúsund,
+    UTöluðTalaUndirMilljón,
+    UTöluðTalaUndirMilljarði,
+    UTöluðTalaUndirBilljón,
+    UTöluðTalaUndirBilljarði,
+    UTöluðTalaUndirTrilljón,
+    UTöluðTalaUndirTrilljarði,
+    UTöluðTalaUndirKvaðrilljón,
+    UTöluðTalaUndirKvaðrilljarði,
+    UTöluðTalaUndirKvintilljón,
+    UTöluðTalaUndirSextilljón,
+    UTöluðTalaUndirSeptilljón,
+    UTöluðTalaUndirOktilljón,
+) = [_sum_children] * 15
+
+
+# Function for nonterminals where we can perform a value lookup
+# e.g. "hundruð" (result._root = "hundrað") -> 100
+def _lookup_function(node: Any, params: Any, result: Result) -> None:
+    result["numbers"] = [_NUMBERS[result._root]]
+
+
+# Define multiple functions with same functionality but different names
+(
+    UTöluðTala0,
+    UTöluðTala1Til9,
+    UTöluðTala10Til19,
+    UTöluðTalaTugir,
+    UTöluðTalaHundrað,
+    UTöluðTalaÞúsund,
+    UTöluðTalaMilljón,
+    UTöluðTalaMilljarður,
+    UTöluðTalaBilljón,
+    UTöluðTalaBilljarður,
+    UTöluðTalaTrilljón,
+    UTöluðTalaTrilljarður,
+    UTöluðTalaKvaðrilljón,
+    UTöluðTalaKvaðrilljarður,
+    UTöluðTalaKvintilljón,
+    UTöluðTalaSextilljón,
+    UTöluðTalaSeptilljón,
+    UTöluðTalaOktilljón,
+) = [_lookup_function] * 18

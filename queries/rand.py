@@ -31,7 +31,7 @@ import random
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_grammar_file
 from queries.arithmetic import add_num, terminal_num
-from queries.num import number_to_text
+from queries.utility.number_utils import number_to_text
 from tree import Result, Node
 
 

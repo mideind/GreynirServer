@@ -38,7 +38,11 @@ from query import Query, QueryStateDict
 from queries import query_json_api, is_plural, read_grammar_file, spell_out
 from tree import Result, Node
 from settings import changedlocale
-from queries.num import digits_to_text, numbers_to_ordinal, numbers_to_text
+from queries.utility.number_utils import (
+    digits_to_text,
+    numbers_to_ordinal,
+    numbers_to_text,
+)
 
 from reynir import NounPhrase
 from geo import capitalize_placename, iceprep_for_placename, icelandic_city_name

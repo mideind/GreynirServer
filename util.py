@@ -20,21 +20,51 @@
     Utility functions used in various places in the codebase.
 
 """
+from typing import List
 
-import os
 from functools import lru_cache
+from pathlib import Path
+
+
+def _find_greynir_root_folder() -> Path:
+    """Small helper function to find the root folder of Greynir."""
+    p = Path(__file__).resolve()
+    # Search for LICENSE.txt file (should be in root folder)
+    while not (p / "LICENSE.txt").is_file() and p.parent != p:
+        p = p.parent
+    assert (
+        p.parent != p
+    ), "Can't find root project folder. Was the LICENSE.txt file moved?"
+    return p.resolve()
+
+
+GREYNIR_ROOT_PATH: Path = _find_greynir_root_folder()
 
 
 @lru_cache(maxsize=32)
 def read_api_key(key_name: str) -> str:
     """Read the given key from a text file in resources directory. Cached."""
-    path = os.path.join(os.path.dirname(__file__), "resources", key_name + ".txt")
+    p = GREYNIR_ROOT_PATH / "resources" / f"{key_name}.txt"
     try:
-        with open(path) as f:
-            return f.read().strip()
+        return p.read_text().strip()
     except FileNotFoundError:
         pass
     return ""
+
+
+def modules_in_dir(*args: str) -> List[str]:
+    """Find the import names of all python modules in a given directory."""
+    folder = GREYNIR_ROOT_PATH / Path(*args)
+    assert (
+        folder.exists() and folder.is_dir()
+    ), f"Directory {folder} not found when calling modules_in_dir()"
+    module_parents = ".".join(folder.relative_to(GREYNIR_ROOT_PATH).parts)
+
+    return [
+        f"{module_parents}.{pyfile.stem}"
+        for pyfile in folder.glob("*.py")
+        if not pyfile.name.startswith("_")
+    ]
 
 
 def icelandic_asciify(text: str) -> str:

@@ -56,7 +56,7 @@ from geo import (
     ICE_PLACENAME_BLACKLIST,
 )
 from iceaddr import placename_lookup  # type: ignore
-from queries.num import numbers_to_ordinal, floats_to_text
+from queries.utility.number_utils import numbers_to_ordinal, floats_to_text
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings

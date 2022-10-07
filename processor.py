@@ -39,7 +39,6 @@ import importlib
 import json
 import sys
 import time
-import os
 
 if TYPE_CHECKING:
     from multiprocessing.dummy import Pool
@@ -53,23 +52,10 @@ from settings import Settings, ConfigError
 from db import Scraper_DB, Session
 from db.models import Article, Person, Column
 from tree import Tree
+from util import modules_in_dir
 
 
 _PROFILING = False
-
-
-def modules_in_dir(directory: str) -> List[str]:
-    """Find all python modules in a given directory"""
-    files = os.listdir(directory)
-    modnames: List[str] = list()
-    for fname in files:
-        if not fname.endswith(".py"):
-            continue
-        if fname.startswith("_"):  # Skip any files starting with _
-            continue
-        mod = directory.replace("/", ".") + "." + fname[:-3]  # Cut off .py
-        modnames.append(mod)
-    return modnames
 
 
 class TokenContainer:
@@ -263,7 +249,7 @@ class Processor:
                             ptype: str = getattr(p, "PROCESSOR_TYPE")
                             assert ptype in _PROCESSOR_TYPES, "Unknown processor type"
                             if ptype == _PROCESSOR_TYPE_TREE:
-                                tree.process(session, p)
+                                tree.process(session, vars(p))
                             elif ptype == _PROCESSOR_TYPE_TOKEN:
                                 token_container.process(session, p)
 

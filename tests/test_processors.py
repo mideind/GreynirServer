@@ -22,7 +22,7 @@
 
 """
 
-from typing import Tuple, cast
+from typing import Any, Set, Tuple, cast
 
 import os
 import sys
@@ -61,17 +61,17 @@ class SessionShim:
 
     def __init__(self):
         # Accumulate rows that are added to the session
-        self.defs = set()
+        self.defs: Set[Any] = set()
 
-    def execute(self, command):
+    def execute(self, command: str):
         """Shim out SQLAlchemy execute() calls"""
         pass
 
-    def add(self, row):
+    def add(self, row: Any) -> None:
         """Shim out SQLAlchemy add() calls"""
         raise NotImplementedError
 
-    def check(self, t):
+    def check(self, t: Tuple[str, ...]):
         """Check whether the tuple t is in the defs set, and
         removes it if it is, or raises an exception otherwise"""
         self.defs.remove(t)
@@ -79,7 +79,7 @@ class SessionShim:
     def is_empty(self):
         return not self.defs
 
-    def __contains__(self, t):
+    def __contains__(self, t: Tuple[str, ...]):
         return t in self.defs
 
 
@@ -179,7 +179,7 @@ def test_entities():
 
     tree, _ = _make_tree(text)
     session = EntitiesSessionShim()
-    tree.process(cast(Session, session), entities)
+    tree.process(cast(Session, session), vars(entities))
 
     session.check(("Bygma", "er", "dönsk byggingavörukeðja"))
     session.check(("Húsasmiðjan", "er", "íslenskt verslunarfyrirtæki"))
@@ -213,7 +213,7 @@ def test_entities():
 
     tree, _ = _make_tree(text)
     session = EntitiesSessionShim()
-    tree.process(cast(Session, session), entities)
+    tree.process(cast(Session, session), vars(entities))
 
     session.check(("Kópavogur", "er", "vinalegur staður"))
     session.check(("Hafnarfjörður", "er", "einstakur bær"))
@@ -238,7 +238,7 @@ def test_persons():
 
     tree, _ = _make_tree(text)
     session = PersonsSessionShim()
-    tree.process(cast(Session, session), persons)
+    tree.process(cast(Session, session), vars(persons))
 
     session.check(("Katrín Jakobsdóttir", "forsætisráðherra", "kvk"))
     session.check(("Helgi Hrafn", "þingmaður", "kk"))

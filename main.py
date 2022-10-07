@@ -31,12 +31,14 @@
 
 """
 
-from typing import Callable, Dict, Pattern, Optional, Union
+from typing import Dict, List, Pattern, Optional, Union
 
 import sys
-import os
 import re
 import logging
+from os import environ as ENV
+from platform import system as os_name
+from pathlib import Path
 from datetime import datetime
 
 from flask import Flask, send_from_directory, render_template
@@ -54,8 +56,8 @@ import reynir_correct
 
 from settings import Settings, ConfigError
 from article import Article as ArticleProxy
+from util import GREYNIR_ROOT_PATH
 
-from platform import system as os_name
 from reynir.version import __version__ as greynir_version
 from tokenizer.version import __version__ as tokenizer_version
 
@@ -135,9 +137,9 @@ def hashed_url_for_static_file(
     """Add a ?h=XXX parameter to URLs for static .js and .css files,
     where XXX is calculated from the file timestamp"""
 
-    def static_file_hash(filename: str):
+    def static_file_hash(filepath: Path):
         """Obtain a timestamp for the given file"""
-        return int(os.stat(filename).st_mtime)
+        return int(filepath.stat().st_mtime)
 
     if "static" == endpoint or endpoint.endswith(".static"):
         filename = values.get("filename")
@@ -156,13 +158,13 @@ def hashed_url_for_static_file(
             # Add underscores in front of the param name until it is unique
             while param_name in values:
                 param_name = "_" + param_name
-            values[param_name] = static_file_hash(os.path.join(static_folder, filename))
+            values[param_name] = static_file_hash(Path(static_folder, filename))
 
 
 @app.route("/static/fonts/<path:path>")
 @max_age(seconds=24 * 60 * 60)  # Client should cache font for 24 hours
 def send_font(path: str) -> Response:
-    return send_from_directory(os.path.join("static", "fonts"), path)
+    return send_from_directory(str(Path("static", "fonts")), path)
 
 
 # Custom 404 error handler
@@ -191,7 +193,7 @@ def inject_nn_bools() -> Dict[str, Union[str, bool]]:
 # Initialize the main module
 try:
     # Read configuration file
-    Settings.read(os.path.join("config", "Greynir.conf"))
+    Settings.read(str(Path("config", "Greynir.conf")))
 except ConfigError as e:
     logging.error("Greynir did not start due to a configuration error:\n{0}".format(e))
     sys.exit(1)
@@ -221,7 +223,7 @@ if Settings.DEBUG:
 
 if not RUNNING_AS_SERVER:
 
-    if os.environ.get("GREYNIR_ATTACH_PTVSD"):
+    if ENV.get("GREYNIR_ATTACH_PTVSD"):
         # Attach to the VSCode PTVSD debugger, enabling remote debugging via SSH
         # import ptvsd
 
@@ -236,45 +238,33 @@ if not RUNNING_AS_SERVER:
 
     # Additional files that should cause a reload of the web server application
     # Note: Greynir.grammar is automatically reloaded if its timestamp changes
-    extra_files = [
-        "Greynir.conf",
-        "GreynirPackage.conf",
-        "Index.conf",
-        "Verbs.conf",
-        "Adjectives.conf",
-        "AdjectivePredicates.conf",
-        "Prepositions.conf",
-        "Prefs.conf",
-        "Phrases.conf",
-        "Vocab.conf",
-        "Names.conf",
-        "GreynirCorrect.conf",
-    ]
+    extra_files: List[str] = []
 
-    # Hack to satisfy the Mypy type checker, which sometimes confuses str and AnyStr
-    _dirname: Callable[[str], str] = lambda s: os.path.dirname(s)
+    # Parent directories of our modules
+    greynirpackage_dir = Path(reynir.__file__).parent
+    reynir_correct_dir = Path(reynir_correct.__file__).parent
 
-    dirs = list(map(_dirname, [__file__, reynir.__file__, reynir_correct.__file__]))
-    for i, fname in enumerate(extra_files):
-        # Look for the extra file in the different package directories
-        for directory in dirs:
-            path = os.path.join(directory, "config", fname)
-            path = os.path.realpath(path)
-            if os.path.isfile(path):
-                extra_files[i] = path
-                break
-        else:
-            print("Extra file '{0}' not found".format(fname))
+    # Reload web server when config files change
+    extra_files.extend(str(p.resolve()) for p in GREYNIR_ROOT_PATH.glob("config/*.conf"))
+    extra_files.extend(
+        str(p.resolve()) for p in greynirpackage_dir.glob("config/*.conf")
+    )
+    extra_files.extend(
+        str(p.resolve()) for p in reynir_correct_dir.glob("config/*.conf")
+    )
 
-    # Add ord.compressed from GeynirPackage
+    # Add grammar files
+    extra_files.extend(
+        str(p.resolve()) for p in GREYNIR_ROOT_PATH.glob("queries/grammars/*.grammar")
+    )
+    # Add dialogue TOML files
+    extra_files.extend(
+        str(p.resolve()) for p in GREYNIR_ROOT_PATH.glob("queries/dialogues/*.toml")
+    )
+
+    # Add ord.compressed from GreynirPackage
     extra_files.append(
-        os.path.join(
-            os.path.dirname(reynir.__file__),
-            "src",
-            "reynir",
-            "resources",
-            "ord.compressed",
-        )
+        str((greynirpackage_dir / "src" / "reynir" / "resources" / "ord.compressed").resolve())
     )
 
     from socket import error as socket_error
