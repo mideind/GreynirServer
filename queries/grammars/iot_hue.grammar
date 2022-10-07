@@ -25,10 +25,16 @@ QHueLækkaðuMinnkaðu → "lækkaðu" | "minnkaðu" | "lækka" | "minnka"
 QHueVeraVerða → "vera" | "verða"
 
 # Commands for turning on lights
-QHueTurnOnLights → QHueKveiktu QHueKveiktuX
+QHueTurnOnLights →
+    QHueKveiktu QHueLight/þf? QHueHvar    # ... ljósið í eldhúsinu
+    | QHueKveiktu "á" QHueLight/þgf QHueHvar?    # ... á lampanum í stofunni
+    | QHueKveiktu QHueAllLights # ... öll ljósin
 
 # Commands for turning off lights
-QHueTurnOffLights → QHueSlökktu QHueSlökktuX
+QHueTurnOffLights →
+    QHueSlökktu QHueLight/þf? QHueHvar    # ... ljósið í eldhúsinu
+    | QHueSlökktu "á" QHueLight/þgf QHueHvar?    # ... á lampanum í stofunni
+    | QHueSlökktu QHueAllLights # ... öll ljósin
 
 QHueMeiri → "meiri" | "meira"
 
@@ -65,16 +71,6 @@ QHueChangeScene →
     QHueKveiktu "á" QHueNewScene/þgf QHueHvar?
     | QHueStilltuSettu "á" QHueNewScene/þf QHueHvar?
     | QHueBreyttuSkiptu "yfir"? "í" QHueNewScene/þf QHueHvar?
-
-QHueKveiktuX →
-    QHueLight/þf? QHueHvar    # ... ljósið í eldhúsinu
-    | "á" QHueLight/þgf QHueHvar?    # ... á lampanum í stofunni
-    | QHueAllLights # ... öll ljósin
-
-QHueSlökktuX →
-    QHueLight/þf? QHueHvar    # ... ljósið í eldhúsinu
-    | "á" QHueLight/þgf QHueHvar?    # ... á lampanum í stofunni
-    | QHueAllLights # ... öll ljósin
 
 QHueHækkaðuX →
     QHueLight/þf QHueHvar? # TODO
@@ -115,12 +111,6 @@ QHueLækkaðuX →
 #     | QHueHvar? QHueHvernigLet QHueSubject/þf
 #     | QHueHvernigLet QHueSubject/þf QHueHvar?
 #     | QHueHvernigLet QHueHvar? QHueSubject/þf
-
-# QHueÁHverju
-# QHueSpyrjaHuldu_þf
-# QHueSpyrjaHuldu_þgf
-# QHueSpyrjaHuldu_ef
-# QHueNewSetting_ef
 
 # QHueSubject/fall →
 #     QHueSubjectOne/fall
@@ -352,10 +342,3 @@ QHueNewScene/fall →
 
 # QHueStilling/fall →
 #     'stilling'/fall
-
-# Catching hotwords from iot_speakers
-# QHueBanwords/fall →
-#     QIoTSpeakerHotwords/fall
-
-# $tag(keep) QHueBanwords/fall
-# $tag(module_banwords) QHueBanwords/fall

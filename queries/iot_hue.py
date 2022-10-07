@@ -102,6 +102,7 @@ HANDLE_TREE = True
 # The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = {"QHue"}
 
+# Color name to [x,y] coordinates
 _COLORS: Dict[str, List[float]] = {
     "appelsínugulur": [0.6195, 0.3624],
     "bleikur": [0.4443, 0.2006],
@@ -112,6 +113,7 @@ _COLORS: Dict[str, List[float]] = {
     "hvítur": [0.3085, 0.3275],
     "ljósblár": [0.1581, 0.2395],
     "rauður": [0.7, 0.3],
+    "sægrænn": [0.1664, 0.4621],
 }
 
 # The context-free grammar for the queries recognized by this plug-in module
@@ -216,10 +218,13 @@ def QHueLightName(node: Node, params: ParamList, result: Result) -> None:
     result["light_name"] = result._indefinite
 
 
+# Used to distinguish queries intended for music/radio/speaker modules
 _SPEAKER_WORDS: FrozenSet[str] = frozenset(
     (
         "tónlist",
         "lag",
+        "hljóð",
+        "ljóð",
         "hátalari",
         "útvarp",
         "útvarpsstöð",
@@ -258,6 +263,8 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
     )
 )
 
+# Used when grammar mistakes a generic word
+# for lights as the name of a group
 _PROBABLY_LIGHT_NAME: FrozenSet[str] = frozenset(
     (
         "ljós",
@@ -333,12 +340,12 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             "Skal gert.",
             '<break time="2s"/>',
         )
-        js = (
+        q.set_command(
             read_jsfile(str(Path("Libraries", "fuse.js")))
             + read_jsfile(str(Path("Philips_Hue", "set_lights.js")))
             + f"return await setLights('{bridge_ip}','{username}','{light}','{group}','{json.dumps(result.hue_obj)}');"
         )
-        q.set_command(js)
+
     except Exception as e:
         logging.warning("Exception while processing iot_hue query: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))

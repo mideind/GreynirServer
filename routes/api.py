@@ -649,19 +649,19 @@ def register_query_data_api(version: int = 1) -> Response:
     Jóhann's comment:
     Data format example for IoT device from js code:
 
-    'client_id': clientID,
-    'key': "iot",
-    'data': {
-        'iot_lights: {
-            'philips_hue': {
-                'credentials': {
-                    'username': username,
-                    'ip_address': IP address,
-                },
-                'data': {
-                    'groups': {name, id}, {name, id}, ...
+    {
+        'client_id': clientID,
+        'key': "iot",
+        'data': {
+            'iot_lights: {
+                'philips_hue': {
+                    'credentials': {
+                        'username': username,
+                        'ip_address': IP address,
+                    }
+                }
             }
-        },
+        }
     };
 
     """
@@ -829,11 +829,11 @@ class IotSupportedTOMLStructure(TypedDict):
 def get_supported_iot_connections(version: int = 1) -> Response:
     """
     API endpoint to get supported IOT devices from iot_supported.toml.
-    Converts it to json and puts it in the repsonse body.
+    Converts it to JSON and puts it in the response body.
     """
     args = request.args
-    client_id: str = args.get("client_id")
-    host: str = args.get("host")
+    client_id: Optional[str] = args.get("client_id")
+    host: Optional[str] = args.get("host")
 
     fpath = Path(__file__).parent.parent / "resources" / "iot_supported.toml"
     f = fpath.read_text()
@@ -842,7 +842,7 @@ def get_supported_iot_connections(version: int = 1) -> Response:
     obj: IotSupportedTOMLStructure = tomllib.loads(f)  # type: ignore
 
     if obj:
-        for (_, connection) in obj["connections"].items():
+        for connection in obj["connections"].values():
             webview_home = connection["webview_home"]
             webview_home = webview_home.format(host=host, client_id=client_id)
             connection.update({"webview_home": webview_home})
