@@ -50,13 +50,13 @@ __all__ = (
     "OperationalError",
     "ConfigError",
     "Settings",
-    "Scraper_DB",
+    "ScraperDB",
     "classproperty",
     "SessionContext",
 )
 
 
-class Scraper_DB:
+class ScraperDB:
     """Wrapper around the SQLAlchemy connection, engine and session"""
 
     def __init__(self) -> None:
@@ -110,19 +110,19 @@ class classproperty(Generic[T]):
 class SessionContext:
     """Context manager for database sessions"""
 
-    # Singleton instance of Scraper_DB
-    _db: Optional[Scraper_DB] = None
+    # Singleton instance of ScraperDB
+    _db: Optional[ScraperDB] = None
 
     # pylint: disable=no-self-argument
     @classproperty
-    def db(cls) -> Scraper_DB:
+    def db(cls) -> ScraperDB:
         if cls._db is None:
-            cls._db = Scraper_DB()
+            cls._db = ScraperDB()
         return cls._db
 
     @classmethod
     def cleanup(cls) -> None:
-        """Clean up the reference to the singleton Scraper_DB instance"""
+        """Clean up the reference to the singleton ScraperDB instance"""
         cls._db = None
 
     def __init__(
@@ -136,7 +136,7 @@ class SessionContext:
             # Create a new session that will be automatically committed
             # (if commit == True) and closed upon exit from the context
             # pylint: disable=no-member
-            # Creates a new Scraper_DB instance if needed
+            # Creates a new ScraperDB instance if needed
             self._session = self.db.session
             self._new_session = True
             if read_only:

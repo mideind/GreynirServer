@@ -38,7 +38,7 @@ from typing import Any, cast
 from sqlalchemy.orm.query import Query
 
 from settings import Settings, ConfigError
-from db import Scraper_DB
+from db import ScraperDB
 from db.models import Article
 from tokenizer import TOK
 
@@ -170,7 +170,7 @@ class Dumper:
     def go(self, output: str, limit: int) -> None:
         """Process already parsed articles from the database"""
 
-        db = Scraper_DB()
+        db = ScraperDB()
         with closing(db.session) as session, open(output, "w") as file:
 
             """Go through parsed articles and process them"""

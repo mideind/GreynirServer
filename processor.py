@@ -50,7 +50,7 @@ from contextlib import closing
 from datetime import datetime
 
 from settings import Settings, ConfigError
-from db import Scraper_DB, Session
+from db import ScraperDB, Session
 from db.models import Article, Person, Column
 from tree import Tree
 
@@ -161,13 +161,13 @@ _PROCESSOR_TYPES = frozenset((_PROCESSOR_TYPE_TREE, _PROCESSOR_TYPE_TOKEN))
 class Processor:
     """The worker class that processes parsed articles"""
 
-    _db: Optional[Scraper_DB] = None
+    _db: Optional[ScraperDB] = None
 
     @classmethod
     def _init_class(cls) -> None:
         """Initialize class attributes"""
         if cls._db is None:
-            cls._db = Scraper_DB()
+            cls._db = ScraperDB()
 
     @classmethod
     def cleanup(cls) -> None:
@@ -423,7 +423,7 @@ class Usage(Exception):
 
 def init_db() -> None:
     """Initialize the database, to the extent required"""
-    db = Scraper_DB()
+    db = ScraperDB()
     try:
         db.create_tables()
     except Exception as e:
