@@ -36,7 +36,7 @@ from tree import Node, Result
 # as opposed to simple literal text strings
 HANDLE_TREE = True
 
-
+# Lemmas to look for when providing help text
 TOPIC_LEMMAS = ["prufa"]
 
 
