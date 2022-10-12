@@ -36,13 +36,11 @@ from tnttagger import ifd_tag
 from db import SessionContext
 from db.models import ArticleTopic, Query, Feedback, QueryData
 from treeutil import TreeUtility
-from correct import check_grammar
 from reynir.bintokenizer import TokenDict
 from reynir.binparser import canonicalize_token
 from article import Article as ArticleProxy
 from query import process_query
 from query import Query as QueryObject
-from doc import SUPPORTED_DOC_MIMETYPES, Document
 from speech import (
     text_to_audio_url,
     DEFAULT_VOICE,
@@ -91,93 +89,6 @@ def analyze_api(version: int = 1) -> Response:
         return better_jsonify(valid=True, result=pgs, stats=stats, register=register)
     # Should not get here - this return is mostly to placate Pylance
     return Response("Error", status=403)
-
-
-@routes.route("/correct.api", methods=["GET", "POST"])
-@routes.route("/correct.api/v<int:version>", methods=["GET", "POST"])
-def correct_api(version: int = 1) -> Response:
-    """Correct text provided by the user, i.e. not coming from an article.
-    This can be either an uploaded file or a string.
-    This is a lower level API used by the Greynir web front-end."""
-    if not (1 <= version <= 1):
-        return better_jsonify(valid=False, reason="Unsupported version")
-
-    file = request.files.get("file")
-    if file is not None:
-        # file is a Werkzeug FileStorage object
-        mimetype = file.content_type
-        if mimetype not in SUPPORTED_DOC_MIMETYPES:
-            return better_jsonify(
-                valid=False, reason=f"File type not supported: {mimetype}"
-            )
-
-        # Create document object from file and extract text
-        try:
-            # filename = werkzeug.secure_filename(file.filename)
-            # Instantiate an appropriate class for the MIME type of the file
-            doc = Document.for_mimetype(mimetype)(file.read())  # type: ignore
-            text = doc.extract_text()
-        except Exception as e:
-            logging.warning("Exception in correct_api(): {0}".format(e))
-            return better_jsonify(valid=False, reason="Error reading file")
-
-    else:
-
-        try:
-            text = text_from_request(request)
-        except Exception as e:
-            logging.warning("Exception in correct_api(): {0}".format(e))
-            return better_jsonify(valid=False, reason="Invalid request")
-
-    pgs, stats = check_grammar(text)
-
-    # Return the annotated paragraphs/sentences and stats
-    # in a JSON structure to the client
-    return better_jsonify(valid=True, result=pgs, stats=stats, text=text)
-
-
-@routes.route("/correct.task", methods=["POST"])
-@routes.route("/correct.task/v<int:version>", methods=["POST"])
-@async_task  # This means that the function is automatically run on a separate thread
-def correct_task(version: int = 1) -> Response:
-    """Correct text provided by the user, i.e. not coming from an article.
-    This can be either an uploaded file or a string.
-    This is a lower level API used by the Greynir web front-end."""
-    if not (1 <= version <= 1):
-        return better_jsonify(valid=False, reason="Unsupported version")
-
-    file = request.files.get("file")
-    if file is not None:
-        # Handle uploaded file
-        # file is a proxy object that emulates a Werkzeug FileStorage object
-        mimetype = file.mimetype
-        if mimetype not in SUPPORTED_DOC_MIMETYPES:
-            return better_jsonify(valid=False, reason="File type not supported")
-
-        # Create document object from an uploaded file and extract its text
-        try:
-            # Instantiate an appropriate class for the MIME type of the file
-            doc = Document.for_mimetype(mimetype)(file.read())  # type: ignore
-            text = doc.extract_text()
-        except Exception as e:
-            logging.warning("Exception in correct_task(): {0}".format(e))
-            return better_jsonify(valid=False, reason="Error reading file")
-
-    else:
-
-        # Handle POSTed form data or plain text string
-        try:
-            text = text_from_request(request)
-        except Exception as e:
-            logging.warning("Exception in correct_task(): {0}".format(e))
-            return better_jsonify(valid=False, reason="Invalid request")
-
-    # assert isinstance(request, _RequestProxy)
-    pgs, stats = check_grammar(text, progress_func=cast(Any, request).progress_func)
-
-    # Return the annotated paragraphs/sentences and stats
-    # in a JSON structure to the client
-    return better_jsonify(valid=True, result=pgs, stats=stats, text=text)
 
 
 @routes.route("/postag.api", methods=["GET", "POST"])

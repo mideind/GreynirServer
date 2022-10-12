@@ -56,7 +56,6 @@ cp config/Index.conf $DEST/config/Index.conf
 cp config/TnT-model.pickle $DEST/config/TnT-model.pickle
 
 cp article.py $DEST/article.py
-cp correct.py $DEST/correct.py
 cp doc.py $DEST/doc.py
 cp fetcher.py $DEST/fetcher.py
 cp geo.py $DEST/geo.py
