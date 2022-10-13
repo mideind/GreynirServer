@@ -1,0 +1,346 @@
+
+Query → QLight
+
+QLight → QPleasantries? QLightQuery QForMe? '?'?
+
+QPleasantries → "værirðu" "til" "í" "að" | "gætirðu" "nokkuð"? | "vinsamlegast"
+QForMe → "fyrir" "mig"
+
+QLightQuery →
+    QLightTurnOnLights
+    | QLightTurnOffLights
+    | QLightIncreaseBrightness
+    | QLightDecreaseBrightness
+    | QLightChangeColor
+    | QLightChangeScene
+    | QLightLetThereBeLight
+
+QLightLetThereBeLight → "verði" "ljós"
+# Some verbs
+QLightKveiktu → "kveiktu" | "kveikja"
+QLightSlökktu → "slökktu" | "slökkva"
+QLightGerðu → "gerðu" | "gera" | "aðgerð"
+QLightStilltuSettu → "stilltu" | "settu" | "stilla" | "setja"
+QLightBreyttuSkiptu → "breyttu" | "skiptu" | "breyta" | "skipta"
+QLightLáttu → "láttu" | "láta"
+QLightHækkaðuAuktu → "hækkaðu" | "auktu" | "hækka" | "auka"
+QLightLækkaðuMinnkaðu → "lækkaðu" | "minnkaðu" | "lækka" | "minnka"
+QLightVeraVerða → "vera" | "verða"
+
+# Commands for turning on lights
+QLightTurnOnLights →
+    QLightKveiktu QLightLight_þf? QLightHvar    # ... ljósið í eldhúsinu
+    | QLightKveiktu "á" QLightLight_þgf QLightHvar?    # ... á lampanum í stofunni
+    | QLightKveiktu QLightAllLights # ... öll ljósin
+
+# Commands for turning off lights
+QLightTurnOffLights →
+    QLightSlökktu QLightLight_þf? QLightHvar    # ... ljósið í eldhúsinu
+    | QLightSlökktu "á" QLightLight_þgf QLightHvar?    # ... á lampanum í stofunni
+    | QLightSlökktu QLightAllLights # ... öll ljósin
+    # TODO: Slökktu á öllum ljósum
+
+QLightMeiri → "meiri" | "meira"
+
+# Commands for increasing light brightness
+QLightIncreaseBrightness →
+    QLightHækkaðuAuktu "ljósið" QLightHvar? # TODO
+    | QLightHækkaðuAuktu QLightBrightnessSubject_þf QLightHvar?
+    | QLightGerðu QLightMeiri QLightBrightnessWord_þf QLightHvar
+    | QLightGerðu QLightBrightnessWord_þf QLightMeiri QLightHvar?
+    | QLightGerðu QLightBrightnessWord_þf QLightHvar QLightMeiri
+
+QLightMinni → "minni" | "minna"
+
+# Commands for decreasing light brightness
+QLightDecreaseBrightness →
+    QLightLækkaðuMinnkaðu QLightLight_þf QLightHvar?
+    | QLightLækkaðuMinnkaðu QLightBrightnessSubject_þf QLightHvar?
+    | QLightGerðu QLightBrightnessWord_þf QLightMinni QLightHvar?
+    | QLightGerðu QLightBrightnessWord_þf QLightHvar QLightMinni
+    | QLightGerðu QLightMinni QLightBrightnessWord_þf QLightHvar
+
+QLightÁLitinn → "á" "litinn" | "á" "lit"
+
+# Commands for changing the current color
+QLightChangeColor →
+    QLightGerðu QLightLight_þf QLightHvar? QLightColorName_þf QLightÁLitinn?
+    | QLightGerðu QLightLight_þf QLightColorName_þf QLightÁLitinn? QLightHvar
+    | QLightLáttu QLightLight_þf QLightHvar? QLightVeraVerða QLightColorName_þf QLightÁLitinn?
+    | QLightLáttu QLightLight_þf QLightVeraVerða QLightColorName_þf QLightÁLitinn? QLightHvar
+    | QLightStilltuSettu "á" QLightNewColor_þf QLightHvar
+    | QLightBreyttuSkiptu "yfir"? "í" QLightNewColor_þf QLightHvar
+    | QLightBreyttuSkiptu "litnum" "á" QLightLight_þgf QLightHvar? "í" "litinn"? QLightColorName_þf
+    | QLightColorName_nf QLightLight_þf QLightHvar
+
+# Commands for changing the current scene
+QLightChangeScene →
+    QLightKveiktu "á" QLightNewScene_þgf QLightHvar?
+    | QLightStilltuSettu "á" QLightNewScene_þf QLightHvar?
+    | QLightBreyttuSkiptu "yfir"? "í" QLightNewScene_þf QLightHvar?
+
+
+# QLightGerðuX →
+#     QLightSubject_þf QLightHvar? QLightHvernigMake
+#     | QLightSubject_þf QLightHvernigMake QLightHvar?
+#     | QLightHvar? QLightSubject_þf QLightHvernigMake
+#     | QLightHvar? QLightHvernigMake QLightSubject_þf
+#     | QLightHvernigMake QLightSubject_þf QLightHvar?
+#     | QLightHvernigMake QLightHvar? QLightSubject_þf
+
+# QLightSettuX →
+#     QLightSubject_þf QLightHvar? QLightHvernigSet
+#     | QLightSubject_þf QLightHvernigSet QLightHvar?
+#     | QLightHvar? QLightSubject_þf QLightHvernigSet
+#     | QLightHvar? QLightHvernigSet QLightSubject_þf
+#     | QLightHvernigSet QLightSubject_þf QLightHvar?
+#     | QLightHvernigSet QLightHvar? QLightSubject_þf
+
+# QLightBreyttuX →
+#     QLightSubjectOne_þgf QLightHvar? QLightHvernigChange
+#     | QLightSubjectOne_þgf QLightHvernigChange QLightHvar?
+#     | QLightHvar? QLightSubjectOne_þgf QLightHvernigChange
+#     | QLightHvar? QLightHvernigChange QLightSubjectOne_þgf
+#     | QLightHvernigChange QLightSubjectOne_þgf QLightHvar?
+#     | QLightHvernigChange QLightHvar? QLightSubjectOne_þgf
+
+# QLightLáttuX →
+#     QLightSubject_þf QLightHvar? QLightHvernigLet
+#     | QLightSubject_þf QLightHvernigLet QLightHvar?
+#     | QLightHvar? QLightSubject_þf QLightHvernigLet
+#     | QLightHvar? QLightHvernigLet QLightSubject_þf
+#     | QLightHvernigLet QLightSubject_þf QLightHvar?
+#     | QLightHvernigLet QLightHvar? QLightSubject_þf
+
+# QLightSubject/fall →
+#     QLightSubjectOne/fall
+#     | QLightSubjectTwo/fall
+
+# # TODO: Decide whether LightSubject_þgf should be accepted
+# QLightSubjectOne/fall →
+#     QLightLight/fall
+#     | QLightColorSubject/fall
+#     | QLightBrightnessSubject/fall
+#     | QLightSceneWord/fall
+
+# QLightSubjectTwo/fall →
+#     QLightGroupName/fall # á bara að styðja "gerðu eldhúsið rautt", "gerðu eldhúsið rómó" "gerðu eldhúsið bjartara", t.d.
+
+QLightHvar →
+    QLightLocationPreposition QLightGroupName_þgf
+    | QLightEverywhere
+
+# QLightHvernigMake →
+#     QLightAnnaðAndlag # gerðu litinn rauðan í eldhúsinu EÐA gerðu birtuna meiri í eldhúsinu
+#     | QLightAðHverju # gerðu litinn að rauðum í eldhúsinu
+#     | QLightÞannigAð
+
+# QLightHvernigSet →
+#     QLightÁHvað
+#     | QLightÞannigAð
+
+# QLightHvernigChange →
+#     QLightÍHvað
+#     | QLightÞannigAð
+
+# QLightHvernigLet →
+#     QLightVerða QLightSomethingOrSomehow
+#     | QLightVera QLightSomehow
+
+# QLightÞannigAð →
+#     "þannig" "að"? pfn_nf QLightBeOrBecomeSubjunctive QLightAnnaðAndlag
+
+# QLightBeOrBecomeSubjunctive →
+#     "verði" | "sé"
+
+# QLightColorSubject/fall →
+#     QLightColorWord/fall QLightLight_ef?
+#     | QLightColorWord/fall "á" QLightLight_þgf
+
+QLightBrightnessSubject/fall →
+    QLightBrightnessWord/fall QLightLight_ef?
+
+QLightLocationPreposition →
+    QLightLocationPrepositionFirstPart? QLightLocationPrepositionSecondPart
+
+# The latter proverbs are grammatically incorrect, but common errors, both in speech and transcription.
+# The list provided is taken from StefnuAtv in Greynir.grammar. That includes "aftur:ao", which is not applicable here.
+QLightLocationPrepositionFirstPart →
+    StaðarAtv
+    | "fram:ao"
+    | "inn:ao"
+    | "niður:ao"
+    | "upp:ao"
+    | "út:ao"
+
+QLightLocationPrepositionSecondPart → "á" | "í"
+
+QLightLight/fall →
+    'ljós:no'/fall
+    | QLightLightName/fall
+
+# QLightLjósTegund/fall →
+#     | 'lampi:no'/fall
+#     | 'útiljós'/fall
+#     | 'leslampi'/fall
+#     | 'borðlampi'/fall
+#     | 'gólflampi'/fall
+#     | 'lýsing'/fall
+#     | 'birta'/fall
+#     | 'Birta'/fall
+
+QLightGroupName/fall → no/fall
+    # | sérnafn/fall
+    # | QLightBanwords/fall
+
+# Note: don't use this for 'öll ljósin í svefnherberginu'
+# as this is for ALL lights not all lights in an area
+QLightAllLights →
+    "öll"? "ljósin"
+
+QLightEverywhere →
+    "alls_staðar"
+    | "alstaðar"
+    | "allstaðar"
+    | "allsstaðar"
+    | "alsstaðar"
+    | "öllu" "húsinu"
+
+QLightLightName/fall → no/fall
+    # | sérnafn/fall
+    # | QLightBanwords/fall
+
+QLightColorName/fall → {color_names}
+
+QLightSceneName/fall → no/fall
+    # | sérnafn/fall
+    # | QLightBanwords/fall
+
+# QLightAnnaðAndlag →
+#     QLightNewSetting/nf
+#     | QLightSpyrjaHuldu/nf
+
+# QLightAðHverju →
+#     "að" QLightNewSetting_þgf
+
+# QLightÁHvað →
+#     "á" QLightNewSetting_þf
+
+# QLightÍHvað →
+#     "í" QLightNewSetting_þf
+
+# QLightÁHverju →
+#     "á" QLightLight_þgf
+    # | "á" QLightNewSetting_þgf
+
+# QLightSomethingOrSomehow →
+#     QLightAnnaðAndlag
+#     | QLightAðHverju
+
+# QLightSomehow →
+#     QLightAnnaðAndlag
+#     | QLightÞannigAð
+
+QLightColorWord/fall →
+    'litur'/fall
+    | 'litblær'/fall
+    | 'blær'/fall
+
+QLightBrightnessWords/fall →
+    'bjartur:lo'/fall
+    | QLightBrightnessWord/fall
+
+QLightBrightnessWord/fall →
+    'birta:kvk'/fall
+    | 'Birta'/fall
+    | 'birtustig'/fall
+
+QLightSceneWord/fall →
+    'sena:kvk'/fall
+    | 'stemning'/fall
+    | 'stemming'/fall
+    | 'stemmning'/fall
+    | 'sina:kvk'/fall
+    | "siðunni"
+    | 'Sena'/fall
+    | "Sena"
+    | "senuni"
+
+# Need to ask Hulda how this works.
+# QLightSpyrjaHuldu/fall →
+#     # QLightHuldaColor/fall
+#     QLightHuldaBrightness/fall
+#     # | QLightHuldaScene/fall
+#     | QLightHuldaTemp/fall
+
+# Do I need a "new light state" non-terminal?
+# QLightNewSetting/fall →
+#     QLightNewColor/fall
+#     | QLightNewBrightness/fall
+#     | QLightNewScene/fall
+
+# # TODO: Missing "meira dimmt"
+# QLightHuldaBrightness/fall →
+#     QLightMoreBrighterOrHigher/fall QLightBrightnessWords/fall?
+#     | QLightLessDarkerOrLower/fall QLightBrightnessWords/fall?
+
+# QLightHuldaTemp/fall →
+#     QLightWarmer/fall
+#     | QLightCooler/fall
+
+# # TODO: Unsure about whether to include /fall after QLightColorName
+QLightNewColor/fall →
+    QLightColorWord/fall QLightColorName/fall
+    | QLightColorName/fall QLightColorWord/fall?
+
+# QLightNewBrightness/fall →
+#     'sá'/fall? QLightBrightestOrDarkest/fall
+#     | QLightBrightestOrDarkest/fall QLightBrightnessOrSettingWord/fall
+
+QLightNewScene/fall →
+    QLightSceneWord/fall QLightSceneName_nf
+    | QLightSceneWord/fall QLightSceneName/fall
+    # | QLightSceneName QLightSceneWord/fall?
+
+# QLightMoreBrighterOrHigher/fall →
+#     'mikill:lo'_mst/fall
+#     | 'bjartur:lo'_mst/fall
+#     | 'ljós:lo'_mst/fall
+#     | 'hár:lo'_mst/fall
+
+# QLightLessDarkerOrLower/fall →
+#     'lítill:lo'_mst/fall
+#     | 'dökkur:lo'_mst/fall
+#     | 'dimmur:lo'_mst/fall
+#     | 'lágur:lo'_mst/fall
+
+# QLightWarmer/fall →
+#     'hlýr:lo'_mst/fall
+#     | 'heitur:lo'_mst/fall
+#     | "hlýri"
+
+# QLightCooler/fall →
+#     'kaldur:lo'_mst/fall
+
+# QLightBrightestOrDarkest/fall →
+#     QLightBrightest/fall
+#     | QLightDarkest/fall
+
+# QLightBrightest/fall →
+#     'bjartur:lo'_evb
+#     | 'bjartur:lo'_esb
+#     | 'ljós:lo'_evb
+#     | 'ljós:lo'_esb
+
+# QLightDarkest/fall →
+#     'dimmur:lo'_evb
+#     | 'dimmur:lo'_esb
+#     | 'dökkur:lo'_evb
+#     | 'dökkur:lo'_esb
+
+# QLightBrightnessOrSettingWord/fall →
+#     QLightBrightnessWord/fall
+#     | QLightStilling/fall
+
+# QLightStilling/fall →
+#     'stilling'/fall

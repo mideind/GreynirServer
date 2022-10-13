@@ -21,15 +21,19 @@
 
 """
 
-from typing import Dict, Optional, Any
+from typing import Dict, List, Optional, Any
+from typing_extensions import TypedDict
 
 import re
 import os
 import sys
 import pytest
+import json as jsonlib
+from pathlib import Path
 from copy import deepcopy
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
+from unittest.mock import patch
 
 from flask.testing import FlaskClient
 
@@ -69,7 +73,26 @@ QUERY_API_ENDPOINT = "/query.api"
 QUERY_HISTORY_API_ENDPOINT = "/query_history.api"
 
 
-def qmcall(c: FlaskClient, qdict: Dict[str, Any], qtype: Optional[str] = None) -> Dict:
+class QueryResponse(TypedDict):
+    answer: str
+    audio: str
+    command: str
+    error: str
+    image: str
+    key: str
+    open_url: str
+    q: str
+    q_raw: str
+    qtype: str
+    response: Dict[str, Any]
+    source: str
+    valid: bool
+    voice: str
+
+
+def qmcall(
+    c: FlaskClient, qdict: Dict[str, Any], qtype: Optional[str] = None
+) -> QueryResponse:
     """Use passed client object to call query API with
     query string key value pairs provided in dict arg."""
 
@@ -961,6 +984,34 @@ def test_schedules(client: FlaskClient) -> None:
     assert "2:00" in json["answer"]
 
 
+def test_smartlights(client: FlaskClient) -> None:
+    """Smartlights module"""
+    q_file = Path(__file__).parent.resolve() / "files" / "smartlights.json"
+    qs = jsonlib.loads(q_file.read_text())
+    assert isinstance(qs, dict)
+    qkey: str
+    ql: List[str]
+    for qkey, ql in qs.items():
+        for q in ql:
+            resp = qmcall(client, {"q": q}, "Smartlights")
+            assert resp["key"] == qkey
+
+
+def test_smartspeakers(client: FlaskClient) -> None:
+    """Smartspeakers module (mocked SonosClient)"""
+    # TODO: Add more tests!
+    with patch("queries.extras.sonos.SonosClient") as SonosMock:
+        resp = qmcall(
+            client,
+            {"q": "Kveiktu á útvarpsstöðinni rondó", "client_id": "9cc79e5f6b7c65c9"},
+            "Smartspeakers",
+        )
+        assert resp["key"] == "radio"
+        SonosMock.assert_called()
+        name, args, _ = SonosMock.mock_calls[-1]
+        assert 'play_radio_stream' in name and 'rondo' in args[0]
+
+
 def test_special(client: FlaskClient) -> None:
     """Special module"""
 
@@ -1327,7 +1378,7 @@ def test_query_history_api(client: FlaskClient) -> None:
         # We don't run these tests unless a Greynir API key is present
         return
 
-    def _verify_basic(r: Any) -> Dict:
+    def _verify_basic(r: Any) -> Dict[str, Any]:
         """Make sure the server response is minimally sane."""
         assert r.content_type.startswith(API_CONTENT_TYPE)
         assert r.is_json

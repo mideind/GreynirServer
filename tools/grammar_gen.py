@@ -167,17 +167,17 @@ def get_wordform(gi: BIN_LiteralTerminal) -> str:
     """
     global strict
     word, cat, variants = gi.first, gi.category, "".join(gi.variants).casefold()
-    ll = BIN.lookup_lemmas(word)
+    bin_entries = BIN.lookup_lemmas(word)[1]
 
     if strict:
         # Strictness checks on usage of
         # single-quoted terminals in the grammar
-        assert len(ll[1]) > 0, f"Meaning not found, use root of word for: {gi.name}"
+        assert len(bin_entries) > 0, f"Meaning not found, use root of word for: {gi.name}"
         assert (
             cat is not None
         ), f"Specify category for single quoted terminal: {gi.name}"
         # Filter by word category
-        assert len(list(filter(lambda m: m.ofl == cat, ll[1]))) < 2, (
+        assert len(list(filter(lambda m: m.ofl == cat, bin_entries))) < 2, (
             "Category not specific enough, "
             "single quoted terminal has "
             f"multiple meanings: {gi.name}"
@@ -187,9 +187,9 @@ def get_wordform(gi: BIN_LiteralTerminal) -> str:
                 len(variants) > 0
             ), f"Specify variant for single quoted terminal: {gi.name}"
 
-    if not cat and len(ll[1]) > 0:
+    if not cat and len(bin_entries) > 0:
         # Guess category from lemma lookup
-        cat = ll[1][0].ofl
+        cat = bin_entries[0].ofl
 
     # Have correct order of variants for form lookup (otherwise it doesn't work)
     spec: List[str] = ["" for _ in range(_order_len)]
@@ -232,12 +232,44 @@ def get_wordform(gi: BIN_LiteralTerminal) -> str:
     return lightcyan(f"({'|'.join(wf.bmynd for wf in wordforms)})")
 
 
+def _break_up_line(line: List[str], break_indices: List[int]) -> Iterable[List[str]]:
+    """
+    Breaks up a single line containing parenthesized word forms
+    and yields lines with all combinations of the word forms.
+    """
+    for comb in itertools.product(
+        *[set(line[i].lstrip("(").rstrip(")").split("|")) for i in break_indices]
+    ):
+        yield [
+            comb[break_indices.index(i)] if i in break_indices else line[i]
+            for i in range(len(line))
+        ]
+
+
+def expander(it: Iterable[List[str]]) -> Iterable[List[str]]:
+    """
+    Expand lines in iterator that include (word form 1|word form 2|...) items.
+    """
+    for line in it:
+        paren_indices = [
+            i
+            for i, w in enumerate(line)
+            if w.startswith("(") and w.endswith(")")
+            # ^ We can do this as color is disabled when fully expanding lines
+        ]
+        if paren_indices:
+            yield from _break_up_line(line, paren_indices)
+        else:
+            yield line
+
+
 def generate_from_cfg(
     grammar: QueryGrammar,
     *,
     root: Optional[Union[Nonterminal, str]] = None,
     depth: Optional[int] = None,
     n: Optional[int] = None,
+    expand: Optional[bool] = False,
 ) -> Iterable[str]:
     """
     Generates an iterator of all sentences from
@@ -274,7 +306,14 @@ def generate_from_cfg(
         for pt in grammar.nt_dict[root]
     )
 
-    # n=None means return all sentences, otherwise return n sentences
+    if expand:
+        # Expand condensed lines
+        # (containing parenthesized word forms)
+        # into separate lines
+        iter = expander(iter)
+
+    # n=None means return all sentences,
+    # otherwise return n sentences
     iter = itertools.islice(iter, 0, n)
 
     return (" ".join(sl) for sl in iter)
@@ -385,6 +424,12 @@ if __name__ == "__main__":
         help="Maximum number of sentences to generate",
     )
     parser.add_argument(
+        "-e",
+        "--expand",
+        action="store_true",
+        help="Expand lines with multiple interpretations into separate lines (disables color)",
+    )
+    parser.add_argument(
         "-s",
         "--strict",
         action="store_true",
@@ -424,7 +469,10 @@ if __name__ == "__main__":
             print("Output file already exists!")
             exit(1)
 
-    if not args.color or p is not None:
+    # Expand and writing to file disables color
+    args.color = args.color and not args.expand and p is None
+
+    if not args.color:
         useless: ColorF = lambda s: s
         # Undefine color functions
         [
@@ -458,7 +506,7 @@ if __name__ == "__main__":
         """
         global placeholder_defs
         new_nt = f"{_PLACEHOLDER_PREFIX}{m.group(1)}"
-        # Create empty production for this nonterminal ('keep' tag just in case)
+        # Create empty production for this nonterminal ('keep'-tag just in case)
         placeholder_defs += f"\n{new_nt} → ∅\n$tag(keep) {new_nt}\n"
         # Replace format string with reference to new nonterminal
         return new_nt
@@ -481,6 +529,7 @@ if __name__ == "__main__":
         root=args.root,
         depth=args.depth,
         n=args.num,
+        expand=args.expand,
     )
 
     if p is not None:

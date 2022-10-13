@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Randomness query response module
+    Smartlight query response module
 
     Copyright (C) 2022 Miðeind ehf.
 
@@ -18,8 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
-    This query module handles queries related to the generation
-    of random numbers, e.g. "Kastaðu tengingi", "Nefndu tölu milli 5 og 10", etc.
+    This query module handles queries related to the control of smartlights.
 
 """
 
@@ -27,7 +26,6 @@
 # TODO: make the objects of sentences more modular, so that the same structure doesn't need to be written for each action
 # TODO: ditto the previous comment. make the initial non-terminals general and go into specifics at the terminal level instead.
 # TODO: substitution klósett -> baðherbergi, for common room names and alternative ways of saying
-# TODO: Cut down javascript sent to Embla
 # TODO: Two specified groups or lights.
 # TODO: No specified location
 # TODO: Fix scene issues
@@ -61,7 +59,7 @@ class _IoTDeviceData(TypedDict):
     philips_hue: _PhilipsHueData
 
 
-_HUE_QTYPE = "Hue"
+_SMARTLIGHT_QTYPE = "Smartlights"
 
 TOPIC_LEMMAS = [
     "ljós",
@@ -100,7 +98,7 @@ def help_text(lemma: str) -> str:
 HANDLE_TREE = True
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = {"QHue"}
+QUERY_NONTERMINALS = {"QLight"}
 
 # Color name to [x,y] coordinates
 _COLORS: Dict[str, List[float]] = {
@@ -118,103 +116,110 @@ _COLORS: Dict[str, List[float]] = {
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = read_grammar_file(
-    "iot_hue",
+    "smartlights",
     color_names=" | ".join(f"'{color}:lo'/fall" for color in _COLORS.keys()),
 )
 
 
-# Insert or update hue object kept in result
-_upsert_hue_obj: Callable[[Result, Dict[str, Any]], None] = (
-    lambda r, d: r.__setattr__("hue_obj", d)
-    if "hue_obj" not in r
-    else cast(Dict[str, Any], r["hue_obj"]).update(d)
+# Insert or update payload object
+# for the light API (kept in result)
+_upsert_payload: Callable[[Result, Dict[str, Any]], None] = (
+    lambda r, d: r.__setattr__("payload", d)
+    if "payload" not in r
+    else cast(Dict[str, Any], r["payload"]).update(d)
 )
 
 
-def QHueQuery(node: Node, params: ParamList, result: Result) -> None:
-    result.qtype = _HUE_QTYPE
+def QLightQuery(node: Node, params: ParamList, result: Result) -> None:
+    result.qtype = _SMARTLIGHT_QTYPE
 
 
-def QHueTurnOnLights(node: Node, params: ParamList, result: Result) -> None:
+def QLightLetThereBeLight(node: Node, params: ParamList, result: Result) -> None:
     result.action = "turn_on"
-    _upsert_hue_obj(result, {"on": True})
+    result.everywhere = True
+    _upsert_payload(result, {"on": True})
 
 
-def QHueTurnOffLights(node: Node, params: ParamList, result: Result) -> None:
+def QLightTurnOnLights(node: Node, params: ParamList, result: Result) -> None:
+    result.action = "turn_on"
+    _upsert_payload(result, {"on": True})
+
+
+def QLightTurnOffLights(node: Node, params: ParamList, result: Result) -> None:
     result.action = "turn_off"
-    _upsert_hue_obj(result, {"on": False})
+    _upsert_payload(result, {"on": False})
 
 
-def QHueChangeColor(node: Node, params: ParamList, result: Result) -> None:
-    result.action = "set_color"
+def QLightChangeColor(node: Node, params: ParamList, result: Result) -> None:
+    result.action = "change_color"
     color_hue = _COLORS.get(result.color_name, None)
 
     if color_hue is not None:
-        _upsert_hue_obj(result, {"on": True, "xy": color_hue})
+        _upsert_payload(result, {"on": True, "xy": color_hue})
 
 
-def QHueChangeScene(node: Node, params: ParamList, result: Result) -> None:
-    result.action = "set_scene"
+def QLightChangeScene(node: Node, params: ParamList, result: Result) -> None:
+    result.action = "change_scene"
     scene_name = result.get("scene_name", None)
 
     if scene_name is not None:
-        _upsert_hue_obj(result, {"on": True, "scene": scene_name})
+        _upsert_payload(result, {"on": True, "scene": scene_name})
 
 
-def QHueIncreaseBrightness(node: Node, params: ParamList, result: Result) -> None:
+def QLightIncreaseBrightness(node: Node, params: ParamList, result: Result) -> None:
     result.action = "increase_brightness"
-    _upsert_hue_obj(result, {"on": True, "bri_inc": 64})
+    _upsert_payload(result, {"on": True, "bri_inc": 64})
 
 
-def QHueDecreaseBrightness(node: Node, params: ParamList, result: Result) -> None:
+def QLightDecreaseBrightness(node: Node, params: ParamList, result: Result) -> None:
     result.action = "decrease_brightness"
-    _upsert_hue_obj(result, {"bri_inc": -64})
+    _upsert_payload(result, {"bri_inc": -64})
 
 
-def QHueCooler(node: Node, params: ParamList, result: Result) -> None:
+def QLightCooler(node: Node, params: ParamList, result: Result) -> None:
     result.action = "decrease_colortemp"
-    _upsert_hue_obj(result, {"ct_inc": -30000})
+    _upsert_payload(result, {"ct_inc": -30000})
 
 
-def QHueWarmer(node: Node, params: ParamList, result: Result) -> None:
+def QLightWarmer(node: Node, params: ParamList, result: Result) -> None:
     result.action = "increase_colortemp"
-    _upsert_hue_obj(result, {"ct_inc": 30000})
+    _upsert_payload(result, {"ct_inc": 30000})
 
 
-def QHueBrightest(node: Node, params: ParamList, result: Result) -> None:
+def QLightBrightest(node: Node, params: ParamList, result: Result) -> None:
     result.action = "increase_brightness"
-    _upsert_hue_obj(result, {"bri": 255})
+    _upsert_payload(result, {"bri": 255})
 
 
-def QHueDarkest(node: Node, params: ParamList, result: Result) -> None:
+def QLightDarkest(node: Node, params: ParamList, result: Result) -> None:
     result.action = "decrease_brightness"
-    _upsert_hue_obj(result, {"bri": 0})
+    _upsert_payload(result, {"bri": 0})
 
 
-def QHueColorName(node: Node, params: ParamList, result: Result) -> None:
+def QLightColorName(node: Node, params: ParamList, result: Result) -> None:
     fc = node.first_child(lambda x: True)
     if fc:
         result["color_name"] = fc.string_self().strip("'").split(":")[0]
 
 
-def QHueSceneName(node: Node, params: ParamList, result: Result) -> None:
+def QLightSceneName(node: Node, params: ParamList, result: Result) -> None:
     result["scene_name"] = result._indefinite
     result["changing_scene"] = True
 
 
-def QHueGroupName(node: Node, params: ParamList, result: Result) -> None:
+def QLightGroupName(node: Node, params: ParamList, result: Result) -> None:
     result["group_name"] = result._indefinite
 
 
-def QHueEverywhere(node: Node, params: ParamList, result: Result) -> None:
+def QLightEverywhere(node: Node, params: ParamList, result: Result) -> None:
     result["everywhere"] = True
 
 
-def QHueAllLights(node: Node, params: ParamList, result: Result) -> None:
+def QLightAllLights(node: Node, params: ParamList, result: Result) -> None:
     result["everywhere"] = True
 
 
-def QHueLightName(node: Node, params: ParamList, result: Result) -> None:
+def QLightLightName(node: Node, params: ParamList, result: Result) -> None:
     result["light_name"] = result._indefinite
 
 
@@ -233,10 +238,13 @@ _SPEAKER_WORDS: FrozenSet[str] = frozenset(
         "gullbylgja",
         "x-ið",
         "léttbylgjan",
+        "rás",
         "rás 1",
         "rás 2",
         "rondo",
         "rondó",
+        "London",
+        "rangá",
         "fm 957",
         "fm957",
         "fm-957",
@@ -289,8 +297,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         i[0].root(state, result.params)
         for i in result.enum_descendants(lambda x: isinstance(x, TerminalNode))
     )
-    if not lemmas.isdisjoint(_SPEAKER_WORDS) or result.qtype != _HUE_QTYPE:
-        # Uses a word that is associated with the sonos module
+    if not lemmas.isdisjoint(_SPEAKER_WORDS) or result.qtype != _SMARTLIGHT_QTYPE:
+        # Uses a word that is associated with the smartspeaker module
         # (or incorrect qtype)
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
@@ -334,7 +342,16 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         # If group or scene name is more like the name of a light
         if group in _PROBABLY_LIGHT_NAME:
             light, group = group, light
+        if " sinunni " in q.query_lower:
+            q.set_beautified_query(
+                q.beautified_query.replace(" sinunni ", " senunni ")
+                .replace(" siðunni ", " senunni ")
+                .replace(" sinuna ", " senuna ")
+                .replace("Aðgerð", "Gerðu")
+                .replace("aðgerð", "gerðu")
+            )
 
+        q.query_is_command()
         q.set_answer(
             {"answer": "Skal gert."},
             "Skal gert.",
@@ -343,7 +360,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_command(
             read_jsfile(str(Path("Libraries", "fuse.js")))
             + read_jsfile(str(Path("Philips_Hue", "set_lights.js")))
-            + f"return await setLights('{bridge_ip}','{username}','{light}','{group}','{json.dumps(result.hue_obj)}');"
+            + f"return await setLights('{bridge_ip}','{username}','{light}','{group}','{json.dumps(result.payload)}');"
         )
 
     except Exception as e:

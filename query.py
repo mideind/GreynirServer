@@ -59,9 +59,8 @@ from settings import Settings
 
 from db import SessionContext, Session, desc
 from db.models import Query as QueryRow
-from db.models import QueryData, QueryLog, DialogueData
+from db.models import QueryData, QueryLog
 from queries.extras.dialogue import (
-    ActiveDialogueList,
     DialogueStateManager as DSM,
 )
 

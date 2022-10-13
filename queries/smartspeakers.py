@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Randomness query response module
+    Smartspeaker query response module
 
     Copyright (C) 2022 Miðeind ehf.
 
@@ -18,11 +18,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
-    This query module handles queries related to the generation
-    of random numbers, e.g. "Kastaðu tengingi", "Nefndu tölu milli 5 og 10", etc.
+    This query module handles queries related to the control of smartspeakers.
 
 """
-# TODO: add "láttu", "hafðu", "litaðu", "kveiktu" functionality.
+
 # TODO: make the objects of sentences more modular, so that the same structure doesn't need to be written for each action
 # TODO: ditto the previous comment. make the initial non-terminals general and go into specifics at the terminal level instead.
 # TODO: substituion klósett, baðherbergi hugmyndÆ senda lista i javascript og profa i röð
@@ -31,6 +30,7 @@
 # TODO: Two specified groups or lights.
 # TODO: No specified location
 # TODO: Fix scene issues
+
 from typing import Dict, cast
 
 import logging
@@ -68,13 +68,17 @@ _RADIO_STREAMS: Dict[str, str] = {
 }
 
 
-_SPEAKER_QTYPE = "IoTSpeakers"
+_SPEAKER_QTYPE = "Smartspeakers"
 
 TOPIC_LEMMAS = [
     "tónlist",
     "spila",
     "útvarp",
     "útvarpsstöð",
+    "hækka",
+    "lækka",
+    "stoppa",
+    "stöðva",
 ]
 
 
@@ -95,10 +99,10 @@ def help_text(lemma: str) -> str:
 HANDLE_TREE = True
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = {"QIoTSpeaker", "QIoTSpeakerQuery"}
+QUERY_NONTERMINALS = {"QIoTSpeaker"}
 
 # The context-free grammar for the queries recognized by this plug-in module
-GRAMMAR = read_grammar_file("iot_speaker")
+GRAMMAR = read_grammar_file("smartspeakers")
 
 
 def QIoTSpeaker(node: Node, params: ParamList, result: Result) -> None:
@@ -293,9 +297,9 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     if "qkey" not in result:
         result.qkey = "turn_on"
-    print(result.qkey)
+
     qk: str = result.qkey
-    if qk == "turn_on" and result.get("target") == "radio":
+    if qk == "turn_on" and result.get("target") == "radio" and result.get("station"):
         qk = "radio"
 
     try:
@@ -314,7 +318,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             answer: str
             if qk == "turn_on":
                 sonos_client.toggle_play()
-                answer = "Ég kveikti á tónlistinni"
+                answer = "Ég kveikti á tónlist"
             elif qk == "turn_off":
                 sonos_client.toggle_pause()
                 answer = "Ég slökkti á tónlistinni"
@@ -329,17 +333,29 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 station = result.get("station")
                 radio_url = _RADIO_STREAMS[station]
                 sonos_client.play_radio_stream(radio_url)
-                answer = "Ég setti á útvarpstöðina"
+                answer = "Ég kveikti á útvarpstöðinni"
             elif qk == "next_song":
                 sonos_client.next_song()
-                answer = "Ég skipti í næsta lag"
+                answer = "Ég skipti yfir í næsta lag"
             elif qk == "prev_song":
                 sonos_client.prev_song()
-                answer = "Ég skipti í fyrra lag"
+                answer = "Ég skipti yfir í lagið á undan"
             else:
                 logging.warning("Incorrect qkey in speaker module")
                 return
 
+            q.query_is_command()
+            q.set_key(qk)
+            q.set_beautified_query(
+                q.beautified_query.replace("London", "Rondó")
+                .replace(" eydís ", " 80s ")
+                .replace(" Eydís ", " 80s ")
+                .replace(" ljóð", " hljóð")
+                .replace("Stofnaðu ", "Stoppaðu ")
+                .replace("stofnaðu ", "stoppaðu ")
+                .replace("Stoppa í", "Stoppaðu")
+                .replace("stoppa í", "stoppaðu")
+            )
             q.set_answer(
                 dict(answer=answer),
                 answer,
@@ -347,7 +363,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             )
             return
     except Exception as e:
-        logging.warning("Exception answering iot_speakers query: {0}".format(e))
+        logging.warning("Exception answering smartspeaker query: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))
         return
 

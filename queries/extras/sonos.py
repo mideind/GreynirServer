@@ -135,6 +135,7 @@ _HOUSEHOLDS_ENDPOINT = f"{_API_ENDPOINT}/households"
 _GROUP_ENDPOINT = f"{_API_ENDPOINT}/groups"
 _PLAYER_ENDPOINT = f"{_API_ENDPOINT}/players"
 _PLAYBACKSESSIONS_ENDPOINT = f"{_API_ENDPOINT}/playbackSessions"
+_VOLUME_INCREMENT = 20
 
 # TODO - Decide what should happen if user does not designate a speaker but owns multiple speakers
 # TODO - Remove debug print statements
@@ -142,6 +143,7 @@ _PLAYBACKSESSIONS_ENDPOINT = f"{_API_ENDPOINT}/playbackSessions"
 # TODO - Implement a cleaner create_or_join_session function that doesn't rely on recursion
 class SonosClient:
     _encoded_credentials: str = read_api_key("SonosEncodedCredentials")
+
     def __init__(
         self,
         device_data: SonosDeviceData,
@@ -154,7 +156,9 @@ class SonosClient:
         self._group_name: Optional[str] = group_name
         self._radio_name: Optional[str] = radio_name
         self._code: str = self._device_data["sonos"]["credentials"]["code"]
-        self._timestamp: str = self._device_data["sonos"]["credentials"]["timestamp"]
+        self._timestamp: Optional[str] = self._device_data["sonos"]["credentials"].get(
+            "timestamp"
+        )
 
         self._access_token: str
         self._refresh_token: str
@@ -273,11 +277,9 @@ class SonosClient:
             if self._group_name is not None:
                 translated_group_name = self._translate_group_name()
                 group_id = self._groups.get(translated_group_name.casefold())
-                return group_id
-            else:
-                if len(self._groups) == 1:
-                    group_name = iter(self._groups[0])
-                    return self._groups[0][group_name]
+                if group_id:
+                    return group_id
+            return list(self._groups.values())[0]
         except (KeyError, TypeError):
             url = f"{_HOUSEHOLDS_ENDPOINT}/{self._household_id}/groups"
 
@@ -409,13 +411,13 @@ class SonosClient:
     def increase_volume(self) -> None:
         url = f"{_GROUP_ENDPOINT}/{self._group_id}/groupVolume/relative"
 
-        payload = json.dumps({"volumeDelta": 10})
+        payload = json.dumps({"volumeDelta": _VOLUME_INCREMENT})
         post_to_json_api(url, form_data=payload, headers=self._headers)
 
     def decrease_volume(self) -> None:
         url = f"{_GROUP_ENDPOINT}/{self._group_id}/groupVolume/relative"
 
-        payload = json.dumps({"volumeDelta": -10})
+        payload = json.dumps({"volumeDelta": -_VOLUME_INCREMENT})
         post_to_json_api(url, form_data=payload, headers=self._headers)
 
     def toggle_play(self) -> Union[None, List[Any], Dict[str, Any]]:
