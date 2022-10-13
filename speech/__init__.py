@@ -26,7 +26,6 @@ from typing import List, Iterable, Dict, Any
 from types import ModuleType
 
 import os
-import sys
 import logging
 from inspect import isfunction
 import importlib
@@ -77,7 +76,7 @@ def load_voice_modules() -> Dict[str, ModuleType]:
             for v in voices:
                 v2m[v] = m
         except Exception as e:
-            print(f"Error importing voice module {modname}: {e}")
+            logging.error(f"Error importing voice module {modname}: {e}")
 
     return v2m
 

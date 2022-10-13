@@ -220,9 +220,9 @@
    // Article statistics
    var stats = {
       num_tokens: {{ article.num_tokens }},
-   num_sentences: { { article.num_sentences } },
-   num_parsed: { { article.num_parsed } },
-   ambiguity: { { article.ambiguity } }
+      num_sentences: {{ article.num_sentences }},
+      num_parsed: {{ article.num_parsed }},
+      ambiguity: {{ article.ambiguity }}
    };
 
    function handleError(xhr, status, errorThrown) {
