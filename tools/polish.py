@@ -8,7 +8,6 @@ sys.path.insert(1, os.path.join(sys.path[0], ".."))
 from db import SessionContext, desc
 from db.models import Article
 from tokenizer import correct_spaces
-from pprint import pprint
 
 with open("urls.json", "r") as f:
     items = json.load(f)

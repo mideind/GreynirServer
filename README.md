@@ -155,7 +155,7 @@ in [`queries/examples`](queries/examples).
 * [`routes/*.py`](routes/): Routes for the web application
 * [`query.py`](query.py): Natural language query processor
 * [`queries/*.py`](queries/): Query-answering modules
-* [`db/*.py`](db/): Database models and functions via SQLAlchemy
+* [`db/*.py`](db/): Database models, queries and functions via SQLAlchemy
 * [`scraper.py`](scraper.py): Web scraper, collecting articles from a set of pre-selected websites
 * [`scrapers/*.py`](scrapers): Scraper code for various websites
 * [`settings.py`](settings.py): Management of global settings and configuration data
@@ -166,12 +166,11 @@ in [`queries/examples`](queries/examples).
 * [`postagger.py`](postagger.py): Part-of-speech tagging
 * [`article.py`](article.py): Representation of an article through its life cycle
 * [`vectors/builder.py`](vectors/builder.py): Article indexer and LSA topic vector builder
-* [`doc.py`](doc.py): Extract plain text from various document formats
 * [`geo.py`](geo.py): Geography and location-related utility functions
 * [`speech/*.py`](speech/): Speech synthesizer modules
 * [`stt.py`](stt.py): Command line interface for speech synthesis
-* [`tools/*.py`](tools/): Various command line tools
-* [`tnttagger.py`](tnttagger.py): Statistical POS tagging
+* [`tools/*.py`](tools/): Various command line utility tools
+* [`tnttagger.py`](tnttagger.py): Statistical Part-of-speech tagging
 * [`tree.py`](tree.py): Representation of parse trees for processing
 * [`treeutil.py`](treeutil.py): Utility functions for working with parse trees and tokens
 * [`util.py`](util.py): Assorted utility functions used throughout the codebase

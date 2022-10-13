@@ -45,3 +45,5 @@ def test_util():
         assert icelandic_asciify(k) == v
 
     from util import read_api_key
+
+    # TODO: Test this function
