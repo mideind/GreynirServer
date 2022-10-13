@@ -17,7 +17,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    Tests for utility code in the Greynir repo.
+    Tests for utility code in the Greynir repository.
 
 """
 
@@ -31,3 +31,17 @@ basepath, _ = os.path.split(os.path.realpath(__file__))
 mainpath = os.path.join(basepath, "..")
 if mainpath not in sys.path:
     sys.path.insert(0, mainpath)
+
+
+def test_util():
+    from util import icelandic_asciify
+
+    is2ascii = {
+        "mikið er þetta gaman": "mikid er thetta gaman",
+        "HVAÐ ER EIGINLEGA Í GANGI?": "HVAD ER EIGINLEGA I GANGI?",
+        "Örnólfur Gyrðir Möðvarsson": "Ornolfur Gyrdir Modvarsson",
+    }
+    for k, v in is2ascii.items():
+        assert icelandic_asciify(k) == v
+
+    from util import read_api_key
