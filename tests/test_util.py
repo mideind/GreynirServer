@@ -34,12 +34,17 @@ if mainpath not in sys.path:
 
 
 def test_util():
+    """Test functions in util.py"""
+
     from util import icelandic_asciify
 
     is2ascii = {
-        "mikið er þetta gaman": "mikid er thetta gaman",
+        "það mikið er þetta gaman": "thad mikid er thetta gaman",
         "HVAÐ ER EIGINLEGA Í GANGI?": "HVAD ER EIGINLEGA I GANGI?",
         "Örnólfur Gyrðir Möðvarsson": "Ornolfur Gyrdir Modvarsson",
+        "Dóra": "Dora",
+        "Álfur": "Alfur",
+        "GUÐRÚN": "GUDRUN",
     }
     for k, v in is2ascii.items():
         assert icelandic_asciify(k) == v
