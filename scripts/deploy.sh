@@ -3,7 +3,7 @@
 # deploy.sh
 #
 # Deployment script for greynir.is
-# 
+#
 # Prompts for confirmation before copying files over
 #
 # Defaults to deploying to production.
@@ -56,7 +56,6 @@ cp config/Index.conf $DEST/config/Index.conf
 cp config/TnT-model.pickle $DEST/config/TnT-model.pickle
 
 cp article.py $DEST/article.py
-cp doc.py $DEST/doc.py
 cp fetcher.py $DEST/fetcher.py
 cp geo.py $DEST/geo.py
 cp images.py $DEST/images.py
