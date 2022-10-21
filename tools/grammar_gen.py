@@ -27,7 +27,15 @@
     Use --help to see more information on usage.
 
 """
-from typing import Callable, Iterable, Iterator, List, Optional, Union, Match
+from typing import (
+    Callable,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Union,
+    Match,
+)
 
 import re
 import sys
@@ -35,7 +43,7 @@ import itertools
 from pathlib import Path
 from functools import lru_cache
 
-from islenska.basics import BinEntry
+from islenska.basics import MarkOrder
 
 
 # Hack to make this Python program executable from the tools subdirectory
@@ -73,47 +81,6 @@ lightblue: ColorF = lambda s: f"\033[94m{s}{_reset}"
 pink: ColorF = lambda s: f"\033[95m{s}{_reset}"
 lightcyan: ColorF = lambda s: f"\033[96m{s}{_reset}"
 
-nonverb_variant_order = [
-    ("esb", "evb", "fsb", "fvb", "mst", "vb", "sb"),
-    ("kk", "kvk", "hk"),
-    ("nf", "þf", "þgf", "ef"),
-    ("et", "ft"),
-    ("gr",),
-    ("0", "1", "2", "3"),
-]
-verb_variant_order = [
-    ("gm", "mm"),
-    ("lhnt", "nh", "fh", "vh", "bh"),
-    ("þt", "nt"),
-    ("1p", "2p", "3p"),
-    ("et", "ft"),
-    ("0", "1", "2", "3"),
-]
-_order_len = max(len(nonverb_variant_order), len(verb_variant_order))
-
-_orderings = {
-    "hk": (
-        "NFET",
-        "ÞFET",
-        "ÞGFET",
-        "EFET",
-        "NFFT",
-        "ÞFFT",
-        "ÞGFFT",
-        "EFFT",
-        "NFETgr",
-        "ÞFETgr",
-        "ÞGFETgr",
-        "EFETgr",
-        "NFFTgr",
-        "ÞFFTgr",
-        "ÞGFFTgr",
-        "EFFTgr",
-    ),
-}
-# kk = kvk = hk
-_orderings["kk"] = _orderings["kvk"] = _orderings["hk"]
-
 # Grammar item type
 _GIType = Union[Nonterminal, Terminal]
 # BÍN, for word lookups
@@ -122,7 +89,7 @@ BIN = Bin()
 # Mebibyte
 MiB = 1024 * 1024
 
-# Preamble with a hacke in case we aren't testing a query grammar
+# Preamble hack in case we aren't testing a query grammar
 # (prevents an error in the QueryGrammar class)
 PREAMBLE = """
 QueryRoot →
@@ -131,29 +98,6 @@ QueryRoot →
 Query → ""
 
 """
-
-
-def _binentry_to_int(w: BinEntry) -> List[int]:
-    """Used for pretty ordering of variants in output :)."""
-    try:
-        return [_orderings[w.ofl].index(w.mark)]
-    except (KeyError, ValueError):
-        pass
-
-    # Fallback, manually compute order
-    val = [0 for _ in range(_order_len)]
-    if w.ofl == "so":
-        var_order = verb_variant_order
-    else:
-        var_order = nonverb_variant_order
-
-    for x, v_list in enumerate(var_order):
-        for y, v in enumerate(v_list):
-            if v in w.mark.casefold():
-                val[-x] = y + 1
-                break
-    return val
-
 
 # Word categories which should have some variant specified
 _STRICT_CATEGORIES = frozenset(("no", "so", "lo"))
@@ -172,7 +116,9 @@ def get_wordform(gi: BIN_LiteralTerminal) -> str:
     if strict:
         # Strictness checks on usage of
         # single-quoted terminals in the grammar
-        assert len(bin_entries) > 0, f"Meaning not found, use root of word for: {gi.name}"
+        assert (
+            len(bin_entries) > 0
+        ), f"Meaning not found, use root of word for: {gi.name}"
         assert (
             cat is not None
         ), f"Specify category for single quoted terminal: {gi.name}"
@@ -180,7 +126,7 @@ def get_wordform(gi: BIN_LiteralTerminal) -> str:
         assert len(list(filter(lambda m: m.ofl == cat, bin_entries))) < 2, (
             "Category not specific enough, "
             "single quoted terminal has "
-            f"multiple meanings: {gi.name}"
+            f"multiple possible categories: {gi.name}"
         )
         if cat in _STRICT_CATEGORIES:
             assert (
@@ -191,25 +137,10 @@ def get_wordform(gi: BIN_LiteralTerminal) -> str:
         # Guess category from lemma lookup
         cat = bin_entries[0].ofl
 
-    # Have correct order of variants for form lookup (otherwise it doesn't work)
-    spec: List[str] = ["" for _ in range(_order_len)]
-    if cat == "so":
-        # Verb variants
-        var_order = verb_variant_order
-    else:
-        # Nonverb variants
-        var_order = nonverb_variant_order
-
-    # Re-order correctly
-    for i, v_list in enumerate(var_order):
-        for v in v_list:
-            if v in variants:
-                spec[i] = v
-
-    wordforms = BIN.lookup_forms(
+    wordforms = BIN.lookup_variants(
         word,
-        cat or None,  # type: ignore
-        "".join(spec),
+        cat or "",
+        variants or "",
     )
 
     if len(wordforms) == 0:
@@ -225,8 +156,8 @@ def get_wordform(gi: BIN_LiteralTerminal) -> str:
         # author of grammar should maybe use double-quotes instead
         return lightred(f"({'|'.join(wf.bmynd for wf in wordforms)})")
 
-    # Sort wordforms in a logical order
-    wordforms.sort(key=_binentry_to_int)
+    # Sort wordforms in a canonical order
+    wordforms.sort(key=lambda ks: MarkOrder.index(ks.ofl, ks.mark))
 
     # Join all matched wordforms together (within parenthesis)
     return lightcyan(f"({'|'.join(wf.bmynd for wf in wordforms)})")
@@ -255,7 +186,7 @@ def expander(it: Iterable[List[str]]) -> Iterable[List[str]]:
             i
             for i, w in enumerate(line)
             if w.startswith("(") and w.endswith(")")
-            # ^ We can do this as color is disabled when fully expanding lines
+            # ^ We can do this as ansi color is disabled when fully expanding lines
         ]
         if paren_indices:
             yield from _break_up_line(line, paren_indices)
