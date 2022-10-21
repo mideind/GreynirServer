@@ -36,20 +36,7 @@ from typing import Set, Tuple, Union
 import os
 import threading
 
-from reynir.basics import changedlocale, sort_strings, ConfigError, LineReader
-
-
-class UndeclinableAdjectives:
-
-    """Wrapper around list of undeclinable adjectives"""
-
-    # Set of adjectives
-    ADJECTIVES: Set[str] = set()
-
-    @classmethod
-    def add(cls, wrd):
-        """Add an adjective"""
-        cls.ADJECTIVES.add(wrd)
+from reynir.basics import ConfigError, LineReader
 
 
 class NoIndexWords:
@@ -209,16 +196,6 @@ class Settings:
             raise ConfigError("Invalid parameter value: {0}={1}".format(par, val))
 
     @staticmethod
-    def _handle_undeclinable_adjectives(s: str) -> None:
-        """Handle list of undeclinable adjectives"""
-        s = s.lower().strip()
-        if not s.isalpha():
-            raise ConfigError(
-                "Expected word but got '{0}' in undeclinable_adjectives".format(s)
-            )
-        UndeclinableAdjectives.add(s)
-
-    @staticmethod
     def _handle_noindex_words(s: str) -> None:
         """Handle no index instructions in the settings section"""
         # Format: category = [cat] followed by word stem list
@@ -245,7 +222,6 @@ class Settings:
 
             CONFIG_HANDLERS = {
                 "settings": Settings._handle_settings,
-                "undeclinable_adjectives": Settings._handle_undeclinable_adjectives,
                 "noindex_words": Settings._handle_noindex_words,
             }
             handler = None  # Current section handler
