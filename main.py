@@ -50,8 +50,6 @@ import reynir
 from reynir.bindb import GreynirBin
 from reynir.fastparser import Fast_Parser
 
-import reynir_correct
-
 from settings import Settings, ConfigError
 from article import Article as ArticleProxy
 
@@ -214,9 +212,8 @@ if Settings.DEBUG:
             ),
         )
     )
-    # Clobber Settings.DEBUG in GreynirPackage and GreynirCorrect
+    # Clobber Settings.DEBUG in GreynirPackage
     reynir.Settings.DEBUG = True
-    reynir_correct.Settings.DEBUG = True
 
 
 if not RUNNING_AS_SERVER:
@@ -248,13 +245,12 @@ if not RUNNING_AS_SERVER:
         "Phrases.conf",
         "Vocab.conf",
         "Names.conf",
-        "GreynirCorrect.conf",
     ]
 
     # Hack to satisfy the Mypy type checker, which sometimes confuses str and AnyStr
     _dirname: Callable[[str], str] = lambda s: os.path.dirname(s)
 
-    dirs = list(map(_dirname, [__file__, reynir.__file__, reynir_correct.__file__]))
+    dirs = list(map(_dirname, [__file__, reynir.__file__]))
     for i, fname in enumerate(extra_files):
         # Look for the extra file in the different package directories
         for directory in dirs:

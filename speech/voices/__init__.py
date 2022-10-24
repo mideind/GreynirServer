@@ -39,7 +39,7 @@ AUDIOFMT_TO_SUFFIX = {
 }
 
 
-def mimetype4audiofmt(fmt: str) -> str:
+def mimetype_for_audiofmt(fmt: str) -> str:
     return AUDIOFMT_TO_MIMETYPE.get(fmt, BINARY_MIMETYPE)
 
 

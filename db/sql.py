@@ -19,7 +19,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module wraps a number of SQLAlchemy SQL queries.
+    This module wraps a number of raw SQL queries using SQLAlchemy.
 
 """
 

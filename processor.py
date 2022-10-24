@@ -50,7 +50,7 @@ from contextlib import closing
 from datetime import datetime
 
 from settings import Settings, ConfigError
-from db import ScraperDB, Session
+from db import GreynirDB, Session
 from db.models import Article, Person, Column
 from tree import Tree
 
@@ -98,7 +98,7 @@ class TokenContainer:
         sentence_end = getattr(processor, "sentence_end", None)
         token_func = getattr(processor, "token", None)
 
-        # Make sure at least one of these functions is is present
+        # Make sure at least one of these functions is present
         if not any(
             (
                 article_begin,
@@ -161,13 +161,13 @@ _PROCESSOR_TYPES = frozenset((_PROCESSOR_TYPE_TREE, _PROCESSOR_TYPE_TOKEN))
 class Processor:
     """The worker class that processes parsed articles"""
 
-    _db: Optional[ScraperDB] = None
+    _db: Optional[GreynirDB] = None
 
     @classmethod
     def _init_class(cls) -> None:
         """Initialize class attributes"""
         if cls._db is None:
-            cls._db = ScraperDB()
+            cls._db = GreynirDB()
 
     @classmethod
     def cleanup(cls) -> None:
@@ -251,9 +251,11 @@ class Processor:
                     print("Article not found in scraper database")
                 else:
                     if article.tree and article.tokens:
+                        # Create tree object from article
                         tree = Tree(url, float(article.authority))
                         tree.load(article.tree)
 
+                        # Create token container object from article
                         token_container = TokenContainer(
                             article.tokens, url, article.authority
                         )
@@ -277,9 +279,7 @@ class Processor:
                 # If an exception occurred, roll back the transaction
                 session.rollback()
                 print(
-                    "Exception in article {0}, transaction rolled back\nException: {1}".format(
-                        url, e
-                    )
+                    f"Exception in article {url}, transaction rolled back\nException: {e}"
                 )
                 raise
 
@@ -423,7 +423,7 @@ class Usage(Exception):
 
 def init_db() -> None:
     """Initialize the database, to the extent required"""
-    db = ScraperDB()
+    db = GreynirDB()
     try:
         db.create_tables()
     except Exception as e:
