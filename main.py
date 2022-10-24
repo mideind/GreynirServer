@@ -261,7 +261,7 @@ if not RUNNING_AS_SERVER:
     #         "resources",
     #         "ord.compressed",
     #     )
-    )
+    # )
 
     from socket import error as socket_error
     import errno
