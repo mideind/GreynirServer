@@ -49,6 +49,5 @@ def test_util():
     for k, v in is2ascii.items():
         assert icelandic_asciify(k) == v
 
-    from util import read_api_key
-
     # TODO: Test this function
+    # from util import read_api_key

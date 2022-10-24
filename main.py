@@ -212,7 +212,7 @@ if Settings.DEBUG:
             ),
         )
     )
-    # Clobber Settings.DEBUG in GreynirPackage and GreynirCorrect
+    # Clobber Settings.DEBUG in GreynirPackage
     reynir.Settings.DEBUG = True
 
 
@@ -245,7 +245,6 @@ if not RUNNING_AS_SERVER:
         "Phrases.conf",
         "Vocab.conf",
         "Names.conf",
-        "GreynirCorrect.conf",
     ]
 
     # Hack to satisfy the Mypy type checker, which sometimes confuses str and AnyStr
