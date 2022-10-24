@@ -232,19 +232,9 @@ if not RUNNING_AS_SERVER:
     # Run a default Flask web server for testing if invoked directly as a main program
 
     # Additional files that should cause a reload of the web server application
-    # Note: Greynir.grammar is automatically reloaded if its timestamp changes
     extra_files = [
         "Greynir.conf",
-        "GreynirPackage.conf",
         "Index.conf",
-        "Verbs.conf",
-        "Adjectives.conf",
-        "AdjectivePredicates.conf",
-        "Prepositions.conf",
-        "Prefs.conf",
-        "Phrases.conf",
-        "Vocab.conf",
-        "Names.conf",
     ]
 
     # Hack to satisfy the Mypy type checker, which sometimes confuses str and AnyStr
@@ -263,14 +253,14 @@ if not RUNNING_AS_SERVER:
             print("Extra file '{0}' not found".format(fname))
 
     # Add ord.compressed from GeynirPackage
-    extra_files.append(
-        os.path.join(
-            os.path.dirname(reynir.__file__),
-            "src",
-            "reynir",
-            "resources",
-            "ord.compressed",
-        )
+    # extra_files.append(
+    #     os.path.join(
+    #         os.path.dirname(reynir.__file__),
+    #         "src",
+    #         "reynir",
+    #         "resources",
+    #         "ord.compressed",
+    #     )
     )
 
     from socket import error as socket_error
