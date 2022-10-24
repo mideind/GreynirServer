@@ -36,11 +36,10 @@ from typing import Set, Tuple, Union
 import os
 import threading
 
-from reynir.basics import ConfigError, LineReader
+from reynir.basics import ConfigError, changedlocale, LineReader
 
 
 class NoIndexWords:
-
     """Wrapper around set of word stems and categories that should
     not be indexed"""
 
@@ -155,7 +154,6 @@ class Settings:
         )
 
     # Configuration settings from the Greynir.conf file
-
     @staticmethod
     def _handle_settings(s: str) -> None:
         """Handle config parameters in the settings section"""
