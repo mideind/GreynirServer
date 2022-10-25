@@ -26,7 +26,7 @@
 # TODO: "hvað eru 10 evrur í íslenskum krónum"
 # TODO: "Hvert er gengi krónunnar?"
 
-from typing import Dict, Optional, Sequence, Union, cast
+from typing import Dict, List, Optional, Sequence, Union, cast
 
 import re
 import cachetools  # type: ignore
@@ -162,20 +162,12 @@ def parse_num(num_str: str) -> Optional[Union[int, float]]:
     return num
 
 
-def add_num(num, result) -> None:
-    """Add a number to accumulated number args"""
-    if "numbers" not in result:
-        result.numbers = []
-    if isinstance(num, str):
-        result.numbers.append(parse_num(num))
-    else:
-        result.numbers.append(num)
-
 
 def add_currency(curr: str, result: Result) -> None:
     if "currencies" not in result:
         result.currencies = []
-    result.currencies.append(curr)
+    rn = cast(List[str], result.currencies)
+    rn.append(curr)
 
 
 def QCurrency(node: Node, params: QueryStateDict, result: Result) -> None:

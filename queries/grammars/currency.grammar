@@ -138,12 +138,6 @@ QCurCNY/fall →
     | "júan"
     | currency_cny/fall
 
-QCurNumberWord →
-    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
-    # töl is an undeclinable number word ('sautján')
-    # tala is a number ('17')
-    to | töl | tala
-
 QCurCurrencyIndex/fall →
     'gengisvísitala:kvk'_et/fall QCurISK_ef?
 
@@ -163,7 +157,7 @@ QCurGeneralCost →
     QCurUnit_nf
 
 QCurConvertAmount →
-    QCurNumberWord QCurUnit_nf
+    UHeilTala QCurUnit_nf
     | amount
 
 QCurMany →
