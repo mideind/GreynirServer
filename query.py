@@ -586,8 +586,8 @@ class Query:
             self.set_error("E_EMPTY_QUERY")
             return False
 
-        # Tokenize and auto-capitalize the query string
-        toklist = list(tokenize(q, auto_uppercase=self._auto_uppercase and q.islower()))
+        # Tokenize and auto-capitalize the query string, without multiplying numbers together
+        toklist = list(tokenize(q, auto_uppercase=self._auto_uppercase and q.islower(), no_multiply_numbers=True))
 
         actual_q = self._query_string_from_toklist(toklist)
 

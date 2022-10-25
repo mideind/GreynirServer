@@ -40,7 +40,7 @@ from speech import (
     SUPPORTED_AUDIO_FORMATS,
     SUPPORTED_TEXT_FORMATS,
 )
-from speech.voices import suffix4audiofmt
+from speech.voices import suffix_for_audiofmt
 from util import icelandic_asciify
 
 
@@ -174,10 +174,10 @@ def main() -> None:
 
     # Generate file name
     fn = "_".join([t.lower() for t in args.text.rstrip(".").split()])
-    fn = icelandic_asciify(fn)[:60].rstrip("_")  # Rm unicode chars + limit length
-    fn = fn.replace(",", "")
-    suffix = suffix4audiofmt(args.audioformat)
-    fn = f"{fn}.{suffix}".rstrip(".")
+    fn = icelandic_asciify(fn)[:60].rstrip("_")  # Rm non-ASCII chars + limit length
+    fn = fn.replace(",", "").rstrip(".")
+    suffix = suffix_for_audiofmt(args.audioformat)
+    fn = f"{fn}.{suffix}"
 
     # Write audio data to file
     print(f'Writing to file "{fn}".')

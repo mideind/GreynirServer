@@ -66,7 +66,7 @@ from collections import defaultdict
 from settings import Settings, Topics, NoIndexWords
 from db import SessionContext
 from db.models import Article, Topic, ArticleTopic, Word
-from db.queries import TermTopicsQuery
+from db.sql import TermTopicsQuery
 from similar import SimilarityClient
 
 import numpy as np

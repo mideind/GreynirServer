@@ -46,7 +46,7 @@
 from query import QueryStateDict
 from tree import Result, TreeStateDict
 
-# from scraperdb import Attribute
+# from db import Attribute
 
 
 MODULE_NAME = __name__

@@ -83,7 +83,6 @@ SKIP_ROUTES = frozenset(
         "/exit.api",
         "/salescloud/nyskraning",
         "/salescloud/breyting",
-        "/correct.task",
         "/register_query_data.api",
     )
 )
@@ -392,29 +391,6 @@ def test_geo():
     assert location_info("Norður-Dakóta", "country")["country"] == "US"
     assert location_info("Kænugarður", "placename")["continent"] == "EU"
     assert location_info("Fiskislóð 31", "address")["country"] == "IS"
-
-
-def test_doc():
-    """Test document-related functions in doc.py"""
-    from doc import PlainTextDocument, DocxDocument
-
-    txt_bytes = "Halló, gaman að kynnast þér.\n\nHvernig gengur?".encode("utf-8")
-    doc = PlainTextDocument(txt_bytes)
-    assert doc.extract_text() == txt_bytes.decode("utf-8")
-
-    # Change to same directory as this file in order
-    # to resolve relative path to files used by tests
-    prev_dir = os.getcwd()
-    abspath = os.path.abspath(__file__)
-    dname = os.path.dirname(abspath)
-    os.chdir(dname)
-
-    txt = "Þetta er prufa.\n\nLína 1.\n\nLína 2."
-    doc = DocxDocument("files/test.docx")
-    assert doc.extract_text() == txt
-
-    # Change back to previous directory
-    os.chdir(prev_dir)
 
 
 def test_util():

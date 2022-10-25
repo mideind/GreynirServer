@@ -31,6 +31,8 @@ with SessionContext(read_only=True) as session:
 
     for i, a in enumerate(q.yield_per(100)):
         print("%d\r" % i, end="")
+        if not a.tokens:
+            continue
         tokens = json.loads(a.tokens)
         # Paragraphs
         for p in tokens:

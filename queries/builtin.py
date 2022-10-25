@@ -37,7 +37,7 @@ from settings import Settings
 
 from db import desc, OperationalError, Session
 from db.models import Article, Person, Entity, Root, Column
-from db.queries import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
+from db.sql import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
 
 from treeutil import TreeUtility
 from reynir import TOK, Tok, correct_spaces

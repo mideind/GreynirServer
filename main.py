@@ -52,8 +52,6 @@ import reynir
 from reynir.bindb import GreynirBin
 from reynir.fastparser import Fast_Parser
 
-import reynir_correct
-
 from settings import Settings, ConfigError
 from article import Article as ArticleProxy
 from util import GREYNIR_ROOT_PATH
@@ -216,9 +214,8 @@ if Settings.DEBUG:
             ),
         )
     )
-    # Clobber Settings.DEBUG in GreynirPackage and GreynirCorrect
+    # Clobber Settings.DEBUG in GreynirPackage
     reynir.Settings.DEBUG = True
-    reynir_correct.Settings.DEBUG = True
 
 
 if not RUNNING_AS_SERVER:
@@ -242,30 +239,34 @@ if not RUNNING_AS_SERVER:
 
     # Parent directories of our modules
     greynirpackage_dir = Path(reynir.__file__).parent
-    reynir_correct_dir = Path(reynir_correct.__file__).parent
 
     # Reload web server when config files change
-    extra_files.extend(str(p.resolve()) for p in GREYNIR_ROOT_PATH.glob("config/*.conf"))
     extra_files.extend(
-        str(p.resolve()) for p in greynirpackage_dir.glob("config/*.conf")
+        str(p.resolve()) for p in (GREYNIR_ROOT_PATH / "config").glob("*.conf")
     )
     extra_files.extend(
-        str(p.resolve()) for p in reynir_correct_dir.glob("config/*.conf")
+        str(p.resolve()) for p in (greynirpackage_dir / "config").glob("*.conf")
     )
 
     # Add grammar files
     extra_files.extend(
-        str(p.resolve()) for p in GREYNIR_ROOT_PATH.glob("queries/grammars/*.grammar")
+        str(p.resolve())
+        for p in (GREYNIR_ROOT_PATH / "queries" / "grammars").glob("*.grammar")
     )
     # Add dialogue TOML files
     extra_files.extend(
-        str(p.resolve()) for p in GREYNIR_ROOT_PATH.glob("queries/dialogues/*.toml")
+        str(p.resolve())
+        for p in (GREYNIR_ROOT_PATH / "queries" / "dialogues").glob("*.toml")
     )
 
     # Add ord.compressed from GreynirPackage
-    extra_files.append(
-        str((greynirpackage_dir / "src" / "reynir" / "resources" / "ord.compressed").resolve())
-    )
+    # extra_files.append(
+    #     str(
+    #         (
+    #             greynirpackage_dir / "src" / "reynir" / "resources" / "ord.compressed"
+    #         ).resolve()
+    #     )
+    # )
 
     from socket import error as socket_error
     import errno

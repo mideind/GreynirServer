@@ -28,7 +28,7 @@ import os
 import logging
 import json
 
-from . import generate_data_uri, strip_markup, mimetype4audiofmt
+from . import generate_data_uri, strip_markup, mimetype_for_audiofmt
 
 import azure.cognitiveservices.speech as speechsdk
 
@@ -131,7 +131,7 @@ def text_to_audio_url(
         return None
 
     # Generate Data URI from the bytes received
-    mime_type = mimetype4audiofmt(audio_format)
+    mime_type = mimetype_for_audiofmt(audio_format)
     data_uri = generate_data_uri(data, mime_type=mime_type)
 
     return data_uri

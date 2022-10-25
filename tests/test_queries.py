@@ -146,7 +146,7 @@ def has_greynir_api_key() -> bool:
 def test_nonsense(client: FlaskClient) -> None:
     """Make sure nonsensical queries are not answered"""
 
-    qstr = {"q": "blergh smergh vlurgh"}
+    qstr = {"q": "blergh smergh vlurgh", "test": True, "private": True}
     r = client.get("/query.api?" + urlencode(qstr))
     assert r.content_type.startswith(API_CONTENT_TYPE)
     assert r.is_json
@@ -156,6 +156,7 @@ def test_nonsense(client: FlaskClient) -> None:
     assert json["valid"] == True
     assert "error" in json
     assert "answer" not in json
+    assert "voice" not in json
 
 
 def test_arithmetic(client: FlaskClient) -> None:

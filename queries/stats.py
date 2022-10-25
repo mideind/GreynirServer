@@ -30,7 +30,7 @@ from datetime import datetime, timedelta
 from db import SessionContext
 from db.models import Person
 from db.models import Query as QueryModel
-from db.queries import QueryTypesQuery
+from db.sql import QueryTypesQuery
 
 from query import Query
 from queries import gen_answer, natlang_seq, is_plural, sing_or_plur

@@ -35,7 +35,7 @@ from flask import request, render_template
 
 from settings import changedlocale
 from db import SessionContext, Session
-from db.queries import (
+from db.sql import (
     StatsQuery,
     ChartsQuery,
     GenderQuery,

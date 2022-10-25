@@ -53,8 +53,8 @@ def main():
         exit()
 
     with SessionContext(commit=False) as session:
-        bef = datetime(2020, 7, 26, 0, 0, 1)
-        aft = datetime(2020, 7, 27, 0, 0, 1)
+        bef = datetime(2022, 10, 10, 0, 0, 1)
+        aft = datetime(2022, 10, 11, 0, 0, 1)
         q = (
             session.query(
                 Article.url, Article.timestamp, Article.heading, Article.tokens  # type: ignore
@@ -67,19 +67,24 @@ def main():
         for r in q.all():
             (url, ts, title, tokens) = r
             text = ""
+            if not tokens:
+                continue
             tokens = json.loads(tokens)
             if not tokens:
                 continue
             # Paragraphs
             for p in tokens:
+                tx = ""
                 # Sentences
                 for s in p:
                     # Tokens
                     for t in s:
-                        text += t["x"] + " "
+                        tx += t["x"] + " "
+                tx = correct_spaces(tx)
+                text += tx + "\n\n"
 
             d = dict(url=url, timestamp=ts.isoformat(), title=title, text=text)
-            d["text"] = correct_spaces(d["text"])
+            # d["text"] = correct_spaces(d["text"])
             items.append(d)
             # print(d)
             # print(text)

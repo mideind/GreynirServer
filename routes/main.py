@@ -44,7 +44,6 @@ from article import Article as ArticleProxy
 from search import Search
 from treeutil import TreeUtility, StatsDict
 from images import Img, get_image_url, update_broken_image_url, blacklist_image_url
-from doc import SUPPORTED_DOC_MIMETYPES
 
 from . import routes, max_age, cache, text_from_request, better_jsonify, restricted
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH, MAX_TEXT_LENGTH_VIA_URL
@@ -94,22 +93,6 @@ def analysis():
     """Handler for a page with grammatical analysis of user-entered text"""
     txt = request.args.get("txt", "")[0:MAX_TEXT_LENGTH_VIA_URL]
     return render_template("analysis.html", title="Málgreining", default_text=txt)
-
-
-@routes.route("/correct", methods=["GET", "POST"])
-def correct():
-    """Handler for a page for spelling and grammar correction
-    of user-entered text"""
-    try:
-        txt = text_from_request(request, post_field="txt", get_field="txt")
-    except Exception:
-        txt = ""
-    return render_template(
-        "correct.html",
-        title="Yfirlestur",
-        default_text=txt,
-        supported_mime_types=list(SUPPORTED_DOC_MIMETYPES),
-    )
 
 
 MAX_SIM_ARTICLES = 10  # Display at most 10 similarity matches
