@@ -684,14 +684,14 @@ def read_grammar_file(filename: str, **format_kwargs: str) -> str:
     return grammar
 
 
-def join_grammar_files(folder: Path) -> str:
+def read_utility_grammar_file(filename: str, **format_kwargs: str) -> str:
     """
-    Given a pathlib.Path pointing to a folder,
-    return a string containing the contents of
-    all '.grammar' files within the folder
+    Read and return a grammar file from the 'queries/utility/grammars' folder.
+    Optionally specify keyword arguments for str.format() call
     """
+    gfile = QUERIES_ROOT_PATH / "utility" / "grammars" / f"{filename}.grammar"
 
-    grammar: List[str] = []
-    for gfile in folder.glob("*.grammar"):
-        grammar.append(gfile.read_text())
-    return "\n".join(grammar)
+    grammar = gfile.read_text()
+    if len(format_kwargs) > 0:
+        grammar = grammar.format(**format_kwargs)
+    return grammar

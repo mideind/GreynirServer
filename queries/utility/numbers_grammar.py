@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Number parsing utility.
+    Number parsing grammar.
 
     Copyright (C) 2022 Miðeind ehf.
 
@@ -19,7 +19,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    Utility module.
+    Utility module
     Exposes nonterminal "UHeilTala" for extracting
     numbers either written in natural language or in digits.
     Returns the number values in the list result["numbers"].
@@ -27,7 +27,7 @@
 """
 
 # TODO: Deal with cases and genders of numbers (/fall/kyn/tala)
-# TODO: Allow "tólf hundruð þúsund" & "milljón milljónir"
+# TODO: Allow "tólf hundruð þúsund", "milljón milljónir" & "hundruðir"(need to add to ord.add/auka.csv)
 # TODO: 1 - Floats
 # TODO: 2 - Ordinal numbers
 # TODO: 3 - Fractions
@@ -38,10 +38,10 @@ from functools import reduce
 from operator import mul
 
 from tree import Result
-from queries import read_grammar_file
+from queries import read_utility_grammar_file
 
 # The context-free grammar for number utterances recognized by this utility module
-GRAMMAR = read_grammar_file("numbers")
+GRAMMAR = read_utility_grammar_file("numbers")
 
 _NUMBERS = {
     "núll": 0,
@@ -98,7 +98,7 @@ def _multiply_children(node: Any, params: Any, result: Result) -> None:
         result["numbers"] = [reduce(mul, result["numbers"])]
 
 
-# Plural named functions ("UTöluðTalaMilljónir") take the product of the children nodes
+# Plural named functions (e.g. "UTöluðTalaMilljónir") take the product of the children nodes
 (
     UTöluðTalaHundruð,
     UTöluðTala10Til19Hundruð,
@@ -154,7 +154,8 @@ def _lookup_function(node: Any, params: Any, result: Result) -> None:
 # Define multiple functions with same functionality but different names
 (
     UTöluðTala0,
-    UTöluðTala1Til9,
+    UTöluðTala1,
+    UTöluðTala2Til9,
     UTöluðTala10Til19,
     UTöluðTalaTugir,
     UTöluðTalaHundrað,
@@ -171,4 +172,4 @@ def _lookup_function(node: Any, params: Any, result: Result) -> None:
     UTöluðTalaSextilljón,
     UTöluðTalaSeptilljón,
     UTöluðTalaOktilljón,
-) = [_lookup_function] * 18
+) = [_lookup_function] * 19
