@@ -21,8 +21,7 @@ jobs:
       # Label used to access the service container
       postgres:
         # Docker Hub image
-        # We stick with 14 for now because Postgres 15 has stricter default permissions
-        image: postgres:14
+        image: postgres:15
         # Provide the password for postgres
         env:
           POSTGRES_DB: postgres
@@ -41,7 +40,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9, 3.10.0, 3.11]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v2
@@ -72,6 +71,7 @@ jobs:
         PGPASSWORD=postgres psql -h localhost -U postgres -c "create user reynir with password 'reynir';"
         PGPASSWORD=postgres psql -h localhost -U postgres -c "create database scraper with encoding 'UTF8' TEMPLATE=template0;"
         PGPASSWORD=postgres psql -h localhost -U postgres -d scraper -c "create extension if not exists \"uuid-ossp\";"
+        PGPASSWORD=postgres psql -h localhost -U postgres -d scraper -c "alter database scraper owner to reynir;"
         python scraper.py --init
         psql -f tests/files/populate_testdb.sql postgresql://postgres:postgres@localhost:5432/scraper
     - name: Create API key(s)
