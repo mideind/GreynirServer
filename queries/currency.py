@@ -21,14 +21,14 @@
 
 """
 
+# TODO: Switch from using apis.is
 # TODO: Bug: "30 dollarar eru 3.801 krónUR." [!!!] Fix using is_plural
 # TODO: Answer for exch rate should be of the form ISK 2000 = USD 14,65
 # TODO: "hvað eru 10 evrur í íslenskum krónum"
 # TODO: "Hvert er gengi krónunnar?"
 
-from typing import Dict, List, Optional, Sequence, Union, cast
+from typing import Dict, List, Mapping, Optional, Sequence, cast
 
-import re
 import cachetools  # type: ignore
 import random
 import logging
@@ -41,7 +41,6 @@ from queries import (
     is_plural,
     read_grammar_file,
 )
-from settings import Settings
 from tree import Result, Node, NonterminalNode
 from queries.utility.number_utils import float_to_text
 
@@ -87,50 +86,6 @@ def help_text(lemma: str) -> str:
 
 _CURRENCY_QTYPE = "Currency"
 
-
-_NUMBER_WORDS = {
-    "núll": 0,
-    "einn": 1,
-    "ein": 1,
-    "eitt": 1,
-    "tveir": 2,
-    "tvær": 2,
-    "tvö": 2,
-    "þrír": 3,
-    "þrjár": 3,
-    "þrjú": 3,
-    "fjórir": 4,
-    "fjórar": 4,
-    "fjögur": 4,
-    "fimm": 5,
-    "sex": 6,
-    "sjö": 7,
-    "átta": 8,
-    "níu": 9,
-    "tíu": 10,
-    "ellefu": 11,
-    "tólf": 12,
-    "þrettán": 13,
-    "fjórtán": 14,
-    "fimmtán": 15,
-    "sextán": 16,
-    "sautján": 17,
-    "átján": 18,
-    "nítján": 19,
-    "tuttugu": 20,
-    "þrjátíu": 30,
-    "fjörutíu": 40,
-    "fimmtíu": 50,
-    "sextíu": 60,
-    "sjötíu": 70,
-    "áttatíu": 80,
-    "níutíu": 90,
-    "hundrað": 100,
-    "þúsund": 1000,
-    "milljón": 1e6,
-    "milljarður": 1e9,
-}
-
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
@@ -141,26 +96,19 @@ QUERY_NONTERMINALS = {"QCurrency"}
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = read_grammar_file("currency")
 
-
-def parse_num(num_str: str) -> Optional[Union[int, float]]:
-    """Parse Icelandic number string to float or int"""
-    num = None
-    try:
-        # Handle numbers w. Icelandic decimal places ("17,2")
-        if re.search(r"^\d+,\d+", num_str):
-            num = float(num_str.replace(",", "."))
-        # Handle digits ("17")
-        else:
-            num = float(num_str)
-    except ValueError:
-        # Handle number words ("sautján")
-        num = _NUMBER_WORDS.get(num_str)
-    except Exception as e:
-        if Settings.DEBUG:
-            print("Unexpected exception: {0}".format(e))
-        raise
-    return num
-
+NON_KVK_CURRENCY_GENDERS: Mapping[str, str] = {
+    # KK
+    "USD": "kk",
+    "CHF": "kk",
+    "CAD": "kk",
+    # HK
+    "GBP": "hk",
+    "JPY": "hk",
+    "PLN": "hk",
+    "CNY": "hk",
+    "RMB": "hk",
+    "ZAR": "hk",
+}
 
 
 def add_currency(curr: str, result: Result) -> None:
@@ -308,22 +256,24 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         # Successfully matched a query type
         val = None
         target_currency = "ISK"
+        gender = None
         suffix = ""
         verb = "er"
 
         if result.op == "index":
             # target_currency = "GVT"
             val = _query_exchange_rate("GVT", "")
+            gender = "kk"
         elif result.op == "exchange":
             # 'Hvert er gengi evru gagnvart dollara?'
             target_currency = result.currencies[0]
             val = _query_exchange_rate(result.currencies[0], result.currencies[1])
+            gender = "kk"
         elif result.op == "general":
             # 'Hvert er gengi dollarans?'
             val = _query_exchange_rate(result.currencies[0], "ISK")
-            if val is None:
-                val = 1.0
-            suffix = "krónur" if is_plural(val) else "króna"
+            if val:
+                suffix = "krónur" if is_plural(val) else "króna"
         elif result.op == "convert":
             # 'Hvað eru 100 evrur margar krónur?'
             suffix = result.currency  # 'krónur'
@@ -331,23 +281,28 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             target_currency = result.currencies[1]
             val = _query_exchange_rate(result.currencies[0], result.currencies[1])
             val = val * result.amount if val else None
-            if val:
-                if target_currency == "ISK":
-                    # For ISK, round to whole numbers
-                    val = round(val, 0)
-                else:
-                    val = round(val, 2)
         else:
             raise Exception("Unknown operator: {0}".format(result.op))
 
         if val:
+            if target_currency == "ISK":
+                # For ISK, round to whole numbers
+                val = round(val, 0)
+            else:
+                val = round(val, 2)
             answer = iceformat_float(val)
             response = dict(answer=answer)
+            if gender is None:
+                gender = NON_KVK_CURRENCY_GENDERS.get(target_currency, "kvk")
             voice_answer = "{0} {1} {2}{3}.".format(
                 result.desc,
                 verb,
-                # FIXME: We need to determine currency gender
-                float_to_text(val, case="þf", gender="kvk", comma_null=False),
+                float_to_text(
+                    val,
+                    case="nf",
+                    gender=gender,
+                    comma_null=(target_currency != "ISK"),
+                ),
                 (" " + suffix) if suffix else "",
             ).capitalize()
             voice_answer = _clean_voice_answer(voice_answer)

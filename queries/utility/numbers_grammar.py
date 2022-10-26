@@ -74,6 +74,7 @@ _NUMBERS = {
     "áttatíu": 80,
     "níutíu": 90,
     "hundrað": 100,
+    "hundruð": 100,
     "þúsund": 1000,
     "milljón": 10**6,
     "miljarður": 10**9,

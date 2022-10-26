@@ -310,6 +310,12 @@ def test_currency(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "hvað eru tíu þúsund krónur margir dalir"}, "Currency")
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
+    json = qmcall(client, {"q": "hvað eru þrettán hundruð fjörutíu og sex krónur margir dalir"}, "Currency")
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
+    json = qmcall(client, {"q": "hvað eru átján milljónir króna margir dalir"}, "Currency")
+    assert re.search(r"^(\d?\d?\d\.?)+(,\d+)?$", json["answer"]) is not None
+
     json = qmcall(client, {"q": "hvað eru 79 dollarar margar evrur?"}, "Currency")
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
