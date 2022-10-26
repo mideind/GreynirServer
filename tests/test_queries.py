@@ -1597,6 +1597,7 @@ def test_numbers() -> None:
         number_to_text(-11220024, gender="kvk")
         == "mínus ellefu milljónir tvö hundruð og tuttugu þúsund tuttugu og fjórar"
     )
+    assert number_to_text(19501180) == "nítján milljónir fimm hundruð og eitt þúsund eitt hundrað og áttatíu"
 
     assert numbers_to_text("Baugatangi 1, Reykjavík") == "Baugatangi eitt, Reykjavík"
     assert numbers_to_text("Baugatangi 2, Reykjavík") == "Baugatangi tvö, Reykjavík"

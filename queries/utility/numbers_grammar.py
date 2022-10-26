@@ -27,7 +27,7 @@
 """
 
 # TODO: Deal with cases and genders of numbers (/fall/kyn/tala)
-# TODO: Allow "tólf hundruð þúsund", "milljón milljónir" & "hundruðir"(need to add to ord.add/auka.csv)
+# TODO: Allow "tólf hundruð þúsund" & "hundruðir"(need to add to ord.add/auka.csv)
 # TODO: 1 - Floats
 # TODO: 2 - Ordinal numbers
 # TODO: 3 - Fractions
