@@ -52,7 +52,6 @@ import json
 import re
 
 import abc
-from collections import OrderedDict
 from contextlib import contextmanager
 from islenska.basics import BinMeaning, make_bin_entry
 
@@ -1368,7 +1367,7 @@ class TreeBase:
     _TC = {"person": PersonNode}
 
     def __init__(self) -> None:
-        self.s: Dict[int, Optional[Node]] = OrderedDict()  # Sentence dictionary
+        self.s: Dict[int, Optional[Node]] = dict()  # Sentence dictionary
         self.scores: Dict[int, int] = dict()  # Sentence scores
         self.lengths: Dict[int, int] = dict()  # Sentence lengths, in tokens
         self.stack: Optional[List[Node]] = None

@@ -29,8 +29,6 @@ import sys
 import json
 import importlib
 
-from collections import OrderedDict
-
 # Shenanigans to enable Pytest to discover modules in the
 # main workspace directory (the parent of /tests)
 basepath, _ = os.path.split(os.path.realpath(__file__))
@@ -108,7 +106,7 @@ def _make_tree(text: str) -> Tuple[Tree, str]:
     pgs = []
     # Dict of parse trees in string dump format,
     # stored by sentence index (1-based)
-    trees = OrderedDict()
+    trees = dict()
     num_sent = 0
     for p in ip.paragraphs():
         pgs.append([])
