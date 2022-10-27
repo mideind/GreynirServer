@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #
-# Purge all logged queries older than 30 days
+# Purge all logged queries in queries table older than 30 days
 #
 
 psql -h "greynir.is" -U reynir -d scraper -c \

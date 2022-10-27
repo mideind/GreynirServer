@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 #
 # deploy.sh
 #
@@ -8,6 +8,10 @@
 #
 # Defaults to deploying to production.
 # Run with argument "staging" to deploy to staging
+
+set -o errexit   # Exit when a command fails
+set -o nounset   # Disallow unset variables
+set -o pipefail  # Pipeline command fails if any command fails
 
 SRC=~/github/Greynir
 MODE="PRODUCTION"
