@@ -66,7 +66,7 @@ from geo import in_iceland, RVK_COORDS, near_capital_region, ICE_PLACENAME_BLACK
 from iceaddr import placename_lookup  # type: ignore
 from iceweather import observation_for_closest, observation_for_station, forecast_text  # type: ignore
 
-from queries.utility.number_utils import number_to_text
+from queries.util.num import number_to_text
 
 _WEATHER_QTYPE = "Weather"
 

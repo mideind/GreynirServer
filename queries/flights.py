@@ -38,7 +38,7 @@ from query import Query, QueryStateDict
 from queries import query_json_api, is_plural, read_grammar_file, spell_out
 from tree import Result, Node
 from settings import changedlocale
-from queries.utility.number_utils import (
+from queries.util.num import (
     digits_to_text,
     numbers_to_ordinal,
     numbers_to_text,

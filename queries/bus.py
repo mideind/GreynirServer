@@ -50,7 +50,7 @@ import query
 from query import AnswerTuple, Query, QueryStateDict, ResponseType, Session
 from tree import Result, Node
 from queries import natlang_seq, cap_first, gen_answer, read_grammar_file, sing_or_plur
-from queries.utility.number_utils import floats_to_text, numbers_to_text
+from queries.util.num import floats_to_text, numbers_to_text
 from settings import Settings
 from reynir import correct_spaces
 from geo import in_iceland

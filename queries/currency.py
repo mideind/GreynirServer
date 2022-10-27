@@ -42,7 +42,7 @@ from queries import (
     read_grammar_file,
 )
 from tree import Result, Node, NonterminalNode
-from queries.utility.number_utils import float_to_text
+from queries.util.num import float_to_text
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS: Sequence[str] = [

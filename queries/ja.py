@@ -36,7 +36,7 @@ from reynir import NounPhrase
 from reynir.bindb import GreynirBin
 
 from queries import query_json_api, gen_answer, icequote, read_grammar_file
-from queries.utility.number_utils import numbers_to_text, digits_to_text
+from queries.util.num import numbers_to_text, digits_to_text
 
 from query import AnswerTuple, Query, QueryStateDict
 from tree import Result, Node

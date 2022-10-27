@@ -54,7 +54,7 @@ from reynir.fastparser import Fast_Parser
 
 from settings import Settings, ConfigError
 from article import Article as ArticleProxy
-from util import GREYNIR_ROOT_PATH
+from utility import GREYNIR_ROOT_PATH
 
 from reynir.version import __version__ as greynir_version
 from tokenizer.version import __version__ as tokenizer_version

@@ -52,10 +52,10 @@ from tzwhere import tzwhere  # type: ignore
 from pytz import country_timezones
 
 from geo import country_name_for_isocode, iceprep_for_cc, LatLonTuple
-from queries.utility.number_utils import number_to_text, float_to_text
+from queries.util.num import number_to_text, float_to_text
 from reynir import NounPhrase
 from settings import changedlocale
-from util import GREYNIR_ROOT_PATH, read_api_key
+from utility import GREYNIR_ROOT_PATH, read_api_key
 
 
 # Type definitions
@@ -689,7 +689,7 @@ def read_utility_grammar_file(filename: str, **format_kwargs: str) -> str:
     Read and return a grammar file from the 'queries/utility/grammars' folder.
     Optionally specify keyword arguments for str.format() call
     """
-    gfile = QUERIES_ROOT_PATH / "utility" / "grammars" / f"{filename}.grammar"
+    gfile = QUERIES_ROOT_PATH / "util" / "grammars" / f"{filename}.grammar"
 
     grammar = gfile.read_text()
     if len(format_kwargs) > 0:

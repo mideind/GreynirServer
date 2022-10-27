@@ -43,7 +43,7 @@ from queries import (
     LatLonTuple,
     read_grammar_file,
 )
-from queries.utility.number_utils import floats_to_text
+from queries.util.num import floats_to_text
 
 _PETROL_QTYPE = "Petrol"
 
