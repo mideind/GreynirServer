@@ -20,8 +20,10 @@
 
 
     Utility module
-    Exposes nonterminal "UHeilTala" for extracting
-    numbers either written in natural language or in digits.
+    Exposes nonterminal "UHeilTala" for parsing
+    numbers either written in natural language or in digits,
+    along with "UBrotaTala" for parsing floats ("(number) 'komma' (numbers)")
+    written in natural language.
     Returns the number values in the list result["numbers"].
 
 """

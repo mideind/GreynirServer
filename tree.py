@@ -64,6 +64,9 @@ from reynir.binparser import BIN_Token
 from reynir.simpletree import SimpleTree, SimpleTreeBuilder, NonterminalMap, IdMap
 from reynir.cache import LRU_Cache
 
+# Processing environment
+# A mapping of keywords or nonterminal names to functions
+# for processing sentence trees or, more specifically, query trees
 ProcEnv = MutableMapping[str, Any]
 
 

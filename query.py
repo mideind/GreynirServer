@@ -319,7 +319,7 @@ class Query:
     _tree_processors: List[ProcEnv] = []
     # Functions from utility modules,
     # facilitating code reuse between query modules
-    _shared_functions: ChainMapType[str, FunctionType] = ChainMap()
+    _utility_functions: ChainMapType[str, FunctionType] = ChainMap()
     # Handler functions within processors that handle plain text
     _text_processors: List[Callable[["Query"], bool]] = []
     # Singleton instance of the query parser
@@ -433,8 +433,8 @@ class Query:
                 )
         # Sort the processors by descending priority
         # so that the higher-priority ones get invoked bfore the lower-priority ones
-        # We create a ChainMap for each tree processor, exposing the processors
-        # attributes with the utility modules as a fallback
+        # We create a ChainMap (processing environment) for each tree processor,
+        # containing the processors attributes with the utility modules as a fallback
         cls._tree_processors = [
             cls.create_processing_env(t[1])
             for t in sorted(tree_procs, key=lambda x: -x[0])
@@ -460,7 +460,7 @@ class Query:
                     grammar_fragments.append(fragment)
                     # and the nonterminal functions to the shared functions ChainMap,
                     # ignoring non-callables and underscore (private) attributes
-                    cls._shared_functions.update(
+                    cls._utility_functions.update(
                         (
                             (k, v)
                             for k, v in exported.items()
@@ -503,7 +503,13 @@ class Query:
 
     @staticmethod
     def create_processing_env(processor: ModuleType) -> ProcEnv:
-        return Query._shared_functions.new_child(vars(processor))
+        """
+        Create a new child of the utility functions ChainMap.
+        Returns a mapping suitable for parsing query trees,
+        where the current processor's functions are prioritized over
+        the shared utility module functions.
+        """
+        return Query._utility_functions.new_child(vars(processor))
 
     @staticmethod
     def _parse(toklist: Iterable[Tok]) -> Tuple[ResponseDict, Dict[int, str]]:
