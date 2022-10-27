@@ -43,7 +43,6 @@ import requests
 import json
 import re
 import locale
-from pathlib import Path
 from urllib.parse import urlencode
 from functools import lru_cache
 from xml.dom import minidom  # type: ignore
@@ -63,6 +62,10 @@ AnswerTuple = Tuple[Dict[str, str], str, str]
 JsonResponse = Union[None, List[Any], Dict[str, Any]]
 
 QUERIES_ROOT_PATH = GREYNIR_ROOT_PATH / "queries"
+QUERY_GRAMMAR_DIR = QUERIES_ROOT_PATH / "grammars"
+QUERY_JS_DIR = QUERIES_ROOT_PATH / "js"
+QUERY_UTIL_DIR = QUERIES_ROOT_PATH / "util"
+QUERY_UTIL_GRAMMAR_DIR = QUERY_UTIL_DIR / "grammars"
 MONTH_ABBREV_ORDERED: Sequence[str] = (
     "jan",
     "feb",
@@ -662,21 +665,22 @@ def timezone4loc(
 
 @lru_cache(maxsize=32)
 def read_jsfile(filename: str) -> str:
-    """Read and return a minified JavaScript (.js) file"""
-    # The file is read from the directory 'js' within the directory
-    # containing this __init__.py file
+    """
+    Read and return a minified JavaScript (.js)
+    file from the QUERY_JS_DIR folder.
+    """
     from rjsmin import jsmin  # type: ignore
 
-    jsfile = QUERIES_ROOT_PATH / "js" / filename
+    jsfile = QUERY_JS_DIR / filename
     return cast(str, jsmin(jsfile.read_text()))
 
 
 def read_grammar_file(filename: str, **format_kwargs: str) -> str:
     """
-    Read and return a grammar file from the 'queries/grammars' folder.
+    Read and return a grammar file from the QUERY_GRAMMAR_DIR folder.
     Optionally specify keyword arguments for str.format() call
     """
-    gfile = QUERIES_ROOT_PATH / "grammars" / f"{filename}.grammar"
+    gfile = QUERY_GRAMMAR_DIR / f"{filename}.grammar"
 
     grammar = gfile.read_text()
     if len(format_kwargs) > 0:
@@ -686,10 +690,10 @@ def read_grammar_file(filename: str, **format_kwargs: str) -> str:
 
 def read_utility_grammar_file(filename: str, **format_kwargs: str) -> str:
     """
-    Read and return a grammar file from the 'queries/utility/grammars' folder.
+    Read and return a grammar file from the QUERY_UTIL_GRAMMAR_DIR folder.
     Optionally specify keyword arguments for str.format() call
     """
-    gfile = QUERIES_ROOT_PATH / "util" / "grammars" / f"{filename}.grammar"
+    gfile = QUERY_UTIL_GRAMMAR_DIR / f"{filename}.grammar"
 
     grammar = gfile.read_text()
     if len(format_kwargs) > 0:
