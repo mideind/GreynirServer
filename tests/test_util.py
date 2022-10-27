@@ -34,9 +34,9 @@ if mainpath not in sys.path:
 
 
 def test_util():
-    """Test functions in util.py"""
+    """Test functions in utility.py"""
 
-    from util import icelandic_asciify
+    from utility import icelandic_asciify
 
     is2ascii = {
         "það mikið er þetta gaman": "thad mikid er thetta gaman",

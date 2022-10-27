@@ -42,7 +42,7 @@ from tree import Result
 from queries import read_utility_grammar_file
 
 # The context-free grammar for number utterances recognized by this utility module
-GRAMMAR = read_utility_grammar_file("numbers")
+GRAMMAR = read_utility_grammar_file("number")
 
 _NUMBERS = {
     "núll": 0,

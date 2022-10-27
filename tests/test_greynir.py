@@ -39,7 +39,7 @@ if mainpath not in sys.path:
 from main import app  # noqa
 from db import SessionContext  # noqa
 from db.models import Query, QueryData  # noqa
-from util import read_api_key  # noqa
+from utility import read_api_key  # noqa
 
 # pylint: disable=unused-wildcard-import
 from geo import *  # noqa
@@ -396,7 +396,7 @@ def test_geo():
 def test_util():
     """Test utility functions."""
 
-    from util import icelandic_asciify
+    from utility import icelandic_asciify
 
     assert icelandic_asciify("Sveinbjörn Þórðarson") == "Sveinbjorn THordarson"
     assert icelandic_asciify("sveinbjörn þórðarson") == "sveinbjorn thordarson"

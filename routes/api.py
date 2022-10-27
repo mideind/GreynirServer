@@ -47,7 +47,7 @@ from speech import (
     SUPPORTED_VOICES,
     RECOMMENDED_VOICES,
 )
-from util import read_api_key, icelandic_asciify
+from utility import read_api_key, icelandic_asciify
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH

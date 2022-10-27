@@ -78,7 +78,7 @@ from tree import ProcEnv, Tree, TreeStateDict, Node
 
 # from nertokenizer import recognize_entities
 from images import get_image_url
-from util import modules_in_dir
+from utility import modules_in_dir
 from geo import LatLonTuple
 
 # Query response
@@ -445,7 +445,7 @@ class Query:
         grammar_fragments: List[str] = []
 
         # Load utility modules
-        modnames = modules_in_dir("queries", "utility")
+        modnames = modules_in_dir("queries", "util")
         for modname in sorted(modnames):
             try:
                 um = importlib.import_module(modname)
@@ -593,7 +593,13 @@ class Query:
             return False
 
         # Tokenize and auto-capitalize the query string, without multiplying numbers together
-        toklist = list(tokenize(q, auto_uppercase=self._auto_uppercase and q.islower(), no_multiply_numbers=True))
+        toklist = list(
+            tokenize(
+                q,
+                auto_uppercase=self._auto_uppercase and q.islower(),
+                no_multiply_numbers=True,
+            )
+        )
 
         actual_q = self._query_string_from_toklist(toklist)
 

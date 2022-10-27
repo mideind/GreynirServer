@@ -52,7 +52,7 @@ from settings import Settings, ConfigError
 from db import GreynirDB, Session
 from db.models import Article, Person, Column
 from tree import Tree
-from util import modules_in_dir
+from utility import modules_in_dir
 
 
 _PROFILING = False
