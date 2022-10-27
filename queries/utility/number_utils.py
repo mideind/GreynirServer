@@ -165,9 +165,8 @@ def number_to_neutral(n: int = 0, *, one_hundred: bool = False) -> str:
 
         # Singular/Plural form of "þúsund" is the same
         text.append("þúsund")
-        # Don't prepend 'og' in front of one hundred plus a multiple of ten
-        a, b = divmod(n, 100)
-        if should_prepend_og(n) and not (a == 1 and b > 0):
+        # Don't prepend 'og' in front of 110, 120, ..., 190
+        if should_prepend_og(n) and n not in range(110, 200, 10):
             text.append("og")
 
     if 100 <= n < THOUSAND:

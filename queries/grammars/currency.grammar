@@ -158,6 +158,7 @@ QCurGeneralCost →
 
 QCurConvertAmount →
     UHeilTala QCurUnit_nf
+    | UBrotaTala QCurUnit_nf
     | amount
 
 QCurMany →

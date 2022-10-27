@@ -325,6 +325,15 @@ def test_currency(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "hvað eru 79,50 dollarar margar evrur?"}, "Currency")
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
+    json = qmcall(client, {"q": "hvað eru þrjátíu og fjórir komma sex fjórir dollarar margar evrur?"}, "Currency")
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
+    json = qmcall(client, {"q": "hvað er ein komma ein evra margar krónur?"}, "Currency")
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
+    json = qmcall(client, {"q": "hvað eru ein komma þrjátíu og tvær evrur margar krónur?"}, "Currency")
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
 
 def test_date(client: FlaskClient) -> None:
     """Date module"""

@@ -1266,7 +1266,7 @@ class NonterminalNode(Node):
         # Calculate the base name of this nonterminal (without variants)
         self.nt_base = elems[0]
         self.variants = set(elems[1:])
-        self.is_repeated = self.nt_base[-1] in _REPEAT_SUFFIXES
+        self.is_repeated = self.nt[-1] in _REPEAT_SUFFIXES
 
     def build_simple_tree(self, builder: Any) -> None:
         builder.push_nonterminal(self.nt_base)

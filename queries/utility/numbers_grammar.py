@@ -26,11 +26,10 @@
 
 """
 
-# TODO: Deal with cases and genders of numbers (/fall/kyn/tala)
-# TODO: Allow "tólf hundruð þúsund" & "hundruðir"(need to add to ord.add/auka.csv)
-# TODO: 1 - Floats
-# TODO: 2 - Ordinal numbers
-# TODO: 3 - Fractions
+# TODO: Deal better with cases and genders of numbers
+# TODO: Allow "tólf hundruð þúsund" & "hundruðir" (need to add hundruðir to ord.add/auka.csv)
+# TODO: 1 - Ordinal numbers
+# TODO: 2 - Fractions
 
 from typing import Any
 
@@ -90,6 +89,13 @@ _NUMBERS = {
     "septilljón": 10**42,
     "oktilljón": 10**48,
 }
+
+
+def UBrotaTala(node: Any, params: Any, result: Result) -> None:
+    if "numbers" in result:
+        result["numbers"] = [float(
+            f"{result['numbers'][0]}.{''.join(str(i) for i in result['numbers'][1:])}"
+        )]
 
 
 # Function for nonterminals which have children that should be multiplied together

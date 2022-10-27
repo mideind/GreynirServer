@@ -1,4 +1,5 @@
 # Grammar for the numbers utility module
+UBrotaTala → UTöluðTala/fall/kyn "komma" UTöluðTala/fall/kyn+ | UTöluðTala/fall/kyn "," UTöluðTala/fall/kyn+
 
 UHeilTala → tala | UHeilTala/fall/kyn
 
@@ -26,10 +27,22 @@ UHeilTala/fall/kyn →
     # Zero
     | UTöluðTala0/fall/tala
 
-# Cardinal number
+# The reason we start so large (oktilljón = 10^48) is so that a large number
+# doesn't get interpreted as multiple discrete numbers side by side.
+# E.g. we want 'tvö hundruð þúsund' to be one number,
+# but it would be split into 'tvö' 'hundruð' 'þúsund'
+# if we had shortcuts in the grammar and multiple TöluðTala
+# nonterminals were used side by side in a grammar.
+# This allows us (theoretically) to use constructions like: TöluðTala+
+# to catch a list of numbers, like when people read telephone numbers
+
+# Single cardinal number
 UTöluðTala/fall/kyn →
+    # Something smaller than an oktilljón (quindecillion in english), probably most numbers
     UTöluðTalaUndirOktilljón/fall/kyn
+    # "x oktilljónir ..."
     | UTöluðTalaOktilljónir/fall/kyn UTöluðTalaUndirOktilljón/fall/kyn?
+    # "x oktilljónir og ..."
     | UTöluðTalaOktilljónir/fall/kyn UTöluðTalaOgUndirOktilljón/fall/kyn
 
 # OKTILLJÓNIR

@@ -253,6 +253,12 @@ if not RUNNING_AS_SERVER:
         str(p.resolve())
         for p in (GREYNIR_ROOT_PATH / "queries" / "grammars").glob("*.grammar")
     )
+    extra_files.extend(
+        str(p.resolve())
+        for p in (GREYNIR_ROOT_PATH / "queries" / "utility" / "grammars").glob(
+            "*.grammar"
+        )
+    )
     # Add dialogue TOML files
     extra_files.extend(
         str(p.resolve())
