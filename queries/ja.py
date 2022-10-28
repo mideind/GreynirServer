@@ -41,7 +41,7 @@ from queries.util.num import numbers_to_text, digits_to_text
 from query import AnswerTuple, Query, QueryStateDict
 from tree import Result, Node
 from geo import iceprep_for_street
-from util import read_api_key
+from utility import read_api_key
 
 
 # Module priority

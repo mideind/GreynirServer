@@ -688,7 +688,7 @@ class Query:
                     return True
             except Exception as e:
                 logging.error(
-                    f"Exception in execute_from_tree('{processor['__name__']}') "
+                    f"Exception in execute_from_tree('{processor.get('__name__', 'UNKNOWN')}') "
                     f"for query '{self._query}': {repr(e)}"
                 )
         # No processor was able to answer the query

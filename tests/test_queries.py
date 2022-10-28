@@ -336,19 +336,34 @@ def test_currency(client: FlaskClient) -> None:
         {"q": "hvað eru þrjátíu og fjórir komma sex fjórir dollarar margar evrur?"},
         "Currency",
     )
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+    json2 = qmcall(
+        client,
+        {"q": "hvað eru 34,64 dollarar margar evrur?"},
+        "Currency",
+    )
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None and json["answer"] == json2["answer"]
 
     json = qmcall(
         client, {"q": "hvað er ein komma ein evra margar krónur?"}, "Currency"
     )
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+    json2 = qmcall(
+        client,
+        {"q": "hvað er 1,1 evra margar krónur?"},
+        "Currency",
+    )
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None and json["answer"] == json2["answer"]
 
     json = qmcall(
         client,
         {"q": "hvað eru ein komma þrjátíu og tvær evrur margar krónur?"},
         "Currency",
     )
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+    json2 = qmcall(
+        client,
+        {"q": "hvað eru 1.32 evrur margar krónur?"},
+        "Currency",
+    )
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None and json["answer"] == json2["answer"]
 
 
 def test_date(client: FlaskClient) -> None:

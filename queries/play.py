@@ -34,7 +34,7 @@ from pyyoutube import Api, SearchListResponse
 
 from query import Query
 from queries import gen_answer
-from util import read_api_key
+from utility import read_api_key
 
 
 _PLAY_QTYPE = "Play"
