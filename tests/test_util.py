@@ -36,7 +36,7 @@ if mainpath not in sys.path:
 def test_util():
     """Test functions in utility.py"""
 
-    from utility import icelandic_asciify
+    from utility import icelandic_asciify, GREYNIR_ROOT_PATH, modules_in_dir
 
     is2ascii = {
         "það mikið er þetta gaman": "thad mikid er thetta gaman",
@@ -48,6 +48,15 @@ def test_util():
     }
     for k, v in is2ascii.items():
         assert icelandic_asciify(k) == v
+
+    assert (
+        # utility should be in the root dir
+        (GREYNIR_ROOT_PATH / "utility.py").is_file()
+        # A few files that are found in the root dir
+        and (GREYNIR_ROOT_PATH / "LICENSE.txt").is_file()
+        and (GREYNIR_ROOT_PATH / "requirements.txt").is_file()
+        and (GREYNIR_ROOT_PATH / "main.py").is_file()
+    ), f"Was utility.py moved from the root folder?"
 
     # TODO: Test this function
     # from util import read_api_key

@@ -25,20 +25,8 @@ from typing import List
 from functools import lru_cache
 from pathlib import Path
 
-
-def _find_greynir_root_folder() -> Path:
-    """Small helper function to find the root folder of Greynir."""
-    p = Path(__file__).resolve()
-    # Search for LICENSE.txt file (should be in root folder)
-    while not (p / "LICENSE.txt").is_file() and p.parent != p:
-        p = p.parent
-    assert (
-        p.parent != p
-    ), "Can't find root project folder. Was the LICENSE.txt file moved?"
-    return p.resolve()
-
-
-GREYNIR_ROOT_PATH: Path = _find_greynir_root_folder()
+# Path which points to the root folder of Greynir
+GREYNIR_ROOT_PATH: Path = Path(__file__).parent.resolve()
 
 
 @lru_cache(maxsize=32)
