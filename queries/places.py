@@ -47,7 +47,7 @@ from queries import (
     AnswerTuple,
     read_grammar_file,
 )
-from queries.num import numbers_to_text
+from queries.util.num import numbers_to_text
 from tree import ParamList, Result, Node
 
 

@@ -33,6 +33,7 @@ from typing import (
     FrozenSet,
     Iterable,
     Mapping,
+    MutableMapping,
     Optional,
     List,
     Set,
@@ -44,14 +45,13 @@ from typing import (
     NamedTuple,
     cast,
 )
-
-from typing_extensions import TypedDict
+from typing_extensions import Required, TypedDict
 from types import ModuleType
+
 
 import json
 import re
 
-from collections import OrderedDict
 import abc
 from contextlib import contextmanager
 from islenska.basics import BinMeaning, make_bin_entry
@@ -64,10 +64,15 @@ from reynir.binparser import BIN_Token
 from reynir.simpletree import SimpleTree, SimpleTreeBuilder, NonterminalMap, IdMap
 from reynir.cache import LRU_Cache
 
+# Processing environment
+# A mapping of keywords or nonterminal names to functions
+# for processing sentence trees or, more specifically, query trees
+ProcEnv = MutableMapping[str, Any]
+
 
 class TreeStateDict(TypedDict, total=False):
-    session: Session
-    processor: ModuleType
+    session: Required[Session]
+    processor: Required[ProcEnv]
     bin_db: GreynirBin
     url: str
     authority: float
@@ -1264,7 +1269,7 @@ class NonterminalNode(Node):
         # Calculate the base name of this nonterminal (without variants)
         self.nt_base = elems[0]
         self.variants = set(elems[1:])
-        self.is_repeated = self.nt_base[-1] in _REPEAT_SUFFIXES
+        self.is_repeated = self.nt[-1] in _REPEAT_SUFFIXES
 
     def build_simple_tree(self, builder: Any) -> None:
         builder.push_nonterminal(self.nt_base)
@@ -1328,20 +1333,19 @@ class NonterminalNode(Node):
             # coming from the children into the result
             if p is not None:
                 result.copy_from(p)
-        # Invoke a processor function for this nonterminal, if
-        # present in the given processor module. The check for 'Query'
-        # catches a corner case where the processor may have imported
-        # the Query class, so it is available as an attribute, but it
-        # should not be called!
+        # Invoke a function for this nonterminal, if present
+        # in the given processor/processing environment
+        # (the current module + the shared utility functions).
+        # The check for 'Query' catches a corner case where the
+        # processor may have imported the Query class, so it is
+        # available as an attribute, but it should not be called!
         if params and not self.is_repeated and self.nt_base != "Query":
             # Don't invoke if this is an epsilon nonterminal (i.e. has no children),
             # or if this is a repetition parent (X?, X* or X+)
-            processor = state.get("processor")
+            processor = state["processor"]
             func = cast(
                 Optional[NonterminalFunction],
-                getattr(processor, self.nt_base, state.get("_default"))
-                if processor
-                else None,
+                processor.get(self.nt_base, state.get("_default")),
             )
             if func is not None:
                 try:
@@ -1364,7 +1368,7 @@ class TreeBase:
     _TC = {"person": PersonNode}
 
     def __init__(self) -> None:
-        self.s: Dict[int, Optional[Node]] = OrderedDict()  # Sentence dictionary
+        self.s: Dict[int, Optional[Node]] = dict()  # Sentence dictionary
         self.scores: Dict[int, int] = dict()  # Sentence scores
         self.lengths: Dict[int, int] = dict()  # Sentence lengths, in tokens
         self.stack: Optional[List[Node]] = None
@@ -1601,28 +1605,22 @@ class Tree(TreeBase):
 
     @contextmanager
     def context(
-        self, session: Session, processor: ModuleType, **kwargs: Any
+        self, session: Session, processor: Union[ProcEnv, ModuleType], **kwargs: Any
     ) -> Iterator[TreeStateDict]:
         """Context manager for tree processing, setting up the environment
         and encapsulating the sentence tree processing"""
 
+        if isinstance(processor, ModuleType):
+            processor = cast(ProcEnv, vars(processor))
+
         # Obtain the processor's handler functions
-        article_begin = getattr(processor, "article_begin", None) if processor else None
-        article_end = getattr(processor, "article_end", None) if processor else None
-        sentence = cast(
-            Optional[SentenceFunction],
-            getattr(processor, "sentence", None) if processor else None,
-        )
+        article_begin = processor.get("article_begin", None)
+        article_end = processor.get("article_end", None)
+        sentence = cast(Optional[SentenceFunction], processor.get("sentence", None))
         # If visit(state, node) returns False for a node, do not visit child nodes
-        visit = cast(
-            Optional[VisitFunction],
-            getattr(processor, "visit", None) if processor else None,
-        )
+        visit = cast(Optional[VisitFunction], processor.get("visit", None))
         # If no handler exists for a nonterminal, call default() instead
-        default = cast(
-            Optional[NonterminalFunction],
-            getattr(processor, "default", None) if processor else None,
-        )
+        default = cast(Optional[NonterminalFunction], processor.get("default", None))
 
         with GreynirBin.get_db() as bin_db:
 
@@ -1652,7 +1650,9 @@ class Tree(TreeBase):
             if article_end is not None:
                 article_end(state)
 
-    def process(self, session: Session, processor: ModuleType, **kwargs: Any) -> None:
+    def process(
+        self, session: Session, processor: Union[ProcEnv, ModuleType], **kwargs: Any
+    ) -> None:
         with self.context(session, processor, **kwargs) as state:
             self.process_trees(state)
 

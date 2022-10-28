@@ -73,7 +73,11 @@ from queries import (
 )
 from tree import Result, Node, TerminalNode, ParamList
 from settings import changedlocale
-from queries.num import numbers_to_ordinal, years_to_text, numbers_to_text
+from queries.util.num import (
+    numbers_to_ordinal,
+    years_to_text,
+    numbers_to_text,
+)
 
 
 _DATE_QTYPE = "Date"

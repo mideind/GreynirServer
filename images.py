@@ -41,7 +41,7 @@ import requests
 from db import Session, SessionContext
 from db.models import Link, BlacklistedLink
 from settings import Settings
-from util import read_api_key
+from utility import read_api_key
 
 # HTTP request timeout
 QUERY_TIMEOUT = 4.0
@@ -314,7 +314,6 @@ def get_staticmap_image(
         return None
 
     url = STATICMAP_URL.format(zoom, width, height, key, latitude, longitude)
-    # TODO: Use urllib instead of requests here
     try:
         r = requests.get(url, stream=True)
     except Exception as e:

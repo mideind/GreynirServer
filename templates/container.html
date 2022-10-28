@@ -1,101 +1,105 @@
 <!DOCTYPE html>
 <html lang="is">
+
 <head>
-<meta charset="UTF-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Málgreining fyrir íslensku, greining ritaðrar íslensku, málfræði, stafsetning">
-<meta name="application-name" content="Greynir">
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <meta name="description" content="Málgreining fyrir íslensku, greining ritaðrar íslensku, málfræði, stafsetning">
+   <meta name="application-name" content="Greynir">
 
-<title>Greynir - {{ title or "Málgreining fyrir íslensku" }}</title>
+   <title>Greynir - {{ title or "Málgreining fyrir íslensku" }}</title>
 
-<link rel="apple-touch-icon" sizes="57x57" href="/static/img/apple-icon-57x57.png">
-<link rel="apple-touch-icon" sizes="60x60" href="/static/img/apple-icon-60x60.png">
-<link rel="apple-touch-icon" sizes="72x72" href="/static/img/apple-icon-72x72.png">
-<link rel="apple-touch-icon" sizes="76x76" href="/static/img/apple-icon-76x76.png">
-<link rel="apple-touch-icon" sizes="114x114" href="/static/img/apple-icon-114x114.png">
-<link rel="apple-touch-icon" sizes="120x120" href="/static/img/apple-icon-120x120.png">
-<link rel="apple-touch-icon" sizes="144x144" href="/static/img/apple-icon-144x144.png">
-<link rel="apple-touch-icon" sizes="152x152" href="/static/img/apple-icon-152x152.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/static/img/apple-icon-180x180.png">
-<link rel="icon" type="image/png" sizes="192x192"  href="/static/img/android-icon-192x192.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="96x96" href="/static/img/favicon-96x96.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon-16x16.png">
-<link rel="manifest" href="/static/manifest.json">
-<meta property="og:image" content="https://greynir.is/static/img/greynir_opengraph.png">
+   <link rel="apple-touch-icon" sizes="57x57" href="/static/img/apple-icon-57x57.png">
+   <link rel="apple-touch-icon" sizes="60x60" href="/static/img/apple-icon-60x60.png">
+   <link rel="apple-touch-icon" sizes="72x72" href="/static/img/apple-icon-72x72.png">
+   <link rel="apple-touch-icon" sizes="76x76" href="/static/img/apple-icon-76x76.png">
+   <link rel="apple-touch-icon" sizes="114x114" href="/static/img/apple-icon-114x114.png">
+   <link rel="apple-touch-icon" sizes="120x120" href="/static/img/apple-icon-120x120.png">
+   <link rel="apple-touch-icon" sizes="144x144" href="/static/img/apple-icon-144x144.png">
+   <link rel="apple-touch-icon" sizes="152x152" href="/static/img/apple-icon-152x152.png">
+   <link rel="apple-touch-icon" sizes="180x180" href="/static/img/apple-icon-180x180.png">
+   <link rel="icon" type="image/png" sizes="192x192" href="/static/img/android-icon-192x192.png">
+   <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32x32.png">
+   <link rel="icon" type="image/png" sizes="96x96" href="/static/img/favicon-96x96.png">
+   <link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon-16x16.png">
+   <link rel="manifest" href="/static/manifest.json">
+   <meta property="og:image" content="https://greynir.is/static/img/greynir_opengraph.png">
 
-<meta name="msapplication-TileColor" content="#ffffff">
-<meta name="msapplication-TileImage" content="/static/img/ms-icon-144x144.png">
-<meta name="theme-color" content="#ffffff">
+   <meta name="msapplication-TileColor" content="#ffffff">
+   <meta name="msapplication-TileImage" content="/static/img/ms-icon-144x144.png">
+   <meta name="theme-color" content="#ffffff">
 
-{% block meta %}
-{% endblock %}
+   {% block meta %}
+   {% endblock %}
 
-<!-- Bootstrap main CSS -->
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" 
-   integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
-<!-- Bootstrap theme CSS -->
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap-theme.min.css" 
-   integrity="sha384-6pzBo3FDv/PJ8r2KRkGHifhEocL+1X2rVCTTkUfGk7/0pbek5mMa1upzvWbrUbOZ" crossorigin="anonymous">
+   <!-- Bootstrap main CSS -->
+   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+      integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+   <!-- Bootstrap theme CSS -->
+   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap-theme.min.css"
+      integrity="sha384-6pzBo3FDv/PJ8r2KRkGHifhEocL+1X2rVCTTkUfGk7/0pbek5mMa1upzvWbrUbOZ" crossorigin="anonymous">
 
-{% block styles %}
-{% endblock %}
+   {% block styles %}
+   {% endblock %}
 
-{% block scripts %}
-{% endblock %}
+   {% block scripts %}
+   {% endblock %}
 
 </head>
+
 <body id="bodytag">
 
-{% block navbar %}
-<!-- Fixed navbar -->
-<nav class="navbar navbar-default navbar-fixed-top">
-   <div class="container">
-      <div class="navbar-header">
-         <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
-            data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-         </button>
-         <a class="navbar-brand" href="{{ url_for('routes.main') }}">
-            <img src="{{ url_for('static', filename='img/GreynirLogoHoriz180x80.png') }}" width=90 height=40>
-         </a>
+   {% block navbar %}
+   <!-- Fixed navbar -->
+   <nav class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
+         <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
+               aria-expanded="false" aria-controls="navbar">
+               <span class="sr-only">Toggle navigation</span>
+               <span class="icon-bar"></span>
+               <span class="icon-bar"></span>
+               <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="{{ url_for('routes.main') }}">
+               <img src="{{ url_for('static', filename='img/GreynirLogoHoriz180x80.png') }}" width=90 height=40>
+            </a>
+         </div>
+         <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+               <!--<li id="navid-main"><a href="{{ url_for('routes.main') }}">Heim</a></li> -->
+               <li id="navid-news"><a href="{{ url_for('routes.news') }}">Fréttir</a></li>
+               <li id="navid-people"><a href="{{ url_for('routes.people_top') }}">Fólk</a></li>
+               <li id="navid-locations"><a href="{{ url_for('routes.locations') }}">Staðir</a></li>
+               <li id="navid-words"><a href="{{ url_for('routes.words') }}">Orð</a></li>
+               <li id="navid-analysis"><a href="{{ url_for('routes.analysis') }}">Málgreining</a></li>
+               <li id="navid-correct"><a href="https://yfirlestur.is">Yfirlestur</a></li>
+               {% if nn_translate_enabled %}
+               <li id="navid-translate"><a href="{{ url_for('routes.translate') }}">Þýðing</a></li>
+               {% endif %}
+               <li id="navid-stats"><a href="{{ url_for('routes.stats') }}">Tölfræði</a></li>
+               <li id="navid-about"><a href="{{ url_for('routes.about') }}">Um Greyni</a></li>
+            </ul>
+         </div>
       </div>
-      <div id="navbar" class="navbar-collapse collapse">
-         <ul class="nav navbar-nav">
-            <!--<li id="navid-main"><a href="{{ url_for('routes.main') }}">Heim</a></li> -->
-            <li id="navid-news"><a href="{{ url_for('routes.news') }}">Fréttir</a></li>
-            <li id="navid-people"><a href="{{ url_for('routes.people_top') }}">Fólk</a></li>
-            <li id="navid-locations"><a href="{{ url_for('routes.locations') }}">Staðir</a></li>
-            <li id="navid-words"><a href="{{ url_for('routes.words') }}">Orð</a></li>
-            <li id="navid-analysis"><a href="{{ url_for('routes.analysis') }}">Málgreining</a></li>
-            <li id="navid-correct"><a href="{{ url_for('routes.correct') }}">Yfirlestur</a></li>
-            {% if nn_translate_enabled %}
-                <li id="navid-translate"><a href="{{ url_for('routes.translate') }}">Þýðing</a></li>
-            {% endif %}
-            <li id="navid-stats"><a href="{{ url_for('routes.stats') }}">Tölfræði</a></li>
-            <li id="navid-about"><a href="{{ url_for('routes.about') }}">Um Greyni</a></li>
-         </ul>
-      </div>
-   </div>
-</nav>
-{% endblock %}
+   </nav>
+   {% endblock %}
 
-{% block container -%}
-{%- endblock %}
+   {% block container -%}
+   {%- endblock %}
 
-<!-- jQuery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js" 
-   integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
-<!-- Bootstrap -->
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js" 
-   integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
+   <!-- jQuery -->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"
+      integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+   <!-- Bootstrap -->
+   <script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"
+      integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd"
+      crossorigin="anonymous"></script>
 
-{% block endscripts -%}
-{%- endblock %}
+   {% block endscripts -%}
+   {%- endblock %}
 
 </body>
+
 </html>

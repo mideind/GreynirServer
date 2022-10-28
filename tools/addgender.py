@@ -20,8 +20,6 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module is written in Python 3
-
 """
 
 from settings import Settings, ConfigError

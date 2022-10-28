@@ -21,7 +21,7 @@
 
 """
 
-from typing import Any, Dict, NamedTuple
+from typing import Any, Dict, NamedTuple, Optional
 from datetime import datetime
 
 from db.models import Location
@@ -34,10 +34,7 @@ MODULE_NAME = __name__
 PROCESSOR_TYPE = "token"
 
 
-Loc = NamedTuple("Loc", [
-    ("name", str),
-    ("kind", str)
-])
+Loc = NamedTuple("Loc", [("name", str), ("kind", Optional[str])])
 
 LOCFL = ["lönd", "göt", "örn", "borg"]
 LOCFL_TO_KIND = dict(zip(LOCFL, ["country", "street", "placename", "placename"]))
@@ -166,7 +163,7 @@ def article_begin(state: TreeStateDict) -> None:
     session.execute(Location.table().delete().where(Location.article_url == url))
 
     # Set that will contain all unique locations found in the article
-    state["locations"] = set()
+    state["locations"] = set()  # type: ignore
 
 
 def article_end(state: TreeStateDict) -> None:

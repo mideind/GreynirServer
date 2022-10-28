@@ -1,4 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Run scraper and processor programs
+#
+
+set -o errexit   # Exit when a command fails
+set -o nounset   # Disallow unset variables
+set -o pipefail  # Pipeline command fails if any command fails
 
 # Scraper
 cd ~/Greynir || exit 1

@@ -1,11 +1,14 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #
 # Start IPython shell using config stored in repository
 #
 
+set -o errexit   # Exit when a command fails
+set -o nounset   # Disallow unset variables
+set -o pipefail  # Pipeline command fails if any command fails
+
 command -v ipython >/dev/null 2>&1 || \
 { echo >&2 "Requires IPython. Run 'pip install ipython'."; exit 1; }
-
 
 SCRIPT_DIR=$(dirname "$0")
 CONFIG_PATH="${SCRIPT_DIR}/.ipython.py"

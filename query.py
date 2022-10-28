@@ -26,6 +26,7 @@
 """
 
 from typing import (
+    ChainMap as ChainMapType,
     DefaultDict,
     Optional,
     Sequence,
@@ -43,7 +44,7 @@ from typing import (
 )
 from typing_extensions import Protocol
 
-from types import ModuleType
+from types import FunctionType, ModuleType
 
 import importlib
 import logging
@@ -87,11 +88,11 @@ from reynir.fastparser import Node as SPPF_Node
 from reynir.grammar import GrammarError, Nonterminal
 from islenska.bindb import BinFilterFunc
 
-from tree import Tree, TreeStateDict, Node, Result
+from tree import ProcEnv, Tree, TreeStateDict, Node, Result
 
 # from nertokenizer import recognize_entities
 from images import get_image_url
-from processor import modules_in_dir
+from utility import QUERIES_DIR, modules_in_dir, QUERIES_UTIL_DIR
 from geo import LatLonTuple
 
 
@@ -455,12 +456,10 @@ class QueryTree(Tree):
         return set(node.string_self() for node in self._query_trees)
 
     def process_queries(
-        self, query: "Query", session: Session, processor: ModuleType
+        self, query: "Query", session: Session, processor: ProcEnv
     ) -> bool:
         """Process all query trees that the given processor is interested in"""
-        processor_query_types: Set[str] = getattr(
-            processor, "QUERY_NONTERMINALS", set()
-        )
+        processor_query_types: Set[str] = processor.get("QUERY_NONTERMINALS", set())
         # Every tree processor must be interested in at least one query type
         assert isinstance(processor_query_types, set)
         # For development, we allow processors to be disinterested in any query
@@ -486,7 +485,7 @@ class QueryTree(Tree):
                 # Is the processor interested in the root nonterminal
                 # of this query tree?
                 if query_tree.string_self() in processor_query_types:
-                    # Yes: hand the query tree over to the processor
+                    # Hand the query tree over to the processor
                     self.process_sentence(state, query_tree)
                     if query.has_answer():
                         # The processor successfully answered the query: We're done
@@ -524,7 +523,10 @@ class Query:
     result object if successful."""
 
     # Processors that handle parse trees
-    _tree_processors: List[ModuleType] = []
+    _tree_processors: List[ProcEnv] = []
+    # Functions from utility modules,
+    # facilitating code reuse between query modules
+    _utility_functions: ChainMapType[str, FunctionType] = ChainMap()
     # Handler functions within processors that handle plain text
     _text_processors: List[Callable[["Query"], bool]] = []
     # Singleton instance of the query parser
@@ -619,7 +621,7 @@ class Query:
         # Load the query processor modules found in the
         # queries directory. The modules can be tree and/or text processors,
         # and we sort them into two lists, accordingly.
-        modnames = modules_in_dir("queries")
+        modnames = modules_in_dir(QUERIES_DIR)
         for modname in sorted(modnames):
             try:
                 m = importlib.import_module(modname)
@@ -644,14 +646,48 @@ class Query:
                 )
         # Sort the processors by descending priority
         # so that the higher-priority ones get invoked bfore the lower-priority ones
-        cls._tree_processors = [t[1] for t in sorted(tree_procs, key=lambda x: -x[0])]
+        # We create a ChainMap (processing environment) for each tree processor,
+        # containing the processors attributes with the utility modules as a fallback
+        cls._tree_processors = [
+            cls.create_processing_env(t[1])
+            for t in sorted(tree_procs, key=lambda x: -x[0])
+        ]
         cls._text_processors = [t[1] for t in sorted(text_procs, key=lambda x: -x[0])]
 
-        # Obtain query grammar fragments from the tree processors
+        # Obtain query grammar fragments from the utility modules and tree processors
         grammar_fragments: List[str] = []
+
+        # Load utility modules
+        modnames = modules_in_dir(QUERIES_UTIL_DIR)
+        for modname in sorted(modnames):
+            try:
+                um = importlib.import_module(modname)
+                exported = vars(um)  # Get all exported values from module
+
+                # Pop grammar fragment, if any
+                fragment = exported.pop("GRAMMAR", None)
+                if fragment and isinstance(fragment, str):
+                    # This utility module has a grammar fragment,
+                    # and probably corresponding nonterminal functions
+                    # We add the grammar fragment to our grammar
+                    grammar_fragments.append(fragment)
+                    # and the nonterminal functions to the shared functions ChainMap,
+                    # ignoring non-callables and underscore (private) attributes
+                    cls._utility_functions.update(
+                        (
+                            (k, v)
+                            for k, v in exported.items()
+                            if callable(v) and not k.startswith("_")
+                        )
+                    )
+            except ImportError as e:
+                logging.error(
+                    "Error importing utility module {0}: {1}".format(modname, e)
+                )
+
         for processor in cls._tree_processors:
             # Check whether this dialogue/tree processor supplies a query grammar fragment
-            fragment = getattr(processor, "GRAMMAR", None)
+            fragment = processor.pop("GRAMMAR", None)
             if fragment and isinstance(fragment, str):
                 # Looks legit: add it to our list
                 grammar_fragments.append(fragment)
@@ -677,6 +713,16 @@ class Query:
         # Initialize a singleton parser instance for queries,
         # with the nonterminal 'QueryRoot' as the grammar root
         cls._parser = QueryParser(grammar_additions)
+
+    @staticmethod
+    def create_processing_env(processor: ModuleType) -> ProcEnv:
+        """
+        Create a new child of the utility functions ChainMap.
+        Returns a mapping suitable for parsing query trees,
+        where the current processor's functions are prioritized over
+        the shared utility module functions.
+        """
+        return Query._utility_functions.new_child(vars(processor))
 
     def _parse(self, toklist: Iterable[Tok]) -> Tuple[ResponseDict, Dict[int, str]]:
         """Parse a token list as a query"""
@@ -757,8 +803,14 @@ class Query:
             self.set_error("E_EMPTY_QUERY")
             return False
 
-        # Tokenize and auto-capitalize the query string
-        toklist = list(tokenize(q, auto_uppercase=self._auto_uppercase and q.islower()))
+        # Tokenize and auto-capitalize the query string, without multiplying numbers together
+        toklist = list(
+            tokenize(
+                q,
+                auto_uppercase=self._auto_uppercase and q.islower(),
+                no_multiply_numbers=True,
+            )
+        )
 
         actual_q = self._query_string_from_toklist(toklist)
 
@@ -849,13 +901,17 @@ class Query:
                 # Note that passing query=self here means that the
                 # "query" field of the TreeStateDict is populated,
                 # turning it into a QueryStateDict.
-                if self._tree.process_queries(self, self._session, processor):
+                if self._tree.process_queries(
+                    self,
+                    self._session,
+                    processor,
+                ):
                     # This processor found an answer, which is already stored
                     # in the Query object: return True
                     return True
             except Exception as e:
                 logging.error(
-                    f"Exception in execute_from_tree('{processor.__name__}') "
+                    f"Exception in execute_from_tree('{processor.get('__name__', 'UNKNOWN')}') "
                     f"for query '{self._query}': {repr(e)}"
                 )
         # No processor was able to answer the query

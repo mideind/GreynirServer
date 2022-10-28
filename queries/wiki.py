@@ -192,6 +192,8 @@ def _clean_answer(answer: str) -> str:
     # TODO: Fix me
     if a.startswith("Getur líka átt"):
         a = ". ".join(a.split(".")[1:])
+
+    # TODO: "200 fm" -> "200 fermetrar"
     # Remove text within parentheses
     a = re.sub(r"\([^)]+\)", " ", a)
     # Fix any whitespace formatting issues created by

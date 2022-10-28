@@ -46,7 +46,7 @@ from queries import (
     query_geocode_api_addr,
     query_traveltime_api,
 )
-from queries.num import numbers_to_text
+from queries.util.num import numbers_to_text
 from geo import distance, capitalize_placename
 
 

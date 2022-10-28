@@ -388,7 +388,8 @@ def article_begin(state: TreeStateDict) -> None:
     # pylint: disable=no-member
     session.execute(Entity.table().delete().where(Entity.article_url == url))
     # Create a name mapping dict for the article
-    state["names"] = dict()  # Last name -> full name
+    # Last name -> full name
+    state["names"] = dict()  # type: ignore
 
 
 def article_end(state: TreeStateDict) -> None:

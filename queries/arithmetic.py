@@ -24,6 +24,7 @@
 """
 
 # TODO: Hvað er X með Y aukastöfum?
+# TODO: Styðja hvað er X þúsund "kall" með vask?
 
 from typing import Dict, Any, List, Mapping, Optional, Sequence, Union, cast
 
@@ -36,7 +37,7 @@ import random
 from query import AnswerTuple, ContextDict, Query, QueryStateDict
 from queries import iceformat_float, gen_answer, read_grammar_file
 from tree import Result, Node, TerminalNode, ParamList
-from queries.num import floats_to_text, numbers_to_text
+from queries.util.num import floats_to_text, numbers_to_text
 
 
 _ARITHMETIC_QTYPE = "Arithmetic"

@@ -38,7 +38,7 @@ from reynir.bintokenizer import tokenize
 
 from db import SessionContext, desc
 from db.models import Article, Word, Root, Column
-from db.queries import WordFrequencyQuery
+from db.sql import WordFrequencyQuery
 
 
 @routes.route("/words")

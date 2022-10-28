@@ -28,13 +28,12 @@ from typing import Optional, List, Dict, Any, Union, Match, cast
 import re
 import logging
 from random import choice
-from collections import OrderedDict
 
 from pyyoutube import Api, SearchListResponse
 
 from query import Query
 from queries import gen_answer
-from util import read_api_key
+from utility import read_api_key
 
 
 _PLAY_QTYPE = "Play"
@@ -319,42 +318,38 @@ _ADJ = "|".join(
 _POST = "|".join(("fyrir mig", "fyrir okkur"))
 
 
-REGEX_Q2H = OrderedDict(
-    {
-        # Any music
-        r"^(?:{0})\s?(?:{1})?\s(tónlist|tónverk|lag|slagara)\s?(?:{2})?$".format(
-            _VERB, _ADJ, _POST
-        ): _play_music,
-        # Jazz
-        r"^(?:{0})\s?(?:{1})?\s(djass|jazz|jass|djasstónlist|djasslag|djass lag)\s?(?:{2})?$".format(
-            _VERB, _ADJ, _POST
-        ): _play_jazz,
-        # Blues
-        r"^(?:{0})\s?(?:{1})?\s(blús|blúsinn|blústónlist|blúslag|blús lag)\s?(?:{2})?$".format(
-            _VERB, _ADJ, _POST
-        ): _play_blues,
-        # Rock
-        r"^(?:{0})\s?(?:{1})?\s(rokk|rokktónlist|rokklag|rokk og ról)\s?(?:{2})?$".format(
-            _VERB, _ADJ, _POST
-        ): _play_rock,
-        # Classical
-        r"^(?:{0})\s?(?:{1})?\s(klassíska tónlist|klassík|klassískt)\s?(?:{2})?$".format(
-            _VERB, _ADJ, _POST
-        ): _play_classical,
-        # Electronic
-        r"^(?:{0})\s?(?:{1})?\s(raftónlist|elektróníska tónlist|elektrónískt)\s?(?:{2})?$".format(
-            _VERB, _ADJ, _POST
-        ): _play_electronic,
-        # Play music by X
-        r"^(?:{0})\s?(?:{1})?\s(?:tónlist|tónverk|lag|verk|slagara) (?:eftir|með|í flutningi) (.+)$".format(
-            _VERB, _ADJ
-        ): _play_music_by_artist,
-        # Play song Y by X
-        r"(?:{0}) (.+) (?:eftir|með|í flutningi) (.+)$".format(
-            _VERB
-        ): _play_song_by_artist,
-    }
-)
+REGEX_Q2H = {
+    # Any music
+    r"^(?:{0})\s?(?:{1})?\s(tónlist|tónverk|lag|slagara)\s?(?:{2})?$".format(
+        _VERB, _ADJ, _POST
+    ): _play_music,
+    # Jazz
+    r"^(?:{0})\s?(?:{1})?\s(djass|jazz|jass|djasstónlist|djasslag|djass lag)\s?(?:{2})?$".format(
+        _VERB, _ADJ, _POST
+    ): _play_jazz,
+    # Blues
+    r"^(?:{0})\s?(?:{1})?\s(blús|blúsinn|blústónlist|blúslag|blús lag)\s?(?:{2})?$".format(
+        _VERB, _ADJ, _POST
+    ): _play_blues,
+    # Rock
+    r"^(?:{0})\s?(?:{1})?\s(rokk|rokktónlist|rokklag|rokk og ról)\s?(?:{2})?$".format(
+        _VERB, _ADJ, _POST
+    ): _play_rock,
+    # Classical
+    r"^(?:{0})\s?(?:{1})?\s(klassíska tónlist|klassík|klassískt)\s?(?:{2})?$".format(
+        _VERB, _ADJ, _POST
+    ): _play_classical,
+    # Electronic
+    r"^(?:{0})\s?(?:{1})?\s(raftónlist|elektróníska tónlist|elektrónískt)\s?(?:{2})?$".format(
+        _VERB, _ADJ, _POST
+    ): _play_electronic,
+    # Play music by X
+    r"^(?:{0})\s?(?:{1})?\s(?:tónlist|tónverk|lag|verk|slagara) (?:eftir|með|í flutningi) (.+)$".format(
+        _VERB, _ADJ
+    ): _play_music_by_artist,
+    # Play song Y by X
+    r"(?:{0}) (.+) (?:eftir|með|í flutningi) (.+)$".format(_VERB): _play_song_by_artist,
+}
 
 
 def handle_plain_text(q: Query) -> bool:

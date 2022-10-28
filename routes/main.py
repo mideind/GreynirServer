@@ -51,7 +51,6 @@ from article import Article as ArticleProxy
 from search import Search
 from treeutil import TreeUtility, StatsDict
 from images import Img, get_image_url, update_broken_image_url, blacklist_image_url
-from doc import SUPPORTED_DOC_MIMETYPES
 
 from . import routes, max_age, cache, text_from_request, better_jsonify, restricted
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH, MAX_TEXT_LENGTH_VIA_URL

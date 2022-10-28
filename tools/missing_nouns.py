@@ -19,7 +19,7 @@ from db.models import Article
 
 with SessionContext(read_only=True) as session:
     q = (
-        session.query(Article.id, Article.timestamp, Article.tokens)
+        session.query(Article.id, Article.timestamp, Article.tokens)  # type: ignore
         .filter(Article.tree != None)
         .filter(Article.timestamp != None)
         .filter(Article.timestamp <= datetime.utcnow())
@@ -31,6 +31,8 @@ with SessionContext(read_only=True) as session:
 
     for i, a in enumerate(q.yield_per(100)):
         print("%d\r" % i, end="")
+        if not a.tokens:
+            continue
         tokens = json.loads(a.tokens)
         # Paragraphs
         for p in tokens:

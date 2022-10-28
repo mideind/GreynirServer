@@ -22,14 +22,12 @@
 
 """
 
-from typing import Tuple, cast
+from typing import Any, Dict, List, Set, Tuple, cast
 
 import os
 import sys
 import json
 import importlib
-
-from collections import OrderedDict
 
 # Shenanigans to enable Pytest to discover modules in the
 # main workspace directory (the parent of /tests)
@@ -61,17 +59,17 @@ class SessionShim:
 
     def __init__(self):
         # Accumulate rows that are added to the session
-        self.defs = set()
+        self.defs: Set[Any] = set()
 
-    def execute(self, command):
+    def execute(self, command: str):
         """Shim out SQLAlchemy execute() calls"""
         pass
 
-    def add(self, row):
+    def add(self, row: Any) -> None:
         """Shim out SQLAlchemy add() calls"""
         raise NotImplementedError
 
-    def check(self, t):
+    def check(self, t: Tuple[str, ...]):
         """Check whether the tuple t is in the defs set, and
         removes it if it is, or raises an exception otherwise"""
         self.defs.remove(t)
@@ -79,7 +77,7 @@ class SessionShim:
     def is_empty(self):
         return not self.defs
 
-    def __contains__(self, t):
+    def __contains__(self, t: Tuple[str, ...]):
         return t in self.defs
 
 
@@ -105,10 +103,10 @@ def _make_tree(text: str) -> Tuple[Tree, str]:
     fp = Fast_Parser(verbose=False)
     ip = IncrementalParser(fp, toklist, verbose=False)
 
-    pgs = []
+    pgs: List[List[Any]] = []
     # Dict of parse trees in string dump format,
     # stored by sentence index (1-based)
-    trees = OrderedDict()
+    trees: Dict[int, str] = dict()
     num_sent = 0
     for p in ip.paragraphs():
         pgs.append([])
@@ -271,7 +269,7 @@ def test_locations():
     pmod = importlib.import_module("processors.locations")
 
     tc = TokenContainer(tokens_json, "", 1.0)
-    tc.process(session, pmod)  # type: ignore
+    tc.process(cast(Session, session), pmod)
 
     session.check(("Fiskislóð 31b", "address"))
     session.check(("Öldugata 4", "address"))

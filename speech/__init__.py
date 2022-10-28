@@ -22,18 +22,18 @@
 
 """
 
-from typing import List, Iterable, Dict, Any
+from typing import Iterable, Dict, Any
 from types import ModuleType
 
-import os
-import sys
 import logging
 from inspect import isfunction
 import importlib
 
+from utility import GREYNIR_ROOT_DIR, modules_in_dir
+
 
 DEFAULT_VOICE = "Dora"
-VOICES_DIR = "speech/voices"
+VOICES_DIR = GREYNIR_ROOT_DIR / "speech" / "voices"
 
 # Text formats
 # For details about SSML markup, see:
@@ -52,20 +52,6 @@ def load_voice_modules() -> Dict[str, ModuleType]:
     """Dynamically load all voice modules, map voice ID
     strings to the relevant modules."""
 
-    def modules_in_dir(directory: str) -> List[str]:
-        """Find all python modules in a given directory"""
-        files = os.listdir(directory)
-        modnames: List[str] = list()
-        for fname in files:
-
-            if not fname.endswith(".py"):
-                continue
-            if fname.startswith("_"):  # Skip any files starting with _
-                continue
-            mod = directory.replace("/", ".") + "." + fname[:-3]  # Cut off .py suffix
-            modnames.append(mod)
-        return modnames
-
     v2m = {}
     for modname in modules_in_dir(VOICES_DIR):
         try:
@@ -77,7 +63,7 @@ def load_voice_modules() -> Dict[str, ModuleType]:
             for v in voices:
                 v2m[v] = m
         except Exception as e:
-            print(f"Error importing voice module {modname}: {e}")
+            logging.error(f"Error importing voice module {modname}: {e}")
 
     return v2m
 

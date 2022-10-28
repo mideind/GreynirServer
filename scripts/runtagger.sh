@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Run topic vector tagging program
+#
 
 # Tagger
 cd ~/github/Greynir/vectors || exit 1

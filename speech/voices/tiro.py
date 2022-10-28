@@ -26,7 +26,7 @@ from typing import Optional
 
 import logging
 
-from . import generate_data_uri, strip_markup, mimetype4audiofmt
+from . import generate_data_uri, strip_markup, mimetype_for_audiofmt
 
 import requests
 
@@ -50,7 +50,7 @@ def _tiro_synthesized_text_data(
 
     # No proper support for SSML yet in Tiro's API
     text = strip_markup(text)
-    text_format = "text"
+    # text_format = "text"
 
     jdict = {
         "Engine": "standard",
@@ -87,7 +87,7 @@ def _tiro_synthesized_text_url(
         return None
 
     # Generate Data URI from the bytes received
-    mime_type = mimetype4audiofmt(audio_format)
+    mime_type = mimetype_for_audiofmt(audio_format)
     data_uri = generate_data_uri(data, mime_type=mime_type)
 
     return data_uri

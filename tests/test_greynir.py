@@ -39,7 +39,7 @@ if mainpath not in sys.path:
 from main import app  # noqa
 from db import SessionContext  # noqa
 from db.models import Query, QueryData  # noqa
-from util import read_api_key  # noqa
+from utility import read_api_key  # noqa
 
 # pylint: disable=unused-wildcard-import
 from geo import *  # noqa
@@ -83,7 +83,6 @@ SKIP_ROUTES = frozenset(
         "/exit.api",
         "/salescloud/nyskraning",
         "/salescloud/breyting",
-        "/correct.task",
         "/register_query_data.api",
     )
 )
@@ -394,24 +393,16 @@ def test_geo():
     assert location_info("Fiskislóð 31", "address")["country"] == "IS"
 
 
-def test_doc():
-    """Test document-related functions in doc.py"""
-    from doc import PlainTextDocument, DocxDocument
+def test_util():
+    """Test utility functions."""
 
-    txt_bytes = "Halló, gaman að kynnast þér.\n\nHvernig gengur?".encode("utf-8")
-    doc = PlainTextDocument(txt_bytes)
-    assert doc.extract_text() == txt_bytes.decode("utf-8")
+    from utility import icelandic_asciify
 
-    # Change to same directory as this file in order
-    # to resolve relative path to files used by tests
-    prev_dir = os.getcwd()
-    abspath = os.path.abspath(__file__)
-    dname = os.path.dirname(abspath)
-    os.chdir(dname)
-
-    txt = "Þetta er prufa.\n\nLína 1.\n\nLína 2."
-    doc = DocxDocument("files/test.docx")
-    assert doc.extract_text() == txt
-
-    # Change back to previous directory
-    os.chdir(prev_dir)
+    assert icelandic_asciify("Sveinbjörn Þórðarson") == "Sveinbjorn THordarson"
+    assert icelandic_asciify("sveinbjörn þórðarson") == "sveinbjorn thordarson"
+    assert icelandic_asciify("Þetta er prófun") == "THetta er profun"
+    assert (
+        icelandic_asciify("örn flýgur hægt suður við ána")
+        == "orn flygur haegt sudur vid ana"
+    )
+    assert icelandic_asciify("ÞJÓFUR PRÓFAR ÍSVÉL") == "THJOFUR PROFAR ISVEL"

@@ -31,7 +31,7 @@
 
 """
 
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, List, cast
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, List, Union, cast
 from types import ModuleType
 
 import getopt
@@ -39,7 +39,6 @@ import importlib
 import json
 import sys
 import time
-import os
 
 if TYPE_CHECKING:
     from multiprocessing.dummy import Pool
@@ -48,28 +47,16 @@ else:
 
 from contextlib import closing
 from datetime import datetime
+from pathlib import Path
 
 from settings import Settings, ConfigError
-from db import Scraper_DB, Session
+from db import GreynirDB, Session
 from db.models import Article, Person, Column
-from tree import Tree
+from tree import Tree, ProcEnv
+from utility import modules_in_dir
 
 
 _PROFILING = False
-
-
-def modules_in_dir(directory: str) -> List[str]:
-    """Find all python modules in a given directory"""
-    files = os.listdir(directory)
-    modnames: List[str] = list()
-    for fname in files:
-        if not fname.endswith(".py"):
-            continue
-        if fname.startswith("_"):  # Skip any files starting with _
-            continue
-        mod = directory.replace("/", ".") + "." + fname[:-3]  # Cut off .py
-        modnames.append(mod)
-    return modnames
 
 
 class TokenContainer:
@@ -80,7 +67,9 @@ class TokenContainer:
         self.url = url
         self.authority = authority
 
-    def process(self, session: Session, processor: ModuleType, **kwargs: Any) -> None:
+    def process(
+        self, session: Session, processor: Union[ProcEnv, ModuleType], **kwargs: Any
+    ) -> None:
         """Process tokens for an entire article.  Iterate over each paragraph,
         sentence and token, calling revelant functions in processor module."""
 
@@ -89,16 +78,19 @@ class TokenContainer:
         if not self.tokens:
             return
 
-        # Get functions from processor module
-        article_begin = getattr(processor, "article_begin", None)
-        article_end = getattr(processor, "article_end", None)
-        paragraph_begin = getattr(processor, "paragraph_begin", None)
-        paragraph_end = getattr(processor, "paragraph_end", None)
-        sentence_begin = getattr(processor, "sentence_begin", None)
-        sentence_end = getattr(processor, "sentence_end", None)
-        token_func = getattr(processor, "token", None)
+        if isinstance(processor, ModuleType):
+            processor = cast(ProcEnv, vars(processor))
 
-        # Make sure at least one of these functions is is present
+        # Get functions from processor module
+        article_begin = processor.get("article_begin", None)
+        article_end = processor.get("article_end", None)
+        paragraph_begin = processor.get("paragraph_begin", None)
+        paragraph_end = processor.get("paragraph_end", None)
+        sentence_begin = processor.get("sentence_begin", None)
+        sentence_end = processor.get("sentence_end", None)
+        token_func = processor.get("token", None)
+
+        # Make sure at least one of these functions is present
         if not any(
             (
                 article_begin,
@@ -161,13 +153,13 @@ _PROCESSOR_TYPES = frozenset((_PROCESSOR_TYPE_TREE, _PROCESSOR_TYPE_TOKEN))
 class Processor:
     """The worker class that processes parsed articles"""
 
-    _db: Optional[Scraper_DB] = None
+    _db: Optional[GreynirDB] = None
 
     @classmethod
     def _init_class(cls) -> None:
         """Initialize class attributes"""
         if cls._db is None:
-            cls._db = Scraper_DB()
+            cls._db = GreynirDB()
 
     @classmethod
     def cleanup(cls) -> None:
@@ -185,10 +177,10 @@ class Processor:
         self.num_workers = num_workers
 
         self.processors: List[str] = []
-        self.pmodules: Optional[List[ModuleType]] = None
+        self.pmodules: Optional[List[ProcEnv]] = None
 
         # Find .py files in the processor directory
-        modnames = modules_in_dir(processor_directory)
+        modnames = modules_in_dir(Path(processor_directory))
 
         if single_processor:
             # Remove all except the single processor specified
@@ -238,7 +230,7 @@ class Processor:
         # If first article within a new process, import the processor modules
         if self.pmodules is None:
             self.pmodules = [
-                importlib.import_module(modname) for modname in self.processors
+                vars(importlib.import_module(modname)) for modname in self.processors
             ]
 
         # Load the article
@@ -251,16 +243,18 @@ class Processor:
                     print("Article not found in scraper database")
                 else:
                     if article.tree and article.tokens:
+                        # Create tree object from article
                         tree = Tree(url, float(article.authority))
                         tree.load(article.tree)
 
+                        # Create token container object from article
                         token_container = TokenContainer(
                             article.tokens, url, article.authority
                         )
 
                         # Run all processors in turn
                         for p in self.pmodules:
-                            ptype: str = getattr(p, "PROCESSOR_TYPE")
+                            ptype: str = p.get("PROCESSOR_TYPE", "")
                             assert ptype in _PROCESSOR_TYPES, "Unknown processor type"
                             if ptype == _PROCESSOR_TYPE_TREE:
                                 tree.process(session, p)
@@ -277,9 +271,7 @@ class Processor:
                 # If an exception occurred, roll back the transaction
                 session.rollback()
                 print(
-                    "Exception in article {0}, transaction rolled back\nException: {1}".format(
-                        url, e
-                    )
+                    f"Exception in article {url}, transaction rolled back\nException: {e}"
                 )
                 raise
 
@@ -382,6 +374,7 @@ def process_articles(
 
     t0 = time.time()
 
+    proc = None
     try:
         # Run all processors in the processors directory, or the single processor given
         proc = Processor(
@@ -391,7 +384,8 @@ def process_articles(
         )
         proc.go(from_date, limit=limit, force=force, update=update, title=title)
     finally:
-        del proc
+        if proc is not None:
+            del proc
         Processor.cleanup()
 
     t1 = time.time()
@@ -404,11 +398,13 @@ def process_articles(
 
 def process_article(url: str, processor: Optional[str] = None) -> None:
     """Process a single article, eventually with a single processor"""
+    proc = None
     try:
         proc = Processor(processor_directory="processors", single_processor=processor)
         proc.go_single(url)
     finally:
-        del proc
+        if proc is not None:
+            del proc
         Processor.cleanup()
 
 
@@ -419,7 +415,7 @@ class Usage(Exception):
 
 def init_db() -> None:
     """Initialize the database, to the extent required"""
-    db = Scraper_DB()
+    db = GreynirDB()
     try:
         db.create_tables()
     except Exception as e:
