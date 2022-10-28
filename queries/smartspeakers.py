@@ -99,190 +99,186 @@ def help_text(lemma: str) -> str:
 HANDLE_TREE = True
 
 # The grammar nonterminals this module wants to handle
-QUERY_NONTERMINALS = {"QIoTSpeaker"}
+QUERY_NONTERMINALS = {"QSpeaker"}
 
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = read_grammar_file("smartspeakers")
 
 
-def QIoTSpeaker(node: Node, params: ParamList, result: Result) -> None:
+def QSpeaker(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = _SPEAKER_QTYPE
 
 
-def QIoTSpeakerTurnOnVerb(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerTurnOnVerb(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "turn_on"
 
 
-def QIoTSpeakerTurnOffVerb(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerTurnOffVerb(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "turn_off"
 
 
-# def QIoTSpeakerPlayVerb(node: Node, params: ParamList, result: Result) -> None:
-#     result.qkey = "turn_on"
-
-
-def QIoTSpeakerPauseVerb(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerPauseVerb(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "turn_off"
 
 
-def QIoTSpeakerSkipVerb(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerSkipVerb(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "next_song"
 
 
-def QIoTSpeakerNewPlay(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerNewPlay(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "turn_on"
 
 
-def QIoTSpeakerNewPause(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerNewPause(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "turn_off"
 
 
-def QIoTSpeakerNewNext(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerNewNext(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "next_song"
 
 
-def QIoTSpeakerNewPrevious(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerNewPrevious(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "prev_song"
 
 
-def QIoTSpeakerIncreaseVerb(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerIncreaseVerb(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "increase_volume"
 
 
-def QIoTSpeakerDecreaseVerb(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerDecreaseVerb(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "decrease_volume"
 
 
-def QIoTSpeakerMoreOrHigher(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerMoreOrHigher(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "increase_volume"
 
 
-def QIoTSpeakerLessOrLower(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerLessOrLower(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "decrease_volume"
 
 
-def QIoTSpeakerMusicWord(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerMusicWord(node: Node, params: ParamList, result: Result) -> None:
     result.target = "music"
 
 
-def QIoTSpeakerSpeakerWord(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerSpeakerWord(node: Node, params: ParamList, result: Result) -> None:
     result.target = "speaker"
 
 
-def QIoTSpeakerRadioWord(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerRadioWord(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
 
 
-def QIoTSpeakerGroupName(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerGroupName(node: Node, params: ParamList, result: Result) -> None:
     result.group_name = result._indefinite
 
 
-def QIoTSpeakerRas1(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerRas1(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "Rás 1"
 
 
-def QIoTSpeakerRas2(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerRas2(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "Rás 2"
 
 
-def QIoTSpeakerRondo(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerRondo(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "Rondó"
 
 
-def QIoTSpeakerBylgjan(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerBylgjan(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "Bylgjan"
 
 
-def QIoTSpeakerFm957(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerFm957(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "FM957"
 
 
-def QIoTSpeakerUtvarpSaga(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerUtvarpSaga(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "Útvarp Saga"
 
 
-def QIoTSpeakerGullbylgjan(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerGullbylgjan(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "Gullbylgjan"
 
 
-def QIoTSpeakerLettbylgjan(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerLettbylgjan(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "Léttbylgjan"
 
 
-def QIoTSpeakerXid(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerXid(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "X977"
 
 
-def QIoTSpeakerKissfm(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerKissfm(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "KissFM"
 
 
-def QIoTSpeakerFlassback(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerFlassback(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "Flashback"
 
 
-def QIoTSpeakerRetro(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerRetro(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "Retro"
 
 
-def QIoTSpeakerUtvarp101(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerUtvarp101(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "Útvarp 101"
 
 
-def QIoTSpeakerK100(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerK100(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "K100"
 
 
-def QIoTSpeakerIslenskaBylgjan(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerIslenskaBylgjan(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "Íslenska Bylgjan"
 
 
-def QIoTSpeaker80sBylgjan(node: Node, params: ParamList, result: Result) -> None:
+def QSpeaker80sBylgjan(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "80s Bylgjan"
 
 
-def QIoTSpeakerApparatid(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerApparatid(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "Apparatið"
 
 
-def QIoTSpeakerFmExtra(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerFmExtra(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "FM Extra"
 
 
-def QIoTSpeaker70sFlashback(node: Node, params: ParamList, result: Result) -> None:
+def QSpeaker70sFlashback(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "70s Flashback"
 
 
-def QIoTSpeaker80sFlashback(node: Node, params: ParamList, result: Result) -> None:
+def QSpeaker80sFlashback(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "80s Flashback"
 
 
-def QIoTSpeaker90sFlashback(node: Node, params: ParamList, result: Result) -> None:
+def QSpeaker90sFlashback(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "90s Flashback"
 
 
-def QIoTSpeakerUtvarpSudurland(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerUtvarpSudurland(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
     result.station = "Útvarp Suðurland"
 
@@ -309,6 +305,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         if cd:
             device_data = cd.get("iot_speakers")
         if device_data is not None:
+            assert False, "blaaaaaaaaaaa"
             sonos_client = SonosClient(
                 cast(SonosDeviceData, device_data),
                 q.client_id,

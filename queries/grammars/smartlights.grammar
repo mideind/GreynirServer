@@ -1,10 +1,7 @@
 
 Query → QLight
 
-QLight → QPleasantries? QLightQuery QForMe? '?'?
-
-QPleasantries → "værirðu" "til" "í" "að" | "gætirðu" "nokkuð"? | "vinsamlegast"
-QForMe → "fyrir" "mig"
+QLight → QLightQuery '?'?
 
 QLightQuery →
     QLightTurnOnLights
@@ -17,7 +14,7 @@ QLightQuery →
 
 QLightLetThereBeLight → "verði" "ljós"
 # Some verbs
-QLightKveiktu → "kveiktu" | "kveikja"
+QLightKveiktu → "vinsamlegast"? "kveiktu" | "kveikja"
 QLightSlökktu → "slökktu" | "slökkva"
 QLightGerðu → "gerðu" | "gera" | "aðgerð"
 QLightStilltuSettu → "stilltu" | "settu" | "stilla" | "setja"

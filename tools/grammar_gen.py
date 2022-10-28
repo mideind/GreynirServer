@@ -61,6 +61,7 @@ from query import QueryGrammar
 
 # TODO: Create random traversal functionality (itertools.dropwhile?)
 # TODO: Allow replacing special terminals (no, sérnafn, lo, ...) with words
+# TODO: Unwrap recursion (for dealing with complex recursive grammar items as in Greynir.grammar)
 
 ColorF = Callable[[str], str]
 _reset: str = "\033[0m"
@@ -92,15 +93,28 @@ MiB = 1024 * 1024
 # Preamble hack in case we aren't testing a query grammar
 # (prevents an error in the QueryGrammar class)
 PREAMBLE = """
-QueryRoot →
-    Query
+QueryRoot → Query
 
 Query → ""
 
 """
 
 # Word categories which should have some variant specified
-_STRICT_CATEGORIES = frozenset(("no", "so", "lo"))
+_STRICT_CATEGORIES = frozenset(
+    (
+        "no",
+        "kk",
+        "kvk",
+        "hk",
+        "so",
+        "lo",
+        "fn",
+        "pfn",
+        "gr",
+        "rt",
+        "to",
+    )
+)
 
 
 @lru_cache(maxsize=500)  # VERY useful cache
@@ -131,7 +145,7 @@ def get_wordform(gi: BIN_LiteralTerminal) -> str:
         if cat in _STRICT_CATEGORIES:
             assert (
                 len(variants) > 0
-            ), f"Specify variant for single quoted terminal: {gi.name}"
+            ), f"Specify variants for single quoted terminal: {gi.name}"
 
     if not cat and len(bin_entries) > 0:
         # Guess category from lemma lookup
@@ -333,55 +347,58 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "files",
-        nargs="+",
-        help="File/s containing the grammar fragments",
+        nargs="*",
+        help="file/s containing the grammar fragments. "
+        "Always loads Greynir.grammar, so no file has to be specified "
+        "when generating sentences from Greynir.grammar",
     )
     parser.add_argument(
         "-r",
         "--root",
         default="Query",
-        help="Root nonterminal to start from",
+        help="root nonterminal to start from",
     )
     parser.add_argument(
         "-d",
         "--depth",
         type=int,
-        help="Maximum depth of the generated sentences",
+        help="maximum depth of the generated sentences",
     )
     parser.add_argument(
         "-n",
         "--num",
         type=int,
-        help="Maximum number of sentences to generate",
+        help="maximum number of sentences to generate",
     )
     parser.add_argument(
         "-e",
         "--expand",
         action="store_true",
-        help="Expand lines with multiple interpretations into separate lines (disables color)",
+        help="expand lines with multiple interpretations into separate lines",
     )
     parser.add_argument(
         "-s",
         "--strict",
         action="store_true",
-        help="Enable strict mode, adds some opinionated assertions about the grammar",
+        help="enable strict mode, adds some opinionated assertions about the grammar",
     )
     parser.add_argument(
         "-c",
         "--color",
         action="store_true",
-        help="Enables colored output (to stdout only)",
+        help="enables colored output, when not fully "
+        "expanding lines or writing output to file",
     )
     parser.add_argument(
         "-o",
         "--output",
         type=Path,
-        help="Write output to file instead of stdout (faster)",
+        help="write output to file instead of stdout (faster)",
     )
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Forcefully overwrite output file, ignoring any warnings",
+        help="forcefully overwrite output file, ignoring any warnings",
     )
     parser.add_argument("--max-size", type=int, help="Maximum output filesize in MiB.")
     args = parser.parse_args()
@@ -449,10 +466,16 @@ if __name__ == "__main__":
 
     # Add all the placeholder nonterminal definitions we added
     grammar_fragments += placeholder_defs
+    if len(args.files) == 0:
+        # Generate Greynir.grammar by default
+        grammar_fragments = grammar_fragments.replace('Query → ""', "Query → S0", 1)
 
     # Initialize QueryGrammar class from grammar files
     grammar = QueryGrammar()
-    grammar.read_from_generator(args.files[0], iter(grammar_fragments.split("\n")))
+    grammar.read_from_generator(
+        args.files[0] if args.files else BIN_Parser._GRAMMAR_FILE,  # type: ignore
+        iter(grammar_fragments.split("\n")),
+    )
 
     # Create sentence generator
     g = generate_from_cfg(
