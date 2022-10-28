@@ -58,5 +58,18 @@ def test_util():
         and (GREYNIR_ROOT_PATH / "main.py").is_file()
     ), f"Was utility.py moved from the root folder?"
 
+    def mod_dir_test(*path: str):
+        ms = modules_in_dir(*path)
+        fs = set(
+            ".".join(i.relative_to(GREYNIR_ROOT_PATH).with_suffix("").parts)
+            for i in (GREYNIR_ROOT_PATH.joinpath(*path)).glob("*.py")
+            if not i.stem == "__init__"
+        )
+        assert set(ms) == fs
+
+    mod_dir_test("tests")
+    mod_dir_test("queries")
+    mod_dir_test("queries", "util")
+
     # TODO: Test this function
     # from util import read_api_key
