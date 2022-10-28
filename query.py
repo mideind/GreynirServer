@@ -78,7 +78,7 @@ from tree import ProcEnv, Tree, TreeStateDict, Node
 
 # from nertokenizer import recognize_entities
 from images import get_image_url
-from utility import modules_in_dir
+from utility import QUERIES_DIR, modules_in_dir, QUERIES_UTIL_DIR
 from geo import LatLonTuple
 
 # Query response
@@ -408,7 +408,7 @@ class Query:
         # Load the query processor modules found in the
         # queries directory. The modules can be tree and/or text processors,
         # and we sort them into two lists, accordingly.
-        modnames = modules_in_dir("queries")
+        modnames = modules_in_dir(QUERIES_DIR)
         for modname in sorted(modnames):
             try:
                 m = importlib.import_module(modname)
@@ -445,7 +445,7 @@ class Query:
         grammar_fragments: List[str] = []
 
         # Load utility modules
-        modnames = modules_in_dir("queries", "util")
+        modnames = modules_in_dir(QUERIES_UTIL_DIR)
         for modname in sorted(modnames):
             try:
                 um = importlib.import_module(modname)
@@ -688,7 +688,7 @@ class Query:
                     return True
             except Exception as e:
                 logging.error(
-                    f"Exception in execute_from_tree('{processor['__name__']}') "
+                    f"Exception in execute_from_tree('{processor.get('__name__', 'UNKNOWN')}') "
                     f"for query '{self._query}': {repr(e)}"
                 )
         # No processor was able to answer the query

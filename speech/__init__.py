@@ -26,15 +26,14 @@ from typing import Iterable, Dict, Any
 from types import ModuleType
 
 import logging
-from pathlib import Path
 from inspect import isfunction
 import importlib
 
-from utility import modules_in_dir
+from utility import GREYNIR_ROOT_DIR, modules_in_dir
 
 
 DEFAULT_VOICE = "Dora"
-VOICES_DIR = Path("speech", "voices")
+VOICES_DIR = GREYNIR_ROOT_DIR / "speech" / "voices"
 
 # Text formats
 # For details about SSML markup, see:
@@ -54,7 +53,7 @@ def load_voice_modules() -> Dict[str, ModuleType]:
     strings to the relevant modules."""
 
     v2m = {}
-    for modname in modules_in_dir(str(VOICES_DIR)):
+    for modname in modules_in_dir(VOICES_DIR):
         try:
             # Try to import
             m = importlib.import_module(modname)
