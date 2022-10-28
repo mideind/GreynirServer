@@ -23,6 +23,7 @@
 
 import os
 import sys
+from pathlib import Path
 
 
 # Shenanigans to enable Pytest to discover modules in the
@@ -36,7 +37,17 @@ if mainpath not in sys.path:
 def test_util():
     """Test functions in utility.py"""
 
-    from utility import icelandic_asciify, GREYNIR_ROOT_PATH, modules_in_dir
+    from utility import (
+        icelandic_asciify,
+        GREYNIR_ROOT_DIR,
+        modules_in_dir,
+        QUERIES_DIR,
+        QUERIES_UTIL_DIR,
+        QUERIES_GRAMMAR_DIR,
+        QUERIES_JS_DIR,
+        QUERIES_UTIL_GRAMMAR_DIR,
+        CONFIG_DIR
+    )
 
     is2ascii = {
         "það mikið er þetta gaman": "thad mikid er thetta gaman",
@@ -51,25 +62,33 @@ def test_util():
 
     assert (
         # utility should be in the root dir
-        (GREYNIR_ROOT_PATH / "utility.py").is_file()
+        (GREYNIR_ROOT_DIR / "utility.py").is_file()
         # A few files that are found in the root dir
-        and (GREYNIR_ROOT_PATH / "LICENSE.txt").is_file()
-        and (GREYNIR_ROOT_PATH / "requirements.txt").is_file()
-        and (GREYNIR_ROOT_PATH / "main.py").is_file()
+        and (GREYNIR_ROOT_DIR / "LICENSE.txt").is_file()
+        and (GREYNIR_ROOT_DIR / "requirements.txt").is_file()
+        and (GREYNIR_ROOT_DIR / "main.py").is_file()
     ), f"Was utility.py moved from the root folder?"
 
-    def mod_dir_test(*path: str):
-        ms = modules_in_dir(*path)
-        fs = set(
-            ".".join(i.relative_to(GREYNIR_ROOT_PATH).with_suffix("").parts)
-            for i in (GREYNIR_ROOT_PATH.joinpath(*path)).glob("*.py")
-            if not i.stem == "__init__"
-        )
-        assert set(ms) == fs
+    assert CONFIG_DIR.exists() and CONFIG_DIR.is_dir()
+    assert QUERIES_DIR.exists() and QUERIES_DIR.is_dir()
+    assert QUERIES_GRAMMAR_DIR.exists() and QUERIES_GRAMMAR_DIR.is_dir()
+    assert QUERIES_JS_DIR.exists() and QUERIES_JS_DIR.is_dir()
+    assert QUERIES_UTIL_DIR.exists() and QUERIES_UTIL_DIR.is_dir()
+    assert QUERIES_UTIL_GRAMMAR_DIR.exists() and QUERIES_UTIL_GRAMMAR_DIR.is_dir()
 
-    mod_dir_test("tests")
-    mod_dir_test("queries")
-    mod_dir_test("queries", "util")
+    def get_modules(*path: str):
+        return [
+            ".".join(i.relative_to(GREYNIR_ROOT_DIR).with_suffix("").parts)
+            for i in (GREYNIR_ROOT_DIR.joinpath(*path)).glob("*.py")
+            if not i.stem.startswith("_")
+        ]
+
+    assert modules_in_dir(Path("tests")) == get_modules("tests")
+    assert modules_in_dir(Path("queries")) == get_modules("queries")
+    assert modules_in_dir(QUERIES_UTIL_DIR.absolute()) == get_modules("queries", "util")
+    assert modules_in_dir(
+        QUERIES_UTIL_DIR.relative_to(GREYNIR_ROOT_DIR)
+    ) == get_modules("queries", "util")
 
     # TODO: Test this function
     # from util import read_api_key

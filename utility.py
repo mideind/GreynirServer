@@ -26,13 +26,22 @@ from functools import lru_cache
 from pathlib import Path
 
 # Path which points to the root folder of Greynir
-GREYNIR_ROOT_PATH: Path = Path(__file__).parent.resolve()
+GREYNIR_ROOT_DIR: Path = Path(__file__).parent.resolve()
 
+# Other useful paths
+CONFIG_DIR = GREYNIR_ROOT_DIR / "config"
+
+QUERIES_DIR = GREYNIR_ROOT_DIR / "queries"
+QUERIES_GRAMMAR_DIR = QUERIES_DIR / "grammars"
+QUERIES_JS_DIR = QUERIES_DIR / "js"
+QUERIES_UTIL_DIR = QUERIES_DIR / "util"
+QUERIES_UTIL_GRAMMAR_DIR = QUERIES_UTIL_DIR / "grammars"
+QUERIES_DIALOGUE_DIR = QUERIES_DIR / "dialogues"
 
 @lru_cache(maxsize=32)
 def read_api_key(key_name: str) -> str:
     """Read the given key from a text file in resources directory. Cached."""
-    p = GREYNIR_ROOT_PATH / "resources" / f"{key_name}.txt"
+    p = GREYNIR_ROOT_DIR / "resources" / f"{key_name}.txt"
     try:
         return p.read_text().strip()
     except FileNotFoundError:
@@ -40,17 +49,22 @@ def read_api_key(key_name: str) -> str:
     return ""
 
 
-def modules_in_dir(*args: str) -> List[str]:
-    """Find the import names of all python modules in a given directory."""
-    folder = GREYNIR_ROOT_PATH / Path(*args)
+def modules_in_dir(p: Path) -> List[str]:
+    """
+    Find the import names of all python modules
+    in a given directory given a path to a folder
+    (can be relative to GREYNIR_ROOT_PATH or absolute).
+    """
+    p = p.resolve()  # Fully resolve path before working with it
     assert (
-        folder.exists() and folder.is_dir()
-    ), f"Directory {folder} not found when calling modules_in_dir()"
-    module_parents = ".".join(folder.relative_to(GREYNIR_ROOT_PATH).parts)
+        p.exists() and p.is_dir()
+    ), f"Directory {str(p)} not found when searching for modules"
 
+    # Return list of python files in
+    # import-like format ('.' instead of '/', no '.py')
     return [
-        f"{module_parents}.{pyfile.stem}"
-        for pyfile in folder.glob("*.py")
+        ".".join(pyfile.with_suffix("").parts)
+        for pyfile in p.relative_to(GREYNIR_ROOT_DIR).glob("*.py")
         if not pyfile.name.startswith("_")
     ]
 

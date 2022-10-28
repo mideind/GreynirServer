@@ -47,6 +47,7 @@ else:
 
 from contextlib import closing
 from datetime import datetime
+from pathlib import Path
 
 from settings import Settings, ConfigError
 from db import GreynirDB, Session
@@ -179,7 +180,7 @@ class Processor:
         self.pmodules: Optional[List[ProcEnv]] = None
 
         # Find .py files in the processor directory
-        modnames = modules_in_dir(processor_directory)
+        modnames = modules_in_dir(Path(processor_directory))
 
         if single_processor:
             # Remove all except the single processor specified

@@ -54,18 +54,19 @@ from geo import country_name_for_isocode, iceprep_for_cc, LatLonTuple
 from queries.util.num import number_to_text, float_to_text
 from reynir import NounPhrase
 from settings import changedlocale
-from utility import GREYNIR_ROOT_PATH, read_api_key
+from utility import (
+    GREYNIR_ROOT_DIR,
+    QUERIES_GRAMMAR_DIR,
+    QUERIES_JS_DIR,
+    QUERIES_UTIL_GRAMMAR_DIR,
+    read_api_key,
+)
 
 
 # Type definitions
 AnswerTuple = Tuple[Dict[str, str], str, str]
 JsonResponse = Union[None, List[Any], Dict[str, Any]]
 
-QUERIES_ROOT_PATH = GREYNIR_ROOT_PATH / "queries"
-QUERY_GRAMMAR_DIR = QUERIES_ROOT_PATH / "grammars"
-QUERY_JS_DIR = QUERIES_ROOT_PATH / "js"
-QUERY_UTIL_DIR = QUERIES_ROOT_PATH / "util"
-QUERY_UTIL_GRAMMAR_DIR = QUERY_UTIL_DIR / "grammars"
 MONTH_ABBREV_ORDERED: Sequence[str] = (
     "jan",
     "feb",
@@ -671,7 +672,7 @@ def read_jsfile(filename: str) -> str:
     """
     from rjsmin import jsmin  # type: ignore
 
-    jsfile = QUERY_JS_DIR / filename
+    jsfile = QUERIES_JS_DIR / filename
     return cast(str, jsmin(jsfile.read_text()))
 
 
@@ -680,7 +681,7 @@ def read_grammar_file(filename: str, **format_kwargs: str) -> str:
     Read and return a grammar file from the QUERY_GRAMMAR_DIR folder.
     Optionally specify keyword arguments for str.format() call
     """
-    gfile = QUERY_GRAMMAR_DIR / f"{filename}.grammar"
+    gfile = QUERIES_GRAMMAR_DIR / f"{filename}.grammar"
 
     grammar = gfile.read_text()
     if len(format_kwargs) > 0:
@@ -693,7 +694,7 @@ def read_utility_grammar_file(filename: str, **format_kwargs: str) -> str:
     Read and return a grammar file from the QUERY_UTIL_GRAMMAR_DIR folder.
     Optionally specify keyword arguments for str.format() call
     """
-    gfile = QUERY_UTIL_GRAMMAR_DIR / f"{filename}.grammar"
+    gfile = QUERIES_UTIL_GRAMMAR_DIR / f"{filename}.grammar"
 
     grammar = gfile.read_text()
     if len(format_kwargs) > 0:
