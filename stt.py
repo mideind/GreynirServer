@@ -41,7 +41,7 @@ from speech import (
     SUPPORTED_TEXT_FORMATS,
 )
 from speech.voices import suffix_for_audiofmt
-from util import icelandic_asciify
+from utility import icelandic_asciify
 
 
 _DATA_URI_PREFIX = "data:"

@@ -31,7 +31,7 @@ from datetime import datetime
 from query import Query, QueryStateDict
 from tree import Result, Node, TerminalNode
 from queries import read_grammar_file
-from queries.num import numbers_to_ordinal
+from queries.util.num import numbers_to_ordinal
 
 
 def help_text(lemma: str) -> str:

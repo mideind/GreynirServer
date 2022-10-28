@@ -76,7 +76,7 @@ cp stt.py $DEST/stt.py
 cp tnttagger.py $DEST/tnttagger.py
 cp tree.py $DEST/tree.py
 cp treeutil.py $DEST/treeutil.py
-cp util.py $DEST/util.py
+cp utility.py $DEST/utility.py
 cp -r db $DEST/
 cp -r routes $DEST/
 cp -r speech $DEST/

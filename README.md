@@ -173,7 +173,7 @@ in [`queries/examples`](queries/examples).
 * [`tnttagger.py`](tnttagger.py): Statistical Part-of-speech tagging
 * [`tree.py`](tree.py): Representation of parse trees for processing
 * [`treeutil.py`](treeutil.py): Utility functions for working with parse trees and tokens
-* [`util.py`](util.py): Assorted utility functions used throughout the codebase
+* [`utility.py`](utility.py): Assorted utility functions used throughout the codebase
 
 ## Installation and setup
 

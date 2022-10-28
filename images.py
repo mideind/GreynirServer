@@ -41,7 +41,7 @@ import requests
 from db import Session, SessionContext
 from db.models import Link, BlacklistedLink
 from settings import Settings
-from util import read_api_key
+from utility import read_api_key
 
 # HTTP request timeout
 QUERY_TIMEOUT = 4.0

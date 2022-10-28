@@ -45,7 +45,7 @@ from main import app  # noqa
 from settings import changedlocale  # noqa
 from db import SessionContext  # noqa
 from db.models import Query, QueryData, QueryLog  # noqa
-from util import read_api_key  # noqa
+from utility import read_api_key  # noqa
 
 
 @pytest.fixture
@@ -310,8 +310,60 @@ def test_currency(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "hvað eru tíu þúsund krónur margir dalir"}, "Currency")
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
 
+    json = qmcall(
+        client,
+        {"q": "hvað eru þrettán hundruð fjörutíu og sex krónur margir dalir"},
+        "Currency",
+    )
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
+    json = qmcall(
+        client, {"q": "hvað eru átján milljónir króna margir dalir"}, "Currency"
+    )
+    assert re.search(r"^[\d\.]+(,\d+)?$", json["answer"]) is not None
+
     json = qmcall(client, {"q": "hvað eru 79 dollarar margar evrur?"}, "Currency")
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
+    json = qmcall(client, {"q": "hvað eru 79.50 dollarar margar evrur?"}, "Currency")
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
+    json = qmcall(client, {"q": "hvað eru 79,50 dollarar margar evrur?"}, "Currency")
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+
+    json = qmcall(
+        client,
+        {"q": "hvað eru þrjátíu og fjórir komma sex fjórir dollarar margar evrur?"},
+        "Currency",
+    )
+    json2 = qmcall(
+        client,
+        {"q": "hvað eru 34,64 dollarar margar evrur?"},
+        "Currency",
+    )
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None and json["answer"] == json2["answer"]
+
+    json = qmcall(
+        client, {"q": "hvað er ein komma ein evra margar krónur?"}, "Currency"
+    )
+    json2 = qmcall(
+        client,
+        {"q": "hvað er 1,1 evra margar krónur?"},
+        "Currency",
+    )
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None and json["answer"] == json2["answer"]
+
+    json = qmcall(
+        client,
+        {"q": "hvað eru ein komma þrjátíu og tvær evrur margar krónur?"},
+        "Currency",
+    )
+    json2 = qmcall(
+        client,
+        {"q": "hvað eru 1.32 evrur margar krónur?"},
+        "Currency",
+    )
+    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None and json["answer"] == json2["answer"]
 
 
 def test_date(client: FlaskClient) -> None:
@@ -1517,7 +1569,11 @@ def test_query_utility_functions() -> None:
 def test_numbers() -> None:
     """Test number handling functionality in queries"""
 
-    from queries.num import number_to_neutral, number_to_text, numbers_to_text
+    from queries.util.num import (
+        number_to_neutral,
+        number_to_text,
+        numbers_to_text,
+    )
 
     assert number_to_neutral(2) == "tvö"
     assert number_to_neutral(1100) == "eitt þúsund og eitt hundrað"
@@ -1580,6 +1636,10 @@ def test_numbers() -> None:
     assert (
         number_to_text(-11220024, gender="kvk")
         == "mínus ellefu milljónir tvö hundruð og tuttugu þúsund tuttugu og fjórar"
+    )
+    assert (
+        number_to_text(19501180)
+        == "nítján milljónir fimm hundruð og eitt þúsund eitt hundrað og áttatíu"
     )
 
     assert numbers_to_text("Baugatangi 1, Reykjavík") == "Baugatangi eitt, Reykjavík"
@@ -1734,7 +1794,7 @@ def test_numbers() -> None:
 def test_years() -> None:
     """Test number to written year conversion."""
 
-    from queries.num import year_to_text, years_to_text
+    from queries.util.num import year_to_text, years_to_text
 
     assert year_to_text(1999) == "nítján hundruð níutíu og níu"
     assert year_to_text(2004) == "tvö þúsund og fjögur"
@@ -1763,7 +1823,7 @@ def test_years() -> None:
 def test_ordinals() -> None:
     """Test number to written ordinal conversion."""
 
-    from queries.num import number_to_ordinal, numbers_to_ordinal
+    from queries.util.num import number_to_ordinal, numbers_to_ordinal
 
     assert number_to_ordinal(0) == "núllti"
     assert number_to_ordinal(22, case="þgf", gender="kvk") == "tuttugustu og annarri"
@@ -1806,7 +1866,7 @@ def test_ordinals() -> None:
 def test_floats() -> None:
     """Test float to written text conversion."""
 
-    from queries.num import float_to_text, floats_to_text
+    from queries.util.num import float_to_text, floats_to_text
 
     assert float_to_text(-0.12) == "mínus núll komma tólf"
     assert float_to_text(-0.1012) == "mínus núll komma eitt núll eitt tvö"
@@ -1836,7 +1896,7 @@ def test_floats() -> None:
 def test_digits() -> None:
     """Test digit string to written text conversion."""
 
-    from queries.num import digits_to_text
+    from queries.util.num import digits_to_text
 
     assert digits_to_text("5885522") == "fimm átta átta fimm fimm tveir tveir"
     assert digits_to_text("112") == "einn einn tveir"

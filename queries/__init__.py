@@ -41,7 +41,6 @@ from tree import Node
 import logging
 import requests
 import json
-import os
 import re
 import locale
 from urllib.parse import urlencode
@@ -52,16 +51,21 @@ from tzwhere import tzwhere  # type: ignore
 from pytz import country_timezones
 
 from geo import country_name_for_isocode, iceprep_for_cc, LatLonTuple
-from queries.num import number_to_text, float_to_text
+from queries.util.num import number_to_text, float_to_text
 from reynir import NounPhrase
 from settings import changedlocale
-from util import read_api_key
+from utility import (
+    GREYNIR_ROOT_DIR,
+    QUERIES_GRAMMAR_DIR,
+    QUERIES_JS_DIR,
+    QUERIES_UTIL_GRAMMAR_DIR,
+    read_api_key,
+)
 
 
 # Type definitions
 AnswerTuple = Tuple[Dict[str, str], str, str]
 JsonResponse = Union[None, List[Any], Dict[str, Any]]
-
 
 MONTH_ABBREV_ORDERED: Sequence[str] = (
     "jan",
@@ -662,44 +666,37 @@ def timezone4loc(
 
 @lru_cache(maxsize=32)
 def read_jsfile(filename: str) -> str:
-    """Read and return a minified JavaScript (.js) file"""
-    # The file is read from the directory 'js' within the directory
-    # containing this __init__.py file
+    """
+    Read and return a minified JavaScript (.js)
+    file from the QUERY_JS_DIR folder.
+    """
     from rjsmin import jsmin  # type: ignore
 
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    fpath = os.path.join(basepath, "js", filename)
-    with open(fpath, mode="r") as file:
-        return cast(str, jsmin(file.read()))
+    jsfile = QUERIES_JS_DIR / filename
+    return cast(str, jsmin(jsfile.read_text()))
 
 
 def read_grammar_file(filename: str, **format_kwargs: str) -> str:
     """
-    Read and return a grammar file from the 'grammars' folder.
+    Read and return a grammar file from the QUERY_GRAMMAR_DIR folder.
     Optionally specify keyword arguments for str.format() call
     """
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    fpath = os.path.join(basepath, "grammars", filename + ".grammar")
+    gfile = QUERIES_GRAMMAR_DIR / f"{filename}.grammar"
 
-    grammar = ""
-    with open(fpath, mode="r") as file:
-        grammar = file.read()
+    grammar = gfile.read_text()
     if len(format_kwargs) > 0:
         grammar = grammar.format(**format_kwargs)
     return grammar
 
 
-def join_grammar_files(folder: str) -> str:
+def read_utility_grammar_file(filename: str, **format_kwargs: str) -> str:
     """
-    Given a folder name, return a string containing
-    the contents of all '.grammar' files within the folder
+    Read and return a grammar file from the QUERY_UTIL_GRAMMAR_DIR folder.
+    Optionally specify keyword arguments for str.format() call
     """
-    basepath, _ = os.path.split(os.path.realpath(__file__))
-    fpath = os.path.join(basepath, folder)
+    gfile = QUERIES_UTIL_GRAMMAR_DIR / f"{filename}.grammar"
 
-    grammar: List[str] = []
-    for fname in os.listdir(fpath):
-        if fname.endswith(".grammar"):
-            with open(os.path.join(fpath, fname), mode="r") as file:
-                grammar.append(file.read())
-    return "\n".join(grammar)
+    grammar = gfile.read_text()
+    if len(format_kwargs) > 0:
+        grammar = grammar.format(**format_kwargs)
+    return grammar

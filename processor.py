@@ -31,7 +31,7 @@
 
 """
 
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, List, cast
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, List, Union, cast
 from types import ModuleType
 
 import getopt
@@ -39,7 +39,6 @@ import importlib
 import json
 import sys
 import time
-import os
 
 if TYPE_CHECKING:
     from multiprocessing.dummy import Pool
@@ -48,28 +47,16 @@ else:
 
 from contextlib import closing
 from datetime import datetime
+from pathlib import Path
 
 from settings import Settings, ConfigError
 from db import GreynirDB, Session
 from db.models import Article, Person, Column
-from tree import Tree
+from tree import Tree, ProcEnv
+from utility import modules_in_dir
 
 
 _PROFILING = False
-
-
-def modules_in_dir(directory: str) -> List[str]:
-    """Find all python modules in a given directory"""
-    files = os.listdir(directory)
-    modnames: List[str] = list()
-    for fname in files:
-        if not fname.endswith(".py"):
-            continue
-        if fname.startswith("_"):  # Skip any files starting with _
-            continue
-        mod = directory.replace("/", ".") + "." + fname[:-3]  # Cut off .py
-        modnames.append(mod)
-    return modnames
 
 
 class TokenContainer:
@@ -80,7 +67,9 @@ class TokenContainer:
         self.url = url
         self.authority = authority
 
-    def process(self, session: Session, processor: ModuleType, **kwargs: Any) -> None:
+    def process(
+        self, session: Session, processor: Union[ProcEnv, ModuleType], **kwargs: Any
+    ) -> None:
         """Process tokens for an entire article.  Iterate over each paragraph,
         sentence and token, calling revelant functions in processor module."""
 
@@ -89,14 +78,17 @@ class TokenContainer:
         if not self.tokens:
             return
 
+        if isinstance(processor, ModuleType):
+            processor = cast(ProcEnv, vars(processor))
+
         # Get functions from processor module
-        article_begin = getattr(processor, "article_begin", None)
-        article_end = getattr(processor, "article_end", None)
-        paragraph_begin = getattr(processor, "paragraph_begin", None)
-        paragraph_end = getattr(processor, "paragraph_end", None)
-        sentence_begin = getattr(processor, "sentence_begin", None)
-        sentence_end = getattr(processor, "sentence_end", None)
-        token_func = getattr(processor, "token", None)
+        article_begin = processor.get("article_begin", None)
+        article_end = processor.get("article_end", None)
+        paragraph_begin = processor.get("paragraph_begin", None)
+        paragraph_end = processor.get("paragraph_end", None)
+        sentence_begin = processor.get("sentence_begin", None)
+        sentence_end = processor.get("sentence_end", None)
+        token_func = processor.get("token", None)
 
         # Make sure at least one of these functions is present
         if not any(
@@ -185,10 +177,10 @@ class Processor:
         self.num_workers = num_workers
 
         self.processors: List[str] = []
-        self.pmodules: Optional[List[ModuleType]] = None
+        self.pmodules: Optional[List[ProcEnv]] = None
 
         # Find .py files in the processor directory
-        modnames = modules_in_dir(processor_directory)
+        modnames = modules_in_dir(Path(processor_directory))
 
         if single_processor:
             # Remove all except the single processor specified
@@ -238,7 +230,7 @@ class Processor:
         # If first article within a new process, import the processor modules
         if self.pmodules is None:
             self.pmodules = [
-                importlib.import_module(modname) for modname in self.processors
+                vars(importlib.import_module(modname)) for modname in self.processors
             ]
 
         # Load the article
@@ -262,7 +254,7 @@ class Processor:
 
                         # Run all processors in turn
                         for p in self.pmodules:
-                            ptype: str = getattr(p, "PROCESSOR_TYPE")
+                            ptype: str = p.get("PROCESSOR_TYPE", "")
                             assert ptype in _PROCESSOR_TYPES, "Unknown processor type"
                             if ptype == _PROCESSOR_TYPE_TREE:
                                 tree.process(session, p)

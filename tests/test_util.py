@@ -23,6 +23,7 @@
 
 import os
 import sys
+from pathlib import Path
 
 
 # Shenanigans to enable Pytest to discover modules in the
@@ -34,9 +35,19 @@ if mainpath not in sys.path:
 
 
 def test_util():
-    """Test functions in util.py"""
+    """Test functions in utility.py"""
 
-    from util import icelandic_asciify
+    from utility import (
+        icelandic_asciify,
+        GREYNIR_ROOT_DIR,
+        modules_in_dir,
+        QUERIES_DIR,
+        QUERIES_UTIL_DIR,
+        QUERIES_GRAMMAR_DIR,
+        QUERIES_JS_DIR,
+        QUERIES_UTIL_GRAMMAR_DIR,
+        CONFIG_DIR
+    )
 
     is2ascii = {
         "það mikið er þetta gaman": "thad mikid er thetta gaman",
@@ -48,6 +59,36 @@ def test_util():
     }
     for k, v in is2ascii.items():
         assert icelandic_asciify(k) == v
+
+    assert (
+        # utility should be in the root dir
+        (GREYNIR_ROOT_DIR / "utility.py").is_file()
+        # A few files that are found in the root dir
+        and (GREYNIR_ROOT_DIR / "LICENSE.txt").is_file()
+        and (GREYNIR_ROOT_DIR / "requirements.txt").is_file()
+        and (GREYNIR_ROOT_DIR / "main.py").is_file()
+    ), f"Was utility.py moved from the root folder?"
+
+    assert CONFIG_DIR.exists() and CONFIG_DIR.is_dir()
+    assert QUERIES_DIR.exists() and QUERIES_DIR.is_dir()
+    assert QUERIES_GRAMMAR_DIR.exists() and QUERIES_GRAMMAR_DIR.is_dir()
+    assert QUERIES_JS_DIR.exists() and QUERIES_JS_DIR.is_dir()
+    assert QUERIES_UTIL_DIR.exists() and QUERIES_UTIL_DIR.is_dir()
+    assert QUERIES_UTIL_GRAMMAR_DIR.exists() and QUERIES_UTIL_GRAMMAR_DIR.is_dir()
+
+    def get_modules(*path: str):
+        return [
+            ".".join(i.relative_to(GREYNIR_ROOT_DIR).with_suffix("").parts)
+            for i in (GREYNIR_ROOT_DIR.joinpath(*path)).glob("*.py")
+            if not i.stem.startswith("_")
+        ]
+
+    assert modules_in_dir(Path("tests")) == get_modules("tests")
+    assert modules_in_dir(Path("queries")) == get_modules("queries")
+    assert modules_in_dir(QUERIES_UTIL_DIR.absolute()) == get_modules("queries", "util")
+    assert modules_in_dir(
+        QUERIES_UTIL_DIR.relative_to(GREYNIR_ROOT_DIR)
+    ) == get_modules("queries", "util")
 
     # TODO: Test this function
     # from util import read_api_key
