@@ -46,6 +46,7 @@ from typing import (
     cast,
 )
 from typing_extensions import Required, TypedDict
+from types import ModuleType
 
 
 import json
@@ -1605,10 +1606,13 @@ class Tree(TreeBase):
 
     @contextmanager
     def context(
-        self, session: Session, processor: ProcEnv, **kwargs: Any
+        self, session: Session, processor: Union[ProcEnv, ModuleType], **kwargs: Any
     ) -> Iterator[TreeStateDict]:
         """Context manager for tree processing, setting up the environment
         and encapsulating the sentence tree processing"""
+
+        if isinstance(processor, ModuleType):
+            processor = cast(ProcEnv, vars(processor))
 
         # Obtain the processor's handler functions
         article_begin = processor.get("article_begin", None)
@@ -1647,7 +1651,9 @@ class Tree(TreeBase):
             if article_end is not None:
                 article_end(state)
 
-    def process(self, session: Session, processor: ProcEnv, **kwargs: Any) -> None:
+    def process(
+        self, session: Session, processor: Union[ProcEnv, ModuleType], **kwargs: Any
+    ) -> None:
         with self.context(session, processor, **kwargs) as state:
             self.process_trees(state)
 

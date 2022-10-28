@@ -22,7 +22,7 @@
 
 """
 
-from typing import Any, Set, Tuple, cast
+from typing import Any, Dict, List, Set, Tuple, cast
 
 import os
 import sys
@@ -105,10 +105,10 @@ def _make_tree(text: str) -> Tuple[Tree, str]:
     fp = Fast_Parser(verbose=False)
     ip = IncrementalParser(fp, toklist, verbose=False)
 
-    pgs = []
+    pgs: List[List[Any]] = []
     # Dict of parse trees in string dump format,
     # stored by sentence index (1-based)
-    trees = OrderedDict()
+    trees: Dict[int, str] = OrderedDict()
     num_sent = 0
     for p in ip.paragraphs():
         pgs.append([])
@@ -179,7 +179,7 @@ def test_entities():
 
     tree, _ = _make_tree(text)
     session = EntitiesSessionShim()
-    tree.process(cast(Session, session), vars(entities))
+    tree.process(cast(Session, session), entities)
 
     session.check(("Bygma", "er", "dönsk byggingavörukeðja"))
     session.check(("Húsasmiðjan", "er", "íslenskt verslunarfyrirtæki"))
@@ -213,7 +213,7 @@ def test_entities():
 
     tree, _ = _make_tree(text)
     session = EntitiesSessionShim()
-    tree.process(cast(Session, session), vars(entities))
+    tree.process(cast(Session, session), entities)
 
     session.check(("Kópavogur", "er", "vinalegur staður"))
     session.check(("Hafnarfjörður", "er", "einstakur bær"))
@@ -238,7 +238,7 @@ def test_persons():
 
     tree, _ = _make_tree(text)
     session = PersonsSessionShim()
-    tree.process(cast(Session, session), vars(persons))
+    tree.process(cast(Session, session), persons)
 
     session.check(("Katrín Jakobsdóttir", "forsætisráðherra", "kvk"))
     session.check(("Helgi Hrafn", "þingmaður", "kk"))
@@ -271,7 +271,7 @@ def test_locations():
     pmod = importlib.import_module("processors.locations")
 
     tc = TokenContainer(tokens_json, "", 1.0)
-    tc.process(session, pmod)  # type: ignore
+    tc.process(cast(Session, session), pmod)
 
     session.check(("Fiskislóð 31b", "address"))
     session.check(("Öldugata 4", "address"))
