@@ -40,7 +40,7 @@ from typing import (
 import json
 import uuid
 from datetime import datetime
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.orm.query import Query as SqlQuery
@@ -334,7 +334,7 @@ class Article:
 
             # Dict of parse trees in string dump format,
             # stored by sentence index (1-based)
-            trees: OrderedDict[int, str] = OrderedDict()
+            trees: Dict[int, str] = dict()
 
             # Word stem dictionary, indexed by (stem, cat)
             words: Dict[WordTuple, int] = defaultdict(int)
