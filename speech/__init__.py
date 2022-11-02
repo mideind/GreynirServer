@@ -134,3 +134,11 @@ def text_to_audio_url(
     assert isfunction(fn)
     # Call function in module, passing on the arguments
     return fn(**_sanitize_args(args))
+
+
+_DATA_URI_PREFIX = "data:"
+
+
+def is_data_uri(s: str) -> bool:
+    """Returns whether a URL is a data URI (RFC2397). Tolerates uppercase prefix."""
+    return s.startswith(_DATA_URI_PREFIX) or s.startswith(_DATA_URI_PREFIX.upper())

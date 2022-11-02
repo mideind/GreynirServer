@@ -33,6 +33,7 @@ import requests
 
 from speech import (
     text_to_audio_url,
+    is_data_uri,
     DEFAULT_VOICE,
     SUPPORTED_VOICES,
     DEFAULT_TEXT_FORMAT,
@@ -44,14 +45,6 @@ from speech.voices import suffix_for_audiofmt
 from utility import icelandic_asciify
 
 
-_DATA_URI_PREFIX = "data:"
-
-
-def _is_data_uri(s: str) -> bool:
-    """Returns whether a URL is a data URI (RFC2397). Tolerates uppercase prefix."""
-    return s.startswith(_DATA_URI_PREFIX) or s.startswith(_DATA_URI_PREFIX.upper())
-
-
 def _bytes4data_uri(data_uri: str) -> bytes:
     """Returns data contained in data URI (RFC2397) as bytes."""
     with urlopen(data_uri) as response:
@@ -60,7 +53,7 @@ def _bytes4data_uri(data_uri: str) -> bytes:
 
 def _fetch_audio_bytes(url: str) -> Optional[bytes]:
     """Returns bytes of audio file at URL."""
-    if _is_data_uri(url):
+    if is_data_uri(url):
         return _bytes4data_uri(url)
 
     try:
@@ -164,7 +157,7 @@ def main() -> None:
         sys.exit(0)
 
     # Download
-    urldesc = "data URI" if _is_data_uri(url) else url
+    urldesc = "data URI" if is_data_uri(url) else url
     print(f"Fetching {urldesc}")
     data: Optional[bytes] = _fetch_audio_bytes(url)
     if not data:

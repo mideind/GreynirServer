@@ -28,12 +28,14 @@ from base64 import b64encode
 BINARY_MIMETYPE = "application/octet-stream"
 AUDIOFMT_TO_MIMETYPE = {
     "mp3": "audio/mpeg",
+    "wav": "audio/wav",
     "ogg_vorbis": "audio/ogg",
     "pcm": BINARY_MIMETYPE,
 }
 
 AUDIOFMT_TO_SUFFIX = {
     "mp3": "mp3",
+    "wav": "wav",
     "ogg_vorbis": "ogg",
     "pcm": "pcm",
 }
