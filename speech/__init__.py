@@ -61,6 +61,7 @@ def load_voice_modules() -> Dict[str, ModuleType]:
             if not voices:
                 continue  # No voices declared, skip
             for v in voices:
+                assert v not in v2m, f"Voice '{v}' already declared in module {v2m[v]}"
                 v2m[v] = m
         except Exception as e:
             logging.error(f"Error importing voice module {modname}: {e}")

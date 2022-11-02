@@ -115,11 +115,12 @@ def text_to_audio_data(
             )
             if cancellation_details.reason == speechsdk.CancellationReason.Error:
                 logging.error(
-                    "Error details: {}".format(cancellation_details.error_details)
+                    "Azure TTS error: {}".format(cancellation_details.error_details)
                 )
-            return None
     except Exception as e:
         logging.error(f"Error communicating with Azure Speech API: {e}")
+
+    return None
 
 
 def text_to_audio_url(

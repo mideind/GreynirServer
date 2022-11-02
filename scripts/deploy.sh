@@ -72,7 +72,7 @@ cp scraper.py $DEST/scraper.py
 cp search.py $DEST/search.py
 cp settings.py $DEST/settings.py
 cp similar.py $DEST/similar.py
-cp stt.py $DEST/stt.py
+cp tts.py $DEST/tts.py
 cp tnttagger.py $DEST/tnttagger.py
 cp tree.py $DEST/tree.py
 cp treeutil.py $DEST/treeutil.py
