@@ -99,20 +99,25 @@ def text_to_audio_data(
         fmt = speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
         speech_config.set_speech_synthesis_output_format(fmt)
 
-        # Init synthesizer and feed it with text
-        synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config)
-        result = synthesizer.speak_text(text)
+        # Init synthesizer, feed it with text and get result
+        synthesizer = speechsdk.SpeechSynthesizer(
+            speech_config=speech_config, audio_config=None
+        )
+        result = synthesizer.speak_text_async(text).get()
 
-        # Read audio from stream
-        stream = speechsdk.AudioDataStream(result)
-        buf_list: List[bytes] = []
-        audio_buffer = bytes(32000)  # 32 KB buffer
-        filled_size = stream.read_data(audio_buffer)
-        while filled_size > 0:
-            buf_list.append(audio_buffer[:filled_size])
-            filled_size = stream.read_data(audio_buffer)
-
-        return b"".join(buf_list)
+        # Check result
+        if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+            return result.audio_data
+        elif result.reason == speechsdk.ResultReason.Canceled:
+            cancellation_details = result.cancellation_details
+            logging.error(
+                "Speech synthesis canceled: {}".format(cancellation_details.reason)
+            )
+            if cancellation_details.reason == speechsdk.CancellationReason.Error:
+                logging.error(
+                    "Error details: {}".format(cancellation_details.error_details)
+                )
+            return None
     except Exception as e:
         logging.error(f"Error communicating with Azure Speech API: {e}")
 
