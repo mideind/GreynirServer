@@ -30,8 +30,9 @@ AUDIOFMT_TO_MIMETYPE = {
     "mp3": "audio/mpeg",
     "wav": "audio/wav",
     "ogg_vorbis": "audio/ogg",
-    "opus": "audio/ogg",
     "pcm": BINARY_MIMETYPE,
+    # Uses an Ogg container. See https://www.rfc-editor.org/rfc/rfc7845
+    "opus": "audio/ogg",
 }
 
 AUDIOFMT_TO_SUFFIX = {
@@ -39,7 +40,8 @@ AUDIOFMT_TO_SUFFIX = {
     "wav": "wav",
     "ogg_vorbis": "ogg",
     "pcm": "pcm",
-    "opus": "ogg",
+    # Recommended filename extension for Ogg Opus files is '.opus'.
+    "opus": "opus",
 }
 
 

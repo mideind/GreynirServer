@@ -32,7 +32,6 @@ import importlib
 from utility import GREYNIR_ROOT_DIR, modules_in_dir
 
 
-DEFAULT_VOICE = "Dora"
 VOICES_DIR = GREYNIR_ROOT_DIR / "speech" / "voices"
 
 # Text formats
@@ -50,9 +49,9 @@ SUPPORTED_AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm", "opus"))
 assert DEFAULT_AUDIO_FORMAT in SUPPORTED_AUDIO_FORMATS
 
 
-def load_voice_modules() -> Dict[str, ModuleType]:
-    """Dynamically load all voice modules, map voice ID
-    strings to the relevant modules."""
+def _load_voice_modules() -> Dict[str, ModuleType]:
+    """Dynamically load all voice modules, map
+    voice ID strings to the relevant modules."""
 
     v2m = {}
     for modname in modules_in_dir(VOICES_DIR):
@@ -71,9 +70,13 @@ def load_voice_modules() -> Dict[str, ModuleType]:
     return v2m
 
 
-VOICE_TO_MODULE = load_voice_modules()
+VOICE_TO_MODULE = _load_voice_modules()
 SUPPORTED_VOICES = frozenset(VOICE_TO_MODULE.keys())
 RECOMMENDED_VOICES = frozenset(("Dora", "Karl"))
+DEFAULT_VOICE = "Dora"
+
+assert DEFAULT_VOICE in SUPPORTED_VOICES
+assert DEFAULT_VOICE in RECOMMENDED_VOICES
 
 
 def _sanitize_args(args: Dict[str, Any]) -> Dict[str, Any]:

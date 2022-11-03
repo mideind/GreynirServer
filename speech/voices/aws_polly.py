@@ -36,6 +36,7 @@ from botocore.exceptions import ClientError  # type: ignore
 
 from utility import RESOURCES_DIR
 
+
 NAME = "Amazon Polly"
 VOICES = frozenset(("Karl", "Dora"))
 AUDIO_FORMATS = frozenset(("mp3", "pcm", "ogg_vorbis"))
@@ -77,10 +78,10 @@ def _initialize_aws_client() -> Optional[boto3.Session]:
         return _api_client  # type: ignore
 
 
-# Time to live (in seconds) for synthesised text URL caching
+# Time to live (in seconds) for synthesized text URL caching
 # Add a safe 30 second margin to ensure that clients are never provided with an
-# audio URL that's just about to expire and might do so before playback starts.
-_AWS_URL_TTL = 300  # 5 mins in seconds
+# audio URL that is just about to expire and might do so before playback starts.
+_AWS_URL_TTL = 600  # 10 mins in seconds
 _AWS_CACHE_TTL = _AWS_URL_TTL - 30  # seconds
 _AWS_CACHE_MAXITEMS = 30
 
@@ -93,7 +94,10 @@ def _aws_polly_synthesized_text_url(
     voice_id: Optional[str],
     speed: float = 1.0,
 ) -> Optional[str]:
-    """Returns AWS Polly URL to audio file with speech-synthesised text."""
+    """Returns Amazon Polly URL to audio file with speech-synthesised text."""
+
+    assert voice_id in VOICES
+    assert audio_format in AUDIO_FORMATS
 
     # Set up client lazily
     client = _initialize_aws_client()
@@ -103,7 +107,7 @@ def _aws_polly_synthesized_text_url(
 
     if audio_format not in AUDIO_FORMATS:
         logging.warn(
-            f"Unsupported audio format for AWS Polly speech synthesis: {audio_format}."
+            f"Unsupported audio format for Amazon Polly speech synthesis: {audio_format}."
             " Falling back to mp3"
         )
         audio_format = "mp3"
@@ -111,7 +115,7 @@ def _aws_polly_synthesized_text_url(
     # Special preprocessing for SSML markup
     if text_format == "ssml":
         # Prevent '&' symbol from breaking markup
-        text = text.replace("&", "&amp;")
+        text = text.replace("&", "&amp;")  # FIXME: What is this nasty hack?
         # Adjust voice speed as appropriate
         if speed != 1.0:
             perc = int(speed * 100)
@@ -130,8 +134,8 @@ def _aws_polly_synthesized_text_url(
         "VoiceId": voice_id,
         # Valid values for mp3 and ogg_vorbis are "8000", "16000", and "22050".
         # The default value is "22050".
-        # "SampleRate": "",
-        # "text" or "ssml"
+        "SampleRate": "16000",
+        # Either "text" or "ssml"
         "TextType": text_format,
         # Only required for bilingual voices
         # "LanguageCode": "is-IS"

@@ -34,7 +34,7 @@ from . import generate_data_uri, strip_markup, mimetype_for_audiofmt
 from utility import RESOURCES_DIR
 
 
-NAME = "Azure"
+NAME = "Azure Cognitive Services"
 AUDIO_FORMATS = frozenset(("mp3", "pcm", "opus"))
 VOICES = frozenset(("Gudrun", "Gunnar"))
 _VOICE_TO_ID = {"Gudrun": "is-IS-GudrunNeural", "Gunnar": "is-IS-GunnarNeural"}
