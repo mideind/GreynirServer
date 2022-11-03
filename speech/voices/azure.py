@@ -85,8 +85,6 @@ def text_to_audio_data(
 ) -> Optional[bytes]:
     """Feeds text to Azure Speech API and returns audio data received from server."""
 
-    # Text only for now, although Azure supports SSML
-    # text_format = "text"
     if audio_format not in AUDIO_FORMATS:
         logging.warn(
             f"Unsupported audio format for Azure speech synthesis: {audio_format}."
@@ -94,6 +92,8 @@ def text_to_audio_data(
         )
         audio_format = "mp3"
 
+    # Audio format enums for Azure Speech API
+    # https://learn.microsoft.com/en-us/javascript/api/microsoft-cognitiveservices-speech-sdk/speechsynthesisoutputformat"
     aof = speechsdk.SpeechSynthesisOutputFormat
     fmt2enum = {
         "mp3": aof.Audio16Khz32KBitRateMonoMp3,
@@ -105,17 +105,38 @@ def text_to_audio_data(
         # Configure speech synthesis
         (key, region) = _azure_api_key()
         speech_config = speechsdk.SpeechConfig(subscription=key, region=region)
-        speech_config.speech_synthesis_voice_name = (
-            _VOICE_TO_ID.get(voice_id) or _DEFAULT_VOICE_ID
-        )
+        azure_voice_id = _VOICE_TO_ID.get(voice_id) or _DEFAULT_VOICE_ID
+        speech_config.speech_synthesis_voice_name = azure_voice_id
         fmt = fmt2enum.get(audio_format, aof.Audio16Khz32KBitRateMonoMp3)
         speech_config.set_speech_synthesis_output_format(fmt)
 
-        # Init synthesizer, feed it with text and get result
+        # Init synthesizer
         synthesizer = speechsdk.SpeechSynthesizer(
             speech_config=speech_config, audio_config=None
         )
-        result = synthesizer.speak_text(text)
+
+        speak_fn = synthesizer.speak_text
+
+        # Azure Speech API supports SSML but the notation is a bit different from Polly
+        # See https://learn.microsoft.com/en-us/azure/cognitive-services/speech-service/speech-synthesis-markup
+        if text_format == "ssml":
+            # Adjust speed
+            if speed != 1.0:
+                text = f'<prosody rate="{speed}">{text}</prosody>'
+            # Wrap text in the required <speak> and <voice> tags
+            text = f"""
+                <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="is-IS">
+                <voice name="{azure_voice_id}">
+                {text}
+                </voice></speak>
+            """.strip()
+            speak_fn = synthesizer.speak_ssml
+        else:
+            # We're not sending SSML so strip any markup from text
+            text = strip_markup(text)
+
+        # Feed text into speech synthesizer
+        result = speak_fn(text)
 
         # Check result
         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
