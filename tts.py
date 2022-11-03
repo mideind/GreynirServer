@@ -28,6 +28,7 @@ import os
 import sys
 import logging
 from urllib.request import urlopen
+import wave
 
 import requests
 
@@ -120,6 +121,9 @@ def main() -> None:
         choices=list(SUPPORTED_TEXT_FORMATS),
     )
     parser.add_argument(
+        "-w", "--wav", help="generate WAV file from PCM", action="store_true"
+    )
+    parser.add_argument(
         "-u", "--url", help="just dump audio URL to stdout", action="store_true"
     )
     parser.add_argument(
@@ -140,6 +144,9 @@ def main() -> None:
 
     if len(args.text.strip()) == 0:
         die("No text provided.")
+
+    if args.wav and args.audioformat != "pcm":
+        die("WAV output only supported for PCM format.")
 
     # Synthesize the text according to CLI options
     url = text_to_audio_url(
@@ -169,13 +176,23 @@ def main() -> None:
     fn = "_".join([t.lower() for t in args.text.rstrip(".").split()])
     fn = fn.replace(",", "").rstrip(".").replace("?", "").replace("!", "")
     fn = icelandic_asciify(fn)[:60].rstrip("_")  # Rm non-ASCII chars + limit length
-    suffix = suffix_for_audiofmt(args.audioformat)
+    suffix = "wav" if args.wav else suffix_for_audiofmt(args.audioformat)
     fn = f"{fn}.{suffix}"
 
     # Write audio data to file
     print(f'Writing to file "{fn}".')
-    with open(fn, "wb") as f:
-        f.write(data)
+    if args.wav:
+        # The PCM audio needs a WAV header
+        obj = wave.open(fn, "wb")
+        # We assume that the data is in this format
+        obj.setnchannels(1)  # mono
+        obj.setsampwidth(2)  # 16 bit
+        obj.setframerate(16000)  # 16 kHz
+        obj.writeframes(data)
+        obj.close()
+    else:
+        with open(fn, "wb") as f:
+            f.write(data)
 
     # Play audio file using command line tool (if available)
     if not args.noplay:
