@@ -121,6 +121,12 @@ def main() -> None:
         choices=list(SUPPORTED_TEXT_FORMATS),
     )
     parser.add_argument(
+        "-o",
+        "--override",
+        help="override default audio output filename",
+        default="",  # Empty string means use default filename
+    )
+    parser.add_argument(
         "-w", "--wav", help="generate WAV file from PCM", action="store_true"
     )
     parser.add_argument(
@@ -172,12 +178,16 @@ def main() -> None:
 
     assert data is not None  # Silence typing complaints
 
-    # Generate file name
-    fn = "_".join([t.lower() for t in args.text.rstrip(".").split()])
-    fn = fn.replace(",", "").rstrip(".").replace("?", "").replace("!", "")
-    fn = icelandic_asciify(fn)[:60].rstrip("_")  # Rm non-ASCII chars + limit length
-    suffix = "wav" if args.wav else suffix_for_audiofmt(args.audioformat)
-    fn = f"{fn}.{suffix}"
+    if args.override:
+        # Override default filename
+        fn = args.override
+    else:
+        # Generate default file name based on text and audio format
+        fn = "_".join([t.lower() for t in args.text.rstrip(".").split()])
+        fn = fn.replace(",", "").rstrip(".").replace("?", "").replace("!", "")
+        fn = icelandic_asciify(fn)[:60].rstrip("_")  # Rm non-ASCII chars + limit length
+        suffix = "wav" if args.wav else suffix_for_audiofmt(args.audioformat)
+        fn = f"{fn}.{suffix}"
 
     # Write audio data to file
     print(f'Writing to file "{fn}".')
