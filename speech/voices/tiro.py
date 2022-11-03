@@ -48,17 +48,24 @@ def _tiro_synthesized_text_data(
 ) -> Optional[bytes]:
     """Feeds text to Tiro's TTS API and returns audio data received from server."""
 
-    # No proper support for SSML yet in Tiro's API
+    # No proper support for SSML yet in Tiro's speech synthesis API
     text = strip_markup(text)
-    # text_format = "text"
+    text_format = "text"
+
+    if audio_format not in AUDIO_FORMATS:
+        logging.warn(
+            f"Unsupported audio format for Tiro speech synthesis: {audio_format}."
+            " Falling back to mp3"
+        )
+        audio_format = "mp3"
 
     jdict = {
         "Engine": "standard",
         "LanguageCode": "is-IS",
         "OutputFormat": audio_format,
-        # "SampleRate": "22050",
+        "SampleRate": "16000",
         "Text": text,
-        "TextType": "text",
+        "TextType": text_format,
         "VoiceId": voice_id,
     }
 

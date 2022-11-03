@@ -44,7 +44,7 @@ assert DEFAULT_TEXT_FORMAT in SUPPORTED_TEXT_FORMATS
 
 # Audio formats
 DEFAULT_AUDIO_FORMAT = "mp3"
-SUPPORTED_AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
+SUPPORTED_AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm", "opus"))
 assert DEFAULT_AUDIO_FORMAT in SUPPORTED_AUDIO_FORMATS
 
 

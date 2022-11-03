@@ -30,6 +30,7 @@ AUDIOFMT_TO_MIMETYPE = {
     "mp3": "audio/mpeg",
     "wav": "audio/wav",
     "ogg_vorbis": "audio/ogg",
+    "opus": "audio/ogg",
     "pcm": BINARY_MIMETYPE,
 }
 
@@ -38,6 +39,7 @@ AUDIOFMT_TO_SUFFIX = {
     "wav": "wav",
     "ogg_vorbis": "ogg",
     "pcm": "pcm",
+    "opus": "ogg",
 }
 
 

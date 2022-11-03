@@ -22,19 +22,20 @@
 
 """
 
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple
 
 import os
 import logging
 import json
 
-from . import generate_data_uri, strip_markup, mimetype_for_audiofmt
-
 import azure.cognitiveservices.speech as speechsdk
+
+from . import generate_data_uri, strip_markup, mimetype_for_audiofmt
+from utility import RESOURCES_DIR
 
 
 NAME = "Azure"
-AUDIO_FORMATS = frozenset(("mp3"))
+AUDIO_FORMATS = frozenset(("mp3", "pcm", "opus"))
 VOICES = frozenset(("Gudrun", "Gunnar"))
 _VOICE_TO_ID = {"Gudrun": "is-IS-GudrunNeural", "Gunnar": "is-IS-GunnarNeural"}
 _DEFAULT_VOICE_ID = "is-IS-GudrunNeural"
@@ -44,14 +45,14 @@ _DEFAULT_VOICE_ID = "is-IS-GudrunNeural"
 # You must obtain your own key if you want to use this code
 # JSON format is the following:
 # {
-#     "key": ""my_key,
+#     "key": ""my_key",
 #     "region": "my_region",
 # }
 #
 _AZURE_KEYFILE_NAME = "AzureSpeechServerKey.json"
-_AZURE_API_KEY_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "resources", _AZURE_KEYFILE_NAME
-)
+
+_AZURE_API_KEY_PATH = str(RESOURCES_DIR / _AZURE_KEYFILE_NAME)
+
 _AZURE_API_KEY = ""
 _AZURE_API_REGION = ""
 
@@ -85,8 +86,20 @@ def text_to_audio_data(
     """Feeds text to Azure Speech API and returns audio data received from server."""
 
     # Text only for now, although Azure supports SSML
-    text = strip_markup(text)
-    text_format = "text"
+    # text_format = "text"
+    if audio_format not in AUDIO_FORMATS:
+        logging.warn(
+            f"Unsupported audio format for Azure speech synthesis: {audio_format}."
+            " Falling back to mp3"
+        )
+        audio_format = "mp3"
+
+    aof = speechsdk.SpeechSynthesisOutputFormat
+    fmt2enum = {
+        "mp3": aof.Audio16Khz32KBitRateMonoMp3,
+        "pcm": aof.Raw16Khz16BitMonoPcm,
+        "opus": aof.Ogg16Khz16BitMonoOpus,
+    }
 
     try:
         # Configure speech synthesis
@@ -95,8 +108,7 @@ def text_to_audio_data(
         speech_config.speech_synthesis_voice_name = (
             _VOICE_TO_ID.get(voice_id) or _DEFAULT_VOICE_ID
         )
-        # We only support MP3 for now although the API supports other formats
-        fmt = speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
+        fmt = fmt2enum.get(audio_format, aof.Audio16Khz32KBitRateMonoMp3)
         speech_config.set_speech_synthesis_output_format(fmt)
 
         # Init synthesizer, feed it with text and get result
@@ -107,7 +119,6 @@ def text_to_audio_data(
 
         # Check result
         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-            print(type(result.audio_data))
             return result.audio_data
         elif result.reason == speechsdk.ResultReason.Canceled:
             cancellation_details = result.cancellation_details

@@ -34,10 +34,11 @@ import cachetools
 import boto3  # type: ignore
 from botocore.exceptions import ClientError  # type: ignore
 
+from utility import RESOURCES_DIR
 
 NAME = "Amazon Polly"
 VOICES = frozenset(("Karl", "Dora"))
-AUDIO_FORMATS = frozenset(("mp3", "pcm"))
+AUDIO_FORMATS = frozenset(("mp3", "pcm", "ogg_vorbis"))
 
 # The AWS Polly API access keys
 # You must obtain your own keys if you want to use this code
@@ -49,9 +50,9 @@ AUDIO_FORMATS = frozenset(("mp3", "pcm"))
 # }
 #
 _AWS_KEYFILE_NAME = "AWSPollyServerKey.json"
-_AWS_API_KEYS_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "resources", _AWS_KEYFILE_NAME
-)
+_AWS_API_KEYS_PATH = str(RESOURCES_DIR / _AWS_KEYFILE_NAME)
+
+
 _aws_api_client: Optional[boto3.Session] = None
 _aws_api_client_lock = Lock()
 
@@ -99,6 +100,13 @@ def _aws_polly_synthesized_text_url(
     if client is None:
         logging.warning("Unable to instantiate AWS client")
         return None
+
+    if audio_format not in AUDIO_FORMATS:
+        logging.warn(
+            f"Unsupported audio format for AWS Polly speech synthesis: {audio_format}."
+            " Falling back to mp3"
+        )
+        audio_format = "mp3"
 
     # Special preprocessing for SSML markup
     if text_format == "ssml":
