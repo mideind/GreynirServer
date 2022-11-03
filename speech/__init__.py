@@ -38,7 +38,7 @@ VOICES_DIR = GREYNIR_ROOT_DIR / "speech" / "voices"
 # For details about SSML markup, see:
 # https://developer.amazon.com/en-US/docs/alexa/custom-skills/speech-synthesis-markup-language-ssml-reference.html
 # or:
-# https://learn.microsoft.com/en-us/javascript/api/microsoft-cognitiveservices-speech-sdk/speechsynthesisoutputformat"
+# https://learn.microsoft.com/en-us/javascript/api/microsoft-cognitiveservices-speech-sdk/speechsynthesisoutputformat
 DEFAULT_TEXT_FORMAT = "ssml"
 SUPPORTED_TEXT_FORMATS = frozenset(("text", "ssml"))
 assert DEFAULT_TEXT_FORMAT in SUPPORTED_TEXT_FORMATS
@@ -139,11 +139,3 @@ def text_to_audio_url(
     assert isfunction(fn)
     # Call function in module, passing on the arguments
     return fn(**_sanitize_args(args))
-
-
-_DATA_URI_PREFIX = "data:"
-
-
-def is_data_uri(s: str) -> bool:
-    """Returns whether a URL is a data URI (RFC2397). Tolerates uppercase prefix."""
-    return s.startswith(_DATA_URI_PREFIX) or s.startswith(_DATA_URI_PREFIX.upper())

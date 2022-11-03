@@ -24,7 +24,6 @@
 
 from typing import Optional, Tuple
 
-import os
 import logging
 import json
 
@@ -93,7 +92,7 @@ def text_to_audio_data(
         audio_format = "mp3"
 
     # Audio format enums for Azure Speech API
-    # https://learn.microsoft.com/en-us/javascript/api/microsoft-cognitiveservices-speech-sdk/speechsynthesisoutputformat"
+    # https://learn.microsoft.com/en-us/javascript/api/microsoft-cognitiveservices-speech-sdk/speechsynthesisoutputformat
     aof = speechsdk.SpeechSynthesisOutputFormat
     fmt2enum = {
         "mp3": aof.Audio16Khz32KBitRateMonoMp3,
@@ -117,7 +116,7 @@ def text_to_audio_data(
 
         speak_fn = synthesizer.speak_text
 
-        # Azure Speech API supports SSML but the notation is a bit different from Polly
+        # Azure Speech API supports SSML but the notation is a bit different from Amazon Polly's
         # See https://learn.microsoft.com/en-us/azure/cognitive-services/speech-service/speech-synthesis-markup
         if text_format == "ssml":
             # Adjust speed

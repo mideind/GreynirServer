@@ -24,7 +24,6 @@
 
 from typing import Optional, Any, cast
 
-import os
 import json
 import logging
 from threading import Lock
@@ -87,7 +86,7 @@ _AWS_CACHE_MAXITEMS = 30
 
 
 @cachetools.cached(cachetools.TTLCache(_AWS_CACHE_MAXITEMS, _AWS_CACHE_TTL))
-def _aws_polly_synthesized_text_url(
+def text_to_audio_url(
     text: str,
     text_format: str,
     audio_format: str,
@@ -163,7 +162,7 @@ def text_to_audio_data(
     speed: float,
 ) -> Optional[bytes]:
     """Returns audio data for speech-synthesised text."""
-    url = _aws_polly_synthesized_text_url(**locals())
+    url = text_to_audio_url(**locals())
     if not url:
         return None
     try:
@@ -172,14 +171,3 @@ def text_to_audio_data(
     except Exception as e:
         logging.error(f"Error fetching URL {url}: {e}")
     return None
-
-
-def text_to_audio_url(
-    text: str,
-    text_format: str,
-    audio_format: str,
-    voice_id: str,
-    speed: float,
-) -> Optional[str]:
-    """Returns URL to audio of speech-synthesised text."""
-    return _aws_polly_synthesized_text_url(**locals())

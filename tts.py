@@ -19,6 +19,7 @@
 
 
     Friendly command line interface for Icelandic speech synthesis.
+    Returns 0 on success, 1 on error.
 
 """
 
@@ -34,7 +35,6 @@ import requests
 
 from speech import (
     text_to_audio_url,
-    is_data_uri,
     DEFAULT_VOICE,
     SUPPORTED_VOICES,
     DEFAULT_TEXT_FORMAT,
@@ -42,7 +42,7 @@ from speech import (
     SUPPORTED_AUDIO_FORMATS,
     SUPPORTED_TEXT_FORMATS,
 )
-from speech.voices import suffix_for_audiofmt
+from speech.voices import suffix_for_audiofmt, is_data_uri
 from utility import icelandic_asciify
 
 
@@ -194,7 +194,9 @@ def main() -> None:
     if args.wav:
         # The PCM audio needs a WAV header
         wav = wave.open(fn, "wb")
-        # We assume that the data is in this format
+        # We assume that the data is in this format, i.e. mono 16-bit signed 16 kHz PCM
+        # This will stop working if the speech synthesis modules start delivering PCM
+        # in a different format but that's OK. This exists for purely in-house purposes.
         wav.setnchannels(1)  # mono
         wav.setsampwidth(2)  # 16 bit
         wav.setframerate(16000)  # 16 kHz
