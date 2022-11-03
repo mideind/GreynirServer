@@ -46,7 +46,8 @@ def test_util():
         QUERIES_GRAMMAR_DIR,
         QUERIES_JS_DIR,
         QUERIES_UTIL_GRAMMAR_DIR,
-        CONFIG_DIR
+        CONFIG_DIR,
+        RESOURCES_DIR,
     )
 
     is2ascii = {
@@ -70,6 +71,7 @@ def test_util():
     ), f"Was utility.py moved from the root folder?"
 
     assert CONFIG_DIR.exists() and CONFIG_DIR.is_dir()
+    assert RESOURCES_DIR.exists() and RESOURCES_DIR.is_dir()
     assert QUERIES_DIR.exists() and QUERIES_DIR.is_dir()
     assert QUERIES_GRAMMAR_DIR.exists() and QUERIES_GRAMMAR_DIR.is_dir()
     assert QUERIES_JS_DIR.exists() and QUERIES_JS_DIR.is_dir()
