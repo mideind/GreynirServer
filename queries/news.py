@@ -78,11 +78,16 @@ def _get_news_data(max_items: int = 8) -> Optional[List[Dict[str, str]]]:
     if not isinstance(res, dict) or "nodes" not in res or not len(res["nodes"]):
         return None
 
-    items = [
-        {"title": i["node"]["title"], "intro": i["node"]["intro"]} for i in res["nodes"]
-    ]
+    try:
+        items = [
+            {"title": i["node"]["title"], "intro": i["node"]["intro"]}
+            for i in res["nodes"]
+        ]
+        return items[:max_items]
+    except Exception as e:
+        logging.warning("Exception parsing news data: {0}".format(e))
 
-    return items[:max_items]
+    return None
 
 
 def _clean_text(txt: str) -> str:
@@ -106,7 +111,7 @@ def top_news_answer() -> Optional[AnswerTuple]:
     voice_news = _BREAK_SSML.join(items).strip()
 
     answer = news
-    voice = "Í fréttum rúv er þetta helst: {0}".format(voice_news)
+    voice = "Í fréttum rúv er þetta helst. {0}".format(voice_news)
     response = dict(answer=answer)
 
     return response, answer, voice

@@ -18,7 +18,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    Friendly command line interface for Icelandic text to speech synthesis.
+    Friendly command line interface for Icelandic speech synthesis.
 
 """
 
@@ -79,7 +79,7 @@ def _play_audio_file(path: str) -> None:
         os.system(f"{AFPLAY} '{path}'")
     else:
         print(f"Playing file '{path}'")
-        os.system(f"{MPG123} '{path}'")
+        os.system(f"{MPG123} --quiet '{path}'")
 
 
 DEFAULT_TEXT = "Góðan daginn og til hamingju með lífið."
@@ -167,8 +167,8 @@ def main() -> None:
 
     # Generate file name
     fn = "_".join([t.lower() for t in args.text.rstrip(".").split()])
+    fn = fn.replace(",", "").rstrip(".").replace("?", "").replace("!", "")
     fn = icelandic_asciify(fn)[:60].rstrip("_")  # Rm non-ASCII chars + limit length
-    fn = fn.replace(",", "").rstrip(".")
     suffix = suffix_for_audiofmt(args.audioformat)
     fn = f"{fn}.{suffix}"
 
@@ -183,5 +183,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    """Perform speech synthesis of Icelandic text via command line."""
+    """Perform speech synthesis of Icelandic text via the command line."""
     main()
