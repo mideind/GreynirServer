@@ -44,15 +44,17 @@ AUDIOFMT_TO_SUFFIX = {
 
 
 def mimetype_for_audiofmt(fmt: str) -> str:
+    """Returns mime type for the given audio format."""
     return AUDIOFMT_TO_MIMETYPE.get(fmt, BINARY_MIMETYPE)
 
 
 def suffix_for_audiofmt(fmt: str) -> str:
+    """Returns file suffix for the given audio format."""
     return AUDIOFMT_TO_SUFFIX.get(fmt, "")
 
 
 def strip_markup(text: str) -> str:
-    """Remove SSML markup tags from a string"""
+    """Remove SSML markup tags from a string."""
     return re.sub(r"<.*?>", "", text)
 
 

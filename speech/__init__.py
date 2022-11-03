@@ -38,6 +38,8 @@ VOICES_DIR = GREYNIR_ROOT_DIR / "speech" / "voices"
 # Text formats
 # For details about SSML markup, see:
 # https://developer.amazon.com/en-US/docs/alexa/custom-skills/speech-synthesis-markup-language-ssml-reference.html
+# or:
+# https://learn.microsoft.com/en-us/javascript/api/microsoft-cognitiveservices-speech-sdk/speechsynthesisoutputformat"
 DEFAULT_TEXT_FORMAT = "ssml"
 SUPPORTED_TEXT_FORMATS = frozenset(("text", "ssml"))
 assert DEFAULT_TEXT_FORMAT in SUPPORTED_TEXT_FORMATS
@@ -86,8 +88,8 @@ def _sanitize_args(args: Dict[str, Any]) -> Dict[str, Any]:
     else:
         args["voice_id"] = voice_id
 
-    # Clamp speed to 50-150% range
-    args["speed"] = max(min(1.5, args["speed"]), 0.5)
+    # Clamp speed to 50-200% range
+    args["speed"] = max(min(2.0, args["speed"]), 0.5)
 
     return args
 

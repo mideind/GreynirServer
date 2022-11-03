@@ -152,7 +152,7 @@ def main() -> None:
         die("No text provided.")
 
     if args.wav and args.audioformat != "pcm":
-        die("WAV output only supported for PCM format.")
+        die("WAV output flag only supported for PCM format.")
 
     # Synthesize the text according to CLI options
     url = text_to_audio_url(
@@ -193,13 +193,13 @@ def main() -> None:
     print(f'Writing to file "{fn}".')
     if args.wav:
         # The PCM audio needs a WAV header
-        obj = wave.open(fn, "wb")
+        wav = wave.open(fn, "wb")
         # We assume that the data is in this format
-        obj.setnchannels(1)  # mono
-        obj.setsampwidth(2)  # 16 bit
-        obj.setframerate(16000)  # 16 kHz
-        obj.writeframes(data)
-        obj.close()
+        wav.setnchannels(1)  # mono
+        wav.setsampwidth(2)  # 16 bit
+        wav.setframerate(16000)  # 16 kHz
+        wav.writeframes(data)
+        wav.close()
     else:
         with open(fn, "wb") as f:
             f.write(data)
