@@ -104,7 +104,7 @@ def text_to_audio_data(
     voice_id: str = DEFAULT_VOICE,
     speed: float = 1.0,
 ) -> bytes:
-    """Returns audio data for speech-synthesised text."""
+    """Returns audio data for speech-synthesized text."""
     # Fall back to default voice if voice_id param invalid
     if voice_id not in SUPPORTED_VOICES:
         voice_id = DEFAULT_VOICE
@@ -126,7 +126,7 @@ def text_to_audio_url(
     voice_id: str = DEFAULT_VOICE,
     speed: float = 1.0,
 ) -> str:
-    """Returns URL to audio of speech-synthesised text."""
+    """Returns URL to audio of speech-synthesized text."""
     # Fall back to default voice if voice_id param invalid
     if voice_id not in SUPPORTED_VOICES:
         voice_id = DEFAULT_VOICE

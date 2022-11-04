@@ -87,7 +87,7 @@ def text_to_audio_url(
     voice_id: str,
     speed: float = 1.0,
 ) -> Optional[str]:
-    """Returns Tiro (data) URL for speech-synthesised text."""
+    """Returns Tiro (data) URL for speech-synthesized text."""
 
     data = text_to_audio_data(**locals())
     if not data:

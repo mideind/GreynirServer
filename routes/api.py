@@ -440,7 +440,7 @@ def query_history_api(version: int = 1) -> Response:
 @routes.route("/speech.api", methods=["GET", "POST"])
 @routes.route("/speech.api/v<int:version>", methods=["GET", "POST"])
 def speech_api(version: int = 1) -> Response:
-    """Send in text, receive URL to speech synthesised audio file."""
+    """Send in text, receive URL to speech synthesized audio file."""
 
     if not (1 <= version <= 1):
         return better_jsonify(valid=False, reason="Unsupported version")
