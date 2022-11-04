@@ -19,8 +19,8 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module handles queries related to current news & news headlines.
-    Uses RÚV's JSON API to fetch top headlines on the ruv.is front page.
+    This module handles queries related to current news and news headlines.
+    Uses the RÚV JSON API to fetch top headlines from the ruv.is front page.
 
 """
 
@@ -63,6 +63,7 @@ HANDLE_TREE = True
 GRAMMAR = read_grammar_file("news")
 
 
+# Grammar nonterminal plugins
 def QNewsQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _NEWS_QTYPE
 
@@ -111,14 +112,14 @@ def top_news_answer() -> Optional[AnswerTuple]:
     voice_news = _BREAK_SSML.join(items).strip()
 
     answer = news
-    voice = "Í fréttum rúv er þetta helst. {0}".format(voice_news)
+    voice = f"Í fréttum rúv er þetta helst. {voice_news}"
     response = dict(answer=answer)
 
     return response, answer, voice
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """Called when sentence processing is complete"""
+    """Called when sentence processing is complete."""
     q: Query = state["query"]
     if "qtype" in result:
         try:
@@ -130,11 +131,12 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 q.set_answer(*res)
                 q.set_source("RÚV")
             else:
-                errmsg = "Ekki tókst að sækja fréttir"
+                errmsg = "Ekki tókst að sækja fréttir."
                 q.set_answer(*gen_answer(errmsg))
         except Exception as e:
-            logging.warning("Exception answering news query '{0}': {1}".format(q, e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
-            return
-    else:
-        q.set_error("E_QUERY_NOT_UNDERSTOOD")
+            logging.warning(f"Exception answering news query '{q}': {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
+
+        return
+
+    q.set_error("E_QUERY_NOT_UNDERSTOOD")
