@@ -43,8 +43,13 @@ from utility import RESOURCES_DIR, STATIC_DIR
 NAME = "Azure Cognitive Services"
 AUDIO_FORMATS = frozenset(("mp3", "pcm", "opus"))
 VOICES = frozenset(("Gudrun", "Gunnar"))
+
 _VOICE_TO_ID = {"Gudrun": "is-IS-GudrunNeural", "Gunnar": "is-IS-GunnarNeural"}
 _DEFAULT_VOICE_ID = "is-IS-GudrunNeural"
+
+
+# Directory for temporary audio files
+_SCRATCH_DIR = STATIC_DIR / "audio" / "tmp"
 
 
 # The Azure Speech API access key
@@ -61,9 +66,6 @@ _AZURE_API_KEY_PATH = str(RESOURCES_DIR / _AZURE_KEYFILE_NAME)
 
 _AZURE_API_KEY = ""
 _AZURE_API_REGION = ""
-
-
-_SCRATCH_DIR = STATIC_DIR / "audio" / "tmp"
 
 
 def _azure_api_key() -> Tuple[str, str]:
@@ -88,7 +90,8 @@ def _azure_api_key() -> Tuple[str, str]:
 def _synthesize_text(
     text: str, text_format: str, audio_format: str, voice_id: str, speed: float = 1.0
 ) -> Optional[str]:
-    """Returns path to speech synthesis audio file."""
+    """Synthesizes text via Azure and returns path to generated audio file."""
+
     if audio_format not in AUDIO_FORMATS:
         logging.warn(
             f"Unsupported audio format for Azure speech synthesis: {audio_format}."
@@ -114,17 +117,15 @@ def _synthesize_text(
         fmt = fmt2enum.get(audio_format, aof.Audio16Khz32KBitRateMonoMp3)
         speech_config.set_speech_synthesis_output_format(fmt)
 
+        # Generate a unique filename for the audio output file
         suffix = suffix_for_audiofmt(audio_format)
         out_fn = str(_SCRATCH_DIR / f"{uuid.uuid4()}.{suffix}")
-
         audio_config = speechsdk.audio.AudioOutputConfig(filename=out_fn)
 
         # Init synthesizer
         synthesizer = speechsdk.SpeechSynthesizer(
             speech_config=speech_config, audio_config=audio_config
         )
-
-        speak_fn = synthesizer.speak_text
 
         # Azure Speech API supports SSML but the notation is a bit different from Amazon Polly's
         # See https://learn.microsoft.com/en-us/azure/cognitive-services/speech-service/speech-synthesis-markup
@@ -143,26 +144,20 @@ def _synthesize_text(
         else:
             # We're not sending SSML so strip any markup from text
             text = strip_markup(text)
+            speak_fn = synthesizer.speak_text
 
         # Feed text into speech synthesizer
         result = speak_fn(text)
 
         # Check result
         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-            # with open(out_fn, "rb") as f:
-            #     audio_data = f.read()
-            # # return result.audio_data
-            # return audio_data
+            # Return path to generated audio file
             return out_fn
         elif result.reason == speechsdk.ResultReason.Canceled:
             cancellation_details = result.cancellation_details
-            logging.error(
-                "Speech synthesis canceled: {}".format(cancellation_details.reason)
-            )
+            logging.error(f"Speech synthesis canceled: {cancellation_details.reason}")
             if cancellation_details.reason == speechsdk.CancellationReason.Error:
-                logging.error(
-                    "Azure TTS error: {}".format(cancellation_details.error_details)
-                )
+                logging.error(f"Azure TTS error: {cancellation_details.error_details}")
     except Exception as e:
         logging.error(f"Error communicating with Azure Speech API: {e}")
 
@@ -178,6 +173,7 @@ def text_to_audio_data(
     audio_file_path = _synthesize_text(**locals())
     if audio_file_path:
         try:
+            # Read audio data from file and return it
             with open(audio_file_path, "rb") as f:
                 audio_data = f.read()
             return audio_data
@@ -195,7 +191,7 @@ def text_to_audio_url(
     voice_id: str,
     speed: float = 1.0,
 ) -> Optional[str]:
-    """Returns data URL for speech-synthesized text."""
+    """Returns URL for speech-synthesized text."""
 
     # audio_file_path = _synthesize_text(**locals())
     # if audio_file_path:
