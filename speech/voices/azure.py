@@ -24,13 +24,20 @@
 
 from typing import Optional, Tuple
 
+import os
 import logging
 import json
+import uuid
 
 import azure.cognitiveservices.speech as speechsdk
 
-from . import generate_data_uri, strip_markup, mimetype_for_audiofmt
-from utility import RESOURCES_DIR
+from . import (
+    generate_data_uri,
+    strip_markup,
+    mimetype_for_audiofmt,
+    suffix_for_audiofmt,
+)
+from utility import RESOURCES_DIR, STATIC_DIR
 
 
 NAME = "Azure Cognitive Services"
@@ -56,6 +63,9 @@ _AZURE_API_KEY = ""
 _AZURE_API_REGION = ""
 
 
+_SCRATCH_DIR = STATIC_DIR / "audio" / "tmp"
+
+
 def _azure_api_key() -> Tuple[str, str]:
     """Lazy-load API key and region from JSON and return as tuple."""
     global _AZURE_API_KEY
@@ -75,15 +85,10 @@ def _azure_api_key() -> Tuple[str, str]:
     return (_AZURE_API_KEY, _AZURE_API_REGION)
 
 
-def text_to_audio_data(
-    text: str,
-    text_format: str,
-    audio_format: str,
-    voice_id: str,
-    speed: float = 1.0,
-) -> Optional[bytes]:
-    """Feeds text to Azure Speech API and returns audio data received from server."""
-
+def _synthesize_text(
+    text: str, text_format: str, audio_format: str, voice_id: str, speed: float = 1.0
+) -> Optional[str]:
+    """Returns path to speech synthesis audio file."""
     if audio_format not in AUDIO_FORMATS:
         logging.warn(
             f"Unsupported audio format for Azure speech synthesis: {audio_format}."
@@ -109,9 +114,14 @@ def text_to_audio_data(
         fmt = fmt2enum.get(audio_format, aof.Audio16Khz32KBitRateMonoMp3)
         speech_config.set_speech_synthesis_output_format(fmt)
 
+        suffix = suffix_for_audiofmt(audio_format)
+        out_fn = str(_SCRATCH_DIR / f"{uuid.uuid4()}.{suffix}")
+
+        audio_config = speechsdk.audio.AudioOutputConfig(filename=out_fn)
+
         # Init synthesizer
         synthesizer = speechsdk.SpeechSynthesizer(
-            speech_config=speech_config, audio_config=None
+            speech_config=speech_config, audio_config=audio_config
         )
 
         speak_fn = synthesizer.speak_text
@@ -139,7 +149,11 @@ def text_to_audio_data(
 
         # Check result
         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-            return result.audio_data
+            # with open(out_fn, "rb") as f:
+            #     audio_data = f.read()
+            # # return result.audio_data
+            # return audio_data
+            return out_fn
         elif result.reason == speechsdk.ResultReason.Canceled:
             cancellation_details = result.cancellation_details
             logging.error(
@@ -152,6 +166,25 @@ def text_to_audio_data(
     except Exception as e:
         logging.error(f"Error communicating with Azure Speech API: {e}")
 
+
+def text_to_audio_data(
+    text: str,
+    text_format: str,
+    audio_format: str,
+    voice_id: str,
+    speed: float = 1.0,
+) -> Optional[bytes]:
+    """Feeds text to Azure Speech API and returns audio data received from server."""
+    audio_file_path = _synthesize_text(**locals())
+    if audio_file_path:
+        try:
+            with open(audio_file_path, "rb") as f:
+                audio_data = f.read()
+            return audio_data
+        except Exception as e:
+            logging.error(
+                f"Azure: Error reading synthesized audio file {audio_file_path}: {e}"
+            )
     return None
 
 
@@ -163,6 +196,14 @@ def text_to_audio_url(
     speed: float = 1.0,
 ) -> Optional[str]:
     """Returns data URL for speech-synthesized text."""
+
+    # audio_file_path = _synthesize_text(**locals())
+    # if audio_file_path:
+    #     fn = os.path.basename(audio_file_path)
+    #     # TODO: How do we get the server's hostname, port and URI scheme?
+    #     # Or do we have clients assume that it's the same as the query server?
+    #     return "http://192.168.1.41:5000/static/audio/tmp/" + fn
+    # return None
 
     data = text_to_audio_data(**locals())
     if not data:

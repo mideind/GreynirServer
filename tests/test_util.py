@@ -48,6 +48,7 @@ def test_util():
         QUERIES_UTIL_GRAMMAR_DIR,
         CONFIG_DIR,
         RESOURCES_DIR,
+        STATIC_DIR,
     )
 
     is2ascii = {
@@ -72,6 +73,7 @@ def test_util():
 
     assert CONFIG_DIR.exists() and CONFIG_DIR.is_dir()
     assert RESOURCES_DIR.exists() and RESOURCES_DIR.is_dir()
+    assert STATIC_DIR.exists() and STATIC_DIR.is_dir()
     assert QUERIES_DIR.exists() and QUERIES_DIR.is_dir()
     assert QUERIES_GRAMMAR_DIR.exists() and QUERIES_GRAMMAR_DIR.is_dir()
     assert QUERIES_JS_DIR.exists() and QUERIES_JS_DIR.is_dir()
