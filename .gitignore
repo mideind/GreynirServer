@@ -159,3 +159,5 @@ resources/*keys.*.json
 *.mp3
 *.wav
 *.pcm
+*.ogg
+*.opus

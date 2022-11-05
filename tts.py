@@ -18,7 +18,8 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    Friendly command line interface for Icelandic text to speech synthesis.
+    Friendly command line interface for Icelandic speech synthesis.
+    Returns 0 on success, 1 on error.
 
 """
 
@@ -28,6 +29,7 @@ import os
 import sys
 import logging
 from urllib.request import urlopen
+import wave
 
 import requests
 
@@ -40,16 +42,8 @@ from speech import (
     SUPPORTED_AUDIO_FORMATS,
     SUPPORTED_TEXT_FORMATS,
 )
-from speech.voices import suffix_for_audiofmt
+from speech.voices import suffix_for_audiofmt, is_data_uri
 from utility import icelandic_asciify
-
-
-_DATA_URI_PREFIX = "data:"
-
-
-def _is_data_uri(s: str) -> bool:
-    """Returns whether a URL is a data URI (RFC2397). Tolerates uppercase prefix."""
-    return s.startswith(_DATA_URI_PREFIX) or s.startswith(_DATA_URI_PREFIX.upper())
 
 
 def _bytes4data_uri(data_uri: str) -> bytes:
@@ -60,7 +54,7 @@ def _bytes4data_uri(data_uri: str) -> bytes:
 
 def _fetch_audio_bytes(url: str) -> Optional[bytes]:
     """Returns bytes of audio file at URL."""
-    if _is_data_uri(url):
+    if is_data_uri(url):
         return _bytes4data_uri(url)
 
     try:
@@ -86,7 +80,7 @@ def _play_audio_file(path: str) -> None:
         os.system(f"{AFPLAY} '{path}'")
     else:
         print(f"Playing file '{path}'")
-        os.system(f"{MPG123} '{path}'")
+        os.system(f"{MPG123} --quiet '{path}'")
 
 
 DEFAULT_TEXT = "Góðan daginn og til hamingju með lífið."
@@ -127,6 +121,15 @@ def main() -> None:
         choices=list(SUPPORTED_TEXT_FORMATS),
     )
     parser.add_argument(
+        "-o",
+        "--override",
+        help="override default audio output filename",
+        default="",  # Empty string means use default filename
+    )
+    parser.add_argument(
+        "-w", "--wav", help="generate WAV file from PCM", action="store_true"
+    )
+    parser.add_argument(
         "-u", "--url", help="just dump audio URL to stdout", action="store_true"
     )
     parser.add_argument(
@@ -148,6 +151,9 @@ def main() -> None:
     if len(args.text.strip()) == 0:
         die("No text provided.")
 
+    if args.wav and args.audioformat != "pcm":
+        die("WAV output flag only supported for PCM format.")
+
     # Synthesize the text according to CLI options
     url = text_to_audio_url(
         args.text,
@@ -164,7 +170,7 @@ def main() -> None:
         sys.exit(0)
 
     # Download
-    urldesc = "data URI" if _is_data_uri(url) else url
+    urldesc = "data URI" if is_data_uri(url) else url
     print(f"Fetching {urldesc}")
     data: Optional[bytes] = _fetch_audio_bytes(url)
     if not data:
@@ -172,17 +178,33 @@ def main() -> None:
 
     assert data is not None  # Silence typing complaints
 
-    # Generate file name
-    fn = "_".join([t.lower() for t in args.text.rstrip(".").split()])
-    fn = icelandic_asciify(fn)[:60].rstrip("_")  # Rm non-ASCII chars + limit length
-    fn = fn.replace(",", "").rstrip(".")
-    suffix = suffix_for_audiofmt(args.audioformat)
-    fn = f"{fn}.{suffix}"
+    if args.override:
+        # Override default filename
+        fn = args.override
+    else:
+        # Generate default file name based on text and audio format
+        fn = "_".join([t.lower() for t in args.text.rstrip(".").split()])
+        fn = fn.replace(",", "").rstrip(".").replace("?", "").replace("!", "")
+        fn = icelandic_asciify(fn)[:60].rstrip("_")  # Rm non-ASCII chars + limit length
+        suffix = "wav" if args.wav else suffix_for_audiofmt(args.audioformat)
+        fn = f"{fn}.{suffix}"
 
     # Write audio data to file
     print(f'Writing to file "{fn}".')
-    with open(fn, "wb") as f:
-        f.write(data)
+    if args.wav:
+        # The PCM audio needs a WAV header
+        wav = wave.open(fn, "wb")
+        # We assume that the data is in this format, i.e. mono 16-bit signed 16 kHz PCM
+        # This will stop working if the speech synthesis modules start delivering PCM
+        # in a different format but that's OK. This exists for purely in-house purposes.
+        wav.setnchannels(1)  # mono
+        wav.setsampwidth(2)  # 16 bit
+        wav.setframerate(16000)  # 16 kHz
+        wav.writeframes(data)
+        wav.close()
+    else:
+        with open(fn, "wb") as f:
+            f.write(data)
 
     # Play audio file using command line tool (if available)
     if not args.noplay:
@@ -190,5 +212,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    """Perform speech synthesis of Icelandic text via command line."""
+    """Perform speech synthesis of Icelandic text via the command line."""
     main()

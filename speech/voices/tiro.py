@@ -26,9 +26,9 @@ from typing import Optional
 
 import logging
 
-from . import generate_data_uri, strip_markup, mimetype_for_audiofmt
-
 import requests
+
+from . import generate_data_uri, strip_markup, mimetype_for_audiofmt
 
 
 NAME = "Tiro"
@@ -39,7 +39,7 @@ AUDIO_FORMATS = frozenset(("mp3", "pcm"))
 _TIRO_TTS_URL = "https://tts.tiro.is/v0/speech"
 
 
-def _tiro_synthesized_text_data(
+def text_to_audio_data(
     text: str,
     text_format: str,
     audio_format: str,
@@ -48,17 +48,24 @@ def _tiro_synthesized_text_data(
 ) -> Optional[bytes]:
     """Feeds text to Tiro's TTS API and returns audio data received from server."""
 
-    # No proper support for SSML yet in Tiro's API
+    # No proper support for SSML yet in Tiro's speech synthesis API
     text = strip_markup(text)
-    # text_format = "text"
+    text_format = "text"
+
+    if audio_format not in AUDIO_FORMATS:
+        logging.warn(
+            f"Unsupported audio format for Tiro speech synthesis: {audio_format}."
+            " Falling back to mp3"
+        )
+        audio_format = "mp3"
 
     jdict = {
         "Engine": "standard",
         "LanguageCode": "is-IS",
         "OutputFormat": audio_format,
-        # "SampleRate": "22050",
+        "SampleRate": "16000",
         "Text": text,
-        "TextType": "text",
+        "TextType": text_format,
         "VoiceId": voice_id,
     }
 
@@ -73,16 +80,16 @@ def _tiro_synthesized_text_data(
         logging.error(f"Error communicating with Tiro API at {_TIRO_TTS_URL}: {e}")
 
 
-def _tiro_synthesized_text_url(
+def text_to_audio_url(
     text: str,
     text_format: str,
     audio_format: str,
     voice_id: str,
     speed: float = 1.0,
 ) -> Optional[str]:
-    """Returns Tiro (data) URL for speech-synthesised text."""
+    """Returns Tiro (data) URL for speech-synthesized text."""
 
-    data = _tiro_synthesized_text_data(**locals())
+    data = text_to_audio_data(**locals())
     if not data:
         return None
 
@@ -91,27 +98,3 @@ def _tiro_synthesized_text_url(
     data_uri = generate_data_uri(data, mime_type=mime_type)
 
     return data_uri
-
-
-def text_to_audio_data(
-    text: str,
-    text_format: str,
-    audio_format: str,
-    voice_id: str,
-    speed: float,
-) -> Optional[bytes]:
-    """Returns audio data for speech-synthesised text."""
-    # Pass all arguments on to another function
-    return _tiro_synthesized_text_data(**locals())
-
-
-def text_to_audio_url(
-    text: str,
-    text_format: str,
-    audio_format: str,
-    voice_id: str,
-    speed: float,
-) -> Optional[str]:
-    """Returns URL to audio of speech-synthesised text."""
-    # Pass all arguments on to another function
-    return _tiro_synthesized_text_url(**locals())

@@ -28,27 +28,35 @@ from base64 import b64encode
 BINARY_MIMETYPE = "application/octet-stream"
 AUDIOFMT_TO_MIMETYPE = {
     "mp3": "audio/mpeg",
+    "wav": "audio/wav",
     "ogg_vorbis": "audio/ogg",
     "pcm": BINARY_MIMETYPE,
+    # Uses an Ogg container. See https://www.rfc-editor.org/rfc/rfc7845
+    "opus": "audio/ogg",
 }
 
 AUDIOFMT_TO_SUFFIX = {
     "mp3": "mp3",
+    "wav": "wav",
     "ogg_vorbis": "ogg",
     "pcm": "pcm",
+    # Recommended filename extension for Ogg Opus files is '.opus'.
+    "opus": "opus",
 }
 
 
 def mimetype_for_audiofmt(fmt: str) -> str:
+    """Returns mime type for the given audio format."""
     return AUDIOFMT_TO_MIMETYPE.get(fmt, BINARY_MIMETYPE)
 
 
 def suffix_for_audiofmt(fmt: str) -> str:
-    return AUDIOFMT_TO_SUFFIX.get(fmt, "")
+    """Returns file suffix for the given audio format."""
+    return AUDIOFMT_TO_SUFFIX.get(fmt, "data")
 
 
 def strip_markup(text: str) -> str:
-    """Remove SSML markup tags from a string"""
+    """Remove SSML markup tags from a string."""
     return re.sub(r"<.*?>", "", text)
 
 
@@ -56,3 +64,11 @@ def generate_data_uri(data: bytes, mime_type=BINARY_MIMETYPE) -> str:
     """Generate Data URI (RFC2397) from bytes."""
     b64str = b64encode(data).decode("ascii")
     return f"data:{mime_type};base64,{b64str}"
+
+
+_DATA_URI_PREFIX = "data:"
+
+
+def is_data_uri(s: str) -> bool:
+    """Returns whether a URL is a data URI (RFC2397). Tolerates uppercase prefix."""
+    return s.startswith(_DATA_URI_PREFIX) or s.startswith(_DATA_URI_PREFIX.upper())

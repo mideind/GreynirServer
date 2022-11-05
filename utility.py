@@ -31,6 +31,10 @@ GREYNIR_ROOT_DIR: Path = Path(__file__).parent.resolve()
 # Other useful paths
 CONFIG_DIR = GREYNIR_ROOT_DIR / "config"
 
+RESOURCES_DIR = GREYNIR_ROOT_DIR / "resources"
+
+STATIC_DIR = GREYNIR_ROOT_DIR / "static"
+
 QUERIES_DIR = GREYNIR_ROOT_DIR / "queries"
 QUERIES_GRAMMAR_DIR = QUERIES_DIR / "grammars"
 QUERIES_JS_DIR = QUERIES_DIR / "js"
@@ -38,10 +42,11 @@ QUERIES_UTIL_DIR = QUERIES_DIR / "util"
 QUERIES_UTIL_GRAMMAR_DIR = QUERIES_UTIL_DIR / "grammars"
 QUERIES_DIALOGUE_DIR = QUERIES_DIR / "dialogues"
 
+
 @lru_cache(maxsize=32)
 def read_api_key(key_name: str) -> str:
     """Read the given key from a text file in resources directory. Cached."""
-    p = GREYNIR_ROOT_DIR / "resources" / f"{key_name}.txt"
+    p = RESOURCES_DIR / f"{key_name}.txt"
     try:
         return p.read_text().strip()
     except FileNotFoundError:

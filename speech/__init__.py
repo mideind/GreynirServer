@@ -32,25 +32,26 @@ import importlib
 from utility import GREYNIR_ROOT_DIR, modules_in_dir
 
 
-DEFAULT_VOICE = "Dora"
 VOICES_DIR = GREYNIR_ROOT_DIR / "speech" / "voices"
 
 # Text formats
 # For details about SSML markup, see:
 # https://developer.amazon.com/en-US/docs/alexa/custom-skills/speech-synthesis-markup-language-ssml-reference.html
+# or:
+# https://learn.microsoft.com/en-us/javascript/api/microsoft-cognitiveservices-speech-sdk/speechsynthesisoutputformat
 DEFAULT_TEXT_FORMAT = "ssml"
 SUPPORTED_TEXT_FORMATS = frozenset(("text", "ssml"))
 assert DEFAULT_TEXT_FORMAT in SUPPORTED_TEXT_FORMATS
 
 # Audio formats
 DEFAULT_AUDIO_FORMAT = "mp3"
-SUPPORTED_AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm"))
+SUPPORTED_AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm", "opus"))
 assert DEFAULT_AUDIO_FORMAT in SUPPORTED_AUDIO_FORMATS
 
 
-def load_voice_modules() -> Dict[str, ModuleType]:
-    """Dynamically load all voice modules, map voice ID
-    strings to the relevant modules."""
+def _load_voice_modules() -> Dict[str, ModuleType]:
+    """Dynamically load all voice modules, map
+    voice ID strings to the relevant modules."""
 
     v2m = {}
     for modname in modules_in_dir(VOICES_DIR):
@@ -69,9 +70,13 @@ def load_voice_modules() -> Dict[str, ModuleType]:
     return v2m
 
 
-VOICE_TO_MODULE = load_voice_modules()
+VOICE_TO_MODULE = _load_voice_modules()
 SUPPORTED_VOICES = frozenset(VOICE_TO_MODULE.keys())
 RECOMMENDED_VOICES = frozenset(("Dora", "Karl"))
+DEFAULT_VOICE = "Dora"
+
+assert DEFAULT_VOICE in SUPPORTED_VOICES
+assert DEFAULT_VOICE in RECOMMENDED_VOICES
 
 
 def _sanitize_args(args: Dict[str, Any]) -> Dict[str, Any]:
@@ -86,8 +91,8 @@ def _sanitize_args(args: Dict[str, Any]) -> Dict[str, Any]:
     else:
         args["voice_id"] = voice_id
 
-    # Clamp speed to 50-150% range
-    args["speed"] = max(min(1.5, args["speed"]), 0.5)
+    # Clamp speed to 50-200% range
+    args["speed"] = max(min(2.0, args["speed"]), 0.5)
 
     return args
 
@@ -99,7 +104,7 @@ def text_to_audio_data(
     voice_id: str = DEFAULT_VOICE,
     speed: float = 1.0,
 ) -> bytes:
-    """Returns audio data for speech-synthesised text."""
+    """Returns audio data for speech-synthesized text."""
     # Fall back to default voice if voice_id param invalid
     if voice_id not in SUPPORTED_VOICES:
         voice_id = DEFAULT_VOICE
@@ -121,7 +126,7 @@ def text_to_audio_url(
     voice_id: str = DEFAULT_VOICE,
     speed: float = 1.0,
 ) -> str:
-    """Returns URL to audio of speech-synthesised text."""
+    """Returns URL to audio of speech-synthesized text."""
     # Fall back to default voice if voice_id param invalid
     if voice_id not in SUPPORTED_VOICES:
         voice_id = DEFAULT_VOICE

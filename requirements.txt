@@ -22,7 +22,7 @@ country-list>=0.1.1
 botocore==1.21.40
 boto3==1.18.40
 # For Azure text-to-speech. Doesn't work with PyPy at the moment
-azure-cognitiveservices-speech>=1.19.0
+azure-cognitiveservices-speech>=1.24.1
 # Ours
 reynir>=3.5.1
 iceaddr>=0.5.3
