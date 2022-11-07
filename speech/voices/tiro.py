@@ -33,7 +33,7 @@ from . import generate_data_uri, strip_markup, mimetype_for_audiofmt
 
 NAME = "Tiro"
 VOICES = frozenset(("Alfur", "Dilja", "Bjartur", "Rosa", "Alfur_v2", "Dilja_v2"))
-AUDIO_FORMATS = frozenset(("mp3", "pcm"))
+AUDIO_FORMATS = frozenset(("mp3", "pcm", "ogg_vorbis"))
 
 
 _TIRO_TTS_URL = "https://tts.tiro.is/v0/speech"
@@ -48,7 +48,9 @@ def text_to_audio_data(
 ) -> Optional[bytes]:
     """Feeds text to Tiro's TTS API and returns audio data received from server."""
 
-    # No proper support for SSML yet in Tiro's speech synthesis API
+    # Tiro's API supports a subset of SSML tags
+    # See https://tts.tiro.is/#tag/speech/paths/~1v0~1speech/post
+    # However, for now, we just strip all markup
     text = strip_markup(text)
     text_format = "text"
 

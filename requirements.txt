@@ -5,7 +5,7 @@ flask-caching>=2.0.0
 Flask-Cors>=3.0.10
 # DB
 psycopg2cffi==2.9.0
-SQLAlchemy==1.4.42
+SQLAlchemy==1.4.43
 # Util
 cachetools>=3.1.1
 requests>=2.28.1
