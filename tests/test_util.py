@@ -58,6 +58,7 @@ def test_util():
         "Dóra": "Dora",
         "Álfur": "Alfur",
         "GUÐRÚN": "GUDRUN",
+        "Guðrún": "Gudrun",
     }
     for k, v in is2ascii.items():
         assert icelandic_asciify(k) == v

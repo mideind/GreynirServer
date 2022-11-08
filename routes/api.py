@@ -287,7 +287,7 @@ def query_api(version: int = 1) -> Response:
     # If voice is set, return a voice-friendly string
     voice = bool_from_request(request, "voice")
     # Request a particular voice
-    voice_id: str = icelandic_asciify(request.values.get("voice_id", "Dora"))
+    voice_id: str = icelandic_asciify(request.values.get("voice_id", DEFAULT_VOICE))
     # Request a particular voice speed
     try:
         voice_speed = float(request.values.get("voice_speed", 1.0))
@@ -461,7 +461,7 @@ def speech_api(version: int = 1) -> Response:
     fmt = request.values.get("format", "ssml")
     if fmt not in ["text", "ssml"]:
         fmt = "ssml"
-    voice_id = icelandic_asciify(request.values.get("voice_id", "Dora"))
+    voice_id = icelandic_asciify(request.values.get("voice_id", DEFAULT_VOICE))
     speed = request.values.get("voice_speed", 1.0)
     if not isinstance(speed, float):
         try:
