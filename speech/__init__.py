@@ -72,8 +72,8 @@ def _load_voice_modules() -> Dict[str, ModuleType]:
 
 VOICE_TO_MODULE = _load_voice_modules()
 SUPPORTED_VOICES = frozenset(VOICE_TO_MODULE.keys())
-RECOMMENDED_VOICES = frozenset(("Dora", "Karl"))
-DEFAULT_VOICE = "Dora"
+RECOMMENDED_VOICES = frozenset(("Gudrun", "Gunnar"))
+DEFAULT_VOICE = "Gudrun"
 
 assert DEFAULT_VOICE in SUPPORTED_VOICES
 assert DEFAULT_VOICE in RECOMMENDED_VOICES
