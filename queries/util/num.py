@@ -22,7 +22,7 @@
 
 """
 
-from typing import Mapping, List, Tuple, Match, Callable
+from typing import Mapping, List, Tuple, Match, Callable, Union
 import re
 
 
@@ -212,7 +212,11 @@ def number_to_neutral(n: int = 0, *, one_hundred: bool = False) -> str:
 
 
 def number_to_text(
-    n: int, *, case: str = "nf", gender: str = "hk", one_hundred: bool = False
+    n: Union[int, str],
+    *,
+    case: str = "nf",
+    gender: str = "hk",
+    one_hundred: bool = False
 ) -> str:
     """
     Convert an integer into written Icelandic text in given case/gender.
@@ -255,7 +259,7 @@ def numbers_to_text(
 
 
 def float_to_text(
-    f: float = 0.0,
+    f: Union[float, str],
     *,
     case: str = "nf",
     gender: str = "hk",
@@ -346,12 +350,13 @@ def floats_to_text(
     return re.sub(regex, convert, s)
 
 
-def year_to_text(year: int, *, after_christ: bool = False) -> str:
+def year_to_text(year: Union[int, str], *, after_christ: bool = False) -> str:
     """
     Write year as text in Icelandic.
     Negative years automatically append "fyrir Krist" to the text.
     If after_christ is True, add "eftir Krist" after the year.
     """
+    year = int(year)
     suffix: str = ""
     text: List[str] = []
 
@@ -628,13 +633,14 @@ def neutral_text_to_ordinal(
 
 
 def number_to_ordinal(
-    n: int, *, case: str = "nf", gender: str = "kk", number: str = "et"
+    n: Union[int, str], *, case: str = "nf", gender: str = "kk", number: str = "et"
 ) -> str:
     """
     Takes number and returns it as an ordinal
     in specified case (nf, þf, þgf, ef),
     gender (kk, kvk, hk) and number (et, ft).
     """
+    n = int(n)
     return neutral_text_to_ordinal(
         number_to_neutral(n), case=case, gender=gender, number=number
     )
