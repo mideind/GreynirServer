@@ -35,10 +35,11 @@ import cachetools
 from datetime import datetime, timedelta, timezone
 
 from query import Query, QueryStateDict
-from queries import query_json_api, is_plural, read_grammar_file, spell_out
+from queries import query_json_api, is_plural, read_grammar_file
 from tree import Result, Node
 from settings import changedlocale
-from queries.util.num import (
+from speech.norm import spell_out
+from speech.norm.num import (
     digits_to_text,
     numbers_to_ordinal,
     numbers_to_text,

@@ -73,7 +73,7 @@ from queries import (
 )
 from tree import Result, Node, TerminalNode
 from settings import changedlocale
-from queries.util.num import (
+from speech.norm.num import (
     numbers_to_ordinal,
     years_to_text,
     numbers_to_text,

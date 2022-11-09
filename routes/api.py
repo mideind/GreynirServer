@@ -42,6 +42,7 @@ from article import Article as ArticleProxy
 from query import process_query
 from query import Query as QueryObject
 from speech import (
+    GreynirSSMLParser,
     text_to_audio_url,
     DEFAULT_VOICE,
     SUPPORTED_VOICES,
@@ -376,14 +377,14 @@ def query_api(version: int = 1) -> Response:
     # Get URL for response synthesized speech audio
     if voice and "voice" in result:
         # If the result contains a "voice" key, return it
-        audio = result["voice"]
-        url = (
-            text_to_audio_url(audio, voice_id=voice_id, speed=voice_speed)
-            if audio
-            else None
-        )
-        if url:
-            result["audio"] = file_url_to_host_url(url, request)
+        v = result["voice"]
+        if v:
+            # Parse <greynir> SSML tags
+            result["voice"] = v = GreynirSSMLParser(voice_id).normalize(v)
+            # Create audio data
+            url = text_to_audio_url(v, voice_id=voice_id, speed=voice_speed)
+            if url:
+                result["audio"] = file_url_to_host_url(url, request)
         response = cast(Optional[Dict[str, str]], result.get("response"))
         if response:
             if "sources" in response:

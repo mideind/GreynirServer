@@ -51,7 +51,7 @@ from tzwhere import tzwhere  # type: ignore
 from pytz import country_timezones
 
 from geo import country_name_for_isocode, iceprep_for_cc, LatLonTuple
-from queries.util.num import number_to_text, float_to_text
+from speech.norm.num import number_to_text, float_to_text
 from reynir import NounPhrase
 from settings import changedlocale
 from utility import (
@@ -213,55 +213,6 @@ def parse_num(node: Node, num_str: str) -> float:
         logging.warning("Unexpected exception: {0}".format(e))
         raise
     return num or 0.0
-
-
-# Spell out how character names are pronounced in Icelandic
-_CHAR_PRONUNCIATION = {
-    "a": "a",
-    "á": "á",
-    "b": "bé",
-    "c": "sé",
-    "d": "dé",
-    "ð": "eð",
-    "e": "e",
-    "é": "je",
-    "f": "eff",
-    "g": "gé",
-    "h": "há",
-    "i": "i",
-    "í": "í",
-    "j": "joð",
-    "k": "ká",
-    "l": "ell",
-    "m": "emm",
-    "n": "enn",
-    "o": "o",
-    "ó": "ó",
-    "p": "pé",
-    "q": "kú",
-    "r": "err",
-    "s": "ess",
-    "t": "té",
-    "u": "u",
-    "ú": "ú",
-    "v": "vaff",
-    "x": "ex",
-    "y": "ufsilon",
-    "ý": "ufsilon í",
-    "þ": "þoddn",
-    "æ": "æ",
-    "ö": "ö",
-    "z": "seta",
-}
-
-
-def spell_out(s: str) -> str:
-    """Spell out a sequence of characters, e.g. "LTB" -> "ell té bé".
-    Useful for controlling speech synthesis of serial numbers, etc."""
-    if not s:
-        return ""
-    t = [_CHAR_PRONUNCIATION.get(c.lower(), c) if c != " " else "" for c in s]
-    return " ".join(t).replace("  ", " ").strip()
 
 
 def country_desc(cc: str) -> str:

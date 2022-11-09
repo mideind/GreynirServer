@@ -31,7 +31,7 @@ import random
 from query import Query, QueryStateDict, AnswerTuple
 from queries import gen_answer, read_grammar_file
 from queries.arithmetic import add_num, terminal_num
-from queries.util.num import number_to_text
+from speech.norm import gssml
 from tree import Result, Node
 
 
@@ -95,12 +95,12 @@ def QRandNumber(node: Node, params: QueryStateDict, result: Result) -> None:
         add_num(result._nominative, result)
 
 
-def gen_multiple_die_rolls_answer(q: Query, result):
+def gen_multiple_die_rolls_answer(q: Query, result: Result):
     # TODO: Implement me
     pass
 
 
-def gen_random_answer(q: Query, result):
+def gen_random_answer(q: Query, result: Result):
     """Generate answer to a query asking for a random number between two numbers."""
     (num1, num2) = (1, 6)  # Default
 
@@ -121,15 +121,15 @@ def gen_random_answer(q: Query, result):
     response = dict(answer=answer)
     if result.action == "dieroll":
         voice_answer = (
-            f"Talan {number_to_text(answer, gender='kk')} kom upp á teningnum"
+            f"Talan {gssml(answer, type='number', gender='kk')} kom upp á teningnum"
         )
     else:
-        voice_answer = f"Ég vel töluna {number_to_text(answer, gender='kk')}"
+        voice_answer = f"Ég vel töluna {gssml(answer, type='number', gender='kk')}"
 
     return response, str(answer), voice_answer
 
 
-def heads_or_tails(q: Query, result) -> AnswerTuple:
+def heads_or_tails(q: Query, result: Result) -> AnswerTuple:
     """Generate answer to "heads or tails" queries, i.e. "fiskur eða skjaldarmerki."""
     q.set_key("HeadsOrTails")
     return gen_answer(random.choice(("Skjaldarmerki", "Fiskur")))
