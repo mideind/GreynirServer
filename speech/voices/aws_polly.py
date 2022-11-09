@@ -92,6 +92,7 @@ def text_to_audio_url(
     audio_format: str,
     voice_id: Optional[str],
     speed: float = 1.0,
+    host_url: Optional[str] = None,
 ) -> Optional[str]:
     """Returns Amazon Polly URL to audio file with speech-synthesized text."""
 

@@ -353,7 +353,7 @@ _NAME_EXPL: AnswerType = {
 }
 
 _VOICE_EXPL: AnswerType = {
-    "answer": "Ég nota rödd sem Blindrafélagið lét útbúa árið 2011.",
+    "answer": "Ég nota rödd frá Azure skýjaþjónustunni.",
 }
 
 _JUST_QA: AnswerType = {"answer": "Nei, ég er nú bara ósköp einfalt fyrirspurnakerfi."}
@@ -1295,6 +1295,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert falleg": {"answer": "Takk fyrir hrósið!"},
     "þú ert mjög falleg": {"answer": "Takk fyrir hrósið!"},
     "þú ert fallegust": {"answer": "Takk fyrir hrósið!"},
+    "þetta var fallega sagt": {"answer": "Ég geri mitt besta!"},
     "þetta var rétt hjá þér": _GOOD_TO_HEAR,
     "það var rétt hjá þér": _GOOD_TO_HEAR,
     "þetta er rétt hjá þér": _GOOD_TO_HEAR,
@@ -1602,6 +1603,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "geturðu mælt með kvikmynd": _FAVORITE_FILM,
     "geturðu mælt með einhverri kvikmynd": _FAVORITE_FILM,
     "hvað mynd mælirðu með": _FAVORITE_FILM,
+    "mæltu með bíómynd": _FAVORITE_FILM,
+    "mæltu með einhverri bíómynd": _FAVORITE_FILM,
     # Favorite music
     "hvað er uppáhaldstónlistin þín": _FAVORITE_MUSIC,
     "hvað er uppáhalds tónlistin þín": _FAVORITE_MUSIC,

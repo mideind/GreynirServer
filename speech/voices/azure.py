@@ -88,7 +88,12 @@ def _azure_api_key() -> Tuple[str, str]:
 
 
 def _synthesize_text(
-    text: str, text_format: str, audio_format: str, voice_id: str, speed: float = 1.0
+    text: str,
+    text_format: str,
+    audio_format: str,
+    voice_id: str,
+    speed: float = 1.0,
+    **kwargs,
 ) -> Optional[str]:
     """Synthesizes text via Azure and returns path to generated audio file."""
 
@@ -119,8 +124,8 @@ def _synthesize_text(
 
         # Generate a unique filename for the audio output file
         suffix = suffix_for_audiofmt(audio_format)
-        out_fn = str(_SCRATCH_DIR / f"{uuid.uuid4()}.{suffix}")
-        audio_config = speechsdk.audio.AudioOutputConfig(filename=out_fn)
+        out_fn: str = str(_SCRATCH_DIR / f"{uuid.uuid4()}.{suffix}")
+        audio_config = speechsdk.audio.AudioOutputConfig(filename=out_fn)  # type: ignore
 
         # Init synthesizer
         synthesizer = speechsdk.SpeechSynthesizer(
@@ -190,23 +195,22 @@ def text_to_audio_url(
     audio_format: str,
     voice_id: str,
     speed: float = 1.0,
+    host_url: Optional[str] = None,
 ) -> Optional[str]:
     """Returns URL for speech-synthesized text."""
 
-    # audio_file_path = _synthesize_text(**locals())
-    # if audio_file_path:
-    #     fn = os.path.basename(audio_file_path)
-    #     # TODO: How do we get the server's hostname, port and URI scheme?
-    #     # Or do we have clients assume that it's the same as the query server?
-    #     return "http://192.168.1.41:5000/static/audio/tmp/" + fn
-    # return None
+    audio_file_path = _synthesize_text(**locals())
+    if audio_file_path:
+        fn = os.path.basename(audio_file_path)
+        base = host_url.rstrip("/") if host_url else ""
+        return f"{base}/static/audio/tmp/{fn}"
+    return None
 
-    data = text_to_audio_data(**locals())
-    if not data:
-        return None
-
-    # Generate Data URI from the bytes received
-    mime_type = mimetype_for_audiofmt(audio_format)
-    data_uri = generate_data_uri(data, mime_type=mime_type)
-
-    return data_uri
+    # Old method returned data URI
+    # data = text_to_audio_data(**locals())
+    # if not data:
+    #     return None
+    # # Generate Data URI from the bytes received
+    # mime_type = mimetype_for_audiofmt(audio_format)
+    # data_uri = generate_data_uri(data, mime_type=mime_type)
+    # return data_uri

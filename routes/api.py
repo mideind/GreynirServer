@@ -304,7 +304,7 @@ def query_api(version: int = 1) -> Response:
     slon: Optional[str] = request.values.get("longitude")
 
     # Additional client info
-    # !!! FIXME: The client_id for web browser clients is the browser version,
+    # !!! FIXME: The client_id for web browser clients is the browser user agent,
     # !!! which is not particularly useful. Consider using an empty string instead.
     client_id: Optional[str] = request.values.get("client_id")
     client_type: Optional[str] = request.values.get("client_type")
@@ -366,7 +366,9 @@ def query_api(version: int = 1) -> Response:
         # If the result contains a "voice" key, return it
         audio = result["voice"]
         url = (
-            text_to_audio_url(audio, voice_id=voice_id, speed=voice_speed)
+            text_to_audio_url(
+                audio, voice_id=voice_id, speed=voice_speed, host_url=request.host_url
+            )
             if audio
             else None
         )
@@ -472,7 +474,13 @@ def speech_api(version: int = 1) -> Response:
             speed = 1.0
 
     try:
-        url = text_to_audio_url(text, text_format=fmt, voice_id=voice_id, speed=speed)
+        url = text_to_audio_url(
+            text,
+            text_format=fmt,
+            voice_id=voice_id,
+            speed=speed,
+            host_url=request.host_url,
+        )
     except Exception:
         return better_jsonify(**reply)
 
