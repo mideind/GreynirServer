@@ -25,6 +25,8 @@ import os
 import sys
 
 import requests
+import datetime
+from itertools import product
 
 from speech import text_to_audio_url
 
@@ -59,7 +61,92 @@ def test_speech_synthesis():
     assert len(r.content) > 1000
 
 
-def test_spell_out() -> None:
+def test_gssml():
+    from speech.norm import gssml
+
+    gv = gssml("5", type="number")
+    assert gv == '<greynir type="number">5</greynir>'
+    gv = gssml(type="break")
+    assert gv == '<greynir type="break" />'
+    gv = gssml(type="break", strength="medium")
+    assert gv == '<greynir type="break" strength="medium" />'
+    gv = gssml("whatever", type="misc", a="1", b=3, c=4.5)
+    assert gv == '<greynir type="misc" a="1" b="3" c="4.5">whatever</greynir>'
+    try:
+        gssml("something", no_type_arg="hello")  # type: ignore
+        assert False, "gssml should raise error if no type arg specified"
+    except:
+        pass
+
+
+def test_greynirssmlparser():
+    from speech import GreynirSSMLParser, DEFAULT_VOICE
+    from speech.norm import gssml, DEFAULT_NORM_HANDLERS
+
+    gp = GreynirSSMLParser(DEFAULT_VOICE)
+    n = gp.normalize(f"Ég vel töluna {gssml(244, type='number', gender='kk')}")
+    assert "tvö hundruð fjörutíu og fjórir" in n
+    n = gp.normalize(
+        f"{gssml(type='break')} {gssml(3, type='number', gender='kk', case='þf')}"
+    )
+    assert "<break />" in n and "þrjá" in n
+
+    example_data = {
+        "number": "1",
+        "numbers": "1 2 3",
+        "float": "1.0",
+        "floats": "1.0 2.3",
+        "ordinal": "1",
+        "ordinals": "1., 3., 4.",
+        "phone": "5885522",
+        "time": "12:31",
+        "date": "2000-01-01",
+        "year": "1999",
+        "years": "1999, 2000 og 2021",
+        "abbrev": "ASÍ",
+        "email": "t@olvupostur.rugl",
+        "paragraph": "lítil efnisgrein",
+        "sentence": "lítil setning eða málsgrein?",
+    }
+
+    # Make sure parser removes all <greynir> tags
+    for t in DEFAULT_NORM_HANDLERS.keys():
+        if t in example_data:
+            d = example_data[t]
+        else:
+            # Handlers that don't take positional args
+            continue
+        r = f"hér er {gssml(d, type=t)} texti"
+        assert "<greynir" in r and "</greynir" in r
+        n = gp.normalize(r)
+        assert "<greynir" not in n and "</greynir" not in n
+
+    # -------------------------
+    # Tests for weird text data (shouldn't happen in normal query processing though)
+    # HTMLParser doesn't deal correctly with </tag a=">">, nothing easy we can do to fix that
+    x = """<ehskrytid> bla</s>  <t></t> <other formatting="fhe"> bla</other> fad <daf <fda> fda"""
+    n = gp.normalize(x)
+    assert n == x
+    # We strip spaces from the names of endtags,
+    # but otherwise try to keep unrecognized tags unmodified
+    x = """<bla attr="fad" f="3"></ bla  >"""
+    n = gp.normalize(x)
+    assert n == """<bla attr="fad" f="3"></bla>""" and n.count(" ") <= x.count(" ")
+
+    x = """<bla attr="fad" f="3"><greynir type="break" /></bla> <greynir type="number" gender="kvk">4</greynir>"""
+    n = gp.normalize(x)
+    assert n == """<bla attr="fad" f="3"><break /></bla> fjórar"""
+
+    x = """<bla attr="fad" f="3"><greynir type="break" /> <greynir type="number" gender="kvk">4</greynir>"""
+    n = gp.normalize(x)
+    assert n == """<bla attr="fad" f="3"><break /> fjórar"""
+
+    x = """<bla attr="fad" f="3"><greynir type="break" /> <&#47;<greynir type="number" gender="kvk">4</greynir>>"""
+    n = gp.normalize(x)
+    assert n == """<bla attr="fad" f="3"><break /> </fjórar>"""
+
+
+def test_norm_spell_out() -> None:
     from speech.norm import spell_out
 
     assert spell_out("LÍÚ") == "ell í ú"
@@ -70,7 +157,7 @@ def test_spell_out() -> None:
     assert spell_out(" YnG") == "ufsilon enn gé"
 
 
-def test_numbers() -> None:
+def test_norm_numbers() -> None:
     """Test number handling functionality in queries"""
 
     from speech.norm.num import (
@@ -295,7 +382,7 @@ def test_numbers() -> None:
     )
 
 
-def test_years() -> None:
+def test_norm_years() -> None:
     """Test number to written year conversion."""
 
     from speech.norm.num import year_to_text, years_to_text
@@ -324,7 +411,7 @@ def test_years() -> None:
     )
 
 
-def test_ordinals() -> None:
+def test_norm_ordinals() -> None:
     """Test number to written ordinal conversion."""
 
     from speech.norm.num import number_to_ordinal, numbers_to_ordinal
@@ -367,7 +454,7 @@ def test_ordinals() -> None:
     )
 
 
-def test_floats() -> None:
+def test_norm_floats() -> None:
     """Test float to written text conversion."""
 
     from speech.norm.num import float_to_text, floats_to_text
@@ -397,7 +484,7 @@ def test_floats() -> None:
     assert floats_to_text("2.000.000,00.", comma_null=False) == "tvær milljónir."
 
 
-def test_digits() -> None:
+def test_norm_digits() -> None:
     """Test digit string to written text conversion."""
 
     from speech.norm.num import digits_to_text
@@ -428,9 +515,76 @@ def test_digits() -> None:
     )
 
 
-def test_gssml():
-    assert False
+def test_norm_time_handler() -> None:
+    from speech.norm import _time_handler  # type: ignore
+
+    for h, m in product(range(24), range(60)):
+        t = datetime.time(h, m)
+        n1 = _time_handler(f"{t.hour}:{t.min}")
+        assert n1.replace(" ", "").isalpha()
+        n2 = _time_handler(t.strftime("%H:%M"))
+        assert n2.replace(" ", "").isalpha()
+        assert n1 == n2
+        # TODO: add checks
 
 
-def test_greynirssmlparser():
-    assert False
+def test_norm_date_handler() -> None:
+    from speech.norm import _date_handler  # type: ignore
+    from settings import changedlocale
+
+    with changedlocale(category="LC_TIME"):
+        for d, m, y, case in product(
+            range(1, 32),
+            range(1, 13),
+            (1, 100, 1800, 1850, 1900, 1939, 2022),
+            ("nf", "þf", "þgf", "ef"),
+        ):
+            try:
+                date = datetime.date(y, m, d)
+            except:
+                continue
+            n1 = _date_handler(date.isoformat(), case=case)
+            assert n1 == _date_handler(f"{y}-{m}-{d}", case=case)
+            n2 = _date_handler(f"{d}/{m}/{y}", case=case)
+            assert n2 == _date_handler(date.strftime("%d/%m/%Y"), case=case)
+            n3 = _date_handler(date.strftime("%d. %B %Y"), case=case)
+            n4 = _date_handler(date.strftime("%d. %b %Y"), case=case)
+            assert n1 == n2 == n3 == n4
+
+
+def test_norm_abbrev_handler() -> None:
+    from speech.norm import _abbrev_handler  # type: ignore
+
+    for a in ("ASÍ", "LSH", "AÁBDÐEÉFIÍJKLMNOÓPQRSTUÚVWXYÝZÆÖ"):
+        n1 = _abbrev_handler(a.upper())
+        print(n1)
+        n2 = _abbrev_handler(a.lower())
+        assert n1 == n2
+        assert n1.islower()
+        assert n2.islower()
+
+
+def test_norm_email_handler() -> None:
+    from speech.norm import _email_handler  # type: ignore
+
+    for e in (
+        "jon.jonsson@mideind.is",
+        "gunnar.brjann@youtube.gov.uk",
+        "tolvupostur@gmail.com",
+    ):
+        n = _email_handler(e)
+        assert n.replace(" ", "").isalpha()
+        assert "@" not in n and " hjá " in n
+        assert "." not in n and " punktur " in n
+
+
+def test_norm_break_handler() -> None:
+    from speech.norm import _break_handler, _STRENGTHS  # type: ignore
+
+    assert _break_handler() == "<break />"
+    for t in ("0ms", "50ms", "1s", "1.7s"):
+        n = _break_handler(time=t)
+        assert n == f'<break time="{t}" />'
+    for s in _STRENGTHS:
+        n = _break_handler(strength=s)
+        assert n == f'<break strength="{s}" />'

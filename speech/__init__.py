@@ -119,17 +119,19 @@ class GreynirSSMLParser(HTMLParser):
         self._handlers: HANDLER_MAPTYPE = getattr(
             module, NORM_MAP_VAR, DEFAULT_NORM_HANDLERS
         )
-        # Variables used during parsing
+
+    def normalize(self, voice_string: str) -> str:
+        """Parse and return normalized voice string."""
+        # Prepare HTMLParser variables for parsing
+        # (in case normalize is called more
+        # than once on a particular instance)
+        self.reset()
+
+        # Set (or reset) variables used during parsing
         self._str_stack: Deque[str] = deque()
         self._str_stack.append("")
         self._attr_stack: Deque[Dict[str, Optional[str]]] = deque()
 
-    def normalize(self, voice_string: str) -> str:
-        """Parse and return normalized voice string."""
-        # Prepare instance for parsing
-        # (in case normalize is called more
-        # than once on a particular instance)
-        self.reset()
         self.feed(voice_string)
         self.close()
         assert (
@@ -159,17 +161,20 @@ class GreynirSSMLParser(HTMLParser):
         if tag == "greynir":
             # Parse data inside the greynir tag we're closing
             s = self._str_stack.pop()  # String content
-            dattrs = self._attr_stack.pop()  # Current tag attributes
-            t: Optional[str] = dattrs.pop("type")
-            assert t, f"Missing type attribute in <greynir> tag around string: {s}"
-            # Fetch handler
-            hf = self._handlers.get(t)
-            if hf:
-                self._str_stack[-1] += hf(s, **dattrs)
-            else:
-                # Add string content (greynir tags removed)
-                # if no handler found or needed
+            if self._attr_stack:
+                dattrs = self._attr_stack.pop()  # Current tag attributes
+                t: Optional[str] = dattrs.pop("type")
+                assert t, f"Missing type attribute in <greynir> tag around string: {s}"
+                # Fetch handler
+                hf = self._handlers.get(t)
+                if hf:
+                    # Handler found, normalize text
+                    s = hf(s, **dattrs)
+            # Add to our string stack
+            if self._str_stack:
                 self._str_stack[-1] += s
+            else:
+                self._str_stack.append(s)
         else:
             # Other tags than greynir are kept as-is,
             # close them cleanly

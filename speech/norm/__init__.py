@@ -30,6 +30,8 @@ from typing import (
     Union,
     ChainMap as ChainMapType,
 )
+
+import re
 from collections import ChainMap
 
 from speech.norm.num import (
@@ -49,11 +51,11 @@ from speech.norm.num import (
 NORM_MAP_VAR = "NORM_HANDLERS"
 
 
-def gssml(data: Any = None, type: str = "", **kwargs: Union[str, int, float]) -> str:
+def gssml(data: Any = None, *, type: str, **kwargs: Union[str, int, float]) -> str:
     """
     Utility function, surrounds data with Greynir-specific
     voice normalizing tags.
-    E.g. '<greynir ... >{data}</greynir>'
+    E.g. '<greynir ...>{data}</greynir>'
       or '<greynir ... />' if data is None.
 
     Type specifies the type of handling needed when the tags are parsed.
@@ -63,15 +65,15 @@ def gssml(data: Any = None, type: str = "", **kwargs: Union[str, int, float]) ->
     in different ways depending on the voice engine used.
 
     Example:
-            gssml(43, type="number", gender="kk") -> '<greynir type="number" gender="kk">43</greynir>'
+        gssml(43, type="number", gender="kk") -> '<greynir type="number" gender="kk">43</greynir>'
     """
     assert type and isinstance(
         type, str
-    ), f"Must specify type keyword argument for gssml function. data: {data}"
+    ), f"type keyword arg must be non-empty string in function gssml; data: {data}"
     return (
         f'<greynir type="{type}"'
         + "".join(f' {k}="{v}"' for k, v in kwargs.items())
-        + (f">{data}</greynir>" if data is not None else f"/>")
+        + (f">{data}</greynir>" if data is not None else f" />")
     )
 
 
@@ -105,6 +107,7 @@ _CHAR_PRONUNCIATION = {
     "u": "u",
     "ú": "ú",
     "v": "vaff",
+    "w": "tvöfalt vaff",
     "x": "ex",
     "y": "ufsilon",
     "ý": "ufsilon í",
@@ -124,17 +127,99 @@ def spell_out(s: str) -> str:
     return " ".join(t).replace("  ", " ").strip()
 
 
-def _time(t: str) -> str:
+def _time_handler(t: str) -> str:
+    """Handles time of day data specified as 'HH:MM'."""
     # TODO: Say e.g. "hálf fjögur" instead of "fimmtán þrjátíu"? korter í/yfir
     # TODO: Say "tuttugu mínútur yfir þrjú" instead of "fimmtán tuttugu"
     ts = t.split(":")
     return " ".join(number_to_text(x, gender="hk") for x in ts)
 
 
-def _date(d: str, case: str = "nf") -> str:
-    # TODO: Handle DD/MM/YYY
-    # TODO: Handle MM. jan/feb/...
-    return numbers_to_ordinal(d, gender="kk", case=case, number="et")
+_MONTH_ABBREVS = (
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "maí",
+    "jún",
+    "júl",
+    "ágú",
+    "sep",
+    "okt",
+    "nóv",
+    "des",
+)
+_MONTH_NAMES = (
+    "janúar",
+    "febrúar",
+    "mars",
+    "apríl",
+    "maí",
+    "júní",
+    "júlí",
+    "ágúst",
+    "september",
+    "október",
+    "nóvember",
+    "desember",
+)
+_DATE_REGEXES = (
+    # Matches e.g. "1986-03-07"
+    re.compile(r"(?P<year>\d{1,4})-(?P<month>\d{1,2})-(?P<day>\d{1,2})"),
+    # Matches e.g. "1/4/2001"
+    re.compile(r"(?P<day>\d{1,2})/(?P<month>\d{1,2})/(?P<year>\d{1,4})"),
+    # Matches e.g. "25. janúar 1999" or "25 des."
+    re.compile(
+        r"(?P<day>\d{1,2})\.? ?"
+        r"(?P<month>(jan(úar|\.)?|feb(rúar|\.)?|mar(s|\.)?|"
+        r"apr(íl|\.)?|maí\.?|jún(í|\.)?|"
+        r"júl(í|\.)?|ágú(st|\.)?|sep(tember|\.)?|"
+        r"okt(óber|\.)?|nóv(ember|\.)?|des(ember|\.)?))"  # 'month' capture group ends
+        r"( (?P<year>\d{1,4}))?",  # Optional
+        flags=re.IGNORECASE,
+    ),
+)
+
+
+def _date_handler(d: str, case: str = "nf") -> str:
+    """
+    Handles dates specified in either
+        'YYYY-MM-DD' (ISO 8601 format),
+        'DD/MM/YYYY' or
+        'DD. month [YYYY]'
+    Note: doesn't check for incorrect numbers,
+          as that should be handled by caller.
+    """
+    # Get first fullmatch from date regexes
+    m = next(
+        (
+            match
+            for match in (r.fullmatch(d) for r in _DATE_REGEXES)
+            if match is not None
+        ),
+        None, # Default if no matches are found
+    )
+    assert m is not None, f"Incorrect date format specified for date handler: {d}"
+
+    # Handle 'DD/MM/YYYY' or 'MM. jan/feb/... [year]' match
+    gd = m.groupdict()
+    day = number_to_ordinal(gd["day"], gender="kk", case=case, number="et")
+    month = (
+        _MONTH_NAMES[min(int(gd["month"]) - 1, 11)]  # DD/MM/YYYY specification
+        if gd["month"].isdecimal()
+        else _MONTH_NAMES[_MONTH_ABBREVS.index(gd["month"][:3])]  # Non-decimal
+    )
+    return (
+        f"{day} {month} {year_to_text(gd['year'])}" if gd["year"] else f"{day} {month}"
+    )
+
+
+def _abbrev_handler(txt: str) -> str:
+    return f' {spell_out(txt).replace(" ", _break_handler(strength="weak"))} '
+
+
+def _email_handler(email: str) -> str:
+    return email.replace("@", " hjá ").replace(".", " punktur ")
 
 
 # Break strength values:
@@ -156,10 +241,6 @@ def _break_handler(time: Optional[str] = None, strength: Optional[str] = None):
     return f"<break />"
 
 
-def _abbrev_handler(txt: str) -> str:
-    return f" {spell_out(txt).replace(' ', _break_handler(strength='weak'))} "
-
-
 _HFT = Callable[..., str]  # Permissive handler function type
 HANDLER_MAPTYPE = ChainMapType[str, _HFT]
 # Default/Fallback normalization handlers,
@@ -167,17 +248,22 @@ HANDLER_MAPTYPE = ChainMapType[str, _HFT]
 DEFAULT_NORM_HANDLERS: HANDLER_MAPTYPE = ChainMap(
     {
         "number": number_to_text,
-        "numbers": numbers_to_text,  # Plural forms are lazy shortcuts
+        "numbers": numbers_to_text,
+        # ^ Plural forms are lazy shortcuts for longer text
+        # TODO: amount/s
+        # TODO: currency/ies
+        # TODO: distance/s
         "float": float_to_text,
         "floats": floats_to_text,
         "ordinal": number_to_ordinal,
         "ordinals": numbers_to_ordinal,
         "phone": digits_to_text,
-        "time": _time,
-        "date": _date,
+        "time": _time_handler,
+        "date": _date_handler,
         "year": year_to_text,
         "years": years_to_text,
         "abbrev": _abbrev_handler,
+        "email": _email_handler,
         "break": _break_handler,
         "paragraph": lambda txt: f"<p>{txt}</p>",
         "sentence": lambda txt: f"<s>{txt}</s>",
