@@ -4,7 +4,7 @@
 #
 
 set -o errexit   # Exit when a command fails
-set -o nounset   # Disallow unset variables
+# set -o nounset   # Disallow unset variables
 
 if [[ $# = 0 ]]; then
     echo "You must provide a voice name as argument"
