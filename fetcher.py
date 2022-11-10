@@ -48,7 +48,6 @@ _HTML_PARSER = "html.parser"
 
 
 class Fetcher:
-
     """The worker class that scrapes the known roots"""
 
     # HTML tags that we explicitly don't want to look at

@@ -54,7 +54,13 @@ from reynir.fastparser import Fast_Parser
 
 from settings import Settings, ConfigError
 from article import Article as ArticleProxy
-from utility import CONFIG_DIR, GREYNIR_ROOT_DIR, QUERIES_DIALOGUE_DIR, QUERIES_GRAMMAR_DIR, QUERIES_UTIL_GRAMMAR_DIR
+from utility import (
+    CONFIG_DIR,
+    GREYNIR_ROOT_DIR,
+    QUERIES_DIALOGUE_DIR,
+    QUERIES_GRAMMAR_DIR,
+    QUERIES_UTIL_GRAMMAR_DIR,
+)
 
 from reynir.version import __version__ as greynir_version
 from tokenizer.version import __version__ as tokenizer_version
@@ -238,30 +244,20 @@ if not RUNNING_AS_SERVER:
     extra_files: List[str] = []
 
     # Reload web server when config files change
-    extra_files.extend(
-        str(p) for p in CONFIG_DIR.resolve().glob("*.conf")
-    )
+    extra_files.extend(str(p) for p in CONFIG_DIR.resolve().glob("*.conf"))
     # Config files for GreynirPackage
     extra_files.extend(
-        str(p) for p in (Path(reynir.__file__).parent.resolve() / "config").glob("*.conf")
+        str(p)
+        for p in (Path(reynir.__file__).parent.resolve() / "config").glob("*.conf")
     )
 
     # Add grammar files
+    extra_files.extend(str(p) for p in QUERIES_GRAMMAR_DIR.resolve().glob("*.grammar"))
     extra_files.extend(
-        str(p)
-        for p in QUERIES_GRAMMAR_DIR.resolve().glob("*.grammar")
-    )
-    extra_files.extend(
-        str(p)
-        for p in QUERIES_UTIL_GRAMMAR_DIR.resolve().glob(
-            "*.grammar"
-        )
+        str(p) for p in QUERIES_UTIL_GRAMMAR_DIR.resolve().glob("*.grammar")
     )
     # Add dialogue TOML files
-    extra_files.extend(
-        str(p)
-        for p in QUERIES_DIALOGUE_DIR.resolve().glob("*.toml")
-    )
+    extra_files.extend(str(p) for p in QUERIES_DIALOGUE_DIR.resolve().glob("*.toml"))
 
     # Add ord.compressed from GreynirPackage
     # extra_files.append(
@@ -291,7 +287,7 @@ if not RUNNING_AS_SERVER:
     except socket_error as e:
         if e.errno == errno.EADDRINUSE:  # Address already in use
             logging.error(
-                "Greynir web app is already running at host {0}:{1}".format(
+                "Another application is already running at host {0}:{1}".format(
                     Settings.HOST, Settings.PORT
                 )
             )

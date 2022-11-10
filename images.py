@@ -58,6 +58,7 @@ def _server_query(url: str, q: Dict[str, Union[int, str]]) -> Optional[bytes]:
                 # Decode the HTML Content-type header to obtain the
                 # document type and the charset (content encoding), if specified
                 encoding = "ISO-8859-1"
+                # TODO: Why is this parsing done manually instead of using the stdlib?
                 ctype = response.getheader("Content-type", "")
                 if ";" in ctype:
                     s = ctype.split(";")

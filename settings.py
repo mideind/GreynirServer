@@ -36,7 +36,10 @@ from typing import Set, Tuple, Union
 import os
 import threading
 
-from reynir.basics import ConfigError, changedlocale, LineReader
+from reynir.basics import ConfigError, LineReader
+
+# Do not remove, relied on by other modules who import changedlocale via settings
+from reynir.basics import changedlocale
 
 
 class NoIndexWords:
@@ -63,7 +66,6 @@ class NoIndexWords:
 
 
 class Settings:
-
     """Global settings"""
 
     _lock = threading.Lock()

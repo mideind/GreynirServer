@@ -78,7 +78,6 @@ from treeutil import TreeUtility
 
 
 class IFD_Corpus:
-
     """A utility class to access the IFD corpus of XML files, by default
     assumed to be located in the `ifd` directory."""
 
@@ -183,7 +182,6 @@ class IFD_Corpus:
 
 
 class NgramCounter:
-
     """A container for the dictionary of known n-grams along with their
     counts. The container can store and load itself from a compact
     text file."""
@@ -237,7 +235,6 @@ class NgramCounter:
 
 
 class NgramTagger:
-
     """A class to assign Icelandic Frequency Dictionary (IFD) tags
     to sentences consisting of 'raw' tokens coming out of the
     tokenizer. A parse tree is not required, so the class can

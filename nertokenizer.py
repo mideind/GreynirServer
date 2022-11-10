@@ -47,14 +47,11 @@ def recognize_entities(
     enclosing_session: Optional[Session] = None,
     token_ctor: Type[TOK] = TOK,
 ) -> Iterator[Tok]:
-
     """Parse a stream of tokens looking for (capitalized) entity names
     The algorithm implements N-token lookahead where N is the
     length of the longest entity name having a particular initial word.
     Adds a named entity recognition layer on top of the
-    reynir.bintokenizer.tokenize() function.
-
-    """
+    reynir.bintokenizer.tokenize() function."""
 
     # Token queue
     tq: List[Tok] = []
