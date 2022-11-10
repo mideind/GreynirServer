@@ -28,6 +28,7 @@ import os
 import logging
 import json
 import uuid
+import pathlib
 
 import azure.cognitiveservices.speech as speechsdk
 
@@ -195,15 +196,14 @@ def text_to_audio_url(
     audio_format: str,
     voice_id: str,
     speed: float = 1.0,
-    host_url: Optional[str] = None,
 ) -> Optional[str]:
     """Returns URL for speech-synthesized text."""
 
     audio_file_path = _synthesize_text(**locals())
     if audio_file_path:
-        fn = os.path.basename(audio_file_path)
-        base = host_url.rstrip("/") if host_url else ""
-        return f"{base}/static/audio/tmp/{fn}"
+        # Generate and return file:// URL to audio file
+        url = pathlib.Path(audio_file_path).as_uri()
+        return url
     return None
 
     # Old method returned data URI

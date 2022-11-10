@@ -88,7 +88,6 @@ def text_to_audio_url(
     audio_format: str,
     voice_id: str,
     speed: float = 1.0,
-    host_url: Optional[str] = None,
 ) -> Optional[str]:
     """Returns Tiro (data) URL for speech-synthesized text."""
 

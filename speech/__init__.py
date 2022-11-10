@@ -125,7 +125,6 @@ def text_to_audio_url(
     audio_format: str = DEFAULT_AUDIO_FORMAT,
     voice_id: str = DEFAULT_VOICE,
     speed: float = 1.0,
-    host_url: Optional[str] = None,
 ) -> str:
     """Returns URL to audio of speech-synthesized text."""
     # Fall back to default voice if voice_id param invalid

@@ -28,7 +28,7 @@ from datetime import datetime
 import logging
 
 from flask import request, abort
-from flask.wrappers import Response
+from flask.wrappers import Response, Request
 
 from settings import Settings
 
@@ -261,6 +261,18 @@ def reparse_api(version: int = 1) -> Response:
     return better_jsonify(valid=True, result=tokens, register=register, stats=stats)
 
 
+def file_url_to_host_url(url: str, r: Request) -> str:
+    """Convert a local file:// URL to a http(s):// URL."""
+    if url.startswith("file://"):
+        try:
+            idx = url.index("static/audio/")  # A bit hacky
+            path = url[idx:]
+            return f"{request.host_url}{path}"
+        except:
+            pass
+    return url
+
+
 # Maximum number of query string variants
 _MAX_QUERY_VARIANTS = 10
 # Maximum length of each query string
@@ -366,14 +378,12 @@ def query_api(version: int = 1) -> Response:
         # If the result contains a "voice" key, return it
         audio = result["voice"]
         url = (
-            text_to_audio_url(
-                audio, voice_id=voice_id, speed=voice_speed, host_url=request.host_url
-            )
+            text_to_audio_url(audio, voice_id=voice_id, speed=voice_speed)
             if audio
             else None
         )
         if url:
-            result["audio"] = url
+            result["audio"] = file_url_to_host_url(url, request)
         response = cast(Optional[Dict[str, str]], result.get("response"))
         if response:
             if "sources" in response:
@@ -479,8 +489,9 @@ def speech_api(version: int = 1) -> Response:
             text_format=fmt,
             voice_id=voice_id,
             speed=speed,
-            host_url=request.host_url,
         )
+        if url:
+            url = file_url_to_host_url(url, request)
     except Exception:
         return better_jsonify(**reply)
 

@@ -64,11 +64,3 @@ def generate_data_uri(data: bytes, mime_type=BINARY_MIMETYPE) -> str:
     """Generate Data URI (RFC2397) from bytes."""
     b64str = b64encode(data).decode("ascii")
     return f"data:{mime_type};base64,{b64str}"
-
-
-_DATA_URI_PREFIX = "data:"
-
-
-def is_data_uri(s: str) -> bool:
-    """Returns whether a URL is a data URI (RFC2397). Tolerates uppercase prefix."""
-    return s.startswith(_DATA_URI_PREFIX) or s.startswith(_DATA_URI_PREFIX.upper())
