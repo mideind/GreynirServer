@@ -11,19 +11,18 @@ if [[ $# = 0 ]]; then
     exit 1
 fi
 
-
 VOICE=$1
 VOICE_LOWER=$( echo "$VOICE" | tr '[:upper:]' '[:lower:]' )
 
 # Dunno variants
-python3 tts.py -w -f "pcm" --voice "$1" -n --override "dunno01-${VOICE_LOWER}.wav" "Ég get ekki svarað því."
-python3 tts.py -w -f "pcm" --voice "$1" -n --override "dunno02-${VOICE_LOWER}.wav" "Ég get því miður ekki svarað því."
-python3 tts.py -w -f "pcm" --voice "$1" -n --override "dunno03-${VOICE_LOWER}.wav" "Ég kann ekki svar við því."
-python3 tts.py -w -f "pcm" --voice "$1" -n --override "dunno04-${VOICE_LOWER}.wav" "Ég skil ekki þessa fyrirspurn."
-python3 tts.py -w -f "pcm" --voice "$1" -n --override "dunno05-${VOICE_LOWER}.wav" "Ég veit það ekki."
-python3 tts.py -w -f "pcm" --voice "$1" -n --override "dunno06-${VOICE_LOWER}.wav" "Því miður skildi ég þetta ekki."
-python3 tts.py -w -f "pcm" --voice "$1" -n --override "dunno07-${VOICE_LOWER}.wav" "Því miður veit ég það ekki."
+python3 speak.py -w -f "pcm" --voice "$1" -n --override "dunno01-${VOICE_LOWER}.wav" "Ég get ekki svarað því."
+python3 speak.py -w -f "pcm" --voice "$1" -n --override "dunno02-${VOICE_LOWER}.wav" "Ég get því miður ekki svarað því."
+python3 speak.py -w -f "pcm" --voice "$1" -n --override "dunno03-${VOICE_LOWER}.wav" "Ég kann ekki svar við því."
+python3 speak.py -w -f "pcm" --voice "$1" -n --override "dunno04-${VOICE_LOWER}.wav" "Ég skil ekki þessa fyrirspurn."
+python3 speak.py -w -f "pcm" --voice "$1" -n --override "dunno05-${VOICE_LOWER}.wav" "Ég veit það ekki."
+python3 speak.py -w -f "pcm" --voice "$1" -n --override "dunno06-${VOICE_LOWER}.wav" "Því miður skildi ég þetta ekki."
+python3 speak.py -w -f "pcm" --voice "$1" -n --override "dunno07-${VOICE_LOWER}.wav" "Því miður veit ég það ekki."
 
 # Error messages
-python3 tts.py -w -f "pcm" --voice "$1" -n --override "err-${VOICE_LOWER}.wav" "Villa kom upp í samskiptum við netþjón."
-python3 tts.py -w -f "pcm" --voice "$1" -n --override "conn-${VOICE_LOWER}.wav" "Ekki næst samband við netið."
+python3 speak.py -w -f "pcm" --voice "$1" -n --override "err-${VOICE_LOWER}.wav" "Villa kom upp í samskiptum við netþjón."
+python3 speak.py -w -f "pcm" --voice "$1" -n --override "conn-${VOICE_LOWER}.wav" "Ekki næst samband við netið."
