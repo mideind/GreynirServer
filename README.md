@@ -151,29 +151,29 @@ in [`queries/examples`](queries/examples).
 
 ## File details
 
-* [`main.py`](main.py): WSGI web server application and main module for command-line invocation
-* [`routes/*.py`](routes/): Routes for the web application
-* [`query.py`](query.py): Natural language query processor
-* [`queries/*.py`](queries/): Query-answering modules
+* [`article.py`](article.py): Representation of an article through its life cycle
+* [`config/Greynir.conf`](config/Greynir.conf): Editable configuration file
 * [`db/*.py`](db/): Database models, queries and functions via SQLAlchemy
+* [`fetcher.py`](fetcher.py): Utility classes for fetching articles given their URLs
+* [`geo.py`](geo.py): Geography and location-related utility functions
+* [`main.py`](main.py): WSGI web server application and main module for command-line invocation
+* [`nertokenizer.py`](nertokenizer.py): A layer on top of the tokenizer for named entity recognition
+* [`postagger.py`](postagger.py): Part-of-speech tagging
+* [`processor.py`](processor.py): Information extraction from parse trees and token streams
+* [`queries/*.py`](queries/): Query-answering modules
+* [`query.py`](query.py): Natural language query processor
+* [`routes/*.py`](routes/): Routes for the web application
 * [`scraper.py`](scraper.py): Web scraper, collecting articles from a set of pre-selected websites
 * [`scrapers/*.py`](scrapers): Scraper code for various websites
 * [`settings.py`](settings.py): Management of global settings and configuration data
-* [`config/Greynir.conf`](config/Greynir.conf): Editable configuration file
-* [`fetcher.py`](fetcher.py): Utility classes for fetching articles given their URLs
-* [`nertokenizer.py`](nertokenizer.py): A layer on top of the tokenizer for named entity recognition
-* [`processor.py`](processor.py): Information extraction from parse trees and token streams
-* [`postagger.py`](postagger.py): Part-of-speech tagging
-* [`article.py`](article.py): Representation of an article through its life cycle
-* [`vectors/builder.py`](vectors/builder.py): Article indexer and LSA topic vector builder
-* [`geo.py`](geo.py): Geography and location-related utility functions
+* [`speak.py`](speak.py): Command line interface for speech synthesis
 * [`speech/*.py`](speech/): Speech synthesizer modules
-* [`tools/*.py`](tools/): Various command line utility tools
 * [`tnttagger.py`](tnttagger.py): Statistical Part-of-speech tagging
+* [`tools/*.py`](tools/): Various command line utility tools
 * [`tree.py`](tree.py): Representation of parse trees for processing
 * [`treeutil.py`](treeutil.py): Utility functions for working with parse trees and tokens
-* [`speak.py`](speak.py): Command line interface for speech synthesis
 * [`utility.py`](utility.py): Assorted utility functions used throughout the codebase
+* [`vectors/builder.py`](vectors/builder.py): Article indexer and LSA topic vector builder
 
 ## Installation and setup
 
