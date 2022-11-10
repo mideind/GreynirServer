@@ -24,7 +24,6 @@
 
 from typing import Optional, Tuple
 
-import os
 import logging
 import json
 import uuid
@@ -158,7 +157,8 @@ def _synthesize_text(
         # Check result
         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
             # Return path to generated audio file
-            return out_fn
+            assert pathlib.Path(out_fn).exists()
+            return
         elif result.reason == speechsdk.ResultReason.Canceled:
             cancellation_details = result.cancellation_details
             logging.error(f"Speech synthesis canceled: {cancellation_details.reason}")
