@@ -158,7 +158,7 @@ def _synthesize_text(
         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
             # Return path to generated audio file
             assert pathlib.Path(out_fn).exists()
-            return
+            return out_fn
         elif result.reason == speechsdk.ResultReason.Canceled:
             cancellation_details = result.cancellation_details
             logging.error(f"Speech synthesis canceled: {cancellation_details.reason}")

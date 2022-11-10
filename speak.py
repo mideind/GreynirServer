@@ -59,24 +59,16 @@ def is_file_uri(s: str) -> bool:
     return s.startswith("file://")
 
 
-def _bytes4data_uri(data_uri: str) -> bytes:
-    """Returns data contained in data URI (RFC2397) as bytes."""
-    with urlopen(data_uri) as response:
+def _bytes4file_or_data_uri(uri: str) -> bytes:
+    """Returns bytes of file at file URI (RFC8089) or in data URI (RFC2397)."""
+    with urlopen(uri) as response:
         return response.read()
-
-
-def _bytes4file_uri(file_uri: str) -> bytes:
-    """Returns bytes of file at file URI (RFC8089)."""
-    return _bytes4data_uri(file_uri)
 
 
 def _fetch_audio_bytes(url: str) -> Optional[bytes]:
     """Returns bytes of audio file at URL."""
-    if is_data_uri(url):
-        return _bytes4data_uri(url)
-
-    if is_file_uri(url):
-        return _bytes4file_uri(url)
+    if is_data_uri(url) or is_file_uri(url):
+        return _bytes4file_or_data_uri(url)
 
     try:
         r = requests.get(url)
@@ -151,7 +143,7 @@ def main() -> None:
         "-w", "--wav", help="generate WAV file from PCM", action="store_true"
     )
     parser.add_argument(
-        "-u", "--url", help="just dump audio URL to stdout", action="store_true"
+        "-u", "--url", help="dump audio URL to stdout", action="store_true"
     )
     parser.add_argument(
         "-n", "--noplay", help="do not play resulting audio file", action="store_true"
