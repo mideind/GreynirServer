@@ -176,8 +176,8 @@ class GreynirSSMLParser(HTMLParser):
             else:
                 self._str_stack.append(s)
         else:
-            # Other tags than greynir are kept as-is,
-            # close them cleanly
+            # Other tags than greynir are ideally kept as-is,
+            # try to close them cleanly when possible
             self._str_stack[-1] += f"</{tag}>"
 
     def handle_startendtag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]):

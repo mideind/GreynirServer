@@ -321,7 +321,7 @@ def distance_desc(
         unit = "km" if abbr else unit_long
         sdist = dist
         if num_to_str:
-            sdist = float_to_text(rounded_km, case=case, gender="kk", comma_null=False)
+            sdist = float_to_text(rounded_km, case=case, gender="kk")
     # E.g. 940 metrar
     else:
         # Round to nearest 10

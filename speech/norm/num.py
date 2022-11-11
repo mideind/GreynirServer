@@ -263,7 +263,7 @@ def float_to_text(
     *,
     case: str = "nf",
     gender: str = "hk",
-    comma_null: bool = True,
+    comma_null: bool = False,
     one_hundred: bool = False
 ) -> str:
     """
@@ -328,7 +328,7 @@ def floats_to_text(
     regex: str = r"\b(\d?\d?\d\.)*\d+,\d+\b",
     case: str = "nf",
     gender: str = "hk",
-    comma_null: bool = True,
+    comma_null: bool = False,
     one_hundred: bool = False
 ) -> str:
     """

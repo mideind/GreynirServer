@@ -129,9 +129,9 @@ def spell_out(s: str) -> str:
 
 def _time_handler(t: str) -> str:
     """Handles time of day data specified as 'HH:MM'."""
-    # TODO: Say e.g. "hálf fjögur" instead of "fimmtán þrjátíu"? korter í/yfir
-    # TODO: Say "tuttugu mínútur yfir þrjú" instead of "fimmtán tuttugu"
-    ts = t.split(":")
+    # TODO: Say e.g. "hálf fjögur" instead of "fimmtán þrjátíu"? "korter í/yfir"?
+    # TODO: Say "tuttugu mínútur yfir þrjú" instead of "fimmtán tuttugu"?
+    ts = [int(i) for i in t.split(":")]
     return " ".join(number_to_text(x, gender="hk") for x in ts)
 
 
@@ -186,18 +186,17 @@ def _date_handler(d: str, case: str = "nf") -> str:
     Handles dates specified in either
         'YYYY-MM-DD' (ISO 8601 format),
         'DD/MM/YYYY' or
-        'DD. month [YYYY]'
+        'DD. month[ YYYY]'
     Note: doesn't check for incorrect numbers,
           as that should be handled by caller.
     """
     # Get first fullmatch from date regexes
     m = next(
-        (
-            match
-            for match in (r.fullmatch(d) for r in _DATE_REGEXES)
-            if match is not None
+        filter(
+            lambda x: x is not None,
+            (r.fullmatch(d) for r in _DATE_REGEXES),
         ),
-        None, # Default if no matches are found
+        None,  # Default if no matches are found
     )
     assert m is not None, f"Incorrect date format specified for date handler: {d}"
 
@@ -241,8 +240,9 @@ def _break_handler(time: Optional[str] = None, strength: Optional[str] = None):
     return f"<break />"
 
 
-_HFT = Callable[..., str]  # Permissive handler function type
-HANDLER_MAPTYPE = ChainMapType[str, _HFT]
+# Permissive normalization handler function type
+NormFunc = Callable[..., str]
+HANDLER_MAPTYPE = ChainMapType[str, NormFunc]
 # Default/Fallback normalization handlers,
 # voice modules can override the handlers by creating a ChainMap child
 DEFAULT_NORM_HANDLERS: HANDLER_MAPTYPE = ChainMap(
@@ -257,6 +257,7 @@ DEFAULT_NORM_HANDLERS: HANDLER_MAPTYPE = ChainMap(
         "floats": floats_to_text,
         "ordinal": number_to_ordinal,
         "ordinals": numbers_to_ordinal,
+        "digits": digits_to_text,
         "phone": digits_to_text,
         "time": _time_handler,
         "date": _date_handler,

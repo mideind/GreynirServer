@@ -461,12 +461,15 @@ def test_norm_floats() -> None:
 
     assert float_to_text(-0.12) == "mínus núll komma tólf"
     assert float_to_text(-0.1012) == "mínus núll komma eitt núll eitt tvö"
+    assert float_to_text(-0.1012, gender="kk") == "mínus núll komma einn núll einn tveir"
     assert float_to_text(-21.12, gender="kk") == "mínus tuttugu og einn komma tólf"
     assert (
         float_to_text(-21.123, gender="kk")
         == "mínus tuttugu og einn komma einn tveir þrír"
     )
     assert float_to_text(1.03, gender="kvk") == "ein komma núll þrjár"
+    assert float_to_text(2.0, gender="kvk", case="þgf") == "tveimur"
+    assert float_to_text(2.0, gender="kvk", case="þgf", comma_null=True) == "tveimur komma núll"
 
     assert (
         floats_to_text("2,13 millilítrar af vökva.", gender="kk")
@@ -520,7 +523,7 @@ def test_norm_time_handler() -> None:
 
     for h, m in product(range(24), range(60)):
         t = datetime.time(h, m)
-        n1 = _time_handler(f"{t.hour}:{t.min}")
+        n1 = _time_handler(f"{t.hour}:{t.minute}")
         assert n1.replace(" ", "").isalpha()
         n2 = _time_handler(t.strftime("%H:%M"))
         assert n2.replace(" ", "").isalpha()

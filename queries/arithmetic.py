@@ -26,9 +26,20 @@
 # TODO: Hvað er X með Y aukastöfum?
 # TODO: Styðja hvað er X þúsund "kall" með vask?
 
-from typing import Dict, Any, List, Mapping, Optional, Sequence, Union, cast
+from typing import (
+    Callable,
+    Any,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+)
 
 import math
+import operator
 import json
 import re
 import logging
@@ -37,7 +48,7 @@ import random
 from query import AnswerTuple, ContextDict, Query, QueryStateDict
 from queries import iceformat_float, gen_answer, read_grammar_file
 from tree import Result, Node, TerminalNode
-from speech.norm.num import floats_to_text, numbers_to_text
+from speech.norm import gssml
 
 
 _ARITHMETIC_QTYPE = "Arithmetic"
@@ -286,7 +297,7 @@ def add_num(num: Optional[Union[str, int, float]], result: Result):
     rn = cast(List[float], result.numbers)
     if isinstance(num, str):
         rn.append(parse_num(num))
-    elif num:
+    elif num is not None:
         rn.append(num)
 
 
@@ -329,12 +340,13 @@ def QArFractionWord(node: Node, params: QueryStateDict, result: Result) -> None:
         if fp:
             fp = 1 / int(fp)
     add_num(fp, result)
+    result.frac_desc = fn  # Used in voice answer
 
 
 def QArMultOperator(node: Node, params: QueryStateDict, result: Result) -> None:
     """'tvisvar_sinnum', 'þrisvar_sinnum', 'fjórum_sinnum'"""
     add_num(result._nominative, result)
-    result.operator = "multiply"
+    result.op = "multiply"
 
 
 def QArLastResult(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -352,41 +364,41 @@ def QArLastResult(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QArPlusOperator(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.operator = "plus"
+    result.op = "plus"
 
 
 def QArSumOperator(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.operator = "plus"
+    result.op = "plus"
 
 
 def QArMinusOperator(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.operator = "minus"
+    result.op = "minus"
 
 
 def QArDivisionOperator(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.operator = "divide"
+    result.op = "divide"
 
 
 def QArMultiplicationOperator(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
-    result.operator = "multiply"
+    result.op = "multiply"
 
 
 def QArSquareRootOperator(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.operator = "sqrt"
+    result.op = "sqrt"
 
 
 def QArPowOperator(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.operator = "pow"
+    result.op = "pow"
 
 
 def QArPercentOperator(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.operator = "percent"
+    result.op = "percent"
 
 
 def QArFractionOperator(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.operator = "fraction"
+    result.op = "fraction"
 
 
 def Prósenta(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -409,55 +421,19 @@ def QArCurrencyOrNum(node: Node, params: QueryStateDict, result: Result) -> None
             add_num(result.amount, result)
 
 
-def QArStd(node: Node, params: QueryStateDict, result: Result) -> None:
-    # Used later for formatting voice answer string,
-    # e.g. "[tveir plús tveir] er [fjórir]"
-    result.desc = (
-        result._canonical.replace("+", " plús ")
-        .replace("-", " mínus ")
-        .replace("/", " deilt með ")
-        .replace(" x ", " sinnum ")
-    )
-
-
-def QArSum(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.desc = result._canonical
-
-
-def QArMult(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.desc = result._canonical
-
-
-def QArSqrt(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.desc = result._canonical
-
-
-def QArPow(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.desc = result._canonical
-
-
-def QArPercent(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.desc = result._canonical
-
-
-def QArFraction(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.desc = result._canonical
-
-
 def QArPiQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = "PI"
 
 
 def QArWithVAT(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.operator = "with_vat"
+    result.op = "with_vat"
 
 
 def QArWithoutVAT(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.operator = "without_vat"
+    result.op = "without_vat"
 
 
 def QArVAT(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.desc = result._canonical
     result.qtype = "VSK"
 
 
@@ -466,12 +442,13 @@ def QArithmetic(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _ARITHMETIC_QTYPE
 
 
-# Map operator name to corresponding python operator
-_STD_OPERATORS: Mapping[str, str] = {
-    "multiply": "*",
-    "divide": "/",
-    "plus": "+",
-    "minus": "-",
+# Map operator name to corresponding
+# operator function, voice version and symbol
+_STD_OPERATORS: Mapping[str, Tuple[Callable[[Any, Any], Any], str, str]] = {
+    "plus": (operator.add, "plús", "+"),
+    "minus": (operator.sub, "mínus", "-"),
+    "multiply": (operator.mul, "sinnum", "*"),
+    "divide": (operator.truediv, "deilt með", "/"),
 }
 
 # Number of args required for each operator
@@ -495,108 +472,118 @@ _VAT_MULT = 1.24
 
 def calc_arithmetic(query: Query, result: Result) -> Optional[AnswerTuple]:
     """Calculate the answer to an arithmetic query"""
-    operator = result.operator
+    op = result.op
     nums = result.numbers
-    # Replace period with Icelandic comma in query answer
-    desc = result.desc.replace(".", ",")
 
+    # Shorter names for common gssml function calls
+    fmt_num: Callable[..., str] = lambda f, **kw: gssml(
+        f,
+        type="float",
+        gender=kw.get("gender", "kk"),
+        case=kw.get("case", "nf"),
+    )
+    fmt_ord: Callable[..., str] = lambda f, **kw: gssml(
+        f,
+        type="ordinal",
+        gender=kw.get("gender", "kk"),
+        case=kw.get("case", "nf"),
+    )
     if "error_context_reference" in result:
         # Used 'það' or 'því' without context
         return gen_answer("Ég veit ekki til hvers þú vísar.")
 
     # Ensure that we have the right number of
     # number args for the operation in question
-    assert _OP_NUM_ARGS[operator] == len(nums)
-
-    # Global namespace for eval
-    # Block access to all builtins
-    eval_globals: Dict[str, Any] = {"__builtins__": None}
+    assert _OP_NUM_ARGS[op] == len(nums), f'Incorrect number of arguments: {_OP_NUM_ARGS[op]} != {len(nums)}'
 
     # Square root calculation
-    if operator == "sqrt":
+    if op == "sqrt":
         if len(str(nums[0])) > 100:
             return gen_answer("Þessi tala er of há.")
-        # Allow sqrt function in eval namespace
-        eval_globals["sqrt"] = math.sqrt
-        s = "sqrt({0})".format(nums[0])
+        res = round(math.sqrt(nums[0]), 2)
+        s = f"sqrt({nums[0]})"
+        voice = f"Kvaðratrótin af {fmt_num(nums[0])} er {fmt_num(res)}"
 
     # Pow
-    elif operator == "pow":
+    elif op == "pow":
         # Cap max pow
         if nums[1] > 50:
             return gen_answer("Þetta er of hátt veldi.")
-        # Allow pow function in eval namespace
-        eval_globals["pow"] = pow
-        s = "pow({0},{1})".format(nums[0], nums[1])
+        res = pow(nums[0], nums[1])
+        s = f"pow({nums[0]}, {nums[1]})"
+        voice = (
+            f"{fmt_num(nums[0])} í "
+            f"{fmt_ord(nums[1], gender='hk', case='þgf')} veldi "
+            f"er {fmt_num(res)}"
+        )
 
     # Percent
-    elif operator == "percent":
-        s = "({0} * {1}) / 100.0".format(nums[0], nums[1])
+    elif op == "percent":
+        res = (nums[0] * nums[1]) / 100.0
+        s = f"({nums[0]} * {nums[1]}) / 100.0"
+        voice = (
+            f"{fmt_num(nums[0], gender='hk')} "
+            f"prósent af {fmt_num(nums[1])} "
+            f"er {fmt_num(res, comma_null=True)}"
+        )
 
     # Fraction
-    elif operator == "fraction":
-        s = "{0} * {1}".format(nums[0], nums[1])
+    elif op == "fraction":
+        res = nums[0] * nums[1]
+        s = f"{nums[0]} * {nums[1]}"
+        voice = f"{result.frac_desc} af {fmt_num(nums[1])} er {fmt_num(res)}"
 
     # Add VAT to sum
-    elif operator == "with_vat":
-        s = "{0} * {1}".format(nums[0], _VAT_MULT)
+    elif op == "with_vat":
+        res = nums[0] * _VAT_MULT
+        s = f"{nums[0]} * {_VAT_MULT}"
+        voice = f"{fmt_num(nums[0])} með virðisaukaskatti er {fmt_num(res)}"
 
     # Subtract VAT from sum
-    elif operator == "without_vat":
-        s = "{0} / {1}".format(nums[0], _VAT_MULT)
+    elif op == "without_vat":
+        res = nums[0] / _VAT_MULT
+        s = f"{nums[0]} / {_VAT_MULT}"
+        voice = f"{fmt_num(nums[0])} án virðisaukaskatts er {fmt_num(res)}"
 
     # Addition, subtraction, multiplication, division
-    elif operator in _STD_OPERATORS:
-        math_op = _STD_OPERATORS[operator]
+    elif op in _STD_OPERATORS:
+        op_func, op_voice, op_symbol = _STD_OPERATORS[op]
 
         # Check for division by zero
-        if math_op == "/" and nums[1] == 0:
+        if op_func == operator.truediv and nums[1] == 0:
             return gen_answer("Það er ekki hægt að deila með núlli.")
 
-        s = "{0} {1} {2}".format(nums[0], math_op, nums[1])
+        res = op_func(nums[0], nums[1])
+        s = f"{nums[0]} {op_symbol} {nums[1]}"
+        voice = (
+            fmt_num(nums[0])
+            + f" {op_voice} "
+            + fmt_num(nums[1], case="þgf" if op_func == operator.truediv else "nf")
+            + f" er {fmt_num(res, comma_null=True)}"
+        )
     else:
-        logging.warning("Unknown operator: {0}".format(operator))
+        logging.warning("Unknown operator: {0}".format(op))
         return None
 
     # Set arithmetic expression as query key
     result.qkey = s
 
-    # Run eval on expression
-    res: Any = eval(s, eval_globals, {})
-
-    if isinstance(res, float):  # type: ignore
+    if isinstance(res, float):
         # Convert result to Icelandic decimal format
         answer = iceformat_float(res)
     else:
         answer = str(res)
 
-    response = dict(answer=answer, result=res)
-    voice_answer = f"{desc} er {answer}"
-
-    # Format numbers for voice
-    # Use dative when preceded by "deilt með"
-    voice_answer = floats_to_text(
-        voice_answer, regex=r"(?<=deilt með )\d+,\d+", case="þgf", gender="kk"
-    )
-    voice_answer = numbers_to_text(
-        voice_answer, regex=r"(?<=deilt með )\d+", case="þgf", gender="kk"
-    )
-
-    voice_answer = floats_to_text(voice_answer, gender="kk")
-    voice_answer = numbers_to_text(voice_answer, gender="kk")
-
-    return response, answer, voice_answer
+    return dict(answer=answer, result=res), answer, voice
 
 
 def pi_answer(q: Query, result: Result) -> AnswerTuple:
     """Define pi (π)"""
     answer = "Talan π („pí“) er stærðfræðilegi fastinn 3,14159265359 eða þar um bil."
-    voice = floats_to_text(
-        "Talan pí er stærðfræðilegi fastinn 3,14159265359 eða þar um bil.", gender="kk"
-    )
-    response = dict(answer=answer, result=math.pi)
+    voice = f"Talan pí er stærðfræðilegi fastinn {gssml(3.14159265359, type='float', gender='kk')} eða þar um bil."
+
     q.set_context(dict(result=3.14159265359))
-    return response, answer, voice
+    return dict(answer=answer, result=math.pi), answer, voice
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:

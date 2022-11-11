@@ -32,9 +32,7 @@ import pathlib
 import azure.cognitiveservices.speech as speechsdk
 
 from speech.voices import (
-    generate_data_uri,
     strip_markup,
-    mimetype_for_audiofmt,
     suffix_for_audiofmt,
 )
 from utility import RESOURCES_DIR, STATIC_DIR
