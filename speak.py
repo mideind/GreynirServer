@@ -46,7 +46,7 @@ from speech import (
     SUPPORTED_TEXT_FORMATS,
 )
 from speech.voices import suffix_for_audiofmt
-from utility import icelandic_asciify
+from utility import sanitize_filename
 
 
 def _die(msg: str, exit_code: int = 1) -> None:
@@ -94,9 +94,9 @@ def _play_audio_file(path: str) -> None:
     works on systems with afplay (macOS), mpv or mpg123."""
 
     AFPLAY = "/usr/bin/afplay"  # afplay is only present on macOS systems
-    # Common UNIX command line video/audio players
-    MPV = shutil.which("mpv")
-    MPG123 = shutil.which("mpg123")
+    MPV = shutil.which("mpv")  # mpv is a cross-platform player
+    MPG123 = shutil.which("mpg123")  # mpg123 is a cross-platform player
+    CMDMP3 = shutil.which("cmdmp3")  # cmdmp3 is a Windows command line mp3 player
 
     cmd = None
     if Path(AFPLAY).is_file():
@@ -105,6 +105,8 @@ def _play_audio_file(path: str) -> None:
         cmd = [MPV, path]
     elif MPG123:
         cmd = [MPG123, "--quiet", path]
+    elif CMDMP3:
+        cmd = [CMDMP3, path]
 
     if not cmd:
         _die("Couldn't find suitable command line audio player.")
@@ -114,7 +116,6 @@ def _play_audio_file(path: str) -> None:
 
 
 DEFAULT_TEXT = "Góðan daginn og til hamingju með lífið."
-_ALLOWED_FILE_CHARS = string.ascii_letters + string.digits + "._-"
 
 
 def main() -> None:
@@ -213,11 +214,7 @@ def main() -> None:
         fn = args.override
     else:
         # Generate file name
-        fn = "_".join([t for t in args.text.lower().split()])
-        # Rm non-ASCII chars, non-filename chars and limit length
-        fn = "".join(c for c in icelandic_asciify(fn) if c in _ALLOWED_FILE_CHARS)[
-            :60
-        ].rstrip("._")
+        fn = sanitize_filename(args.text)
         fn += "." + suffix_for_audiofmt(args.audioformat)
 
     # Write audio data to file

@@ -22,6 +22,7 @@
 """
 from typing import List
 
+import string
 from functools import lru_cache
 from pathlib import Path
 
@@ -72,6 +73,22 @@ def modules_in_dir(p: Path) -> List[str]:
         for pyfile in p.relative_to(GREYNIR_ROOT_DIR).glob("*.py")
         if not pyfile.name.startswith("_")
     ]
+
+
+def sanitize_filename(fn: str, maxlen: int = 60) -> str:
+    """Sanitize a filename by limiting allowed characters."""
+
+    ALLOWED_FILE_CHARS = string.ascii_letters + string.digits + "._-"
+
+    # Replace whitespace with underscore
+    fn = "_".join([t for t in fn.lower().split()])
+
+    # Rm non-ASCII chars, non-filename chars and limit length
+    fn = "".join(c for c in icelandic_asciify(fn) if c in ALLOWED_FILE_CHARS)[
+        :maxlen
+    ].rstrip("._")
+
+    return fn
 
 
 def icelandic_asciify(text: str) -> str:
