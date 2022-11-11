@@ -96,7 +96,7 @@ ABOUT_TPL="${DEST}/templates/about.html"
 sed -i "s/\[Þróunarútgáfa\]/Útgáfa $(date "+%Y-%m-%d %H:%M")/g" "${ABOUT_TPL}"
 GITVERS=$(git rev-parse HEAD) # Get git commit ID
 GITVERS=${GITVERS:0:7} # Truncate it
-sed -i "s/\[Git-útgáfa\]/${GITVERS}/g" "{$ABOUT_TPL}"
+sed -i "s/\[Git-útgáfa\]/${GITVERS}/g" "${ABOUT_TPL}"
 
 echo "Reloading gunicorn server..."
 

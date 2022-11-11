@@ -24,6 +24,7 @@
 """
 
 # TODO: Hvað er X með Y aukastöfum?
+# TODO: Hvað er kvaðratrótin af mínus 1? :)
 # TODO: Styðja hvað er X þúsund "kall" með vask?
 
 from typing import (
@@ -494,7 +495,9 @@ def calc_arithmetic(query: Query, result: Result) -> Optional[AnswerTuple]:
 
     # Ensure that we have the right number of
     # number args for the operation in question
-    assert _OP_NUM_ARGS[op] == len(nums), f'Incorrect number of arguments: {_OP_NUM_ARGS[op]} != {len(nums)}'
+    assert _OP_NUM_ARGS[op] == len(
+        nums
+    ), f"Incorrect number of arguments: {_OP_NUM_ARGS[op]} != {len(nums)}"
 
     # Square root calculation
     if op == "sqrt":

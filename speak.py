@@ -23,7 +23,7 @@
 
 """
 
-from typing import Optional
+from typing import Optional, cast
 
 import sys
 import string
@@ -98,17 +98,19 @@ def _play_audio_file(path: str) -> None:
     MPV = shutil.which("mpv")
     MPG123 = shutil.which("mpg123")
 
+    cmd = None
     if Path(AFPLAY).is_file():
-        print(f"Playing file '{path}'")
-        subprocess.run([AFPLAY, path])
+        cmd = [AFPLAY, path]
     elif MPV:
-        print(f"Playing file '{path}'")
-        subprocess.run([MPV, path])
+        cmd = [MPV, path]
     elif MPG123:
-        print(f"Playing file '{path}'")
-        subprocess.run([MPG123, "--quiet", path])
-    else:
+        cmd = [MPG123, "--quiet", path]
+
+    if not cmd:
         _die("Couldn't find suitable command line audio player.")
+
+    print(f"Playing file '{path}'")
+    subprocess.run(cast(subprocess._CMD, cmd))
 
 
 DEFAULT_TEXT = "Góðan daginn og til hamingju með lífið."
