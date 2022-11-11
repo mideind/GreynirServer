@@ -22,12 +22,23 @@
 
 """
 
-from typing import Iterable, Dict, Any, Optional
+from typing import (
+    Any,
+    Deque,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+)
 from types import ModuleType
 
 import logging
-from inspect import isfunction
 import importlib
+from inspect import isfunction
+from html.parser import HTMLParser
+from collections import deque
+from speech.norm import HANDLER_MAPTYPE, NORM_MAP_VAR, DEFAULT_NORM_HANDLERS
 
 from utility import GREYNIR_ROOT_DIR, modules_in_dir
 
@@ -38,7 +49,7 @@ VOICES_DIR = GREYNIR_ROOT_DIR / "speech" / "voices"
 # For details about SSML markup, see:
 # https://developer.amazon.com/en-US/docs/alexa/custom-skills/speech-synthesis-markup-language-ssml-reference.html
 # or:
-# https://learn.microsoft.com/en-us/javascript/api/microsoft-cognitiveservices-speech-sdk/speechsynthesisoutputformat
+# https://learn.microsoft.com/en-us/azure/cognitive-services/speech-service/speech-synthesis-markup
 DEFAULT_TEXT_FORMAT = "ssml"
 SUPPORTED_TEXT_FORMATS = frozenset(("text", "ssml"))
 assert DEFAULT_TEXT_FORMAT in SUPPORTED_TEXT_FORMATS
@@ -53,7 +64,7 @@ def _load_voice_modules() -> Dict[str, ModuleType]:
     """Dynamically load all voice modules, map
     voice ID strings to the relevant modules."""
 
-    v2m = {}
+    v2m: Dict[str, ModuleType] = {}
     for modname in modules_in_dir(VOICES_DIR):
         try:
             # Try to import
@@ -77,6 +88,114 @@ DEFAULT_VOICE = "Gudrun"
 
 assert DEFAULT_VOICE in SUPPORTED_VOICES
 assert DEFAULT_VOICE in RECOMMENDED_VOICES
+
+
+class GreynirSSMLParser(HTMLParser):
+    """
+    Parses voice strings containing <greynir> tags and
+    calls normalization handlers corresponding to each tag's type attribute.
+    Example:
+        # Provide voice engine ID
+        gp = GreynirSSMLParser(voice_id)
+        # Normalize voice string
+        voice_string = gp.normalize(voice_string)
+    """
+
+    def __init__(self, voice_id: str) -> None:
+        """
+        Initialize parser and setup normalization handlers
+        for the provided speech synthesis engine.
+        """
+        super().__init__()
+        if voice_id not in SUPPORTED_VOICES:
+            logging.warning(
+                f"Voice '{voice_id}' not in supported voices, reverting to default ({DEFAULT_VOICE})"
+            )
+            voice_id = DEFAULT_VOICE
+        # Find the module that provides this voice
+        module = VOICE_TO_MODULE[voice_id]
+
+        # Fetch normalization handlers for this voice module
+        self._handlers: HANDLER_MAPTYPE = getattr(
+            module, NORM_MAP_VAR, DEFAULT_NORM_HANDLERS
+        )
+
+    def normalize(self, voice_string: str) -> str:
+        """Parse and return normalized voice string."""
+        # Prepare HTMLParser variables for parsing
+        # (in case normalize is called more
+        # than once on a particular instance)
+        self.reset()
+
+        # Set (or reset) variables used during parsing
+        self._str_stack: Deque[str] = deque()
+        self._str_stack.append("")
+        self._attr_stack: Deque[Dict[str, Optional[str]]] = deque()
+
+        self.feed(voice_string)
+        self.close()
+        assert (
+            len(self._str_stack) == 1
+        ), "Error during parsing, are all markup tags correctly closed?"
+        return self._str_stack[0]
+
+    # ----------------------------------------
+
+    def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]):
+        """Called when a tag is opened."""
+        if tag == "greynir":
+            self._str_stack.append("")
+            self._attr_stack.append(dict(attrs))
+        else:
+            s = self.get_starttag_text()
+            if s:
+                self._str_stack[-1] += s
+
+    def handle_data(self, data: str) -> None:
+        """Called when data is encountered."""
+        # Append string data to current string in stack
+        self._str_stack[-1] += data
+
+    def handle_endtag(self, tag: str):
+        """Called when a tag is closed."""
+        if tag == "greynir":
+            # Parse data inside the greynir tag we're closing
+            s = self._str_stack.pop()  # String content
+            if self._attr_stack:
+                dattrs = self._attr_stack.pop()  # Current tag attributes
+                t: Optional[str] = dattrs.pop("type")
+                assert t, f"Missing type attribute in <greynir> tag around string: {s}"
+                # Fetch handler
+                hf = self._handlers.get(t)
+                if hf:
+                    # Handler found, normalize text
+                    s = hf(s, **dattrs)
+            # Add to our string stack
+            if self._str_stack:
+                self._str_stack[-1] += s
+            else:
+                self._str_stack.append(s)
+        else:
+            # Other tags than greynir are ideally kept as-is,
+            # try to close them cleanly when possible
+            self._str_stack[-1] += f"</{tag}>"
+
+    def handle_startendtag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]):
+        """Called when a empty tag is opened (and closed), e.g. '<greynir ... />'."""
+        if tag == "greynir":
+            dattrs = dict(attrs)
+            t: Optional[str] = dattrs.pop("type")
+            assert t, "Missing type attribute in <greynir> tag"
+            hf = self._handlers.get(t)
+            # If handler found, replace empty greynir tag with output,
+            # otherwise simply remove empty greynir tag
+            if hf:
+                self._str_stack[-1] += hf(**dattrs)
+        else:
+            # Other tags than greynir are kept as-is
+            s = self.get_starttag_text()
+            if s:
+                self._str_stack[-1] += s
 
 
 def _sanitize_args(args: Dict[str, Any]) -> Dict[str, Any]:

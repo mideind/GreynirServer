@@ -25,9 +25,12 @@
 
 from typing import Optional
 
-import os
 import sys
+import string
+import subprocess
+import shutil
 import logging
+from pathlib import Path
 from urllib.request import urlopen
 import wave
 
@@ -44,6 +47,11 @@ from speech import (
 )
 from speech.voices import suffix_for_audiofmt
 from utility import icelandic_asciify
+
+
+def _die(msg: str, exit_code: int = 1) -> None:
+    print(msg, file=sys.stderr)
+    sys.exit(exit_code)
 
 
 _DATA_URI_PREFIX = "data:"
@@ -83,20 +91,28 @@ def _fetch_audio_bytes(url: str) -> Optional[bytes]:
 
 def _play_audio_file(path: str) -> None:
     """Play audio file at path via command line player. This only
-    works on systems with either afplay (macOS) or mpg123 (Linux)."""
+    works on systems with afplay (macOS), mpv or mpg123."""
 
     AFPLAY = "/usr/bin/afplay"  # afplay is only present on macOS systems
-    MPG123 = "mpg123"
+    # Common UNIX command line video/audio players
+    MPV = shutil.which("mpv")
+    MPG123 = shutil.which("mpg123")
 
-    if os.path.exists(AFPLAY):
+    if Path(AFPLAY).is_file():
         print(f"Playing file '{path}'")
-        os.system(f"{AFPLAY} '{path}'")
+        subprocess.run([AFPLAY, path])
+    elif MPV:
+        print(f"Playing file '{path}'")
+        subprocess.run([MPV, path])
+    elif MPG123:
+        print(f"Playing file '{path}'")
+        subprocess.run([MPG123, "--quiet", path])
     else:
-        print(f"Playing file '{path}'")
-        os.system(f"{MPG123} --quiet '{path}'")
+        _die("Couldn't find suitable command line audio player.")
 
 
 DEFAULT_TEXT = "Góðan daginn og til hamingju með lífið."
+_ALLOWED_FILE_CHARS = string.ascii_letters + string.digits + "._-"
 
 
 def main() -> None:
@@ -149,6 +165,9 @@ def main() -> None:
         "-n", "--noplay", help="do not play resulting audio file", action="store_true"
     )
     parser.add_argument(
+        "--rm-file", help="remove audio file after playing", action="store_true"
+    )
+    parser.add_argument(
         "text",
         help="text to synthesize",
         nargs="?",
@@ -157,15 +176,11 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    def die(msg: str, exit_code: int = 1) -> None:
-        print(msg, file=sys.stderr)
-        sys.exit(exit_code)
-
     if len(args.text.strip()) == 0:
-        die("No text provided.")
+        _die("No text provided.")
 
     if args.wav and args.audioformat != "pcm":
-        die("WAV output flag only supported for PCM format.")
+        _die("WAV output flag only supported for PCM format.")
 
     # Synthesize the text according to CLI options
     url = text_to_audio_url(
@@ -176,7 +191,7 @@ def main() -> None:
         speed=args.speed,
     )
     if not url:
-        die("Error generating speech synthesis URL.")
+        _die("Error generating speech synthesis URL.")
 
     if args.url:
         print(url)
@@ -187,7 +202,7 @@ def main() -> None:
     print(f"Fetching {urldesc}")
     data: Optional[bytes] = _fetch_audio_bytes(url)
     if not data:
-        die("Unable to fetch audio data.")
+        _die("Unable to fetch audio data.")
 
     assert data is not None  # Silence typing complaints
 
@@ -195,12 +210,13 @@ def main() -> None:
         # Override default filename
         fn = args.override
     else:
-        # Generate default file name based on text and audio format
-        fn = "_".join([t.lower() for t in args.text.rstrip(".").split()])
-        fn = fn.replace(",", "").rstrip(".").replace("?", "").replace("!", "")
-        fn = icelandic_asciify(fn)[:60].rstrip("_")  # Rm non-ASCII chars + limit length
-        suffix = "wav" if args.wav else suffix_for_audiofmt(args.audioformat)
-        fn = f"{fn}.{suffix}"
+        # Generate file name
+        fn = "_".join([t for t in args.text.lower().split()])
+        # Rm non-ASCII chars, non-filename chars and limit length
+        fn = "".join(c for c in icelandic_asciify(fn) if c in _ALLOWED_FILE_CHARS)[
+            :60
+        ].rstrip("._")
+        fn += "." + suffix_for_audiofmt(args.audioformat)
 
     # Write audio data to file
     print(f'Writing to file "{fn}".')
@@ -222,6 +238,10 @@ def main() -> None:
     # Play audio file using command line tool (if available)
     if not args.noplay:
         _play_audio_file(fn)
+
+    # Remove file after playing
+    if args.rm_file:
+        Path(fn).unlink()
 
 
 if __name__ == "__main__":

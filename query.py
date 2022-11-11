@@ -892,12 +892,7 @@ class Query:
 
     def voice_answer(self) -> str:
         """Return a voice version of the 'single best' answer, if any"""
-        va = self._voice_answer
-        if va is None:
-            return ""
-        # TODO: Replace acronyms with pronounced characters
-        # (ASÍ -> a ess í, BHM -> bé há emm)
-        return va
+        return self._voice_answer or ""
 
     def key(self) -> Optional[str]:
         """Return the query key"""
@@ -986,7 +981,7 @@ class Query:
         """Attempt to help the user in the case of a failed query,
         based on lemmas in the query string"""
         # Collect a set of lemmas that occur in the query string
-        lemmas = set()
+        lemmas: Set[str] = set()
         with GreynirBin.get_db() as db:
             for token in query.lower().split():
                 if token.isalpha():

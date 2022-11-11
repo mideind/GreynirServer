@@ -28,7 +28,7 @@ import logging
 
 import requests
 
-from . import generate_data_uri, strip_markup, mimetype_for_audiofmt
+from speech.voices import generate_data_uri, strip_markup, mimetype_for_audiofmt
 
 
 NAME = "Tiro"
