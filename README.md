@@ -236,7 +236,7 @@ See [Contributing to Greynir](CONTRIBUTING.md).
 
 ## License
 
-Greynir is Copyright &copy; 2022 [Miðeind ehf.](https://mideind.is)
+Greynir is Copyright &copy; 2022 [Miðeind ehf.](https://mideind.is)  
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
 <a href="https://mideind.is"><img src="static/img/mideind-horizontal-small.png" alt="Miðeind ehf."

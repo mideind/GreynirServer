@@ -23,7 +23,7 @@
 
 """
 
-from typing import Optional, cast
+from typing import Optional, cast, List
 
 import sys
 import string
@@ -90,15 +90,15 @@ def _fetch_audio_bytes(url: str) -> Optional[bytes]:
 
 
 def _play_audio_file(path: str) -> None:
-    """Play audio file at path via command line player. This only
-    works on systems with afplay (macOS), mpv or mpg123."""
+    """Play audio file at path via command line player. This only works
+    on systems with afplay (macOS), mpv, mpg123 or cmdmp3 installed."""
 
     AFPLAY = "/usr/bin/afplay"  # afplay is only present on macOS systems
     MPV = shutil.which("mpv")  # mpv is a cross-platform player
     MPG123 = shutil.which("mpg123")  # mpg123 is a cross-platform player
     CMDMP3 = shutil.which("cmdmp3")  # cmdmp3 is a Windows command line mp3 player
 
-    cmd = None
+    cmd: Optional[List[str]] = None
     if Path(AFPLAY).is_file():
         cmd = [AFPLAY, path]
     elif MPV:
@@ -112,7 +112,7 @@ def _play_audio_file(path: str) -> None:
         _die("Couldn't find suitable command line audio player.")
 
     print(f"Playing file '{path}'")
-    subprocess.run(cast(subprocess._CMD, cmd))
+    subprocess.run(cast(List[str], cmd))
 
 
 DEFAULT_TEXT = "Góðan daginn og til hamingju með lífið."
@@ -130,6 +130,12 @@ def main() -> None:
         help="specify which voice to use",
         default=DEFAULT_VOICE,
         choices=list(SUPPORTED_VOICES),
+    )
+    parser.add_argument(
+        "-l",
+        "--list-voices",
+        help="print list of supported voices",
+        action="store_true",
     )
     parser.add_argument(
         "-f",
@@ -168,7 +174,7 @@ def main() -> None:
         "-n", "--noplay", help="do not play resulting audio file", action="store_true"
     )
     parser.add_argument(
-        "--rm-file", help="remove audio file after playing", action="store_true"
+        "-r", "--rm-file", help="remove audio file after playing", action="store_true"
     )
     parser.add_argument(
         "text",
@@ -178,6 +184,11 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    if args.list_voices:
+        for voice in SUPPORTED_VOICES:
+            print(voice)
+        sys.exit(0)
 
     if len(args.text.strip()) == 0:
         _die("No text provided.")
@@ -240,6 +251,7 @@ def main() -> None:
 
     # Remove file after playing
     if args.rm_file:
+        print(f'Deleting file "{fn}".')
         Path(fn).unlink()
 
 
