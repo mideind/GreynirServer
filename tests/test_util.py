@@ -35,12 +35,10 @@ if mainpath not in sys.path:
 
 
 def test_util():
-    """Test functions in utility.py"""
+    """Test functions in utility.py."""
 
     from utility import (
-        icelandic_asciify,
         GREYNIR_ROOT_DIR,
-        modules_in_dir,
         QUERIES_DIR,
         QUERIES_UTIL_DIR,
         QUERIES_GRAMMAR_DIR,
@@ -49,20 +47,12 @@ def test_util():
         CONFIG_DIR,
         RESOURCES_DIR,
         STATIC_DIR,
+        icelandic_asciify,
+        sanitize_filename,
+        modules_in_dir,
     )
 
-    is2ascii = {
-        "það mikið er þetta gaman": "thad mikid er thetta gaman",
-        "HVAÐ ER EIGINLEGA Í GANGI?": "HVAD ER EIGINLEGA I GANGI?",
-        "Örnólfur Gyrðir Möðvarsson": "Ornolfur Gyrdir Modvarsson",
-        "Dóra": "Dora",
-        "Álfur": "Alfur",
-        "GUÐRÚN": "GUDRUN",
-        "Guðrún": "Gudrun",
-    }
-    for k, v in is2ascii.items():
-        assert icelandic_asciify(k) == v
-
+    # Test that the root directory is correctly structured
     assert (
         # utility should be in the root dir
         (GREYNIR_ROOT_DIR / "utility.py").is_file()
@@ -81,6 +71,35 @@ def test_util():
     assert QUERIES_UTIL_DIR.exists() and QUERIES_UTIL_DIR.is_dir()
     assert QUERIES_UTIL_GRAMMAR_DIR.exists() and QUERIES_UTIL_GRAMMAR_DIR.is_dir()
 
+    # Test icelandic_asciify
+    is2ascii = {
+        "það mikið er þetta gaman": "thad mikid er thetta gaman",
+        "HVAÐ ER EIGINLEGA Í GANGI?": "HVAD ER EIGINLEGA I GANGI?",
+        "Örnólfur Gyrðir Möðvarsson": "Ornolfur Gyrdir Modvarsson",
+        "Dóra": "Dora",
+        "Álfur": "Alfur",
+        "GUÐRÚN": "GUDRUN",
+        "Guðrún": "Gudrun",
+        "ÞÓRIR": "THORIR",
+        "þÓRIR": "thORIR",
+        "Þórir": "THorir",
+        "Ævilöng Ánauð": "AEvilong Anaud",
+    }
+    for k, v in is2ascii.items():
+        assert icelandic_asciify(k) == v
+
+    # Test sanitize_filename
+    unsan2san = {
+        "Hvað er eiginlega í gangi?": "hvad_er_eiginlega_i_gangi",
+        "ALDREI FÓR ÉG SUÐUR": "aldrei_for_eg_sudur",
+        "ekki Benda á miG...": "ekki_benda_a_mig",
+        "Þetta er bara einhver texti": "thetta_er_bara_einhver_texti",
+        "Sæll vert þú, Þórir": "saell_vert_thu_thorir",
+    }
+    for k, v in unsan2san.items():
+        assert sanitize_filename(k) == v
+
+    # Test modules_in_dirmodules_in_dir
     def get_modules(*path: str):
         return [
             ".".join(i.relative_to(GREYNIR_ROOT_DIR).with_suffix("").parts)
@@ -95,5 +114,5 @@ def test_util():
         QUERIES_UTIL_DIR.relative_to(GREYNIR_ROOT_DIR)
     ) == get_modules("queries", "util")
 
-    # TODO: Test this function
+    # TODO: Test read_api_key
     # from util import read_api_key

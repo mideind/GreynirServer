@@ -26,7 +26,6 @@
 from typing import Optional, cast, List
 
 import sys
-import string
 import subprocess
 import shutil
 import logging
@@ -207,12 +206,13 @@ def main() -> None:
     if not url:
         _die("Error generating speech synthesis URL.")
 
+    # Command line flag specifies that we should just dump the URL to stdout
     if args.url:
         print(url)
         sys.exit(0)
 
     # Download
-    urldesc = "data URI" if is_data_uri(url) else url
+    urldesc = f"data URI ({len(url)} bytes)" if is_data_uri(url) else url
     print(f"Fetching {urldesc}")
     data: Optional[bytes] = _fetch_audio_bytes(url)
     if not data:

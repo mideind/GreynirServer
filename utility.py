@@ -76,7 +76,7 @@ def modules_in_dir(p: Path) -> List[str]:
 
 
 def sanitize_filename(fn: str, maxlen: int = 60) -> str:
-    """Sanitize a filename by limiting allowed characters."""
+    """Sanitize a potential filename string by limiting allowed characters."""
 
     ALLOWED_FILE_CHARS = string.ascii_letters + string.digits + "._-"
 
