@@ -4,7 +4,7 @@ Query →
     BuiltinQueries
 
 BuiltinQueries →
-    QPerson > QCompany > QEntity > QTitle > QRepeat > QWord > QSearch
+    QPerson > QCompany > QEntity > QTitle > QRepeat > QWord #> QSearch
 
 QPerson →
     Mannsnafn_nf/nkyn
@@ -224,33 +224,33 @@ QWordEntityKey/fall → Sérnafn/fall > Sérnafn
 # Try to recognize the search query first as a sentence,
 # then as a noun phrase, and finally as an arbitrary sequence of tokens
 
-QSearch →
-    QSearchSentence
-    | QSearchNl
-    | QSearchArbitrary
+# QSearch →
+#     QSearchSentence
+#     | QSearchNl
+#     | QSearchArbitrary
 
-# Prefer other parses to QSearch
-$score(-999) QSearch
+# # Prefer other parses to QSearch
+# $score(-999) QSearch
 
-QSearchSentence →
-    Málsgrein
-    | SetningÁnF_et_p3/kyn Lokatákn? # 'Stefndi í átt til Bláfjalla'
-    | SetningÁnF_ft_p3/kyn Lokatákn? # 'Aftengdu fjarstýringu'
+# QSearchSentence →
+#     Málsgrein
+#     | SetningÁnF_et_p3/kyn Lokatákn? # 'Stefndi í átt til Bláfjalla'
+#     | SetningÁnF_ft_p3/kyn Lokatákn? # 'Aftengdu fjarstýringu'
 
-$score(+4) QSearchSentence
+# $score(+4) QSearchSentence
 
-QSearchNl →
-    Nl_nf Atviksliður? Lokatákn? # 'Tobías í turninum'
+# QSearchNl →
+#     Nl_nf Atviksliður? Lokatákn? # 'Tobías í turninum'
 
-QSearchArbitrary →
-    QSearchToken+ Lokatákn?
+# QSearchArbitrary →
+#     QSearchToken+ Lokatákn?
 
-$score(-100) QSearchArbitrary
+# $score(-100) QSearchArbitrary
 
-QSearchToken →
-    person/fall/kyn > fyrirtæki > no/fall/tala/kyn
-    > fn/fall/tala/kyn > pfn/fall/tala/kyn > entity > lo > so
-    > eo > ao > fs/fall
-    > dags > dagsafs > dagsföst
-    > tímapunkturafs > tímapunkturfast > tími
-    > raðnr > to > töl > ártal > tala > sérnafn
+# QSearchToken →
+#     person/fall/kyn > fyrirtæki > no/fall/tala/kyn
+#     > fn/fall/tala/kyn > pfn/fall/tala/kyn > entity > lo > so
+#     > eo > ao > fs/fall
+#     > dags > dagsafs > dagsföst
+#     > tímapunkturafs > tímapunkturfast > tími
+#     > raðnr > to > töl > ártal > tala > sérnafn

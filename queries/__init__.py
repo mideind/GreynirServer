@@ -28,7 +28,6 @@ from typing import (
     Any,
     Mapping,
     Optional,
-    FrozenSet,
     List,
     Dict,
     Sequence,
@@ -45,7 +44,6 @@ import re
 import locale
 from urllib.parse import urlencode
 from functools import lru_cache
-from xml.dom import minidom  # type: ignore
 
 from tzwhere import tzwhere  # type: ignore
 from pytz import country_timezones
@@ -55,7 +53,6 @@ from speech.norm.num import number_to_text, float_to_text
 from reynir import NounPhrase
 from settings import changedlocale
 from utility import (
-    GREYNIR_ROOT_DIR,
     QUERIES_GRAMMAR_DIR,
     QUERIES_JS_DIR,
     QUERIES_UTIL_GRAMMAR_DIR,
@@ -81,8 +78,6 @@ MONTH_ABBREV_ORDERED: Sequence[str] = (
     "nóv",
     "des",
 )
-
-MONTH_ABBREV_UNORDERED: FrozenSet[str] = frozenset(MONTH_ABBREV_ORDERED)
 
 
 def natlang_seq(words: List[str], oxford_comma: bool = False) -> str:
@@ -405,32 +400,6 @@ def query_json_api(url: str, headers: Optional[Dict[str, str]] = None) -> JsonRe
     except Exception as e:
         logging.warning("Error parsing JSON API response: {0}".format(e))
     return None
-
-
-def query_xml_api(url: str) -> Any:
-    """Request the URL, expecting an XML response which is
-    parsed and returned as an XML document object."""
-
-    # Send request
-    try:
-        r = requests.get(url)
-    except Exception as e:
-        logging.warning(str(e))
-        return None
-
-    # Verify that status is OK
-    if r.status_code != 200:
-        logging.warning(
-            "Received status {0} from remote URL {1}".format(r.status_code, url)
-        )
-        return None
-
-    # Parse XML response text
-    try:
-        xmldoc = cast(Any, minidom).parseString(r.text)
-        return xmldoc
-    except Exception as e:
-        logging.warning("Error parsing XML response from {0}: {1}".format(url, e))
 
 
 _MAPS_API_COORDS_URL = (
