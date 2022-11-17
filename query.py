@@ -54,12 +54,6 @@ import re
 import random
 from collections import defaultdict, ChainMap
 
-from settings import Settings
-
-from db import SessionContext, Session, desc
-from db.models import Query as QueryRow
-from db.models import QueryData, QueryLog
-
 from reynir import TOK, Tok, tokenize, correct_spaces
 from reynir.fastparser import (
     Fast_Parser,
@@ -73,6 +67,14 @@ from reynir.reducer import Reducer
 from reynir.bindb import GreynirBin
 from reynir.grammar import GrammarError
 from islenska.bindb import BinFilterFunc
+
+from settings import Settings
+
+from queries import read_grammar_file
+
+from db import SessionContext, Session, desc
+from db.models import Query as QueryRow
+from db.models import QueryData, QueryLog
 
 from tree import ProcEnv, Tree, TreeStateDict, Node
 
@@ -111,23 +113,10 @@ class CastFunc(Protocol):
 
 
 # The grammar root nonterminal for queries; see Greynir.grammar in GreynirPackage
-_QUERY_ROOT = "QueryRoot"
+QUERY_GRAMMAR_ROOT = "QueryRoot"
 
 # A fixed preamble that is inserted before the concatenated query grammar fragments
-_GRAMMAR_PREAMBLE = """
-
-QueryRoot →
-    Query
-
-# Mark the QueryRoot nonterminal as a root in the grammar
-$root(QueryRoot)
-
-# Keep all child families of Query, i.e. all possible query
-# trees, rather than just the highest-scoring one
-
-$tag(no_reduce) Query
-
-"""
+_QUERY_ROOT_GRAMMAR = read_grammar_file("root")
 
 # Query prefixes that we cut off before further processing
 # The 'bæjarblað'/'hæðarblað' below is a common misunderstanding by the Google ASR
@@ -189,7 +178,7 @@ class QueryGrammar(BIN_Grammar):
                 for line in inp:
                     yield line
             # Yield the query grammar preamble
-            grammar_preamble = _GRAMMAR_PREAMBLE.split("\n")
+            grammar_preamble = _QUERY_ROOT_GRAMMAR.split("\n")
             for line in grammar_preamble:
                 yield line
             # Yield grammar additions from plug-ins, if any
@@ -242,7 +231,7 @@ class QueryParser(Fast_Parser):
 
     def __init__(self, grammar_additions: str) -> None:
         QueryParser._grammar_additions = grammar_additions
-        super().__init__(verbose=False, root=_QUERY_ROOT)
+        super().__init__(verbose=False, root=QUERY_GRAMMAR_ROOT)
 
     @classmethod
     def grammar_additions(cls) -> str:
