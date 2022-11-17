@@ -29,8 +29,8 @@ import logging
 import random
 from datetime import datetime, timedelta
 
-from queries import parse_num, gen_answer, read_grammar_file
-from query import Query, QueryStateDict
+from queries.util import parse_num, gen_answer, read_grammar_file
+from queries import Query, QueryStateDict
 from tree import Result, Node
 
 
@@ -41,7 +41,7 @@ TOPIC_LEMMAS = ["telja"]
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég skil þig ef þú segir til dæmis: {0}.".format(
         random.choice(("Teldu upp að tíu", "Teldu niður frá tuttugu"))

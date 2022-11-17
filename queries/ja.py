@@ -35,10 +35,10 @@ from datetime import datetime, timedelta
 from reynir import NounPhrase
 from reynir.bindb import GreynirBin
 
-from queries import query_json_api, gen_answer, icequote, read_grammar_file
+from queries.util import query_json_api, gen_answer, icequote, read_grammar_file
 from speech.norm.num import numbers_to_text, digits_to_text
 
-from query import AnswerTuple, Query, QueryStateDict
+from queries import AnswerTuple, Query, QueryStateDict
 from tree import Result, Node
 from geo import iceprep_for_street
 from utility import read_api_key

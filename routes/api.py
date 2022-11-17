@@ -39,14 +39,15 @@ from treeutil import TreeUtility
 from reynir.bintokenizer import TokenDict
 from reynir.binparser import canonicalize_token
 from article import Article as ArticleProxy
-from query import process_query
-from query import Query as QueryObject
+from queries import process_query
+from queries import Query as QueryObject
 from speech import (
     GreynirSSMLParser,
     text_to_audio_url,
     DEFAULT_VOICE,
     SUPPORTED_VOICES,
     RECOMMENDED_VOICES,
+    DEFAULT_VOICE_SPEED,
 )
 from utility import read_api_key, icelandic_asciify
 
@@ -303,9 +304,9 @@ def query_api(version: int = 1) -> Response:
     voice_id: str = icelandic_asciify(request.values.get("voice_id", DEFAULT_VOICE))
     # Request a particular voice speed
     try:
-        voice_speed = float(request.values.get("voice_speed", 1.0))
+        voice_speed = float(request.values.get("voice_speed", DEFAULT_VOICE_SPEED))
     except ValueError:
-        voice_speed = 1.0
+        voice_speed = DEFAULT_VOICE_SPEED
 
     # If test is set to True, we
     # (1) add a synthetic location, if not given; and
@@ -475,21 +476,17 @@ def speech_api(version: int = 1) -> Response:
     if fmt not in ["text", "ssml"]:
         fmt = "ssml"
     voice_id = icelandic_asciify(request.values.get("voice_id", DEFAULT_VOICE))
-    speed = request.values.get("voice_speed", 1.0)
-    if not isinstance(speed, float):
-        try:
-            speed = float(speed)
-            if speed < 0.1 or speed > 3.0:
-                speed = 1.0
-        except Exception:
-            speed = 1.0
+    try:
+        voice_speed = float(request.values.get("voice_speed", DEFAULT_VOICE_SPEED))
+    except ValueError:
+        voice_speed = DEFAULT_VOICE_SPEED
 
     try:
         url = text_to_audio_url(
             text,
             text_format=fmt,
             voice_id=voice_id,
-            speed=speed,
+            speed=voice_speed,
         )
         if url:
             url = file_url_to_host_url(url, request)
@@ -613,37 +610,3 @@ def register_query_data_api(version: int = 1) -> Response:
         return better_jsonify(valid=True, msg="Query data registered")
 
     return better_jsonify(valid=False, errmsg="Error registering query data.")
-
-
-_WAV_MIMETYPES = frozenset(("audio/wav", "audio/x-wav"))
-
-
-@routes.route("/upload_speech_audio.api", methods=["POST"])
-@routes.route("/upload_speech_audio.api/v<int:version>", methods=["POST"])
-def upload_speech_audio(version: int = 1) -> Response:
-    """Receives uploaded speech audio for a query."""
-
-    # This is disabled for now
-    return better_jsonify(valid=False, errmsg="Not implemented")
-
-    # This code is currently here only for debugging/development purposes
-    # if not (1 <= version <= 1):
-    #     return better_jsonify(valid=False, errmsg="Unsupported version")
-
-    # file = request.files.get("file")
-    # if file is not None:
-    #     # file is a Werkzeug FileStorage object
-    #     mimetype = file.content_type
-    #     if mimetype not in _WAV_MIMETYPES:
-    #         return better_jsonify(
-    #             valid=False, reason=f"File type not supported: {mimetype}"
-    #         )
-    #     try:
-    #         with open("/tmp/myfile.wav", "wb") as f:
-    #             # Writing data to a file
-    #             f.write(file.read())
-    #     except Exception as e:
-    #         logging.warning("Exception in upload_speech_audio(): {0}".format(e))
-    #         return better_jsonify(valid=False, reason="Error reading file")
-
-    # return better_jsonify(valid=True, msg="Audio data received")

@@ -26,8 +26,8 @@ import random
 import logging
 from urllib.parse import urlparse
 
-from query import Query, QueryStateDict
-from queries import gen_answer, icequote, read_grammar_file
+from queries import Query, QueryStateDict
+from queries.util import gen_answer, icequote, read_grammar_file
 from reynir import NounPhrase
 from tree import Result, Node
 from images import get_image_url, Img
@@ -39,7 +39,7 @@ TOPIC_LEMMAS = ["mynd", "ljósmynd"]
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú segir til dæmis: {0}?".format(
         random.choice(

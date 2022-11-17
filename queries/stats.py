@@ -32,8 +32,8 @@ from db.models import Person
 from db.models import Query as QueryModel
 from db.sql import QueryTypesQuery
 
-from query import Query
-from queries import gen_answer, natlang_seq, is_plural, sing_or_plur
+from queries import Query
+from queries.util import gen_answer, natlang_seq, is_plural, sing_or_plur
 from routes.people import top_persons
 
 

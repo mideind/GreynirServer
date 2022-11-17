@@ -60,7 +60,7 @@ class GreynirDB:
     """Wrapper around the SQLAlchemy connection, engine and session"""
 
     def __init__(self) -> None:
-        """Initialize the SQLAlchemy connection to the scraper database"""
+        """Initialize SQLAlchemy connection to the scraper database"""
 
         # Assemble the connection string, using psycopg2cffi which
         # supports both PyPy and CPython

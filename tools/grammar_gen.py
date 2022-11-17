@@ -49,7 +49,7 @@ from islenska import Bin
 from reynir.grammar import Nonterminal, Terminal
 from reynir.binparser import BIN_Parser, BIN_LiteralTerminal
 
-from query import QueryGrammar
+from queries import QueryGrammar
 
 # TODO: Create random traversal functionality (itertools.dropwhile?)
 # TODO: Allow replacing special terminals (no, sérnafn, lo, ...) with words

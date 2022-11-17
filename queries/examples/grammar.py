@@ -28,7 +28,7 @@
 
 import random
 
-from query import QueryStateDict
+from queries import QueryStateDict
 from tree import Node, Result
 
 
@@ -41,7 +41,7 @@ TOPIC_LEMMAS = ["prufa"]
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(("Er þetta prufa", "Gæti þetta verið prufa"))

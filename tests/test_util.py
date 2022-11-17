@@ -99,7 +99,7 @@ def test_util():
     for k, v in unsan2san.items():
         assert sanitize_filename(k) == v
 
-    # Test modules_in_dirmodules_in_dir
+    # Test modules_in_dir
     def get_modules(*path: str):
         return [
             ".".join(i.relative_to(GREYNIR_ROOT_DIR).with_suffix("").parts)

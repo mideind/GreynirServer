@@ -33,8 +33,8 @@
 import re
 import random
 
-from query import Query
-from queries import gen_answer
+from queries import Query
+from queries.util import gen_answer
 
 from reynir import NounPhrase
 
@@ -46,7 +46,7 @@ TOPIC_LEMMAS = ["hringja"]
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get hringt ef þú segir til dæmis: {0}".format(
         random.choice(("Hringdu í 18 18", "Hringdu í 18 19"))

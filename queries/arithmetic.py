@@ -46,8 +46,8 @@ import re
 import logging
 import random
 
-from query import AnswerTuple, ContextDict, Query, QueryStateDict
-from queries import iceformat_float, gen_answer, read_grammar_file
+from queries import AnswerTuple, ContextDict, Query, QueryStateDict
+from queries.util import iceformat_float, gen_answer, read_grammar_file
 from tree import Result, Node, TerminalNode
 from speech.norm import gssml
 
@@ -76,7 +76,7 @@ TOPIC_LEMMAS: Sequence[str] = [
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     if lemma in ("kvaðratrót", "ferningsrót"):
         return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(

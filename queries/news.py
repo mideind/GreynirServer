@@ -33,8 +33,8 @@ import logging
 import cachetools  # type: ignore
 import random
 
-from query import Query, QueryStateDict, AnswerTuple
-from queries import gen_answer, query_json_api, read_grammar_file
+from queries import Query, QueryStateDict, AnswerTuple
+from queries.util import gen_answer, query_json_api, read_grammar_file
 from tree import Result, Node
 
 
@@ -45,7 +45,7 @@ TOPIC_LEMMAS = ["fréttir", "fregnir", "frétta"]
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég skil þig ef þú spyrð til dæmis: {0}?".format(
         random.choice(("Hvað er í fréttum", "Hvað er að frétta"))

@@ -160,8 +160,7 @@ in [`queries/examples`](queries/examples).
 * [`nertokenizer.py`](nertokenizer.py): A layer on top of the tokenizer for named entity recognition
 * [`postagger.py`](postagger.py): Part-of-speech tagging
 * [`processor.py`](processor.py): Information extraction from parse trees and token streams
-* [`queries/*.py`](queries/): Query-answering modules
-* [`query.py`](query.py): Natural language query processor
+* [`queries/*.py`](queries/): Natural language query processor and query-answering modules
 * [`routes/*.py`](routes/): Routes for the web application
 * [`scraper.py`](scraper.py): Web scraper, collecting articles from a set of pre-selected websites
 * [`scrapers/*.py`](scrapers): Scraper code for various websites
@@ -177,9 +176,9 @@ in [`queries/examples`](queries/examples).
 
 ## Installation and setup
 
-  * [Instructions for Ubuntu/Debian GNU/Linux](docs/setup_linux.md)
-  * [Instructions for macOS](docs/setup_macos.md)
-  * [Docker container](https://github.com/vthorsteinsson/greynir-docker)
+* [Instructions for Ubuntu/Debian GNU/Linux](docs/setup_linux.md)
+* [Instructions for macOS](docs/setup_macos.md)
+* [Docker container](https://github.com/vthorsteinsson/greynir-docker)
 
 ## Running Greynir
 

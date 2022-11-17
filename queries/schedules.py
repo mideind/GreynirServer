@@ -29,7 +29,7 @@
 
 from typing import List, Dict, Optional, Tuple, Any, cast
 from typing_extensions import TypedDict
-from query import Query, QueryStateDict
+from queries import Query, QueryStateDict
 from tree import Node, TerminalNode, ParamList, Result
 
 import logging
@@ -38,7 +38,7 @@ import datetime
 import cachetools
 
 from settings import changedlocale
-from queries import query_json_api, read_grammar_file
+from queries.util import query_json_api, read_grammar_file
 from tokenizer import split_into_sentences
 
 
@@ -62,7 +62,7 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(

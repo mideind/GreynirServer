@@ -69,7 +69,9 @@ QUERY_API_ENDPOINT = "/query.api"
 QUERY_HISTORY_API_ENDPOINT = "/query_history.api"
 
 
-def qmcall(c: FlaskClient, qdict: Dict[str, Any], qtype: Optional[str] = None) -> Dict[str, Any]:
+def qmcall(
+    c: FlaskClient, qdict: Dict[str, Any], qtype: Optional[str] = None
+) -> Dict[str, Any]:
     """Use passed client object to call query API with
     query string key value pairs provided in dict arg."""
 
@@ -1426,7 +1428,7 @@ def test_query_history_api(client: FlaskClient) -> None:
 def test_query_utility_functions() -> None:
     """Tests for various utility functions used by query modules."""
 
-    from queries import (
+    from queries.util import (
         natlang_seq,
         nom2dat,
         is_plural,
@@ -1565,4 +1567,3 @@ def test_query_utility_functions() -> None:
 
     assert timezone4loc((64.157202, -21.948536)) == "Atlantic/Reykjavik"
     assert timezone4loc((40.093368, 57.000067)) == "Asia/Ashgabat"
-

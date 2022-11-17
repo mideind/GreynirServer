@@ -33,8 +33,8 @@ from reynir import NounPhrase
 from reynir.bindb import GreynirBin
 
 from geo import icelandic_addr_info, iceprep_for_placename, iceprep_for_street
-from query import ClientDataDict, Query
-from . import gen_answer
+from queries import ClientDataDict, Query
+from queries.util import gen_answer
 from speech.norm.num import numbers_to_text
 
 

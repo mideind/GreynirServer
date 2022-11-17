@@ -30,7 +30,7 @@
 
 from datetime import datetime, timedelta
 
-from query import Query
+from queries import Query
 
 
 def handle_plain_text(q: Query) -> bool:

@@ -35,8 +35,8 @@ import re
 import random
 from datetime import datetime, timedelta
 
-from queries import query_json_api, gen_answer, cap_first, read_grammar_file
-from query import Query, QueryStateDict, ContextDict
+from queries.util import query_json_api, gen_answer, cap_first, read_grammar_file
+from queries import Query, QueryStateDict, ContextDict
 from tree import Result, Node
 
 
@@ -87,7 +87,7 @@ TOPIC_LEMMAS = _WIKI_VARIATIONS
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(

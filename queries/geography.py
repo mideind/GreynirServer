@@ -34,8 +34,8 @@ from datetime import datetime, timedelta
 
 from cityloc import capital_for_cc  # type: ignore
 
-from query import Query, QueryStateDict
-from queries import country_desc, nom2dat, cap_first, read_grammar_file
+from queries import Query, QueryStateDict
+from queries.util import country_desc, nom2dat, cap_first, read_grammar_file
 from reynir import NounPhrase
 from geo import (
     icelandic_city_name,
@@ -55,7 +55,7 @@ TOPIC_LEMMAS = ["höfuðborg", "heimsálfa", "borg", "landafræði"]
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(

@@ -25,8 +25,8 @@
 
 """
 
-from query import Query
-from queries import gen_answer
+from queries import Query
+from queries.util import gen_answer
 
 
 _TEST_QTYPE = "Test"

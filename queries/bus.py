@@ -46,10 +46,16 @@ import random
 
 from islenska.basics import BinEntry
 
-import query
-from query import AnswerTuple, Query, QueryStateDict, ResponseType, Session
+import queries
+from queries import AnswerTuple, Query, QueryStateDict, ResponseType, Session
 from tree import Result, Node
-from queries import natlang_seq, cap_first, gen_answer, read_grammar_file, sing_or_plur
+from queries.util import (
+    natlang_seq,
+    cap_first,
+    gen_answer,
+    read_grammar_file,
+    sing_or_plur,
+)
 from speech.norm.num import floats_to_text, numbers_to_text
 from settings import Settings
 from reynir import correct_spaces
@@ -110,7 +116,7 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
@@ -344,14 +350,14 @@ def _filter_func(mm: Iterable[BinEntry]) -> List[BinEntry]:
 def to_accusative(np: str) -> str:
     """Return the noun phrase after casting it from nominative to accusative case"""
     np = straeto.BusStop.voice(np)
-    return query.to_accusative(np, filter_func=_filter_func)
+    return queries.to_accusative(np, filter_func=_filter_func)
 
 
 @lru_cache(maxsize=None)
 def to_dative(np: str) -> str:
     """Return the noun phrase after casting it from nominative to dative case"""
     np = straeto.BusStop.voice(np)
-    return query.to_dative(np, filter_func=_filter_func)
+    return queries.to_dative(np, filter_func=_filter_func)
 
 
 def voice_distance(d: float) -> str:

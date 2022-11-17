@@ -34,8 +34,8 @@ import logging
 import cachetools
 from datetime import datetime, timedelta, timezone
 
-from query import Query, QueryStateDict
-from queries import query_json_api, is_plural, read_grammar_file
+from queries import Query, QueryStateDict
+from queries.util import query_json_api, is_plural, read_grammar_file
 from tree import Result, Node
 from settings import changedlocale
 from speech.norm import spell_out
@@ -63,7 +63,7 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(

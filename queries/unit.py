@@ -34,8 +34,8 @@ from typing import Tuple
 import random
 from math import floor, log10
 
-from query import Query, QueryStateDict, to_dative, to_accusative
-from queries import iceformat_float, parse_num, read_grammar_file
+from queries import Query, QueryStateDict, to_dative, to_accusative
+from queries.util import iceformat_float, parse_num, read_grammar_file
 from tree import Result, Node
 
 
@@ -73,7 +73,7 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(

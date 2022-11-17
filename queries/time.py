@@ -45,8 +45,8 @@ from geo import (
     iceprep_for_cc,
     iceprep_for_placename,
 )
-from query import Query
-from queries import timezone4loc, gen_answer, icequote
+from queries import Query
+from queries.util import timezone4loc, gen_answer, icequote
 
 _TIME_QTYPE = "Time"
 
@@ -56,7 +56,7 @@ TOPIC_LEMMAS = ["klukka", "tími"]
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(

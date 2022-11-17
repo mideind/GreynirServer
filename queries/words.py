@@ -42,8 +42,8 @@ from tokenizer.definitions import BIN_Tuple
 from islenska.bindb import BinEntryIterable, BinEntryList
 from reynir.bindb import GreynirBin
 
-from query import Query, AnswerTuple
-from queries import gen_answer, icequote
+from queries import Query, AnswerTuple
+from queries.util import gen_answer, icequote
 from speech.norm import spell_out
 
 
