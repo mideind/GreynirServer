@@ -39,7 +39,7 @@ from functools import reduce
 from operator import mul
 
 from tree import Result
-from queries import read_utility_grammar_file
+from queries.util import read_utility_grammar_file
 
 # The context-free grammar for number utterances recognized by this utility module
 GRAMMAR = read_utility_grammar_file("number")
@@ -95,9 +95,11 @@ _NUMBERS = {
 
 def UBrotaTala(node: Any, params: Any, result: Result) -> None:
     if "numbers" in result:
-        result["numbers"] = [float(
-            f"{result['numbers'][0]}.{''.join(str(i) for i in result['numbers'][1:])}"
-        )]
+        result["numbers"] = [
+            float(
+                f"{result['numbers'][0]}.{''.join(str(i) for i in result['numbers'][1:])}"
+            )
+        ]
 
 
 # Function for nonterminals which have children that should be multiplied together

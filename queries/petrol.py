@@ -34,7 +34,7 @@ import random
 from geo import distance
 from tree import Result, Node
 from query import Query, QueryStateDict
-from queries import (
+from queries.util import (
     query_json_api,
     gen_answer,
     distance_desc,

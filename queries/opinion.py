@@ -27,7 +27,7 @@
 from datetime import datetime, timedelta
 
 from query import Query, QueryStateDict
-from queries import gen_answer, read_grammar_file
+from queries.util import gen_answer, read_grammar_file
 from tree import Result, Node
 
 

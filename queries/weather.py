@@ -52,7 +52,7 @@ import random
 from datetime import timedelta, datetime
 
 from query import Query, QueryStateDict
-from queries import (
+from queries.util import (
     JsonResponse,
     gen_answer,
     query_json_api,

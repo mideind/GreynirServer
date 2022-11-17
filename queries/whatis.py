@@ -30,7 +30,7 @@
 from typing import Set
 
 from query import ResponseType, QueryStateDict
-from queries import read_grammar_file
+from queries.util import read_grammar_file
 from tree import Node, ParamList, Result
 
 # --- Begin "magic" module constants ---

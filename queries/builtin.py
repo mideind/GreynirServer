@@ -44,10 +44,9 @@ from reynir import TOK, Tok, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
 from query import AnswerTuple, Query, ResponseDict, ResponseType, QueryStateDict
-from queries import read_grammar_file
 from tree import Result, Node
+from queries.util import cap_first, read_grammar_file
 
-from queries import cap_first
 
 # The type of a name/entity register
 RegisterType = Dict[str, Dict[str, Any]]

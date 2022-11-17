@@ -47,7 +47,7 @@ import logging
 import random
 
 from query import AnswerTuple, ContextDict, Query, QueryStateDict
-from queries import iceformat_float, gen_answer, read_grammar_file
+from queries.util import iceformat_float, gen_answer, read_grammar_file
 from tree import Result, Node, TerminalNode
 from speech.norm import gssml
 

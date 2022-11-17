@@ -35,7 +35,7 @@ import re
 import random
 from datetime import datetime, timedelta
 
-from queries import query_json_api, gen_answer, cap_first, read_grammar_file
+from queries.util import query_json_api, gen_answer, cap_first, read_grammar_file
 from query import Query, QueryStateDict, ContextDict
 from tree import Result, Node
 

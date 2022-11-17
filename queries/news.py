@@ -34,7 +34,7 @@ import cachetools  # type: ignore
 import random
 
 from query import Query, QueryStateDict, AnswerTuple
-from queries import gen_answer, query_json_api, read_grammar_file
+from queries.util import gen_answer, query_json_api, read_grammar_file
 from tree import Result, Node
 
 

@@ -34,7 +34,7 @@ from datetime import datetime, timedelta
 from inspect import isfunction
 from random import choice
 
-from queries import icequote
+from queries.util import icequote
 
 from query import Query
 

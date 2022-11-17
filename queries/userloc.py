@@ -28,7 +28,7 @@ import re
 import logging
 
 from query import Query, QueryStateDict, AnswerTuple
-from queries import (
+from queries.util import (
     gen_answer,
     query_geocode_api_coords,
     country_desc,
@@ -42,9 +42,7 @@ from iceaddr import iceaddr_lookup, postcodes  # type: ignore
 from geo import (
     iceprep_for_placename,
     iceprep_for_street,
-    iceprep_for_cc,
     in_iceland,
-    country_name_for_isocode,
     LatLonTuple,
 )
 

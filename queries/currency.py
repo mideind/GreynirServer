@@ -34,7 +34,7 @@ import random
 import logging
 
 from query import Query, QueryStateDict
-from queries import (
+from queries.util import (
     query_json_api,
     iceformat_float,
     gen_answer,

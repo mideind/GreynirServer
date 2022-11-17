@@ -31,7 +31,7 @@ from typing import Dict, List, Iterable, Tuple, Optional, Union, cast
 from tree import Result, Node
 from query import Query, QueryStateDict
 
-from queries import (
+from queries.util import (
     AnswerTuple,
     LatLonTuple,
     MONTH_ABBREV_ORDERED,

@@ -70,7 +70,7 @@ from islenska.bindb import BinFilterFunc
 
 from settings import Settings
 
-from queries import read_grammar_file
+from queries.util import read_grammar_file
 
 from db import SessionContext, Session, desc
 from db.models import Query as QueryRow

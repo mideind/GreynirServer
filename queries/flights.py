@@ -35,7 +35,7 @@ import cachetools
 from datetime import datetime, timedelta, timezone
 
 from query import Query, QueryStateDict
-from queries import query_json_api, is_plural, read_grammar_file
+from queries.util import query_json_api, is_plural, read_grammar_file
 from tree import Result, Node
 from settings import changedlocale
 from speech.norm import spell_out

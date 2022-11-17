@@ -43,7 +43,7 @@ from islenska.bindb import BinEntryIterable, BinEntryList
 from reynir.bindb import GreynirBin
 
 from query import Query, AnswerTuple
-from queries import gen_answer, icequote
+from queries.util import gen_answer, icequote
 from speech.norm import spell_out
 
 

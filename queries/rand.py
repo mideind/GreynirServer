@@ -29,7 +29,7 @@ import logging
 import random
 
 from query import Query, QueryStateDict, AnswerTuple
-from queries import gen_answer, read_grammar_file
+from queries.util import gen_answer, read_grammar_file
 from queries.arithmetic import add_num, terminal_num
 from speech.norm import gssml
 from tree import Result, Node
