@@ -45,7 +45,7 @@ from geo import (
     iceprep_for_cc,
     iceprep_for_placename,
 )
-from query import Query
+from queries import Query
 from queries.util import timezone4loc, gen_answer, icequote
 
 _TIME_QTYPE = "Time"

@@ -63,7 +63,7 @@ import random
 from datetime import datetime, timedelta
 from calendar import monthrange, isleap
 
-from query import Query, QueryStateDict
+from queries import Query, QueryStateDict
 from queries.util import (
     gen_answer,
     is_plural,

@@ -51,7 +51,7 @@ import logging
 import random
 from datetime import timedelta, datetime
 
-from query import Query, QueryStateDict
+from queries import Query, QueryStateDict
 from queries.util import (
     JsonResponse,
     gen_answer,

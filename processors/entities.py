@@ -38,7 +38,7 @@ from datetime import datetime
 from db.models import Entity
 from tokenizer import Abbreviations
 
-from query import QueryStateDict
+from queries import QueryStateDict
 from tree import Result, TreeStateDict
 
 

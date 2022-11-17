@@ -46,8 +46,8 @@ import random
 
 from islenska.basics import BinEntry
 
-import query
-from query import AnswerTuple, Query, QueryStateDict, ResponseType, Session
+import queries
+from queries import AnswerTuple, Query, QueryStateDict, ResponseType, Session
 from tree import Result, Node
 from queries.util import (
     natlang_seq,
@@ -350,14 +350,14 @@ def _filter_func(mm: Iterable[BinEntry]) -> List[BinEntry]:
 def to_accusative(np: str) -> str:
     """Return the noun phrase after casting it from nominative to accusative case"""
     np = straeto.BusStop.voice(np)
-    return query.to_accusative(np, filter_func=_filter_func)
+    return queries.to_accusative(np, filter_func=_filter_func)
 
 
 @lru_cache(maxsize=None)
 def to_dative(np: str) -> str:
     """Return the noun phrase after casting it from nominative to dative case"""
     np = straeto.BusStop.voice(np)
-    return query.to_dative(np, filter_func=_filter_func)
+    return queries.to_dative(np, filter_func=_filter_func)
 
 
 def voice_distance(d: float) -> str:

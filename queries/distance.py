@@ -37,7 +37,7 @@ import re
 import logging
 
 from reynir import NounPhrase
-from query import AnswerTuple, Query
+from queries import AnswerTuple, Query
 from queries.util import (
     gen_answer,
     cap_first,

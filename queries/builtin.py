@@ -43,7 +43,7 @@ from treeutil import TreeUtility
 from reynir import TOK, Tok, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
-from query import AnswerTuple, Query, ResponseDict, ResponseType, QueryStateDict
+from queries import AnswerTuple, Query, ResponseDict, ResponseType, QueryStateDict
 from tree import Result, Node
 from queries.util import cap_first, read_grammar_file
 

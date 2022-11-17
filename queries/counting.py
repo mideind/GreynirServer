@@ -30,7 +30,7 @@ import random
 from datetime import datetime, timedelta
 
 from queries.util import parse_num, gen_answer, read_grammar_file
-from query import Query, QueryStateDict
+from queries import Query, QueryStateDict
 from tree import Result, Node
 
 

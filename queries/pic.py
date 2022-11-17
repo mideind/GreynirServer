@@ -26,7 +26,7 @@ import random
 import logging
 from urllib.parse import urlparse
 
-from query import Query, QueryStateDict
+from queries import Query, QueryStateDict
 from queries.util import gen_answer, icequote, read_grammar_file
 from reynir import NounPhrase
 from tree import Result, Node

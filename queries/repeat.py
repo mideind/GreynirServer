@@ -24,9 +24,10 @@
 
 """
 
+# TODO: Migrate repeat functionality in builtin to this module
 # TODO: Hvað spurði ég þig um síðast? Hvert var síðasta svar þitt? Endurtaktu þetta, o.s.frv.
 
-from query import Query
+from queries import Query
 from queries.util import gen_answer, icequote
 from datetime import datetime, timedelta
 

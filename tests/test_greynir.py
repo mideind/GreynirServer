@@ -223,7 +223,7 @@ def test_postagger():
 def test_query():
     # TODO: Import all query modules and test whether
     # they include all necessary functions/variables
-    from query import Query
+    from queries import Query
     from queries.builtin import HANDLE_TREE
     from queries.special import handle_plain_text
 

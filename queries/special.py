@@ -36,7 +36,7 @@ from random import choice
 
 from queries.util import icequote
 
-from query import Query
+from queries import Query
 
 
 # Type definitions

@@ -27,7 +27,7 @@ from typing import Any, Tuple, Optional, cast
 import re
 import logging
 
-from query import Query, QueryStateDict, AnswerTuple
+from queries import Query, QueryStateDict, AnswerTuple
 from queries.util import (
     gen_answer,
     query_geocode_api_coords,

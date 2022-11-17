@@ -28,7 +28,7 @@
 import random
 from datetime import datetime
 
-from query import Query, QueryStateDict
+from queries import Query, QueryStateDict
 from tree import Result, Node, TerminalNode
 from queries.util import read_grammar_file
 from speech.norm.num import numbers_to_ordinal

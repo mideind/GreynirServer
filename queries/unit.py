@@ -34,7 +34,7 @@ from typing import Tuple
 import random
 from math import floor, log10
 
-from query import Query, QueryStateDict, to_dative, to_accusative
+from queries import Query, QueryStateDict, to_dative, to_accusative
 from queries.util import iceformat_float, parse_num, read_grammar_file
 from tree import Result, Node
 

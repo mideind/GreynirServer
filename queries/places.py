@@ -40,7 +40,7 @@ from reynir import NounPhrase
 # from iceaddr import nearest_addr, nearest_placenames
 
 from geo import in_iceland, iceprep_for_street, LatLonTuple
-from query import Query, QueryStateDict
+from queries import Query, QueryStateDict
 from queries.util import (
     gen_answer,
     query_places_api,

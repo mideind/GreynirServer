@@ -27,7 +27,7 @@ from typing import List
 
 import logging
 
-from query import Query, QueryStateDict
+from queries import Query, QueryStateDict
 from tree import Result, Node
 
 from queries.util import (

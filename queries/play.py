@@ -31,7 +31,7 @@ from random import choice
 
 from pyyoutube import Api, SearchListResponse
 
-from query import Query
+from queries import Query
 from queries.util import gen_answer
 from utility import read_api_key
 

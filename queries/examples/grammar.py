@@ -28,7 +28,7 @@
 
 import random
 
-from query import QueryStateDict
+from queries import QueryStateDict
 from tree import Node, Result
 
 

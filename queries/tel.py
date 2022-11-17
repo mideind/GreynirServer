@@ -33,7 +33,7 @@
 import re
 import random
 
-from query import Query
+from queries import Query
 from queries.util import gen_answer
 
 from reynir import NounPhrase

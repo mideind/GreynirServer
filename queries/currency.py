@@ -33,7 +33,7 @@ import cachetools  # type: ignore
 import random
 import logging
 
-from query import Query, QueryStateDict
+from queries import Query, QueryStateDict
 from queries.util import (
     query_json_api,
     iceformat_float,

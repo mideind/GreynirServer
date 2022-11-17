@@ -29,7 +29,7 @@
 
 from typing import List, Dict, Optional, Tuple, Any, cast
 from typing_extensions import TypedDict
-from query import Query, QueryStateDict
+from queries import Query, QueryStateDict
 from tree import Node, TerminalNode, ParamList, Result
 
 import logging

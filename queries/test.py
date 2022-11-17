@@ -25,7 +25,7 @@
 
 """
 
-from query import Query
+from queries import Query
 from queries.util import gen_answer
 
 

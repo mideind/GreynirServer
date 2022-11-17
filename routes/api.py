@@ -39,8 +39,8 @@ from treeutil import TreeUtility
 from reynir.bintokenizer import TokenDict
 from reynir.binparser import canonicalize_token
 from article import Article as ArticleProxy
-from query import process_query
-from query import Query as QueryObject
+from queries import process_query
+from queries import Query as QueryObject
 from speech import (
     GreynirSSMLParser,
     text_to_audio_url,
