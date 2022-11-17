@@ -85,6 +85,7 @@ VOICE_TO_MODULE = _load_voice_modules()
 SUPPORTED_VOICES = frozenset(VOICE_TO_MODULE.keys())
 RECOMMENDED_VOICES = frozenset(("Gudrun", "Gunnar"))
 DEFAULT_VOICE = "Gudrun"
+DEFAULT_VOICE_SPEED = 1.0
 
 assert DEFAULT_VOICE in SUPPORTED_VOICES
 assert DEFAULT_VOICE in RECOMMENDED_VOICES
@@ -221,7 +222,7 @@ def text_to_audio_data(
     text_format: str = DEFAULT_TEXT_FORMAT,
     audio_format: str = DEFAULT_AUDIO_FORMAT,
     voice_id: str = DEFAULT_VOICE,
-    speed: float = 1.0,
+    speed: float = DEFAULT_VOICE_SPEED,
 ) -> bytes:
     """Returns audio data for speech-synthesized text."""
     # Fall back to default voice if voice_id param invalid
@@ -243,7 +244,7 @@ def text_to_audio_url(
     text_format: str = DEFAULT_TEXT_FORMAT,
     audio_format: str = DEFAULT_AUDIO_FORMAT,
     voice_id: str = DEFAULT_VOICE,
-    speed: float = 1.0,
+    speed: float = DEFAULT_VOICE_SPEED,
 ) -> str:
     """Returns URL to audio of speech-synthesized text."""
     # Fall back to default voice if voice_id param invalid
