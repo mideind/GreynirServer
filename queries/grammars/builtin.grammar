@@ -4,7 +4,7 @@ Query →
     BuiltinQueries
 
 BuiltinQueries →
-    QPerson > QCompany > QEntity > QTitle > QRepeat > QWord #> QSearch
+    QPerson > QCompany > QEntity > QTitle > QRepeat > QWord > QSearch
 
 QPerson →
     Mannsnafn_nf/nkyn

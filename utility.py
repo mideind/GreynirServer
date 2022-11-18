@@ -23,6 +23,7 @@
 from typing import List
 
 import string
+import logging
 from functools import lru_cache
 from pathlib import Path
 
@@ -51,7 +52,7 @@ def read_api_key(key_name: str) -> str:
     try:
         return p.read_text().strip()
     except FileNotFoundError:
-        pass
+        logging.warning("API key file {p} not found")
     return ""
 
 
