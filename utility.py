@@ -70,8 +70,8 @@ def modules_in_dir(p: Path) -> List[str]:
     # Return list of python files in
     # import-like format ('.' instead of '/', no '.py')
     return [
-        ".".join(pyfile.with_suffix("").parts)
-        for pyfile in p.relative_to(GREYNIR_ROOT_DIR).glob("*.py")
+        ".".join(pyfile.relative_to(GREYNIR_ROOT_DIR).with_suffix("").parts)
+        for pyfile in p.glob("*.py")
         if not pyfile.name.startswith("_")
     ]
 
