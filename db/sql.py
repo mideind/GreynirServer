@@ -165,6 +165,62 @@ class QueryTypesQuery(_BaseQuery):
         return g
 
 
+class TopUnansweredQueriesQuery(_BaseQuery):
+    """Return list of the most frequent *unanswered* queries
+    over a given time period."""
+
+    _Q = """
+        select question, answer, count(question) as qoccurrence from queries
+            where answer is NULL
+            group by question, answer
+            order by qoccurrence desc
+            limit :count
+        """
+
+    _DEFAULT_COUNT = 20
+
+    @classmethod
+    def period(
+        cls,
+        start: datetime,
+        end: datetime,
+        count: int = _DEFAULT_COUNT,
+        enclosing_session: Optional[Session] = None,
+    ) -> Iterable[Any]:
+        g: Iterable[Any] = []
+        with SessionContext(session=enclosing_session, commit=False) as session:
+            g = cls().execute(session, start=start, end=end, count=count)
+        return g
+
+
+class TopAnsweredQueriesQuery(_BaseQuery):
+    """Return list of the most frequent *unanswered* queries
+    over a given time period."""
+
+    _Q = """
+        select question, answer, count(question) as qoccurrence from queries
+            where answer is not NULL
+            group by question, answer
+            order by qoccurrence desc
+            limit :count
+        """
+
+    _DEFAULT_COUNT = 20
+
+    @classmethod
+    def period(
+        cls,
+        start: datetime,
+        end: datetime,
+        count: int = _DEFAULT_COUNT,
+        enclosing_session: Optional[Session] = None,
+    ) -> Iterable[Any]:
+        g: Iterable[Any] = []
+        with SessionContext(session=enclosing_session, commit=False) as session:
+            g = cls().execute(session, start=start, end=end, count=count)
+        return g
+
+
 class BestAuthorsQuery(_BaseQuery):
     """A query for statistics on authors with the best parse ratios.
     The query only includes authors with at least 10 articles."""

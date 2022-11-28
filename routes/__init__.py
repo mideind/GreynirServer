@@ -379,5 +379,6 @@ from .people import *
 from .loc import *
 from .words import *
 from .stats import *
+from .stats_queries import *
 from .salescloud import *
 from nn.api import *

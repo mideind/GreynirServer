@@ -286,7 +286,7 @@ def _gen_num_queries_answer(q: Query) -> bool:
         )
 
         fs = sing_or_plur(qr, "fyrirspurn", "fyrirspurnum")
-        answer = "Á síðustu {0} dögum hef ég svarað {1}.".format(_QUERIES_PERIOD, fs)
+        answer = f"Á síðustu {_QUERIES_PERIOD} dögum hef ég svarað {fs}."
         voice = answer
         response = dict(answer=answer)
 

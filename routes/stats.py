@@ -25,9 +25,10 @@ from typing import Any, Dict, List, Optional, Union
 
 from werkzeug.wrappers import Response
 
-from . import routes, max_age, cache
+from . import routes, cache
 
 import json
+import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -105,10 +106,6 @@ def chart_stats(session=None, num_days: int = 7) -> Dict[str, Any]:
             percent = round((parsed / sent) * 100, 2) if sent else 0
             parsed_data.append(percent)
 
-            # Get query count for day
-            q = list(QueriesQuery.period(start, end, enclosing_session=session))
-            query_data.append(q[0][0])
-
     # Create datasets for bar chart
     datasets = []
     article_count = 0
@@ -128,11 +125,6 @@ def chart_stats(session=None, num_days: int = 7) -> Dict[str, Any]:
             "labels": labels,
             "datasets": [{"data": parsed_data}],
             "avg": parse_avg,
-        },
-        "queries": {
-            "labels": labels,
-            "datasets": [{"data": query_data}],
-            "avg": query_avg,
         },
     }
 
@@ -162,7 +154,6 @@ def top_authors(
 
 @routes.route("/stats", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
-@max_age(seconds=30 * 60)
 def stats() -> Union[Response, str]:
     """Render a page containing various statistics from the Greynir database."""
     days = _DEFAULT_STATS_PERIOD
@@ -175,48 +166,48 @@ def stats() -> Union[Response, str]:
 
     chart_data: Dict[str, Any] = dict()
 
-    with SessionContext(read_only=True) as session:
+    try:
+        with SessionContext(read_only=True) as session:
 
-        # Article stats
-        sq = StatsQuery()
-        result = sq.execute(session)
-        total = dict(art=Decimal(), sent=Decimal(), parsed=Decimal())
-        for r in result:
-            total["art"] += r.art
-            total["sent"] += r.sent
-            total["parsed"] += r.parsed
+            # Article stats
+            sq = StatsQuery()
+            result = sq.execute(session)
+            total = dict(art=Decimal(), sent=Decimal(), parsed=Decimal())
+            for r in result:
+                total["art"] += r.art
+                total["sent"] += r.sent
+                total["parsed"] += r.parsed
 
-        # Gender stats
-        gq = GenderQuery()
-        gresult = gq.execute(session)
+            # Gender stats
+            gq = GenderQuery()
+            gresult = gq.execute(session)
 
-        gtotal = dict(kvk=Decimal(), kk=Decimal(), hk=Decimal(), total=Decimal())
-        for r in gresult:
-            gtotal["kvk"] += r.kvk
-            gtotal["kk"] += r.kk
-            gtotal["hk"] += r.hk
-            gtotal["total"] += r.kvk + r.kk + r.hk
+            gtotal = dict(kvk=Decimal(), kk=Decimal(), hk=Decimal(), total=Decimal())
+            for r in gresult:
+                gtotal["kvk"] += r.kvk
+                gtotal["kk"] += r.kk
+                gtotal["hk"] += r.hk
+                gtotal["total"] += r.kvk + r.kk + r.hk
 
-        # Author stats
-        authresult = top_authors(session=session)
+            # Author stats
+            authresult = top_authors(session=session)
 
-        # Chart stats
-        chart_data = chart_stats(session=session, num_days=days)
+            # Chart stats
+            chart_data = chart_stats(session=session, num_days=days)
 
-        return render_template(
-            "stats.html",
-            title="Tölfræði",
-            result=result,
-            total=total,
-            gresult=gresult,
-            gtotal=gtotal,
-            authresult=authresult,
-            scraped_chart_data=json.dumps(chart_data["scraped"]),
-            parsed_chart_data=json.dumps(chart_data["parsed"]),
-            queries_chart_data=json.dumps(chart_data["queries"]),
-            scraped_avg=int(round(chart_data["scraped"]["avg"])),
-            parsed_avg=round(chart_data["parsed"]["avg"], 1),
-            queries_avg=round(chart_data["queries"]["avg"], 1),
-        )
-
-    return Response("Error", status=403)
+            return render_template(
+                "stats.html",
+                title="Tölfræði",
+                result=result,
+                total=total,
+                gresult=gresult,
+                gtotal=gtotal,
+                authresult=authresult,
+                scraped_chart_data=json.dumps(chart_data["scraped"]),
+                scraped_avg=int(round(chart_data["scraped"]["avg"])),
+                parsed_chart_data=json.dumps(chart_data["parsed"]),
+                parsed_avg=round(chart_data["parsed"]["avg"], 1),
+            )
+    except Exception as e:
+        logging.error("Error rendering stats page: {0}".format(e))
+        return Response(f"Error: {e}", status=500)
