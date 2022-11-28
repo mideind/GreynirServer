@@ -8,6 +8,9 @@
 
 {% block content %}
 
+<h2>Tölfræði fyrirspurnakerfis</h2>
+
+<br>
 
 <!-- Query count bar chart broken down by days. -->
 <div class="panel panel-default">
@@ -25,6 +28,14 @@
         Tegundir fyrirspurna síðustu {{ days }} daga
     </div>
     <canvas id="query_types_pie_canvas" style="padding: 25px;"></canvas>
+</div>
+
+<!-- Query client type pie chart. -->
+<div class="panel panel-default">
+    <div class="panel-heading">
+        Biðlaraútgáfur síðustu {{ days }} daga
+    </div>
+    <canvas id="query_client_type_pie_canvas" style="padding: 25px;"></canvas>
 </div>
 
 <!-- Most frequent unanswered queries. -->
@@ -92,7 +103,7 @@
 <script>
 
     // Query count by days chart
-    var queriesChartData = {{ queries_chart_data | safe }};
+    var queriesChartData = {{ query_count_data | safe }};
     queriesChartData.datasets[0].backgroundColor = '#eb3732';
 
     var queriesCtx = $('#queries_chart_canvas').get(0).getContext('2d');

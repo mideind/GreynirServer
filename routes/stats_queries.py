@@ -17,7 +17,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    Embla stats-related routes
+    Query engine stats routes.
 
 """
 
@@ -41,17 +41,17 @@ from settings import changedlocale
 
 
 _DEFAULT_QUERY_STATS_PERIOD = 30
-_MAX_QUERY_STATS_PERIOD = 90
+_MAX_QUERY_STATS_PERIOD = 30
 
 
 def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
     """Return scraping and parsing stats for charts"""
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+
     labels = []
+    query_count_data = []
 
-    query_data = []
-
-    # Get article count for each source for each day, and query count for each day
+    # Get query count for each day
     # We change locale to get localized date weekday/month names
     with changedlocale(category="LC_TIME"):
         for n in range(0, num_days):
@@ -65,18 +65,18 @@ def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
 
             # Get query count for day
             q = list(QueriesQuery.period(start, end, enclosing_session=session))
-            query_data.append(q[0][0])
+            query_count_data.append(q[0][0])
 
-    query_avg = sum(query_data) / num_days
+    query_avg = sum(query_count_data) / num_days
 
-    #
     start = today - timedelta(days=num_days)
     end = datetime.utcnow()
-    qt = QueryTypesQuery.period(
+    query_types_data = QueryTypesQuery.period(
         start=start,
         end=end,
         enclosing_session=session,
     )
+    query_types_data = [list(e) for e in query_types_data]
 
     def prep_top_answ_data(res) -> List[Dict[str, Any]]:
         rl = list(res)
@@ -92,12 +92,12 @@ def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
     top_answered = prep_top_answ_data(res)
 
     return {
-        "queries": {
+        "query_count": {
             "labels": labels,
-            "datasets": [{"data": query_data}],
+            "datasets": [{"data": query_count_data}],
             "avg": query_avg,
         },
-        "query_types": [list(e) for e in qt],
+        "query_types": query_types_data,
         "top_unanswered": top_unanswered,
         "top_answered": top_answered,
     }
@@ -130,8 +130,8 @@ def queries_stats() -> Union[Response, str]:
         "stats-queries.html",
         title="Tölfræði fyrirspurnakerfis",
         days=days,
-        queries_chart_data=json.dumps(stats_data["queries"]),
-        queries_avg=stats_data["queries"]["avg"],
+        query_count_data=json.dumps(stats_data["query_count"]),
+        queries_avg=stats_data["query_count"]["avg"],
         query_types_data=json.dumps(stats_data["query_types"]),
         top_unanswered=stats_data["top_unanswered"],
         top_answered=stats_data["top_answered"],

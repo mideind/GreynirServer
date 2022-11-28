@@ -60,7 +60,7 @@ class _BaseQuery:
 
 
 class GenderQuery(_BaseQuery):
-    """A query for gender representation in the persons table"""
+    """A query for gender representation in the persons table."""
 
     _Q = """
         select domain,
@@ -80,7 +80,7 @@ class GenderQuery(_BaseQuery):
 
 
 class StatsQuery(_BaseQuery):
-    """A query for statistics on articles"""
+    """A query for statistics on articles."""
 
     _Q = """
         select r.domain,
@@ -97,7 +97,7 @@ class StatsQuery(_BaseQuery):
 
 class ChartsQuery(_BaseQuery):
     """Statistics on article, sentence and parse count
-    for all sources for a given time period"""
+    for all sources for a given time period."""
 
     _Q = """
         select r.description AS name,
@@ -153,6 +153,27 @@ class QueryTypesQuery(_BaseQuery):
             timestamp >= :start and timestamp < :end
             group by queries.qtype
             order by queries.count desc
+        """
+
+    @classmethod
+    def period(
+        cls, start: datetime, end: datetime, enclosing_session: Optional[Session] = None
+    ) -> Iterable[Any]:
+        g: Iterable[Any] = []
+        with SessionContext(session=enclosing_session, commit=False) as session:
+            g = cls().execute(session, start=start, end=end)
+        return g
+
+
+class QueryClientTypeQuery(_BaseQuery):
+    """Stats on query client types (e.g. ios, android) over a given time period."""
+
+    _Q = """
+        select client_type, count(client_type) as freq
+        from queries
+        where client_type is not NULL and client_type != ''
+        group by client_type
+        order by freq desc
         """
 
     @classmethod
@@ -262,7 +283,7 @@ class BestAuthorsQuery(_BaseQuery):
 
 class RelatedWordsQuery(_BaseQuery):
     """A query for word stems commonly occurring in the same articles
-    as the given word stem"""
+    as the given word stem."""
 
     _Q = """
         select stem, cat, sum(cnt) as c
@@ -312,7 +333,7 @@ class TermTopicsQuery(_BaseQuery):
 
 
 class ArticleCountQuery(_BaseQuery):
-    """A query yielding the number of articles containing any of the given word stems"""
+    """A query yielding the number of articles containing any of the given word stems."""
 
     _Q = """
         select count(*)
