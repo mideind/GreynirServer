@@ -105,14 +105,13 @@ def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
 
 @routes.route("/stats/queries", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
-def queries_stats() -> Union[Response, str]:
+def stats_queries() -> Union[Response, str]:
     """Render a page containing various statistics on query system
     usage from the Greynir database."""
 
     # Accessing this route requires an API key
-    gak = read_api_key("GreynirServerKey")
     key = request.args.get("key")
-    if key is None or key != gak:
+    if key is None or key != read_api_key("GreynirServerKey"):
         return Response(f"Not authorized", status=401)
 
     days = _DEFAULT_QUERY_STATS_PERIOD

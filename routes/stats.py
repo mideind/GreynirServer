@@ -171,26 +171,28 @@ def stats() -> Union[Response, str]:
 
             # Article stats
             sq = StatsQuery()
-            result = sq.execute(session)
-            total = dict(art=Decimal(), sent=Decimal(), parsed=Decimal())
-            for r in result:
-                total["art"] += r.art
-                total["sent"] += r.sent
-                total["parsed"] += r.parsed
+            articles_result = sq.execute(session)
+            articles_total = dict(art=Decimal(), sent=Decimal(), parsed=Decimal())
+            for r in articles_result:
+                articles_total["art"] += r.art
+                articles_total["sent"] += r.sent
+                articles_total["parsed"] += r.parsed
 
             # Gender stats
             gq = GenderQuery()
-            gresult = gq.execute(session)
+            gender_result = gq.execute(session)
 
-            gtotal = dict(kvk=Decimal(), kk=Decimal(), hk=Decimal(), total=Decimal())
-            for r in gresult:
-                gtotal["kvk"] += r.kvk
-                gtotal["kk"] += r.kk
-                gtotal["hk"] += r.hk
-                gtotal["total"] += r.kvk + r.kk + r.hk
+            gender_total = dict(
+                kvk=Decimal(), kk=Decimal(), hk=Decimal(), total=Decimal()
+            )
+            for r in gender_result:
+                gender_total["kvk"] += r.kvk
+                gender_total["kk"] += r.kk
+                gender_total["hk"] += r.hk
+                gender_total["total"] += r.kvk + r.kk + r.hk
 
             # Author stats
-            authresult = top_authors(session=session)
+            author_result = top_authors(session=session)
 
             # Chart stats
             chart_data = chart_stats(session=session, num_days=days)
@@ -198,11 +200,11 @@ def stats() -> Union[Response, str]:
             return render_template(
                 "stats.html",
                 title="Tölfræði",
-                result=result,
-                total=total,
-                gresult=gresult,
-                gtotal=gtotal,
-                authresult=authresult,
+                articles_result=articles_result,
+                articles_total=articles_total,
+                gender_result=gender_result,
+                gender_total=gender_total,
+                author_result=author_result,
                 scraped_chart_data=json.dumps(chart_data["scraped"]),
                 scraped_avg=int(round(chart_data["scraped"]["avg"])),
                 parsed_chart_data=json.dumps(chart_data["parsed"]),
