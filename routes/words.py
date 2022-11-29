@@ -128,7 +128,7 @@ def _words2str(words):
 
 def _desc4word(wc):
     """Create a human-friendly description string for a word/category tuple."""
-    return "{0} ({1})".format(wc[0], CAT_DESC.get(wc[1]))
+    return f"{wc[0]} ({CAT_DESC.get(wc[1])})")
 
 
 @routes.route("/wordfreq", methods=["GET", "POST"])
@@ -142,7 +142,7 @@ def wordfreq():
         date_from = datetime.strptime(request.args.get("date_from", ""), date_fmt)
         date_to = datetime.strptime(request.args.get("date_to", ""), date_fmt)
     except Exception as e:
-        logging.warning("Failed to parse date arg: {0}".format(e))
+        logging.warning(f"Failed to parse date arg: {e}")
         return better_jsonify(**resp)
 
     # Words param should contain one or more comma-separated word
@@ -259,11 +259,11 @@ def wordfreq():
                 or []
             )
             # Generate data and config for chart
-            label = "{0} ({1})".format(wd, CAT_DESC.get(cat))
+            label = f"{wd} ({CAT_DESC.get(cat)})"
             ds: Dict[str, Any] = dict(label=label, fill=False, lineTension=0)
             ds["borderColor"] = ds["backgroundColor"] = colors.pop(0)
             ds["data"] = [r[1] for r in res]
-            ds["word"] = "{0}:{1}".format(wd, cat)
+            ds["word"] = f"{wd}:{cat}"
             data["datasets"].append(ds)
 
     # Create response
@@ -294,7 +294,7 @@ def wordfreq_details():
             # If only one date provided, assume it's a period spanning a single day
             date_to = date_from + timedelta(days=1)
     except Exception as e:
-        logging.warning("Failed to parse date arg: {0}".format(e))
+        logging.warning("Failed to parse date arg: {e}")
         return better_jsonify(**resp)
 
     # Fetch list of articles for each word for the given period

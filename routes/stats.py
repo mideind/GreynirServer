@@ -81,7 +81,7 @@ def chart_stats(session=None, num_days: int = 7) -> Dict[str, Any]:
     query_data = []
 
     # Get article count for each source for each day, and query count for each day
-    # We change locale to get localized date weekday/month names
+    # We change locale to get localized weekday/month names
     with changedlocale(category="LC_TIME"):
         for n in range(0, num_days):
             days_back = num_days - n - 1
@@ -194,7 +194,7 @@ def stats() -> Union[Response, str]:
             # Author stats
             author_result = top_authors(session=session)
 
-            # Chart stats
+            # Scraping and parsing stats
             chart_data = chart_stats(session=session, num_days=days)
 
             return render_template(
@@ -211,5 +211,5 @@ def stats() -> Union[Response, str]:
                 parsed_avg=round(chart_data["parsed"]["avg"], 1),
             )
     except Exception as e:
-        logging.error("Error rendering stats page: {0}".format(e))
+        logging.error(f"Error rendering stats page: {e}")
         return Response(f"Error: {e}", status=500)
