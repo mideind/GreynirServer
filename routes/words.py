@@ -53,6 +53,8 @@ def words_trends():
     return render_template("words/trends.html", title="Orð")
 
 
+CAT_UNKNOWN = "??"
+
 # Word categories permitted in word frequency search
 _VALID_WCATS = frozenset(
     (
@@ -65,12 +67,11 @@ _VALID_WCATS = frozenset(
         "person_kvk",
         "person_hk",
         "entity",
-        "??",
+        CAT_UNKNOWN,
     )
 )
 
 # Human-readable descriptions of word categories
-CAT_UNKNOWN = "??"
 CAT_DESC = {
     "kk": "kk. no.",
     "kvk": "kvk. no.",
@@ -128,7 +129,7 @@ def _words2str(words):
 
 def _desc4word(wc):
     """Create a human-friendly description string for a word/category tuple."""
-    return f"{wc[0]} ({CAT_DESC.get(wc[1])})")
+    return f"{wc[0]} ({CAT_DESC.get(wc[1])})"
 
 
 @routes.route("/wordfreq", methods=["GET", "POST"])

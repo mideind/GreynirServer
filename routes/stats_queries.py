@@ -33,6 +33,7 @@ from . import routes, cache
 from db.sql import (
     QueriesQuery,
     QueryTypesQuery,
+    QueryClientTypeQuery,
     TopUnansweredQueriesQuery,
     TopAnsweredQueriesQuery,
 )
@@ -45,7 +46,7 @@ _MAX_QUERY_STATS_PERIOD = 30
 
 
 def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
-    """Return scraping and parsing stats for charts"""
+    """Return all query stats."""
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
     labels = []
@@ -71,6 +72,8 @@ def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
 
     start = today - timedelta(days=num_days)
     end = datetime.utcnow()
+
+    # Query types
     query_types_data = QueryTypesQuery.period(
         start=start,
         end=end,
@@ -78,6 +81,23 @@ def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
     )
     query_types_data = [list(e) for e in query_types_data]
 
+    # Client types
+    _CLIENT_COLORS = {
+        "ios": "#4c8bf5",
+        "android": "#a4c639",
+        "www": "#f7b924",
+    }
+    res = QueryClientTypeQuery.period(start, end)
+    client_types_data: List[Dict[str, Any]] = [
+        {
+            "name": f"{k[0]} {k[1] or ''}".rstrip(),
+            "count": k[2],
+            "color": _CLIENT_COLORS.get(k[0], "#ccc"),
+        }
+        for k in res
+    ]
+
+    # Top queries (answered and unanswered)
     def prep_top_answ_data(res) -> List[Dict[str, Any]]:
         rl = list(res)
         highest_count = res[0][2]
@@ -98,6 +118,7 @@ def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
             "avg": query_avg,
         },
         "query_types": query_types_data,
+        "client_types": client_types_data,
         "top_unanswered": top_unanswered,
         "top_answered": top_answered,
     }
@@ -106,8 +127,8 @@ def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
 @routes.route("/stats/queries", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
 def stats_queries() -> Union[Response, str]:
-    """Render a page containing various statistics on query system
-    usage from the Greynir database."""
+    """Render a page containing various statistics on query
+    engine usage from the Greynir database."""
 
     # Accessing this route requires an API key
     key = request.args.get("key")
@@ -132,6 +153,7 @@ def stats_queries() -> Union[Response, str]:
         query_count_data=json.dumps(stats_data["query_count"]),
         queries_avg=stats_data["query_count"]["avg"],
         query_types_data=json.dumps(stats_data["query_types"]),
+        client_types_data=json.dumps(stats_data["client_types"]),
         top_unanswered=stats_data["top_unanswered"],
         top_answered=stats_data["top_answered"],
     )

@@ -27,14 +27,16 @@
     <div class="panel-heading">
         Tegundir fyrirspurna síðustu {{ days }} daga
     </div>
+    {{ query_types_data | safe }}
     <canvas id="query_types_pie_canvas" style="padding: 25px;"></canvas>
 </div>
 
-<!-- Query client type pie chart. -->
+<!-- Client type pie chart. -->
 <div class="panel panel-default">
     <div class="panel-heading">
         Biðlaraútgáfur síðustu {{ days }} daga
     </div>
+    {{ client_types_data | safe }}
     <canvas id="query_client_type_pie_canvas" style="padding: 25px;"></canvas>
 </div>
 

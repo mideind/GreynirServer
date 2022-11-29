@@ -166,13 +166,14 @@ class QueryTypesQuery(_BaseQuery):
 
 
 class QueryClientTypeQuery(_BaseQuery):
-    """Stats on query client types (e.g. ios, android) over a given time period."""
+    """Stats on query client type and version (e.g. ios 1.3.0,
+    android 1.2.1, etc.) over a given time period."""
 
     _Q = """
-        select client_type, count(client_type) as freq
+        select client_type, client_version, count(client_type) as freq
         from queries
         where client_type is not NULL and client_type != ''
-        group by client_type
+        group by client_type, client_version
         order by freq desc
         """
 
