@@ -108,7 +108,6 @@
     // Query count by days chart
     var queriesChartData = {{ query_count_data | safe }};
     queriesChartData.datasets[0].backgroundColor = '#eb3732';
-
     var queriesCtx = $('#queries_chart_canvas').get(0).getContext('2d');
     var queriesChart = new Chart(queriesCtx, {
         type: 'bar',

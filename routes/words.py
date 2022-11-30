@@ -295,7 +295,7 @@ def wordfreq_details():
             # If only one date provided, assume it's a period spanning a single day
             date_to = date_from + timedelta(days=1)
     except Exception as e:
-        logging.warning("Failed to parse date arg: {e}")
+        logging.warning(f"Failed to parse date arg: {e}")
         return better_jsonify(**resp)
 
     # Fetch list of articles for each word for the given period

@@ -44,7 +44,7 @@ from db.sql import (
     ChartsQuery,
     GenderQuery,
     BestAuthorsQuery,
-    QueriesQuery,
+    QueryCountQuery,
     QueryTypesQuery,
     QueryClientTypeQuery,
     TopUnansweredQueriesQuery,
@@ -245,7 +245,7 @@ def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
             labels.append(start.strftime(dfmtstr))
 
             # Get query count for day
-            q = list(QueriesQuery.period(start, end, enclosing_session=session))
+            q = list(QueryCountQuery.period(start, end, enclosing_session=session))
             query_count_data.append(q[0][0])
 
     query_avg = sum(query_count_data) / num_days

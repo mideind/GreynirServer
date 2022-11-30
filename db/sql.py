@@ -34,7 +34,7 @@ ArticleListItem = Tuple[str, str, datetime, str, str]
 ChartQueryItem = Tuple[str, int, int, int]
 RelatedWordsItem = Tuple[str, str, int]
 BestAuthorsItem = Tuple[str, int, int, int, float]
-QueriesQueryItem = Tuple[int]
+QueryCountItem = Tuple[int]
 
 
 class _BaseQuery:
@@ -124,7 +124,7 @@ class ChartsQuery(_BaseQuery):
         return r
 
 
-class QueriesQuery(_BaseQuery):
+class QueryCountQuery(_BaseQuery):
     """Statistics on the number of queries received over a given time period."""
 
     _Q = """
@@ -135,11 +135,11 @@ class QueriesQuery(_BaseQuery):
     @classmethod
     def period(
         cls, start: datetime, end: datetime, enclosing_session: Optional[Session] = None
-    ) -> Iterable[QueriesQueryItem]:
-        r = cast(Iterable[QueriesQueryItem], [])
+    ) -> Iterable[QueryCountItem]:
+        r = cast(Iterable[QueryCountItem], [])
         with SessionContext(session=enclosing_session, commit=False) as session:
             r = cast(
-                Iterable[QueriesQueryItem], cls().execute(session, start=start, end=end)
+                Iterable[QueryCountItem], cls().execute(session, start=start, end=end)
             )
         return r
 
