@@ -78,6 +78,8 @@
 import re
 from datetime import datetime
 
+from reynir import NounPhrase
+
 from db.models import Person
 
 from queries import QueryStateDict
@@ -212,7 +214,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             person = Person(
                 article_url=url,
                 name=nafn,
-                title=titill,
+                # Try to get nominative form, otherwise fall back to raw text
+                title=NounPhrase(titill).nominative or titill,
                 title_lc=titill.lower(),
                 gender=kyn,
                 authority=authority,
@@ -292,7 +295,7 @@ def Titill(node, params, result):
     """Titill á eftir nafni"""
     # print("Titill: {0}".format(result["_text"]))
     if "ekki_titill" not in result:
-        result.titill = result._nominative
+        result.titill = result._text
 
 
 def KommuTitill(node, params, result):
@@ -314,7 +317,7 @@ def NlTitill(node, params, result):
 def EinnTitill(node, params, result):
     """Einn titill af hugsanlega fleirum í lista"""
     if "ekki_titill" not in result:
-        result.titlar = [result._nominative]
+        result.titlar = [result._text]
 
 
 def EfLiður(node, params, result):
@@ -424,7 +427,7 @@ def NlSkýring(node, params, result):
             s = " ".join([words[1], words[0]] + words[2:])
     else:
         # Ég talaði við Jón (heimsmethafa í hástökki)
-        s = cut(result._nominative)
+        s = cut(result._text)
 
     if s.lower() in NOT_EXPLANATION:
         s = None
@@ -489,7 +492,7 @@ def NlKjarni(node, params, result):
             kyn = result.get("skýring_kyn")
             if mannsnafn and kyn:
                 # print("NlKjarni: mannsnafn úr skýringu er '{0}', allur texti er '{1}'".format(mannsnafn, result._nominative))
-                titill = result._nominative
+                titill = result._text
                 # Skera nafnið og tákn (sviga/hornklofa/bandstrik/kommur) aftan af
                 rdelim = titill[-2:]
                 titill = titill[:-2]
