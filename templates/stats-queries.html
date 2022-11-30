@@ -36,8 +36,7 @@
     <div class="panel-heading">
         Biðlaraútgáfur síðustu {{ days }} daga
     </div>
-    {{ client_types_data | safe }}
-    <canvas id="query_client_type_pie_canvas" style="padding: 25px;"></canvas>
+    <canvas id="client_types_pie_canvas" style="padding: 25px;"></canvas>
 </div>
 
 <!-- Most frequent unanswered queries. -->
@@ -104,6 +103,9 @@
 
 <script>
 
+    // Configure chart styling
+    Chart.defaults.global.defaultFontFamily = "Lato";
+
     // Query count by days chart
     var queriesChartData = {{ query_count_data | safe }};
     queriesChartData.datasets[0].backgroundColor = '#eb3732';
@@ -117,10 +119,6 @@
                 display: false,
                 position: 'bottom',
             },
-            // tooltips: {
-            //     mode: 'index',
-            //     intersect: false,
-            // },
             responsive: true,
             scales: {
                 xAxes: [{
@@ -142,10 +140,26 @@
 
     // Query types pie chart
     var queryTypesData = {{ query_types_data | safe }};
-    var queriesCtx = $('#query_types_pie_canvas').get(0).getContext('2d');
-    var queriesChart = new Chart(queriesCtx, {
+    var queryTypesCtx = $('#query_types_pie_canvas').get(0).getContext('2d');
+    var queryTypesChart = new Chart(queryTypesCtx, {
         type: 'pie',
         data: queryTypesData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+            }
+        },
+    });
+
+    // Query types pie chart
+    var clientTypesData = {{ client_types_data | safe }};
+    var clientTypesCtx = $('#client_types_pie_canvas').get(0).getContext('2d');
+    var clientTypesChart = new Chart(clientTypesCtx, {
+        type: 'pie',
+        data: clientTypesData,
         options: {
             responsive: true,
             plugins: {

@@ -24,6 +24,7 @@
 from typing import Union, Dict, Any, List
 
 import json
+from hashlib import md5
 from datetime import datetime, timedelta
 
 from werkzeug.wrappers import Response
@@ -74,28 +75,51 @@ def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
     end = datetime.utcnow()
 
     # Query types
-    query_types_data = QueryTypesQuery.period(
+    res = QueryTypesQuery.period(
         start=start,
         end=end,
         enclosing_session=session,
     )
-    query_types_data = [list(e) for e in query_types_data]
+
+    def _hexcolor4string(s: str) -> str:
+        """Generate a hex color from a string."""
+        hash = md5(s.encode("utf-8")).hexdigest()
+        hash_values = (
+            hash[:8],
+            hash[8:16],
+            hash[16:24],
+        )
+        rgb = tuple(int(value, 16) % 256 for value in hash_values)
+        return "#%02x%02x%02x" % rgb
+
+    query_types_data = {
+        "labels": [k[1] for k in res],
+        "datasets": [
+            {
+                "data": [k[0] for k in res],
+                "backgroundColor": [_hexcolor4string(k[1]) for k in res],
+            }
+        ],
+    }
 
     # Client types
     _CLIENT_COLORS = {
         "ios": "#4c8bf5",
+        "ios_flutter": "#4c8bf5",
         "android": "#a4c639",
+        "android_flutter": "#a4c639",
         "www": "#f7b924",
     }
     res = QueryClientTypeQuery.period(start, end)
-    client_types_data: List[Dict[str, Any]] = [
-        {
-            "name": f"{k[0]} {k[1] or ''}".rstrip(),
-            "count": k[2],
-            "color": _CLIENT_COLORS.get(k[0], "#ccc"),
-        }
-        for k in res
-    ]
+    client_types_data = {
+        "labels": [f"{k[0]} {k[1] or ''}".rstrip() for k in res],
+        "datasets": [
+            {
+                "data": [k[2] for k in res],
+                "backgroundColor": [_CLIENT_COLORS.get(k[0], "#ccc") for k in res],
+            }
+        ],
+    }
 
     # Top queries (answered and unanswered)
     def prep_top_answ_data(res) -> List[Dict[str, Any]]:
