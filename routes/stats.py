@@ -25,16 +25,19 @@ from typing import Any, Dict, List, Optional, Union
 
 from werkzeug.wrappers import Response
 
-from . import routes, cache
 
+from hashlib import md5
 import json
 import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
 
 from flask import request, render_template
+from reynir.bindb import GreynirBin
 
+from . import routes, cache
 from settings import changedlocale
+from utility import read_api_key
 from db import SessionContext, Session
 from db.sql import (
     StatsQuery,
@@ -42,8 +45,11 @@ from db.sql import (
     GenderQuery,
     BestAuthorsQuery,
     QueriesQuery,
+    QueryTypesQuery,
+    QueryClientTypeQuery,
+    TopUnansweredQueriesQuery,
+    TopAnsweredQueriesQuery,
 )
-from reynir.bindb import GreynirBin
 
 
 # Days
@@ -213,3 +219,144 @@ def stats() -> Union[Response, str]:
     except Exception as e:
         logging.error(f"Error rendering stats page: {e}")
         return Response(f"Error: {e}", status=500)
+
+
+_DEFAULT_QUERY_STATS_PERIOD = 30
+_MAX_QUERY_STATS_PERIOD = 30
+
+
+def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
+    """Return all query stats."""
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    labels = []
+    query_count_data = []
+
+    # Get query count for each day
+    # We change locale to get localized date weekday/month names
+    with changedlocale(category="LC_TIME"):
+        for n in range(0, num_days):
+            days_back = num_days - n - 1
+            start = today - timedelta(days=days_back)
+            end = today - timedelta(days=days_back - 1)
+
+            # Generate date label
+            dfmtstr = "%a %-d. %b"
+            labels.append(start.strftime(dfmtstr))
+
+            # Get query count for day
+            q = list(QueriesQuery.period(start, end, enclosing_session=session))
+            query_count_data.append(q[0][0])
+
+    query_avg = sum(query_count_data) / num_days
+
+    start = today - timedelta(days=num_days)
+    end = datetime.utcnow()
+
+    # Query types
+    res = QueryTypesQuery.period(
+        start=start,
+        end=end,
+        enclosing_session=session,
+    )
+
+    def _hexcolor4string(s: str) -> str:
+        """Generate a hex color from a string."""
+        hash = md5(s.encode("utf-8")).hexdigest()
+        hash_values = (
+            hash[:8],
+            hash[8:16],
+            hash[16:24],
+        )
+        rgb = tuple(int(value, 16) % 256 for value in hash_values)
+        return "#%02x%02x%02x" % rgb
+
+    query_types_data = {
+        "labels": [k[1] for k in res],
+        "datasets": [
+            {
+                "data": [k[0] for k in res],
+                "backgroundColor": [_hexcolor4string(k[1]) for k in res],
+            }
+        ],
+    }
+
+    # Client types
+    _CLIENT_COLORS = {
+        "ios": "#4c8bf5",
+        "ios_flutter": "#4c8bf5",
+        "android": "#a4c639",
+        "android_flutter": "#a4c639",
+        "www": "#f7b924",
+    }
+    res = QueryClientTypeQuery.period(start, end)
+    client_types_data = {
+        "labels": [f"{k[0]} {k[1] or ''}".rstrip() for k in res],
+        "datasets": [
+            {
+                "data": [k[2] for k in res],
+                "backgroundColor": [_CLIENT_COLORS.get(k[0], "#ccc") for k in res],
+            }
+        ],
+    }
+
+    # Top queries (answered and unanswered)
+    def prep_top_answ_data(res) -> List[Dict[str, Any]]:
+        rl = list(res)
+        highest_count = res[0][2]
+        toplist = []
+        for q in rl:
+            toplist.append({"query": q[0], "count": q[2], "freq": q[2] / highest_count})
+        return toplist
+
+    res = TopUnansweredQueriesQuery.period(start, end, enclosing_session=session)
+    top_unanswered = prep_top_answ_data(res)
+    res = TopAnsweredQueriesQuery.period(start, end, enclosing_session=session)
+    top_answered = prep_top_answ_data(res)
+
+    return {
+        "query_count": {
+            "labels": labels,
+            "datasets": [{"data": query_count_data}],
+            "avg": query_avg,
+        },
+        "query_types": query_types_data,
+        "client_types": client_types_data,
+        "top_unanswered": top_unanswered,
+        "top_answered": top_answered,
+    }
+
+
+@routes.route("/stats/queries", methods=["GET"])
+@cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
+def stats_queries() -> Union[Response, str]:
+    """Render a page containing various statistics on query
+    engine usage from the Greynir database."""
+
+    # Accessing this route requires an API key
+    key = request.args.get("key")
+    if key is None or key != read_api_key("GreynirServerKey"):
+        return Response(f"Not authorized", status=401)
+
+    days = _DEFAULT_QUERY_STATS_PERIOD
+    try:
+        days = min(
+            _MAX_QUERY_STATS_PERIOD,
+            int(request.args.get("days", _DEFAULT_QUERY_STATS_PERIOD)),
+        )
+    except Exception:
+        pass
+
+    stats_data = query_stats_data(num_days=days)
+
+    return render_template(
+        "stats-queries.html",
+        title="Tölfræði fyrirspurnakerfis",
+        days=days,
+        query_count_data=json.dumps(stats_data["query_count"]),
+        queries_avg=stats_data["query_count"]["avg"],
+        query_types_data=json.dumps(stats_data["query_types"]),
+        client_types_data=json.dumps(stats_data["client_types"]),
+        top_unanswered=stats_data["top_unanswered"],
+        top_answered=stats_data["top_answered"],
+    )

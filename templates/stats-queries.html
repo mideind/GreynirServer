@@ -27,7 +27,6 @@
     <div class="panel-heading">
         Tegundir fyrirspurna síðustu {{ days }} daga
     </div>
-    {{ query_types_data | safe }}
     <canvas id="query_types_pie_canvas" style="padding: 25px;"></canvas>
 </div>
 
@@ -126,7 +125,7 @@
                 }],
                 yAxes: [{
                     ticks: {
-                        stepSize: 10,
+                        stepSize: 25,
                         min: 0,
                         callback: function (tick) {
                             return tick.toString();
@@ -171,10 +170,8 @@
     });
 
     function init() {
-
         // Activate the top navbar
         $("#navid-stats").addClass("active");
-
     }
 
     $(document).ready(init);
