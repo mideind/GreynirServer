@@ -84,7 +84,6 @@ def chart_stats(session=None, num_days: int = 7) -> Dict[str, Any]:
     labels = []
     sources: Dict[str, List[int]] = {}
     parsed_data = []
-    query_data = []
 
     # Get article count for each source for each day, and query count for each day
     # We change locale to get localized weekday/month names
@@ -123,7 +122,6 @@ def chart_stats(session=None, num_days: int = 7) -> Dict[str, Any]:
     # Calculate averages
     scrape_avg = article_count / num_days
     parse_avg = sum(parsed_data) / num_days
-    query_avg = sum(query_data) / num_days
 
     return {
         "scraped": {"labels": labels, "datasets": datasets, "avg": scrape_avg},

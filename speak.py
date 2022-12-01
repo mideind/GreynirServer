@@ -126,7 +126,7 @@ def _play_audio_file(path: str) -> None:
     subprocess.run(cast(List[str], cmd))
 
 
-DEFAULT_TEXT = "Góðan daginn og til hamingju með lífið."
+DEFAULT_TEXT = ["Góðan daginn og til hamingju með lífið."]
 
 
 def main() -> None:
@@ -190,7 +190,7 @@ def main() -> None:
     parser.add_argument(
         "text",
         help="text to synthesize",
-        nargs="+",
+        nargs="*",
         default=DEFAULT_TEXT,
     )
 

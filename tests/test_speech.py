@@ -23,13 +23,14 @@
 
 import os
 import sys
-
-import requests
 import datetime
+import logging
+from pathlib import Path
 from itertools import product
 
+import requests
 from speech import text_to_audio_url
-
+from utility import read_api_key
 
 # Shenanigans to enable Pytest to discover modules in the
 # main workspace directory (the parent of /tests)
@@ -39,26 +40,72 @@ if mainpath not in sys.path:
     sys.path.insert(0, mainpath)
 
 
+def test_voices_utils():
+    """Test utility functions in speech.voices."""
+    from speech.voices import (
+        mimetype_for_audiofmt,
+        suffix_for_audiofmt,
+        strip_markup,
+        generate_data_uri,
+    )
+
+    assert mimetype_for_audiofmt("mp3") == "audio/mpeg"
+    assert mimetype_for_audiofmt("blergh") == "application/octet-stream"
+
+    assert suffix_for_audiofmt("mp3") == "mp3"
+    assert suffix_for_audiofmt("blergh") == "data"
+
+    assert strip_markup("hello") == "hello"
+    assert strip_markup("<dajs dsajl>hello") == "hello"
+    assert strip_markup("<a>hello</a>") == "hello"
+    assert strip_markup("<prefer:something>hello</else>") == "hello"
+
+    assert (
+        generate_data_uri(b"hello") == "data:application/octet-stream;base64,aGVsbG8="
+    )
+    assert (
+        generate_data_uri(b"hello", mime_type="text/plain")
+        == "data:text/plain;base64,aGVsbG8="
+    )
+
+
 def test_speech_synthesis():
     """Test basic speech synthesis functionality."""
 
-    url = text_to_audio_url(
-        "Prufa",
-        text_format="text",
-        audio_format="mp3",
-        voice_id="Dora",
-    )
+    _TEXT = "Prufa"
+    _MIN_AUDIO_SIZE = 1000
 
-    assert url and url.startswith("http")
+    # Test AWS Polly
+    if read_api_key("AWSPollyServerKey.json"):
+        url = text_to_audio_url(
+            _TEXT,
+            text_format="text",
+            audio_format="mp3",
+            voice_id="Dora",
+        )
+        assert url and url.startswith("http")
+        r = requests.get(url)
+        assert r.headers.get("Content-Type") == "audio/mpeg", "Expected MP3 audio data"
+        assert len(r.content) > _MIN_AUDIO_SIZE, "Expected longer audio data"
+    else:
+        logging.info("No AWS Polly API key found, skipping test")
 
-    # Make request
-    r = requests.get(url)
-
-    # Make sure we're getting an MP3 audio data response
-    assert r.headers.get("Content-Type") == "audio/mpeg"
-
-    # Audio data should be at least 1 KB in size
-    assert len(r.content) > 1000
+    # Test Azure Cognitive Services
+    if read_api_key("AzureSpeechServerKey.json"):
+        url = text_to_audio_url(
+            _TEXT,
+            text_format="text",
+            audio_format="mp3",
+            voice_id="Gudrun",
+        )
+        assert url and url.startswith("file://") and url.endswith(".mp3")
+        path_str = url[7:]
+        path = Path(path_str)
+        assert path.is_file(), "Expected audio file to exist"
+        assert path.stat().st_size > _MIN_AUDIO_SIZE, "Expected longer audio data"
+        path.unlink()
+    else:
+        logging.info("No Azure Speech API key found, skipping test")
 
 
 def test_gssml():
@@ -461,7 +508,9 @@ def test_norm_floats() -> None:
 
     assert float_to_text(-0.12) == "mínus núll komma tólf"
     assert float_to_text(-0.1012) == "mínus núll komma eitt núll eitt tvö"
-    assert float_to_text(-0.1012, gender="kk") == "mínus núll komma einn núll einn tveir"
+    assert (
+        float_to_text(-0.1012, gender="kk") == "mínus núll komma einn núll einn tveir"
+    )
     assert float_to_text(-21.12, gender="kk") == "mínus tuttugu og einn komma tólf"
     assert (
         float_to_text(-21.123, gender="kk")
@@ -469,7 +518,10 @@ def test_norm_floats() -> None:
     )
     assert float_to_text(1.03, gender="kvk") == "ein komma núll þrjár"
     assert float_to_text(2.0, gender="kvk", case="þgf") == "tveimur"
-    assert float_to_text(2.0, gender="kvk", case="þgf", comma_null=True) == "tveimur komma núll"
+    assert (
+        float_to_text(2.0, gender="kvk", case="þgf", comma_null=True)
+        == "tveimur komma núll"
+    )
 
     assert (
         floats_to_text("2,13 millilítrar af vökva.", gender="kk")

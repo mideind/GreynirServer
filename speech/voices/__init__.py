@@ -35,6 +35,7 @@ AUDIOFMT_TO_MIMETYPE = {
     "opus": "audio/ogg",
 }
 
+FALLBACK_SUFFIX = "data"
 AUDIOFMT_TO_SUFFIX = {
     "mp3": "mp3",
     "wav": "wav",
@@ -52,7 +53,7 @@ def mimetype_for_audiofmt(fmt: str) -> str:
 
 def suffix_for_audiofmt(fmt: str) -> str:
     """Returns file suffix for the given audio format."""
-    return AUDIOFMT_TO_SUFFIX.get(fmt, "data")
+    return AUDIOFMT_TO_SUFFIX.get(fmt, FALLBACK_SUFFIX)
 
 
 def strip_markup(text: str) -> str:
