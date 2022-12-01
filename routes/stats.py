@@ -35,7 +35,7 @@ from decimal import Decimal
 from flask import request, render_template
 from reynir.bindb import GreynirBin
 
-from . import routes, cache
+from . import routes, cache, max_age
 from settings import changedlocale
 from utility import read_api_key
 from db import SessionContext, Session
@@ -158,6 +158,7 @@ def top_authors(
 
 @routes.route("/stats", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
+@max_age(seconds=30 * 60)
 def stats() -> Union[Response, str]:
     """Render a page containing various statistics from the Greynir database."""
     days = _DEFAULT_STATS_PERIOD
@@ -305,8 +306,8 @@ def query_stats_data(
 
     # Top queries (answered and unanswered)
     def prep_top_answ_data(res) -> List[Dict[str, Any]]:
-        rl = list(res)
-        highest_count = res[0][2]
+        rl = list(res)  # Consume generator
+        highest_count = rl[0][2]
         toplist = []
         for q in rl:
             toplist.append({"query": q[0], "count": q[2], "freq": q[2] / highest_count})
@@ -332,6 +333,7 @@ def query_stats_data(
 
 @routes.route("/stats/queries", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
+@max_age(seconds=30 * 60)
 def stats_queries() -> Union[Response, str]:
     """Render a page containing various statistics on query engine usage."""
 
