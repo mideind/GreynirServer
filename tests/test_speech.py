@@ -78,7 +78,7 @@ def test_speech_synthesis():
     # Test AWS Polly
     if read_api_key("AWSPollyServerKey.json"):
         url = text_to_audio_url(
-            _TEXT,
+            text=_TEXT,
             text_format="text",
             audio_format="mp3",
             voice_id="Dora",
@@ -93,7 +93,7 @@ def test_speech_synthesis():
     # Test Azure Cognitive Services
     if read_api_key("AzureSpeechServerKey.json"):
         url = text_to_audio_url(
-            _TEXT,
+            text=_TEXT,
             text_format="text",
             audio_format="mp3",
             voice_id="Gudrun",

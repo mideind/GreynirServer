@@ -223,8 +223,10 @@ _DEFAULT_QUERY_STATS_PERIOD = 30
 _MAX_QUERY_STATS_PERIOD = 30
 
 
-def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
-    """Return all query stats."""
+def query_stats_data(
+    session=None, num_days: int = _DEFAULT_QUERY_STATS_PERIOD
+) -> Dict[str, Any]:
+    """Return all data for query stats dashboard."""
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
     labels = []
@@ -258,6 +260,8 @@ def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
         enclosing_session=session,
     )
 
+    # This function is used to ensure that all the query
+    # types have a fixed, unique color on the pie chart.
     def _hexcolor4string(s: str) -> str:
         """Generate a hex color from a string."""
         hash = md5(s.encode("utf-8")).hexdigest()
@@ -285,6 +289,7 @@ def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
         "ios_flutter": "#4c8bf5",
         "android": "#a4c639",
         "android_flutter": "#a4c639",
+        "python": "#ffff00",
         "www": "#f7b924",
     }
     res = QueryClientTypeQuery.period(start, end)
@@ -328,8 +333,7 @@ def query_stats_data(session=None, num_days: int = 7) -> Dict[str, Any]:
 @routes.route("/stats/queries", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
 def stats_queries() -> Union[Response, str]:
-    """Render a page containing various statistics on query
-    engine usage from the Greynir database."""
+    """Render a page containing various statistics on query engine usage."""
 
     # Accessing this route requires an API key
     key = request.args.get("key")
