@@ -150,7 +150,7 @@
 <script>
 
    // Scraped articles stacked bar chart
-   var parseChartData = {{ parsed_chart_data | safe }};
+   var scrapeChartData = {{ scraped_chart_data | safe }};
    var scrapeCtx = $('#scraped_chart_canvas').get(0).getContext('2d');
    var scrapeChart = new Chart(scrapeCtx, {
       type: 'bar',
@@ -177,7 +177,7 @@
    });
 
    // Parsed % chart
-   var scrapeChartData = {{ scraped_chart_data | safe }};
+   var parseChartData = {{ parsed_chart_data | safe }};
    var parseCtx = $('#parsed_chart_canvas').get(0).getContext('2d');
    parseChartData.datasets[0].backgroundColor = 'rgba(200, 222, 255, 0.5)';
    // parseChartData.datasets[0].fill = true;
@@ -201,7 +201,7 @@
             }],
             yAxes: [{
                ticks: {
-                  min: 80,
+                  min: 70,
                   max: 100,
                   callback: function (tick) {
                      return tick.toString() + '%';

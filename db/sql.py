@@ -175,7 +175,7 @@ class QueryClientTypeQuery(_BaseQuery):
         where client_type is not NULL and client_type != '' and
         timestamp >= :start and timestamp < :end
         group by client_type, client_version
-        order by freq desc
+        order by client_type
         """
 
     @classmethod

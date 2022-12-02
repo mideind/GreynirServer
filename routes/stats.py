@@ -304,6 +304,7 @@ def query_stats_data(
             }
         ],
     }
+    # TODO: Add iOS, Android percentages
 
     # Top queries (answered and unanswered)
     def prep_top_answ_data(res: Iterable) -> List[Dict[str, Any]]:
