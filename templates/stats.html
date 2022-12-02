@@ -20,7 +20,7 @@
             <th class="count">%</th>
          </thead>
          <tbody>
-            {% for r in result %}
+            {% for r in articles_result %}
             {% if r.sent %}
             <tr class="topitem" data-domain="{{ r.domain }}">
                <td class="domain"><img src="{{ url_for('static', filename = 'img/sources/' + r.domain + '.png') }}"
@@ -35,14 +35,14 @@
             {% endif %}
             {% endfor %}
          </tbody>
-         {% if total.sent %}
+         {% if articles_total.sent %}
          <tfoot>
             <tr>
                <td class="domain">Samtals</td>
-               <td class="count">{{ total.art | format_is }}</td>
-               <td class="count">{{ total.sent | format_is }}</td>
-               <td class="count">{{ total.parsed | format_is }}</td>
-               <td class="count">{{ (total.parsed / total.sent * 100) | format_is(1) }}%</td>
+               <td class="count">{{ articles_total.art | format_is }}</td>
+               <td class="count">{{ articles_total.sent | format_is }}</td>
+               <td class="count">{{ articles_total.parsed | format_is }}</td>
+               <td class="count">{{ (articles_total.parsed / articles_total.sent * 100) | format_is(1) }}%</td>
             </tr>
          </tfoot>
          {% endif %}
@@ -68,7 +68,7 @@
             <th class="count total">Samtals</th>
          </thead>
          <tbody>
-            {% for r in gresult %}
+            {% for r in gender_result %}
             {% if r.total %}
             <tr class="topitem" data-domain="{{ r.domain }}">
                <td class="domain"><img src="{{ url_for('static', filename = 'img/sources/' + r.domain + '.png') }}"
@@ -82,15 +82,17 @@
             {% endif %}
             {% endfor %}
          </tbody>
-         {% if gtotal.total %}
+         {% if gender_total.total %}
          <tfoot>
             <tr>
                <td class="domain">Samtals</td>
-               <td class="count female">{{ gtotal.kvk | format_is }}</td>
-               <td class="count female">{{ (gtotal.kvk / (gtotal.kvk + gtotal.kk) * 100) | format_is(1) }}%</td>
-               <td class="count male">{{ gtotal.kk | format_is }}</td>
-               <td class="count male">{{ (gtotal.kk / (gtotal.kvk + gtotal.kk) * 100) | format_is(1) }}%</td>
-               <td class="count total">{{ gtotal.total | format_is }}</td>
+               <td class="count female">{{ gender_total.kvk | format_is }}</td>
+               <td class="count female">{{ (gender_total.kvk / (gender_total.kvk + gender_total.kk) * 100) |
+                  format_is(1) }}%</td>
+               <td class="count male">{{ gender_total.kk | format_is }}</td>
+               <td class="count male">{{ (gender_total.kk / (gender_total.kvk + gender_total.kk) * 100) | format_is(1)
+                  }}%</td>
+               <td class="count total">{{ gender_total.total | format_is }}</td>
             </tr>
          </tfoot>
          {% endif %}
@@ -105,7 +107,7 @@
    </div>
    <table class="table table-hover" id="dtable">
       <tbody>
-         {% for a in authresult %}
+         {% for a in author_result %}
          <tr class="authitem" data-author="{{ a.name | safe }}">
             {% if a.gender == 'kk' %}
             <td class="gender" title="Karl"><span class="glyphicon glyphicon-gender-male"></span></td>
@@ -136,16 +138,6 @@
    <canvas id="parsed_chart_canvas" style="padding: 25px;"></canvas>
 </div>
 
-<!--
-<div class="panel panel-default">
-   <div class="panel-heading">
-      Fyrirspurnir
-      <div class="pull-right hidden-xs">Meðaltal síðustu daga: <strong>{{ queries_avg | format_is(1) }} á dag</strong></div>
-   </div>
-   <canvas id="queries_chart_canvas" style="padding: 25px;"></canvas>
-</div>
--->
-
 {% endblock %}
 
 {% block endscripts %}
@@ -157,18 +149,8 @@
 
 <script>
 
-   function initCharts() {
-
-      Chart.defaults.global.defaultFontFamily = "Lato";
-
-      var scrapeChartData = {{ scraped_chart_data | safe
-   }};
-
-   var parseChartData = {{ parsed_chart_data | safe }};
-
-   var queriesChartData = {{ queries_chart_data | safe }};
-
    // Scraped articles stacked bar chart
+   var parseChartData = {{ parsed_chart_data | safe }};
    var scrapeCtx = $('#scraped_chart_canvas').get(0).getContext('2d');
    var scrapeChart = new Chart(scrapeCtx, {
       type: 'bar',
@@ -195,6 +177,7 @@
    });
 
    // Parsed % chart
+   var scrapeChartData = {{ scraped_chart_data | safe }};
    var parseCtx = $('#parsed_chart_canvas').get(0).getContext('2d');
    parseChartData.datasets[0].backgroundColor = 'rgba(200, 222, 255, 0.5)';
    // parseChartData.datasets[0].fill = true;
@@ -229,47 +212,9 @@
       }
    });
 
-      // Queries chart
-      /*var queriesCtx =  $('#queries_chart_canvas').get(0).getContext('2d');
-      
-      queriesChartData.datasets[0].backgroundColor = '#eb3732';
-      // parseChartData.datasets[0].fill = true;
-      var queriesChart = new Chart(queriesCtx, {
-         type: 'bar',
-         data: queriesChartData,
-         options: {
-            legend: {
-               display: false,
-               position: 'bottom',
-            },
-            tooltips: {
-               mode: 'index',
-               intersect: false,
-            },
-            responsive: true,
-            scales: {
-               xAxes: [{
-                  stacked: true,
-               }],
-               yAxes: [{
-                  ticks: {
-                     stepSize: 500,
-                     min: 0,
-                     callback: function(tick) {
-                        return tick.toString();
-                     }
-                  },
-                  stacked: true,
-               }]
-            }
-         }
-      });*/
-      
-   }
-
    function init() {
 
-      // Activate the top navbar
+      // Activate the stats top navbar
       $("#navid-stats").addClass("active");
 
       // Enable clicking on source items
@@ -285,8 +230,8 @@
          openURL("{{ url_for('routes.news') }}?author=" + authName, ev);
       });
 
-      // Set up charts
-      initCharts();
+      // Configure chart styling
+      Chart.defaults.global.defaultFontFamily = "Lato";
    }
 
    $(document).ready(init);

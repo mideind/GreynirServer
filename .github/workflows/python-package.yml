@@ -78,6 +78,7 @@ jobs:
       run: |
         cat "tests/files/dummy_greynir_api_key.txt" > "resources/GreynirServerKey.txt"
         echo '${{ secrets.AWSPOLLY_KEY_JSON }}' > "resources/AWSPollyServerKey.json"
+        echo '${{ secrets.AZURE_KEY_JSON }}' > "resources/AzureSpeechServerKey.json"
     - name: Test with pytest
       run: |
         python -m pytest

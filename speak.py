@@ -56,12 +56,12 @@ def _die(msg: str, exit_code: int = 1) -> None:
 _DATA_URI_PREFIX = "data:"
 
 
-def is_data_uri(s: str) -> bool:
+def _is_data_uri(s: str) -> bool:
     """Returns whether a URL is a data URI (RFC2397). Tolerates uppercase prefix."""
     return s.startswith(_DATA_URI_PREFIX) or s.startswith(_DATA_URI_PREFIX.upper())
 
 
-def is_file_uri(s: str) -> bool:
+def _is_file_uri(s: str) -> bool:
     """Returns whether a URL is a file URI (RFC8089)."""
     return s.startswith("file://")
 
@@ -74,7 +74,7 @@ def _bytes4file_or_data_uri(uri: str) -> bytes:
 
 def _fetch_audio_bytes(url: str) -> Optional[bytes]:
     """Returns bytes of audio file at URL."""
-    if is_data_uri(url) or is_file_uri(url):
+    if _is_data_uri(url) or _is_file_uri(url):
         return _bytes4file_or_data_uri(url)
 
     try:
@@ -85,7 +85,19 @@ def _fetch_audio_bytes(url: str) -> Optional[bytes]:
             )
         return r.content
     except Exception as e:
-        logging.error(f"Error fetching audio bytes: {e}")
+        logging.error(f"Error fetching audio file: {e}")
+
+
+def _write_wav(fn: str, data: bytes) -> None:
+    """Write audio data to WAV file."""
+    with wave.open(fn, "wb") as wav:
+        # We assume that the data is in this format, i.e. mono 16-bit signed 16 kHz PCM
+        # This will stop working if the speech synthesis modules start delivering PCM
+        # in a different format but that's OK. This exists purely for in-house purposes.
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(16000)
+        wav.writeframes(data)
 
 
 def _play_audio_file(path: str) -> None:
@@ -114,7 +126,7 @@ def _play_audio_file(path: str) -> None:
     subprocess.run(cast(List[str], cmd))
 
 
-DEFAULT_TEXT = "Góðan daginn og til hamingju með lífið."
+DEFAULT_TEXT = ["Góðan daginn og til hamingju með lífið."]
 
 
 def main() -> None:
@@ -173,12 +185,12 @@ def main() -> None:
         "-n", "--noplay", help="do not play resulting audio file", action="store_true"
     )
     parser.add_argument(
-        "-r", "--rm-file", help="remove audio file after playing", action="store_true"
+        "-r", "--remove", help="remove audio file after playing", action="store_true"
     )
     parser.add_argument(
         "text",
         help="text to synthesize",
-        nargs="?",
+        nargs="*",
         default=DEFAULT_TEXT,
     )
 
@@ -189,7 +201,10 @@ def main() -> None:
             print(voice)
         sys.exit(0)
 
-    if len(args.text.strip()) == 0:
+    if len(args.text) == 0:
+        _die("No text provided.")
+    text = " ".join(args.text).strip()
+    if len(text) == 0:
         _die("No text provided.")
 
     if args.wav and args.audioformat != "pcm":
@@ -197,7 +212,7 @@ def main() -> None:
 
     # Synthesize the text according to CLI options
     url = text_to_audio_url(
-        args.text,
+        text,
         text_format=args.textformat,
         audio_format=args.audioformat,
         voice_id=args.voice,
@@ -212,7 +227,7 @@ def main() -> None:
         sys.exit(0)
 
     # Download
-    urldesc = f"data URI ({len(url)} bytes)" if is_data_uri(url) else url
+    urldesc = f"data URI ({len(url)} bytes)" if _is_data_uri(url) else url
     print(f"Fetching {urldesc}")
     data: Optional[bytes] = _fetch_audio_bytes(url)
     if not data:
@@ -225,22 +240,13 @@ def main() -> None:
         fn = args.override
     else:
         # Generate file name
-        fn = sanitize_filename(args.text)
+        fn = sanitize_filename(text)
         fn += "." + suffix_for_audiofmt(args.audioformat)
 
     # Write audio data to file
     print(f'Writing to file "{fn}".')
     if args.wav:
-        # The PCM audio needs a WAV header
-        wav = wave.open(fn, "wb")
-        # We assume that the data is in this format, i.e. mono 16-bit signed 16 kHz PCM
-        # This will stop working if the speech synthesis modules start delivering PCM
-        # in a different format but that's OK. This exists for purely in-house purposes.
-        wav.setnchannels(1)  # mono
-        wav.setsampwidth(2)  # 16 bit
-        wav.setframerate(16000)  # 16 kHz
-        wav.writeframes(data)
-        wav.close()
+        _write_wav(fn, data)
     else:
         with open(fn, "wb") as f:
             f.write(data)
@@ -250,7 +256,7 @@ def main() -> None:
         _play_audio_file(fn)
 
     # Remove file after playing
-    if args.rm_file:
+    if args.remove:
         print(f'Deleting file "{fn}".')
         Path(fn).unlink()
 

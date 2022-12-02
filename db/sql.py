@@ -34,7 +34,7 @@ ArticleListItem = Tuple[str, str, datetime, str, str]
 ChartQueryItem = Tuple[str, int, int, int]
 RelatedWordsItem = Tuple[str, str, int]
 BestAuthorsItem = Tuple[str, int, int, int, float]
-QueriesQueryItem = Tuple[int]
+QueryCountItem = Tuple[int]
 
 
 class _BaseQuery:
@@ -60,7 +60,7 @@ class _BaseQuery:
 
 
 class GenderQuery(_BaseQuery):
-    """A query for gender representation in the persons table"""
+    """A query for gender representation in the persons table."""
 
     _Q = """
         select domain,
@@ -80,7 +80,7 @@ class GenderQuery(_BaseQuery):
 
 
 class StatsQuery(_BaseQuery):
-    """A query for statistics on articles"""
+    """A query for statistics on articles."""
 
     _Q = """
         select r.domain,
@@ -97,7 +97,7 @@ class StatsQuery(_BaseQuery):
 
 class ChartsQuery(_BaseQuery):
     """Statistics on article, sentence and parse count
-    for all sources for a given time period"""
+    for all sources for a given time period."""
 
     _Q = """
         select r.description AS name,
@@ -117,14 +117,14 @@ class ChartsQuery(_BaseQuery):
         cls, start: datetime, end: datetime, enclosing_session: Optional[Session] = None
     ) -> Iterable[ChartQueryItem]:
         r: Iterable[ChartQueryItem] = []
-        with SessionContext(session=enclosing_session, commit=False) as session:
+        with SessionContext(session=enclosing_session, read_only=True) as session:
             r = cast(
                 Iterable[ChartQueryItem], cls().execute(session, start=start, end=end)
             )
         return r
 
 
-class QueriesQuery(_BaseQuery):
+class QueryCountQuery(_BaseQuery):
     """Statistics on the number of queries received over a given time period."""
 
     _Q = """
@@ -135,11 +135,11 @@ class QueriesQuery(_BaseQuery):
     @classmethod
     def period(
         cls, start: datetime, end: datetime, enclosing_session: Optional[Session] = None
-    ) -> Iterable[QueriesQueryItem]:
-        r = cast(Iterable[QueriesQueryItem], [])
-        with SessionContext(session=enclosing_session, commit=False) as session:
+    ) -> Iterable[QueryCountItem]:
+        r = cast(Iterable[QueryCountItem], [])
+        with SessionContext(session=enclosing_session, read_only=True) as session:
             r = cast(
-                Iterable[QueriesQueryItem], cls().execute(session, start=start, end=end)
+                Iterable[QueryCountItem], cls().execute(session, start=start, end=end)
             )
         return r
 
@@ -160,8 +160,89 @@ class QueryTypesQuery(_BaseQuery):
         cls, start: datetime, end: datetime, enclosing_session: Optional[Session] = None
     ) -> Iterable[Any]:
         g: Iterable[Any] = []
-        with SessionContext(session=enclosing_session, commit=False) as session:
+        with SessionContext(session=enclosing_session, read_only=True) as session:
             g = cls().execute(session, start=start, end=end)
+        return g
+
+
+class QueryClientTypeQuery(_BaseQuery):
+    """Stats on query client type and version (e.g. ios 1.3.0,
+    android 1.2.1, etc.) over a given time period."""
+
+    _Q = """
+        select client_type, client_version, count(client_type) as freq
+        from queries
+        where client_type is not NULL and client_type != '' and
+        timestamp >= :start and timestamp < :end
+        group by client_type, client_version
+        order by freq desc
+        """
+
+    @classmethod
+    def period(
+        cls, start: datetime, end: datetime, enclosing_session: Optional[Session] = None
+    ) -> Iterable[Any]:
+        g: Iterable[Any] = []
+        with SessionContext(session=enclosing_session, read_only=True) as session:
+            g = cls().execute(session, start=start, end=end)
+        return g
+
+
+class TopUnansweredQueriesQuery(_BaseQuery):
+    """Return list of the most frequent *unanswered* queries
+    over a given time period."""
+
+    _Q = """
+        select question, count(question) as qoccurrence from queries
+            where answer is NULL and
+            timestamp >= :start and timestamp < :end
+            group by question
+            order by qoccurrence desc
+            limit :count
+        """
+
+    _DEFAULT_COUNT = 20
+
+    @classmethod
+    def period(
+        cls,
+        start: datetime,
+        end: datetime,
+        count: int = _DEFAULT_COUNT,
+        enclosing_session: Optional[Session] = None,
+    ) -> Iterable[Any]:
+        g: Iterable[Any] = []
+        with SessionContext(session=enclosing_session, read_only=True) as session:
+            g = cls().execute(session, start=start, end=end, count=count)
+        return g
+
+
+class TopAnsweredQueriesQuery(_BaseQuery):
+    """Return list of the most frequent *answered* queries
+    over a given time period."""
+
+    _Q = """
+        select question, count(question) as qoccurrence from queries
+            where answer is not NULL and
+            timestamp >= :start and timestamp < :end
+            group by question
+            order by qoccurrence desc
+            limit :count
+        """
+
+    _DEFAULT_COUNT = 20
+
+    @classmethod
+    def period(
+        cls,
+        start: datetime,
+        end: datetime,
+        count: int = _DEFAULT_COUNT,
+        enclosing_session: Optional[Session] = None,
+    ) -> Iterable[Any]:
+        g: Iterable[Any] = []
+        with SessionContext(session=enclosing_session, read_only=True) as session:
+            g = cls().execute(session, start=start, end=end, count=count)
         return g
 
 
@@ -196,7 +277,7 @@ class BestAuthorsQuery(_BaseQuery):
         enclosing_session: Optional[Session] = None,
     ) -> Iterable[BestAuthorsItem]:
         r = cast(Iterable[BestAuthorsItem], [])
-        with SessionContext(session=enclosing_session, commit=False) as session:
+        with SessionContext(session=enclosing_session, read_only=True) as session:
             r = cast(
                 Iterable[BestAuthorsItem],
                 cls().execute(session, start=start, end=end, min_articles=min_articles),
@@ -206,7 +287,7 @@ class BestAuthorsQuery(_BaseQuery):
 
 class RelatedWordsQuery(_BaseQuery):
     """A query for word stems commonly occurring in the same articles
-    as the given word stem"""
+    as the given word stem."""
 
     _Q = """
         select stem, cat, sum(cnt) as c
@@ -231,7 +312,7 @@ class RelatedWordsQuery(_BaseQuery):
         # The default limit is 21 instead of 20 because the original stem
         # is usually included in the result list
         r: Iterable[RelatedWordsItem] = []
-        with SessionContext(session=enclosing_session, commit=True) as session:
+        with SessionContext(session=enclosing_session, read_only=True) as session:
             r = cls().execute(session, root=stem, limit=limit)
         return r
 
@@ -256,7 +337,7 @@ class TermTopicsQuery(_BaseQuery):
 
 
 class ArticleCountQuery(_BaseQuery):
-    """A query yielding the number of articles containing any of the given word stems"""
+    """A query yielding the number of articles containing any of the given word stems."""
 
     _Q = """
         select count(*)
@@ -276,7 +357,7 @@ class ArticleCountQuery(_BaseQuery):
         """Return a count of articles containing any of the given word
         stems. stems may be a single string or an iterable."""
         cnt = 0
-        with SessionContext(session=enclosing_session, commit=True) as session:
+        with SessionContext(session=enclosing_session, read_only=True) as session:
             cnt = int(
                 cls().scalar(
                     session,
@@ -313,7 +394,7 @@ class ArticleListQuery(_BaseQuery):
     ) -> Iterable[ArticleListItem]:
         """Return a list of the newest articles containing the given stem."""
         r: Iterable[ArticleListItem] = []
-        with SessionContext(session=enclosing_session, commit=True) as session:
+        with SessionContext(session=enclosing_session, read_only=True) as session:
             if stem == stem.lower():
                 # Lower case stem
                 r = cast(
@@ -370,7 +451,7 @@ class WordFrequencyQuery(_BaseQuery):
         enclosing_session: Optional[Session] = None,
     ) -> Iterable[Any]:
         result: Iterable[Any] = []
-        with SessionContext(session=enclosing_session, commit=False) as session:
+        with SessionContext(session=enclosing_session, read_only=True) as session:
             assert timeunit in ["week", "day"]
             datefmt = "IYYY-IW" if timeunit == "week" else "YYYY-MM-DD"
             tu = "1 {0}".format(timeunit)

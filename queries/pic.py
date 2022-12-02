@@ -20,6 +20,8 @@
 
 """
 
+# TODO: "Sýndu mér X"
+
 from typing import Optional
 
 import random

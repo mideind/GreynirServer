@@ -1,0 +1,180 @@
+{% extends "container-normal.html" %}
+
+{% block styles %}
+
+<link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
+
+{% endblock %}
+
+{% block content %}
+
+<h2>Tölfræði fyrirspurnakerfis</h2>
+
+<br>
+
+<!-- Query count bar chart broken down by days. -->
+<div class="panel panel-default">
+    <div class="panel-heading">
+        Tíðni fyrirspurna síðustu {{ days }} daga
+        <div class="pull-right hidden-xs">Meðaltal: <strong>{{ queries_avg | format_is(1) }} á dag</strong>
+        </div>
+    </div>
+    <canvas id="queries_chart_canvas" style="padding: 25px;"></canvas>
+</div>
+
+<!-- Query type pie chart. -->
+<div class="panel panel-default">
+    <div class="panel-heading">
+        Tegundir fyrirspurna síðustu {{ days }} daga
+    </div>
+    <canvas id="query_types_pie_canvas" style="padding: 25px;"></canvas>
+</div>
+
+<!-- Client type pie chart. -->
+<div class="panel panel-default">
+    <div class="panel-heading">
+        Biðlaraútgáfur síðustu {{ days }} daga
+    </div>
+    <canvas id="client_types_pie_canvas" style="padding: 25px;"></canvas>
+</div>
+
+<!-- Most frequent unanswered queries. -->
+<div class="panel panel-default">
+    <div class="panel-heading">
+        Algengustu ósvöruðu fyrirspurnir síðustu {{ days }} daga
+    </div>
+    <div class="table-scroll-wrapper">
+        <table class="table table-hover" id="">
+            <tbody>
+                {% for q in top_unanswered %}
+                <tr class="topitem">
+                    <td class="">
+                        {{ q['query'] | safe}}
+                    </td>
+                    <td class="noselect" style="width:40%">
+                        {% set width = q['freq'] * 100 %}
+                        <div class="progress progress-bar rank-progressbar" style="width:{{ width | round | int }}%;">
+                            <span>{{ q['count'] }}</span>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Most frequent answered queries. -->
+<div class="panel panel-default">
+    <div class="panel-heading">
+        Algengustu svöruðu fyrirspurnir síðustu {{ days }} daga
+    </div>
+    <div class="table-scroll-wrapper">
+        <table class="table table-hover" id="">
+            <tbody>
+                {% for q in top_answered %}
+                <tr class="topitem">
+                    <td class="">
+                        {{ q['query'] | safe}}
+                    </td>
+                    <td class="noselect" style="width:40%">
+                        {% set width = q['freq'] * 100 %}
+                        <div class="progress progress-bar rank-progressbar" style="width:{{ width | round | int }}%;">
+                            <span>{{ q['count'] }}</span>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block endscripts %}
+
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"
+    integrity="sha384-e4YKd0O/y4TmH7qskMQzKnOrqN83RJ7TmJ4RsBLHodJ6jHOE30I7J1uZfLdvybhc"
+    crossorigin="anonymous"></script>
+
+<script>
+
+    // Configure chart styling
+    Chart.defaults.global.defaultFontFamily = "Lato";
+
+    // Query count by days chart
+    var queriesChartData = {{ query_count_data | safe }};
+    queriesChartData.datasets[0].backgroundColor = '#eb3732';
+    var queriesCtx = $('#queries_chart_canvas').get(0).getContext('2d');
+    var queriesChart = new Chart(queriesCtx, {
+        type: 'bar',
+        data: queriesChartData,
+        options: {
+            legend: {
+                display: false,
+                position: 'bottom',
+            },
+            responsive: true,
+            scales: {
+                xAxes: [{
+                    stacked: true,
+                }],
+                yAxes: [{
+                    ticks: {
+                        stepSize: 25,
+                        min: 0,
+                        callback: function (tick) {
+                            return tick.toString();
+                        }
+                    },
+                    stacked: true,
+                }]
+            }
+        }
+    });
+
+    // Query types pie chart
+    var queryTypesData = {{ query_types_data | safe }};
+    var queryTypesCtx = $('#query_types_pie_canvas').get(0).getContext('2d');
+    var queryTypesChart = new Chart(queryTypesCtx, {
+        type: 'pie',
+        data: queryTypesData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+            }
+        },
+    });
+
+    // Client types pie chart
+    var clientTypesData = {{ client_types_data | safe }};
+    var clientTypesCtx = $('#client_types_pie_canvas').get(0).getContext('2d');
+    var clientTypesChart = new Chart(clientTypesCtx, {
+        type: 'pie',
+        data: clientTypesData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+            }
+        },
+    });
+
+    function init() {
+        // Activate the top navbar
+        $("#navid-stats").addClass("active");
+    }
+
+    $(document).ready(init);
+
+</script>
+
+{% endblock %}

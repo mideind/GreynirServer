@@ -105,9 +105,9 @@
             <button type="button" class="btn btn-warning" id="refresh" title="Endurgreina">
                <span class="glyphicon glyphicon-restart"></span>
             </button>
-            <button type="button" class="btn btn-info" id="check" title="Lesa yfir">
+            <!--<button type="button" class="btn btn-info" id="check" title="Lesa yfir">
                <span class="glyphicon glyphicon-eye-open"></span>
-            </button>
+            </button>-->
          </h5>
       </div>
 
@@ -116,7 +116,6 @@
          <ul id="language-hdr" class="nav nav-tabs" role="tablist">
             <li role="presentation" class="active">
                <a href="#translation-article-src" aria-controls="icelandic" role="tab" data-toggle="tab">
-                  <!-- https://www.countryflags.com/en/iceland-flag-icon.html -->
                   <img src="{{ url_for('static', filename = 'img/flags/IS.png') }}" width="32"
                      height="23">&nbsp;Íslenska&nbsp;
                </a>
@@ -124,7 +123,6 @@
             <li role="presentation">
                <a id="translate-tgt-btn" href="#translation-article-tgt" aria-controls="translation" role="tab"
                   data-toggle="tab">
-                  <!-- https://www.countryflags.com/en/united-states-flag-icon.html -->
                   <span><img src="{{ url_for('static', filename = 'img/flags/GB.png') }}" width="32"
                         height="20">&nbsp;Enska
                   </span>
