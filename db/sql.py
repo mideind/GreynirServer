@@ -172,7 +172,8 @@ class QueryClientTypeQuery(_BaseQuery):
     _Q = """
         select client_type, client_version, count(client_type) as freq
         from queries
-        where client_type is not NULL and client_type != ''
+        where client_type is not NULL and client_type != '' and
+        timestamp >= :start and timestamp < :end
         group by client_type, client_version
         order by freq desc
         """
@@ -192,9 +193,10 @@ class TopUnansweredQueriesQuery(_BaseQuery):
     over a given time period."""
 
     _Q = """
-        select question, answer, count(question) as qoccurrence from queries
-            where answer is NULL
-            group by question, answer
+        select question, count(question) as qoccurrence from queries
+            where answer is NULL and
+            timestamp >= :start and timestamp < :end
+            group by question
             order by qoccurrence desc
             limit :count
         """
@@ -220,9 +222,10 @@ class TopAnsweredQueriesQuery(_BaseQuery):
     over a given time period."""
 
     _Q = """
-        select question, answer, count(question) as qoccurrence from queries
-            where answer is not NULL
-            group by question, answer
+        select question, count(question) as qoccurrence from queries
+            where answer is not NULL and
+            timestamp >= :start and timestamp < :end
+            group by question
             order by qoccurrence desc
             limit :count
         """

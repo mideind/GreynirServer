@@ -21,7 +21,7 @@
 
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Iterable
 
 from werkzeug.wrappers import Response
 
@@ -305,12 +305,12 @@ def query_stats_data(
     }
 
     # Top queries (answered and unanswered)
-    def prep_top_answ_data(res) -> List[Dict[str, Any]]:
+    def prep_top_answ_data(res: Iterable) -> List[Dict[str, Any]]:
         rl = list(res)  # Consume generator
-        highest_count = rl[0][2]
+        highest_count = rl[0][1]
         toplist = []
         for q in rl:
-            toplist.append({"query": q[0], "count": q[2], "freq": q[2] / highest_count})
+            toplist.append({"query": q[0], "count": q[1], "freq": q[1] / highest_count})
         return toplist
 
     res = TopUnansweredQueriesQuery.period(start, end, enclosing_session=session)
