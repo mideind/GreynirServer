@@ -127,9 +127,9 @@ def _words2str(words):
     return ", ".join([":".join(w[:2]) if len(w) >= 2 else w[0] for w in words])
 
 
-def _desc4word(wc):
+def _desc4word(wc: Tuple) -> str:
     """Create a human-friendly description string for a word/category tuple."""
-    return f"{wc[0]} ({CAT_DESC.get(wc[1])})"
+    return f"{wc[0]} ({CAT_DESC.get(wc[1], CAT_UNKNOWN)})"
 
 
 @routes.route("/wordfreq", methods=["GET", "POST"])

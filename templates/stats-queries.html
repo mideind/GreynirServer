@@ -152,7 +152,7 @@
         },
     });
 
-    // Query types pie chart
+    // Client types pie chart
     var clientTypesData = {{ client_types_data | safe }};
     var clientTypesCtx = $('#client_types_pie_canvas').get(0).getContext('2d');
     var clientTypesChart = new Chart(clientTypesCtx, {
