@@ -29,6 +29,7 @@ from werkzeug.wrappers import Response
 from hashlib import md5
 import json
 import logging
+from colorsys import hsv_to_rgb
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -255,31 +256,31 @@ def query_stats_data(
     end = datetime.utcnow()
 
     # Query types
-    res = QueryTypesQuery.period(
-        start=start,
-        end=end,
-        enclosing_session=session,
+    res = list(
+        QueryTypesQuery.period(
+            start=start,
+            end=end,
+            enclosing_session=session,
+        )
     )
 
     # This function is used to ensure that all the query
     # types have a fixed, unique color on the pie chart.
-    def _hexcolor4string(s: str) -> str:
-        """Generate a hex color from a string."""
-        hash = md5(s.encode("utf-8")).hexdigest()
-        hash_values = (
-            hash[:8],
-            hash[8:16],
-            hash[16:24],
-        )
-        rgb = tuple(int(value, 16) % 256 for value in hash_values)
-        return "#%02x%02x%02x" % rgb
+    def gen_distinct_hex_colors(num: int) -> List[str]:
+        """Generate a list of perceptually distinct hex colors."""
+        hsv_tuples = [(x * 1.0 / num, 0.9, 0.9) for x in range(num)]
+        hex_out = []
+        for hsv in hsv_tuples:
+            rgb = map(lambda x: int(x * 255), hsv_to_rgb(*hsv))
+            hex_out.append("#%02x%02x%02x" % tuple(rgb))
+        return hex_out
 
     query_types_data = {
         "labels": [k[1] for k in res],
         "datasets": [
             {
                 "data": [k[0] for k in res],
-                "backgroundColor": [_hexcolor4string(k[1]) for k in res],
+                "backgroundColor": gen_distinct_hex_colors(len(res)),
             }
         ],
     }
