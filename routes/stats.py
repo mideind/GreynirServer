@@ -263,6 +263,7 @@ def query_stats_data(
             enclosing_session=session,
         )
     )
+    total = sum([k[0] for k in res])
 
     # This function is used to ensure that all the query
     # types have a fixed, unique color on the pie chart.
@@ -280,6 +281,7 @@ def query_stats_data(
         "datasets": [
             {
                 "data": [k[0] for k in res],
+                "percentage": [round(k[0] / total * 100, 1) for k in res],
                 "backgroundColor": gen_distinct_hex_colors(len(res)),
             }
         ],
@@ -295,11 +297,13 @@ def query_stats_data(
         "www": "#f7b924",
     }
     res = QueryClientTypeQuery.period(start, end)
+    total = sum([k[2] for k in res])
     client_types_data = {
         "labels": [f"{k[0]} {k[1] or ''}".rstrip() for k in res],
         "datasets": [
             {
                 "data": [k[2] for k in res],
+                "percentage": [round(k[2] / total * 100, 1) for k in res],
                 "backgroundColor": [_CLIENT_COLORS.get(k[0], "#ccc") for k in res],
             }
         ],
