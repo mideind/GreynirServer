@@ -469,7 +469,7 @@ class RuvScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
-        # Not using RÚV's RSS feed for now since it contains English-language articles
+        # This RSS feed is out of date, so we don't use it
         # self._feeds = ["http://www.ruv.is/rss/frettir"]
 
     def skip_url(self, url):
@@ -477,77 +477,74 @@ class RuvScraper(ScrapeHelper):
         s = urlparse.urlsplit(url)
         p = s.path
         # Only scrape urls with the right path prefix
-        if p and p.startswith("/frett/"):
+        if p and p.startswith("/frettir/"):
             return False  # Don't skip
         return True
 
     def get_metadata(self, soup):
         """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
+
         # Extract the heading from the OpenGraph (Facebook) og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         heading = self.unescape(heading)
+        if " - " in heading:
+            # Remove the " - RÚV" suffix
+            heading = heading[0 : heading.index(" - ")].rstrip()
+
         # Extract the publication time from the article:published_time meta property
+        timestamp = datetime.utcnow()
         ts = ScrapeHelper.meta_property(soup, "article:published_time")
         if ts:
-            timestamp = datetime(
-                year=int(ts[0:4]),
-                month=int(ts[5:7]),
-                day=int(ts[8:10]),
-                hour=int(ts[11:13]),
-                minute=int(ts[14:16]),
-                second=int(ts[17:19]),
-            )
-        else:
-            timestamp = datetime.utcnow()
+            try:
+                timestamp = datetime(
+                    year=int(ts[0:4]),
+                    month=int(ts[5:7]),
+                    day=int(ts[8:10]),
+                    hour=int(ts[11:13]),
+                    minute=int(ts[14:16]),
+                    second=int(ts[17:19]),
+                )
+            except Exception as e:
+                logging.warning(f"RuvScraper: Could not parse timestamp {ts}: {e}")
+
+        # Exctract the author name from meta property
+        author = ScrapeHelper.meta_property(soup, "article:author") or "Ritstjórn RÚV"
+
         # Exctract the author name
-        # Look for div[class == 'view-id-author'] > div[class == 'clip']
-        clip = ScrapeHelper.div_class(soup.html.body, "view-id-author", "clip")
-        if not clip:
-            clip = ScrapeHelper.div_class(soup.html.body, "view-content", "clip")
-        author = clip.text.strip() if clip else "Fréttastofa RÚV"
         metadata.heading = heading
         metadata.author = author
         metadata.timestamp = timestamp
+
         return metadata
 
     # noinspection PyMethodMayBeStatic
     def _get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
-        content = ScrapeHelper.div_class(
-            soup_body, ("region", "region-two-66-33-first"), "region-inner"
-        )
-        if content is None:
-            # Try alternative layout
-            content = ScrapeHelper.div_class(soup_body, "view-content", "second")
-        if content is None:
-            # Fallback to outermost block
-            content = ScrapeHelper.div_class(soup_body, ("block", "block-system"))
-        # Still no content? Return empty soup
-        if content is None:
-            return BeautifulSoup("", _HTML_PARSER)
 
-        ScrapeHelper.del_div_class(
-            content, "pane-custom"
-        )  # Sharing stuff at bottom of page
-        ScrapeHelper.del_div_class(content, "title-wrapper")  # Additional header stuff
-        ScrapeHelper.del_div_class(content, "views-field-field-user-display-name")
-        ScrapeHelper.del_div_class(content, "field-name-myndatexti-credit-source")
-        ScrapeHelper.del_div_class(content, "field-name-field-media-reference")
-        ScrapeHelper.del_div_class(content, "field-name-field-myndatexti")
-        ScrapeHelper.del_div_class(content, "pane-menningin-faerslur-panel-pane-16")
-        ScrapeHelper.del_div_class(content, "region-conditional-stack")
-        ScrapeHelper.del_div_class(content, "pane-author")
-        ScrapeHelper.del_div_class(content, "user-profile")
-        ScrapeHelper.del_div_class(content, "pane-node-created")
-        ScrapeHelper.del_div_class(content, "field-name-video-player-sip-vefur")
-        ScrapeHelper.del_div_class(content, "field-name-sip-vefur-image-credit")
-        ScrapeHelper.del_div_class(content, "pane-node-field-authors")
-        # Remove hidden taxonomy/sharing lists at bottom of article
-        for ul in content.find_all("ul", {"class": "links"}):
-            ul.decompose()
-        for ul in content.find_all("ul", {"class": "rrssb-buttons"}):
-            ul.decompose()
+        content = BeautifulSoup("", _HTML_PARSER)
+
+        # This catches the summary text
+        summary = soup_body.find_all("h2", {"class": "text-base"})
+        for s in summary:
+            if "font-normal" in s.get("class", ""):
+                content.append(s)
+
+        # This catches the main text blocks in the article
+        main_blocks = soup_body.find_all("div", {"class": "maincontent"})
+        for m in main_blocks:
+            content.append(m)
+
+        # Remove embedded media such as images with captions
+        ScrapeHelper.del_div_class(content, "media-card")
+
+        for elm in content.find_all("aside"):
+            elm.decompose()
+        for elm in content.find_all("h3"):
+            elm.decompose()
+        for elm in content.find_all("h4"):
+            elm.decompose()
+
         return content
 
 
