@@ -285,6 +285,8 @@ def _replace_abbreviations(stop_nf: str, stop_name: str) -> str:
     """
     Replace '... N/A/S/V' with '... norður/austur/suður/vestur'
     and surround other abbreviations with 'spell' GSSML.
+    stop_nf is the stop name in nominative case,
+    while stop_name can be in another case (e.g. accusative or dative).
     """
     if stop_name.endswith(" N") and straeto.BusStop.named(stop_nf[:-1] + "S"):
         stop_name = stop_name[:-1] + "norður"
@@ -294,6 +296,7 @@ def _replace_abbreviations(stop_nf: str, stop_name: str) -> str:
         stop_name = stop_name[:-1] + "suður"
     elif stop_name.endswith(" V") and straeto.BusStop.named(stop_nf[:-1] + "A"):
         stop_name = stop_name[:-1] + "vestur"
+    # Spell out any remaining abbreviations for the speech synthesis engine
     return _ABBREV_RE.sub(lambda m: gssml(m.group(0), type="spell"), stop_name)
 
 
@@ -307,9 +310,8 @@ def _get_split_symbol(stop: str) -> Optional[str]:
 
 def voicify_stop_name(np: str) -> str:
     """Fix stop name to better suit speech synthesis."""
-    if np in _BETTER_NAMES:
-        np = _BETTER_NAMES[np]
-    return _replace_abbreviations(np, np)
+    np = _BETTER_NAMES.get(np, np)
+    return cap_first(_replace_abbreviations(np, np))
 
 
 @lru_cache(maxsize=None)
@@ -340,7 +342,7 @@ def accusative_form(np: str, voice: bool = False) -> str:
         np = split_symb.join(new_np)
     if voice:
         np = _replace_abbreviations(orig_stop_name, np)
-    return np
+    return cap_first(np)
 
 
 @lru_cache(maxsize=None)
@@ -370,7 +372,7 @@ def dative_form(np: str, voice: bool = False) -> str:
         np = split_symb.join(new_np)
     if voice:
         np = _replace_abbreviations(orig_stop_name, np)
-    return np
+    return cap_first(np)
 
 
 def voice_distance(d: float) -> str:
@@ -701,22 +703,22 @@ def query_arrival_time(query: Query, result: Result) -> AnswerTuple:
 
 def query_which_route(query: Query, result: Result):
     """Which routes stop at a given bus stop"""
-    stop_name = cast(str, result.stop_name)  # 'Einarsnes', 'Fiskislóð'...
+    user_stop_name = cast(str, result.stop_name)  # 'Einarsnes', 'Fiskislóð'...
 
-    if stop_name in {"þar", "þangað"}:
+    if user_stop_name in {"þar", "þangað"}:
         # Referring to a bus stop mentioned earlier
         ctx = query.fetch_context()
         if ctx and "bus_stop" in ctx:
-            stop_name = cast(str, ctx["bus_stop"])
-            result.qkey = stop_name
+            user_stop_name = cast(str, ctx["bus_stop"])
+            result.qkey = user_stop_name
         else:
             return gen_answer("Ég veit ekki við hvaða stað þú átt.")
 
     bus_noun = result.bus_noun  # 'strætó', 'vagn', 'leið'...
-    stops = straeto.BusStop.named(stop_name, fuzzy=True)
+    stops = straeto.BusStop.named(user_stop_name, fuzzy=True)
     if not stops:
-        answer = f"{stop_name} þekkist ekki."
-        voice_answer = f"Ég þekki ekki biðstöðina {stop_name}."
+        answer = f"{user_stop_name} þekkist ekki."
+        voice_answer = f"Ég þekki ekki biðstöðina {user_stop_name}."
     else:
         routes: Set[str] = set()
         if query.location:

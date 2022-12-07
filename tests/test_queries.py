@@ -338,7 +338,22 @@ def test_bus(client: FlaskClient) -> None:
     assert "Mýrarvegi / Hringteig" in json["answer"]
     assert all(not c.isdecimal() for c in json["voice"])
 
+    json = qmcall(
+        client,
+        {
+            "q": "hvaða leiðir stoppa á Naustabraut Davíðshagi A?",  # TODO: Davíðshaga doesn't work
+            "voice": True,
+        },
+        "WhichRoute",
+    )
+    assert "Naustabraut / Davíðshaga A" in json["answer"]
+    assert (
+        all(not c.isdecimal() for c in json["voice"])
+        and "Naustabraut / Davíðshaga austur" in json["voice"]
+    )
+
     _query_data_cleanup()  # Remove any data logged to DB on account of tests
+
 
 def test_counting(client: FlaskClient) -> None:
     """Counting module"""
