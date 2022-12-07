@@ -263,15 +263,11 @@ class ScrapeHelper:
             mp = soup.html.head.find(f)
             if not mp:
                 logging.warning(
-                    "meta property {0} not found in soup.html.head".format(
-                        property_name
-                    )
+                    f"meta property {property_name} not found in soup.html.head"
                 )
             return str(mp["content"]) if mp else None
         except Exception as e:
-            logging.warning(
-                "Exception in meta_property('{0}'): {1}".format(property_name, e)
-            )
+            logging.warning(f"Exception in meta_property('{property_name}'): {e}")
             return None
 
     @staticmethod
@@ -666,14 +662,12 @@ class MblScraper(ScrapeHelper):
                     )
                 except Exception as e:
                     logging.warning(
-                        "Exception when obtaining date of mbl.is article '{0}': {1}".format(
-                            url, e
-                        )
+                        f"Exception when obtaining date of mbl.is article '{url}': {e}"
                     )
                     timestamp = None
 
         if timestamp is None:
-            logging.warning("Failed to obtain date of mbl.is article '{0}'".format(url))
+            logging.warning(f"Failed to obtain date of mbl.is article '{url}'")
             timestamp = datetime.utcnow()
 
         # Extract the author name
@@ -850,7 +844,7 @@ class VisirScraper(ScrapeHelper):
                     pass
 
         if timestamp is None:
-            logging.warning("Could not parse date in visir.is article {0}".format(url))
+            logging.warning(f"Could not parse date in visir.is article {url}")
             timestamp = datetime.utcnow()
 
         # Author
@@ -962,7 +956,7 @@ class EyjanScraper(ScrapeHelper):
                 )
             except Exception as e:
                 logging.warning(
-                    "Exception when obtaining date of eyjan.is article: {0}".format(e)
+                    f"Exception when obtaining date of eyjan.is article: {e}"
                 )
                 timestamp = None
         if timestamp is None:
@@ -1136,8 +1130,7 @@ class KvennabladidScraper(ScrapeHelper):
                 )
             except Exception as e:
                 logging.warning(
-                    "Exception when obtaining date of kvennabladid.is "
-                    "article: {0}".format(e)
+                    f"Exception when obtaining date of kvennabladid.is article: {e}"
                 )
                 timestamp = None
         if timestamp is None:
@@ -1238,9 +1231,7 @@ class StundinScraper(ScrapeHelper):
                     minute=int(ts[14:16]),
                 )
         except Exception as e:
-            logging.warning(
-                "Exception obtaining date of stundin.is article: {0}".format(e)
-            )
+            logging.warning(f"Exception obtaining date of stundin.is article: {e}")
 
         metadata.heading = heading
         metadata.author = author
@@ -1305,7 +1296,7 @@ class HringbrautScraper(ScrapeHelper):
                 )
             except Exception as e:
                 logging.warning(
-                    "Exception obtaining date of hringbraut.is article: {0}".format(e)
+                    f"Exception obtaining date of hringbraut.is article: {e}"
                 )
 
         metadata.heading = heading
@@ -1441,9 +1432,7 @@ class FrettabladidScraper(ScrapeHelper):
                         minute=int(mm),
                     )
             except Exception as e:
-                logging.warning(
-                    "Error finding Frettabladid article date: {0}".format(str(e))
-                )
+                logging.warning(f"Error finding Frettabladid article date: {e}")
                 timestamp = datetime.utcnow()
 
         metadata.heading = heading
@@ -1551,9 +1540,7 @@ class HagstofanScraper(ScrapeHelper):
                     minute=timestamp.minute,
                 )
             except Exception as e:
-                logging.warning(
-                    "Exception obtaining date of hagstofa.is article: {0}".format(e)
-                )
+                logging.warning(f"Exception obtaining date of hagstofa.is article: {e}")
 
         metadata.heading = heading
         metadata.author = author
@@ -1617,9 +1604,7 @@ class DVScraper(ScrapeHelper):
             if info_div:
                 author = info_div.find("strong").get_text()  # type: ignore
         except Exception as e:
-            logging.warning(
-                "Exception obtaining author of dv.is article: {0}".format(e)
-            )
+            logging.warning(f"Exception obtaining author of dv.is article: {e}")
 
         # Extract the heading from the OpenGraph og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
@@ -1686,9 +1671,7 @@ class BBScraper(ScrapeHelper):
             if meta_auth:
                 author = meta_auth
         except Exception as e:
-            logging.warning(
-                "Exception obtaining author of bb.is article: {0}".format(e)
-            )
+            logging.warning(f"Exception obtaining author of bb.is article: {e}")
 
         # Extract the heading from the OpenGraph og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
@@ -1827,9 +1810,7 @@ class MannlifScraper(ScrapeHelper):
                     second=int(ts[17:19]),
                 )
         except Exception as e:
-            logging.warning(
-                "Exception when obtaining date of man.is article: {0}".format(e)
-            )
+            logging.warning(f"Exception when obtaining date of man.is article: {e}")
 
         if not timestamp:
             timestamp = datetime.utcnow()
@@ -1901,9 +1882,7 @@ class VisindavefurScraper(ScrapeHelper):
                 )
         except Exception as e:
             logging.warning(
-                "Exception when obtaining date of visindavefur.is article: {0}".format(
-                    e
-                )
+                f"Exception when obtaining date of visindavefur.is article: {e}"
             )
 
         if not timestamp:
