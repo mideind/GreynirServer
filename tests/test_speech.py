@@ -113,10 +113,10 @@ def test_gssml():
 
     gv = gssml("5", type="number")
     assert gv == '<greynir type="number">5</greynir>'
-    gv = gssml(type="break")
-    assert gv == '<greynir type="break" />'
-    gv = gssml(type="break", strength="medium")
-    assert gv == '<greynir type="break" strength="medium" />'
+    gv = gssml(type="vbreak")
+    assert gv == '<greynir type="vbreak" />'
+    gv = gssml(type="vbreak", strength="medium")
+    assert gv == '<greynir type="vbreak" strength="medium" />'
     gv = gssml("whatever", type="misc", a="1", b=3, c=4.5)
     assert gv == '<greynir type="misc" a="1" b="3" c="4.5">whatever</greynir>'
     try:
@@ -127,14 +127,14 @@ def test_gssml():
 
 
 def test_greynirssmlparser():
-    from speech import GreynirSSMLParser, DEFAULT_VOICE
-    from speech.norm import gssml, DEFAULT_NORM_HANDLERS
+    from speech import GreynirSSMLParser, DEFAULT_VOICE, SUPPORTED_VOICES
+    from speech.norm import gssml, DefaultNormalization
 
     gp = GreynirSSMLParser(DEFAULT_VOICE)
     n = gp.normalize(f"Ég vel töluna {gssml(244, type='number', gender='kk')}")
     assert "tvö hundruð fjörutíu og fjórir" in n
     n = gp.normalize(
-        f"{gssml(type='break')} {gssml(3, type='number', gender='kk', case='þf')}"
+        f"{gssml(type='vbreak')} {gssml(3, type='number', gender='kk', case='þf')}"
     )
     assert "<break />" in n and "þrjá" in n
 
@@ -151,26 +151,37 @@ def test_greynirssmlparser():
         "year": "1999",
         "years": "1999, 2000 og 2021",
         "abbrev": "ASÍ",
+        "spell": "SÍBS",
+        "vbreak": None,
         "email": "t@olvupostur.rugl",
         "paragraph": "lítil efnisgrein",
         "sentence": "lítil setning eða málsgrein?",
     }
 
-    # Make sure parser removes all <greynir> tags
-    for t in DEFAULT_NORM_HANDLERS.keys():
-        if t in example_data:
-            d = example_data[t]
-        else:
-            # Handlers that don't take positional args
+    for t, v in DefaultNormalization.__dict__.items():
+        if t not in example_data:
             continue
-        r = f"hér er {gssml(d, type=t)} texti"
-        assert "<greynir" in r and "</greynir" in r
+        assert isinstance(
+            v, (staticmethod, classmethod)
+        ), "not valid normalization method name"
+        d = example_data[t]
+        if d is None:
+            # No data argument to gssml
+            r = f"hér er {gssml(type=t)} texti"
+            # Make sure gssml added <greynir/> tag
+            assert "<greynir" in r and "/>" in r
+        else:
+            r = f"hér er {gssml(d, type=t)} texti"
+            # Make sure gssml added <greynir> tags
+            assert "<greynir" in r and "</greynir" in r
         n = gp.normalize(r)
+        # Make sure normalization removes all <greynir> tags
         assert "<greynir" not in n and "</greynir" not in n
 
     # -------------------------
     # Tests for weird text data (shouldn't happen in normal query processing though)
-    # HTMLParser doesn't deal correctly with </tag a=">">, nothing easy we can do to fix that
+    # Underlying HTMLParser class doesn't deal correctly with </tag a=">">,
+    # nothing easy we can do to fix that
     x = """<ehskrytid> bla</s>  <t></t> <other formatting="fhe"> bla</other> fad <daf <fda> fda"""
     n = gp.normalize(x)
     assert n == x
@@ -180,17 +191,31 @@ def test_greynirssmlparser():
     n = gp.normalize(x)
     assert n == """<bla attr="fad" f="3"></bla>""" and n.count(" ") <= x.count(" ")
 
-    x = """<bla attr="fad" f="3"><greynir type="break" /></bla> <greynir type="number" gender="kvk">4</greynir>"""
+    x = """<bla attr="fad" f="3"><greynir type="vbreak" /></bla> <greynir type="number" gender="kvk">4</greynir>"""
     n = gp.normalize(x)
     assert n == """<bla attr="fad" f="3"><break /></bla> fjórar"""
 
-    x = """<bla attr="fad" f="3"><greynir type="break" /> <greynir type="number" gender="kvk">4</greynir>"""
+    x = """<bla attr="fad" f="3"><greynir type="vbreak" /> <greynir type="number" gender="kvk">4</greynir>"""
     n = gp.normalize(x)
     assert n == """<bla attr="fad" f="3"><break /> fjórar"""
 
-    x = """<bla attr="fad" f="3"><greynir type="break" /> <&#47;<greynir type="number" gender="kvk">4</greynir>>"""
+    x = """<bla attr="fad" f="3"><greynir type="vbreak" /> <&#47;<greynir type="number" gender="kvk">4</greynir>>"""
     n = gp.normalize(x)
     assert n == """<bla attr="fad" f="3"><break /> </fjórar>"""
+
+    # -------------------------
+    # Test voice engine specific normalization
+
+    assert "Dora" in SUPPORTED_VOICES
+    # Gudrun, the default voice, and Dora don't spell things the same
+    gp2 = GreynirSSMLParser("Dora")
+    alphabet = "aábcdðeéfghiíjklmnoópqrstuúvwxyýþæöz"
+    n1 = gp.normalize(gssml(alphabet, type="spell"))
+    n2 = gp2.normalize(gssml(alphabet, type="spell"))
+    assert n1 != n2
+    n1 = gp.normalize(gssml(alphabet, type="abbrev"))
+    n2 = gp2.normalize(gssml(alphabet, type="abbrev"))
+    assert n1 != n2
 
 
 def test_norm_spell_out() -> None:
@@ -280,6 +305,8 @@ def test_norm_numbers() -> None:
         == "nítján milljónir fimm hundruð og eitt þúsund eitt hundrað og áttatíu"
     )
 
+    assert numbers_to_text("135 og -16") == "hundrað þrjátíu og fimm og mínus sextán"
+    assert numbers_to_text("-55 manns") == "mínus fimmtíu og fimm manns"
     assert numbers_to_text("Baugatangi 1, Reykjavík") == "Baugatangi eitt, Reykjavík"
     assert numbers_to_text("Baugatangi 2, Reykjavík") == "Baugatangi tvö, Reykjavík"
     assert numbers_to_text("Baugatangi 3, Reykjavík") == "Baugatangi þrjú, Reykjavík"
@@ -468,6 +495,10 @@ def test_norm_ordinals() -> None:
     assert number_to_ordinal(302, gender="kvk") == "þrjú hundraðasta og önnur"
     assert number_to_ordinal(302, case="þgf", gender="hk") == "þrjú hundraðasta og öðru"
     assert (
+        number_to_ordinal(-302, case="þgf", gender="hk")
+        == "mínus þrjú hundraðasta og öðru"
+    )
+    assert (
         number_to_ordinal(10202, case="þgf", gender="hk", number="ft")
         == "tíu þúsund tvö hundruðustu og öðrum"
     )
@@ -485,6 +516,11 @@ def test_norm_ordinals() -> None:
         == "Ég lenti í fertugasta og fyrsta sæti."
     )
     assert (
+        numbers_to_ordinal("Ég lenti í -41. sæti.", case="þgf")
+        == "Ég lenti í mínus fertugasta og fyrsta sæti."
+    )
+    assert numbers_to_ordinal("-4. sæti.", case="þgf") == "mínus fjórða sæti."
+    assert (
         numbers_to_ordinal("2. í röðinni var hæstur.") == "annar í röðinni var hæstur."
     )
     assert (
@@ -498,6 +534,24 @@ def test_norm_ordinals() -> None:
     assert (
         numbers_to_ordinal("Ég var 10201. í röðinni.")
         == "Ég var tíu þúsund tvö hundraðasti og fyrsti í röðinni."
+    )
+    assert (
+        numbers_to_ordinal(
+            "Björn sækist eftir 1. - 4. sæti í Norðvesturkjördæmi", case="þgf"
+        ).replace("-", "til")
+        == "Björn sækist eftir fyrsta til fjórða sæti í Norðvesturkjördæmi"
+    )
+    assert (
+        numbers_to_ordinal(
+            "Björn sækist eftir 1.-4. sæti í Norðvesturkjördæmi", case="þgf"
+        ).replace("-", " til ")
+        == "Björn sækist eftir fyrsta til fjórða sæti í Norðvesturkjördæmi"
+    )
+    assert (
+        numbers_to_ordinal("1.-4. sæti í Norðvesturkjördæmi", case="þgf").replace(
+            "-", " til "
+        )
+        == "fyrsta-fjórða sæti í Norðvesturkjördæmi"
     )
 
 
@@ -528,6 +582,7 @@ def test_norm_floats() -> None:
         == "tveir komma þrettán millilítrar af vökva."
     )
     assert floats_to_text("0,04 prósent.") == "núll komma núll fjögur prósent."
+    assert floats_to_text("-0,04 prósent.") == "mínus núll komma núll fjögur prósent."
     assert (
         floats_to_text("101,0021 prósent.")
         == "hundrað og eitt komma núll núll tuttugu og eitt prósent."
@@ -535,6 +590,14 @@ def test_norm_floats() -> None:
     assert (
         floats_to_text("10.100,21 prósent.")
         == "tíu þúsund og eitt hundrað komma tuttugu og eitt prósent."
+    )
+    assert (
+        floats_to_text("Um -10.100,21 prósent.")
+        == "Um mínus tíu þúsund og eitt hundrað komma tuttugu og eitt prósent."
+    )
+    assert (
+        floats_to_text("-10.100,21 prósent.")
+        == "mínus tíu þúsund og eitt hundrað komma tuttugu og eitt prósent."
     )
     assert floats_to_text("2.000.000,00.", comma_null=False) == "tvær milljónir."
 
@@ -571,20 +634,22 @@ def test_norm_digits() -> None:
 
 
 def test_norm_time_handler() -> None:
-    from speech.norm import _time_handler  # type: ignore
+    from speech.norm import DefaultNormalization
 
+    assert DefaultNormalization.time(f"00:00") == "tólf á miðnætti"
     for h, m in product(range(24), range(60)):
         t = datetime.time(h, m)
-        n1 = _time_handler(f"{t.hour}:{t.minute}")
+        n1 = DefaultNormalization.time(f"{t.hour}:{t.minute}")
         assert n1.replace(" ", "").isalpha()
-        n2 = _time_handler(t.strftime("%H:%M"))
+        n2 = DefaultNormalization.time(t.strftime("%H:%M"))
         assert n2.replace(" ", "").isalpha()
         assert n1 == n2
-        # TODO: add checks
+        if datetime.time(0, 0) < t < datetime.time(6, 0):
+            assert "um nótt" in n1
 
 
 def test_norm_date_handler() -> None:
-    from speech.norm import _date_handler  # type: ignore
+    from speech.norm import DefaultNormalization
     from settings import changedlocale
 
     with changedlocale(category="LC_TIME"):
@@ -598,48 +663,50 @@ def test_norm_date_handler() -> None:
                 date = datetime.date(y, m, d)
             except:
                 continue
-            n1 = _date_handler(date.isoformat(), case=case)
-            assert n1 == _date_handler(f"{y}-{m}-{d}", case=case)
-            n2 = _date_handler(f"{d}/{m}/{y}", case=case)
-            assert n2 == _date_handler(date.strftime("%d/%m/%Y"), case=case)
-            n3 = _date_handler(date.strftime("%d. %B %Y"), case=case)
-            n4 = _date_handler(date.strftime("%d. %b %Y"), case=case)
+            n1 = DefaultNormalization.date(date.isoformat(), case=case)
+            assert n1 == DefaultNormalization.date(f"{y}-{m}-{d}", case=case)
+            n2 = DefaultNormalization.date(f"{d}/{m}/{y}", case=case)
+            assert n2 == DefaultNormalization.date(date.strftime("%d/%m/%Y"), case=case)
+            n3 = DefaultNormalization.date(date.strftime("%d. %B %Y"), case=case)
+            n4 = DefaultNormalization.date(date.strftime("%d. %b %Y"), case=case)
             assert n1 == n2 == n3 == n4
 
 
 def test_norm_abbrev_handler() -> None:
-    from speech.norm import _abbrev_handler  # type: ignore
+    from speech.norm import DefaultNormalization
 
     for a in ("ASÍ", "LSH", "AÁBDÐEÉFIÍJKLMNOÓPQRSTUÚVWXYÝZÆÖ"):
-        n1 = _abbrev_handler(a.upper())
-        print(n1)
-        n2 = _abbrev_handler(a.lower())
-        assert n1 == n2
+        n1 = DefaultNormalization.abbrev(a.upper())
+        n2 = DefaultNormalization.abbrev(a.lower())
+        n3 = DefaultNormalization.abbrev(a.upper())
+        n4 = DefaultNormalization.spell(a.lower())
+        assert n1 == n2 == n3 == n4
         assert n1.islower()
-        assert n2.islower()
 
 
 def test_norm_email_handler() -> None:
-    from speech.norm import _email_handler  # type: ignore
+    from speech.norm import DefaultNormalization
 
     for e in (
         "jon.jonsson@mideind.is",
         "gunnar.brjann@youtube.gov.uk",
         "tolvupostur@gmail.com",
     ):
-        n = _email_handler(e)
-        assert n.replace(" ", "").isalpha()
+        n = DefaultNormalization.email(e)
         assert "@" not in n and " hjá " in n
         assert "." not in n and " punktur " in n
 
 
-def test_norm_break_handler() -> None:
-    from speech.norm import _break_handler, _STRENGTHS  # type: ignore
+def test_norm_vbreak_handler() -> None:
+    from speech.norm import (
+        DefaultNormalization,
+        _STRENGTHS,  # type: ignore
+    )
 
-    assert _break_handler() == "<break />"
+    assert DefaultNormalization.vbreak() == "<break />"
     for t in ("0ms", "50ms", "1s", "1.7s"):
-        n = _break_handler(time=t)
+        n = DefaultNormalization.vbreak(time=t)
         assert n == f'<break time="{t}" />'
     for s in _STRENGTHS:
-        n = _break_handler(strength=s)
+        n = DefaultNormalization.vbreak(strength=s)
         assert n == f'<break strength="{s}" />'

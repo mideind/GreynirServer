@@ -30,6 +30,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Type,
 )
 from types import ModuleType
 
@@ -38,7 +39,11 @@ import importlib
 from inspect import isfunction
 from html.parser import HTMLParser
 from collections import deque
-from speech.norm import HANDLER_MAPTYPE, NORM_MAP_VAR, DEFAULT_NORM_HANDLERS
+from speech.norm import (
+    NORMALIZATION_CLASS,
+    DefaultNormalization,
+    NormalizationHandler,
+)
 
 from utility import GREYNIR_ROOT_DIR, modules_in_dir
 
@@ -116,9 +121,10 @@ class GreynirSSMLParser(HTMLParser):
         # Find the module that provides this voice
         module = VOICE_TO_MODULE[voice_id]
 
-        # Fetch normalization handlers for this voice module
-        self._handlers: HANDLER_MAPTYPE = getattr(
-            module, NORM_MAP_VAR, DEFAULT_NORM_HANDLERS
+        # Fetch normalization handlers for this voice module,
+        # otherwise use DefaultNormalization as fallback
+        self._handler: Type[NormalizationHandler] = getattr(
+            module, NORMALIZATION_CLASS, DefaultNormalization
         )
 
     def normalize(self, voice_string: str) -> str:
@@ -138,6 +144,7 @@ class GreynirSSMLParser(HTMLParser):
         assert (
             len(self._str_stack) == 1
         ), "Error during parsing, are all markup tags correctly closed?"
+        logging.info("Voice string after normalization:", self._str_stack[0])
         return self._str_stack[0]
 
     # ----------------------------------------
@@ -166,8 +173,8 @@ class GreynirSSMLParser(HTMLParser):
                 dattrs = self._attr_stack.pop()  # Current tag attributes
                 t: Optional[str] = dattrs.pop("type")
                 assert t, f"Missing type attribute in <greynir> tag around string: {s}"
-                # Fetch handler
-                hf = self._handlers.get(t)
+                # Fetch handler function
+                hf = getattr(self._handler, t)
                 if hf:
                     # Handler found, normalize text
                     s = hf(s, **dattrs)
@@ -187,7 +194,7 @@ class GreynirSSMLParser(HTMLParser):
             dattrs = dict(attrs)
             t: Optional[str] = dattrs.pop("type")
             assert t, "Missing type attribute in <greynir> tag"
-            hf = self._handlers.get(t)
+            hf = getattr(self._handler, t)
             # If handler found, replace empty greynir tag with output,
             # otherwise simply remove empty greynir tag
             if hf:

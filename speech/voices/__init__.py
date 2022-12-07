@@ -56,11 +56,6 @@ def suffix_for_audiofmt(fmt: str) -> str:
     return AUDIOFMT_TO_SUFFIX.get(fmt, FALLBACK_SUFFIX)
 
 
-def strip_markup(text: str) -> str:
-    """Remove SSML markup tags from a string."""
-    return re.sub(r"<.*?>", "", text)
-
-
 def generate_data_uri(data: bytes, mime_type: str = BINARY_MIMETYPE) -> str:
     """Generate Data URI (RFC2397) from bytes."""
     b64str = b64encode(data).decode("ascii")
