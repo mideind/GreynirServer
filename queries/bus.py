@@ -37,6 +37,7 @@
 # TODO: Hvar er nálægasta strætóstoppistöð?
 # TODO: Hvað er ég lengi í næsta strætóskýli?
 # TODO: Hvar stoppar sjöan næst?
+# TODO: "á" vs. "í" vs. other prepositions before bus stop names
 
 from typing import Dict, Iterable, Optional, List, Set, Tuple, cast
 
@@ -270,23 +271,6 @@ def QBusNumber(node: Node, params: ParamList, result: Result) -> None:
 
 # End of grammar nonterminal handlers
 
-
-def _compass_directions(stop: str) -> str:
-    """
-    Replace '... N/A/S/V' with '... norður/austur/suður/vestur'
-    for speech synthesis.
-    """
-    if stop.endswith(" N") and straeto.BusStop.named(stop[:-1] + "S"):
-        stop = stop[:-1] + "norður"
-    elif stop.endswith(" A") and straeto.BusStop.named(stop[:-1] + "V"):
-        stop = stop[:-1] + "austur"
-    elif stop.endswith(" S") and straeto.BusStop.named(stop[:-1] + "N"):
-        stop = stop[:-1] + "suður"
-    elif stop.endswith(" V") and straeto.BusStop.named(stop[:-1] + "A"):
-        stop = stop[:-1] + "vestur"
-    return stop
-
-
 _BETTER_NAMES = {
     "BSÍ": "Umferðarmiðstöðin",
     "FMOS": "Framhaldsskólinn í Mosfellsbæ",
@@ -297,11 +281,35 @@ _BETTER_NAMES = {
 _ABBREV_RE = re.compile(r"\b[A-ZÁÐÉÍÓÚÝÞÆÖ]+\b")
 
 
+def _replace_abbreviations(stop_nf: str, stop_name: str) -> str:
+    """
+    Replace '... N/A/S/V' with '... norður/austur/suður/vestur'
+    and surround other abbreviations with 'spell' GSSML.
+    """
+    if stop_name.endswith(" N") and straeto.BusStop.named(stop_nf[:-1] + "S"):
+        stop_name = stop_name[:-1] + "norður"
+    elif stop_name.endswith(" A") and straeto.BusStop.named(stop_nf[:-1] + "V"):
+        stop_name = stop_name[:-1] + "austur"
+    elif stop_name.endswith(" S") and straeto.BusStop.named(stop_nf[:-1] + "N"):
+        stop_name = stop_name[:-1] + "suður"
+    elif stop_name.endswith(" V") and straeto.BusStop.named(stop_nf[:-1] + "A"):
+        stop_name = stop_name[:-1] + "vestur"
+    return _ABBREV_RE.sub(lambda m: gssml(m.group(0), type="spell"), stop_name)
+
+
+def _get_split_symbol(stop: str) -> Optional[str]:
+    if " / " in stop:
+        return " / "
+    if " - " in stop:
+        return " - "
+    return None
+
+
 def voicify_stop_name(np: str) -> str:
     """Fix stop name to better suit speech synthesis."""
-    np = _compass_directions(np)
-    np = _BETTER_NAMES.get(np, np)
-    return _ABBREV_RE.sub(lambda m: gssml(m.group(0), type="spell"), np)
+    if np in _BETTER_NAMES:
+        np = _BETTER_NAMES[np]
+    return _replace_abbreviations(np, np)
 
 
 @lru_cache(maxsize=None)
@@ -310,15 +318,12 @@ def accusative_form(np: str, voice: bool = False) -> str:
     Return accusative case of the stop name,
     optionally expanding abbreviations for speech synthesis.
     """
+    orig_stop_name = np
     if voice:
-        np = _compass_directions(np)
+        # Replace with better name before inflecting
         np = _BETTER_NAMES.get(np, np)
 
-    split_symb = None
-    if " / " in np:
-        split_symb = " / "
-    elif " - " in np:
-        split_symb = " - "
+    split_symb = _get_split_symbol(np)
 
     if split_symb is None:
         # Bus stop is single noun phrase
@@ -334,7 +339,7 @@ def accusative_form(np: str, voice: bool = False) -> str:
             new_np.append(n)
         np = split_symb.join(new_np)
     if voice:
-        np = _ABBREV_RE.sub(lambda m: gssml(m.group(0), type="spell"), np)
+        np = _replace_abbreviations(orig_stop_name, np)
     return np
 
 
@@ -344,15 +349,11 @@ def dative_form(np: str, voice: bool = False) -> str:
     Return dative case of the stop name,
     optionally expanding abbreviations for speech synthesis.
     """
+    orig_stop_name = np
     if voice:
-        np = _compass_directions(np)
         np = _BETTER_NAMES.get(np, np)
 
-    split_symb = None
-    if " / " in np:
-        split_symb = " / "
-    elif " - " in np:
-        split_symb = " - "
+    split_symb = _get_split_symbol(np)
 
     if split_symb is None:
         # Bus stop is single noun phrase
@@ -368,7 +369,7 @@ def dative_form(np: str, voice: bool = False) -> str:
             new_np.append(n)
         np = split_symb.join(new_np)
     if voice:
-        np = _ABBREV_RE.sub(lambda m: gssml(m.group(0), type="spell"), np)
+        np = _replace_abbreviations(orig_stop_name, np)
     return np
 
 

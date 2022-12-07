@@ -295,7 +295,6 @@ def test_bus(client: FlaskClient) -> None:
         {
             "q": "hvaða leiðir stoppa í Bíó Paradís?",
             "voice": True,
-            # Note: This adds a row to the QueryLog table
             "private": False,
         },
         "WhichRoute",
@@ -339,6 +338,7 @@ def test_bus(client: FlaskClient) -> None:
     assert "Mýrarvegi / Hringteig" in json["answer"]
     assert all(not c.isdecimal() for c in json["voice"])
 
+    _query_data_cleanup()  # Remove any data logged to DB on account of tests
 
 def test_counting(client: FlaskClient) -> None:
     """Counting module"""

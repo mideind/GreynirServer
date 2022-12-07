@@ -323,7 +323,7 @@ class DefaultNormalization(NormalizationHandler):
         ac = after_christ is not None and after_christ == "True"
         return years_to_text(txt, after_christ=ac)
 
-    # Pronounciation of character names in Icelandic
+    # Pronunciation of character names in Icelandic
     _CHAR_PRONUNCIATION = {
         "a": "a",
         "á": "á",

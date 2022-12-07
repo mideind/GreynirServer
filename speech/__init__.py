@@ -144,7 +144,6 @@ class GreynirSSMLParser(HTMLParser):
         assert (
             len(self._str_stack) == 1
         ), "Error during parsing, are all markup tags correctly closed?"
-        logging.info("Voice string after normalization:", self._str_stack[0])
         return self._str_stack[0]
 
     # ----------------------------------------
