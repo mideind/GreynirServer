@@ -55,7 +55,7 @@ from db.sql import (
 
 # Days
 _DEFAULT_STATS_PERIOD = 10
-_MAX_STATS_PERIOD = 30
+_MAX_STATS_PERIOD = 90
 _TOP_AUTHORS_PERIOD = 30
 
 # TODO: This should be put in a column in the roots table
@@ -198,7 +198,7 @@ def stats() -> Union[Response, str]:
                 gender_total["total"] += r.kvk + r.kk + r.hk
 
             # Author stats
-            author_result = top_authors(session=session)
+            author_result = top_authors(session=session, days=days)
 
             # Scraping and parsing stats
             chart_data = chart_stats(session=session, num_days=days)
