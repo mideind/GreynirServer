@@ -42,10 +42,10 @@ if mainpath not in sys.path:
 
 def test_voices_utils():
     """Test utility functions in speech.voices."""
+    from speech.norm import strip_markup
     from speech.voices import (
         mimetype_for_audiofmt,
         suffix_for_audiofmt,
-        strip_markup,
         generate_data_uri,
     )
 
@@ -551,7 +551,7 @@ def test_norm_ordinals() -> None:
         numbers_to_ordinal("1.-4. sæti í Norðvesturkjördæmi", case="þgf").replace(
             "-", " til "
         )
-        == "fyrsta-fjórða sæti í Norðvesturkjördæmi"
+        == "fyrsta til fjórða sæti í Norðvesturkjördæmi"
     )
 
 
