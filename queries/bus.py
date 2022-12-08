@@ -37,6 +37,8 @@
 # TODO: Hvar er nálægasta strætóstoppistöð?
 # TODO: Hvað er ég lengi í næsta strætóskýli?
 # TODO: Hvar stoppar sjöan næst?
+# TODO: Fuzzy matching in straeto package should
+#       catch N/A/S/V <-> norður/austur/suður/vestur
 # TODO: "á" vs. "í" vs. other prepositions before bus stop names
 
 from typing import Dict, Iterable, Optional, List, Set, Tuple, cast

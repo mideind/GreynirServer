@@ -338,6 +338,11 @@ def test_bus(client: FlaskClient) -> None:
     assert "Mýrarvegi / Hringteig" in json["answer"]
     assert all(not c.isdecimal() for c in json["voice"])
 
+    import straeto
+    if len(straeto.BusStop.named("Naustabraut / Davíðshagi A")) == 0:
+        # Stop doesn't exist in old stops.txt file in straeto package
+        return
+
     json = qmcall(
         client,
         {
@@ -366,8 +371,6 @@ def test_bus(client: FlaskClient) -> None:
         and "Naustabraut / Davíðshaga austur" in json["voice"]
     )
 
-    # TODO: Fuzzy matching in straeto should
-    #       catch N/A/S/V <-> norður/austur/suður/vestur
     # json = qmcall(
     #     client,
     #     {
