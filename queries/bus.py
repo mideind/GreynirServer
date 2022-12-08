@@ -162,7 +162,7 @@ def QBusStop(node: Node, params: ParamList, result: Result) -> None:
 
 def QBusStopName(node: Node, params: ParamList, result: Result) -> None:
     """Save the bus stop name"""
-    result.stop_name = result._nominative
+    result.stop_name = result._root
 
 
 def QBusStopThere(node: Node, params: ParamList, result: Result) -> None:
@@ -735,6 +735,7 @@ def query_which_route(query: Query, result: Result):
             f"{bus_noun} númer {gssml(route_seq, type='numbers')} "
             f"{stop_verb} á {dative_form(stop.name, voice=True)}."
         )
+        query.set_key(stop.name)
         # Store a location coordinate and a bus stop name in the context
         query.set_context({"location": stop.location, "bus_stop": stop.name})
 

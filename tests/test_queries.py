@@ -341,7 +341,7 @@ def test_bus(client: FlaskClient) -> None:
     json = qmcall(
         client,
         {
-            "q": "hvaða leiðir stoppa á Naustabraut Davíðshagi A?",  # TODO: Davíðshaga doesn't work
+            "q": "hvaða leiðir stoppa á Naustabraut Davíðshagi A?",
             "voice": True,
         },
         "WhichRoute",
@@ -351,6 +351,36 @@ def test_bus(client: FlaskClient) -> None:
         all(not c.isdecimal() for c in json["voice"])
         and "Naustabraut / Davíðshaga austur" in json["voice"]
     )
+
+    json = qmcall(
+        client,
+        {
+            "q": "hvaða leiðir stoppa á Naustabraut Davíðshaga A?",
+            "voice": True,
+        },
+        "WhichRoute",
+    )
+    assert "Naustabraut / Davíðshaga A" in json["answer"]
+    assert (
+        all(not c.isdecimal() for c in json["voice"])
+        and "Naustabraut / Davíðshaga austur" in json["voice"]
+    )
+
+    # TODO: Fuzzy matching in straeto should
+    #       catch N/A/S/V <-> norður/austur/suður/vestur
+    # json = qmcall(
+    #     client,
+    #     {
+    #         "q": "hvaða leiðir stoppa á Naustabraut Davíðshaga austur?",
+    #         "voice": True,
+    #     },
+    #     "WhichRoute",
+    # )
+    # assert "Naustabraut / Davíðshaga A" in json["answer"]
+    # assert (
+    #     all(not c.isdecimal() for c in json["voice"])
+    #     and "Naustabraut / Davíðshaga austur" in json["voice"]
+    # )
 
     _query_data_cleanup()  # Remove any data logged to DB on account of tests
 
