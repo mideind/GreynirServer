@@ -218,7 +218,7 @@ class Normalization(DefaultNormalization):
     specific to the Azure voice engine.
     """
 
-    # Override some character pronounciations for
+    # Override some character pronunciations for
     # normalization, custom for this speech engine
     _CHAR_PRONUNCIATION = {
         **DefaultNormalization._CHAR_PRONUNCIATION,

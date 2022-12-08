@@ -76,7 +76,7 @@ def gssml(data: Any = None, *, type: str, **kwargs: Union[str, int, float]) -> s
     )
 
 
-# Spell out how character names are pronounced in Icelandic
+# Spell out how character names are pronunced in Icelandic
 _CHAR_PRONUNCIATION = {
     "a": "a",
     "á": "á",
@@ -377,7 +377,7 @@ class DefaultNormalization(NormalizationHandler):
         """Spell out a sequence of characters."""
         return cls.spell(txt)
 
-    _DOMAIN_PRONOUNCIATIONS = {
+    _DOMAIN_PRONUNCIATIONS = {
         "is": "is",
         "org": "org",
         "net": "net",
@@ -399,8 +399,8 @@ class DefaultNormalization(NormalizationHandler):
                 # Short parts of username get spelled out
                 user_parts[i] = cls.spell(p)
         for i, p in enumerate(domain_parts):
-            if p in cls._DOMAIN_PRONOUNCIATIONS:
-                domain_parts[i] = cls._DOMAIN_PRONOUNCIATIONS[p]
+            if p in cls._DOMAIN_PRONUNCIATIONS:
+                domain_parts[i] = cls._DOMAIN_PRONUNCIATIONS[p]
             elif len(p) <= 3:
                 # Spell out short, unknown domains
                 domain_parts[i] = cls.spell(p)

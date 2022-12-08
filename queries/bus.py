@@ -641,7 +641,7 @@ def query_arrival_time(query: Query, result: Result) -> AnswerTuple:
                 len(times) > 1 and hms_diff(times[0], hms_now) >= 10
             ):
                 # Either we have only one arrival time, or the next arrival is
-                # at least 10 minutes away: only pronounce one time
+                # at least 10 minutes away: only pronunce one time
                 hms = times[0]
                 time_text = hms_fmt(hms, voice=True)
             else:
