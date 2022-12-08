@@ -57,8 +57,8 @@ _DATA_URI_PREFIX = "data:"
 
 
 def _is_data_uri(s: str) -> bool:
-    """Returns whether a URL is a data URI (RFC2397). Tolerates uppercase prefix."""
-    return s.startswith(_DATA_URI_PREFIX) or s.startswith(_DATA_URI_PREFIX.upper())
+    """Returns whether a URL is a data URI (RFC2397). Tolerates upper/mixed case prefix."""
+    return s[: len(_DATA_URI_PREFIX)].lower().startswith(_DATA_URI_PREFIX)
 
 
 def _is_file_uri(s: str) -> bool:
