@@ -346,7 +346,7 @@ def _get_almanak_hi_data() -> Optional[_SOLAR_DICT_TYPE]:
         return data
 
     try:
-        r = requests.get(_ALMANAK_HI_URL)
+        r = requests.get(_ALMANAK_HI_URL, timeout=3)
     except Exception as e:
         logging.warning(str(e))
         return None
