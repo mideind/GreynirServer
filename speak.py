@@ -78,7 +78,7 @@ def _fetch_audio_bytes(url: str) -> Optional[bytes]:
         return _bytes4file_or_data_uri(url)
 
     try:
-        r = requests.get(url)
+        r = requests.get(url, timeout=10)
         if r.status_code != 200:
             raise Exception(
                 f"Received HTTP status code {r.status_code} when fetching {url}"

@@ -166,7 +166,7 @@ def text_to_audio_data(
     if not url:
         return None
     try:
-        r = requests.get(url)
+        r = requests.get(url, timeout=10)
         return r.content
     except Exception as e:
         logging.error(f"Error fetching URL {url}: {e}")
