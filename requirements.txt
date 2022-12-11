@@ -1,11 +1,11 @@
 # Flask
 werkzeug>=2.2.1
 Flask==2.2.2
-flask-caching>=2.0.0
+flask-caching>=2.0.1
 Flask-Cors>=3.0.10
 # DB
 psycopg2cffi==2.9.0
-SQLAlchemy==1.4.44
+SQLAlchemy==1.4.45
 # Util
 cachetools>=5.2.0
 requests>=2.28.1
@@ -13,11 +13,11 @@ requests>=2.28.1
 beautifulsoup4>=4.11.1
 feedparser>=6.0.10
 # Query modules
-pytz>=2019.2
+pytz>=2022.6
 tzwhere>=3.0.3
-rjsmin>=1.1.0
-python-youtube>=0.8.1
-country-list>=0.1.1
+rjsmin>=1.2.1
+python-youtube>=0.8.3
+country-list>=1.0.0
 # For AWS Polly text-to-speech
 botocore==1.21.40
 boto3==1.18.40
@@ -25,7 +25,7 @@ boto3==1.18.40
 azure-cognitiveservices-speech>=1.24.2
 # Ours
 reynir>=3.5.1
-iceaddr>=0.5.4
+iceaddr>=0.5.5
 iceweather>=0.2
 cityloc>=0.1.1
 straeto>=1.2.0
