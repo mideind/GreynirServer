@@ -96,9 +96,9 @@
 
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"
-    integrity="sha384-e4YKd0O/y4TmH7qskMQzKnOrqN83RJ7TmJ4RsBLHodJ6jHOE30I7J1uZfLdvybhc"
-    crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.bundle.js"
+    integrity="sha512-zO8oeHCxetPn1Hd9PdDleg5Tw1bAaP0YmNvPY8CwcRyUk7d7/+nyElmFrB6f7vg4f7Fv4sui1mcep8RIEShczg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script>
 
@@ -124,7 +124,7 @@
                 }],
                 yAxes: [{
                     ticks: {
-                        stepSize: 100,
+                        stepSize: 25,
                         min: 0,
                         callback: function (tick) {
                             return tick.toString();
@@ -144,6 +144,13 @@
         data: queryTypesData,
         options: {
             responsive: true,
+            tooltips: {
+                callbacks: {
+                    label: function (tooltipItem, data) {
+                        return queryTypesData.datasets[0].percentage[tooltipItem.index] + '%';
+                    },
+                }
+            },
             plugins: {
                 legend: {
                     position: 'top',
@@ -160,6 +167,13 @@
         data: clientTypesData,
         options: {
             responsive: true,
+            tooltips: {
+                callbacks: {
+                    label: function (tooltipItem, data) {
+                        return clientTypesData.datasets[0].percentage[tooltipItem.index] + '%';
+                    },
+                }
+            },
             plugins: {
                 legend: {
                     position: 'top',

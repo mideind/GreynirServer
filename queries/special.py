@@ -72,7 +72,6 @@ _CAP = (
     "Þú getur til dæmis spurt mig um opnunartíma verslana og veitingastaða.",
     "Þú getur til dæmis beðið mig um að hringja í símanúmer.",
     "Þú getur til dæmis spurt mig um flugsamgöngur.",
-    "Þú getur til dæmis beðið mig um að endurtaka setningar.",
 )
 
 
@@ -214,6 +213,7 @@ def _random_quotation(qs: str, q: Query) -> AnswerType:
 
 
 def _poetry(qs: str, q: Query) -> AnswerType:
+    # TODO: Expand this!
     return {
         "answer": icequote(
             "Það mælti mín móðir, \n"
