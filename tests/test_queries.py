@@ -1217,7 +1217,7 @@ def test_sunpos(client: FlaskClient) -> None:
     )
     assert "birting" in json["answer"].lower()
     json = qmcall(client, {"q": "hvenær er hádegi á morgun á Ísafirði?"}, "SunPosition")
-    assert "hádegi" in json["answer"]
+    assert "hádegi" in json["answer"].lower()
     json = qmcall(
         client, {"q": "hvenær varð myrkur í gær á Egilsstöðum?"}, "SunPosition"
     )
