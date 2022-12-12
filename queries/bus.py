@@ -337,7 +337,7 @@ def accusative_form(np: str, voice: bool = False) -> str:
         # separated by split_symb, inflect them separately
         new_np: List[str] = []
         for n in np.split(split_symb):
-            if any(c.islower() for c in n):
+            if not n.isupper():
                 # Not an all-uppercase abbreviation, try to inflect it
                 n = NounPhrase(n).accusative or n
             new_np.append(n)
@@ -367,7 +367,7 @@ def dative_form(np: str, voice: bool = False) -> str:
         # separated by split_symb, inflect them separately
         new_np: List[str] = []
         for n in np.split(split_symb):
-            if any(c.islower() for c in n):
+            if not n.isupper():
                 # Not an uppercase abbreviation, inflect it
                 n = NounPhrase(n).dative or n
             new_np.append(n)
@@ -641,7 +641,7 @@ def query_arrival_time(query: Query, result: Result) -> AnswerTuple:
                 len(times) > 1 and hms_diff(times[0], hms_now) >= 10
             ):
                 # Either we have only one arrival time, or the next arrival is
-                # at least 10 minutes away: only pronunce one time
+                # at least 10 minutes away: only pronounce one time
                 hms = times[0]
                 time_text = hms_fmt(hms, voice=True)
             else:
@@ -690,7 +690,7 @@ def query_arrival_time(query: Query, result: Result) -> AnswerTuple:
         bq = bq.replace(*t)
     query.set_beautified_query(bq)
 
-    def assemble(x: Iterable[str]):
+    def assemble(x: Iterable[str]) -> str:
         """Intelligently join answer string components."""
         s = " ".join(x) + "."
         s = re.sub(r"\s\s+", r" ", s)  # Shorten repeated whitespace
@@ -767,8 +767,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         try:
             assert qfunc is not None, "qfunc is None"
             q.set_answer(*qfunc(q, result))
-        except AssertionError:
-            raise
         except Exception as e:
             if Settings.DEBUG:
                 raise

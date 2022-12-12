@@ -637,6 +637,9 @@ def test_norm_time_handler() -> None:
     from speech.norm import DefaultNormalization
 
     assert DefaultNormalization.time(f"00:00") == "tólf á miðnætti"
+    assert DefaultNormalization.time(f"12:00") == "tólf á hádegi"
+    midnight = datetime.time(0, 0)
+    six_am = datetime.time(6, 0)
     for h, m in product(range(24), range(60)):
         t = datetime.time(h, m)
         n1 = DefaultNormalization.time(f"{t.hour}:{t.minute}")
@@ -644,7 +647,7 @@ def test_norm_time_handler() -> None:
         n2 = DefaultNormalization.time(t.strftime("%H:%M"))
         assert n2.replace(" ", "").isalpha()
         assert n1 == n2
-        if datetime.time(0, 0) < t < datetime.time(6, 0):
+        if midnight < t < six_am:
             assert "um nótt" in n1
 
 

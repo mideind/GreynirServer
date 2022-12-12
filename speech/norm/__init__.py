@@ -23,7 +23,7 @@
 
 """
 
-from typing import Any, Optional, Union
+from typing import Any, Mapping, Optional, Union
 
 import re
 
@@ -76,8 +76,8 @@ def gssml(data: Any = None, *, type: str, **kwargs: Union[str, int, float]) -> s
     )
 
 
-# Spell out how character names are pronunced in Icelandic
-_CHAR_PRONUNCIATION = {
+# Spell out how character names are pronounced in Icelandic
+_CHAR_PRONUNCIATION: Mapping[str, str] = {
     "a": "a",
     "á": "á",
     "b": "bé",
@@ -122,7 +122,7 @@ def spell_out(s: str) -> str:
     Useful for controlling speech synthesis of serial numbers, etc."""
     if not s:
         return ""
-    t = [_CHAR_PRONUNCIATION.get(c.lower(), c) if c != " " else "" for c in s]
+    t = [_CHAR_PRONUNCIATION.get(c.lower(), c) if not c.isspace() else "" for c in s]
     return " ".join(t).replace("  ", " ").strip()
 
 
@@ -198,47 +198,47 @@ class DefaultNormalization(NormalizationHandler):
     # distance/s
 
     @classmethod
-    def number(cls, txt: str, **kwargs: str):
+    def number(cls, txt: str, **kwargs: str) -> str:
         """Voicify a number."""
         return number_to_text(txt, **kwargs)
 
     @classmethod
-    def numbers(cls, txt: str, **kwargs: str):
+    def numbers(cls, txt: str, **kwargs: str) -> str:
         """Voicify text containing multiple numbers."""
         return numbers_to_text(txt, **kwargs)
 
     @classmethod
-    def float(cls, txt: str, **kwargs: str):
+    def float(cls, txt: str, **kwargs: str) -> str:
         """Voicify a float."""
         return float_to_text(txt, **kwargs)
 
     @classmethod
-    def floats(cls, txt: str, **kwargs: str):
+    def floats(cls, txt: str, **kwargs: str) -> str:
         """Voicify text containing multiple floats."""
         return floats_to_text(txt, **kwargs)
 
     @classmethod
-    def ordinal(cls, txt: str, **kwargs: str):
+    def ordinal(cls, txt: str, **kwargs: str) -> str:
         """Voicify an ordinal."""
         return number_to_ordinal(txt, **kwargs)
 
     @classmethod
-    def ordinals(cls, txt: str, **kwargs: str):
+    def ordinals(cls, txt: str, **kwargs: str) -> str:
         """Voicify text containing multiple ordinals."""
         return numbers_to_ordinal(txt, **kwargs)
 
     @classmethod
-    def digits(cls, txt: str):
+    def digits(cls, txt: str) -> str:
         """Spell out digits."""
         return digits_to_text(txt)
 
     @classmethod
-    def phone(cls, txt: str):
+    def phone(cls, txt: str) -> str:
         """Spell out digits."""
         return cls.digits(txt)
 
     @classmethod
-    def time(cls, txt: str):
+    def time(cls, txt: str) -> str:
         """
         Voicifies time of day, specified as 'HH:MM'.
         E.g.
@@ -257,7 +257,7 @@ class DefaultNormalization(NormalizationHandler):
         elif 0 < h <= 5:
             suffix = "um nótt"
         elif h == 12 and m == 0:
-            suffix = "um hádegi"
+            suffix = "á hádegi"
         t = [
             number_to_text(h, case="nf", gender="hk"),
         ]
@@ -271,7 +271,7 @@ class DefaultNormalization(NormalizationHandler):
         return " ".join(t)
 
     @classmethod
-    def date(cls, txt: str, case: str = "nf"):
+    def date(cls, txt: str, case: str = "nf") -> str:
         """
         Voicifies dates specified in either
             'YYYY-MM-DD' (ISO 8601 format),
@@ -293,11 +293,12 @@ class DefaultNormalization(NormalizationHandler):
         # Handle 'DD/MM/YYYY' or 'MM. jan/feb/... [year]' match
         gd = m.groupdict()
         day = number_to_ordinal(gd["day"], gender="kk", case=case, number="et")
+        mon: str = gd["month"]
         # Month names don't change in different declensions
         month = (
-            _MONTH_NAMES[int(gd["month"]) - 1]  # DD/MM/YYYY specification
-            if gd["month"].isdecimal()
-            else _MONTH_NAMES[_MONTH_ABBREVS.index(gd["month"][:3])]  # Non-decimal
+            _MONTH_NAMES[int(mon) - 1]  # DD/MM/YYYY specification
+            if mon.isdecimal()
+            else _MONTH_NAMES[_MONTH_ABBREVS.index(mon[:3])]  # Non-decimal
         )
         return (
             f"{day} {month} {year_to_text(gd['year'])}"
@@ -312,19 +313,19 @@ class DefaultNormalization(NormalizationHandler):
         raise NotImplementedError()
 
     @classmethod
-    def year(cls, txt: str, *, after_christ: Optional[str] = None):
+    def year(cls, txt: str, *, after_christ: Optional[str] = None) -> str:
         """Voicify a year."""
         ac = after_christ is not None and after_christ == "True"
         return year_to_text(txt, after_christ=ac)
 
     @classmethod
-    def years(cls, txt: str, *, after_christ: Optional[str] = None):
+    def years(cls, txt: str, *, after_christ: Optional[str] = None) -> str:
         """Voicify text containing multiple years."""
         ac = after_christ is not None and after_christ == "True"
         return years_to_text(txt, after_christ=ac)
 
     # Pronunciation of character names in Icelandic
-    _CHAR_PRONUNCIATION = {
+    _CHAR_PRONUNCIATION: Mapping[str, str] = {
         "a": "a",
         "á": "á",
         "b": "bé",
@@ -364,20 +365,19 @@ class DefaultNormalization(NormalizationHandler):
     }
 
     @classmethod
-    def spell(cls, txt: str):
+    def spell(cls, txt: str) -> str:
         """Spell out a sequence of characters."""
         if not txt:
             return ""
-        t = [cls._CHAR_PRONUNCIATION.get(c.lower(), c) if c != " " else "" for c in txt]
-        s = ", ".join(t).strip()
-        return re.sub(r"\s\s+", r" ", s)  # Shorten repeated whitespace
+        t = [cls._CHAR_PRONUNCIATION.get(c.lower(), c) if not c.isspace() else "" for c in txt]
+        return ", ".join(t)
 
     @classmethod
-    def abbrev(cls, txt: str):
+    def abbrev(cls, txt: str) -> str:
         """Spell out a sequence of characters."""
         return cls.spell(txt)
 
-    _DOMAIN_PRONUNCIATIONS = {
+    _DOMAIN_PRONUNCIATIONS: Mapping[str, str] = {
         "is": "is",
         "org": "org",
         "net": "net",
@@ -389,7 +389,7 @@ class DefaultNormalization(NormalizationHandler):
     }
 
     @classmethod
-    def email(cls, txt: str):
+    def email(cls, txt: str) -> str:
         """Voicify emails."""
         user, domain = txt.split("@")
         user_parts = user.split(".")
@@ -407,7 +407,7 @@ class DefaultNormalization(NormalizationHandler):
         return f"{' punktur '.join(user_parts)} hjá {' punktur '.join(domain_parts)}"
 
     @classmethod
-    def vbreak(cls, time: Optional[str] = None, strength: Optional[str] = None):
+    def vbreak(cls, time: Optional[str] = None, strength: Optional[str] = None) -> str:
         """Create a break in the voice/speech synthesis."""
         if time:
             return f'<break time="{time}" />'
@@ -417,9 +417,9 @@ class DefaultNormalization(NormalizationHandler):
         return f"<break />"
 
     @classmethod
-    def paragraph(cls, txt: str):
+    def paragraph(cls, txt: str) -> str:
         return f"<p>{txt}</p>"
 
     @classmethod
-    def sentence(cls, txt: str):
+    def sentence(cls, txt: str) -> str:
         return f"<s>{txt}</s>"
