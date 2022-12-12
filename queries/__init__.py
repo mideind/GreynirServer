@@ -615,13 +615,11 @@ class Query:
             self.set_error("E_NO_PARSE_TREES")
             return False
 
-        result.update(parse_result)
-
-        if result["num_sent"] != 1:
+        if parse_result["num_sent"] != 1:
             # Queries must be one sentence
             self.set_error("E_MULTIPLE_SENTENCES")
             return False
-        if result["num_parsed_sent"] != 1:
+        if parse_result["num_parsed_sent"] != 1:
             # Unable to parse the single sentence
             self.set_error("E_NO_PARSE")
             return False
@@ -1291,8 +1289,8 @@ def process_query(
                             expires=query.expires if voice else None,
                             qtype=result.get("qtype"),
                             key=result.get("key"),
-                            latitude=None,
-                            longitude=None,
+                            latitude=None,  # Disabled for now
+                            longitude=None,  # Disabled for now
                             # Client identifier
                             client_id=client_id[:256] if client_id else None,
                             client_type=client_type[:80] if client_type else None,
