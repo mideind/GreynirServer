@@ -215,7 +215,7 @@ class Fetcher:
         try:
 
             # Normal external HTTP/HTTPS fetch
-            r = requests.get(url)
+            r = requests.get(url, timeout=10)
             if r is None:
                 logging.warning("No document returned for URL {0}".format(url))
                 return None

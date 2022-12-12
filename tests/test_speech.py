@@ -84,7 +84,7 @@ def test_speech_synthesis():
             voice_id="Dora",
         )
         assert url and url.startswith("http")
-        r = requests.get(url)
+        r = requests.get(url, timeout=10)
         assert r.headers.get("Content-Type") == "audio/mpeg", "Expected MP3 audio data"
         assert len(r.content) > _MIN_AUDIO_SIZE, "Expected longer audio data"
     else:
