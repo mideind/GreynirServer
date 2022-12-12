@@ -238,7 +238,8 @@ def number_to_text(
 def numbers_to_text(
     s: str,
     *,
-    regex: str = r"\b\d+\b",
+    regex: str = r"((?<!\d)-)?\b\d+\b",
+    # ^ matches "15" & "-15", but matches "1-5" as "1" and "5"
     case: str = "nf",
     gender: str = "hk",
     one_hundred: bool = False
@@ -325,7 +326,7 @@ def float_to_text(
 def floats_to_text(
     s: str,
     *,
-    regex: str = r"\b(\d?\d?\d\.)*\d+,\d+\b",
+    regex: str = r"(-)?\b(\d?\d?\d\.)*\d+,\d+\b",
     case: str = "nf",
     gender: str = "hk",
     comma_null: bool = False,
@@ -649,7 +650,7 @@ def number_to_ordinal(
 def numbers_to_ordinal(
     s: str,
     *,
-    regex: str = r"\b\d+\.(?=[ ,)])",
+    regex: str = r"((?<!\d\.)-)?\b\d+\.(?=[ ,)-])",
     case: str = "nf",
     gender: str = "kk",
     number: str = "et"

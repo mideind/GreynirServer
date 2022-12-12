@@ -28,8 +28,8 @@ import logging
 
 import requests
 
-from speech.voices import generate_data_uri, strip_markup, mimetype_for_audiofmt
-
+from speech.norm import strip_markup
+from speech.voices import generate_data_uri, mimetype_for_audiofmt
 
 NAME = "Tiro"
 VOICES = frozenset(("Alfur", "Dilja", "Bjartur", "Rosa", "Alfur_v2", "Dilja_v2"))
