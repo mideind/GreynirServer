@@ -23,7 +23,7 @@
 
 """
 
-from typing import Any, Mapping, Optional, Union
+from typing import Any, Callable, Mapping, Optional, Union
 
 import re
 
@@ -182,11 +182,10 @@ _DATE_REGEXES = (
 _STRENGTHS = frozenset(("none", "x-weak", "weak", "medium", "strong", "x-strong"))
 
 
-class NormalizationHandler:  # Abstract base class
-    ...
+NormMethod = Callable[..., str]
 
 
-class DefaultNormalization(NormalizationHandler):
+class DefaultNormalization:
     """
     Class containing default text normalization functions
     for Icelandic speech synthesis.
@@ -369,7 +368,10 @@ class DefaultNormalization(NormalizationHandler):
         """Spell out a sequence of characters."""
         if not txt:
             return ""
-        t = [cls._CHAR_PRONUNCIATION.get(c.lower(), c) if not c.isspace() else "" for c in txt]
+        t = [
+            cls._CHAR_PRONUNCIATION.get(c.lower(), c) if not c.isspace() else ""
+            for c in txt
+        ]
         return ", ".join(t)
 
     @classmethod

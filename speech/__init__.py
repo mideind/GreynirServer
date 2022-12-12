@@ -36,14 +36,10 @@ from types import ModuleType
 
 import logging
 import importlib
-from inspect import isfunction
+from inspect import isfunction, ismethod
 from html.parser import HTMLParser
 from collections import deque
-from speech.norm import (
-    NORMALIZATION_CLASS,
-    DefaultNormalization,
-    NormalizationHandler,
-)
+from speech.norm import NORMALIZATION_CLASS, DefaultNormalization, NormMethod
 
 from utility import GREYNIR_ROOT_DIR, modules_in_dir
 
@@ -123,7 +119,7 @@ class GreynirSSMLParser(HTMLParser):
 
         # Fetch normalization handlers for this voice module,
         # otherwise use DefaultNormalization as fallback
-        self._handler: Type[NormalizationHandler] = getattr(
+        self._handler: Type[DefaultNormalization] = getattr(
             module, NORMALIZATION_CLASS, DefaultNormalization
         )
 
@@ -167,16 +163,16 @@ class GreynirSSMLParser(HTMLParser):
         """Called when a tag is closed."""
         if tag == "greynir":
             # Parse data inside the greynir tag we're closing
-            s = self._str_stack.pop()  # String content
+            s: str = self._str_stack.pop()  # String content
             if self._attr_stack:
                 dattrs = self._attr_stack.pop()  # Current tag attributes
                 t: Optional[str] = dattrs.pop("type")
                 assert t, f"Missing type attribute in <greynir> tag around string: {s}"
-                # Fetch handler function
-                hf = getattr(self._handler, t)
-                if hf:
-                    # Handler found, normalize text
-                    s = hf(s, **dattrs)
+                # Fetch corresponding normalization method from handler
+                normf: NormMethod = getattr(self._handler, t)
+                assert ismethod(normf), f"{t} is not a normalization method."
+                # Normalization classmethod found, normalize text
+                s = normf(s, **dattrs)
             # Add to our string stack
             if self._str_stack:
                 self._str_stack[-1] += s
@@ -193,16 +189,17 @@ class GreynirSSMLParser(HTMLParser):
             dattrs = dict(attrs)
             t: Optional[str] = dattrs.pop("type")
             assert t, "Missing type attribute in <greynir> tag"
-            hf = getattr(self._handler, t)
+            normf: NormMethod = getattr(self._handler, t)
             # If handler found, replace empty greynir tag with output,
             # otherwise simply remove empty greynir tag
-            if hf:
-                self._str_stack[-1] += hf(**dattrs)
+            assert ismethod(normf), f"{t} is not a normalization method."
+            s: str = normf(**dattrs)
+            self._str_stack[-1] += s
         else:
             # Other tags than greynir are kept as-is
-            s = self.get_starttag_text()
-            if s:
-                self._str_stack[-1] += s
+            st = self.get_starttag_text()
+            if st:
+                self._str_stack[-1] += st
 
 
 def _sanitize_args(args: Dict[str, Any]) -> Dict[str, Any]:
