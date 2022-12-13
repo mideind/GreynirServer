@@ -366,7 +366,7 @@ def iceformat_float(
 
 def icequote(s: str) -> str:
     """Return string surrounded by Icelandic-style quotation marks."""
-    return "„{0}“".format(s.strip())
+    return f"„{s.strip()}“"
 
 
 def gen_answer(a: str) -> AnswerTuple:

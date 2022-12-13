@@ -96,6 +96,10 @@ class GreynirSSMLParser(HTMLParser):
     """
     Parses voice strings containing <greynir> tags and
     calls normalization handlers corresponding to each tag's type attribute.
+
+    Note: Removes any other markup tags from the text as that
+          can interfere with the voice engines.
+
     Example:
         # Provide voice engine ID
         gp = GreynirSSMLParser(voice_id)
@@ -103,7 +107,7 @@ class GreynirSSMLParser(HTMLParser):
         voice_string = gp.normalize(voice_string)
     """
 
-    def __init__(self, voice_id: str) -> None:
+    def __init__(self, voice_id: str = DEFAULT_VOICE) -> None:
         """
         Initialize parser and setup normalization handlers
         for the provided speech synthesis engine.
@@ -119,6 +123,7 @@ class GreynirSSMLParser(HTMLParser):
 
         # Fetch normalization handlers for this voice module,
         # otherwise use DefaultNormalization as fallback
+        # (Other normalization classes should inherit from default class)
         self._handler: Type[DefaultNormalization] = getattr(
             module, NORMALIZATION_CLASS, DefaultNormalization
         )
@@ -149,15 +154,11 @@ class GreynirSSMLParser(HTMLParser):
         if tag == "greynir":
             self._str_stack.append("")
             self._attr_stack.append(dict(attrs))
-        else:
-            s = self.get_starttag_text()
-            if s:
-                self._str_stack[-1] += s
 
     def handle_data(self, data: str) -> None:
         """Called when data is encountered."""
         # Append string data to current string in stack
-        self._str_stack[-1] += data
+        self._str_stack[-1] += self._handler.danger_symbols(data)
 
     def handle_endtag(self, tag: str):
         """Called when a tag is closed."""
@@ -178,10 +179,6 @@ class GreynirSSMLParser(HTMLParser):
                 self._str_stack[-1] += s
             else:
                 self._str_stack.append(s)
-        else:
-            # Other tags than greynir are ideally kept as-is,
-            # try to close them cleanly when possible
-            self._str_stack[-1] += f"</{tag}>"
 
     def handle_startendtag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]):
         """Called when a empty tag is opened (and closed), e.g. '<greynir ... />'."""
@@ -195,11 +192,6 @@ class GreynirSSMLParser(HTMLParser):
             assert ismethod(normf), f"{t} is not a normalization method."
             s: str = normf(**dattrs)
             self._str_stack[-1] += s
-        else:
-            # Other tags than greynir are kept as-is
-            st = self.get_starttag_text()
-            if st:
-                self._str_stack[-1] += st
 
 
 def _sanitize_args(args: Dict[str, Any]) -> Dict[str, Any]:

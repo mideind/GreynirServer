@@ -38,7 +38,7 @@ from queries import Query, QueryStateDict
 from queries.util import query_json_api, is_plural, read_grammar_file
 from tree import Result, Node
 from settings import changedlocale
-from speech.norm import spell_out
+from speech.norm import gssml
 from speech.norm.num import (
     digits_to_text,
     numbers_to_ordinal,
@@ -343,7 +343,7 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
                 )
 
         # Spell out flight number (GS209 -> gé ess tveir núll níu)
-        voice_flight_number = digits_to_text(spell_out(flight_number))
+        voice_flight_number = gssml(gssml(flight_number, type="spell"), type="digits")
         voice_line = line.replace(flight_number, voice_flight_number)
 
         # Convert date ordinals to text for voice ("5. ágúst" -> "fimmta ágúst")

@@ -30,6 +30,7 @@ from itertools import product
 
 import requests
 from speech import text_to_audio_url
+from speech.norm import DefaultNormalization as DNorm
 from utility import read_api_key
 
 # Shenanigans to enable Pytest to discover modules in the
@@ -128,7 +129,7 @@ def test_gssml():
 
 def test_greynirssmlparser():
     from speech import GreynirSSMLParser, DEFAULT_VOICE, SUPPORTED_VOICES
-    from speech.norm import gssml, DefaultNormalization
+    from speech.norm import gssml
 
     gp = GreynirSSMLParser(DEFAULT_VOICE)
     n = gp.normalize(f"Ég vel töluna {gssml(244, type='number', gender='kk')}")
@@ -150,7 +151,7 @@ def test_greynirssmlparser():
         "date": "2000-01-01",
         "year": "1999",
         "years": "1999, 2000 og 2021",
-        "abbrev": "ASÍ",
+        "abbrev": "t.d.",
         "spell": "SÍBS",
         "vbreak": None,
         "email": "t@olvupostur.rugl",
@@ -158,7 +159,7 @@ def test_greynirssmlparser():
         "sentence": "lítil setning eða málsgrein?",
     }
 
-    for t, v in DefaultNormalization.__dict__.items():
+    for t, v in DNorm.__dict__.items():
         if t not in example_data:
             continue
         assert isinstance(
@@ -184,24 +185,28 @@ def test_greynirssmlparser():
     # nothing easy we can do to fix that
     x = """<ehskrytid> bla</s>  <t></t> <other formatting="fhe"> bla</other> fad <daf <fda> fda"""
     n = gp.normalize(x)
-    assert n == x
+    assert "&" not in n and "<" not in n and ">" not in n
+    assert len(n) > 0
     # We strip spaces from the names of endtags,
     # but otherwise try to keep unrecognized tags unmodified
     x = """<bla attr="fad" f="3"></ bla  >"""
     n = gp.normalize(x)
-    assert n == """<bla attr="fad" f="3"></bla>""" and n.count(" ") <= x.count(" ")
+    assert "&" not in n and "<" not in n and ">" not in n
+    assert n == ""
 
     x = """<bla attr="fad" f="3"><greynir type="vbreak" /></bla> <greynir type="number" gender="kvk">4</greynir>"""
     n = gp.normalize(x)
-    assert n == """<bla attr="fad" f="3"><break /></bla> fjórar"""
+    assert "&" not in n and n.count("<") == 1 and n.count(">") == 1
+    assert n == """<break /> fjórar"""
 
     x = """<bla attr="fad" f="3"><greynir type="vbreak" /> <greynir type="number" gender="kvk">4</greynir>"""
     n = gp.normalize(x)
-    assert n == """<bla attr="fad" f="3"><break /> fjórar"""
+    assert "&" not in n and n.count("<") == 1 and n.count(">") == 1
+    assert n == """<break /> fjórar"""
 
     x = """<bla attr="fad" f="3"><greynir type="vbreak" /> <&#47;<greynir type="number" gender="kvk">4</greynir>>"""
     n = gp.normalize(x)
-    assert n == """<bla attr="fad" f="3"><break /> </fjórar>"""
+    assert "&" not in n and n.count("<") == 1 and n.count(">") == 1
 
     # -------------------------
     # Test voice engine specific normalization
@@ -213,23 +218,9 @@ def test_greynirssmlparser():
     n1 = gp.normalize(gssml(alphabet, type="spell"))
     n2 = gp2.normalize(gssml(alphabet, type="spell"))
     assert n1 != n2
-    n1 = gp.normalize(gssml(alphabet, type="abbrev"))
-    n2 = gp2.normalize(gssml(alphabet, type="abbrev"))
-    assert n1 != n2
 
 
-def test_norm_spell_out() -> None:
-    from speech.norm import spell_out
-
-    assert spell_out("LÍÚ") == "ell í ú"
-    assert spell_out("líú") == "ell í ú"
-    assert spell_out("fTb") == "eff té bé"
-    assert spell_out("F t B ") == "eff té bé"
-    assert spell_out("YnG") == "ufsilon enn gé"
-    assert spell_out(" YnG") == "ufsilon enn gé"
-
-
-def test_norm_numbers() -> None:
+def test_number_normalization() -> None:
     """Test number handling functionality in queries"""
 
     from speech.norm.num import (
@@ -456,7 +447,7 @@ def test_norm_numbers() -> None:
     )
 
 
-def test_norm_years() -> None:
+def test_year_normalization() -> None:
     """Test number to written year conversion."""
 
     from speech.norm.num import year_to_text, years_to_text
@@ -485,7 +476,7 @@ def test_norm_years() -> None:
     )
 
 
-def test_norm_ordinals() -> None:
+def test_ordinal_normalization() -> None:
     """Test number to written ordinal conversion."""
 
     from speech.norm.num import number_to_ordinal, numbers_to_ordinal
@@ -555,7 +546,7 @@ def test_norm_ordinals() -> None:
     )
 
 
-def test_norm_floats() -> None:
+def test_float_normalization() -> None:
     """Test float to written text conversion."""
 
     from speech.norm.num import float_to_text, floats_to_text
@@ -602,7 +593,7 @@ def test_norm_floats() -> None:
     assert floats_to_text("2.000.000,00.", comma_null=False) == "tvær milljónir."
 
 
-def test_norm_digits() -> None:
+def test_digit_normalization() -> None:
     """Test digit string to written text conversion."""
 
     from speech.norm.num import digits_to_text
@@ -633,26 +624,23 @@ def test_norm_digits() -> None:
     )
 
 
-def test_norm_time_handler() -> None:
-    from speech.norm import DefaultNormalization
-
-    assert DefaultNormalization.time(f"00:00") == "tólf á miðnætti"
-    assert DefaultNormalization.time(f"12:00") == "tólf á hádegi"
+def test_time_normalization() -> None:
+    assert DNorm.time(f"00:00") == "tólf á miðnætti"
+    assert DNorm.time(f"12:00") == "tólf á hádegi"
     midnight = datetime.time(0, 0)
     six_am = datetime.time(6, 0)
     for h, m in product(range(24), range(60)):
         t = datetime.time(h, m)
-        n1 = DefaultNormalization.time(f"{t.hour}:{t.minute}")
+        n1 = DNorm.time(f"{t.hour}:{t.minute}")
         assert n1.replace(" ", "").isalpha()
-        n2 = DefaultNormalization.time(t.strftime("%H:%M"))
+        n2 = DNorm.time(t.strftime("%H:%M"))
         assert n2.replace(" ", "").isalpha()
         assert n1 == n2
         if midnight < t < six_am:
             assert "um nótt" in n1
 
 
-def test_norm_date_handler() -> None:
-    from speech.norm import DefaultNormalization
+def test_date_normalization() -> None:
     from settings import changedlocale
 
     with changedlocale(category="LC_TIME"):
@@ -666,50 +654,193 @@ def test_norm_date_handler() -> None:
                 date = datetime.date(y, m, d)
             except:
                 continue
-            n1 = DefaultNormalization.date(date.isoformat(), case=case)
-            assert n1 == DefaultNormalization.date(f"{y}-{m}-{d}", case=case)
-            n2 = DefaultNormalization.date(f"{d}/{m}/{y}", case=case)
-            assert n2 == DefaultNormalization.date(date.strftime("%d/%m/%Y"), case=case)
-            n3 = DefaultNormalization.date(date.strftime("%d. %B %Y"), case=case)
-            n4 = DefaultNormalization.date(date.strftime("%d. %b %Y"), case=case)
+            n1 = DNorm.date(date.isoformat(), case=case)
+            assert n1 == DNorm.date(f"{y}-{m}-{d}", case=case)
+            n2 = DNorm.date(f"{d}/{m}/{y}", case=case)
+            assert n2 == DNorm.date(date.strftime("%d/%m/%Y"), case=case)
+            n3 = DNorm.date(date.strftime("%d. %B %Y"), case=case)
+            n4 = DNorm.date(date.strftime("%d. %b %Y"), case=case)
             assert n1 == n2 == n3 == n4
 
 
-def test_norm_abbrev_handler() -> None:
-    from speech.norm import DefaultNormalization
+def test_spelling_normalization() -> None:
+    from speech.norm import _ICELANDIC_ALPHABET_ENG  # type: ignore
 
-    for a in ("ASÍ", "LSH", "AÁBDÐEÉFIÍJKLMNOÓPQRSTUÚVWXYÝZÆÖ"):
-        n1 = DefaultNormalization.abbrev(a.upper())
-        n2 = DefaultNormalization.abbrev(a.lower())
-        n3 = DefaultNormalization.abbrev(a.upper())
-        n4 = DefaultNormalization.spell(a.lower())
-        assert n1 == n2 == n3 == n4
+    for a in (_ICELANDIC_ALPHABET_ENG, "ÁÍS", "BSÍ", "LSH", "SÍBS"):
+        n1 = DNorm.spell(a.upper())
+        n2 = DNorm.spell(a.lower())
+        assert n1 == n2
+        assert "." not in n1
+        assert len(n1) > len(a)
         assert n1.islower()
 
 
-def test_norm_email_handler() -> None:
-    from speech.norm import DefaultNormalization
+def test_abbreviation_normalization() -> None:
+    abbrevs = (
+        "t.d.",
+        "MSc",
+        "m.a.s.",
+        "o.s.frv.",
+        "m.a.",
+        "PhD",
+        "Ph.D.",
+    )
+    for a in abbrevs:
+        n1 = DNorm.abbrev(a)
+        assert "." not in n1
+        assert n1.islower()
 
+
+def test_email_normalization() -> None:
     for e in (
         "jon.jonsson@mideind.is",
         "gunnar.brjann@youtube.gov.uk",
         "tolvupostur@gmail.com",
     ):
-        n = DefaultNormalization.email(e)
+        n = DNorm.email(e)
         assert "@" not in n and " hjá " in n
         assert "." not in n and " punktur " in n
 
 
-def test_norm_vbreak_handler() -> None:
+def test_entity_normalization() -> None:
+    n = DNorm.entity("Miðeind ehf.")
+    assert "ehf." not in n
+    n = DNorm.entity("BSÍ")
+    assert "BSÍ" not in n
+    n = DNorm.entity("SÍBS")
+    assert "SÍBS" not in n
+    n = DNorm.entity("L&L slf.")
+    assert "L" not in n
+    assert "slf" not in n
+    n = DNorm.entity("Kjarninn")
+    assert n == "Kjarninn"
+    n = DNorm.entity("RANNÍS")
+    assert n == "RANNÍS"
+    n = DNorm.entity("Rannís")
+    assert n == "Rannís"
+    n = DNorm.entity("Verkís")
+    assert n == "Verkís"
+    n = DNorm.entity("RARIK")
+    assert n == "RARIK"
+    n = DNorm.entity("NATO")
+    assert n == "NATO"
+    # TODO n = DNorm.entity("NASA")
+    # assert n == "NASA"
+
+
+def test_title_normalization() -> None:
+    # TODO
+    return
+    n = DNorm.title("þjálfari ÍR")
+    assert "ÍR" not in n
+    n = DNorm.title("fulltrúi í samninganefnd félagsins")
+    assert n == "fulltrúi í samninganefnd félagsins"
+    n = DNorm.title("formaður nefndarinnar")
+    assert n == "formaður nefndarinnar"
+    n = DNorm.title("fyrrverandi Bandaríkjaforseti")
+    assert n == "fyrrverandi Bandaríkjaforseti"
+    n = DNorm.title("þjálfari Fram í Olís deild karla")
+    assert n == "þjálfari Fram í Olís deild karla"
+    # n = DNorm.title("NASF") # TODO
+    # assert "NASF" not in n
+    n = DNorm.title("íþróttakennari")
+    assert n == "íþróttakennari"
+    n = DNorm.title("formaður Bandalags háskólamanna")
+    assert n == "formaður Bandalags háskólamanna"
+    n = DNorm.title("formaður Leigjendasamtakanna")
+    assert n == "formaður Leigjendasamtakanna"
+    # n = DNorm.title("framkvæmdastjóri Samtaka atvinnulífsins (SA)") # TODO
+    # assert "SA" not in n
+    n = DNorm.title("innanríkisráðherra í stjórn Sigmundar Davíðs Gunnlaugssonar")
+    assert n == "innanríkisráðherra í stjórn Sigmundar Davíðs Gunnlaugssonar"
+    n = DNorm.title("fyrsti ráðherra Íslands")
+    assert n == "fyrsti ráðherra Íslands"
+    n = DNorm.title("málpípur þær")
+    assert n == "málpípur þær"
+    n = DNorm.title("sundsérfræðingur RÚV")
+    assert n == "sundsérfræðingur Ríkisútvarpsins"
+    n = DNorm.title("framkvæmdastjóri Strætó ehf.")
+    assert "ehf." not in n
+    n = DNorm.title("þáverandi sjávarútvegsráðherra")
+    assert n == "þáverandi sjávarútvegsráðherra"
+    n = DNorm.title("knattspyrnudómari")
+    assert n == "knattspyrnudómari"
+    n = DNorm.title("framkvæmdastjóri Félags atvinnurekenda")
+    assert n == "framkvæmdastjóri Félags atvinnurekenda"
+    n = DNorm.title("þjálfari Stjörnunnar")
+    assert n == "þjálfari Stjörnunnar"
+    n = DNorm.title("lektor við HÍ")
+    assert "HÍ" not in n
+    n = DNorm.title("trillukarl í Skerjafirði")
+    assert n == "trillukarl í Skerjafirði"
+    n = DNorm.title("formaður VR og LÍV")
+    assert "VR" not in n and "LÍV" not in n
+
+
+def test_person_normalization() -> None:
+    # Roman numerals
+    n = DNorm.person("Elísabet II")
+    assert n == "Elísabet önnur"
+    n = DNorm.person("Elísabet II Bretlandsdrottning")
+    assert n == "Elísabet önnur Bretlandsdrottning"
+    n = DNorm.person("Leópold II Belgakonungur")
+    assert n == "Leópold annar Belgakonungur"
+    # TODO: bug in lookup_name_gender for "Óskar"/"Ósk"
+    # n = DNorm.person("Óskar II Svíakonungur")
+    # assert n == "Óskar annar Svíakonungur"
+    n = DNorm.person("Loðvík XVI")
+    assert n == "Loðvík sextándi"
+
+    # Normal
+    n = DNorm.person("Einar Björn")
+    assert n == "Einar Björn"
+    n = DNorm.person("Martin Rivers")
+    assert n == "Martin Rivers"
+    n = DNorm.person("Tor Magne Drønen")
+    assert n == "Tor Magne Drønen"
+    n = DNorm.person("Richard Guthrie")
+    assert n == "Richard Guthrie"
+    n = DNorm.person("Jón Ingvi Bragason")
+    assert n == "Jón Ingvi Bragason"
+    n = DNorm.person("Regína Valdimarsdóttir")
+    assert n == "Regína Valdimarsdóttir"
+    n = DNorm.person("Sigurður Ingvi Snorrason")
+    assert n == "Sigurður Ingvi Snorrason"
+    n = DNorm.person("Aðalsteinn Sigurgeirsson")
+    assert n == "Aðalsteinn Sigurgeirsson"
+
+    # Abbreviations which should be spelled out
+    # Note that the spelling can be different based on the voice engine
+    n = DNorm.person("James H. Grendell")
+    assert "H." not in n and n.startswith("James") and n.endswith("Grendell")
+    n = DNorm.person("Guðni Th. Jóhannesson")
+    assert "Th" not in n and n.startswith("Guðni") and n.endswith("Jóhannesson")
+    n = DNorm.person("guðni th. jóhannesson")
+    assert "th" not in n and n.startswith("guðni") and n.endswith("jóhannesson")
+    n = DNorm.person("Mary J. Blige")
+    assert "J." not in n and n.startswith("Mary") and n.endswith("Blige")
+    n = DNorm.person("Alfred P. Sloan Jr.")
+    assert "P." not in n and "Jr." not in n and "Alfred" in n and "Sloan" in n
+
+    # Lowercase middle names
+    n = DNorm.person("Alex van der Zwaan")
+    assert n == "Alex van der Zwaan"
+    n = DNorm.person("Frans van Houten")
+    assert n == "Frans van Houten"
+    n = DNorm.person("Louis van Gaal")
+    assert n == "Louis van Gaal"
+    n = DNorm.person("Rafael van der Vaart")
+    assert n == "Rafael van der Vaart"
+
+def test_voice_breaks() -> None:
     from speech.norm import (
-        DefaultNormalization,
         _STRENGTHS,  # type: ignore
     )
 
-    assert DefaultNormalization.vbreak() == "<break />"
+    assert DNorm.vbreak() == "<break />"
     for t in ("0ms", "50ms", "1s", "1.7s"):
-        n = DefaultNormalization.vbreak(time=t)
+        n = DNorm.vbreak(time=t)
         assert n == f'<break time="{t}" />'
     for s in _STRENGTHS:
-        n = DefaultNormalization.vbreak(strength=s)
+        n = DNorm.vbreak(strength=s)
         assert n == f'<break strength="{s}" />'

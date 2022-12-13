@@ -702,3 +702,35 @@ def digits_to_text(s: str, *, regex: str = r"\b\d+") -> str:
         ).rstrip()
 
     return re.sub(regex, convert, s)
+
+
+_ROMAN_NUMERALS = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
+
+
+def _roman_numeral_to_int(n: str) -> int:
+    """
+    Helper function, changes a correct roman numeral to an integer.
+    Source: https://stackoverflow.com/a/52426119
+    """
+    nums = [_ROMAN_NUMERALS[i] for i in n.upper() if i in _ROMAN_NUMERALS]
+    return sum(
+        val if val >= nums[min(i + 1, len(n) - 1)] else -val
+        for i, val in enumerate(nums)
+    )
+
+
+def roman_numeral_to_ordinal(
+    n: str, *, case: str = "nf", gender: str = "kk", number: str = "et"
+):
+    """
+    Change a roman numeral into a written Icelandic ordinal.
+    Example:
+        "III" -> "þriðji"
+        "MMXXII" -> "tvö þúsund tuttugasti og annar"
+    """
+    return number_to_ordinal(
+        _roman_numeral_to_int(n),
+        case=case,
+        gender=gender,
+        number=number,
+    )

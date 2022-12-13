@@ -23,9 +23,12 @@
 
 """
 
-from typing import Any, Callable, Mapping, Optional, Union
+from typing import Any, Callable, Mapping, Optional, Tuple, Union
 
 import re
+
+from tokenizer import Abbreviations
+from reynir.bindb import GreynirBin
 
 from speech.norm.num import (
     digits_to_text,
@@ -37,6 +40,8 @@ from speech.norm.num import (
     numbers_to_ordinal,
     year_to_text,
     years_to_text,
+    _ROMAN_NUMERALS,
+    roman_numeral_to_ordinal,
 )
 
 # Each voice module in the directory speech/voices can define a
@@ -185,6 +190,26 @@ _STRENGTHS = frozenset(("none", "x-weak", "weak", "medium", "strong", "x-strong"
 NormMethod = Callable[..., str]
 
 
+def _empty_str(f: NormMethod) -> NormMethod:
+    """
+    Decorator which returns an empty string
+    if the normalization method is called
+    with an empty string.
+    """
+
+    def _empty_str_wrapper(cls: "DefaultNormalization", txt: str, **kwargs: str):
+        if not txt:
+            return ""
+        return f(cls, txt, **kwargs)
+
+    return _empty_str_wrapper
+
+
+# Ensure abbreviations have been loaded,
+# common during normalization
+Abbreviations.initialize()
+
+
 class DefaultNormalization:
     """
     Class containing default text normalization functions
@@ -196,47 +221,86 @@ class DefaultNormalization:
     # currency/ies
     # distance/s
 
+    @staticmethod
+    def _coerce_to_boolean(arg: Optional[str]) -> bool:
+        """
+        Static helper for converting a string argument to a boolean.
+        As GSSML is text-based, all function arguments are strings.
+        """
+        return arg is not None and arg == "True"
+
     @classmethod
+    @_empty_str
+    def danger_symbols(cls, txt: str) -> str:
+        """
+        Takes in any text and replaces the symbols that
+        cause issues for the speech synthesis engine.
+        These symbols are &,<,>.
+
+        Note: HTML charrefs should be translated to their
+              unicode character before this function is called.
+              (GreynirSSMLParser does this automatically.)
+        """
+        # Ampersands
+        txt = re.sub(r" ?& ?", " og ", txt)
+        # <
+        txt = re.sub(r" ?<= ?", " minna eða jafnt og ", txt)
+        txt = re.sub(r" ?< ?", " minna en ", txt)
+        # >
+        txt = re.sub(r" ?>= ?", " stærra eða jafnt og ", txt)
+        txt = re.sub(r" ?> ?", " stærra en ", txt)
+        return txt
+
+    @classmethod
+    @_empty_str
     def number(cls, txt: str, **kwargs: str) -> str:
         """Voicify a number."""
         return number_to_text(txt, **kwargs)
 
     @classmethod
+    @_empty_str
     def numbers(cls, txt: str, **kwargs: str) -> str:
         """Voicify text containing multiple numbers."""
         return numbers_to_text(txt, **kwargs)
 
     @classmethod
+    @_empty_str
     def float(cls, txt: str, **kwargs: str) -> str:
         """Voicify a float."""
         return float_to_text(txt, **kwargs)
 
     @classmethod
+    @_empty_str
     def floats(cls, txt: str, **kwargs: str) -> str:
         """Voicify text containing multiple floats."""
         return floats_to_text(txt, **kwargs)
 
     @classmethod
+    @_empty_str
     def ordinal(cls, txt: str, **kwargs: str) -> str:
         """Voicify an ordinal."""
         return number_to_ordinal(txt, **kwargs)
 
     @classmethod
+    @_empty_str
     def ordinals(cls, txt: str, **kwargs: str) -> str:
         """Voicify text containing multiple ordinals."""
         return numbers_to_ordinal(txt, **kwargs)
 
     @classmethod
+    @_empty_str
     def digits(cls, txt: str) -> str:
         """Spell out digits."""
         return digits_to_text(txt)
 
     @classmethod
+    @_empty_str
     def phone(cls, txt: str) -> str:
-        """Spell out digits."""
+        """Spell out a phone number."""
         return cls.digits(txt)
 
     @classmethod
+    @_empty_str
     def time(cls, txt: str) -> str:
         """
         Voicifies time of day, specified as 'HH:MM'.
@@ -257,9 +321,7 @@ class DefaultNormalization:
             suffix = "um nótt"
         elif h == 12 and m == 0:
             suffix = "á hádegi"
-        t = [
-            number_to_text(h, case="nf", gender="hk"),
-        ]
+        t = [number_to_text(h, case="nf", gender="hk")]
         if m > 0:
             if m < 10:
                 # e.g. "þrettán núll fjögur"
@@ -270,6 +332,7 @@ class DefaultNormalization:
         return " ".join(t)
 
     @classmethod
+    @_empty_str
     def date(cls, txt: str, case: str = "nf") -> str:
         """
         Voicifies dates specified in either
@@ -312,15 +375,17 @@ class DefaultNormalization:
         raise NotImplementedError()
 
     @classmethod
+    @_empty_str
     def year(cls, txt: str, *, after_christ: Optional[str] = None) -> str:
         """Voicify a year."""
-        ac = after_christ is not None and after_christ == "True"
+        ac = cls._coerce_to_boolean(after_christ)
         return year_to_text(txt, after_christ=ac)
 
     @classmethod
+    @_empty_str
     def years(cls, txt: str, *, after_christ: Optional[str] = None) -> str:
         """Voicify text containing multiple years."""
-        ac = after_christ is not None and after_christ == "True"
+        ac = cls._coerce_to_boolean(after_christ)
         return years_to_text(txt, after_christ=ac)
 
     # Pronunciation of character names in Icelandic
@@ -364,10 +429,12 @@ class DefaultNormalization:
     }
 
     @classmethod
-    def spell(cls, txt: str) -> str:
+    @_empty_str
+    def spell(cls, txt: str, ignore_punctuation: Optional[str] = None) -> str:
         """Spell out a sequence of characters."""
-        if not txt:
-            return ""
+        # TODO: Optionally pronunce e.g. '.,/()'
+        # TODO: Control breaks between characters
+        # ignore_punct = cls._coerce_to_boolean(ignore_punctuation)
         t = [
             cls._CHAR_PRONUNCIATION.get(c.lower(), c) if not c.isspace() else ""
             for c in txt
@@ -375,9 +442,26 @@ class DefaultNormalization:
         return ", ".join(t)
 
     @classmethod
+    @_empty_str
     def abbrev(cls, txt: str) -> str:
-        """Spell out a sequence of characters."""
-        return cls.spell(txt)
+        """Expand an abbreviation."""
+        meanings = list(
+            filter(
+                lambda m: m.fl != "erl",  # Only Icelandic abbrevs
+                Abbreviations.get_meaning(txt) or [],
+            )
+        )
+        if meanings:
+            # Abbreviation has at least one known meaning, expand it
+            return meanings[0].stofn
+
+        # Fallbacks:
+        # - Spell out, if any letter is uppercase (e.g. "MSc")
+        if not txt.islower():
+            return cls.spell(txt.replace(".", ""))
+        # - Give up and keep as-is for all-lowercase txt
+        # (e.g. "cand.med."),
+        return txt
 
     _DOMAIN_PRONUNCIATIONS: Mapping[str, str] = {
         "is": "is",
@@ -391,15 +475,19 @@ class DefaultNormalization:
     }
 
     @classmethod
+    @_empty_str
     def email(cls, txt: str) -> str:
-        """Voicify emails."""
+        """Voicify an email address."""
+        # TODO: Use spelling with punctuation to spell weird characters
         user, domain = txt.split("@")
         user_parts = user.split(".")
         domain_parts = domain.split(".")
+
         for i, p in enumerate(user_parts):
             if len(p) < 3:
                 # Short parts of username get spelled out
                 user_parts[i] = cls.spell(p)
+
         for i, p in enumerate(domain_parts):
             if p in cls._DOMAIN_PRONUNCIATIONS:
                 domain_parts[i] = cls._DOMAIN_PRONUNCIATIONS[p]
@@ -407,6 +495,190 @@ class DefaultNormalization:
                 # Spell out short, unknown domains
                 domain_parts[i] = cls.spell(p)
         return f"{' punktur '.join(user_parts)} hjá {' punktur '.join(domain_parts)}"
+
+    # These uppercase parts of a entity name should be
+    # pronounced as-is, not spelled out
+    _ENTITY_DONT_SPELL = frozenset(
+        (
+            "ABBA",
+            "BOYS",
+            "BUGL",
+            "BYKO",
+            "CAVA",
+            "CERN",
+            "CERT",
+            "EFTA",
+            "ELKO",
+            "NATO",
+            "NEW",
+            "NOVA",
+            "PLAY",
+            "PLUS",
+            "RARIK",
+            "RIFF",
+            "RÚV",
+            "SAAB",
+            "SAAS",
+            "SHAH",
+            "SIRI",
+            "UENO",
+            "NASA",
+            "YVES",
+            # "XBOX": "ex box"
+            # "VISA": "vísa"
+            # "UKIP": "júkipp"
+            # "TIME": "tæm",
+            # "UEFA": "júei fa"
+            # "FIFA": "FÍÍfFAh"
+            # "LEGO": "llegó"
+            # "GIRL": "görl"
+            # "FIDE": "fídeh"
+            # (sérhljóði samhljóði sérhljóði samhljóði)?
+            # (samhljóði sérhljóði samhljóði sérhljóði)?
+        )
+    )
+    # These parts of a entity name aren't all uppercase
+    # and don't necessarily contain a period,
+    # but should be spelled out
+    _ENTITY_SPELL = frozenset(
+        (
+            "GmbH",
+            "Ltd",
+            "sf",
+            "s/f",
+            "hf",
+            "h/f",
+            "hsf",
+            "ehf",
+            "slhf",
+            "slf",
+            "svf",
+            "vlf",
+            "vmf",
+            "ohf",
+            "bs",
+            "ses",
+            "hses",
+        )
+    )
+
+    @classmethod
+    @_empty_str
+    def entity(cls, txt: str) -> str:
+        """Voicify an entity name."""
+        txt.replace("&", " og ")
+        parts = txt.split()
+        # TODO: If gb.lookup(p.lower(), auto_uppercase=True)[1]
+        #       then pronounce as icelandic word
+        for i, p in enumerate(parts):
+            if p in cls._ENTITY_DONT_SPELL:
+                continue
+            if p.replace(".", "") in cls._ENTITY_SPELL or (p.isupper() and len(p) <= 4):
+                # Spell out this part of the entity name
+                parts[i] = cls.spell(p)
+        if parts[-1].endswith("."):
+            # Probably should be spelled (e.g. 'ehf.')
+            parts[-1] = cls.spell(parts[-1].replace(".", ""))
+        return " ".join(parts)
+
+    @staticmethod
+    def _guess_noun_case_gender(noun: str) -> Tuple[str, str]:
+        """Helper to return (case, gender) for a noun form."""
+        # Fallback
+        case = "nf"
+        gender = "kk"
+        # Followed by another word,
+        # try to guess gender and case
+        with GreynirBin.get_db() as gbin:
+            bts = GreynirBin.nouns(gbin.lookup(noun)[1])
+            if bts:
+                case = bts[0].mark[:2].lower()
+                gender = bts[0].ofl
+        return case, gender
+
+    @classmethod
+    @_empty_str
+    def title(cls, txt: str) -> str:
+        """Voicify the title of a person."""
+        return txt # TODO
+        # Forstjóri MS, lektor við HÍ
+        # eigandi BSÍ ehf., Strætó bs.
+        # PhD, BSc, M.Phil.
+        parts = txt.split()
+        for i, p in enumerate(parts):
+            last: bool = i == len(parts) - 1
+            # Check if there is a number
+            if p.isdecimal():
+                if len(p) == 4 and (999 < int(p) < 2500):
+                    # Year, probably
+                    parts[i] = cls.year(p)
+                elif not last and (parts[i + 1] == "ára" or parts[i + 1] == "árs"):
+                    # Age, certainly
+                    parts[i] = cls.number(p, case="ef", gender="hk")
+                else:
+                    # Fallback
+                    case, gender = "nf", "kk"
+                    if not last:
+                        case, gender = cls._guess_noun_case_gender(parts[i + 1])
+                    parts[i] = cls.number(p, case=case, gender=gender)
+                continue
+            # Check if there is an ordinal
+            if "." in p and p.rstrip(".").isdecimal():
+                # Ordinal, certainly
+                case, gender = "nf", "kk"
+                if not last:
+                    case, gender = cls._guess_noun_case_gender(parts[i + 1])
+                parts[i] = cls.ordinal(p, case=case, gender=gender)
+                continue
+            # Check abbreviations, expand if known
+            # FIXME Correct case when expanding
+            # if Abbreviations.has_meaning(p):
+            #     parts[i] = cls.abbrev(p)
+        return " ".join(parts)
+
+    _PERSON_PRONUNCIATION: Mapping[str, str] = {
+        "Jr": "djúníor",
+    }
+
+    @classmethod
+    @_empty_str
+    def person(cls, txt: str) -> str:
+        """Voicify the name of a person."""
+        with GreynirBin.get_db() as gbin:
+            gender = gbin.lookup_name_gender(txt)
+        parts = txt.split()
+        for i, p in enumerate(parts):
+            if p in cls._PERSON_PRONUNCIATION:
+                parts[i] = cls._PERSON_PRONUNCIATION[p]
+                continue
+            if "." in p:
+                # Contains period (e.g. 'Jak.' or 'Ólafsd.')
+                abbrs = next(
+                    filter(
+                        lambda m: m.ordfl == gender  # Correct gender
+                        # Icelandic abbrev
+                        and m.fl != "erl"
+                        # Uppercase first letter
+                        and m.stofn[0].isupper()
+                        # Expanded meaning must be longer
+                        # (otherwise we just spell it, e.g. 'Th.' = 'Th.')
+                        and len(m.stofn) > len(p),
+                        Abbreviations.get_meaning(p) or [],
+                    ),
+                    None,
+                )
+                if abbrs is not None:
+                    # Replace with expanded version of part
+                    parts[i] = abbrs.stofn
+                else:
+                    # Spell this part
+                    parts[i] = cls.spell(p.replace(".", ""))
+            if i + 2 >= len(parts) and all(l in _ROMAN_NUMERALS for l in parts[i]):
+                # Last or second to last part of name looks
+                # like an uppercase roman numeral,
+                # replace with ordinal
+                parts[i] = roman_numeral_to_ordinal(parts[i], gender=gender)
+        return " ".join(parts)
 
     @classmethod
     def vbreak(cls, time: Optional[str] = None, strength: Optional[str] = None) -> str:
@@ -419,9 +691,11 @@ class DefaultNormalization:
         return f"<break />"
 
     @classmethod
+    @_empty_str
     def paragraph(cls, txt: str) -> str:
         return f"<p>{txt}</p>"
 
     @classmethod
+    @_empty_str
     def sentence(cls, txt: str) -> str:
         return f"<s>{txt}</s>"
