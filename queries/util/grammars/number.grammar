@@ -1,5 +1,5 @@
 # Grammar for the numbers utility module
-UBrotaTala → UTöluðTala/fall/kyn "komma" UTöluðTala/fall/kyn+ | UTöluðTala/fall/kyn "," UTöluðTala/fall/kyn+
+UBrotaTala → UTöluðTala/fall/kyn "komma" UTöluðTala/fall/kyn+
 
 UHeilTala → tala | UHeilTala/fall/kyn
 

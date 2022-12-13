@@ -176,6 +176,8 @@ def _lookup_function(node: Node, params: ParamList, result: Result) -> None:
     UTöluðTalaTugir,
     UTöluðTalaHundrað,
     UTöluðTalaÞúsund,
+    UTöluðTalaÞúsundHk,
+    UTöluðTalaÞúsundKvk,
     UTöluðTalaMilljón,
     UTöluðTalaMilljarður,
     UTöluðTalaBilljón,
@@ -188,4 +190,4 @@ def _lookup_function(node: Node, params: ParamList, result: Result) -> None:
     UTöluðTalaSextilljón,
     UTöluðTalaSeptilljón,
     UTöluðTalaOktilljón,
-) = [_lookup_function] * 19
+) = [_lookup_function] * 21
