@@ -664,7 +664,9 @@ def test_date_normalization() -> None:
 
 
 def test_spelling_normalization() -> None:
-    from speech.norm import _ICELANDIC_ALPHABET_ENG  # type: ignore
+    _ICELANDIC_ALPHABET_ENG_UPPER = "AÁBCDÐEÉFGHIÍJKLMNOÓPQRSTUÚVWXYÝÞÆÖZ"
+    _ICELANDIC_ALPHABET_ENG_LOWER = "aábcdðeéfghiíjklmnoópqrstuúvwxyýþæöz"
+    _ICELANDIC_ALPHABET_ENG = _ICELANDIC_ALPHABET_ENG_UPPER + _ICELANDIC_ALPHABET_ENG_LOWER
 
     for a in (_ICELANDIC_ALPHABET_ENG, "ÁÍS", "BSÍ", "LSH", "SÍBS"):
         n1 = DNorm.spell(a.upper())

@@ -40,6 +40,10 @@
 # TODO: Fuzzy matching in straeto package should
 #       catch N/A/S/V <-> norður/austur/suður/vestur
 # TODO: "á" vs. "í" vs. other prepositions before bus stop names
+# TODO: If query includes full name of stop,
+#       don't pick other, closer, stop with similar name
+#       e.g. if query is "... Naustabraut Davíðshaga austur",
+#            don't pick "... Naustabraut Davíðshaga vestur"
 
 from typing import Dict, Iterable, Optional, List, Set, Tuple, cast
 
