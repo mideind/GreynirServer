@@ -42,23 +42,23 @@ UTöluðRaðtala/fall/kyn/tala →
     # Something smaller than an oktilljón (quindecillion in english), probably most numbers
     UTöluðRaðtalaUndirOktilljón/fall/kyn/tala
     # "x oktilljónir ..."
-    | UTöluðTalaOktilljónir/fall/kyn UTöluðRaðtalaUndirOktilljón/fall/kyn/tala
+    | UTöluðTalaOktilljónir/fall UTöluðRaðtalaUndirOktilljón/fall/kyn/tala
     # "x oktilljónir og ..."
-    | UTöluðTalaOktilljónir/fall/kyn UTöluðRaðtalaOgUndirOktilljón/fall/kyn/tala
+    | UTöluðTalaOktilljónir/fall UTöluðRaðtalaOgUndirOktilljón/fall/kyn/tala
     # "x oktilljónasti og ..."
     | UTöluðRaðtalaOktilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
 
 # OKTILLJÓNIR
 
 UTöluðRaðtalaOktilljónir/fall/kyn/tala →
-    UTöluðTalaUndirOktilljón/fall/kyn? UTöluðRaðtalaOktilljón/fall/kyn/tala
+    UTöluðTalaUndirOktilljón_kvk/fall? UTöluðRaðtalaOktilljón/fall/kyn/tala
 
 # SEPTILLJÓNIR
 
 UTöluðRaðtalaUndirOktilljón/fall/kyn/tala →
     UTöluðRaðtalaUndirSeptilljón/fall/kyn/tala
-    | UTöluðTalaSeptilljónir/fall/kyn UTöluðRaðtalaUndirSeptilljón/fall/kyn/tala
-    | UTöluðTalaSeptilljónir/fall/kyn UTöluðRaðtalaOgUndirSeptilljón/fall/kyn/tala
+    | UTöluðTalaSeptilljónir/fall UTöluðRaðtalaUndirSeptilljón/fall/kyn/tala
+    | UTöluðTalaSeptilljónir/fall UTöluðRaðtalaOgUndirSeptilljón/fall/kyn/tala
     | UTöluðRaðtalaSeptilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
     
 
@@ -67,14 +67,14 @@ UTöluðRaðtalaOgUndirOktilljón/fall/kyn/tala →
     | UTöluðRaðtalaOgUndirSeptilljón/fall/kyn/tala
 
 UTöluðRaðtalaSeptilljónir/fall/kyn/tala →
-    UTöluðTalaUndirSeptilljón/fall/kyn? UTöluðRaðtalaSeptilljón/fall/kyn/tala
+    UTöluðTalaUndirSeptilljón_kvk/fall? UTöluðRaðtalaSeptilljón/fall/kyn/tala
 
 # SEXTILLJÓNIR
 
 UTöluðRaðtalaUndirSeptilljón/fall/kyn/tala →
     UTöluðRaðtalaUndirSextilljón/fall/kyn/tala
-    | UTöluðTalaSextilljónir/fall/kyn UTöluðRaðtalaUndirSextilljón/fall/kyn/tala
-    | UTöluðTalaSextilljónir/fall/kyn UTöluðRaðtalaOgUndirSextilljón/fall/kyn/tala
+    | UTöluðTalaSextilljónir/fall UTöluðRaðtalaUndirSextilljón/fall/kyn/tala
+    | UTöluðTalaSextilljónir/fall UTöluðRaðtalaOgUndirSextilljón/fall/kyn/tala
     | UTöluðRaðtalaSextilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
 
 UTöluðRaðtalaOgUndirSeptilljón/fall/kyn/tala →
@@ -82,14 +82,14 @@ UTöluðRaðtalaOgUndirSeptilljón/fall/kyn/tala →
     | UTöluðRaðtalaOgUndirSextilljón/fall/kyn/tala
 
 UTöluðRaðtalaSextilljónir/fall/kyn/tala →
-    UTöluðTalaUndirSextilljón/fall/kyn? UTöluðRaðtalaSextilljón/fall/kyn/tala
+    UTöluðTalaUndirSextilljón_kvk/fall? UTöluðRaðtalaSextilljón/fall/kyn/tala
 
 # KVINTILLJÓNIR
 
 UTöluðRaðtalaUndirSextilljón/fall/kyn/tala →
     UTöluðRaðtalaUndirKvintilljón/fall/kyn/tala
-    | UTöluðTalaKvintilljónir/fall/kyn UTöluðRaðtalaUndirKvintilljón/fall/kyn/tala
-    | UTöluðTalaKvintilljónir/fall/kyn UTöluðRaðtalaOgUndirKvintilljón/fall/kyn/tala
+    | UTöluðTalaKvintilljónir/fall UTöluðRaðtalaUndirKvintilljón/fall/kyn/tala
+    | UTöluðTalaKvintilljónir/fall UTöluðRaðtalaOgUndirKvintilljón/fall/kyn/tala
     | UTöluðRaðtalaKvintilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
 
 UTöluðRaðtalaOgUndirSextilljón/fall/kyn/tala →
@@ -97,14 +97,14 @@ UTöluðRaðtalaOgUndirSextilljón/fall/kyn/tala →
     | UTöluðRaðtalaOgUndirKvintilljón/fall/kyn/tala
 
 UTöluðRaðtalaKvintilljónir/fall/kyn/tala →
-    UTöluðTalaUndirKvintilljón/fall/kyn? UTöluðRaðtalaKvintilljón/fall/kyn/tala
+    UTöluðTalaUndirKvintilljón_kvk/fall? UTöluðRaðtalaKvintilljón/fall/kyn/tala
 
 # KVAÐRILLJARÐAR
 
 UTöluðRaðtalaUndirKvintilljón/fall/kyn/tala →
     UTöluðRaðtalaUndirKvaðrilljarði/fall/kyn/tala
-    | UTöluðTalaKvaðrilljarðar/fall/kyn UTöluðRaðtalaUndirKvaðrilljarði/fall/kyn/tala
-    | UTöluðTalaKvaðrilljarðar/fall/kyn UTöluðRaðtalaOgUndirKvaðrilljarði/fall/kyn/tala
+    | UTöluðTalaKvaðrilljarðar/fall UTöluðRaðtalaUndirKvaðrilljarði/fall/kyn/tala
+    | UTöluðTalaKvaðrilljarðar/fall UTöluðRaðtalaOgUndirKvaðrilljarði/fall/kyn/tala
     | UTöluðRaðtalaKvaðrilljarðar/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
 
 UTöluðRaðtalaOgUndirKvintilljón/fall/kyn/tala →
@@ -112,14 +112,14 @@ UTöluðRaðtalaOgUndirKvintilljón/fall/kyn/tala →
     | UTöluðRaðtalaOgUndirKvaðrilljarði/fall/kyn/tala
 
 UTöluðRaðtalaKvaðrilljarðar/fall/kyn/tala →
-    UTöluðTalaUndirKvaðrilljarði/fall/kyn? UTöluðRaðtalaKvaðrilljarður/fall/kyn/tala
+    UTöluðTalaUndirKvaðrilljarði_kk/fall? UTöluðRaðtalaKvaðrilljarður/fall/kyn/tala
 
 # KVAÐRILLJÓNIR
 
 UTöluðRaðtalaUndirKvaðrilljarði/fall/kyn/tala →
     UTöluðRaðtalaUndirKvaðrilljón/fall/kyn/tala
-    | UTöluðTalaKvaðrilljónir/fall/kyn UTöluðRaðtalaUndirKvaðrilljón/fall/kyn/tala
-    | UTöluðTalaKvaðrilljónir/fall/kyn UTöluðRaðtalaOgUndirKvaðrilljón/fall/kyn/tala
+    | UTöluðTalaKvaðrilljónir/fall UTöluðRaðtalaUndirKvaðrilljón/fall/kyn/tala
+    | UTöluðTalaKvaðrilljónir/fall UTöluðRaðtalaOgUndirKvaðrilljón/fall/kyn/tala
     | UTöluðRaðtalaKvaðrilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
 
 UTöluðRaðtalaOgUndirKvaðrilljarði/fall/kyn/tala →
@@ -127,14 +127,14 @@ UTöluðRaðtalaOgUndirKvaðrilljarði/fall/kyn/tala →
     | UTöluðRaðtalaOgUndirKvaðrilljón/fall/kyn/tala
 
 UTöluðRaðtalaKvaðrilljónir/fall/kyn/tala →
-    UTöluðTalaUndirKvaðrilljón/fall/kyn? UTöluðRaðtalaKvaðrilljón/fall/kyn/tala
+    UTöluðTalaUndirKvaðrilljón_kvk/fall? UTöluðRaðtalaKvaðrilljón/fall/kyn/tala
 
 # TRILLJARÐAR
 
 UTöluðRaðtalaUndirKvaðrilljón/fall/kyn/tala →
     UTöluðRaðtalaUndirTrilljarði/fall/kyn/tala
-    | UTöluðTalaTrilljarðar/fall/kyn UTöluðRaðtalaUndirTrilljarði/fall/kyn/tala
-    | UTöluðTalaTrilljarðar/fall/kyn UTöluðRaðtalaOgUndirTrilljarði/fall/kyn/tala
+    | UTöluðTalaTrilljarðar/fall UTöluðRaðtalaUndirTrilljarði/fall/kyn/tala
+    | UTöluðTalaTrilljarðar/fall UTöluðRaðtalaOgUndirTrilljarði/fall/kyn/tala
     | UTöluðRaðtalaTrilljarðar/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
 
 UTöluðRaðtalaOgUndirKvaðrilljón/fall/kyn/tala →
@@ -142,14 +142,14 @@ UTöluðRaðtalaOgUndirKvaðrilljón/fall/kyn/tala →
     | UTöluðRaðtalaOgUndirTrilljarði/fall/kyn/tala
 
 UTöluðRaðtalaTrilljarðar/fall/kyn/tala →
-    UTöluðTalaUndirTrilljarði/fall/kyn? UTöluðRaðtalaTrilljarður/fall/kyn/tala
+    UTöluðTalaUndirTrilljarði_kk/fall? UTöluðRaðtalaTrilljarður/fall/kyn/tala
 
 # TRILLJÓNIR
 
 UTöluðRaðtalaUndirTrilljarði/fall/kyn/tala →
     UTöluðRaðtalaUndirTrilljón/fall/kyn/tala
-    | UTöluðTalaTrilljónir/fall/kyn UTöluðRaðtalaUndirTrilljón/fall/kyn/tala
-    | UTöluðTalaTrilljónir/fall/kyn UTöluðRaðtalaOgUndirTrilljón/fall/kyn/tala
+    | UTöluðTalaTrilljónir/fall UTöluðRaðtalaUndirTrilljón/fall/kyn/tala
+    | UTöluðTalaTrilljónir/fall UTöluðRaðtalaOgUndirTrilljón/fall/kyn/tala
     | UTöluðRaðtalaTrilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
 
 UTöluðRaðtalaOgUndirTrilljarði/fall/kyn/tala →
@@ -157,15 +157,15 @@ UTöluðRaðtalaOgUndirTrilljarði/fall/kyn/tala →
     | UTöluðRaðtalaOgUndirTrilljón/fall/kyn/tala
 
 UTöluðRaðtalaTrilljónir/fall/kyn/tala →
-    UTöluðTalaUndirTrilljón/fall/kyn? UTöluðRaðtalaTrilljón/fall/kyn/tala
-    | UTöluðTalaUndirMilljarði/fall/kyn? UTöluðTalaMilljarður/fall/tala UTöluðRaðtalaMilljarður/fall/kyn/tala
+    UTöluðTalaUndirTrilljón_kvk/fall? UTöluðRaðtalaTrilljón/fall/kyn/tala
+    | UTöluðTalaUndirMilljarði_kk/fall? UTöluðTalaMilljarður/fall/tala UTöluðRaðtalaMilljarður/fall/kyn/tala
 
 # BILLJARÐAR
 
 UTöluðRaðtalaUndirTrilljón/fall/kyn/tala →
     UTöluðRaðtalaUndirBilljarði/fall/kyn/tala
-    | UTöluðTalaBilljarðar/fall/kyn UTöluðRaðtalaUndirBilljarði/fall/kyn/tala
-    | UTöluðTalaBilljarðar/fall/kyn UTöluðRaðtalaOgUndirBilljarði/fall/kyn/tala
+    | UTöluðTalaBilljarðar/fall UTöluðRaðtalaUndirBilljarði/fall/kyn/tala
+    | UTöluðTalaBilljarðar/fall UTöluðRaðtalaOgUndirBilljarði/fall/kyn/tala
     | UTöluðRaðtalaBilljarðar/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
 
 UTöluðRaðtalaOgUndirTrilljón/fall/kyn/tala →
@@ -173,15 +173,15 @@ UTöluðRaðtalaOgUndirTrilljón/fall/kyn/tala →
     | UTöluðRaðtalaOgUndirBilljarði/fall/kyn/tala
 
 UTöluðRaðtalaBilljarðar/fall/kyn/tala →
-    UTöluðTalaUndirBilljarði/fall/kyn? UTöluðRaðtalaBilljarður/fall/kyn/tala
-    | UTöluðTalaUndirMilljón/fall/kyn? UTöluðTalaMilljón/fall/tala UTöluðRaðtalaMilljarður/fall/kyn/tala
+    UTöluðTalaUndirBilljarði_kk/fall? UTöluðRaðtalaBilljarður/fall/kyn/tala
+    | UTöluðTalaUndirMilljón_kvk/fall? UTöluðTalaMilljón/fall/tala UTöluðRaðtalaMilljarður/fall/kyn/tala
 
 # BILLJÓNIR
 
 UTöluðRaðtalaUndirBilljarði/fall/kyn/tala →
     UTöluðRaðtalaUndirBilljón/fall/kyn/tala
-    | UTöluðTalaBilljónir/fall/kyn UTöluðRaðtalaUndirBilljón/fall/kyn/tala
-    | UTöluðTalaBilljónir/fall/kyn UTöluðRaðtalaOgUndirBilljón/fall/kyn/tala
+    | UTöluðTalaBilljónir/fall UTöluðRaðtalaUndirBilljón/fall/kyn/tala
+    | UTöluðTalaBilljónir/fall UTöluðRaðtalaOgUndirBilljón/fall/kyn/tala
     | UTöluðRaðtalaBilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
 
 UTöluðRaðtalaOgUndirBilljarði/fall/kyn/tala →
@@ -189,15 +189,15 @@ UTöluðRaðtalaOgUndirBilljarði/fall/kyn/tala →
     | UTöluðRaðtalaOgUndirBilljón/fall/kyn/tala
 
 UTöluðRaðtalaBilljónir/fall/kyn/tala →
-    UTöluðTalaUndirBilljón/fall/kyn? UTöluðRaðtalaBilljón/fall/kyn/tala
-    | UTöluðTalaUndirMilljón/fall/kyn? UTöluðTalaMilljón/fall/tala UTöluðRaðtalaMilljón/fall/kyn/tala
+    UTöluðTalaUndirBilljón_kvk/fall? UTöluðRaðtalaBilljón/fall/kyn/tala
+    | UTöluðTalaUndirMilljón_kvk/fall? UTöluðTalaMilljón/fall/tala UTöluðRaðtalaMilljón/fall/kyn/tala
 
 # MILLJARÐAR
 
 UTöluðRaðtalaUndirBilljón/fall/kyn/tala →
     UTöluðRaðtalaUndirMilljarði/fall/kyn/tala
-    | UTöluðTalaMilljarðar/fall/kyn UTöluðRaðtalaUndirMilljarði/fall/kyn/tala
-    | UTöluðTalaMilljarðar/fall/kyn UTöluðRaðtalaOgUndirMilljarði/fall/kyn/tala
+    | UTöluðTalaMilljarðar/fall UTöluðRaðtalaUndirMilljarði/fall/kyn/tala
+    | UTöluðTalaMilljarðar/fall UTöluðRaðtalaOgUndirMilljarði/fall/kyn/tala
     | UTöluðRaðtalaMilljarðar/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
 
 UTöluðRaðtalaOgUndirBilljón/fall/kyn/tala →
@@ -205,14 +205,14 @@ UTöluðRaðtalaOgUndirBilljón/fall/kyn/tala →
     | UTöluðRaðtalaOgUndirMilljarði/fall/kyn/tala
 
 UTöluðRaðtalaMilljarðar/fall/kyn/tala →
-    UTöluðTalaUndirMilljarði/fall/kyn? UTöluðRaðtalaMilljarður/fall/kyn/tala
+    UTöluðTalaUndirMilljarði_kk/fall? UTöluðRaðtalaMilljarður/fall/kyn/tala
 
 # MILLJÓNIR
 
 UTöluðRaðtalaUndirMilljarði/fall/kyn/tala →
     UTöluðRaðtalaUndirMilljón/fall/kyn/tala
-    | UTöluðTalaMilljónir/fall/kyn UTöluðRaðtalaUndirMilljón/fall/kyn/tala
-    | UTöluðTalaMilljónir/fall/kyn UTöluðRaðtalaOgUndirMilljón/fall/kyn/tala
+    | UTöluðTalaMilljónir/fall UTöluðRaðtalaUndirMilljón/fall/kyn/tala
+    | UTöluðTalaMilljónir/fall UTöluðRaðtalaOgUndirMilljón/fall/kyn/tala
     | UTöluðRaðtalaMilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
 
 UTöluðRaðtalaOgUndirMilljarði/fall/kyn/tala →
@@ -220,7 +220,7 @@ UTöluðRaðtalaOgUndirMilljarði/fall/kyn/tala →
     | UTöluðRaðtalaOgUndirMilljón/fall/kyn/tala
 
 UTöluðRaðtalaMilljónir/fall/kyn/tala →
-    UTöluðTalaUndirMilljón/fall/kyn? UTöluðRaðtalaMilljón/fall/kyn/tala
+    UTöluðTalaUndirMilljón_kvk/fall? UTöluðRaðtalaMilljón/fall/kyn/tala
 
 # ÞÚSUND
 
