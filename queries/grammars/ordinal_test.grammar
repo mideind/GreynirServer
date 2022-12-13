@@ -1,0 +1,6 @@
+# Grammar for the rand query module
+
+Query →
+    QOrdinal
+
+QOrdinal → UHeilRaðtala '?'?

@@ -33,85 +33,117 @@
 # TODO: 1 - Ordinal numbers
 # TODO: 2 - Fractions
 
+from typing import Any
+
 from functools import reduce
 from operator import mul
 
-from tree import Result, ParamList, Node
+from tree import Result
 from queries.util import read_utility_grammar_file
 
 # The context-free grammar for number utterances recognized by this utility module
-GRAMMAR = read_utility_grammar_file("number")
+GRAMMAR = read_utility_grammar_file("ordinal")
 
 _NUMBERS = {
     "núll": 0,
+    "núllti": 0,
     "einn": 1,
+    "fyrstur": 1,
     "tveir": 2,
+    "annar": 2,
     "þrír": 3,
+    "þriðji": 3,
     "fjórir": 4,
+    "fjórði": 4,
     "fimm": 5,
+    "fimmti": 5,
     "sex": 6,
+    "sjötti": 6,
     "sjö": 7,
+    "sjöundi": 7,
     "átta": 8,
+    "áttundi": 8,
     "níu": 9,
+    "níundi": 9,
     "tíu": 10,
+    "tíundi": 10,
     "ellefu": 11,
+    "ellefti": 11,
     "tólf": 12,
+    "tólfti": 12,
     "þrettán": 13,
+    "þrettándi": 13,
     "fjórtán": 14,
+    "fjórtándi": 14,
     "fimmtán": 15,
+    "fimmtándi": 15,
     "sextán": 16,
+    "sextándi": 16,
     "sautján": 17,
+    "sautjándi": 17,
     "seytján": 17,
+    "seytjándi": 17,
     "átján": 18,
+    "átjándi": 18,
     "nítján": 19,
+    "nítjándi": 19,
     "tuttugu": 20,
+    "tuttugasti": 20,
     "þrjátíu": 30,
+    "þrítugasti": 30,
     "fjörutíu": 40,
+    "fertugasti": 40,
     "fimmtíu": 50,
+    "fimmtugasti": 50,
     "sextíu": 60,
+    "sextugasti": 60,
     "sjötíu": 70,
+    "sjötugasti": 70,
     "áttatíu": 80,
+    "átttugasti": 80,
     "níutíu": 90,
+    "nítugasti": 90,
     "hundrað": 100,
+    "hundraðasti": 100,
     "hundruð": 100,
+    "hundruðasti": 100,
     "þúsund": 1000,
+    "þúsundasti": 1000,
     "milljón": 10**6,
+    "milljónasti": 10**6,
     "miljarður": 10**9,
+    "miljarðasti": 10**9,
     "milljarður": 10**9,
+    "milljarðasti": 10**9,
     "billjón": 10**12,
+    "billjónasti": 10**12,
     "billjarður": 10**15,
+    "billjarðasti": 10**15,
     "trilljón": 10**18,
+    "trilljónasti": 10**18,
     "trilljarður": 10**21,
+    "trilljarðasti": 10**21,
     "kvaðrilljón": 10**24,
+    "kvaðrilljónasti": 10**24,
     "kvaðrilljarður": 10**27,
+    "kvaðrilljarðasti": 10**27,
     "kvintilljón": 10**30,
+    "kvintilljónasti": 10**30,
     "sextilljón": 10**36,
+    "sextilljónasti": 10**36,
     "septilljón": 10**42,
+    "septilljónasti": 10**42,
     "oktilljón": 10**48,
+    "oktilljónasti": 10**48,
 }
-
-
-def UBrotaTala(node: Node, params: ParamList, result: Result) -> None:
-    if "numbers" in result:
-        result["numbers"] = [
-            float(
-                f"{result['numbers'][0]}.{''.join(str(i) for i in result['numbers'][1:])}"
-            )
-        ]
-
-
-def UHeilTala(node: Node, params: ParamList, result: Result) -> None:
-    # Check if a number was specified in digits instead of written out
-    tala = node.first_child(lambda n: n.has_t_base("tala"))
-    if tala is not None and tala.contained_number is not None:
-        result["numbers"] = [int(tala.contained_number)]
 
 
 # Function for nonterminals which have children that should be multiplied together
 # e.g. "fimm" (5) and "hundruð" (100) -> "fimm hundruð" (500)
-def _multiply_children(node: Node, params: ParamList, result: Result) -> None:
+def _multiply_children(node: Any, params: Any, result: Result) -> None:
     if "numbers" in result:
         result["numbers"] = [reduce(mul, result["numbers"])]
+    print("multiply_children")
 
 
 # Plural named functions (e.g. "UTöluðTalaMilljónir") take the product of the children nodes
@@ -133,11 +165,31 @@ def _multiply_children(node: Node, params: ParamList, result: Result) -> None:
     UTöluðTalaOktilljónir,
 ) = [_multiply_children] * 15
 
+# Plural named functions (e.g. "UTöluðTalaMilljónir") take the product of the children nodes
+(
+    UTöluðRaðtalaHundruð,
+    UTöluðRaðtala10Til19Hundruð,
+    UTöluðRaðtalaÞúsundir,
+    UTöluðRaðtalaMilljónir,
+    UTöluðRaðtalaMilljarðar,
+    UTöluðRaðtalaBilljónir,
+    UTöluðRaðtalaBilljarðar,
+    UTöluðRaðtalaTrilljónir,
+    UTöluðRaðtalaTrilljarðar,
+    UTöluðRaðtalaKvaðrilljónir,
+    UTöluðRaðtalaKvaðrilljarðar,
+    UTöluðRaðtalaKvintilljónir,
+    UTöluðRaðtalaSextilljónir,
+    UTöluðRaðtalaSeptilljónir,
+    UTöluðRaðtalaOktilljónir,
+) = [_multiply_children] * 15
+
 # Function for nonterminals which have children that should be added together
 # e.g. "sextíu" (60) and "átta" (8) -> "sextíu (og) átta" (68)
-def _sum_children(node: Node, params: ParamList, result: Result) -> None:
+def _sum_children(node: Any, params: Any, result: Result) -> None:
     if "numbers" in result:
         result["numbers"] = [sum(result["numbers"])]
+    print("sum_children")
 
 
 # "UTöluðTalaUndirX" functions take the sum of the children nodes,
@@ -160,11 +212,34 @@ def _sum_children(node: Node, params: ParamList, result: Result) -> None:
     UTöluðTalaUndirOktilljón,
 ) = [_sum_children] * 15
 
+# "UTöluðTalaUndirX" functions take the sum of the children nodes,
+# along with the root "UTöluðTala"
+(
+    UTöluðRaðtala,
+    UTöluðRaðtalaUndirHundrað,
+    UTöluðRaðtalaUndirÞúsund,
+    UTöluðRaðtalaUndirMilljón,
+    UTöluðRaðtalaUndirMilljarði,
+    UTöluðRaðtalaUndirBilljón,
+    UTöluðRaðtalaUndirBilljarði,
+    UTöluðRaðtalaUndirTrilljón,
+    UTöluðRaðtalaUndirTrilljarði,
+    UTöluðRaðtalaUndirKvaðrilljón,
+    UTöluðRaðtalaUndirKvaðrilljarði,
+    UTöluðRaðtalaUndirKvintilljón,
+    UTöluðRaðtalaUndirSextilljón,
+    UTöluðRaðtalaUndirSeptilljón,
+    UTöluðRaðtalaUndirOktilljón,
+) = [_sum_children] * 15
+
 
 # Function for nonterminals where we can perform a value lookup
-# e.g. "hundruð" (result._root = "hundrað") -> 100
-def _lookup_function(node: Node, params: ParamList, result: Result) -> None:
-    result["numbers"] = [_NUMBERS[result._root]]
+# e.g. "hundraðasti" (result._root = "hundraðasti") -> 100
+# Lowercase to avoid "Annar" auto-capitalization.
+# TODO: Fix that issue.
+def _lookup_function(node: Any, params: Any, result: Result) -> None:
+    result["numbers"] = [_NUMBERS[result._root.lower()]]
+    print("lookup_function")
 
 
 # Define multiple functions with same functionality but different names
@@ -191,3 +266,26 @@ def _lookup_function(node: Node, params: ParamList, result: Result) -> None:
     UTöluðTalaSeptilljón,
     UTöluðTalaOktilljón,
 ) = [_lookup_function] * 21
+
+# Define multiple functions with same functionality but different names
+(
+    UTöluðRaðtala0,
+    UTöluðRaðtala1,
+    UTöluðRaðtala2Til9,
+    UTöluðRaðtala10Til19,
+    UTöluðRaðtalaTugir,
+    UTöluðRaðtalaHundrað,
+    UTöluðRaðtalaÞúsund,
+    UTöluðRaðtalaMilljón,
+    UTöluðRaðtalaMilljarður,
+    UTöluðRaðtalaBilljón,
+    UTöluðRaðtalaBilljarður,
+    UTöluðRaðtalaTrilljón,
+    UTöluðRaðtalaTrilljarður,
+    UTöluðRaðtalaKvaðrilljón,
+    UTöluðRaðtalaKvaðrilljarður,
+    UTöluðRaðtalaKvintilljón,
+    UTöluðRaðtalaSextilljón,
+    UTöluðRaðtalaSeptilljón,
+    UTöluðRaðtalaOktilljón,
+) = [_lookup_function] * 19

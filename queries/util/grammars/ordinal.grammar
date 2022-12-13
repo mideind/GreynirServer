@@ -1,0 +1,368 @@
+# Grammar for the numbers utility module
+# UBrotaTala → UTöluðTala/fall/kyn "komma" UTöluðTala/fall/kyn+ | UTöluðTala/fall/kyn "," UTöluðTala/fall/kyn+
+
+/grno = gr nogr
+
+UHeilRaðtala → tala | UHeilRaðtala/fall/kyn/tala
+
+UHeilRaðtala/fall/kyn/tala →
+    UTöluðRaðtala/fall/kyn/tala
+    # Standalone forms (definite) that
+    # don't work inside a larger spoken number,
+    # e.g. hundraðið, hundraðinu, hundruðunum
+    # These aren't applicable to ordinals
+    # | UTöluðTalaHundrað_gr/fall/kyn/tala
+    # | UTöluðTalaÞúsund_gr/fall/kyn/tala
+    # | UTöluðTalaMilljón_gr/fall/kyn/tala
+    # | UTöluðTalaMilljarður_gr/fall/kyn/tala
+    # | UTöluðTalaBilljón_gr/fall/kyn/tala
+    # | UTöluðTalaBilljarður_gr/fall/kyn/tala
+    # | UTöluðTalaTrilljón_gr/fall/kyn/tala
+    # | UTöluðTalaTrilljarður_gr/fall/kyn/tala
+    # | UTöluðTalaKvaðrilljón_gr/fall/kyn/tala
+    # | UTöluðTalaKvaðrilljarður_gr/fall/kyn/tala
+    # | UTöluðTalaKvintilljón_gr/fall/kyn/tala
+    # | UTöluðTalaSextilljón_gr/fall/kyn/tala
+    # | UTöluðTalaSeptilljón_gr/fall/kyn/tala
+    # | UTöluðTalaOktilljón_gr/fall/kyn/tala
+    # # Zero
+    # | UTöluðTala0/fall/kyn/tala
+
+# The reason we start so large (oktilljón = 10^48 = (10^6)^8) is so that a large number
+# doesn't get interpreted as multiple discrete numbers side by side.
+# E.g. we want 'tvö hundruð þúsund' to be one number,
+# but it would be split into 'tvö' 'hundruð' 'þúsund'
+# if we had shortcuts in the grammar and multiple TöluðTala
+# nonterminals were used side by side in a grammar.
+# This allows us (theoretically) to use constructions like: TöluðTala+
+# to catch a list of numbers, like when people read telephone numbers
+
+# Single cardinal number
+UTöluðRaðtala/fall/kyn/tala →
+    # Something smaller than an oktilljón (quindecillion in english), probably most numbers
+    UTöluðRaðtalaUndirOktilljón/fall/kyn/tala
+    # "x oktilljónir ..."
+    | UTöluðTalaOktilljónir/fall/kyn UTöluðRaðtalaUndirOktilljón/fall/kyn/tala
+    # "x oktilljónir og ..."
+    | UTöluðTalaOktilljónir/fall/kyn UTöluðRaðtalaOgUndirOktilljón/fall/kyn/tala
+    # "x oktilljónasti og ..."
+    | UTöluðRaðtalaOktilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
+
+# OKTILLJÓNIR
+
+UTöluðRaðtalaOktilljónir/fall/kyn/tala →
+    UTöluðTalaUndirOktilljón/fall/kyn? UTöluðRaðtalaOktilljón/fall/kyn/tala
+
+# SEPTILLJÓNIR
+
+UTöluðRaðtalaUndirOktilljón/fall/kyn/tala →
+    UTöluðRaðtalaUndirSeptilljón/fall/kyn/tala
+    | UTöluðTalaSeptilljónir/fall/kyn UTöluðRaðtalaUndirSeptilljón/fall/kyn/tala
+    | UTöluðTalaSeptilljónir/fall/kyn UTöluðRaðtalaOgUndirSeptilljón/fall/kyn/tala
+    | UTöluðRaðtalaSeptilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
+    
+
+UTöluðRaðtalaOgUndirOktilljón/fall/kyn/tala →
+    "og" UTöluðRaðtalaSeptilljónir/fall/kyn/tala
+    | UTöluðRaðtalaOgUndirSeptilljón/fall/kyn/tala
+
+UTöluðRaðtalaSeptilljónir/fall/kyn/tala →
+    UTöluðTalaUndirSeptilljón/fall/kyn? UTöluðRaðtalaSeptilljón/fall/kyn/tala
+
+# SEXTILLJÓNIR
+
+UTöluðRaðtalaUndirSeptilljón/fall/kyn/tala →
+    UTöluðRaðtalaUndirSextilljón/fall/kyn/tala
+    | UTöluðTalaSextilljónir/fall/kyn UTöluðRaðtalaUndirSextilljón/fall/kyn/tala
+    | UTöluðTalaSextilljónir/fall/kyn UTöluðRaðtalaOgUndirSextilljón/fall/kyn/tala
+    | UTöluðRaðtalaSextilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
+
+UTöluðRaðtalaOgUndirSeptilljón/fall/kyn/tala →
+    "og" UTöluðRaðtalaSextilljónir/fall/kyn/tala
+    | UTöluðRaðtalaOgUndirSextilljón/fall/kyn/tala
+
+UTöluðRaðtalaSextilljónir/fall/kyn/tala →
+    UTöluðTalaUndirSextilljón/fall/kyn? UTöluðRaðtalaSextilljón/fall/kyn/tala
+
+# KVINTILLJÓNIR
+
+UTöluðRaðtalaUndirSextilljón/fall/kyn/tala →
+    UTöluðRaðtalaUndirKvintilljón/fall/kyn/tala
+    | UTöluðTalaKvintilljónir/fall/kyn UTöluðRaðtalaUndirKvintilljón/fall/kyn/tala
+    | UTöluðTalaKvintilljónir/fall/kyn UTöluðRaðtalaOgUndirKvintilljón/fall/kyn/tala
+    | UTöluðRaðtalaKvintilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
+
+UTöluðRaðtalaOgUndirSextilljón/fall/kyn/tala →
+    "og" UTöluðRaðtalaKvintilljónir/fall/kyn/tala
+    | UTöluðRaðtalaOgUndirKvintilljón/fall/kyn/tala
+
+UTöluðRaðtalaKvintilljónir/fall/kyn/tala →
+    UTöluðTalaUndirKvintilljón/fall/kyn? UTöluðRaðtalaKvintilljón/fall/kyn/tala
+
+# KVAÐRILLJARÐAR
+
+UTöluðRaðtalaUndirKvintilljón/fall/kyn/tala →
+    UTöluðRaðtalaUndirKvaðrilljarði/fall/kyn/tala
+    | UTöluðTalaKvaðrilljarðar/fall/kyn UTöluðRaðtalaUndirKvaðrilljarði/fall/kyn/tala
+    | UTöluðTalaKvaðrilljarðar/fall/kyn UTöluðRaðtalaOgUndirKvaðrilljarði/fall/kyn/tala
+    | UTöluðRaðtalaKvaðrilljarðar/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
+
+UTöluðRaðtalaOgUndirKvintilljón/fall/kyn/tala →
+    "og" UTöluðRaðtalaKvaðrilljarðar/fall/kyn/tala
+    | UTöluðRaðtalaOgUndirKvaðrilljarði/fall/kyn/tala
+
+UTöluðRaðtalaKvaðrilljarðar/fall/kyn/tala →
+    UTöluðTalaUndirKvaðrilljarði/fall/kyn? UTöluðRaðtalaKvaðrilljarður/fall/kyn/tala
+
+# KVAÐRILLJÓNIR
+
+UTöluðRaðtalaUndirKvaðrilljarði/fall/kyn/tala →
+    UTöluðRaðtalaUndirKvaðrilljón/fall/kyn/tala
+    | UTöluðTalaKvaðrilljónir/fall/kyn UTöluðRaðtalaUndirKvaðrilljón/fall/kyn/tala
+    | UTöluðTalaKvaðrilljónir/fall/kyn UTöluðRaðtalaOgUndirKvaðrilljón/fall/kyn/tala
+    | UTöluðRaðtalaKvaðrilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
+
+UTöluðRaðtalaOgUndirKvaðrilljarði/fall/kyn/tala →
+    "og" UTöluðRaðtalaKvaðrilljónir/fall/kyn/tala
+    | UTöluðRaðtalaOgUndirKvaðrilljón/fall/kyn/tala
+
+UTöluðRaðtalaKvaðrilljónir/fall/kyn/tala →
+    UTöluðTalaUndirKvaðrilljón/fall/kyn? UTöluðRaðtalaKvaðrilljón/fall/kyn/tala
+
+# TRILLJARÐAR
+
+UTöluðRaðtalaUndirKvaðrilljón/fall/kyn/tala →
+    UTöluðRaðtalaUndirTrilljarði/fall/kyn/tala
+    | UTöluðTalaTrilljarðar/fall/kyn UTöluðRaðtalaUndirTrilljarði/fall/kyn/tala
+    | UTöluðTalaTrilljarðar/fall/kyn UTöluðRaðtalaOgUndirTrilljarði/fall/kyn/tala
+    | UTöluðRaðtalaTrilljarðar/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
+
+UTöluðRaðtalaOgUndirKvaðrilljón/fall/kyn/tala →
+    "og" UTöluðRaðtalaTrilljarðar/fall/kyn/tala
+    | UTöluðRaðtalaOgUndirTrilljarði/fall/kyn/tala
+
+UTöluðRaðtalaTrilljarðar/fall/kyn/tala →
+    UTöluðTalaUndirTrilljarði/fall/kyn? UTöluðRaðtalaTrilljarður/fall/kyn/tala
+
+# TRILLJÓNIR
+
+UTöluðRaðtalaUndirTrilljarði/fall/kyn/tala →
+    UTöluðRaðtalaUndirTrilljón/fall/kyn/tala
+    | UTöluðTalaTrilljónir/fall/kyn UTöluðRaðtalaUndirTrilljón/fall/kyn/tala
+    | UTöluðTalaTrilljónir/fall/kyn UTöluðRaðtalaOgUndirTrilljón/fall/kyn/tala
+    | UTöluðRaðtalaTrilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
+
+UTöluðRaðtalaOgUndirTrilljarði/fall/kyn/tala →
+    "og" UTöluðRaðtalaTrilljónir/fall/kyn/tala
+    | UTöluðRaðtalaOgUndirTrilljón/fall/kyn/tala
+
+UTöluðRaðtalaTrilljónir/fall/kyn/tala →
+    UTöluðTalaUndirTrilljón/fall/kyn? UTöluðRaðtalaTrilljón/fall/kyn/tala
+    | UTöluðTalaUndirMilljarði/fall/kyn? UTöluðTalaMilljarður/fall/tala UTöluðRaðtalaMilljarður/fall/kyn/tala
+
+# BILLJARÐAR
+
+UTöluðRaðtalaUndirTrilljón/fall/kyn/tala →
+    UTöluðRaðtalaUndirBilljarði/fall/kyn/tala
+    | UTöluðTalaBilljarðar/fall/kyn UTöluðRaðtalaUndirBilljarði/fall/kyn/tala
+    | UTöluðTalaBilljarðar/fall/kyn UTöluðRaðtalaOgUndirBilljarði/fall/kyn/tala
+    | UTöluðRaðtalaBilljarðar/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
+
+UTöluðRaðtalaOgUndirTrilljón/fall/kyn/tala →
+    "og" UTöluðRaðtalaBilljarðar/fall/kyn/tala
+    | UTöluðRaðtalaOgUndirBilljarði/fall/kyn/tala
+
+UTöluðRaðtalaBilljarðar/fall/kyn/tala →
+    UTöluðTalaUndirBilljarði/fall/kyn? UTöluðRaðtalaBilljarður/fall/kyn/tala
+    | UTöluðTalaUndirMilljón/fall/kyn? UTöluðTalaMilljón/fall/tala UTöluðRaðtalaMilljarður/fall/kyn/tala
+
+# BILLJÓNIR
+
+UTöluðRaðtalaUndirBilljarði/fall/kyn/tala →
+    UTöluðRaðtalaUndirBilljón/fall/kyn/tala
+    | UTöluðTalaBilljónir/fall/kyn UTöluðRaðtalaUndirBilljón/fall/kyn/tala
+    | UTöluðTalaBilljónir/fall/kyn UTöluðRaðtalaOgUndirBilljón/fall/kyn/tala
+    | UTöluðRaðtalaBilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
+
+UTöluðRaðtalaOgUndirBilljarði/fall/kyn/tala →
+    "og" UTöluðRaðtalaBilljónir/fall/kyn/tala
+    | UTöluðRaðtalaOgUndirBilljón/fall/kyn/tala
+
+UTöluðRaðtalaBilljónir/fall/kyn/tala →
+    UTöluðTalaUndirBilljón/fall/kyn? UTöluðRaðtalaBilljón/fall/kyn/tala
+    | UTöluðTalaUndirMilljón/fall/kyn? UTöluðTalaMilljón/fall/tala UTöluðRaðtalaMilljón/fall/kyn/tala
+
+# MILLJARÐAR
+
+UTöluðRaðtalaUndirBilljón/fall/kyn/tala →
+    UTöluðRaðtalaUndirMilljarði/fall/kyn/tala
+    | UTöluðTalaMilljarðar/fall/kyn UTöluðRaðtalaUndirMilljarði/fall/kyn/tala
+    | UTöluðTalaMilljarðar/fall/kyn UTöluðRaðtalaOgUndirMilljarði/fall/kyn/tala
+    | UTöluðRaðtalaMilljarðar/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
+
+UTöluðRaðtalaOgUndirBilljón/fall/kyn/tala →
+    "og" UTöluðRaðtalaMilljarðar/fall/kyn/tala
+    | UTöluðRaðtalaOgUndirMilljarði/fall/kyn/tala
+
+UTöluðRaðtalaMilljarðar/fall/kyn/tala →
+    UTöluðTalaUndirMilljarði/fall/kyn? UTöluðRaðtalaMilljarður/fall/kyn/tala
+
+# MILLJÓNIR
+
+UTöluðRaðtalaUndirMilljarði/fall/kyn/tala →
+    UTöluðRaðtalaUndirMilljón/fall/kyn/tala
+    | UTöluðTalaMilljónir/fall/kyn UTöluðRaðtalaUndirMilljón/fall/kyn/tala
+    | UTöluðTalaMilljónir/fall/kyn UTöluðRaðtalaOgUndirMilljón/fall/kyn/tala
+    | UTöluðRaðtalaMilljónir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
+
+UTöluðRaðtalaOgUndirMilljarði/fall/kyn/tala →
+    "og" UTöluðRaðtalaMilljónir/fall/kyn/tala
+    | UTöluðRaðtalaOgUndirMilljón/fall/kyn/tala
+
+UTöluðRaðtalaMilljónir/fall/kyn/tala →
+    UTöluðTalaUndirMilljón/fall/kyn? UTöluðRaðtalaMilljón/fall/kyn/tala
+
+# ÞÚSUND
+
+UTöluðRaðtalaUndirMilljón/fall/kyn/tala →
+    UTöluðRaðtalaUndirÞúsund/fall/kyn/tala
+    | UTöluðTalaÞúsundir/fall UTöluðRaðtalaUndirÞúsund/fall/kyn/tala
+    | UTöluðTalaÞúsundir/fall UTöluðRaðtalaOgUndirÞúsund/fall/kyn/tala
+    | UTöluðRaðtalaÞúsundir/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
+    | UTöluðTala10Til19Hundruð/fall/kyn UTöluðRaðtalaUndirHundrað/fall/kyn/tala
+    | UTöluðTala10Til19Hundruð/fall/kyn UTöluðRaðtalaOgUndirHundrað/fall/kyn/tala
+    | UTöluðRaðtala10Til19Hundruð/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala?
+
+UTöluðRaðtalaOgUndirMilljón/fall/kyn/tala →
+    "og" UTöluðRaðtalaÞúsundir/fall/kyn/tala
+    | UTöluðRaðtalaOgUndirÞúsund/fall/kyn/tala
+
+UTöluðRaðtalaÞúsundir/fall/kyn/tala →
+    UTöluðTalaUndirÞúsund_hk/fall? UTöluðRaðtalaÞúsund/fall/kyn/tala
+
+# TODO: Sjö hundruðasti?
+UTöluðRaðtala10Til19Hundruð/fall/kyn/tala →
+    UTöluðTala10Til19/fall/kyn UTöluðRaðtalaHundrað/fall/kyn/tala
+
+# HUNDRUÐ
+
+# TODO: Spyrja Loga hvað þessi efsta lína sé að gera
+UTöluðRaðtalaUndirÞúsund/kyn/fall/tala → UTöluðRaðtalaUndirÞúsund/fall/kyn/tala
+UTöluðRaðtalaUndirÞúsund/fall/kyn/tala →
+    UTöluðTalaHundruð_nf UTöluðRaðtalaTugurOgEining/fall/kyn/tala
+    | UTöluðTalaHundruð_nf UTöluðRaðtalaOgUndirHundrað/fall/kyn/tala
+    | UTöluðRaðtalaHundruð/fall/kyn/tala UTöluðRaðtalaOg1Til19/fall/kyn/tala
+    | UTöluðRaðtalaHundruð/fall/kyn/tala
+    | UTöluðRaðtalaUndirHundrað/fall/kyn/tala
+
+UTöluðRaðtalaOgUndirÞúsund/fall/kyn/tala →
+    "og" UTöluðRaðtalaHundruð/fall/kyn/tala
+    | UTöluðRaðtalaOgUndirHundrað/fall/kyn/tala
+
+UTöluðRaðtalaHundruð/fall/kyn/tala →
+    UTöluðTala2Til9_hk/fall UTöluðRaðtalaHundrað/fall/kyn/tala
+    | UTöluðTala1_hk_et/fall UTöluðRaðtalaHundrað/fall/kyn/tala
+    | UTöluðRaðtalaHundrað/fall/kyn/tala
+
+# UNDIR HUNDRAÐ
+
+# TODO: Hvað með núll?
+UTöluðRaðtalaUndirHundrað/fall/kyn/tala →
+    UTöluðRaðtalaTugurOgEining/fall/kyn/tala
+    | UTöluðRaðtalaTugir/fall/kyn/tala
+    | UTöluðRaðtala10Til19/fall/kyn/tala
+    | UTöluðRaðtala2Til9/fall/kyn/tala
+    | UTöluðRaðtala1/fall/kyn/tala
+
+# "...OgUndirHundrað" only contains "og" followed by the multiples of 10
+# The other numbers either cannot be preceded by an "og"
+# or inflict an inflection on "hundrað", i.e. "hundraðasti" 
+UTöluðRaðtalaOgUndirHundrað/fall/kyn/tala →
+    "og" UTöluðRaðtalaTugir/fall/kyn/tala
+
+UTöluðRaðtalaTugurOgEining/fall/kyn/tala →
+    UTöluðRaðtalaTugir/fall/kyn/tala "og" UTöluðRaðtala2Til9/fall/kyn/tala
+    | UTöluðRaðtalaTugir/fall/kyn/tala "og" UTöluðRaðtala1/fall/kyn/tala
+
+###
+
+UTöluðRaðtalaOg1Til19/fall/kyn/tala →
+    UTöluðRaðtala2Til9/fall/kyn/tala
+    | UTöluðRaðtala1/fall/kyn/tala
+
+UTöluðRaðtala0/fall/kyn/tala → 'núllti:lo'
+
+UTöluðRaðtala1/kyn/tala/fall → UTöluðRaðtala1/fall/kyn/tala
+UTöluðRaðtala1/fall/kyn/tala → 'fyrstur:lo'_vb/fall/kyn/tala
+
+UTöluðRaðtalaOg1Til19/fall/kyn/tala →
+    "og"? UTöluðRaðtala1Til19/fall/kyn/tala
+
+UTöluðRaðtala1Til19/fall/kyn/tala → 
+    UTöluðRaðtala1/fall/kyn/tala
+    | UTöluðRaðtala2Til9/fall/kyn/tala
+    | UTöluðRaðtala10Til19/fall/kyn/tala
+
+UTöluðRaðtala2Til9/kyn/fall/tala → UTöluðRaðtala2Til9/fall/kyn/tala
+UTöluðRaðtala2Til9/fall/kyn/tala →
+    'annar:lo'/fall/kyn/tala
+    | 'þriðji:lo'/fall/kyn/tala
+    | 'fjórði:lo'/fall/kyn/tala
+    | 'fimmti:lo'/fall/kyn/tala
+    | 'sjötti:lo'/fall/kyn/tala
+    | 'sjöundi:lo'/fall/kyn/tala
+    | 'áttundi:lo'/fall/kyn/tala
+    | 'níundi:lo'/fall/kyn/tala
+    | "cokqs"
+
+UTöluðRaðtala10Til19/fall/kyn/tala →
+    'tíundi:lo'/fall/kyn/tala
+    | 'ellefti:lo'/fall/kyn/tala
+    | 'tólfti:lo'/fall/kyn/tala
+    | 'þrettándi:lo'/fall/kyn/tala
+    | 'fjórtándi:lo'/fall/kyn/tala
+    | 'fimmtándi:lo'/fall/kyn/tala
+    | 'sextándi:lo'/fall/kyn/tala
+    | 'sautjándi:lo'/fall/kyn/tala
+    | 'átjándi:lo'/fall/kyn/tala
+    | 'nítjándi:lo'/fall/kyn/tala
+
+UTöluðRaðtalaTugir/fall/kyn/tala →
+    'tuttugasti:lo'/fall/kyn/tala
+    | 'þrítugasti:lo'/fall/kyn/tala
+    | 'fertugasti:lo'/fall/kyn/tala
+    | 'fimmtugasti:lo'/fall/kyn/tala
+    | 'sextugasti:lo'/fall/kyn/tala
+    | 'sjötugasti:lo'/fall/kyn/tala
+    | 'átttugasti:lo'/fall/kyn/tala
+    | 'nítugasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaHundrað/fall/kyn/tala → 'hundraðasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaÞúsund/fall/kyn/tala → 'þúsundasti:lo'/fall/kyn/tala
+
+UTöluðTalaMilljón/fall/kyn/tala → 'milljónasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaOktilljón/fall/kyn/tala → 'oktilljónasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaSeptilljón/fall/kyn/tala → 'septilljónasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaSextilljón/fall/kyn/tala → 'sextilljónasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaKvintilljón/fall/kyn/tala → 'kvintilljónasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaKvaðrilljón/fall/kyn/tala → 'kvaðrilljónasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaTrilljón/fall/kyn/tala → 'trilljónasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaBilljón/fall/kyn/tala → 'billjónasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaMilljón/fall/kyn/tala → 'milljónasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaKvaðrilljarður/fall/kyn/tala → 'kvaðrilljarðasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaTrilljarður/fall/kyn/tala → 'trilljarðasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaBilljarður/fall/kyn/tala → 'billjarðasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaMilljarður/fall/kyn/tala → 'milljarðasti:lo'/fall/kyn/tala

@@ -1,4 +1,9 @@
 # Grammar for the numbers utility module
+
+# TODO: Decide what to do with "tólf hundrað og sjö". 
+# It's a common error, but accepting it interferes with catching "fimm, tólf, hundrað og sjö, áttatíu", 
+# i.e. a list of numbers where "hundrað" is preceded by a number in the teens.
+
 UBrotaTala → UTöluðTala/fall/kyn "komma" UTöluðTala/fall/kyn+ | UTöluðTala/fall/kyn "," UTöluðTala/fall/kyn+
 
 UHeilTala → tala | UHeilTala/fall/kyn
@@ -27,7 +32,7 @@ UHeilTala/fall/kyn →
     # Zero
     | UTöluðTala0/fall/tala
 
-# The reason we start so large (oktilljón = 10^48) is so that a large number
+# The reason we start so large (oktilljón = 10^48 = (10^6)^8) is so that a large number
 # doesn't get interpreted as multiple discrete numbers side by side.
 # E.g. we want 'tvö hundruð þúsund' to be one number,
 # but it would be split into 'tvö' 'hundruð' 'þúsund'
@@ -226,6 +231,7 @@ UTöluðTalaÞúsundir/fall →
 
 UTöluðTala10Til19Hundruð/fall/kyn →
     UTöluðTala10Til19/fall/kyn UTöluðTalaHundrað_ft/fall
+    # | UTöluðTala10Til19/fall/kyn UTöluðTalaHundrað_et/fall
 
 # HUNDRUÐ
 
