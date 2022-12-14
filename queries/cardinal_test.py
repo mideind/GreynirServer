@@ -63,10 +63,10 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     q.set_qtype(result.qtype)
 
     print("I'm here " + result.qtype)
-    print("I am " + str(result.numbers[0]))
-
+    print("I am " + str(result.numbers[0]) + ".")
+    val = str(result.numbers[0])
     try:
-        q.set_answer("logi", "eyjo")
+        q.set_answer({"answer":val}, val, "")
     except Exception as e:
         logging.warning("Exception while processing random query: {0}".format(e))
         q.set_error("E_EXCEPTION: {0}".format(e))

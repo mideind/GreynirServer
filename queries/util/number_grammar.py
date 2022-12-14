@@ -164,7 +164,7 @@ def _sum_children(node: Node, params: ParamList, result: Result) -> None:
 # Function for nonterminals where we can perform a value lookup
 # e.g. "hundruð" (result._root = "hundrað") -> 100
 def _lookup_function(node: Node, params: ParamList, result: Result) -> None:
-    result["numbers"] = [_NUMBERS[result._root]]
+    result["numbers"] = [_NUMBERS[result._root.lower()]]
 
 
 # Define multiple functions with same functionality but different names
