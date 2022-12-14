@@ -39,7 +39,7 @@ import random
 from query import Query, QueryStateDict
 from queries import read_grammar_file
 from queries.extras.sonos import SonosClient, SonosDeviceData
-from tree import ParamList, Result, Node
+from tree import NonterminalNode, ParamList, Result, Node
 
 # Dictionary of radio stations and their stream urls
 _RADIO_STREAMS: Dict[str, str] = {
@@ -109,15 +109,11 @@ def QSpeaker(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = _SPEAKER_QTYPE
 
 
-def QSpeakerTurnOnVerb(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerResume(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "turn_on"
 
 
-def QSpeakerTurnOffVerb(node: Node, params: ParamList, result: Result) -> None:
-    result.qkey = "turn_off"
-
-
-def QSpeakerPauseVerb(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerPause(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "turn_off"
 
 
@@ -165,122 +161,21 @@ def QSpeakerSpeakerWord(node: Node, params: ParamList, result: Result) -> None:
     result.target = "speaker"
 
 
-def QSpeakerRadioWord(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerPlayRadio(node: Node, params: ParamList, result: Result) -> None:
     result.target = "radio"
+    result.qkey = "radio"
 
 
 def QSpeakerGroupName(node: Node, params: ParamList, result: Result) -> None:
     result.group_name = result._indefinite
 
 
-def QSpeakerRas1(node: Node, params: ParamList, result: Result) -> None:
+def QSpeakerRadioStation(node: Node, params: ParamList, result: Result) -> None:
+    child = cast(NonterminalNode, node.child)
+    station = child.nt_base.replace("QSpeaker", "").replace("_", " ")
+    print("STATION IS ", station)
     result.target = "radio"
-    result.station = "Rás 1"
-
-
-def QSpeakerRas2(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "Rás 2"
-
-
-def QSpeakerRondo(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "Rondó"
-
-
-def QSpeakerBylgjan(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "Bylgjan"
-
-
-def QSpeakerFm957(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "FM957"
-
-
-def QSpeakerUtvarpSaga(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "Útvarp Saga"
-
-
-def QSpeakerGullbylgjan(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "Gullbylgjan"
-
-
-def QSpeakerLettbylgjan(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "Léttbylgjan"
-
-
-def QSpeakerXid(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "X977"
-
-
-def QSpeakerKissfm(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "KissFM"
-
-
-def QSpeakerFlassback(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "Flashback"
-
-
-def QSpeakerRetro(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "Retro"
-
-
-def QSpeakerUtvarp101(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "Útvarp 101"
-
-
-def QSpeakerK100(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "K100"
-
-
-def QSpeakerIslenskaBylgjan(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "Íslenska Bylgjan"
-
-
-def QSpeaker80sBylgjan(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "80s Bylgjan"
-
-
-def QSpeakerApparatid(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "Apparatið"
-
-
-def QSpeakerFmExtra(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "FM Extra"
-
-
-def QSpeaker70sFlashback(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "70s Flashback"
-
-
-def QSpeaker80sFlashback(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "80s Flashback"
-
-
-def QSpeaker90sFlashback(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "90s Flashback"
-
-
-def QSpeakerUtvarpSudurland(node: Node, params: ParamList, result: Result) -> None:
-    result.target = "radio"
-    result.station = "Útvarp Suðurland"
+    result.station = station
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
@@ -291,13 +186,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")
         return
 
-    if "qkey" not in result:
-        result.qkey = "turn_on"
-
     qk: str = result.qkey
-    if qk == "turn_on" and result.get("target") == "radio" and result.get("station"):
-        qk = "radio"
-
     try:
         q.set_qtype(result.qtype)
         cd = q.client_data("iot")
@@ -305,7 +194,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         if cd:
             device_data = cd.get("iot_speakers")
         if device_data is not None:
-            assert False, "blaaaaaaaaaaa"
             sonos_client = SonosClient(
                 cast(SonosDeviceData, device_data),
                 q.client_id,
@@ -328,7 +216,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             elif qk == "radio":
                 # TODO: Error checking
                 station = result.get("station")
-                radio_url = _RADIO_STREAMS[station]
+                radio_url = _RADIO_STREAMS.get(station)
                 sonos_client.play_radio_stream(radio_url)
                 answer = "Ég kveikti á útvarpstöðinni"
             elif qk == "next_song":

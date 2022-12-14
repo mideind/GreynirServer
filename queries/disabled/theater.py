@@ -39,7 +39,7 @@ from queries import (
     read_grammar_file,
     time_period_desc,
 )
-from queries.num import number_to_text, numbers_to_ordinal, numbers_to_text
+from queries.util.num import number_to_text, numbers_to_ordinal, numbers_to_text
 from queries.extras.resources import (
     DateResource,
     FinalResource,
@@ -88,10 +88,13 @@ def banned_nonterminals(q: Query) -> None:
     allowed due to the state of the dialogue
     """
     # TODO: Put this back in when the dsm has access to the active dialogue again.
+    print("afssddsaasdsaffda")
     if not q.in_dialogue(DIALOGUE_NAME):
         q.ban_nonterminal("QTheaterQuery")
         return
-    resource:str = q.dsm.get_next_active_resource(DIALOGUE_NAME)
+    print("afss")
+    resource: str = q.dsm.get_next_active_resource(DIALOGUE_NAME)
+    print("fdadaf")
     if resource == "Show":
         q.ban_nonterminal_set(
             {
@@ -144,6 +147,7 @@ def banned_nonterminals(q: Query) -> None:
                 "QTheaterShowOnlyName",
             }
         )
+
 
 class ShowType(TypedDict):
     title: str
@@ -265,7 +269,7 @@ def _generate_date_answer(
     if resource.is_partially_fulfilled:
         show_date: Optional[datetime.date] = cast(
             DateResource, dsm.get_resource("ShowDate")
-        ).date
+        ).data
         show_times: list[str] = []
         if show_date is not None:
             for show in _SHOWS:
@@ -564,7 +568,7 @@ def _add_date(
             if show["title"].lower() == show_title.lower():
                 for date in show["date"]:
                     if result["show_date"] == date.date():
-                        resource.set_date(date.date())
+                        resource.data = date.date()
                         dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
                         break
         time_resource: TimeResource = cast(TimeResource, dsm.get_resource("ShowTime"))
@@ -574,13 +578,13 @@ def _add_date(
         for show in _SHOWS:
             if show["title"].lower() == show_title.lower():
                 for date in show["date"]:
-                    if resource.date == date.date():
+                    if resource.data == date.date():
                         show_times.append(date.time())
         if len(show_times) == 0:
             dsm.set_answer(gen_answer(datetime_resource.prompts["no_date_matched"]))
             return
         if len(show_times) == 1:
-            time_resource.set_time(show_times[0])
+            time_resource.data = show_times[0]
             dsm.set_resource_state(time_resource.name, ResourceState.FULFILLED)
             dsm.set_resource_state(datetime_resource.name, ResourceState.FULFILLED)
         else:
@@ -609,7 +613,7 @@ def _add_time(
                             and result["show_time"] == date.time()
                         ):
                             first_matching_date = date
-                            resource.set_time(date.time())
+                            resource.data = date.time()
                             dsm.set_resource_state(
                                 resource.name, ResourceState.FULFILLED
                             )
@@ -637,9 +641,9 @@ def _add_time(
                 date_resource: DateResource = cast(
                     DateResource, dsm.get_resource("ShowDate")
                 )
-                date_resource.set_date(first_matching_date.date())
+                date_resource.data = first_matching_date.date()
                 dsm.set_resource_state(date_resource.name, ResourceState.FULFILLED)
-                resource.set_time(first_matching_date.time())
+                resource.data = first_matching_date.time()
                 dsm.set_resource_state(resource.name, ResourceState.FULFILLED)
                 dsm.set_resource_state(datetime_resource.name, ResourceState.FULFILLED)
         if first_matching_date is None:

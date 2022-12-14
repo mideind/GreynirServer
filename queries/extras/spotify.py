@@ -28,7 +28,7 @@ import flask
 import requests
 from datetime import datetime, timedelta
 
-from util import read_api_key
+from utility import read_api_key
 from queries import query_json_api
 from query import Query
 

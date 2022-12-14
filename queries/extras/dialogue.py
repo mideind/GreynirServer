@@ -260,7 +260,7 @@ ResourceGraph = Dict[res.Resource, ResourceGraphItem]
 
 class DialogueStateManager:
     def __init__(self, client_id: Optional[str], db_session: Session) -> None:
-        """Initialize DSM instance and fetch tthe active dialogues for a client."""
+        """Initialize DSM instance and fetch the active dialogues for a client."""
         self._client_id = client_id
         self._db_session = db_session  # Database session of parent Query class
         # Fetch active dialogues for this client (empty list if no client ID provided)

@@ -29,7 +29,7 @@ import flask
 import requests
 from datetime import datetime, timedelta
 
-from util import read_api_key
+from utility import read_api_key
 from queries import query_json_api
 from query import Query
 
@@ -383,7 +383,7 @@ class SonosClient:
             session_id = response["sessionId"]
         return session_id
 
-    def play_radio_stream(self, radio_url: str) -> Optional[str]:
+    def play_radio_stream(self, radio_url: Optional[str]) -> Optional[str]:
         session_id = self._create_or_join_session()
         if radio_url is None:
             try:

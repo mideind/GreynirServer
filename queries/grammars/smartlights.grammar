@@ -13,7 +13,6 @@ QLightQuery →
     | QLightLetThereBeLight
 
 QLightLetThereBeLight → "verði" "ljós"
-# Some verbs
 QLightKveiktu → "vinsamlegast"? "kveiktu" | "kveikja"
 QLightSlökktu → "slökktu" | "slökkva"
 QLightGerðu → "gerðu" | "gera" | "aðgerð"
@@ -28,14 +27,15 @@ QLightVeraVerða → "vera" | "verða"
 QLightTurnOnLights →
     QLightKveiktu QLightLight_þf? QLightHvar    # ... ljósið í eldhúsinu
     | QLightKveiktu "á" QLightLight_þgf QLightHvar?    # ... á lampanum í stofunni
-    | QLightKveiktu QLightAllLights # ... öll ljósin
+    | QLightKveiktu QLightAllLights_þf # ... öll ljósin
+    | QLightKveiktu "á" QLightAllLights_þgf # ... á öllum ljósum
 
 # Commands for turning off lights
 QLightTurnOffLights →
     QLightSlökktu QLightLight_þf? QLightHvar    # ... ljósið í eldhúsinu
     | QLightSlökktu "á" QLightLight_þgf QLightHvar?    # ... á lampanum í stofunni
-    | QLightSlökktu QLightAllLights # ... öll ljósin
-    # TODO: Slökktu á öllum ljósum
+    | QLightSlökktu QLightAllLights_þf # ... öll ljósin
+    | QLightSlökktu "á" QLightAllLights_þgf # ... á öllum ljósum
 
 QLightMeiri → "meiri" | "meira"
 
@@ -192,8 +192,8 @@ QLightGroupName/fall → no/fall
 
 # Note: don't use this for 'öll ljósin í svefnherberginu'
 # as this is for ALL lights not all lights in an area
-QLightAllLights →
-    "öll"? "ljósin"
+QLightAllLights/fall →
+    'allur:fn'_ft_hk/fall 'ljós:hk'/fall
 
 QLightEverywhere →
     "alls_staðar"

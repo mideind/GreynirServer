@@ -33,7 +33,7 @@ from queries import (
     read_grammar_file,
     sing_or_plur,
 )
-from queries.num import number_to_text, numbers_to_text
+from queries.util.num import number_to_text, numbers_to_text
 from queries.extras.resources import (
     FinalResource,
     DictResource,
