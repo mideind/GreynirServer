@@ -380,7 +380,7 @@ def query_json_api(url: str, headers: Optional[Dict[str, str]] = None) -> JsonRe
 
     # Send request
     try:
-        r = requests.get(url, headers=headers)
+        r = requests.get(url, headers=headers, timeout=10)
     except Exception as e:
         logging.warning(str(e))
         return None

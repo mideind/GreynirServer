@@ -40,12 +40,13 @@ mainpath = os.path.join(basepath, "..")
 if mainpath not in sys.path:
     sys.path.insert(0, mainpath)
 
-from main import app  # noqa
+from main import app
 
-from settings import changedlocale  # noqa
-from db import SessionContext  # noqa
-from db.models import Query, QueryData, QueryLog  # noqa
-from utility import read_api_key  # noqa
+from settings import changedlocale
+from db import SessionContext
+from db.models import Query, QueryData, QueryLog
+from queries import ResponseDict
+from utility import read_api_key
 
 
 @pytest.fixture
@@ -71,7 +72,7 @@ QUERY_HISTORY_API_ENDPOINT = "/query_history.api"
 
 def qmcall(
     c: FlaskClient, qdict: Dict[str, Any], qtype: Optional[str] = None
-) -> Dict[str, Any]:
+) -> ResponseDict:
     """Use passed client object to call query API with
     query string key value pairs provided in dict arg."""
 
@@ -252,7 +253,7 @@ def test_bus(client: FlaskClient) -> None:
     json = qmcall(
         client, {"q": "hvaða stoppistöð er næst mér", "voice": True}, "NearestStop"
     )
-    assert json["answer"] == "Fiskislóð"
+    assert json["answer"] == "Fiskislóð."
     assert (
         json["voice"]
         == "Næsta stoppistöð er Fiskislóð; þangað eru þrjú hundruð og tíu metrar."
@@ -263,7 +264,128 @@ def test_bus(client: FlaskClient) -> None:
         {"q": "hvenær er von á vagni númer 17", "voice": True, "test": False},
         "ArrivalTime",
     )
-    assert json["answer"] == "Staðsetning óþekkt"  # No location info available
+    assert json["answer"] == "Staðsetning óþekkt."  # No location info available
+
+    json = qmcall(
+        client,
+        {"q": "hvenær kemur strætó númer 14 á Grandagarð", "voice": True},
+        "ArrivalTime",
+    )
+    assert json["answer"]
+    assert all(not c.isdecimal() for c in json["voice"])
+
+    json = qmcall(
+        client,
+        {"q": "hvenær kemur strætó á hlemm", "voice": True},
+        "ArrivalTime",
+    )
+    assert json["answer"].endswith("Spurðu um eina þeirra.")
+    assert all(not c.isdecimal() for c in json["voice"])
+
+    json = qmcall(
+        client,
+        {"q": "hvenær kemur strætó", "voice": True},
+        "ArrivalTime",
+    )
+    assert json["answer"]
+    assert all(not c.isdecimal() for c in json["voice"])
+
+    json = qmcall(
+        client,
+        {
+            "q": "hvaða leiðir stoppa í Bíó Paradís?",
+            "voice": True,
+            "private": False,
+        },
+        "WhichRoute",
+    )
+    assert (
+        json["answer"]
+        and "stoppar" not in json["answer"]
+        and "stoppa" in json["answer"]
+        #   (^ Multiple routes go through Bíó Paradís)
+    )
+    assert all(not c.isdecimal() for c in json["voice"])
+    # Following query relies on the query above
+    json = qmcall(
+        client,
+        {"q": "hvenær kemur strætisvagn fjórtán þangað?", "voice": True},
+        "ArrivalTime",
+    )
+    assert json["answer"] and "Bíó Paradís" in json["answer"]
+    assert (
+        all(not c.isdecimal() for c in json["voice"])
+        and "Bíó Paradís" in json["voice"]
+        and "fjórtán" in json["voice"]
+    )
+
+    json = qmcall(
+        client,
+        {"q": "Klukkan hvað stöðvar sexan á Hlemmi?", "voice": True},
+        "ArrivalTime",
+    )
+    assert json["answer"]
+    assert all(not c.isdecimal() for c in json["voice"])
+
+    json = qmcall(
+        client,
+        {
+            "q": "hvaða leiðir stoppa á Mýrarvegi Hringteig?",
+            "voice": True,
+        },
+        "WhichRoute",
+    )
+    assert "Mýrarvegi / Hringteig" in json["answer"]
+    assert all(not c.isdecimal() for c in json["voice"])
+
+    import straeto
+    if len(straeto.BusStop.named("Naustabraut / Davíðshagi A")) == 0:
+        # Stop doesn't exist in old stops.txt file in straeto package
+        return
+
+    json = qmcall(
+        client,
+        {
+            "q": "hvaða leiðir stoppa á Naustabraut Davíðshagi A?",
+            "voice": True,
+        },
+        "WhichRoute",
+    )
+    assert "Naustabraut / Davíðshaga A" in json["answer"]
+    assert (
+        all(not c.isdecimal() for c in json["voice"])
+        and "Naustabraut / Davíðshaga austur" in json["voice"]
+    )
+
+    json = qmcall(
+        client,
+        {
+            "q": "hvaða leiðir stoppa á Naustabraut Davíðshaga A?",
+            "voice": True,
+        },
+        "WhichRoute",
+    )
+    assert "Naustabraut / Davíðshaga A" in json["answer"]
+    assert (
+        all(not c.isdecimal() for c in json["voice"])
+        and "Naustabraut / Davíðshaga austur" in json["voice"]
+    )
+
+    # json = qmcall(
+    #     client,
+    #     {
+    #         "q": "hvaða leiðir stoppa á Naustabraut Davíðshaga austur?",
+    #         "voice": True,
+    #     },
+    #     "WhichRoute",
+    # )
+    # assert "Naustabraut / Davíðshaga A" in json["answer"]
+    # assert (
+    #     all(not c.isdecimal() for c in json["voice"])
+    #     and "Naustabraut / Davíðshaga austur" in json["voice"]
+    # )
+
+    _query_data_cleanup()  # Remove any data logged to DB on account of tests
 
 
 def test_counting(client: FlaskClient) -> None:
@@ -890,78 +1012,111 @@ def test_repeat(client: FlaskClient) -> None:
 def test_schedules(client: FlaskClient) -> None:
     """Schedules module"""
 
-    CURR_RE = (
-        r"^(Á {0} er verið að (sýna|spila) dagskrárliðinn .*|"
-        r"Ekkert er á dagskrá á {0} í augnablikinu\.)$"
-    )
-    NEXT_RE = (
-        r"^(Næst á dagskrá á {0} verður (sýndur|spilaður) dagskrárliðurinn .*|"
-        r"Það er ekkert á dagskrá á {0} eftir núverandi dagskrárlið\.)$"
-    )
-    ANYTIME_RE = (
-        r"^(Á {0}( klukkan \d+:\d+)?( í gær| á morgun)? "
-        r"(er verið að (spila|sýna) dagskrárliðinn|(var|verður) (spilaður|sýndur) dagskrárliðurinn) .*|"
-        r"Ekkert (er|verður|var) á dagskrá á {0} (í augnablikinu|klukkan \d?\d:\d\d( \d+\. \w+| á morgun| í gær)?)\.)$"
-    )
+    def caseless_in(a: str, b: str) -> bool:
+        """Caseless comparison"""
+        return a.casefold() in b.casefold()
+
     # RÚV tests
     json = qmcall(client, {"q": "hvað er í sjónvarpinu", "voice": True}, "Schedule")
     assert json["key"] == "RÚV - RÚV"
-    assert re.fullmatch(CURR_RE.format("RÚV"), json["answer"])
+    assert "RÚV" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("dagskrárliðinn", json["answer"])
+    )
     json = qmcall(client, {"q": "hvaða þáttur er eiginlega á rúv núna"}, "Schedule")
     assert json["key"] == "RÚV - RÚV"
-    assert re.fullmatch(CURR_RE.format("RÚV"), json["answer"])
+    assert "RÚV" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("dagskrárliðinn", json["answer"])
+    )
     json = qmcall(
         client, {"q": "hvaða þátt er verið að sýna í sjónvarpinu"}, "Schedule"
     )
     assert json["key"] == "RÚV - RÚV"
-    assert re.fullmatch(CURR_RE.format("RÚV"), json["answer"])
+    assert "RÚV" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("dagskrárliðinn", json["answer"])
+    )
 
     json = qmcall(client, {"q": "dagskrá rúv klukkan 19:00"}, "Schedule")
     assert json["key"] == "RÚV - RÚV"
-    assert re.fullmatch(ANYTIME_RE.format("RÚV"), json["answer"])
+    assert "RÚV" in json["answer"] and (
+        json["answer"].startswith("Ekkert")
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     json = qmcall(client, {"q": "hvað er í sjónvarpinu í kvöld?"}, "Schedule")
     assert json["key"] == "RÚV - RÚV"
-    assert re.fullmatch(ANYTIME_RE.format("RÚV"), json["answer"])
+    assert "RÚV" in json["answer"] and (
+        json["answer"].startswith("Ekkert")
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     json = qmcall(client, {"q": "hvað var í sjónvarpinu í gærkvöldi?"}, "Schedule")
     assert json["key"] == "RÚV - RÚV"
-    assert re.fullmatch(ANYTIME_RE.format("RÚV"), json["answer"])
+    assert "RÚV" in json["answer"] and (
+        json["answer"].startswith("Ekkert")
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     # json = qmcall(client, {"q": "hver er sjónvarpsdagskráin í kvöld?"}, "Schedule")
     # assert json["key"] == "RÚV - RÚV"
 
     # Stöð 2 tests
     json = qmcall(client, {"q": "hvað er næsti þáttur á stöð 2"}, "Schedule")
     assert json["key"] == "Stöð 2 - Stöð 2"
-    assert re.fullmatch(NEXT_RE.format("Stöð 2"), json["answer"])
+    assert "Stöð 2" in json["answer"] and (
+        caseless_in("ekkert á dagskrá", json["answer"])
+        or caseless_in("næst á dagskrá", json["answer"])
+    )
     json = qmcall(client, {"q": "Hvaða efni er verið að spila á Stöð 2"}, "Schedule")
     assert json["key"] == "Stöð 2 - Stöð 2"
-    assert re.fullmatch(CURR_RE.format("Stöð 2"), json["answer"])
+    assert "Stöð 2" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("dagskrárliðinn", json["answer"])
+    )
 
     # Radio tests
     json = qmcall(client, {"q": "hvað er í útvarpinu?"}, "Schedule")
     assert json["key"] == "RÚV - Rás 1"
-    assert re.fullmatch(CURR_RE.format("Rás 1"), json["answer"])
+    assert "Rás 1" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("dagskrárliðinn", json["answer"])
+    )
     json = qmcall(client, {"q": "hvað er eiginlega í gangi á rás eitt?"}, "Schedule")
     assert json["key"] == "RÚV - Rás 1"
-    assert re.fullmatch(CURR_RE.format("Rás 1"), json["answer"])
+    assert "Rás 1" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("dagskrárliðinn", json["answer"])
+    )
     json = qmcall(client, {"q": "hvað er á dagskrá á rás tvö?"}, "Schedule")
     assert json["key"] == "RÚV - Rás 2"
-    assert re.fullmatch(CURR_RE.format("Rás 2"), json["answer"])
+    assert "Rás 2" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("dagskrárliðinn", json["answer"])
+    )
 
     json = qmcall(
         client, {"q": "hvað var í útvarpinu klukkan sjö í morgun"}, "Schedule"
     )
     assert json["key"] == "RÚV - Rás 1"
-    assert re.fullmatch(ANYTIME_RE.format("Rás 1"), json["answer"])
+    assert "Rás 1" in json["answer"] and (
+        json["answer"].startswith("Ekkert")
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     json = qmcall(client, {"q": "hvað verður á rás 2 klukkan sjö í kvöld"}, "Schedule")
     assert json["key"] == "RÚV - Rás 2"
-    assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
+    assert "Rás 2" in json["answer"] and (
+        json["answer"].startswith("Ekkert")
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     json = qmcall(
         client,
         {"q": "hvað verður á rás 2 klukkan fjögur eftir hádegi á morgun"},
         "Schedule",
     )
     assert json["key"] == "RÚV - Rás 2"
-    assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
+    assert "Rás 2" in json["answer"] and (
+        json["answer"].startswith("Ekkert")
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     assert "16:00" in json["answer"]
     json = qmcall(
         client,
@@ -969,19 +1124,28 @@ def test_schedules(client: FlaskClient) -> None:
         "Schedule",
     )
     assert json["key"] == "RÚV - Rás 2"
-    assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
+    assert "Rás 2" in json["answer"] and (
+        json["answer"].startswith("Ekkert")
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     assert "8:00" in json["answer"]
     json = qmcall(
         client, {"q": "hvað var á rás 2 klukkan sex í gær eftir hádegi"}, "Schedule"
     )
     assert json["key"] == "RÚV - Rás 2"
-    assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
+    assert "Rás 2" in json["answer"] and (
+        json["answer"].startswith("Ekkert")
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     assert "18:00" in json["answer"]
     json = qmcall(
         client, {"q": "hvað var á rás 2 klukkan tvö fyrir hádegi í gær"}, "Schedule"
     )
     assert json["key"] == "RÚV - Rás 2"
-    assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
+    assert "Rás 2" in json["answer"] and (
+        json["answer"].startswith("Ekkert")
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     assert "2:00" in json["answer"]
 
 
@@ -1009,40 +1173,31 @@ def test_sunpos(client: FlaskClient) -> None:
     """Solar position module"""
 
     json = qmcall(client, {"q": "hvenær reis sólin í dag?"}, "SunPosition")
-    assert re.match(r"^Sólin .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
+    assert "sólin" in json["answer"].lower()
     json = qmcall(client, {"q": "hvenær sest sólin í kvöld?"}, "SunPosition")
-    assert re.match(r"^Sólin .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
+    assert "sólin" in json["answer"].lower()
     json = qmcall(
         client, {"q": "hvenær verður sólarlag á Norðfirði í kvöld?"}, "SunPosition"
     )
-    assert re.match(r"^Sólin .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
+    assert "sólin" in json["answer"].lower()
     json = qmcall(
         client,
         {"q": "hver er sólarhæð í Reykjavík í dag?", "voice": True},
         "SunPosition",
     )
-    assert re.match(
-        r"^Sólarhæð um hádegi í dag .* um \d+(,\d+)? gráð(a|ur)\.$",
-        json["answer"],
-    )
+    assert "sólarhæð" in json["answer"].lower()
     assert not re.findall(r"\d+", json["voice"])  # No numbers in voice string
     json = qmcall(
         client,
         {"q": "hver er hæð sólar í Reykjavík í dag?", "voice": True},
         "SunPosition",
     )
-    assert re.match(
-        r"^Sólarhæð um hádegi í dag .* um \d+(,\d+)? gráð(a|ur)\.$",
-        json["answer"],
-    )
+    assert "sólarhæð" in json["answer"].lower()
     assert not re.findall(r"\d+", json["voice"])
     json = qmcall(
         client, {"q": "hver er hæð sólarinnar í dag?", "voice": True}, "SunPosition"
     )
-    assert re.match(
-        r"^Sólarhæð um hádegi í dag .* um \d+(,\d+)? gráð(a|ur)\.$",
-        json["answer"],
-    )
+    assert "sólarhæð" in json["answer"].lower()
     assert not re.findall(r"\d+", json["voice"])
     # json = qmcall(client, {"q": "hver er hæð sólar í dag?"}, "SunPosition")
     # assert re.match(
@@ -1050,35 +1205,27 @@ def test_sunpos(client: FlaskClient) -> None:
     #     json["answer"],
     # )
     json = qmcall(client, {"q": "hvenær var miðnætti í nótt?"}, "SunPosition")
-    assert re.match(r"^Miðnætti .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
+    assert "miðnætti" in json["answer"].lower()
     json = qmcall(client, {"q": "hvenær verður miðnætti í kvöld?"}, "SunPosition")
-    assert re.match(r"^Miðnætti .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
+    assert "miðnætti" in json["answer"].lower()
     json = qmcall(
         client, {"q": "hvenær verður dögun í Keflavík á morgun?"}, "SunPosition"
     )
-    assert re.match(r"^Það verður ekki dögun .*\.$", json["answer"]) or re.match(
-        r"^Dögun .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
-    )
+    assert "dögun" in json["answer"].lower()
     json = qmcall(
         client, {"q": "klukkan hvað verður birting á Akureyri á morgun?"}, "SunPosition"
     )
-    assert re.match(r"^Það verður ekki birting .*\.$", json["answer"]) or re.match(
-        r"^Birting .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
-    )
+    assert "birting" in json["answer"].lower()
     json = qmcall(client, {"q": "hvenær er hádegi á morgun á Ísafirði?"}, "SunPosition")
-    assert re.match(r"^Hádegi .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
+    assert "hádegi" in json["answer"].lower()
     json = qmcall(
         client, {"q": "hvenær varð myrkur í gær á Egilsstöðum?"}, "SunPosition"
     )
-    assert re.match(r"^Það varð ekki myrkur.*\.$", json["answer"]) or re.match(
-        r"^Myrkur .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
-    )
+    assert "myrkur" in json["answer"].lower()
     json = qmcall(
         client, {"q": "klukkan hvað varð dagsetur í gær á Reykjanesi?"}, "SunPosition"
     )
-    assert re.match(r"^Það varð ekki dagsetur.*\.$", json["answer"]) or re.match(
-        r"^Dagsetur .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
-    )
+    assert "dagsetur" in json["answer"].lower()
 
 
 def test_tel(client: FlaskClient) -> None:

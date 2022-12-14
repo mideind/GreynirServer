@@ -1501,7 +1501,7 @@ class HagstofanScraper(ScrapeHelper):
     def fetch_url(self, url):
         # Requests defaults to ISO-8859-1 because content-type
         # does not declare encoding. In fact, charset is UTF-8.
-        r = requests.get(url)
+        r = requests.get(url, timeout=10)
         r.encoding = r.apparent_encoding
         return r.text
 
