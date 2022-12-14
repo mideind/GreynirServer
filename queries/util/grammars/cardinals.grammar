@@ -4,7 +4,6 @@
 # It's a common error, i.e. should be "tólf hundruð og sjö",
 # but accepting it interferes with catching "fimm, tólf, hundrað og sjö, áttatíu", 
 # i.e. a list of numbers where "hundrað" is preceded by a number in the teens.
-# TODO: 
 
 UBrotaTala → UTöluðTala/fall/kyn "komma" UTöluðTala/fall/kyn+ | UTöluðTala/fall/kyn "," UTöluðTala/fall/kyn+
 

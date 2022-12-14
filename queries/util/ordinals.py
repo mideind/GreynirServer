@@ -28,23 +28,18 @@
 
 """
 
-# TODO: Deal better with cases and genders of numbers
-# TODO: Allow "tólf hundruð þúsund" & "hundruðir" (need to add hundruðir to ord.add/auka.csv)
-# TODO: 1 - Ordinal numbers
-# TODO: 2 - Fractions
-
-from typing import Any
-
-from functools import reduce
-from operator import mul
-
-from tree import Result
+from tree import Result, ParamList, Node
 from queries.util import read_utility_grammar_file
+from queries.util.cardinals import (
+    _sum_children,
+    _multiply_children,
+    _lookup_function_generator,
+)
 
 # The context-free grammar for number utterances recognized by this utility module
-GRAMMAR = read_utility_grammar_file("ordinal")
+GRAMMAR = read_utility_grammar_file("ordinals")
 
-_NUMBERS = {
+_ORDINAL_NUMBERS = {
     "núllti": 0,
     "fyrstur": 1,
     "annar": 2,
@@ -89,15 +84,15 @@ _NUMBERS = {
 }
 
 
-# Function for nonterminals which have children that should be multiplied together
-# e.g. "fimm" (5) and "hundruð" (100) -> "fimm hundruð" (500)
-def _multiply_children(node: Any, params: Any, result: Result) -> None:
-    if "numbers" in result:
-        result["numbers"] = [reduce(mul, result["numbers"])]
-    print("multiply_children")
+def UHeilRaðtala(node: Node, params: ParamList, result: Result) -> None:
+    # Check if a number was specified in digits instead of written out
+    tala = node.first_child(lambda n: n.has_t_base("tala"))
+    if tala is not None and tala.contained_number is not None:
+        result["numbers"] = [int(tala.contained_number)]
+    result["ordinals"] = [result.numbers[0]]
 
 
-# Plural named functions (e.g. "UTöluðTalaMilljónir") take the product of the children nodes
+# Plural named functions (e.g. "UTöluðRaðtalaMilljónir") take the product of the children nodes
 (
     UTöluðRaðtalaHundruð,
     UTöluðRaðtala10Til19Hundruð,
@@ -116,16 +111,9 @@ def _multiply_children(node: Any, params: Any, result: Result) -> None:
     UTöluðRaðtalaOktilljónir,
 ) = [_multiply_children] * 15
 
-# Function for nonterminals which have children that should be added together
-# e.g. "sextíu" (60) and "átta" (8) -> "sextíu (og) átta" (68)
-def _sum_children(node: Any, params: Any, result: Result) -> None:
-    if "numbers" in result:
-        result["numbers"] = [sum(result["numbers"])]
-    print("sum_children")
 
-
-# "UTöluðTalaUndirX" functions take the sum of the children nodes,
-# along with the root "UTöluðTala"
+# "UTöluðRaðtalaUndirX" functions take the sum of the children nodes,
+# along with the root "UTöluðRaðtala"
 (
     UTöluðRaðtala,
     UTöluðRaðtalaUndirHundrað,
@@ -145,16 +133,7 @@ def _sum_children(node: Any, params: Any, result: Result) -> None:
 ) = [_sum_children] * 15
 
 
-# Function for nonterminals where we can perform a value lookup
-# e.g. "hundraðasti" (result._root = "hundraðasti") -> 100
-# Lowercase to avoid "Annar" auto-capitalization.
-# TODO: Fix that issue.
-def _lookup_function(node: Any, params: Any, result: Result) -> None:
-    result["numbers"] = [_NUMBERS[result._root.lower()]]
-    print("lookup_function")
-
-
-# Define multiple functions with same functionality but different names
+# Singular named functions (e.g. "UTöluðTalaHundrað") find the corresponding numeric value of the word
 (
     UTöluðRaðtala0,
     UTöluðRaðtala1,
@@ -175,4 +154,4 @@ def _lookup_function(node: Any, params: Any, result: Result) -> None:
     UTöluðRaðtalaSextilljón,
     UTöluðRaðtalaSeptilljón,
     UTöluðRaðtalaOktilljón,
-) = [_lookup_function] * 19
+) = [_lookup_function_generator(_ORDINAL_NUMBERS)] * 19

@@ -28,10 +28,10 @@
 
 """
 
-# TODO: Deal better with cases and genders of numbers
 # TODO: Allow "tólf hundruð þúsund" & "hundruðir" (need to add hundruðir to ord.add/auka.csv)
-# TODO: 1 - Ordinal numbers
-# TODO: 2 - Fractions
+# TODO: 1 - Fractions
+
+from typing import Callable, Dict
 
 from functools import reduce
 from operator import mul
@@ -40,7 +40,7 @@ from tree import Result, ParamList, Node
 from queries.util import read_utility_grammar_file
 
 # The context-free grammar for number utterances recognized by this utility module
-GRAMMAR = read_utility_grammar_file("number")
+GRAMMAR = read_utility_grammar_file("cardinals")
 
 _NUMBERS = {
     "núll": 0,
@@ -105,6 +105,7 @@ def UHeilTala(node: Node, params: ParamList, result: Result) -> None:
     tala = node.first_child(lambda n: n.has_t_base("tala"))
     if tala is not None and tala.contained_number is not None:
         result["numbers"] = [int(tala.contained_number)]
+    result["cardinals"] = [result.numbers[0]]
 
 
 # Function for nonterminals which have children that should be multiplied together
@@ -163,11 +164,17 @@ def _sum_children(node: Node, params: ParamList, result: Result) -> None:
 
 # Function for nonterminals where we can perform a value lookup
 # e.g. "hundruð" (result._root = "hundrað") -> 100
-def _lookup_function(node: Node, params: ParamList, result: Result) -> None:
-    result["numbers"] = [_NUMBERS[result._root.lower()]]
+# Modular so as to be importable in ordinal.py
+def _lookup_function_generator(
+    lookup_dict: Dict[str, int]
+) -> Callable[[Node, ParamList, Result], None]:
+    def _lookup_function(node: Node, params: ParamList, result: Result) -> None:
+        result["numbers"] = [lookup_dict[result._root.lower()]]
+
+    return _lookup_function
 
 
-# Define multiple functions with same functionality but different names
+# Singular named functions (e.g. "UTöluðTalaHundrað") find the corresponding numeric value of the word
 (
     UTöluðTala0,
     UTöluðTala1,
@@ -190,4 +197,4 @@ def _lookup_function(node: Node, params: ParamList, result: Result) -> None:
     UTöluðTalaSextilljón,
     UTöluðTalaSeptilljón,
     UTöluðTalaOktilljón,
-) = [_lookup_function] * 21
+) = [_lookup_function_generator(_NUMBERS)] * 21

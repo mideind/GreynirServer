@@ -2,15 +2,15 @@
 
 /grno = gr nogr
 
-UHeilRaðtala → tala | UHeilRaðtala/fall/kyn/tala
+UHeilRaðtala → tala "." | UHeilRaðtala/fall/kyn/tala
 
 UHeilRaðtala/fall/kyn/tala →
     UTöluðRaðtala/fall/kyn/tala
     | UTöluðRaðtala0/fall/kyn/tala
 
 # The reason we start so large (oktilljón = 10^48 = (10^6)^8) is that
-# this grammar is based in number.grammar. The reasons for its using
-# such large numbers are explained there.
+# this grammar file is based in number.grammar where it starts large.
+# The reasons for its using such large numbers are explained there.
 
 # Single ordinal number
 UTöluðRaðtala/fall/kyn/tala →
@@ -221,7 +221,6 @@ UTöluðRaðtala10Til19Hundruð/fall/kyn/tala →
 
 # HUNDRUÐ
 
-# TODO: Spyrja Loga hvað þessi efsta lína sé að gera
 UTöluðRaðtalaUndirÞúsund/kyn/fall/tala → UTöluðRaðtalaUndirÞúsund/fall/kyn/tala
 UTöluðRaðtalaUndirÞúsund/fall/kyn/tala →
     UTöluðTalaHundruð_nf UTöluðRaðtalaTugurOgEining/fall/kyn/tala
@@ -241,7 +240,6 @@ UTöluðRaðtalaHundruð/fall/kyn/tala →
 
 # UNDIR HUNDRAÐ
 
-# TODO: Hvað með núll?
 UTöluðRaðtalaUndirHundrað/fall/kyn/tala →
     UTöluðRaðtalaTugurOgEining/fall/kyn/tala
     | UTöluðRaðtalaTugir/fall/kyn/tala
@@ -250,8 +248,8 @@ UTöluðRaðtalaUndirHundrað/fall/kyn/tala →
     | UTöluðRaðtala1/fall/kyn/tala
 
 # "...OgUndirHundrað" only contains "og" followed by the multiples of 10
-# The other numbers either cannot be preceded by an "og"
-# or inflict an inflection on "hundrað", i.e. "hundraðasti" 
+# The other numbers under 100 either cannot be preceded by an "og"
+# or inflict an inflection on "hundrað", i.e. "hundraðasti og tíundi" 
 UTöluðRaðtalaOgUndirHundrað/fall/kyn/tala →
     "og" UTöluðRaðtalaTugir/fall/kyn/tala
 
