@@ -758,10 +758,10 @@ def test_opinion(client: FlaskClient) -> None:
     assert json["key"] == "þriðji orkupakkinn"
 
     json = qmcall(
-        client, {"q": "hvað finnst þér eiginlega um Katrínu Jakobsdóttur"}, "Opinion"
+        client, {"q": "hvað finnst þér eiginlega um Sigmund Davíð"}, "Opinion"
     )
     assert json["answer"].startswith("Ég hef enga sérstaka skoðun")
-    assert json["key"] == "Katrín Jakobsdóttir"
+    assert json["key"] == "Sigmundur Davíð"
 
     json = qmcall(client, {"q": "hver er skoðun þín á blurghsmurgdurg"}, "Opinion")
     assert json["answer"].startswith("Ég hef enga sérstaka skoðun")
@@ -1248,6 +1248,9 @@ def test_userloc(client: FlaskClient) -> None:
 
 def test_weather(client: FlaskClient) -> None:
     """Weather module"""
+
+    json = qmcall(client, {"q": "hvernig er veðrið?", "voice": True}, "Weather")
+    assert re.search(r"\d", json["voice"]) is None  # No literal numbers in voice answer
 
     json = qmcall(client, {"q": "hvernig er veðrið í Reykjavík?"}, "Weather")
     assert re.search(r"^\-?\d+ °C", json["answer"]) is not None

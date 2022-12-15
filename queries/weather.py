@@ -23,8 +23,9 @@
 
 """
 
-# TODO: Natural language weather forecasts for different parts of the country (N-land, etc.)
 # TODO: Provide weather info for locations outside Iceland
+# TODO: GSSML processing of forecast text
+# TODO: Natural language weather forecasts for different parts of the country (N-land, etc.)
 # TODO: Add more info to description of current weather conditions?
 # TODO: More detailed forecast, time specific? E.g. "hvernig verður veðrið klukkan þrjú?"
 # TODO: "Mun rigna í dag?" "Verður mikið rok í dag?" "Verður kalt í kvöld?" "Þarf ég regnhlíf?"
@@ -33,7 +34,7 @@
 # TODO: "Hvernig er færðin?"
 # TODO: "Hversu hvasst er úti?"
 # TODO: "Hvað er hitastigið á egilsstöðum?" "Hvað er mikill hiti úti?"
-# TODO: "Hvar er heitast á landinu?"
+# TODO: "Hvar er heitast á landinu?" "Hvar er kaldast á landinu?"
 # TODO: "Er gott veður úti?"
 # TODO: "Hvað er mikið frost?" "Hversu mikið frost er úti?"
 # TODO: "Verður snjór á morgun?"
@@ -41,7 +42,6 @@
 # TODO: "Hvernig er veðurspáin fyrir garðabæ?"
 # TODO: "Hvernig er færðin"
 # TODO: Er rigning úti? Er sól úti? Er sól á Húsavík? Er rigning í Reykjavík?
-# TODO: "Hvernig eru loftgæðin [í Reykjavík] etc."
 
 from typing import Optional
 
@@ -54,19 +54,19 @@ from datetime import timedelta, datetime
 from queries import Query, QueryStateDict
 from queries.util import (
     JsonResponse,
+    AnswerTuple,
     gen_answer,
     query_json_api,
     cap_first,
-    sing_or_plur,
-    AnswerTuple,
     read_grammar_file,
 )
 from tree import Result, Node
 from geo import in_iceland, RVK_COORDS, near_capital_region, ICE_PLACENAME_BLACKLIST
-from iceaddr import placename_lookup  # type: ignore
-from iceweather import observation_for_closest, observation_for_station, forecast_text  # type: ignore
+from iceaddr import placename_lookup
+from iceweather import observation_for_closest, observation_for_station, forecast_text
 
-from speech.norm.num import number_to_text
+from speech.norm import gssml
+
 
 _WEATHER_QTYPE = "Weather"
 
@@ -330,15 +330,16 @@ def get_currweather_answer(query: Query, result: Result) -> AnswerTuple:
 
     # Meters per second string for voice. Say nothing if "logn".
     msec = int(wind_ms_str)
-    # msec_numword = number_to_text(msec)
-    voice_ms = (
-        ", {0} á sekúndu".format(sing_or_plur(msec, "metri", "metrar"))
-        if wind_ms_str != "0"
-        else ""
-    )
+    voice_ms = ""
+    if wind_ms_str != "0":
+        msec_numword = gssml(msec, type="number", gender="kk", case="nf")
+        meters = "metrar" if msec > 1 else "metri"
+        voice_ms = f", {msec_numword} {meters} á sekúndu"
+
+    temp_numw = gssml(abs(temp), type="number", gender="kk", case="ef")
 
     # Format voice string
-    voice = f"{locdesc.capitalize()} er {abs(temp)} stiga {temp_type}{mdesc} og {wind_desc}{voice_ms}"
+    voice = f"{locdesc.capitalize()} er {temp_numw} stiga {temp_type}{mdesc} og {wind_desc}{voice_ms}"
 
     # Text answer
     answer = f"{temp} °C{mdesc} og {wind_desc} ({wind_ms_str} m/s)"
