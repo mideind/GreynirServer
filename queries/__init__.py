@@ -996,7 +996,7 @@ class Query:
             result["valid"] = True
 
     def execute(self) -> ResponseDict:
-        """Check whether the parse tree is describes a query, and if so,
+        """Check whether the parse tree describes a query, and if so,
         execute the query, store the query answer in the result dictionary
         and return True"""
         if Query._parser is None:

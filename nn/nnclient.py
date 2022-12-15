@@ -74,7 +74,7 @@ class NnClient:
 
         logging.debug(str(payload))
         payload_json = json.dumps(payload)
-        resp = requests.post(url, data=payload_json, headers=headers)
+        resp = requests.post(url, data=payload_json, headers=headers, timeout=10)
         resp.raise_for_status()
 
         obj = json.loads(resp.text)

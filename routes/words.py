@@ -53,6 +53,8 @@ def words_trends():
     return render_template("words/trends.html", title="Orð")
 
 
+CAT_UNKNOWN = "??"
+
 # Word categories permitted in word frequency search
 _VALID_WCATS = frozenset(
     (
@@ -65,12 +67,11 @@ _VALID_WCATS = frozenset(
         "person_kvk",
         "person_hk",
         "entity",
-        "??",
+        CAT_UNKNOWN,
     )
 )
 
 # Human-readable descriptions of word categories
-CAT_UNKNOWN = "??"
 CAT_DESC = {
     "kk": "kk. no.",
     "kvk": "kvk. no.",
@@ -126,9 +127,9 @@ def _words2str(words):
     return ", ".join([":".join(w[:2]) if len(w) >= 2 else w[0] for w in words])
 
 
-def _desc4word(wc):
+def _desc4word(wc: Tuple) -> str:
     """Create a human-friendly description string for a word/category tuple."""
-    return "{0} ({1})".format(wc[0], CAT_DESC.get(wc[1]))
+    return f"{wc[0]} ({CAT_DESC.get(wc[1], CAT_UNKNOWN)})"
 
 
 @routes.route("/wordfreq", methods=["GET", "POST"])
@@ -142,7 +143,7 @@ def wordfreq():
         date_from = datetime.strptime(request.args.get("date_from", ""), date_fmt)
         date_to = datetime.strptime(request.args.get("date_to", ""), date_fmt)
     except Exception as e:
-        logging.warning("Failed to parse date arg: {0}".format(e))
+        logging.warning(f"Failed to parse date arg: {e}")
         return better_jsonify(**resp)
 
     # Words param should contain one or more comma-separated word
@@ -259,11 +260,11 @@ def wordfreq():
                 or []
             )
             # Generate data and config for chart
-            label = "{0} ({1})".format(wd, CAT_DESC.get(cat))
+            label = f"{wd} ({CAT_DESC.get(cat)})"
             ds: Dict[str, Any] = dict(label=label, fill=False, lineTension=0)
             ds["borderColor"] = ds["backgroundColor"] = colors.pop(0)
             ds["data"] = [r[1] for r in res]
-            ds["word"] = "{0}:{1}".format(wd, cat)
+            ds["word"] = f"{wd}:{cat}"
             data["datasets"].append(ds)
 
     # Create response
@@ -294,7 +295,7 @@ def wordfreq_details():
             # If only one date provided, assume it's a period spanning a single day
             date_to = date_from + timedelta(days=1)
     except Exception as e:
-        logging.warning("Failed to parse date arg: {0}".format(e))
+        logging.warning(f"Failed to parse date arg: {e}")
         return better_jsonify(**resp)
 
     # Fetch list of articles for each word for the given period

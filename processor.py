@@ -512,7 +512,7 @@ def _main(argv: Optional[List[str]] = None) -> int:
                 num_workers = int(a) if int(a) else None
 
         if init:
-            # Initialize the scraper database
+            # Initialize the database
             init_db()
         else:
             # Read the configuration settings file

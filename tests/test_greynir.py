@@ -84,6 +84,7 @@ SKIP_ROUTES = frozenset(
         "/salescloud/nyskraning",
         "/salescloud/breyting",
         "/register_query_data.api",
+        "/stats/queries",
     )
 )
 

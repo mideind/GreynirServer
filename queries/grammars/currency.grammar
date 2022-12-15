@@ -60,11 +60,13 @@ QCurSEK/fall →
 
 QCurUSD/fall →
     'bandaríkjadalur:kk'/fall
-    | 'dalur:kk'/fall
+    | 'bandaríkjadollari:kk'/fall
+    | 'bandarískur:lo'_kk/fall? 'dalur:kk'/fall
     | 'bandarískur:lo'_kk/fall? 'dollari:kk'/fall
     | currency_usd/fall
     | "dollar" # Common mistake
     | "bandaríkjadollar" # Common mistake
+    | 'Dalir:kk'/fall  # Hacky fix
 
 QCurUSD_þgf →
     "bandaríkjadollara" | "bandaríkjadollaranum" | "bandaríkjadollarnum"

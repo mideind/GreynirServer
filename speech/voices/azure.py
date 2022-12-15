@@ -31,11 +31,9 @@ import pathlib
 
 import azure.cognitiveservices.speech as speechsdk
 
-from speech.voices import (
-    strip_markup,
-    suffix_for_audiofmt,
-)
 from utility import RESOURCES_DIR, STATIC_DIR
+from speech.norm import DefaultNormalization, strip_markup
+from speech.voices import suffix_for_audiofmt
 
 
 NAME = "Azure Cognitive Services"
@@ -212,3 +210,34 @@ def text_to_audio_url(
     # mime_type = mimetype_for_audiofmt(audio_format)
     # data_uri = generate_data_uri(data, mime_type=mime_type)
     # return data_uri
+
+
+class Normalization(DefaultNormalization):
+    """
+    Normalization handler class,
+    specific to the Azure voice engine.
+    """
+
+    # Override some character pronunciations for
+    # normalization, custom for this speech engine
+    _CHAR_PRONUNCIATION = {
+        **DefaultNormalization._CHAR_PRONUNCIATION,
+        "b": "bjé",
+        "c": "sjé",
+        "d": "djé",
+        "ð": "eeð",
+        "e": "eeh",
+        "é": "jé",
+        "g": "gjé",
+        "i": "ii",
+        "j": "íoð",
+        "o": "úa",
+        "ó": "oú",
+        "r": "errr",
+        "t": "tjéé",
+        "ú": "úúu",
+        "ý": "ufsilon íí",
+        "þ": "þodn",
+        "æ": "æí",
+        "ö": "öö",
+    }

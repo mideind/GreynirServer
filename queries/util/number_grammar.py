@@ -33,12 +33,10 @@
 # TODO: 1 - Ordinal numbers
 # TODO: 2 - Fractions
 
-from typing import Any
-
 from functools import reduce
 from operator import mul
 
-from tree import Result
+from tree import Result, ParamList, Node
 from queries.util import read_utility_grammar_file
 
 # The context-free grammar for number utterances recognized by this utility module
@@ -93,7 +91,7 @@ _NUMBERS = {
 }
 
 
-def UBrotaTala(node: Any, params: Any, result: Result) -> None:
+def UBrotaTala(node: Node, params: ParamList, result: Result) -> None:
     if "numbers" in result:
         result["numbers"] = [
             float(
@@ -102,9 +100,16 @@ def UBrotaTala(node: Any, params: Any, result: Result) -> None:
         ]
 
 
+def UHeilTala(node: Node, params: ParamList, result: Result) -> None:
+    # Check if a number was specified in digits instead of written out
+    tala = node.first_child(lambda n: n.has_t_base("tala"))
+    if tala is not None and tala.contained_number is not None:
+        result["numbers"] = [int(tala.contained_number)]
+
+
 # Function for nonterminals which have children that should be multiplied together
 # e.g. "fimm" (5) and "hundruð" (100) -> "fimm hundruð" (500)
-def _multiply_children(node: Any, params: Any, result: Result) -> None:
+def _multiply_children(node: Node, params: ParamList, result: Result) -> None:
     if "numbers" in result:
         result["numbers"] = [reduce(mul, result["numbers"])]
 
@@ -130,7 +135,7 @@ def _multiply_children(node: Any, params: Any, result: Result) -> None:
 
 # Function for nonterminals which have children that should be added together
 # e.g. "sextíu" (60) and "átta" (8) -> "sextíu (og) átta" (68)
-def _sum_children(node: Any, params: Any, result: Result) -> None:
+def _sum_children(node: Node, params: ParamList, result: Result) -> None:
     if "numbers" in result:
         result["numbers"] = [sum(result["numbers"])]
 
@@ -158,7 +163,7 @@ def _sum_children(node: Any, params: Any, result: Result) -> None:
 
 # Function for nonterminals where we can perform a value lookup
 # e.g. "hundruð" (result._root = "hundrað") -> 100
-def _lookup_function(node: Any, params: Any, result: Result) -> None:
+def _lookup_function(node: Node, params: ParamList, result: Result) -> None:
     result["numbers"] = [_NUMBERS[result._root]]
 
 

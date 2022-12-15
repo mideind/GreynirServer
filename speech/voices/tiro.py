@@ -28,8 +28,8 @@ import logging
 
 import requests
 
-from speech.voices import generate_data_uri, strip_markup, mimetype_for_audiofmt
-
+from speech.norm import strip_markup
+from speech.voices import generate_data_uri, mimetype_for_audiofmt
 
 NAME = "Tiro"
 VOICES = frozenset(("Alfur", "Dilja", "Bjartur", "Rosa", "Alfur_v2", "Dilja_v2"))
@@ -72,7 +72,7 @@ def text_to_audio_data(
     }
 
     try:
-        r = requests.post(_TIRO_TTS_URL, json=jdict)
+        r = requests.post(_TIRO_TTS_URL, json=jdict, timeout=10)
         if r.status_code != 200:
             raise Exception(
                 f"Received HTTP status code {r.status_code} from {NAME} server"

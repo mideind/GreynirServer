@@ -51,7 +51,6 @@ __all__ = (
     "ConfigError",
     "Settings",
     "GreynirDB",
-    "classproperty",
     "SessionContext",
 )
 

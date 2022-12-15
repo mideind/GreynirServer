@@ -243,13 +243,8 @@ QBusWord/fall →
     | 'tólfa:kvk'_et_gr/fall
 
 QBusNumber/fall →
-    QBusNounSingular/fall QBusNr? QBusNumberWord
+    QBusNounSingular/fall QBusNr? UHeilTala
+    # UHeilTala is a nonterminal from the util modules, which
+    # matches any cardinal number and places it in the list result.numbers
 
 QBusNr → 'númer:hk'_et_nf | "nr"
-
-QBusNumberWord →
-
-    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
-    # töl is an undeclinable number word ('sautján')
-    # tala is a number ('17')
-    "eitt" | to_nf_ft_hk | töl | tala
