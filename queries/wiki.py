@@ -35,9 +35,10 @@ import re
 import random
 from datetime import datetime, timedelta
 
-from queries.util import query_json_api, gen_answer, cap_first, read_grammar_file
-from queries import Query, QueryStateDict, ContextDict
 from tree import Result, Node
+from utility import cap_first
+from queries import Query, QueryStateDict, ContextDict
+from queries.util import query_json_api, gen_answer, read_grammar_file
 
 
 _WIKI_QTYPE = "Wikipedia"

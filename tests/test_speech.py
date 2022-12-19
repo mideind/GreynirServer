@@ -20,8 +20,10 @@
     Tests for speech-synthesis-related code in the Greynir repo.
 
 """
+from typing import Callable
 
 import os
+import re
 import sys
 import datetime
 import logging
@@ -567,6 +569,12 @@ def test_float_normalization() -> None:
         float_to_text(2.0, gender="kvk", case="þgf", comma_null=True)
         == "tveimur komma núll"
     )
+    assert (
+        float_to_text("-10.100,21")
+        == float_to_text("-10100,21")
+        == float_to_text("-10100.21")
+        == "mínus tíu þúsund og eitt hundrað komma tuttugu og eitt"
+    )
 
     assert (
         floats_to_text("2,13 millilítrar af vökva.", gender="kk")
@@ -630,14 +638,16 @@ def test_time_normalization() -> None:
     midnight = datetime.time(0, 0)
     six_am = datetime.time(6, 0)
     for h, m in product(range(24), range(60)):
-        t = datetime.time(h, m)
-        n1 = DNorm.time(f"{t.hour}:{t.minute}")
-        assert n1.replace(" ", "").isalpha()
-        n2 = DNorm.time(t.strftime("%H:%M"))
-        assert n2.replace(" ", "").isalpha()
-        assert n1 == n2
+        t = datetime.time(hour=h, minute=m)
+        n = DNorm.time(t.strftime("%H:%M"))
+        assert n.replace(" ", "").isalpha()
         if midnight < t < six_am:
-            assert "um nótt" in n1
+            assert "um nótt" in n
+    t = datetime.time(6, 6, 6)
+    assert "klukkan sex núll sex núll sex" == DNorm.time(t.strftime("klukkan %H:%M:%S"))
+    assert "klukkan sex núll sex núll sex" == DNorm.time(t.strftime("kl. %H:%M:%S"))
+    t = datetime.time(3, 3, 3)
+    assert "þrjú núll þrjú núll þrjú um nótt" == DNorm.time(t.strftime("%H:%M:%S"))
 
 
 def test_date_normalization() -> None:
@@ -664,11 +674,11 @@ def test_date_normalization() -> None:
 
 
 def test_spelling_normalization() -> None:
-    _ICELANDIC_ALPHABET_ENG_UPPER = "AÁBCDÐEÉFGHIÍJKLMNOÓPQRSTUÚVWXYÝÞÆÖZ"
-    _ICELANDIC_ALPHABET_ENG_LOWER = "aábcdðeéfghiíjklmnoópqrstuúvwxyýþæöz"
-    _ICELANDIC_ALPHABET_ENG = _ICELANDIC_ALPHABET_ENG_UPPER + _ICELANDIC_ALPHABET_ENG_LOWER
+    from speech.norm import _ICE_ENG_ALPHA
 
-    for a in (_ICELANDIC_ALPHABET_ENG, "ÁÍS", "BSÍ", "LSH", "SÍBS"):
+    _ALPHABET = _ICE_ENG_ALPHA + _ICE_ENG_ALPHA.lower()
+
+    for a in (_ALPHABET, "ÁÍS", "BSÍ", "LSH", "SÍBS"):
         n1 = DNorm.spell(a.upper())
         n2 = DNorm.spell(a.lower())
         assert n1 == n2
@@ -717,7 +727,7 @@ def test_entity_normalization() -> None:
     n = DNorm.entity("Kjarninn")
     assert n == "Kjarninn"
     n = DNorm.entity("RANNÍS")
-    assert n == "RANNÍS"
+    assert n.upper() == "RANNÍS"
     n = DNorm.entity("Rannís")
     assert n == "Rannís"
     n = DNorm.entity("Verkís")
@@ -726,57 +736,161 @@ def test_entity_normalization() -> None:
     assert n == "RARIK"
     n = DNorm.entity("NATO")
     assert n == "NATO"
-    # TODO n = DNorm.entity("NASA")
-    # assert n == "NASA"
+    n = DNorm.entity("NASA")
+    assert n.upper() == "NASA"
+    n = DNorm.entity("Víkurskel ehf.")
+    assert n.startswith("Víkurskel") and "ehf." not in n
+    n = DNorm.entity("VF 45 ehf.")
+    assert "VF" not in n and "ehf." not in n and "45" not in n
+    n = DNorm.entity("Alþjóðalyfjaeftirlitsstofnunin")
+    assert n == "Alþjóðalyfjaeftirlitsstofnunin"
+    n = DNorm.entity("ÖSE")
+    assert n != "ÖSE"
+    n = DNorm.entity("Ungmennaráð UMFÍ")
+    assert n.startswith("Ungmennaráð") and "UMFÍ" not in n
+    n = DNorm.entity("NEC Nijmegen")
+    assert "NEC" not in n and n.endswith("Nijmegen")
+    n = DNorm.entity("Fabienne Buccio")
+    assert n == "Fabienne Buccio"
+    n = DNorm.entity("Salgado")
+    assert n == "Salgado"
+    n = DNorm.entity("Sleep Inn")
+    assert n == "Sleep Inn"
+    n = DNorm.entity("GSMbensín")
+    assert n == "GSMbensín"
+    n = DNorm.entity("Kvennalistinn.is")
+    assert n == "Kvennalistinn.is"
+    n = DNorm.entity("USS Comfort")
+    assert "USS" not in n and n.endswith("Comfort")
+    n = DNorm.entity("Bayern München - FC Rostov")
+    assert "FC" not in n
 
 
-def test_title_normalization() -> None:
-    # TODO
-    return
-    n = DNorm.title("þjálfari ÍR")
-    assert "ÍR" not in n
-    n = DNorm.title("fulltrúi í samninganefnd félagsins")
+def test_generic_normalization() -> None:
+    n = DNorm.generic("þjálfari ÍR")
+    assert "ÍR" not in n and n.startswith("þjálfari ")
+    n = DNorm.generic("fulltrúi í samninganefnd félagsins")
     assert n == "fulltrúi í samninganefnd félagsins"
-    n = DNorm.title("formaður nefndarinnar")
+    n = DNorm.generic("formaður nefndarinnar")
     assert n == "formaður nefndarinnar"
-    n = DNorm.title("fyrrverandi Bandaríkjaforseti")
+    n = DNorm.generic("fyrrverandi Bandaríkjaforseti")
     assert n == "fyrrverandi Bandaríkjaforseti"
-    n = DNorm.title("þjálfari Fram í Olís deild karla")
+    n = DNorm.generic("þjálfari Fram í Olís deild karla")
     assert n == "þjálfari Fram í Olís deild karla"
-    # n = DNorm.title("NASF") # TODO
-    # assert "NASF" not in n
-    n = DNorm.title("íþróttakennari")
+    n = DNorm.generic("NASF")
+    assert n and "NASF" not in n
+    n = DNorm.generic("íþróttakennari")
     assert n == "íþróttakennari"
-    n = DNorm.title("formaður Bandalags háskólamanna")
+    n = DNorm.generic("formaður Bandalags háskólamanna")
     assert n == "formaður Bandalags háskólamanna"
-    n = DNorm.title("formaður Leigjendasamtakanna")
+    n = DNorm.generic("formaður Leigjendasamtakanna")
     assert n == "formaður Leigjendasamtakanna"
-    # n = DNorm.title("framkvæmdastjóri Samtaka atvinnulífsins (SA)") # TODO
-    # assert "SA" not in n
-    n = DNorm.title("innanríkisráðherra í stjórn Sigmundar Davíðs Gunnlaugssonar")
+    n = DNorm.generic("framkvæmdastjóri Samtaka atvinnulífsins (SA)")
+    assert n.startswith("framkvæmdastjóri Samtaka atvinnulífsins (") and "SA" not in n
+    n = DNorm.generic("innanríkisráðherra í stjórn Sigmundar Davíðs Gunnlaugssonar")
     assert n == "innanríkisráðherra í stjórn Sigmundar Davíðs Gunnlaugssonar"
-    n = DNorm.title("fyrsti ráðherra Íslands")
+    n = DNorm.generic("fyrsti ráðherra Íslands")
     assert n == "fyrsti ráðherra Íslands"
-    n = DNorm.title("málpípur þær")
+    n = DNorm.generic("málpípur þær")
     assert n == "málpípur þær"
-    n = DNorm.title("sundsérfræðingur RÚV")
-    assert n == "sundsérfræðingur Ríkisútvarpsins"
-    n = DNorm.title("framkvæmdastjóri Strætó ehf.")
-    assert "ehf." not in n
-    n = DNorm.title("þáverandi sjávarútvegsráðherra")
+    n = DNorm.generic("sundsérfræðingur RÚV")
+    assert n == "sundsérfræðingur RÚV"
+    n = DNorm.generic("framkvæmdastjóri Strætó ehf.")
+    assert n.startswith("framkvæmdastjóri Strætó ") and "ehf." not in n
+    n = DNorm.generic("þáverandi sjávarútvegsráðherra")
     assert n == "þáverandi sjávarútvegsráðherra"
-    n = DNorm.title("knattspyrnudómari")
+    n = DNorm.generic("knattspyrnudómari")
     assert n == "knattspyrnudómari"
-    n = DNorm.title("framkvæmdastjóri Félags atvinnurekenda")
+    n = DNorm.generic("framkvæmdastjóri Félags atvinnurekenda")
     assert n == "framkvæmdastjóri Félags atvinnurekenda"
-    n = DNorm.title("þjálfari Stjörnunnar")
+    n = DNorm.generic("þjálfari Stjörnunnar")
     assert n == "þjálfari Stjörnunnar"
-    n = DNorm.title("lektor við HÍ")
-    assert "HÍ" not in n
-    n = DNorm.title("trillukarl í Skerjafirði")
+    n = DNorm.generic("lektor við HÍ")
+    assert n.startswith("lektor við ") and "HÍ" not in n
+    n = DNorm.generic("trillukarl í Skerjafirði")
     assert n == "trillukarl í Skerjafirði"
-    n = DNorm.title("formaður VR og LÍV")
-    assert "VR" not in n and "LÍV" not in n
+    n = DNorm.generic("formaður VR og LÍV")
+    assert n.startswith("formaður ") and "VR" not in n and "LÍV" not in n
+
+    ws_re = re.compile(r"\n\s+")
+    ws_to_space: Callable[[str], str] = lambda t: ws_re.sub(" ", t.strip())
+    excerpt = ws_to_space(
+        """
+        Breski seðlabankinn hækkaði stýrivexti sína í dag
+        um hálft prósentustig og eru vextir nú yfir 3,2%.
+        Það eru hæstu stýrivextir í Bretlandi í 14 ár.
+        Seðlabankinn vonar að vaxtahækkunin stemmi stigu
+        við mikilli verðbólgu í landinu.
+        """
+    )
+    n = DNorm.generic(excerpt)
+    assert n == excerpt.replace("14", "fjórtán").replace(
+        "3,2%", "þrjú komma tvö prósent"
+    )
+    excerpt = ws_to_space(
+        """
+        t.d. var 249% munur á ódýrstu og dýrustu rauðrófunum,
+        118% munur milli bökunarkartafla, 291% munur á grænum eplum,
+        97% munur á vínberjum og 2-3% af jarðarberjum.
+        """
+    )
+    n = DNorm.generic(excerpt)
+    assert (
+        "%" not in n
+        and "til dæmis" in n
+        and "tvö hundruð níutíu og eitt prósent" in n
+        and "tvö til þrjú prósent"
+    )
+    n = DNorm.generic(
+        "sagðist hún vona að á næstu 10-20 árum"
+        "yrði farið að nýta tæknina 9,2-5,3 prósent meira."
+    )
+    assert "tíu til tuttugu árum" in n and "níu komma tvö til fimm komma þrjú prósent"
+    excerpt = ws_to_space(
+        """
+        Frakkland - Marókkó á HM.
+        Leikurinn var bráðfjörugur en það voru Frakkar
+        sem voru sterkari og unnu þeir leikinn 2-0.
+        """
+    )
+    n = DNorm.generic(excerpt)
+    assert "Frakkland - Marókkó" in n and "HM" not in n and "tvö núll" in n
+    excerpt = ws_to_space(
+        """
+        2 eru slasaðir og um 1.500 fiskar dauðir eftir að um 
+        16 metra hátt fiskabúr í miðju Radisson hóteli
+        í Berlín sprakk snemma í morgun.
+        """
+    )
+    n = DNorm.generic(excerpt)
+    assert "tveir" in n and "eitt þúsund og fimm hundruð" in n and "sextán metra" in n
+
+    excerpt = ws_to_space("Fréttin var síðast uppfærð 3/12/2022 kl. 10:42.")
+    n = DNorm.generic(excerpt)
+    assert (
+        "þriðja desember tvö þúsund tuttugu og tvö" in n
+        and "klukkan tíu fjörutíu og tvö" in n
+    )
+    excerpt = ws_to_space("Fréttin var síðast uppfærð 16. desember 2022 kl. 10:42.")
+    n = DNorm.generic(excerpt)
+    assert (
+        "sextánda desember tvö þúsund tuttugu og tvö" in n
+        and "klukkan tíu fjörutíu og tvö" in n
+    )
+    excerpt = ws_to_space("Fréttin var síðast uppfærð 2. janúar 2022.")
+    n = DNorm.generic(excerpt)
+    assert "annan janúar tvö þúsund tuttugu og tvö" in n
+    excerpt = ws_to_space("Fréttin var síðast uppfærð 01/01/2022.")
+    n = DNorm.generic(excerpt)
+    assert "fyrsta janúar tvö þúsund tuttugu og tvö" in n
+    excerpt = ws_to_space(
+        "Fréttin var síðast uppfærð 14. nóvember og 16. desember 1999."
+    )
+    n = DNorm.generic(excerpt)
+    assert "fjórtánda nóvember og sextánda desember nítján hundruð níutíu og níu" in n
+    excerpt = ws_to_space("Fréttin var síðast uppfærð 2. febrúar klukkan 13:30.")
+    n = DNorm.generic(excerpt)
+    assert "annan febrúar klukkan þrettán þrjátíu" in n
 
 
 def test_person_normalization() -> None:
@@ -787,9 +901,8 @@ def test_person_normalization() -> None:
     assert n == "Elísabet önnur Bretlandsdrottning"
     n = DNorm.person("Leópold II Belgakonungur")
     assert n == "Leópold annar Belgakonungur"
-    # TODO: bug in lookup_name_gender for "Óskar"/"Ósk"
-    # n = DNorm.person("Óskar II Svíakonungur")
-    # assert n == "Óskar annar Svíakonungur"
+    n = DNorm.person("Óskar II Svíakonungur")
+    assert n == "Óskar annar Svíakonungur"
     n = DNorm.person("Loðvík XVI")
     assert n == "Loðvík sextándi"
 
@@ -825,14 +938,11 @@ def test_person_normalization() -> None:
     assert "P." not in n and "Jr." not in n and "Alfred" in n and "Sloan" in n
 
     # Lowercase middle names
-    n = DNorm.person("Alex van der Zwaan")
-    assert n == "Alex van der Zwaan"
-    n = DNorm.person("Frans van Houten")
-    assert n == "Frans van Houten"
-    n = DNorm.person("Louis van Gaal")
-    assert n == "Louis van Gaal"
-    n = DNorm.person("Rafael van der Vaart")
-    assert n == "Rafael van der Vaart"
+    assert DNorm.person("Louis van Gaal") == "Louis van Gaal"
+    assert DNorm.person("Frans van Houten") == "Frans van Houten"
+    assert DNorm.person("Alex van der Zwaan") == "Alex van der Zwaan"
+    assert DNorm.person("Rafael van der Vaart") == "Rafael van der Vaart"
+
 
 def test_voice_breaks() -> None:
     from speech.norm import (

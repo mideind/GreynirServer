@@ -30,11 +30,10 @@ import logging
 from queries import Query, QueryStateDict
 from tree import Result, Node
 
+from utility import cap_first, icequote
 from queries.util import (
     query_json_api,
     gen_answer,
-    cap_first,
-    icequote,
     read_grammar_file,
 )
 

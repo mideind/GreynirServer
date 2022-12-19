@@ -64,11 +64,11 @@ from datetime import datetime, timedelta
 from calendar import monthrange, isleap
 
 from queries import Query, QueryStateDict
+from utility import cap_first
 from queries.util import (
     gen_answer,
     is_plural,
     sing_or_plur,
-    cap_first,
     read_grammar_file,
 )
 from tree import Result, Node, TerminalNode

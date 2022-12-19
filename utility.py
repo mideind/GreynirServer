@@ -128,3 +128,13 @@ def icelandic_asciify(text: str) -> str:
     t = t.encode("ascii", "ignore").decode()
 
     return t
+
+
+def icequote(s: str) -> str:
+    """Return string surrounded by Icelandic-style quotation marks."""
+    return f"„{s.strip()}“"
+
+
+def cap_first(s: str) -> str:
+    """Capitalize first character in a string."""
+    return s[0].upper() + s[1:] if s else s

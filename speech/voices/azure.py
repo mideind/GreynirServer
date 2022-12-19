@@ -241,3 +241,32 @@ class Normalization(DefaultNormalization):
         "æ": "æí",
         "ö": "öö",
     }
+
+    # Weird entity pronunciations can be added here
+    # when they're encountered
+    _ENTITY_PRONUNCIATIONS = {
+        **DefaultNormalization._ENTITY_PRONUNCIATIONS,
+        "BYKO": "Býkó",
+        "ELKO": "Elkó",
+        "FIDE": "fídeh",
+        "FIFA": "fííffah",
+        "GIRL": "görl",
+        "LEGO": "llegó",
+        "MIT": "emm æí tíí",
+        "NEW": "njúú",
+        "NOVA": "Nóva",
+        "PLUS": "plöss",
+        "SHAH": "Sjah",
+        "TIME": "tæm",
+        "UEFA": "júei fa",
+        "UENO": "júeenó",
+        "UKIP": "júkipp",
+        "VISA": "vísa",
+        "XBOX": "ex box",
+    }
+
+    # Override some weird name pronunciations
+    _PERSON_PRONUNCIATION = {
+        "Joe": "Djó",
+        "Biden": "Bæden",
+    }

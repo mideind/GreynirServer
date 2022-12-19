@@ -41,11 +41,11 @@ from reynir import NounPhrase
 
 from geo import in_iceland, iceprep_for_street, LatLonTuple
 from queries import Query, QueryStateDict
+from utility import icequote
 from queries.util import (
     gen_answer,
     query_places_api,
     query_place_details,
-    icequote,
     AnswerTuple,
     read_grammar_file,
 )

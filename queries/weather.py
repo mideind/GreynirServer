@@ -52,11 +52,11 @@ import random
 from datetime import timedelta, datetime
 
 from queries import Query, QueryStateDict
+from utility import cap_first
 from queries.util import (
     JsonResponse,
     gen_answer,
     query_json_api,
-    cap_first,
     sing_or_plur,
     AnswerTuple,
     read_grammar_file,

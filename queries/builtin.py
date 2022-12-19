@@ -46,7 +46,8 @@ from search import Search
 from speech.norm import gssml
 from queries import AnswerTuple, Query, ResponseDict, ResponseType, QueryStateDict
 from tree import Result, Node
-from queries.util import cap_first, icequote, read_grammar_file
+from utility import cap_first, icequote
+from queries.util import read_grammar_file
 
 
 # The type of a name/entity register
@@ -506,7 +507,9 @@ def query_person(query: Query, session: Session, name: str) -> AnswerTuple:
             query.set_error("E_PERSON_NOT_FOUND")
             return dict(answer=""), "", ""
         answer = title
-        voice_answer = f"{gssml(name, type='person')} er {gssml(answer, type='title')}."
+        voice_answer = (
+            f"{gssml(name, type='person')} er {gssml(answer, type='generic')}."
+        )
         # Set the context for a subsequent query
         query.set_context({"person_name": name})
         # Set source, if known
@@ -617,14 +620,12 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
     response = make_response_list(rd)
     answer: str
     voice_answer: str
+    voice_title = gssml(title, type="generic")
     if response and title and "answer" in response[0]:
         first_response = response[0]
         # Return 'Seðlabankastjóri er Már Guðmundsson.'
-        upper_title = cap_first(title)
         answer = first_response["answer"]
-        voice_answer = (
-            f"{gssml(upper_title, type='title')} er {gssml(answer, type='person')}."
-        )
+        voice_answer = f"{voice_title} er {gssml(answer, type='person')}."
         # Store the person name in the query context
         # so it can be referred to in subsequent queries
         query.set_context({"person_name": answer})
@@ -633,7 +634,7 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
             query.set_source(first_source)
     else:
         answer = f"Ekkert nafn finnst með titilinn {icequote(title)}."
-        voice_answer = f"Ég veit ekki hver er {gssml(title, type='title')}."
+        voice_answer = f"Ég veit ekki hver er {voice_title}."
     return response, answer, voice_answer
 
 
@@ -946,6 +947,7 @@ def Fyrirtæki(node: Node, params: QueryStateDict, result: Result) -> None:
 def Mannsnafn(node: Node, params: QueryStateDict, result: Result) -> None:
     """Hreint mannsnafn, þ.e. án ávarps og titils"""
     result.mannsnafn = result._nominative
+    print("A"*20,result.mannsnafn)
 
 
 def EfLiður(node: Node, params: QueryStateDict, result: Result) -> None:

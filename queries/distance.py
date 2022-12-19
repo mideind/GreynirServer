@@ -38,9 +38,9 @@ import logging
 
 from reynir import NounPhrase
 from queries import AnswerTuple, Query
+from utility import cap_first
 from queries.util import (
     gen_answer,
-    cap_first,
     time_period_desc,
     distance_desc,
     query_geocode_api_addr,

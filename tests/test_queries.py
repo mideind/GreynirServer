@@ -1579,13 +1579,11 @@ def test_query_utility_functions() -> None:
         is_plural,
         sing_or_plur,
         country_desc,
-        cap_first,
         time_period_desc,
         distance_desc,
         krona_desc,
         strip_trailing_zeros,
         iceformat_float,
-        icequote,
         timezone4loc,
         # parse_num,
     )
@@ -1627,13 +1625,6 @@ def test_query_utility_functions() -> None:
     assert country_desc("IS") == "á Íslandi"
     assert country_desc("us") == "í Bandaríkjunum"
     assert country_desc("IT") == "á Ítalíu"
-
-    assert cap_first("yolo") == "Yolo"
-    assert cap_first("YOLO") == "YOLO"
-    assert cap_first("yoLo") == "YoLo"
-    assert cap_first("Yolo") == "Yolo"
-    assert cap_first("þristur") == "Þristur"
-    assert cap_first("illur ásetninguR") == "Illur ásetninguR"
 
     assert time_period_desc(3751) == "1 klukkustund og 3 mínútur"
     assert (
@@ -1706,9 +1697,6 @@ def test_query_utility_functions() -> None:
     assert iceformat_float(123.12341, decimal_places=4) == "123,1234"
     assert iceformat_float(123.1000, strip_zeros=True) == "123,1"
     assert iceformat_float(123.0, decimal_places=4, strip_zeros=False) == "123,0000"
-
-    assert icequote("sæll") == "„sæll“"
-    assert icequote(" Góðan daginn ") == "„Góðan daginn“"
 
     assert timezone4loc((64.157202, -21.948536)) == "Atlantic/Reykjavik"
     assert timezone4loc((40.093368, 57.000067)) == "Asia/Ashgabat"

@@ -41,7 +41,7 @@ from html.parser import HTMLParser
 from collections import deque
 from speech.norm import NORMALIZATION_CLASS, DefaultNormalization, NormMethod
 
-from utility import GREYNIR_ROOT_DIR, modules_in_dir
+from utility import GREYNIR_ROOT_DIR, cap_first, modules_in_dir
 
 
 VOICES_DIR = GREYNIR_ROOT_DIR / "speech" / "voices"
@@ -145,7 +145,7 @@ class GreynirSSMLParser(HTMLParser):
         assert (
             len(self._str_stack) == 1
         ), "Error during parsing, are all markup tags correctly closed?"
-        return self._str_stack[0]
+        return cap_first(self._str_stack[0])
 
     # ----------------------------------------
 

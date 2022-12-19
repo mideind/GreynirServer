@@ -225,6 +225,8 @@ def number_to_text(
         302 -> "þrjú hundruð og tvær" (gender="kvk")
         501 -> "fimm hundruð og einn" (gender="kk")
     """
+    if isinstance(n, str):
+        n = n.replace(".", "")
     n = int(n)
     nums = number_to_neutral(n, one_hundred=one_hundred).split()
 
@@ -273,6 +275,13 @@ def float_to_text(
     Example:
         -0.02 -> "mínus núll komma núll tveir" (gender="kk")
     """
+    if isinstance(f, str):
+        if "," in f and "." in f:
+            # Remove Icelandic thousand markers
+            f = f.replace(".", "")
+        # Change Icelandic comma to period
+        f = f.replace(",", ".")
+
     f = float(f)
     out_str: str = ""
     # To prevent edge cases like -0.2 being translated to

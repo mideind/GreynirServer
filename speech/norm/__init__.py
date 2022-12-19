@@ -23,12 +23,16 @@
 
 """
 
-from typing import Any, Callable, Mapping, Optional, Tuple, Union
+from typing import Any, Callable, List, Match, Mapping, Optional, Tuple, Union, cast
 
 import re
+from functools import lru_cache
 
 from tokenizer import Abbreviations
+from tokenizer.definitions import HYPHENS
+from islenska.basics import ALL_CASES, ALL_GENDERS, ALL_NUMBERS
 from reynir.bindb import GreynirBin
+from reynir import Greynir
 
 from speech.norm.num import (
     digits_to_text,
@@ -121,6 +125,9 @@ _CHAR_PRONUNCIATION: Mapping[str, str] = {
     "z": "seta",
 }
 
+# Icelandic/English alphabet, uppercased
+_ICE_ENG_ALPHA = "".join(c.upper() for c in _CHAR_PRONUNCIATION.keys())
+
 
 def spell_out(s: str) -> str:
     """Spell out a sequence of characters, e.g. "LTB" -> "ell té bé".
@@ -131,6 +138,11 @@ def spell_out(s: str) -> str:
     return " ".join(t).replace("  ", " ").strip()
 
 
+# Matches e.g. "klukkan 14:30", "kl. 2:23:31", "02:15"
+_TIME_REGEX = re.compile(
+    r"((?P<klukkan>(kl\.|klukkan)) )?(?P<hour>\d{1,2}):"
+    r"(?P<minute>\d\d)(:(?P<second>\d\d))?"
+)
 _MONTH_ABBREVS = (
     "jan",
     "feb",
@@ -177,6 +189,18 @@ _DATE_REGEXES = (
 )
 
 
+# Regex for splitting string when float/ordinal number encountered
+_NUM_RE = re.compile(r"([0-9]+,[0-9]+|[0-9]+)")
+# Matches letter followed by period or two uppercase letters side-by-side
+_ABBREV_RE = re.compile(
+    rf"([{_ICE_ENG_ALPHA + _ICE_ENG_ALPHA.lower()}]\."
+    rf"|[{_ICE_ENG_ALPHA}][{_ICE_ENG_ALPHA}])"
+)
+
+# Terms common in sentences which refer to results from sports
+_SPORTS_LEMMAS = frozenset(("leikur", "vinna", "tapa", "sigra"))
+_HYPHEN_SYMBOLS = frozenset(HYPHENS)
+
 # Break strength values:
 # none: No pause should be outputted. This can be used to remove a pause that would normally occur (such as after a period).
 # x-weak: No pause should be outputted (same as none).
@@ -216,6 +240,8 @@ class DefaultNormalization:
     for Icelandic speech synthesis.
     """
 
+    # Singleton Greynir instance
+    _greynir: Optional[Greynir] = None
     # TODO
     # amount/s
     # currency/ies
@@ -229,6 +255,16 @@ class DefaultNormalization:
         """
         return arg is not None and arg == "True"
 
+    # &,<,> cause speech synthesis errors,
+    # change these to text
+    _DANGER_SYMBOLS: Tuple[Tuple[str, str], ...] = (
+        ("&", " og "),
+        ("<=", " minna eða jafnt og "),
+        ("<", " minna en "),
+        (">=", " stærra eða jafnt og "),
+        (">", " stærra en "),
+    )
+
     @classmethod
     @_empty_str
     def danger_symbols(cls, txt: str) -> str:
@@ -237,18 +273,12 @@ class DefaultNormalization:
         cause issues for the speech synthesis engine.
         These symbols are &,<,>.
 
-        Note: HTML charrefs should be translated to their
+        Note: HTML charrefs (e.g. &amp;) should be translated to their
               unicode character before this function is called.
               (GreynirSSMLParser does this automatically.)
         """
-        # Ampersands
-        txt = re.sub(r" ?& ?", " og ", txt)
-        # <
-        txt = re.sub(r" ?<= ?", " minna eða jafnt og ", txt)
-        txt = re.sub(r" ?< ?", " minna en ", txt)
-        # >
-        txt = re.sub(r" ?>= ?", " stærra eða jafnt og ", txt)
-        txt = re.sub(r" ?> ?", " stærra en ", txt)
+        for symb, new in cls._DANGER_SYMBOLS:
+            txt = txt.replace(symb, new)
         return txt
 
     @classmethod
@@ -300,79 +330,92 @@ class DefaultNormalization:
         return cls.digits(txt)
 
     @classmethod
-    @_empty_str
-    def time(cls, txt: str) -> str:
-        """
-        Voicifies time of day, specified as 'HH:MM'.
-        E.g.
-            "11:34" -> "ellefu þrjátíu og fjögur",
-            "00:30" -> "tólf þrjátíu um nótt"
-        Note: doesn't check for incorrect data, caller should handle.
-        """
-        h, m = [int(i) for i in txt.split(":")]
-        suffix: Optional[str] = None
-        # Some times
-        if h == 0:
-            # Call 00:00 "tólf á miðnætti"
-            # and 00:xx "tólf ... um nótt"
-            h = 12
-            suffix = "á miðnætti" if m == 0 else "um nótt"
-        elif 0 < h <= 5:
-            suffix = "um nótt"
-        elif h == 12 and m == 0:
-            suffix = "á hádegi"
-        t = [number_to_text(h, case="nf", gender="hk")]
-        if m > 0:
-            if m < 10:
-                # e.g. "þrettán núll fjögur"
-                t.append("núll")
-            t.append(number_to_text(m, case="nf", gender="hk"))
-        if suffix:
-            t.append(suffix)
-        return " ".join(t)
-
-    @classmethod
-    @_empty_str
-    def date(cls, txt: str, case: str = "nf") -> str:
-        """
-        Voicifies dates specified in either
-            'YYYY-MM-DD' (ISO 8601 format),
-            'DD/MM/YYYY' or
-            'DD. month[ YYYY]'
-        Note: doesn't check for incorrect numbers,
-            as that should be handled by caller.
-        """
-        # Get first fullmatch from date regexes
-        m = next(
-            filter(
-                lambda x: x is not None,
-                (r.fullmatch(txt) for r in _DATE_REGEXES),
-            ),
-            None,  # Default if no matches are found
-        )
-        assert m is not None, f"Incorrect date format specified for date handler: {txt}"
-
-        # Handle 'DD/MM/YYYY' or 'MM. jan/feb/... [year]' match
-        gd = m.groupdict()
-        day = number_to_ordinal(gd["day"], gender="kk", case=case, number="et")
-        mon: str = gd["month"]
-        # Month names don't change in different declensions
-        month = (
-            _MONTH_NAMES[int(mon) - 1]  # DD/MM/YYYY specification
-            if mon.isdecimal()
-            else _MONTH_NAMES[_MONTH_ABBREVS.index(mon[:3])]  # Non-decimal
-        )
-        return (
-            f"{day} {month} {year_to_text(gd['year'])}"
-            if gd["year"]
-            else f"{day} {month}"
-        )
-
-    @classmethod
     def timespan(cls, seconds: str) -> str:
         """Voicify a span of time, specified in seconds."""
         # TODO: Replace time_period_desc in queries/util/__init__.py
         raise NotImplementedError()
+
+    @classmethod
+    @_empty_str
+    def time(cls, txt: str) -> str:
+        """Voicifies time of day."""
+
+        def _time_fmt(match: Match[str]) -> str:
+            gd = match.groupdict()
+            prefix: Optional[str] = gd["klukkan"]
+            h: int = int(gd["hour"])
+            m: int = int(gd["minute"])
+            s: Optional[int] = int(gd["second"]) if gd["second"] is not None else None
+            suffix: Optional[str] = None
+
+            t: List[str] = []
+            # If "klukkan" or "kl." at beginning of string,
+            # prepend "klukkan"
+            if prefix:
+                t.append("klukkan")
+
+            # Hours
+            if h == 0 and m == 0:
+                # Call 00:00 "tólf á miðnætti"
+                h = 12
+                suffix = "á miðnætti"
+            elif 0 <= h <= 5:
+                # Call 00:xx-0:5:xx "... um nótt"
+                suffix = "um nótt"
+            elif h == 12 and m == 0:
+                # Call 12:00 "tólf á hádegi"
+                suffix = "á hádegi"
+            t.append(number_to_text(h, case="nf", gender="hk"))
+
+            # Minutes
+            if m > 0:
+                if m < 10:
+                    # e.g. "þrettán núll fjögur"
+                    t.append("núll")
+                t.append(number_to_text(m, case="nf", gender="hk"))
+
+            # Seconds
+            if s is not None and s > 0:
+                if s < 10:
+                    # e.g. "þrettán núll fjögur núll sex"
+                    t.append("núll")
+                t.append(number_to_text(s, case="nf", gender="hk"))
+
+            # Suffix for certain times of day to reduce ambiguity
+            if suffix:
+                t.append(suffix)
+
+            return " ".join(t)
+
+        return _TIME_REGEX.sub(_time_fmt, txt)
+
+    @classmethod
+    @_empty_str
+    def date(cls, txt: str, case: str = "nf") -> str:
+        """Voicifies a date"""
+        for r in _DATE_REGEXES:
+            match = r.search(txt)
+            if match:
+                # Found match
+                start, end = match.span()
+                gd = match.groupdict()
+                day = number_to_ordinal(gd["day"], gender="kk", case=case, number="et")
+                mon: str = gd["month"]
+                # Month names don't change in different declensions
+                month = (
+                    _MONTH_NAMES[int(mon) - 1]  # DD/MM/YYYY specification
+                    if mon.isdecimal()
+                    else _MONTH_NAMES[_MONTH_ABBREVS.index(mon[:3])]  # Non-decimal
+                )
+                fmt_date = (
+                    f"{day} {month} {year_to_text(gd['year'])}"
+                    if gd["year"]
+                    else f"{day} {month}"
+                )
+                # Only replace date part, leave rest of string intact
+                txt = txt[:start] + fmt_date + txt[end:]
+                break
+        return txt
 
     @classmethod
     @_empty_str
@@ -496,69 +539,57 @@ class DefaultNormalization:
                 domain_parts[i] = cls.spell(p)
         return f"{' punktur '.join(user_parts)} hjá {' punktur '.join(domain_parts)}"
 
-    # These uppercase parts of a entity name should be
-    # pronounced as-is, not spelled out
-    _ENTITY_DONT_SPELL = frozenset(
-        (
-            "ABBA",
-            "BOYS",
-            "BUGL",
-            "BYKO",
-            "CAVA",
-            "CERN",
-            "CERT",
-            "EFTA",
-            "ELKO",
-            "NATO",
-            "NEW",
-            "NOVA",
-            "PLAY",
-            "PLUS",
-            "RARIK",
-            "RIFF",
-            "RÚV",
-            "SAAB",
-            "SAAS",
-            "SHAH",
-            "SIRI",
-            "UENO",
-            "NASA",
-            "YVES",
-            # "XBOX": "ex box"
-            # "VISA": "vísa"
-            # "UKIP": "júkipp"
-            # "TIME": "tæm",
-            # "UEFA": "júei fa"
-            # "FIFA": "FÍÍfFAh"
-            # "LEGO": "llegó"
-            # "GIRL": "görl"
-            # "FIDE": "fídeh"
-            # (sérhljóði samhljóði sérhljóði samhljóði)?
-            # (samhljóði sérhljóði samhljóði sérhljóði)?
-        )
-    )
-    # These parts of a entity name aren't all uppercase
-    # and don't necessarily contain a period,
+    # Hardcoded pronounciations,
+    # should be overriden based on voice engine
+    _ENTITY_PRONUNCIATIONS: Mapping[str, str] = {
+        "ABBA": "ABBA",
+        "BOYS": "BOYS",
+        "BUGL": "BUGL",
+        "BYKO": "BYKO",
+        "CAVA": "CAVA",
+        "CERN": "CERN",
+        "CERT": "CERT",
+        "EFTA": "EFTA",
+        "ELKO": "ELKO",
+        "NATO": "NATO",
+        "NEW": "NEW",
+        "NOVA": "NOVA",
+        "PLAY": "PLAY",
+        "PLUS": "PLUS",
+        "RARIK": "RARIK",
+        "RIFF": "RIFF",
+        "RÚV": "RÚV",
+        "SAAB": "SAAB",
+        "SAAS": "SAAS",
+        "SHAH": "SHAH",
+        "SIRI": "SIRI",
+        "UENO": "UENO",
+        "YVES": "YVES",
+    }
+
+    # These parts of a entity name aren't necessarily
+    # all uppercase or contain a period,
     # but should be spelled out
     _ENTITY_SPELL = frozenset(
         (
             "GmbH",
+            "USS",
             "Ltd",
-            "sf",
-            "s/f",
-            "hf",
-            "h/f",
-            "hsf",
+            "bs",
             "ehf",
-            "slhf",
+            "h/f",
+            "hf",
+            "hses",
+            "hsf",
+            "ohf",
+            "s/f",
+            "ses",
+            "sf",
             "slf",
+            "slhf",
             "svf",
             "vlf",
             "vmf",
-            "ohf",
-            "bs",
-            "ses",
-            "hses",
         )
     )
 
@@ -566,19 +597,34 @@ class DefaultNormalization:
     @_empty_str
     def entity(cls, txt: str) -> str:
         """Voicify an entity name."""
-        txt.replace("&", " og ")
         parts = txt.split()
-        # TODO: If gb.lookup(p.lower(), auto_uppercase=True)[1]
-        #       then pronounce as icelandic word
-        for i, p in enumerate(parts):
-            if p in cls._ENTITY_DONT_SPELL:
-                continue
-            if p.replace(".", "") in cls._ENTITY_SPELL or (p.isupper() and len(p) <= 4):
-                # Spell out this part of the entity name
-                parts[i] = cls.spell(p)
-        if parts[-1].endswith("."):
-            # Probably should be spelled (e.g. 'ehf.')
-            parts[-1] = cls.spell(parts[-1].replace(".", ""))
+        with GreynirBin.get_db() as gbin:
+            for i, p in enumerate(parts):
+                if p in cls._ENTITY_PRONUNCIATIONS:
+                    # Hardcoded pronunciation
+                    parts[i] = cls._ENTITY_PRONUNCIATIONS[p]
+                    continue
+                if p.isdecimal():
+                    # Number
+                    parts[i] = cls.number(p)
+                    continue
+
+                spell_part = False
+                p_nodots = p.replace(".", "")
+                if p_nodots in cls._ENTITY_SPELL:
+                    # We know this should be spelled out
+                    spell_part = True
+                elif p_nodots.isupper():
+                    if gbin.lookup(p_nodots, auto_uppercase=True)[1]:
+                        # Uppercase word has similar Icelandic word,
+                        # pronounce it that way
+                        parts[i] = p_nodots.capitalize()
+                        continue
+                    # No known Icelandic pronounciation, spell
+                    spell_part = True
+                if spell_part:
+                    # Spell out this part of the entity name
+                    parts[i] = cls.spell(p_nodots)
         return " ".join(parts)
 
     @staticmethod
@@ -598,42 +644,183 @@ class DefaultNormalization:
 
     @classmethod
     @_empty_str
-    def title(cls, txt: str) -> str:
-        """Voicify the title of a person."""
-        return txt # TODO
-        # Forstjóri MS, lektor við HÍ
-        # eigandi BSÍ ehf., Strætó bs.
-        # PhD, BSc, M.Phil.
-        parts = txt.split()
-        for i, p in enumerate(parts):
-            last: bool = i == len(parts) - 1
-            # Check if there is a number
-            if p.isdecimal():
-                if len(p) == 4 and (999 < int(p) < 2500):
-                    # Year, probably
-                    parts[i] = cls.year(p)
-                elif not last and (parts[i + 1] == "ára" or parts[i + 1] == "árs"):
-                    # Age, certainly
-                    parts[i] = cls.number(p, case="ef", gender="hk")
-                else:
-                    # Fallback
-                    case, gender = "nf", "kk"
-                    if not last:
-                        case, gender = cls._guess_noun_case_gender(parts[i + 1])
-                    parts[i] = cls.number(p, case=case, gender=gender)
-                continue
-            # Check if there is an ordinal
-            if "." in p and p.rstrip(".").isdecimal():
-                # Ordinal, certainly
-                case, gender = "nf", "kk"
-                if not last:
-                    case, gender = cls._guess_noun_case_gender(parts[i + 1])
-                parts[i] = cls.ordinal(p, case=case, gender=gender)
-                continue
-            # Check abbreviations, expand if known
-            # FIXME Correct case when expanding
-            # if Abbreviations.has_meaning(p):
-            #     parts[i] = cls.abbrev(p)
+    @lru_cache(maxsize=50)  # Caching, as this method could be slow
+    def generic(cls, txt: str) -> str:
+        """
+        Attempt to voicify some generic text.
+        Parses text and calls other normalization handlers
+        based on inferred meaning of words.
+        """
+        if cls._greynir is None:
+            cls._greynir = Greynir(no_sentence_start=True)
+        p_result = cls._greynir.parse(txt)
+
+        # Map certain terminals directly to normalization functions
+        handler_map: Mapping[str, NormMethod] = {
+            "entity": cls.entity,
+            "fyrirtæki": cls.entity,
+            "sérnafn": cls.entity,
+            "kennitala": cls.digits,
+            "person": cls.person,
+            "tími": cls.time,
+            "ártal": cls.year,
+            "tölvupóstfang": cls.email,
+            "myllumerki": lambda t: f"hashtagg {t[1:]}",
+            # TODO: Better handling of case for dates,
+            # accusative is common though
+            "dagsafs": lambda t: cls.time(cls.date(t, case="þf")),
+            "dagsföst": lambda t: cls.time(cls.date(t, case="þf")),
+            "tímapunktur": lambda t: cls.time(cls.date(t, case="þf")),
+            "tímapunkturafs": lambda t: cls.time(cls.date(t, case="þf")),
+            "tímapunkturfast": lambda t: cls.time(cls.date(t, case="þf")),
+            "símanúmer": cls.digits,
+            # TODO: Other terminals we probably want to handle
+            # "amount": lambda t: t,
+            # "gata": lambda t: t,
+            # "grm": lambda t: t, # Greinarmerki
+            # "lén": lambda t: t,
+            # "mælieining": lambda t: t,
+            # "notandanafn": lambda t: t,
+            # "sameind": lambda t: t,
+            # "sequence": lambda t: t,
+            # "vefslóð": lambda t: t,
+            # "vörunúmer": lambda t: t,
+        }
+
+        parts: List[str] = []
+        for s in p_result["sentences"]:
+            s_parts: List[str] = []
+            # List of (token, terminal node) pairs.
+            # Terminal nodes can be None if the sentence wasn't parseable
+            tk_term_list = list(
+                zip(s.tokens, s.terminal_nodes or (None for _ in s.tokens))
+            )
+            for i, tk_term in enumerate(tk_term_list):
+                tok, term = tk_term
+                cat = term.tcat if term is not None else None
+                txt = tok.txt
+
+                if cat in handler_map:
+                    # Found a handler for this token
+                    s_parts.append(handler_map[cat](txt))
+                    continue
+                if txt.isupper():
+                    # Fully uppercase string, probably part of an entity name
+                    s_parts.append(cls.entity(txt))
+                    continue
+
+                if _ABBREV_RE.match(txt) and (
+                    (term is not None and not _ABBREV_RE.match(term.lemma))
+                    or any(not _ABBREV_RE.match(m.stofn) for m in tok.meanings)
+                ):
+                    # Probably an abbreviation such as "t.d." or "MSc"
+                    s_parts.append(cls.abbrev(txt))
+                    continue
+
+                # Next terminal
+                next_term = (
+                    tk_term_list[i + 1][1] if i + 1 < len(tk_term_list) else None
+                )
+                if next_term is None and txt == ".":
+                    # Period at end of sentence
+                    if s_parts:
+                        # If we already have some text,
+                        # add it the last string,
+                        # otherwise just ignore
+                        s_parts[-1] += "."
+                    continue
+
+                if _NUM_RE.match(txt):
+                    # Text contains some form of a number
+
+                    # Try to deduce correct declension of the number
+                    case, gender = "nf", "hk"
+                    if term is not None:
+                        case = next(
+                            filter(lambda v: v in ALL_CASES, term.variants), "nf"
+                        )
+                        gender = next(
+                            filter(lambda v: v in ALL_GENDERS, term.variants), "hk"
+                        )
+
+                    if cat == "tala":
+                        # Cardinal, e.g. "14", "135" or "17,86"
+                        if "," in txt:
+                            s_parts.append(cls.float(txt, case=case, gender=gender))
+                        else:
+                            s_parts.append(cls.number(txt, case=case, gender=gender))
+                        continue
+                    if cat == "raðnr":
+                        # Ordinal, e.g. "14.", "2."
+                        number = "et"
+                        if next_term is not None:
+                            # Fetch the grammatical number of the following word
+                            number = next(
+                                filter(lambda v: v in ALL_NUMBERS, next_term.variants),
+                                "et",
+                            )
+                        s_parts.append(
+                            cls.ordinal(txt, case=case, gender=gender, number=number)
+                        )
+                        continue
+                    if cat == "talameðbókstaf":
+                        # Number with letter, e.g. "15B", "42A"
+                        for p in _NUM_RE.split(txt):
+                            # e.g. "15B" -> ["", "15", "B"]
+                            if p:
+                                if p.isdecimal():
+                                    s_parts.append(
+                                        cls.number(p, case="nf", gender="hk")
+                                    )
+                                elif p.isupper():
+                                    s_parts.append(cls.spell(p))
+                                else:
+                                    s_parts.append(p)
+                        continue
+                    if cat == "prósenta" or "%" in txt or " prósent" in txt:
+                        # Percentage
+                        gender = "hk"
+                        case = "nf" if "%" in txt else case
+                        for p in _NUM_RE.split(txt):
+                            if p:
+                                if "," in p:
+                                    s_parts.append(
+                                        cls.float(p, case=case, gender=gender)
+                                    )
+                                elif p.isdecimal():
+                                    s_parts.append(
+                                        cls.number(p, case=case, gender=gender)
+                                    )
+                                elif p.strip() == "%":
+                                    s_parts.append("prósent")
+                                else:
+                                    s_parts.append(p)
+                        continue
+
+                # Check whether this is a hyphen denoting a range
+                if (
+                    txt in _HYPHEN_SYMBOLS
+                    and term is not None
+                    and term.parent is not None
+                    # Check whether parent nonterminal has at least 3 children (might be a range)
+                    and len(term.parent) >= 3
+                    # Check whether middle sibling is a hyphen
+                    # and filter(,term.parent.children)
+                ):
+                    # Hyphen found, probably denoting a range
+                    if s.lemmas is not None and _SPORTS_LEMMAS.isdisjoint(s.lemmas):
+                        # Probably not the result from a sports match
+                        # (as the sentence doesn't contain sports-related lemmas),
+                        # so replace the range-denoting hyphen with 'til'
+                        s_parts.append("til")
+                    continue
+
+                # No normalization happened
+                s_parts.append(txt)
+
+            # Finished parsing a sentence
+            parts.append(" ".join(s_parts))
+        # Join sentences
         return " ".join(parts)
 
     _PERSON_PRONUNCIATION: Mapping[str, str] = {
@@ -693,9 +880,11 @@ class DefaultNormalization:
     @classmethod
     @_empty_str
     def paragraph(cls, txt: str) -> str:
+        """Paragraph delimiter for speech synthesis."""
         return f"<p>{txt}</p>"
 
     @classmethod
     @_empty_str
     def sentence(cls, txt: str) -> str:
+        """Sentence delimiter for speech synthesis."""
         return f"<s>{txt}</s>"

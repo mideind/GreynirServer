@@ -57,10 +57,10 @@ from reynir import NounPhrase
 
 from queries import AnswerTuple, Query, QueryStateDict
 from tree import Result, Node, ParamList
+from utility import cap_first
 from queries.util import (
     is_plural,
     natlang_seq,
-    cap_first,
     gen_answer,
     read_grammar_file,
 )
