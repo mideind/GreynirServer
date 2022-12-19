@@ -659,13 +659,7 @@ def _get_schedule_answer(result: Result) -> _AnswerDict:
     sched: _SchedType = _query_schedule_api(api_channel, station, qdt.date())
 
     if len(sched) == 0:
-        date: str = ""
-        # Add date if not asking about today
-        if qdt.date() != now_date:
-            with changedlocale(category="LC_TIME"):
-                date = qdt.strftime(" %-d. %B")
-
-        error = f"Ekki tókst að sækja dagskrána {date} á {channel}."
+        error = f"Ekki tókst að sækja dagskrána á {channel}."
 
         return _AnswerDict(
             response={"answer": error, "voice": error},
