@@ -216,6 +216,7 @@ def country_desc(cc: str) -> str:
     prep = iceprep_for_cc(cc)
     return f"{prep} {nom2dat(cn)}"
 
+
 # This could be done at runtime using BÍN lookup, but this is
 # faster, cleaner, and allows for reuse outside the codebase.
 _TIMEUNIT_NOUNS = {
@@ -356,6 +357,7 @@ def iceformat_float(
         fmt = "%.{0}f".format(decimal_places)
         res = locale.format_string(fmt, float(fp_num), grouping=True).replace(" ", ".")
         return strip_trailing_zeros(res) if strip_zeros else res
+
 
 def gen_answer(a: str) -> AnswerTuple:
     """Convenience function for query modules: response, answer, voice answer"""

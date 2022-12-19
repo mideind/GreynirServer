@@ -947,7 +947,7 @@ def Fyrirtæki(node: Node, params: QueryStateDict, result: Result) -> None:
 def Mannsnafn(node: Node, params: QueryStateDict, result: Result) -> None:
     """Hreint mannsnafn, þ.e. án ávarps og titils"""
     result.mannsnafn = result._nominative
-    print("A"*20,result.mannsnafn)
+    print("A" * 20, result.mannsnafn)
 
 
 def EfLiður(node: Node, params: QueryStateDict, result: Result) -> None:
