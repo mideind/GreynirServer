@@ -24,7 +24,9 @@
     numbers either written in natural language or in digits,
     along with "UBrotaTala" for parsing floats ("(number) 'komma' (numbers)")
     written in natural language.
-    Returns the number values in the list result["numbers"].
+    Constructs the value of a number in result["numbers"],
+    and if the number is a whole cardinal number, retuns it in result["cardinals"].
+    In case of a fraction, the fraction is returned in result["fractions"].
 
 """
 
@@ -98,6 +100,7 @@ def UBrotaTala(node: Node, params: ParamList, result: Result) -> None:
                 f"{result['numbers'][0]}.{''.join(str(i) for i in result['numbers'][1:])}"
             )
         ]
+    result["fractions"] = [result.numbers[0]]
 
 
 def UHeilTala(node: Node, params: ParamList, result: Result) -> None:

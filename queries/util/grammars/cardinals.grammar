@@ -5,7 +5,7 @@
 # but accepting it interferes with catching "fimm, tólf, hundrað og sjö, áttatíu", 
 # i.e. a list of numbers where "hundrað" is preceded by a number in the teens.
 
-UBrotaTala → UTöluðTala/fall/kyn "komma" UTöluðTala/fall/kyn+ | UTöluðTala/fall/kyn "," UTöluðTala/fall/kyn+
+UBrotaTala → UTöluðTala/fall/kyn "komma" UTöluðTala/fall/kyn+
 
 UHeilTala → tala | UHeilTala/fall/kyn
 

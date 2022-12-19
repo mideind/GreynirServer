@@ -2,9 +2,9 @@
 
 /grno = gr nogr
 
-UHeilRaðtala → tala "." | UHeilRaðtala/fall/kyn/tala
+URaðtala → tala "." | URaðtala/fall/kyn/tala
 
-UHeilRaðtala/fall/kyn/tala →
+URaðtala/fall/kyn/tala →
     UTöluðRaðtala/fall/kyn/tala
     | UTöluðRaðtala0/fall/kyn/tala
 

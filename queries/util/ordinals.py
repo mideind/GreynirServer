@@ -20,13 +20,14 @@
 
 
     Utility module
-    Exposes nonterminal "UHeilTala" for parsing
+    Exposes nonterminal "URaðtala" for parsing ordinal
     numbers either written in natural language or in digits,
-    along with "UBrotaTala" for parsing floats ("(number) 'komma' (numbers)")
-    written in natural language.
-    Returns the number values in the list result["numbers"].
+    Constructs the value of the ordinal number in result["numbers"],
+    and returns the ordinal number in result["ordinals"].
 
 """
+
+# TODO: Support "einn fjórði" etc.
 
 from tree import Result, ParamList, Node
 from queries.util import read_utility_grammar_file
@@ -84,7 +85,7 @@ _ORDINAL_NUMBERS = {
 }
 
 
-def UHeilRaðtala(node: Node, params: ParamList, result: Result) -> None:
+def URaðtala(node: Node, params: ParamList, result: Result) -> None:
     # Check if a number was specified in digits instead of written out
     tala = node.first_child(lambda n: n.has_t_base("tala"))
     if tala is not None and tala.contained_number is not None:
