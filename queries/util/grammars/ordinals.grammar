@@ -9,7 +9,7 @@ UHeilRaðtala/fall/kyn/tala →
     | UTöluðRaðtala0/fall/kyn/tala
 
 # The reason we start so large (oktilljón = 10^48 = (10^6)^8) is that
-# this grammar file is based in number.grammar where it starts large.
+# this grammar file is based on cardinals.grammar where it starts that large.
 # The reasons for its using such large numbers are explained there.
 
 # Single ordinal number
@@ -215,7 +215,6 @@ UTöluðRaðtalaOgUndirMilljón/fall/kyn/tala →
 UTöluðRaðtalaÞúsundir/fall/kyn/tala →
     UTöluðTalaUndirÞúsund_hk/nf? UTöluðRaðtalaÞúsund/fall/kyn/tala
 
-# TODO: Sjö hundruðasti?
 UTöluðRaðtala10Til19Hundruð/fall/kyn/tala →
     UTöluðTala10Til19/fall/kyn UTöluðRaðtalaHundrað/fall/kyn/tala
 
@@ -310,12 +309,6 @@ UTöluðRaðtalaTugir/fall/kyn/tala →
     | 'átttugasti:lo'/fall/kyn/tala
     | 'nítugasti:lo'/fall/kyn/tala
 
-UTöluðRaðtalaHundrað/fall/kyn/tala → 'hundraðasti:lo'/fall/kyn/tala
-
-UTöluðRaðtalaÞúsund/fall/kyn/tala → 'þúsundasti:lo'/fall/kyn/tala
-
-UTöluðTalaMilljón/fall/kyn/tala → 'milljónasti:lo'/fall/kyn/tala
-
 UTöluðRaðtalaOktilljón/fall/kyn/tala → 'oktilljónasti:lo'/fall/kyn/tala
 
 UTöluðRaðtalaSeptilljón/fall/kyn/tala → 'septilljónasti:lo'/fall/kyn/tala
@@ -324,18 +317,22 @@ UTöluðRaðtalaSextilljón/fall/kyn/tala → 'sextilljónasti:lo'/fall/kyn/tala
 
 UTöluðRaðtalaKvintilljón/fall/kyn/tala → 'kvintilljónasti:lo'/fall/kyn/tala
 
-UTöluðRaðtalaKvaðrilljón/fall/kyn/tala → 'kvaðrilljónasti:lo'/fall/kyn/tala
-
-UTöluðRaðtalaTrilljón/fall/kyn/tala → 'trilljónasti:lo'/fall/kyn/tala
-
-UTöluðRaðtalaBilljón/fall/kyn/tala → 'billjónasti:lo'/fall/kyn/tala
-
-UTöluðRaðtalaMilljón/fall/kyn/tala → 'milljónasti:lo'/fall/kyn/tala
-
 UTöluðRaðtalaKvaðrilljarður/fall/kyn/tala → 'kvaðrilljarðasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaKvaðrilljón/fall/kyn/tala → 'kvaðrilljónasti:lo'/fall/kyn/tala
 
 UTöluðRaðtalaTrilljarður/fall/kyn/tala → 'trilljarðasti:lo'/fall/kyn/tala
 
+UTöluðRaðtalaTrilljón/fall/kyn/tala → 'trilljónasti:lo'/fall/kyn/tala
+
 UTöluðRaðtalaBilljarður/fall/kyn/tala → 'billjarðasti:lo'/fall/kyn/tala
 
+UTöluðRaðtalaBilljón/fall/kyn/tala → 'billjónasti:lo'/fall/kyn/tala
+
 UTöluðRaðtalaMilljarður/fall/kyn/tala → 'milljarðasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaMilljón/fall/kyn/tala → 'milljónasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaHundrað/fall/kyn/tala → 'hundraðasti:lo'/fall/kyn/tala
+
+UTöluðRaðtalaÞúsund/fall/kyn/tala → 'þúsundasti:lo'/fall/kyn/tala
