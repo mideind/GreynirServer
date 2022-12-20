@@ -23,6 +23,7 @@
 
 """
 
+# TODO: Fall back on other source of weather data if iceweather fails
 # TODO: Provide weather info for locations outside Iceland
 # TODO: GSSML processing of forecast text
 # TODO: Natural language weather forecasts for different parts of the country (N-land, etc.)
@@ -318,7 +319,7 @@ def get_currweather_answer(query: Query, result: Result) -> AnswerTuple:
         desc = res["W"].lower()
         windsp = float(res["F"].replace(",", "."))
     except Exception as e:
-        logging.warning("Exception parsing weather API result: {0}".format(e))
+        logging.warning(f"Exception parsing weather API result: {e}")
         return gen_answer(_API_ERRMSG)
 
     wind_desc = _wind_descr(windsp)
@@ -401,7 +402,7 @@ def get_forecast_answer(query: Query, result: Result) -> AnswerTuple:
     try:
         res = forecast_text(txt_id)
     except Exception as e:
-        logging.warning("Failed to fetch weather text: {0}".format(e))
+        logging.warning(f"Failed to fetch weather text: {e}")
         res = None
 
     if (
@@ -510,8 +511,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             if r:
                 q.set_answer(*r)
         except Exception as e:
-            logging.warning("Exception while processing weather query: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception while processing weather query: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
             raise
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

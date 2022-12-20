@@ -131,7 +131,7 @@ def _capital_query(country: str, q: Query):
     # Get country code
     cc = isocode_for_country_name(country)
     if not cc:
-        logging.warning("No CC for country {0}".format(country))
+        logging.warning(f"No CC for country {country}")
         return False
 
     # Find capital city, given the country code
@@ -146,10 +146,9 @@ def _capital_query(country: str, q: Query):
     country_gen = NounPhrase(country).genitive or country
     answer = ice_cname
     response = dict(answer=answer)
-    voice = "Höfuðborg {0} er {1}".format(country_gen, answer)
+    voice = f"Höfuðborg {country_gen} er {answer}"
 
     q.set_answer(response, answer, voice)
-    q.set_key("Höfuðborg {0}".format(country_gen))
     q.set_context(dict(subject=ice_cname))
 
     return True
@@ -172,7 +171,7 @@ def _which_country_query(subject: str, q: Query):
     # Format answer
     answer = cap_first(desc)
     response = dict(answer=answer)
-    voice = "{0} er {1}".format(subject, desc)
+    voice = f"{subject} er {desc}"
 
     q.set_answer(response, answer, voice)
     q.set_key(subject)
@@ -214,13 +213,11 @@ def _which_continent_query(subject: str, q: Query):
     answer = continent_dat
     response = dict(answer=answer)
     if is_placename:
-        cd = country_desc(cc)
-        voice = "Staðurinn {0} er {1}, sem er land í {2}".format(
-            subject, cd, continent_dat
-        )
-        answer = "{0}, {1}".format(cap_first(cd), continent_dat)
+        cd = cap_first(country_desc(cc))
+        voice = f"Staðurinn {subject} er {cd}, sem er land í {continent_dat}"
+        answer = f"{cd}, {continent_dat}"
     else:
-        voice = "Landið {0} er í {1}".format(subject, continent_dat)
+        voice = f"Landið {subject} er í {continent_dat}"
 
     q.set_answer(response, answer, voice)
     q.set_key(subject)
@@ -247,7 +244,7 @@ def _loc_desc_query(subject: str, q: Query):
         continent = ISO_TO_CONTINENT[contcode]
         continent_dat = nom2dat(continent)
 
-    answer = "{0} er land í {1}.".format(subject, continent_dat)
+    answer = f"{subject} er land í {continent_dat}."
     voice = answer
     response = dict(answer=answer)
 

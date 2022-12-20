@@ -107,13 +107,13 @@ def _gen_count(q: Query, result: Result):
     if len(num_range) > _MAX_COUNT:
         return gen_answer("Ég nenni ekki að telja svona lengi.")
 
-    answ = "{0}…{1}".format(num_range[0], num_range[-1])
+    answ = f"{num_range[0]}…{num_range[-1]}"
     response: Dict[str, str] = dict(answer=answ)
     components: List[str] = []
     delay = result.get("delay", _DEFAULT_DELAY)
     for n in num_range:
         # Default delay results in roughly 1 sec per number in count
-        components.append('{0} <break time="{1}s"/>'.format(n, delay))
+        components.append(f'{n} <break time="{delay}s"/>')
     voice = " ".join(components)
 
     return response, answ, voice
@@ -132,7 +132,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             q.set_answer(*r)
             q.set_expires(datetime.utcnow() + timedelta(hours=24))
         except Exception as e:
-            logging.warning("Exception while processing counting query: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception while processing counting query: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

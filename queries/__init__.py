@@ -417,9 +417,8 @@ class Query:
                 if is_proc:
                     all_procs.append(m)
             except ImportError as e:
-                logging.error(
-                    "Error importing query processor module {0}: {1}".format(modname, e)
-                )
+                logging.error(f"Error importing query processor module {modname}: {e}")
+
         # Sort the processors by descending priority
         # so that the higher-priority ones get invoked bfore the lower-priority ones
         # We create a ChainMap (processing environment) for each tree processor,
@@ -457,9 +456,7 @@ class Query:
                         )
                     )
             except ImportError as e:
-                logging.error(
-                    "Error importing utility module {0}: {1}".format(modname, e)
-                )
+                logging.error(f"Error importing utility module {modname}: {e}")
 
         for processor in cls._tree_processors:
             # Check whether this tree processor supplies a query grammar fragment
@@ -602,7 +599,7 @@ class Query:
 
         if Settings.DEBUG:
             # Log the query string as seen by the parser
-            print("Query is: '{0}'".format(actual_q))
+            print(f"Query is: '{actual_q}'")
 
         try:
             parse_result, trees = Query._parse(toklist)
@@ -917,9 +914,7 @@ class Query:
                 )
             except Exception as e:
                 logging.error(
-                    "Error fetching client '{0}' query data for key '{1}' from db: {2}".format(
-                        self.client_id, key, e
-                    )
+                    f"Error fetching client '{self.client_id}' query data for key '{key}' from db: {e}"
                 )
         return None
 
@@ -960,7 +955,7 @@ class Query:
             # The session is auto-committed upon exit from the context manager
             return True
         except Exception as e:
-            logging.error("Error storing query data in db: {0}".format(e))
+            logging.error(f"Error storing query data in db: {e}")
         return False
 
     @classmethod
@@ -1015,7 +1010,7 @@ class Query:
                 err = self.error()
                 if err is not None:
                     if Settings.DEBUG:
-                        print("Unable to parse query, error {0}".format(err))
+                        print(f"Unable to parse query, error {err}")
                     result["error"] = err
                 result["valid"] = False
                 return result
@@ -1023,7 +1018,7 @@ class Query:
                 # This is a query, but its execution failed for some reason:
                 # return the error
                 # if Settings.DEBUG:
-                #     print("Unable to execute query, error {0}".format(q.error()))
+                #     print(f"Unable to execute query, error {q.error()}")
                 result["error"] = self.error() or "E_UNABLE_TO_EXECUTE_QUERY"
                 result["valid"] = True
                 return result
@@ -1087,11 +1082,7 @@ class Query:
                     return o.isoformat()[0:16]
                 return None
 
-            print(
-                "{0}".format(
-                    json.dumps(result, indent=3, ensure_ascii=False, default=converter)
-                )
-            )
+            print(json.dumps(result, indent=3, ensure_ascii=False, default=converter))
         return result
 
 
@@ -1308,7 +1299,7 @@ def process_query(
                         # Also log anonymised query
                         session.add(QueryLog.from_Query(qrow))
                     except Exception as e:
-                        logging.error("Error logging query: {0}".format(e))
+                        logging.error(f"Error logging query: {e}")
                 return result
 
         # Failed to answer the query, i.e. no query processor

@@ -244,11 +244,8 @@ _SchedType = List[Dict[str, Any]]
 
 
 class _AnswerDict(TypedDict):
-    """
-    Format of answer dictionary.
-    Includes answer from module along with station,
-    channel and expiration time.
-    """
+    """Format of answer dictionary. Includes answer from module
+    along with station, channel and expiration time."""
 
     response: Dict[str, Any]
     answer: str

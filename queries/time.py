@@ -19,12 +19,6 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module is an example of a plug-in query response module
-    for the Greynir query subsystem. It handles plain text queries, i.e.
-    ones that do not require parsing the query text. For this purpose
-    it only needs to implement the handle_plain_text() function, as
-    shown below.
-
     This particular module handles queries related to time and timezones.
 
 """

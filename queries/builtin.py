@@ -417,7 +417,7 @@ def _query_person_titles(session: Session, name: str):
             .all()
         )
     except OperationalError as e:
-        logging.warning("SQL error in _query_person_titles(): {0}".format(e))
+        logging.warning(f"SQL error in _query_person_titles(): {e}")
         q = []
     # Append titles from the persons table
     append_answers(rd, q, prop_func=lambda x: x.title)
@@ -440,7 +440,7 @@ def _query_person_titles(session: Session, name: str):
             .all()
         )
     except OperationalError as e:
-        logging.warning("SQL error in _query_person_titles(): {0}".format(e))
+        logging.warning(f"SQL error in _query_person_titles(): {e}")
         q = []
     append_answers(rd, q, prop_func=lambda x: x.definition)
     return make_response_list(rd)
@@ -789,7 +789,7 @@ def launch_search(query: Query, session: Session, qkey: str) -> AnswerTuple:
     assert sum(n for _, n in fixups) == len(terms)
 
     if Settings.DEBUG:
-        print("Terms are:\n   {0}".format(terms))
+        print(f"Terms are:\n   {terms}")
 
     # Launch the search and return the answers, as well as the
     # search terms augmented with information about
@@ -884,7 +884,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     except AssertionError:
         raise
     except Exception as e:
-        q.set_error("E_EXCEPTION: {0}".format(e))
+        q.set_error(f"E_EXCEPTION: {e}")
 
 
 # The following functions correspond to grammar nonterminals (see Greynir.grammar)

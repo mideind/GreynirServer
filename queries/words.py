@@ -26,6 +26,7 @@
 
 # "Hvernig orð er X", "Hvers konar orð er X"
 # "Er X [tegund af orði]"
+# TODO: Er orðið X í BÍN?
 # TODO: Handle definite article in declension ("Hvernig beygist orðið 'kötturinn'?")
 # TODO: Declension queries should support adjectives etc.
 # TODO: Beautify query by placing word being asked about within quotation marks
@@ -160,9 +161,7 @@ def declension_answer_for_word(word: str, query: Query) -> AnswerTuple:
     response = dict(answer=answ)
     # TODO: Handle plural e.g. "Hér eru"
     cases_desc = "Hér er {0}, um {1}, frá {2}, til {3}".format(*forms)
-    voice = "Orðið {0} beygist á eftirfarandi hátt: {1}.".format(
-        icequote(word), cases_desc
-    )
+    voice = f"Orðið {icequote(word)} beygist á eftirfarandi hátt: {cases_desc}."
 
     # Beautify by placing word in query within quotation marks
     bq = re.sub(word + r"\??$", icequote(word) + "?", query.beautified_query)
@@ -188,7 +187,8 @@ def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
     # Piece together SSML for speech synthesis
     v = spell_out(word)
     vlist: List[str] = v.split()
-    jfmt = '<break time="{0}s"/>'.format(_LETTER_INTERVAL)
+    # TODO: Normalize this using GSSML
+    jfmt = f'<break time="{_LETTER_INTERVAL}s"/>'
     voice = "Orðið {0} er stafað á eftirfarandi hátt: {1} {2}".format(
         icequote(word), jfmt, jfmt.join(vlist)
     )

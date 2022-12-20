@@ -210,13 +210,10 @@ def answer_for_location(loc: LatLonTuple) -> Optional[AnswerTuple]:
         sdesc = ("á " + street) if street else ""
         if num and street:
             sdesc += " " + num
-        locdesc = (
-            "{0} {1}".format(iceprep_for_placename(locality), locality)
-            if locality
-            else ""
-        )
+        # e.g. "í París"
+        locdesc = f"{iceprep_for_placename(locality)} {locality}" if locality else ""
         # "[á Boulevard St. Germain] [í París] [í Frakklandi]"
-        descr = "{0} {1} {2}".format(sdesc, locdesc, country_desc(country_code)).strip()
+        descr = f"{sdesc} {locdesc} {country_desc(country_code)}".strip()
 
     if not descr:
         # Fall back on the formatted address string provided by Google
@@ -224,7 +221,7 @@ def answer_for_location(loc: LatLonTuple) -> Optional[AnswerTuple]:
 
     answer = cap_first(descr)
     response = dict(answer=answer)
-    voice = "Þú ert {0}".format(_addr4voice(descr))
+    voice = f"Þú ert {_addr4voice(descr)}"
 
     return response, answer, voice
 
@@ -254,9 +251,9 @@ def answer_for_postcode(loc: LatLonTuple):
     # Only support Icelandic postcodes for now
     if country_code == "IS" and postcode:
         pc = cast(Any, postcodes).get(int(postcode))
-        pd = "{0} {1}".format(postcode, pc["stadur_nf"])
+        pd = f'{postcode} {pc["stadur_nf"]}'
         (response, answer, voice) = gen_answer(pd)
-        voice = "Þú ert í {0}".format(pd)
+        voice = f"Þú ert í {pd}"
         return response, answer, voice
     else:
         return gen_answer("Ég veit ekki í hvaða póstnúmeri þú ert.")
@@ -332,8 +329,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             q.set_answer(*answ)
 
         except Exception as e:
-            logging.warning("Exception while processing location query: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception while processing location query: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
             raise
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

@@ -352,7 +352,7 @@ def _get_almanak_hi_data() -> Optional[_SOLAR_DICT_TYPE]:
         return None
 
     if r.status_code != 200:
-        logging.warning("Received status {0} from Almanak HÍ".format(r.status_code))
+        logging.warning(f"Received status {r.status_code} from Almanak HÍ")
         return None
 
     try:
@@ -371,7 +371,7 @@ def _get_almanak_hi_data() -> Optional[_SOLAR_DICT_TYPE]:
 
         return data
     except Exception as e:
-        logging.warning("Error parsing Almanak HÍ response: {0}".format(e))
+        logging.warning(f"Error parsing Almanak HÍ response: {e}")
 
     return None
 

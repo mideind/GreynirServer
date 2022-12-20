@@ -244,7 +244,7 @@ def _whatsmyaddr_handler(q: Query, ql: str) -> bool:
         addr = cast(Dict[str, str], ad)
         street = addr["street"]
         prep = iceprep_for_street(street)
-        answ = "Þú átt heima {0} {1}".format(prep, _addr2str(addr, case="þgf"))
+        answ = f'Þú átt heima {prep} {_addr2str(addr, case="þgf")}'
         voice = numbers_to_text(answ)
         resp = dict(answer=answ)
         q.set_answer(resp, answ, voice)
@@ -320,7 +320,7 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
         q.set_client_data("address", d)
 
         # Generate answer
-        answ = "Heimilisfang þitt hefur verið skráð sem {0}".format(_addr2str(d))
+        answ = f"Heimilisfang þitt hefur verið skráð sem {_addr2str(d)}"
         q.set_answer(*gen_answer(answ))
     else:
         q.set_answer(*gen_answer(_ADDR_CLIENT_ID_MISSING))
