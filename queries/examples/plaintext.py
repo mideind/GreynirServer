@@ -44,7 +44,6 @@ def handle_plain_text(q: Query) -> bool:
 
     if ql == "er þetta prufa":
         q.set_qtype("PlaintextExample")
-        q.set_key("IsTest")
 
         # Set answer
         answer = "Já"
