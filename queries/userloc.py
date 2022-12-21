@@ -18,6 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
+
     This module handles queries related to user location ("Where am I?").
 
 """
@@ -38,7 +39,7 @@ from queries.util import (
 )
 from speech.norm.num import numbers_to_text
 from tree import Result, Node
-from iceaddr import iceaddr_lookup, postcodes  # type: ignore
+from iceaddr import iceaddr_lookup, postcodes
 from geo import (
     iceprep_for_placename,
     iceprep_for_street,
@@ -289,7 +290,7 @@ def answer_for_country(loc: LatLonTuple):
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """Called when sentence processing is complete"""
+    """Called when sentence processing is complete."""
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type
@@ -317,6 +318,9 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 answ = gen_answer("Ég veit ekki hvar þú ert.")
 
             ql = q.query_lower
+            # This is a hack to fix issue where speech recognition
+            # identifies "hvar er ég" as "hvað er ég". We assume it's
+            # not actually a moment of existential angst ;)
             if ql.startswith("hvað er ég"):
                 bq = re.sub(
                     r"^hvað er ég",

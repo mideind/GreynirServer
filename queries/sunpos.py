@@ -55,7 +55,7 @@ from geo import (
     capitalize_placename,
     ICE_PLACENAME_BLACKLIST,
 )
-from iceaddr import placename_lookup  # type: ignore
+from iceaddr import placename_lookup
 from speech.norm.num import numbers_to_ordinal, floats_to_text
 
 # Indicate that this module wants to handle parse trees for queries,
