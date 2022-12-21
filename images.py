@@ -334,15 +334,15 @@ def _test():
     print("Testing...")
     print("Bjarni Benediktsson")
     img = get_image_url("Bjarni Benediktsson")
-    print(f"{img}")
+    print(str(img))
 
     print("Vilhjálmur Þorsteinsson")
     img = get_image_url("Vilhjálmur Þorsteinsson")
-    print(f"{img}")
+    print(str(img))
 
     print("Blængur Klængsson Eyfjörð")
     img = get_image_url("Blængur Klængsson Eyfjörð")
-    print(f"{img}")  # Should be None
+    print(str(img))  # Should be None
 
 
 if __name__ == "__main__":
@@ -356,4 +356,4 @@ if __name__ == "__main__":
     elif cmd:
         # Any other arg is a name to fetch an image for
         img = get_image_url(cmd)
-        print(f"{img}")
+        print(str(img))
