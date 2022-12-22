@@ -267,9 +267,6 @@ def _filter_flight_data(
     return matching_flights
 
 
-_BREAK_LENGTH = 0.5  # Seconds
-_BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
-
 
 def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
     """
@@ -354,7 +351,7 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
 
     return {
         "answer": "<br/>".join(answers).strip(),
-        "voice": _BREAK_SSML.join(voice_lines).strip(),
+        "voice": gssml(type="vbreak", time="0.5s").join(voice_lines).strip(),
     }
 
 
