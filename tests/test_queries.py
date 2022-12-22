@@ -118,7 +118,7 @@ def qmcall(
 
 def _query_data_cleanup() -> None:
     """Delete any queries or query data logged as
-    result of query module tests"""
+    result of query module tests."""
 
     with SessionContext(commit=True) as session:
         session.execute(
@@ -147,7 +147,7 @@ def has_greynir_api_key() -> bool:
 
 
 def test_nonsense(client: FlaskClient) -> None:
-    """Make sure nonsensical queries are not answered"""
+    """Make sure nonsensical queries are not answered."""
 
     qstr = {"q": "blergh smergh vlurgh", "test": True, "private": True}
     r = client.get("/query.api?" + urlencode(qstr))
@@ -163,7 +163,7 @@ def test_nonsense(client: FlaskClient) -> None:
 
 
 def test_arithmetic(client: FlaskClient) -> None:
-    """Arithmetic module"""
+    """Arithmetic module."""
 
     ARITHM_QUERIES = {
         "hvað er 17 deilt með fjórum": "4,25",
@@ -220,7 +220,7 @@ def test_arithmetic(client: FlaskClient) -> None:
 
 def test_builtin(client: FlaskClient) -> None:
     """Person and entity title queries are tested using a dummy database
-    populated with data from SQL file in tests/files/"""
+    populated with data from SQL file tests/files/populate_testdb.sql."""
 
     # Builtin module: title
     json = qmcall(client, {"q": "hver er viðar þorsteinsson", "voice": True}, "Person")
@@ -237,6 +237,7 @@ def test_builtin(client: FlaskClient) -> None:
     assert json["voice"].startswith("Forsætisráðherra er ")
     assert json["voice"].endswith(".")
 
+    # TODO: Why is this disabled?
     # Builtin module: person w. title w. uppercase name
     # json = qmcall(client, {"q": "hver er forstjóri sjóvá", "voice": True}, "Title")
     # assert json["voice"].startswith("Forstjóri") and "Jón Jónsson" in json["voice"]
@@ -248,7 +249,7 @@ def test_builtin(client: FlaskClient) -> None:
 
 
 def test_bus(client: FlaskClient) -> None:
-    """Bus module"""
+    """Bus module."""
 
     json = qmcall(
         client, {"q": "hvaða stoppistöð er næst mér", "voice": True}, "NearestStop"
@@ -339,6 +340,7 @@ def test_bus(client: FlaskClient) -> None:
     assert all(not c.isdecimal() for c in json["voice"])
 
     import straeto
+
     if len(straeto.BusStop.named("Naustabraut / Davíðshagi A")) == 0:
         # Stop doesn't exist in old stops.txt file in straeto package
         return
@@ -389,7 +391,7 @@ def test_bus(client: FlaskClient) -> None:
 
 
 def test_counting(client: FlaskClient) -> None:
-    """Counting module"""
+    """Counting module."""
 
     json = qmcall(client, {"q": "teldu frá einum upp í tíu"}, "Counting")
     assert json["answer"] == "1…10"
@@ -408,7 +410,7 @@ def test_counting(client: FlaskClient) -> None:
 
 
 def test_currency(client: FlaskClient) -> None:
-    """Currency module"""
+    """Currency module."""
 
     json = qmcall(client, {"q": "hvert er gengi dönsku krónunnar?"}, "Currency")
     assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
@@ -500,7 +502,7 @@ def test_currency(client: FlaskClient) -> None:
 
 
 def test_date(client: FlaskClient) -> None:
-    """Date module"""
+    """Date module."""
 
     SPECIAL_DAYS = (
         "jólin",
@@ -607,7 +609,7 @@ def test_date(client: FlaskClient) -> None:
 
 
 def test_dictionary(client: FlaskClient) -> None:
-    """Dictionary module"""
+    """Dictionary module."""
 
     json = qmcall(
         client, {"q": "hvernig skilgreinir orðabókin orðið kettlingur"}, "Dictionary"
@@ -619,7 +621,7 @@ def test_dictionary(client: FlaskClient) -> None:
 
 
 def test_distance(client: FlaskClient) -> None:
-    """Distance module"""
+    """Distance module."""
 
     if not has_google_api_key():
         # NB: No Google API key on test server
@@ -659,7 +661,7 @@ def test_distance(client: FlaskClient) -> None:
 
 
 def test_flights(client: FlaskClient) -> None:
-    """Flights module"""
+    """Flights module."""
 
     departure_pattern = r"^Flug \w*? til .*? flýgur frá \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
     arrival_pattern = r"^Flug \w*? frá .*? lendir [í|á] \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
@@ -766,7 +768,7 @@ def test_flights(client: FlaskClient) -> None:
     )
     json = qmcall(
         client,
-        {"q": "hvenær fer næsta flug frá ekkitil til blablab", "voice": True},
+        {"q": "hvenær fer næsta flug frá ekkitil til blablab"},
         "Flights",
     )
     assert (
@@ -776,7 +778,7 @@ def test_flights(client: FlaskClient) -> None:
 
 
 def test_geography(client: FlaskClient) -> None:
-    """Geography module"""
+    """Geography module."""
 
     json = qmcall(client, {"q": "hver er höfuðborg spánar", "voice": True}, "Geography")
     assert json["answer"] == "Madríd"
@@ -823,7 +825,7 @@ def test_geography(client: FlaskClient) -> None:
 
 
 def test_ja(client: FlaskClient) -> None:
-    """Ja.is module"""
+    """Ja.is module."""
 
     if not has_ja_api_key():
         return
@@ -859,7 +861,7 @@ def test_ja(client: FlaskClient) -> None:
 
 
 def test_news(client: FlaskClient) -> None:
-    """News module"""
+    """News module."""
 
     json = qmcall(client, {"q": "Hvað er í fréttum", "voice": True}, "News")
     assert len(json["answer"]) > 80  # This is always going to be a long answer
@@ -871,7 +873,7 @@ def test_news(client: FlaskClient) -> None:
 
 
 def test_opinion(client: FlaskClient) -> None:
-    """Opinion module"""
+    """Opinion module."""
 
     json = qmcall(
         client, {"q": "hvaða skoðun hefurðu á þriðja orkupakkanum"}, "Opinion"
@@ -880,10 +882,10 @@ def test_opinion(client: FlaskClient) -> None:
     assert json["key"] == "þriðji orkupakkinn"
 
     json = qmcall(
-        client, {"q": "hvað finnst þér eiginlega um Katrínu Jakobsdóttur"}, "Opinion"
+        client, {"q": "hvað finnst þér eiginlega um Sigmund Davíð"}, "Opinion"
     )
     assert json["answer"].startswith("Ég hef enga sérstaka skoðun")
-    assert json["key"] == "Katrín Jakobsdóttir"
+    assert json["key"] == "Sigmundur Davíð"
 
     json = qmcall(client, {"q": "hver er skoðun þín á blurghsmurgdurg"}, "Opinion")
     assert json["answer"].startswith("Ég hef enga sérstaka skoðun")
@@ -891,7 +893,7 @@ def test_opinion(client: FlaskClient) -> None:
 
 
 def test_petrol(client: FlaskClient) -> None:
-    """Petrol module"""
+    """Petrol module."""
 
     json = qmcall(client, {"q": "Hvar er næsta bensínstöð", "voice": True}, "Petrol")
     assert "Ánanaust" in json["answer"]
@@ -910,13 +912,14 @@ def test_petrol(client: FlaskClient) -> None:
 
 
 def test_pic(client: FlaskClient) -> None:
-    """Pic module"""
+    """Pic module."""
 
     if not has_google_api_key():
         # NB: No Google API key on test server
         return
 
-    json = qmcall(client, {"q": "Sýndu mér mynd af Katrínu Jakobsdóttur"}, "Picture")
+    # TODO: Re-add test with "Katrín Jakobsdóttir" when fixed GreynirPackage is released
+    json = qmcall(client, {"q": "Sýndu mér mynd af Bjarna Benediktssyni"}, "Picture")
     assert "image" in json
 
     json = qmcall(client, {"q": "sýndu ljósmynd af hörpunni"}, "Picture")
@@ -927,7 +930,7 @@ def test_pic(client: FlaskClient) -> None:
 
 
 def test_places(client: FlaskClient) -> None:
-    """Places module"""
+    """Places module."""
 
     if not has_google_api_key():
         # NB: No Google API key on test server
@@ -955,7 +958,7 @@ def test_places(client: FlaskClient) -> None:
 
 
 def test_play(client: FlaskClient) -> None:
-    """Play module"""
+    """Play module."""
 
     if not has_google_api_key():
         # NB: No Google (YouTube) API key on test server
@@ -975,7 +978,7 @@ def test_play(client: FlaskClient) -> None:
 
 
 def test_rand(client: FlaskClient) -> None:
-    """Random module"""
+    """Random module."""
 
     json = qmcall(client, {"q": "Veldu tölu milli sautján og 30"}, "Random")
     assert int(json["answer"]) >= 17 and int(json["answer"]) <= 30
@@ -999,7 +1002,7 @@ def test_rand(client: FlaskClient) -> None:
 
 
 def test_repeat(client: FlaskClient) -> None:
-    """Repeat module"""
+    """Repeat module."""
 
     json = qmcall(client, {"q": "segðu setninguna simmi er bjálfi"}, "Parrot")
     assert json["answer"] == "Simmi er bjálfi"
@@ -1010,7 +1013,7 @@ def test_repeat(client: FlaskClient) -> None:
 
 
 def test_schedules(client: FlaskClient) -> None:
-    """Schedules module"""
+    """Schedules module."""
 
     def caseless_in(a: str, b: str) -> bool:
         """Caseless comparison"""
@@ -1056,8 +1059,6 @@ def test_schedules(client: FlaskClient) -> None:
         json["answer"].startswith("Ekkert")
         or caseless_in("dagskrárlið", json["answer"])
     )
-    # json = qmcall(client, {"q": "hver er sjónvarpsdagskráin í kvöld?"}, "Schedule")
-    # assert json["key"] == "RÚV - RÚV"
 
     # Stöð 2 tests
     json = qmcall(client, {"q": "hvað er næsti þáttur á stöð 2"}, "Schedule")
@@ -1150,7 +1151,7 @@ def test_schedules(client: FlaskClient) -> None:
 
 
 def test_special(client: FlaskClient) -> None:
-    """Special module"""
+    """Special module."""
 
     json = qmcall(client, {"q": "Hver er sætastur?", "voice": True}, "Special")
     assert json["answer"] == "Tumi Þorsteinsson."
@@ -1161,7 +1162,7 @@ def test_special(client: FlaskClient) -> None:
 
 
 def test_stats(client: FlaskClient) -> None:
-    """Stats module"""
+    """Stats module."""
 
     qmcall(client, {"q": "hversu marga einstaklinga þekkirðu?"}, "Stats")
     qmcall(client, {"q": "Hversu mörgum spurningum hefur þú svarað?"}, "Stats")
@@ -1170,7 +1171,7 @@ def test_stats(client: FlaskClient) -> None:
 
 
 def test_sunpos(client: FlaskClient) -> None:
-    """Solar position module"""
+    """Solar position module."""
 
     json = qmcall(client, {"q": "hvenær reis sólin í dag?"}, "SunPosition")
     assert "sólin" in json["answer"].lower()
@@ -1229,7 +1230,7 @@ def test_sunpos(client: FlaskClient) -> None:
 
 
 def test_tel(client: FlaskClient) -> None:
-    """Telephone module"""
+    """Telephone module."""
 
     json = qmcall(client, {"q": "Hringdu í síma 6 9 9 2 4 2 2"}, "Telephone")
     assert "open_url" in json
@@ -1251,7 +1252,7 @@ def test_tel(client: FlaskClient) -> None:
 
 
 def test_test(client: FlaskClient) -> None:
-    """Test module"""
+    """Test module."""
 
     json = qmcall(client, {"q": "keyrðu kóða"}, "Test")
     assert "command" in json and isinstance(json["command"], str)
@@ -1264,7 +1265,7 @@ def test_test(client: FlaskClient) -> None:
 
 
 def test_time(client: FlaskClient) -> None:
-    """Time module"""
+    """Time module."""
 
     json = qmcall(
         client, {"q": "hvað er klukkan í Kaupmannahöfn?", "voice": True}, "Time"
@@ -1284,7 +1285,7 @@ def test_time(client: FlaskClient) -> None:
 
 
 def test_unit(client: FlaskClient) -> None:
-    """Unit module"""
+    """Unit module."""
 
     json = qmcall(client, {"q": "Hvað eru margir metrar í mílu?"}, "Unit")
     assert json["answer"] == "1.610 metrar"
@@ -1309,23 +1310,27 @@ def test_unit(client: FlaskClient) -> None:
 
 
 def test_userinfo(client: FlaskClient) -> None:
-    """User info module"""
+    """User info module."""
 
     json = qmcall(
         client,
-        {"q": "ég heiti Gunna Jónsdóttir"},
+        {"q": "ég heiti Sigurbjörg Jónsdóttir"},
         "UserInfo",
     )
-    assert json["answer"].startswith("Sæl og blessuð") and "Gunna" in json["answer"]
+    assert (
+        json["answer"].startswith("Sæl og blessuð") and "Sigurbjörg" in json["answer"]
+    )
 
     json = qmcall(client, {"q": "hvað heiti ég"})
-    assert "Gunna Jónsdóttir" in json["answer"]
+    assert "Sigurbjörg Jónsdóttir" in json["answer"]
 
-    json = qmcall(client, {"q": "Nafn mitt er Gunnar"}, "UserInfo")
-    assert json["answer"].startswith("Sæll og blessaður") and "Gunnar" in json["answer"]
+    json = qmcall(client, {"q": "Nafn mitt er Pétur"}, "UserInfo")
+    assert json["answer"].startswith("Sæll og blessaður") and "Pétur" in json["answer"]
 
     json = qmcall(client, {"q": "veistu hvað ég heiti"}, "UserInfo")
-    assert json["answer"].startswith("Þú heitir Gunnar")
+    assert json["answer"].startswith("Þú heitir Pétur")
+
+    # TODO: Re-add test for names Gunnar and Gunna when a new GreynirPackage is released
 
     json = qmcall(client, {"q": "ég heiti Boutros Boutros-Ghali"}, "UserInfo")
     assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
@@ -1345,6 +1350,7 @@ def test_userinfo(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "á hvaða tæki ertu að keyra?", "client_type": "ios"})
     assert "iOS" in json["answer"]
 
+    # TODO: Why is this disabled?
     # json = qmcall(
     #     c,
     #     {"q": "ég á heima á öldugötu 4 í reykjavík"},
@@ -1363,7 +1369,7 @@ def test_userinfo(client: FlaskClient) -> None:
 
 
 def test_userloc(client: FlaskClient) -> None:
-    """User location module"""
+    """User location module."""
 
     if not has_google_api_key():
         # NB: No Google API key on test server
@@ -1394,7 +1400,10 @@ def test_userloc(client: FlaskClient) -> None:
 
 
 def test_weather(client: FlaskClient) -> None:
-    """Weather module"""
+    """Weather module."""
+
+    json = qmcall(client, {"q": "hvernig er veðrið?", "voice": True}, "Weather")
+    assert re.search(r"\d", json["voice"]) is None  # No literal numbers in voice answer
 
     json = qmcall(client, {"q": "hvernig er veðrið í Reykjavík?"}, "Weather")
     assert re.search(r"^\-?\d+ °C", json["answer"]) is not None
@@ -1417,7 +1426,7 @@ def test_whatis(client: FlaskClient) -> None:
 
 
 def test_wiki(client: FlaskClient) -> None:
-    """Wikipedia module"""
+    """Wikipedia module."""
 
     # "Hvað segir Wikipedía um X" queries
     json = qmcall(client, {"q": "Hvað segir wikipedia um Jón Leifs?"}, "Wikipedia")
@@ -1458,19 +1467,21 @@ def test_wiki(client: FlaskClient) -> None:
 
 
 def test_words(client: FlaskClient) -> None:
-    """Words module"""
+    """Words module."""
 
     json = qmcall(
         client, {"q": "hvernig stafar maður orðið hestur", "voice": True}, "Spelling"
     )
     assert json["answer"] == "H E S T U R"
     assert json["voice"].startswith("Orðið „hestur“ ")
+    assert "há" in json["voice"]
 
     json = qmcall(
         client, {"q": "hvernig beygist orðið maður", "voice": True}, "Declension"
     )
     assert json["answer"].lower() == "maður, mann, manni, manns"
     assert json["voice"].startswith("Orðið „maður“")
+
     json = qmcall(
         client, {"q": "hvernig beygir maður nafnorðið splorglobb?", "voice": True}
     )
@@ -1478,7 +1489,7 @@ def test_words(client: FlaskClient) -> None:
 
 
 def test_yulelads(client: FlaskClient) -> None:
-    """Yule lads module"""
+    """Yule lads module."""
 
     qmcall(
         client,
@@ -1487,10 +1498,6 @@ def test_yulelads(client: FlaskClient) -> None:
     )
 
 
-# NB: Do not move this function. Pytest runs tests in the order they
-# appear in the source file, and this test function should be the
-# last to run, since it has the fortuitous side effect of deleting
-# any logged queries/query data saved to the database due to tests.
 def test_query_history_api(client: FlaskClient) -> None:
     """Tests for the query history deletion API endpoint."""
 
@@ -1589,7 +1596,6 @@ def test_query_utility_functions() -> None:
         iceformat_float,
         icequote,
         timezone4loc,
-        # parse_num,
     )
 
     assert natlang_seq(["Jón"]) == "Jón"
@@ -1605,18 +1611,18 @@ def test_query_utility_functions() -> None:
 
     assert nom2dat("hestur") == "hesti"
     assert nom2dat("Hvolsvöllur") == "Hvolsvelli"
-
-    # assert parse_num("11") == 11
-    # assert parse_num("17,33") == 17.33
+    assert nom2dat("Þórshöfn") == "Þórshöfn"
 
     assert is_plural(22)
     assert is_plural(11)
     assert is_plural("76,3")
     assert is_plural(27.6)
     assert is_plural("19,11")
+    assert is_plural(3.141592653589793)
     assert not is_plural("276,1")
     assert not is_plural(22.1)
     assert not is_plural(22.41)
+    assert not is_plural(3.1415926535897932384626433832795028841)
 
     assert sing_or_plur(21, "maður", "menn") == "21 maður"
     assert sing_or_plur(11, "köttur", "kettir") == "11 kettir"

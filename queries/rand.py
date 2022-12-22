@@ -151,6 +151,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         if r:
             q.set_answer(*r)
     except Exception as e:
-        logging.warning("Exception while processing random query: {0}".format(e))
-        q.set_error("E_EXCEPTION: {0}".format(e))
+        logging.warning(f"Exception while processing random query: {e}")
+        q.set_error(f"E_EXCEPTION: {e}")
         raise

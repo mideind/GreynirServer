@@ -206,9 +206,7 @@ def _fetch_exchange_rates() -> Optional[Dict[str, float]]:
     """Fetch exchange rate data from apis.is and cache it."""
     res = query_json_api(_CURR_API_URL)
     if not isinstance(res, dict) or "results" not in res:
-        logging.warning(
-            "Unable to fetch exchange rate data from {0}".format(_CURR_API_URL)
-        )
+        logging.warning(f"Unable to fetch exchange rate data from {_CURR_API_URL}")
         return None
     return {
         c["shortName"]: c["value"]
@@ -282,7 +280,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             val = _query_exchange_rate(result.currencies[0], result.currencies[1])
             val = val * result.amount if val else None
         else:
-            raise Exception("Unknown operator: {0}".format(result.op))
+            raise Exception(f"Unknown operator: {result.op}")
 
         if val:
             if target_currency == "ISK":

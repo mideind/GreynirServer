@@ -96,7 +96,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
         # Set query answer
         q.set_answer(response, answ, voice)
-        q.set_key(result.qkey)
+
         return
 
     # This module did not understand the query

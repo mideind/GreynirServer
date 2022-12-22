@@ -268,7 +268,7 @@ def _filter_flight_data(
 
 
 _BREAK_LENGTH = 0.5  # Seconds
-_BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
+_BREAK_SSML = f'<break time="{_BREAK_LENGTH}s"/>'
 
 
 def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
@@ -463,9 +463,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             q.set_answer(answ, answ["answer"], answ["voice"])
             return
         except Exception as e:
-            logging.warning(
-                "Exception generating answer from flight data: {0}".format(e)
-            )
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception generating answer from flight data: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

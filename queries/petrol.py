@@ -270,8 +270,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 q.set_answer(*answ)
                 q.set_source("Gasvaktin")
         except Exception as e:
-            logging.warning("Exception while processing petrol query: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception while processing petrol query: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
             raise
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

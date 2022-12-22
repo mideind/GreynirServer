@@ -86,7 +86,7 @@ def _get_news_data(max_items: int = 8) -> Optional[List[Dict[str, str]]]:
         ]
         return items[:max_items]
     except Exception as e:
-        logging.warning("Exception parsing news data: {0}".format(e))
+        logging.warning(f"Exception parsing news data: {e}")
 
     return None
 
@@ -97,7 +97,7 @@ def _clean_text(txt: str) -> str:
 
 
 _BREAK_LENGTH = 1.0  # Seconds
-_BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
+_BREAK_SSML = f'<break time="{_BREAK_LENGTH}s"/>'
 
 
 def top_news_answer() -> Optional[AnswerTuple]:

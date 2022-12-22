@@ -142,9 +142,7 @@ QUERY_NONTERMINALS = {"QYuleQuery"}
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = read_grammar_file(
     "yulelads",
-    yulelad_names=" | ".join(
-        "'{0}'/fall".format(name) for name in _YULE_LADS_BY_NAME.keys()
-    ),
+    yulelad_names=" | ".join(f"'{name}'/fall" for name in _YULE_LADS_BY_NAME.keys()),
 )
 
 
@@ -319,7 +317,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     voice_answer = numbers_to_ordinal(answer, case="ef", gender="kk")
     response = dict(answer=answer)
-    # !!! TODO
+    # TODO: Add context
     # q.set_context({"date": xxx})
     q.set_key(result.qkey)
     q.set_answer(response, answer, voice_answer)
