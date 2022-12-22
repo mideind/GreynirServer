@@ -37,6 +37,7 @@ from datetime import datetime, timedelta
 
 from tree import Result, Node
 from utility import cap_first
+from speech.norm import gssml
 from queries import Query, QueryStateDict, ContextDict
 from queries.util import query_json_api, gen_answer, read_grammar_file
 
@@ -212,19 +213,16 @@ def _clean_answer(answer: str) -> str:
     return a
 
 
-_BREAK_LENGTH = 0.5  # Seconds
-_BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
-
-
 def _clean_voice_answer(answer: str) -> str:
     a = answer.replace(" m.a. ", " meðal annars ")
     a = a.replace(" þ.e. ", " það er ")
     a = a.replace(" t.d. ", " til dæmis ")
+    vb = gssml(type="vbreak", time="0.5s")
     if _MULTIPLE_MEANINGS_RE.search(answer) is not None:
         # Short voice break between each meaning
-        a = a.replace("\n", _BREAK_SSML)
+        a = a.replace("\n", vb)
         # Remove first voice break (before the list of meanings)
-        a = a.replace(_BREAK_SSML, " ", 1)
+        a = a.replace(vb, " ", 1)
     return a
 
 

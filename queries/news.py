@@ -33,6 +33,7 @@ import logging
 import cachetools  # type: ignore
 import random
 
+from speech.norm import gssml
 from queries import Query, QueryStateDict, AnswerTuple
 from queries.util import gen_answer, query_json_api, read_grammar_file
 from tree import Result, Node
@@ -96,10 +97,6 @@ def _clean_text(txt: str) -> str:
     return txt.strip()
 
 
-_BREAK_LENGTH = 1.0  # Seconds
-_BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
-
-
 def top_news_answer() -> Optional[AnswerTuple]:
     """Answer query about top news."""
     headlines = _get_news_data()
@@ -109,7 +106,7 @@ def top_news_answer() -> Optional[AnswerTuple]:
     items = [_clean_text(h["intro"]) + " " for h in headlines]
     news = "".join(items).strip()
     # Add a pause between individual news items
-    voice_news = _BREAK_SSML.join(items).strip()
+    voice_news = gssml(type="vbreak", time="1s").join(items).strip()
 
     answer = news
     voice = f"Í fréttum rúv er þetta helst. {voice_news}"
