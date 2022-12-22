@@ -255,10 +255,12 @@ def _gen_num_people_answer(q: Query) -> bool:
     with SessionContext(read_only=True) as session:
         qr = session.query(Person.name).distinct().count()
 
+        # TODO: Use single_or_plural() here
         pl = is_plural(qr)
         verb = "eru" if pl else "er"
         indiv = "einstaklingar" if pl else "einstaklingur"
-        answer = "Í gagnagrunni mínum {0} {1} {2}.".format(verb, qr or "engir", indiv)
+        count = qr or "engir"
+        answer = f"Í gagnagrunni mínum {verb} {count} {indiv}."
         voice = answer
         response = dict(answer=answer)
 
@@ -344,7 +346,7 @@ def _gen_most_freq_queries_answer(q: Query) -> bool:
         if qr:
             top_qtype = qr[0][1]
             desc = _QTYPE_TO_DESC.get(top_qtype, "óskilgreindum fyrirspurnum")
-            answer = "Undanfarið hef ég mest svarað {0}.".format(desc)
+            answer = f"Undanfarið hef ég mest svarað {desc}."
         else:
             answer = "Ég hef ekki svarað neinum fyrirspurnum upp á síðkastið."
 
@@ -376,7 +378,7 @@ def _gen_most_mentioned_answer(q: Query) -> bool:
     else:
         answer = natlang_seq([t["name"] for t in top if "name" in t])
         response = dict(answer=answer)
-        voice = "Umtöluðustu einstaklingar síðustu daga eru {0}.".format(answer)
+        voice = f"Umtöluðustu einstaklingar síðustu daga eru {answer}."
         q.set_expires(datetime.utcnow() + timedelta(hours=1))
         q.set_answer(response, answer, voice)
 
