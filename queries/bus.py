@@ -546,7 +546,7 @@ def query_arrival_time(query: Query, result: Result) -> AnswerTuple:
 
         # Only one route: use it as the query subject
         bus_number = numbers.pop()
-        bus_name = "Strætó númer {0}".format(bus_number)
+        bus_name = f"Strætó númer {bus_number}"
         va = [f"Strætó númer {gssml(bus_number, type='number')}"]
     else:
         bus_number = result.get("bus_number", 0)
@@ -774,6 +774,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         except Exception as e:
             if Settings.DEBUG:
                 raise
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            q.set_error(f"E_EXCEPTION: {e}")
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

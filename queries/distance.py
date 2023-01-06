@@ -24,6 +24,7 @@
 """
 
 # TODO: This module should probably use grammar instead of regexes
+# TODO: "Hvað er ég langt frá heimili mínu?", "Hvað er ég lengi að ganga heim?"
 # TODO: "Hvað er langt á milli X og Y?", "Hvað er langt frá A til B?"
 # TODO: "Hvað er langt til tunglsins?", "Hvað er langt til Mars?"
 # TODO: Identify when user is present at the location, respond "Þú ert í/á X"
@@ -246,7 +247,7 @@ def dist_answer_for_loc(matches: Match[str], query: Query) -> Optional[AnswerTup
         else:
             is_home = True
             loc = (cast(float, ad["lat"]), cast(float, ad["lon"]))
-            loc_nf = "{0} {1}".format(ad["street"], ad["number"])
+            loc_nf = f'{ad["street"]} {ad["number"]}'
     else:
         # Talk to geocode API
         res = query_geocode_api_addr(loc_nf)
@@ -391,8 +392,8 @@ def handle_plain_text(q: Query) -> bool:
         else:
             answ = gen_answer(_UNKNOWN_LOC_RESP)
     except Exception as e:
-        logging.warning("Exception gen. answer from geocode API: {0}".format(e))
-        q.set_error("E_EXCEPTION: {0}".format(e))
+        logging.warning(f"Exception generating answer from geocode API: {e}")
+        q.set_error(f"E_EXCEPTION: {e}")
         answ = None
 
     if answ:

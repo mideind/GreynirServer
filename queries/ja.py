@@ -133,7 +133,7 @@ def _answer_phonenum4name_query(q: Query, result: Result) -> AnswerTuple:
 
     res = phonenums4name(result.qkey)
     if not res:
-        return gen_answer("Ekki tókst að fletta upp {0}.".format(nþgf))
+        return gen_answer(f"Ekki tókst að fletta upp {nþgf}.")
 
     # Check if we have a single canonical match from API
     allp = res
@@ -163,14 +163,14 @@ def _answer_phonenum4name_query(q: Query, result: Result) -> AnswerTuple:
                 )
                 break
             except (KeyError, ValueError) as e:
-                logging.warning("Exception: " + str(e))
+                logging.warning(f"Exception: {e}")
                 continue
         return gen_answer(msg)
 
     # Scan API call result, try to find the best phone number
     phone_number = _best_phone_number(first)
     if not phone_number:
-        return gen_answer("Ég finn ekki símanúmerið hjá {0}".format(nþgf))
+        return gen_answer(f"Ég finn ekki símanúmerið hjá {nþgf}")
 
     # Sanitize number and generate answer
     phone_number = phone_number.replace("-", "").replace(" ", "")
@@ -261,12 +261,12 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         try:
             r = _QTYPE2HANDLER[result.qtype](q, result)
             if not r:
-                r = gen_answer("Ég fann ekki {0}.".format(icequote(result.qkey)))
+                r = gen_answer(f"Ég fann ekki {icequote(result.qkey)}.")
             q.set_answer(*r)
             q.set_qtype(result.qtype)
             q.set_key(result.qkey)
         except Exception as e:
-            logging.warning("Exception while processing ja.is query: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception while processing ja.is query: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

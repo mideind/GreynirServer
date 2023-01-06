@@ -127,9 +127,7 @@ def _parse_coords(place: Dict) -> Optional[LatLonTuple]:
         lng = float(place["geometry"]["location"]["lng"])
         return (lat, lng)
     except Exception as e:
-        logging.warning(
-            "Unable to parse place coords for place {0}: {1}".format(place, e)
-        )
+        logging.warning(f"Unable to parse place coords for place '{place}': {e}")
     return None
 
 
@@ -170,11 +168,11 @@ def answ_address(placename: str, loc: Optional[LatLonTuple], qtype: str) -> Answ
     prep = "í" if maybe_postcode else iceprep_for_street(street_name)
     # Split addr into street name w. number, and remainder
     street_addr = addr.split(",")[0]
-    remaining = re.sub(r"^{0}".format(street_addr), "", addr)
+    remaining = re.sub(rf"^{street_addr}", "", addr)
     # Get street name in dative case
     addr_þgf = NounPhrase(street_addr).dative or street_addr
     # Assemble final address
-    final_addr = "{0}{1}".format(addr_þgf, remaining)
+    final_addr = f"{addr_þgf}{remaining}"
 
     # Create answer
     answer = final_addr
@@ -235,7 +233,7 @@ def answ_openhours(
         street = fmt_addr.split()[0].rstrip(",")
         street_þgf = NounPhrase(street).dative or street
 
-        name = "{0} {1} {2}".format(name, iceprep_for_street(street), street_þgf)
+        name = f"{name} {iceprep_for_street(street)} {street_þgf}"
 
         # Get correct "open" adjective for place name
         open_adj_map = {"kk": "opinn", "kvk": "opin", "hk": "opið"}
@@ -246,9 +244,7 @@ def answ_openhours(
         periods = res["result"]["opening_hours"]["periods"]
         if len(periods) == 1 or wday >= len(periods):
             # Open 24 hours a day
-            today_desc = p_desc = "{0} er {1} allan sólarhringinn".format(
-                name, open_adj
-            )
+            today_desc = p_desc = f"{name} er {open_adj} allan sólarhringinn"
         else:
             # Get period
             p = periods[wday]
@@ -261,9 +257,10 @@ def answ_openhours(
             p_desc = f"{openstr} - {closestr}"
             p_voice = gssml(openstr, type='time') + " til " + gssml(closestr, type='time')
 
-            today_desc = "Í dag er {0} {1} frá {2}".format(name, open_adj, p_voice)
+            # TODO: Use GSSML to pronounce times correctly
+            today_desc = f"Í dag er {name} {open_adj} frá {p_voice}"
     except Exception as e:
-        logging.warning("Exception generating answer for opening hours: {0}".format(e))
+        logging.warning(f"Exception generating answer for opening hours: {e}")
         return gen_answer(_PLACES_API_ERRMSG)
 
     # Generate answer
@@ -279,7 +276,7 @@ def answ_openhours(
             )
             else "Nei"
         )
-        answer = "{0}. {1}.".format(yes_no, today_desc)
+        answer = f"{yes_no}. {today_desc}."
         voice = answer
 
     response = dict(answer=answer)
@@ -308,13 +305,13 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 q.set_answer(*res)
                 q.set_source("Google Maps")
             else:
-                errmsg = "Ekki tókst að fletta upp staðnum {0}".format(icequote(subj))
+                errmsg = f"Ekki tókst að fletta upp staðnum {icequote(subj)}"
                 q.set_answer(*gen_answer(errmsg))
             q.set_qtype(result.qtype)
             q.set_key(subj)
         except Exception as e:
-            logging.warning("Exception answering places query: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception answering places query: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
             return
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

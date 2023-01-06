@@ -19,12 +19,6 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This module is an example of a plug-in query response module
-    for the Greynir query subsystem. It handles plain text queries, i.e.
-    ones that do not require parsing the query text. For this purpose
-    it only needs to implement the handle_plain_text() function, as
-    shown below.
-
     This particular module handles queries related to time and timezones.
 
 """
@@ -217,15 +211,13 @@ def handle_plain_text(q: Query) -> bool:
         if tz:
             # "Klukkan í Lundúnum er" - Used for voice answer
             dat = NounPhrase(loc_nom).dative or loc
-            specific_desc = "Klukkan {0} {1} er".format(prep, dat)
+            specific_desc = f"Klukkan {prep} {dat} er"
         else:
             # Unable to find the specified location
             q.set_qtype(_TIME_QTYPE)
             q.set_key(loc)
             q.set_answer(
-                *gen_answer(
-                    "Ég gat ekki flett upp staðsetningunni {0}".format(icequote(loc))
-                )
+                *gen_answer(f"Ég gat ekki flett upp staðsetningunni {icequote(loc)}")
             )
             return True
 
@@ -236,12 +228,13 @@ def handle_plain_text(q: Query) -> bool:
         desc = specific_desc or "Klukkan er"
 
         # Create displayable answer
-        answer = "{0:02}:{1:02}".format(now.hour, now.minute)
+        answer = f"{now.hour:02}:{now.minute:02}"
         # A detailed response object is usually a list or a dict
         response = dict(answer=answer)
         # A voice answer is a plain string that will be
         # passed as-is to a voice synthesizer
-        voice = "{0} {1}:{2:02}.".format(desc, now.hour, now.minute)
+        # TODO: Use GSSML to normalize time string for voice
+        voice = f"{desc} {now.hour}:{now.minute:02}."
 
         q.set_qtype(_TIME_QTYPE)
         q.set_key(tz)  # Query key is the timezone

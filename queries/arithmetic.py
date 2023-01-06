@@ -286,7 +286,7 @@ def parse_num(num_str: str) -> float:
         else:
             num = 0
     except Exception as e:
-        logging.warning("Unexpected exception: {0}".format(e))
+        logging.warning(f"Unexpected exception parsing num: {e}")
         raise
     return num
 
@@ -565,7 +565,7 @@ def calc_arithmetic(query: Query, result: Result) -> Optional[AnswerTuple]:
             + f" er {fmt_num(res, comma_null=True)}"
         )
     else:
-        logging.warning("Unknown operator: {0}".format(op))
+        logging.warning(f"Unknown operator: {op}")
         return None
 
     # Set arithmetic expression as query key
@@ -614,7 +614,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             else:
                 raise Exception("Failed to answer arithmetic query")
         except Exception as e:
-            logging.warning("Exception in arithmetic module: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception in arithmetic module: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

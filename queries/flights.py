@@ -472,9 +472,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             q.set_answer(answ, answ["answer"], answ["voice"])
             return
         except Exception as e:
-            logging.warning(
-                "Exception generating answer from flight data: {0}".format(e)
-            )
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception generating answer from flight data: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

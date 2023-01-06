@@ -338,7 +338,7 @@ def query_stats_data(
 
 
 @routes.route("/stats/queries", methods=["GET"])
-@cache.cached(timeout=30 * 60, key_prefix="stats", query_string=True)
+@cache.cached(timeout=30 * 60, key_prefix="stats_queries", query_string=True)
 @max_age(seconds=30 * 60)
 def stats_queries() -> Union[Response, str]:
     """Render a page containing various statistics on query engine usage."""

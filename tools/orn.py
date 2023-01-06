@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-
 """
+
     Fetch all Icelandic placenames (örnefni) from iceaddr database
     and try to look them up using GreynirPackage's bindb module.
     Print any placenames that could not be found in either
     BÍN proper or using the word combinator (samsetjari).
+
 """
 
 import sys
@@ -13,7 +14,7 @@ import sqlite3
 from reynir.bindb import GreynirBin
 
 if __name__ == "__main__":
-    """ Invocation via command line. """
+    """Invocation via command line."""
     db_path = sys.argv[1] if len(sys.argv) > 1 else None
     if not db_path:
         print("No db path")

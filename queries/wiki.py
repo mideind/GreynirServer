@@ -262,7 +262,7 @@ def get_wiki_summary(result: Result) -> Optional[str]:
     if not has_entry(res) and cap_subj != titled_subj:
         res = _query_wiki_api(titled_subj)
 
-    not_found = "Ég fann ekkert um '{0}' í Wikipedíu".format(subject_nom)
+    not_found = f"Ég fann ekkert um '{subject_nom}' í Wikipedíu"
 
     if not has_entry(res):
         if result.get("explicit_wikipedia") == True:

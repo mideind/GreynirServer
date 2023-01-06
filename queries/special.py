@@ -240,7 +240,7 @@ _QUOTATIONS = (
 
 def _random_quotation(qs: str, q: Query) -> AnswerType:
     (quote, author) = choice(_QUOTATIONS)
-    answer = "{0} — {1}".format(icequote(quote), author)
+    answer = f"{icequote(quote)} — {author}"
     return {"answer": answer, "is_question": False}
 
 
@@ -321,6 +321,7 @@ def _rudeness(qs: str, q: Query) -> AnswerType:
         name = nd["first"]
         answ = f"Æi, {name}. {answ}"
     v = answ.replace(",", "")  # Tweak pronunciation
+    # TODO: Use GSSML to normalize this
     # voice = '<amazon:breath duration="long" volume="x-loud"/> {0}'.format(v)
     return {"answer": answ, "voice": v, "is_question": False}
 

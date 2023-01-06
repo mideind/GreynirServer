@@ -98,7 +98,7 @@ def _answer_dictionary_query(q: Query, result: Result) -> None:
 
     def not_found() -> None:
         """Set answer for cases when word lookup fails."""
-        nf = "Ekki tókst að fletta upp orðinu {0}".format(icequote(word))
+        nf = f"Ekki tókst að fletta upp orðinu {icequote(word)}"
         q.set_answer(*gen_answer(nf))
         return None
 
@@ -146,17 +146,17 @@ def _answer_dictionary_query(q: Query, result: Result) -> None:
 
     # If only one definition found, things are simple
     if len(df) == 1:
-        answ = "{0} er {1}".format(icequote(cap_first(word)), icequote(df[0]))
+        answ = f"{icequote(cap_first(word))} er {icequote(df[0])}"
         voice = answ
     else:
         # Otherwise, do some formatting + spell things out nicely for voice synthesis
-        voice = "Orðið {0} getur þýtt: ".format(icequote(word))
+        voice = f"Orðið {icequote(word)} getur þýtt: "
         answ = ""
         # Generate list of the form "í fyrsta lagi a, í öðru lagi b, ..."
         for i, x in enumerate(df[: len(_ENUM_WORDS)]):
-            answ += "{0}. {1}\n".format(i + 1, x)
-            enum = "í {0} lagi,".format(_ENUM_WORDS[i])
-            voice += "{0} {1}, ".format(enum, x.replace("<", "[").replace(">", "]"))
+            answ += f"{i+1}. {x}\n"
+            enum = f"í {_ENUM_WORDS[i]} lagi,"
+            voice += f"{enum} {x.replace('<', '[').replace('>', ']')}, "
         answ = answ.rstrip(",.\n ") + "."
         voice = voice.rstrip(",.\n").strip() + "."
         voice = _clean4voice(voice)
@@ -177,10 +177,8 @@ def sentence(state: QueryStateDict, result: Result):
         try:
             _answer_dictionary_query(q, result)
         except Exception as e:
-            logging.warning(
-                "Exception while processing dictionary query: {0}".format(e)
-            )
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception while processing dictionary query: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
             return
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)

@@ -214,7 +214,7 @@ def QDateAbsOrRel(node: Node, params: QueryStateDict, result: Result) -> None:
             result["days_in_month"] = ndays
             result["target"] = datetime(day=1, month=m, year=y)
     else:
-        raise ValueError("No date in {0}".format(str(datenode)))
+        raise ValueError(f"No date in {str(datenode)}")
 
 
 def QDateWhitsun(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -647,7 +647,5 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                     break
 
     except Exception as e:
-        logging.warning(
-            "Exception {0} while processing date query '{1}'".format(e, q.query)
-        )
-        q.set_error("E_EXCEPTION: {0}".format(e))
+        logging.warning(f"Exception {e} while processing date query '{q.query}'")
+        q.set_error(f"E_EXCEPTION: {e}")

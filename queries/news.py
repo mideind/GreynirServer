@@ -88,7 +88,7 @@ def _get_news_data(max_items: int = 8) -> Optional[List[Dict[str, str]]]:
         ]
         return items[:max_items]
     except Exception as e:
-        logging.warning("Exception parsing news data: {0}".format(e))
+        logging.warning(f"Exception parsing news data: {e}")
 
     return None
 
