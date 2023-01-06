@@ -46,7 +46,7 @@ from tzwhere import tzwhere  # type: ignore
 from pytz import country_timezones
 
 from geo import country_name_for_isocode, iceprep_for_cc, LatLonTuple
-from speech.norm.num import number_to_text, float_to_text
+from speech.trans.num import number_to_text, float_to_text
 from reynir import NounPhrase
 from settings import changedlocale
 from utility import (

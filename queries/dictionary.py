@@ -156,7 +156,7 @@ def _answer_dictionary_query(q: Query, result: Result) -> None:
         for i, x in enumerate(df[: len(_ENUM_WORDS)]):
             answ += "{0}. {1}\n".format(i + 1, x)
             enum = "í {0} lagi,".format(_ENUM_WORDS[i])
-            voice += "{0} {1}, ".format(enum, x)
+            voice += "{0} {1}, ".format(enum, x.replace("<", "[").replace(">", "]"))
         answ = answ.rstrip(",.\n ") + "."
         voice = voice.rstrip(",.\n").strip() + "."
         voice = _clean4voice(voice)

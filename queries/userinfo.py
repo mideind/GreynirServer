@@ -35,7 +35,7 @@ from reynir.bindb import GreynirBin
 from geo import icelandic_addr_info, iceprep_for_placename, iceprep_for_street
 from queries import ClientDataDict, Query
 from queries.util import gen_answer
-from speech.norm.num import numbers_to_text
+from speech.trans.num import numbers_to_text
 
 
 _USERINFO_QTYPE = "UserInfo"

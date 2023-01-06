@@ -49,7 +49,7 @@ import random
 from queries import AnswerTuple, ContextDict, Query, QueryStateDict
 from queries.util import iceformat_float, gen_answer, read_grammar_file
 from tree import Result, Node, TerminalNode
-from speech.norm import gssml
+from speech.trans import gssml
 
 
 _ARITHMETIC_QTYPE = "Arithmetic"

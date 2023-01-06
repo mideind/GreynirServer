@@ -64,7 +64,7 @@ from queries.util import (
     gen_answer,
     read_grammar_file,
 )
-from speech.norm import gssml, strip_markup
+from speech.trans import gssml, strip_markup
 from settings import Settings
 from geo import in_iceland
 

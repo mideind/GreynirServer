@@ -18,23 +18,44 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This file contains text normalization functionality
+    This file contains phonetic transcription functionality
     specifically intended for Icelandic speech synthesis engines.
 
 """
 
-from typing import Any, Callable, List, Match, Mapping, Optional, Tuple, Union, cast
+from typing import (
+    Any,
+    Callable,
+    FrozenSet,
+    Iterable,
+    List,
+    Match,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
 import re
+import itertools
 from functools import lru_cache
 
 from tokenizer import Abbreviations
+
+# Ensure abbreviations have been loaded
+Abbreviations.initialize()
+
 from tokenizer.definitions import HYPHENS
 from islenska.basics import ALL_CASES, ALL_GENDERS, ALL_NUMBERS
 from reynir.bindb import GreynirBin
-from reynir import Greynir
+from reynir.simpletree import SimpleTree
+from reynir import Greynir, TOK, Tok
 
-from speech.norm.num import (
+from speech.trans.num import (
+    CaseType,
+    GenderType,
+    NumberType,
     digits_to_text,
     float_to_text,
     floats_to_text,
@@ -48,10 +69,10 @@ from speech.norm.num import (
     roman_numeral_to_ordinal,
 )
 
-# Each voice module in the directory speech/voices can define a
-# 'Normalization' class as a subclass of 'DefaultNormalization' in
-# order to override normalization functions/methods for a particular voice
-NORMALIZATION_CLASS = "Normalization"
+# Each voice module in the directory `speech/voices` can define a
+# 'Transcriber' class, as a subclass of 'DefaultTranscriber', in
+# order to override transcription methods for a particular voice
+TRANSCRIBER_CLASS = "Transcriber"
 
 
 def strip_markup(text: str) -> str:
@@ -62,14 +83,14 @@ def strip_markup(text: str) -> str:
 def gssml(data: Any = None, *, type: str, **kwargs: Union[str, int, float]) -> str:
     """
     Utility function, surrounds data with Greynir-specific
-    voice normalizing tags.
+    voice transcription tags.
     E.g. '<greynir ...>{data}</greynir>'
       or '<greynir ... />' if data is None.
 
     Type specifies the type of handling needed when the tags are parsed.
     The kwargs are then passed to the handler functions as appropriate.
 
-    The greynir tags can be handled/normalized
+    The greynir tags can be transcribed
     in different ways depending on the voice engine used.
 
     Example:
@@ -128,20 +149,11 @@ _CHAR_PRONUNCIATION: Mapping[str, str] = {
 # Icelandic/English alphabet, uppercased
 _ICE_ENG_ALPHA = "".join(c.upper() for c in _CHAR_PRONUNCIATION.keys())
 
-
-def spell_out(s: str) -> str:
-    """Spell out a sequence of characters, e.g. "LTB" -> "ell té bé".
-    Useful for controlling speech synthesis of serial numbers, etc."""
-    if not s:
-        return ""
-    t = [_CHAR_PRONUNCIATION.get(c.lower(), c) if not c.isspace() else "" for c in s]
-    return " ".join(t).replace("  ", " ").strip()
-
-
 # Matches e.g. "klukkan 14:30", "kl. 2:23:31", "02:15"
 _TIME_REGEX = re.compile(
     r"((?P<klukkan>(kl\.|klukkan)) )?(?P<hour>\d{1,2}):"
-    r"(?P<minute>\d\d)(:(?P<second>\d\d))?"
+    r"(?P<minute>\d\d)(:(?P<second>\d\d))?",
+    flags=re.IGNORECASE,
 )
 _MONTH_ABBREVS = (
     "jan",
@@ -189,71 +201,84 @@ _DATE_REGEXES = (
 )
 
 
-# Regex for splitting string when float/ordinal number encountered
-_NUM_RE = re.compile(r"([0-9]+,[0-9]+|[0-9]+)")
-# Matches letter followed by period or two uppercase letters side-by-side
+def _split_substring_types(t: str) -> Iterable[str]:
+    """
+    Split text into alphabetic, decimal or
+    other character type substrings.
+
+    Example:
+        list(_split_substring_types("hello world,123"))
+        -> ["hello", " ", "world", ",", "123"]
+    """
+    f: Callable[[str], int] = lambda c: c.isalpha() + 2 * c.isdecimal()
+    return ("".join(g) for _, g in itertools.groupby(t, key=f))
+
+
+# Matches letter followed by period or
+# 2-5 uppercase letters side-by-side not
+# followed by another uppercase letter
+# (e.g. matches "EUIPO" or "MSc", but not "TESTING")
 _ABBREV_RE = re.compile(
     rf"([{_ICE_ENG_ALPHA + _ICE_ENG_ALPHA.lower()}]\."
-    rf"|[{_ICE_ENG_ALPHA}][{_ICE_ENG_ALPHA}])"
+    rf"|\b[{_ICE_ENG_ALPHA}]{{2,5}}(?![{_ICE_ENG_ALPHA}]))"
 )
 
 # Terms common in sentences which refer to results from sports
-_SPORTS_LEMMAS = frozenset(("leikur", "vinna", "tapa", "sigra"))
+_SPORTS_LEMMAS: FrozenSet[str] = frozenset(("leikur", "vinna", "tapa", "sigra"))
+
 _HYPHEN_SYMBOLS = frozenset(HYPHENS)
 
-# Break strength values:
-# none: No pause should be outputted. This can be used to remove a pause that would normally occur (such as after a period).
-# x-weak: No pause should be outputted (same as none).
-# weak: Treat adjacent words as if separated by a single comma (equivalent to medium).
-# medium: Treat adjacent words as if separated by a single comma.
-# strong: Make a sentence break (equivalent to using the s tag).
-# x-strong: Make a paragraph break (equivalent to using the p tag).
-_STRENGTHS = frozenset(("none", "x-weak", "weak", "medium", "strong", "x-strong"))
+_StrBool = Union[str, bool]
+TranscrMethod = Callable[..., str]
 
 
-NormMethod = Callable[..., str]
-
-
-def _empty_str(f: NormMethod) -> NormMethod:
+def _empty_str(f: TranscrMethod) -> TranscrMethod:
     """
     Decorator which returns an empty string
-    if the normalization method is called
+    if the transcription method is called
     with an empty string.
     """
 
-    def _empty_str_wrapper(cls: "DefaultNormalization", txt: str, **kwargs: str):
+    def _inner(cls: "DefaultTranscriber", txt: str, **kwargs: _StrBool):
         if not txt:
             return ""
         return f(cls, txt, **kwargs)
 
-    return _empty_str_wrapper
+    return _inner
 
 
-# Ensure abbreviations have been loaded,
-# common during normalization
-Abbreviations.initialize()
-
-
-class DefaultNormalization:
+def _bool_args(*bool_args: str) -> Callable[[TranscrMethod], TranscrMethod]:
     """
-    Class containing default text normalization functions
+    Returns a decorator which converts keyword arguments in bool_args
+    from strings into booleans before calling the decorated function.
+
+    As GSSML is text-based, all function arguments come from strings.
+    Booleans also work when calling the methods directly, e.g. in testing.
+    """
+
+    def _decorator(f: TranscrMethod) -> TranscrMethod:
+        def _bool_translate(cls: "DefaultTranscriber", *args: str, **kwargs: str):
+            # Convert keyword arguments in bool_args from
+            # str to boolean before calling decorated function
+            newkwargs = {
+                key: (str(val) == "True" if key in bool_args else val)
+                for key, val in kwargs.items()
+            }
+            return f(cls, *args, **newkwargs)
+
+        return _bool_translate
+
+    return _decorator
+
+
+class DefaultTranscriber:
+    """
+    Class containing default phonetic transcription functions
     for Icelandic speech synthesis.
     """
 
     # Singleton Greynir instance
     _greynir: Optional[Greynir] = None
-    # TODO
-    # amount/s
-    # currency/ies
-    # distance/s
-
-    @staticmethod
-    def _coerce_to_boolean(arg: Optional[str]) -> bool:
-        """
-        Static helper for converting a string argument to a boolean.
-        As GSSML is text-based, all function arguments are strings.
-        """
-        return arg is not None and arg == "True"
 
     # &,<,> cause speech synthesis errors,
     # change these to text
@@ -283,39 +308,99 @@ class DefaultNormalization:
 
     @classmethod
     @_empty_str
-    def number(cls, txt: str, **kwargs: str) -> str:
+    @_bool_args("one_hundred")
+    def number(
+        cls,
+        txt: str,
+        *,
+        case: CaseType = "nf",
+        gender: GenderType = "hk",
+        one_hundred: bool = False,
+    ) -> str:
         """Voicify a number."""
-        return number_to_text(txt, **kwargs)
+        return number_to_text(txt, case=case, gender=gender, one_hundred=one_hundred)
 
     @classmethod
     @_empty_str
-    def numbers(cls, txt: str, **kwargs: str) -> str:
+    @_bool_args("one_hundred")
+    def numbers(
+        cls,
+        txt: str,
+        *,
+        case: CaseType = "nf",
+        gender: GenderType = "hk",
+        one_hundred: bool = False,
+    ) -> str:
         """Voicify text containing multiple numbers."""
-        return numbers_to_text(txt, **kwargs)
+        return numbers_to_text(txt, case=case, gender=gender, one_hundred=one_hundred)
 
     @classmethod
     @_empty_str
-    def float(cls, txt: str, **kwargs: str) -> str:
+    @_bool_args("comma_null", "one_hundred")
+    def float(
+        cls,
+        txt: str,
+        *,
+        case: CaseType = "nf",
+        gender: GenderType = "hk",
+        one_hundred: bool = False,
+        comma_null: bool = False,
+    ) -> str:
         """Voicify a float."""
-        return float_to_text(txt, **kwargs)
+        return float_to_text(
+            txt,
+            case=case,
+            gender=gender,
+            one_hundred=one_hundred,
+            comma_null=comma_null,
+        )
 
     @classmethod
     @_empty_str
-    def floats(cls, txt: str, **kwargs: str) -> str:
+    @_bool_args("comma_null", "one_hundred")
+    def floats(
+        cls,
+        txt: str,
+        *,
+        case: CaseType = "nf",
+        gender: GenderType = "hk",
+        one_hundred: bool = False,
+        comma_null: bool = False,
+    ) -> str:
         """Voicify text containing multiple floats."""
-        return floats_to_text(txt, **kwargs)
+        return floats_to_text(
+            txt,
+            case=case,
+            gender=gender,
+            one_hundred=one_hundred,
+            comma_null=comma_null,
+        )
 
     @classmethod
     @_empty_str
-    def ordinal(cls, txt: str, **kwargs: str) -> str:
+    def ordinal(
+        cls,
+        txt: str,
+        *,
+        case: CaseType = "nf",
+        gender: GenderType = "hk",
+        number: NumberType = "et",
+    ) -> str:
         """Voicify an ordinal."""
-        return number_to_ordinal(txt, **kwargs)
+        return number_to_ordinal(txt, case=case, gender=gender, number=number)
 
     @classmethod
     @_empty_str
-    def ordinals(cls, txt: str, **kwargs: str) -> str:
+    def ordinals(
+        cls,
+        txt: str,
+        *,
+        case: CaseType = "nf",
+        gender: GenderType = "hk",
+        number: NumberType = "et",
+    ) -> str:
         """Voicify text containing multiple ordinals."""
-        return numbers_to_ordinal(txt, **kwargs)
+        return numbers_to_ordinal(txt, case=case, gender=gender, number=number)
 
     @classmethod
     @_empty_str
@@ -333,6 +418,11 @@ class DefaultNormalization:
     def timespan(cls, seconds: str) -> str:
         """Voicify a span of time, specified in seconds."""
         # TODO: Replace time_period_desc in queries/util/__init__.py
+        raise NotImplementedError()
+
+    @classmethod
+    def distance(cls, meters: str) -> str:
+        # TODO: Replace distance_desc in queries/util/__init__.py
         raise NotImplementedError()
 
     @classmethod
@@ -391,7 +481,7 @@ class DefaultNormalization:
 
     @classmethod
     @_empty_str
-    def date(cls, txt: str, case: str = "nf") -> str:
+    def date(cls, txt: str, case: CaseType = "nf") -> str:
         """Voicifies a date"""
         for r in _DATE_REGEXES:
             match = r.search(txt)
@@ -419,17 +509,15 @@ class DefaultNormalization:
 
     @classmethod
     @_empty_str
-    def year(cls, txt: str, *, after_christ: Optional[str] = None) -> str:
+    def year(cls, txt: str) -> str:
         """Voicify a year."""
-        ac = cls._coerce_to_boolean(after_christ)
-        return year_to_text(txt, after_christ=ac)
+        return year_to_text(txt)
 
     @classmethod
     @_empty_str
-    def years(cls, txt: str, *, after_christ: Optional[str] = None) -> str:
+    def years(cls, txt: str) -> str:
         """Voicify text containing multiple years."""
-        ac = cls._coerce_to_boolean(after_christ)
-        return years_to_text(txt, after_christ=ac)
+        return years_to_text(txt)
 
     # Pronunciation of character names in Icelandic
     _CHAR_PRONUNCIATION: Mapping[str, str] = {
@@ -470,25 +558,87 @@ class DefaultNormalization:
         "ö": "ö",
         "z": "seta",
     }
+    # Pronunciation of some symbols
+    _PUNCT_PRONUNCIATION: Mapping[str, str] = {
+        " ": "bil",
+        "~": "tilda",
+        "`": "broddur",
+        "!": "upphrópunarmerki",
+        "@": "att merki",
+        "#": "myllumerki",
+        "$": "dollaramerki",
+        "%": "prósentumerki",
+        "^": "tvíbroddur",
+        "&": "og merki",
+        "*": "stjarna",
+        "(": "vinstri svigi",
+        ")": "hægri svigi",
+        "-": "bandstrik",
+        "_": "niðurstrik",
+        "=": "jafnt og merki",
+        "+": "plús",
+        "[": "vinstri hornklofi",
+        "{": "vinstri slaufusvigi",
+        "]": "hægri hornklofi",
+        "}": "hægri slaufusvigi",
+        "\\": "bakstrik",
+        "|": "pípumerki",
+        ";": "semíkomma",
+        ":": "tvípunktur",
+        "'": "úrfellingarkomma",
+        '"': "tvöföld gæsalöpp",
+        ",": "komma",
+        "<": "vinstri oddklofi",
+        ".": "punktur",
+        ">": "hægri oddklofi",
+        "/": "skástrik",
+        "?": "spurningarmerki",
+        # Less common symbols
+        "°": "gráðumerki",
+        "±": "plús-mínus merki",
+        "–": "stutt þankastrik",
+        "—": "þankastrik",
+        "…": "úrfellingarpunktar",
+        "™": "vörumerki",
+        "®": "skrásett vörumerki",
+        "©": "höfundarréttarmerki",
+    }
 
     @classmethod
     @_empty_str
-    def spell(cls, txt: str, ignore_punctuation: Optional[str] = None) -> str:
-        """Spell out a sequence of characters."""
-        # TODO: Optionally pronunce e.g. '.,/()'
-        # TODO: Control breaks between characters
-        # ignore_punct = cls._coerce_to_boolean(ignore_punctuation)
-        t = [
-            cls._CHAR_PRONUNCIATION.get(c.lower(), c) if not c.isspace() else ""
-            for c in txt
-        ]
-        return ", ".join(t)
+    @_bool_args("literal")
+    def spell(
+        cls,
+        txt: str,
+        *,
+        pause_length: Optional[str] = None,
+        literal: bool = False,
+    ) -> str:
+        """
+        Spell out a sequence of characters.
+        If literal is set, also pronounce spaces and punctuation symbols.
+        """
+        pronounce: Callable[[str], str] = (
+            lambda c: cls._CHAR_PRONUNCIATION.get(c.lower(), c)
+            if not c.isspace()
+            else ""
+        )
+        if literal:
+            pronounce = lambda c: cls._CHAR_PRONUNCIATION.get(
+                c.lower(), cls._PUNCT_PRONUNCIATION.get(c, c)
+            )
+        t = tuple(map(pronounce, txt))
+        return (
+            cls.vbreak(time="0.01s")
+            + cls.vbreak(time=pause_length or "0.02s").join(t)
+            + cls.vbreak(time="0.02s" if len(t) > 1 else "0.01s")
+        )
 
     @classmethod
     @_empty_str
     def abbrev(cls, txt: str) -> str:
         """Expand an abbreviation."""
-        meanings = list(
+        meanings = tuple(
             filter(
                 lambda m: m.fl != "erl",  # Only Icelandic abbrevs
                 Abbreviations.get_meaning(txt) or [],
@@ -496,7 +646,9 @@ class DefaultNormalization:
         )
         if meanings:
             # Abbreviation has at least one known meaning, expand it
-            return meanings[0].stofn
+            return (
+                cls.vbreak(time="0.01s") + meanings[0].stofn + cls.vbreak(time="0.05s")
+            )
 
         # Fallbacks:
         # - Spell out, if any letter is uppercase (e.g. "MSc")
@@ -505,6 +657,63 @@ class DefaultNormalization:
         # - Give up and keep as-is for all-lowercase txt
         # (e.g. "cand.med."),
         return txt
+
+    @classmethod
+    def amount(cls, txt: str) -> str:
+        # TODO
+        raise NotImplementedError()
+
+    @classmethod
+    def currency(cls, txt: str) -> str:
+        # TODO
+        raise NotImplementedError()
+
+    @classmethod
+    def measurement(cls, txt: str) -> str:
+        # TODO
+        raise NotImplementedError()
+
+    @classmethod
+    @_empty_str
+    def molecule(cls, txt: str) -> str:
+        """Voicify the name of a molecule"""
+        return " ".join(
+            cls.number(x, gender="kk") if x.isdecimal() else cls.spell(x, literal=True)
+            for x in _split_substring_types(txt)
+        )
+    @classmethod
+    @_empty_str
+    def numalpha(cls, txt: str) -> str:
+        """Voicify a alphanumeric string, spelling each character."""
+        return " ".join(
+            cls.digits(x) if x.isdecimal() else cls.spell(x)
+            for x in _split_substring_types(txt)
+        )
+
+    @classmethod
+    @_empty_str
+    def username(cls, txt: str) -> str:
+        """Voicify a username."""
+        newtext: List[str] = []
+        if txt.startswith("@"):
+            txt = txt[1:]
+            newtext.append("att")
+        for x in _split_substring_types(txt):
+            if x.isdecimal():
+                if len(x) > 2:
+                    # Spell out numbers of more than 2 digits
+                    newtext.append(cls.digits(x))
+                else:
+                    newtext.append(cls.number(x))
+            else:
+                if x.isalpha() and len(x) > 2:
+                    # Alphabetic string, longer than 2 chars, pronounce as is
+                    newtext.append(x)
+                else:
+                    # Not recognized as number or Icelandic word,
+                    # spell this literally (might include punctuation symbols)
+                    newtext.append(cls.spell(x, literal=True))
+        return " ".join(newtext)
 
     _DOMAIN_PRONUNCIATIONS: Mapping[str, str] = {
         "is": "is",
@@ -519,25 +728,39 @@ class DefaultNormalization:
 
     @classmethod
     @_empty_str
+    def domain(cls, txt: str) -> str:
+        """Voicify a domain name."""
+        newtext: List[str] = []
+        for x in _split_substring_types(txt):
+            if x in cls._DOMAIN_PRONUNCIATIONS:
+                newtext.append(cls._DOMAIN_PRONUNCIATIONS[x])
+            elif x.isdecimal():
+                if len(x) > 2:
+                    # Spell out numbers of more than 2 digits
+                    newtext.append(cls.digits(x))
+                else:
+                    newtext.append(cls.number(x))
+            else:
+                if x.isalpha() and len(x) > 2:
+                    # Alphabetic string, longer than 2 chars, pronounce as is
+                    newtext.append(x)
+                elif x == ".":
+                    # Periods are common in domains/URLs,
+                    # skip calling the spell method
+                    newtext.append("punktur")
+                else:
+                    # Short and/or non-alphabetic string
+                    # (might consist of punctuation symbols)
+                    # Spell this literally
+                    newtext.append(cls.spell(x, literal=True))
+        return " ".join(newtext)
+
+    @classmethod
+    @_empty_str
     def email(cls, txt: str) -> str:
         """Voicify an email address."""
-        # TODO: Use spelling with punctuation to spell weird characters
-        user, domain = txt.split("@")
-        user_parts = user.split(".")
-        domain_parts = domain.split(".")
-
-        for i, p in enumerate(user_parts):
-            if len(p) < 3:
-                # Short parts of username get spelled out
-                user_parts[i] = cls.spell(p)
-
-        for i, p in enumerate(domain_parts):
-            if p in cls._DOMAIN_PRONUNCIATIONS:
-                domain_parts[i] = cls._DOMAIN_PRONUNCIATIONS[p]
-            elif len(p) <= 3:
-                # Spell out short, unknown domains
-                domain_parts[i] = cls.spell(p)
-        return f"{' punktur '.join(user_parts)} hjá {' punktur '.join(domain_parts)}"
+        user, at, domain = txt.partition("@")
+        return f"{cls.username(user)}{' hjá ' if at else ''}{cls.domain(domain)}"
 
     # Hardcoded pronounciations,
     # should be overriden based on voice engine
@@ -627,64 +850,115 @@ class DefaultNormalization:
                     parts[i] = cls.spell(p_nodots)
         return " ".join(parts)
 
-    @staticmethod
-    def _guess_noun_case_gender(noun: str) -> Tuple[str, str]:
-        """Helper to return (case, gender) for a noun form."""
-        # Fallback
-        case = "nf"
-        gender = "kk"
-        # Followed by another word,
-        # try to guess gender and case
-        with GreynirBin.get_db() as gbin:
-            bts = GreynirBin.nouns(gbin.lookup(noun)[1])
-            if bts:
-                case = bts[0].mark[:2].lower()
-                gender = bts[0].ofl
-        return case, gender
-
     @classmethod
     @_empty_str
+    @_bool_args("full_text")
     @lru_cache(maxsize=50)  # Caching, as this method could be slow
-    def generic(cls, txt: str) -> str:
+    def generic(cls, txt: str, *, full_text: bool = False) -> str:
         """
         Attempt to voicify some generic text.
-        Parses text and calls other normalization handlers
+        Parses text and calls other transcription handlers
         based on inferred meaning of words.
+        if full_text is set to True,
+        add paragraph and sentence markers.
         """
         if cls._greynir is None:
             cls._greynir = Greynir(no_sentence_start=True)
         p_result = cls._greynir.parse(txt)
 
-        # Map certain terminals directly to normalization functions
-        handler_map: Mapping[str, NormMethod] = {
-            "entity": cls.entity,
-            "fyrirtæki": cls.entity,
-            "sérnafn": cls.entity,
-            "kennitala": cls.digits,
-            "person": cls.person,
-            "tími": cls.time,
-            "ártal": cls.year,
-            "tölvupóstfang": cls.email,
-            "myllumerki": lambda t: f"hashtagg {t[1:]}",
+        def _ordinal(tok: Tok, term: Optional[SimpleTree]) -> str:
+            """Handles ordinals, e.g. '14.' or '2.'."""
+            case, gender, number = "nf", "hk", "et"
+            if term is not None:
+                case = next(filter(lambda v: v in ALL_CASES, term.variants), "nf")
+                gender = next(filter(lambda v: v in ALL_GENDERS, term.variants), "hk")
+            if term is not None and term.index is not None:
+                leaves = tuple(term.root.leaves)
+                if len(leaves) > term.index + 1:
+                    # Fetch the grammatical number of the following word
+                    number = next(
+                        filter(
+                            lambda v: v in ALL_NUMBERS,
+                            leaves[term.index + 1].variants,
+                        ),
+                        "et",
+                    )
+            return cls.ordinal(txt, case=case, gender=gender, number=number)
+
+        def _number(tok: Tok, term: Optional[SimpleTree]) -> str:
+            """Handles numbers, e.g. '135', '17,86' or 'fjörutíu og þrír'."""
+            if not tok.txt.replace(".", "").replace(",", "").isdecimal():
+                # Don't modify non-decimal numbers
+                return tok.txt
+            case, gender = "nf", "hk"
+            if term is not None:
+                case = next(filter(lambda v: v in ALL_CASES, term.variants), "nf")
+                gender = next(filter(lambda v: v in ALL_GENDERS, term.variants), "hk")
+            if "," in txt:
+                return cls.float(txt, case=case, gender=gender)
+            else:
+                return cls.number(txt, case=case, gender=gender)
+
+        def _percent(tok: Tok, term: Optional[SimpleTree]) -> str:
+            """Handles a percentage, e.g. '15,6%' or '40 prósent'."""
+            gender = "hk"
+            n, cases, _ = cast(Tuple[float, Any, Any], tok.val)
+            if cases is None:
+                case = "nf"
+            else:
+                case = cases[0]
+            if n.is_integer():
+                val = cls.number(n, case=case, gender=gender)
+            else:
+                val = cls.float(n, case=case, gender=gender)
+            if cases is None:
+                # Uses "%" or "‰" instead of "prósent"
+                # (permille value is converted to percentage by tokenizer)
+                percent = "prósent"
+            else:
+                # Uses "prósent" in some form, keep as is
+                percent = tok.txt.split(" ")[-1]
+            return f"{val} {percent}"
+
+        def _numwletter(tok: Tok, term: Optional[SimpleTree]) -> str:
+            num = "".join(filter(lambda c: c.isdecimal(), tok.txt))
+            return (
+                cls.number(num, case="nf", gender="hk")
+                + " "
+                + cls.spell(tok.txt[len(num) + 1 :])
+            )
+
+        # Map certain terminals directly to transcription functions
+        handler_map: Mapping[int, Callable[[Tok, Optional[SimpleTree]], str]] = {
+            TOK.ENTITY: lambda tok, term: cls.entity(tok.txt),
+            TOK.COMPANY: lambda tok, term: cls.entity(tok.txt),
+            TOK.PERSON: lambda tok, term: cls.person(tok.txt),
+            TOK.EMAIL: lambda tok, term: cls.email(tok.txt),
+            TOK.HASHTAG: lambda tok, term: f"myllumerki {tok.txt[1:]}",
+            TOK.TIME: lambda tok, term: cls.time(tok.txt),
+            TOK.YEAR: lambda tok, term: cls.years(tok.txt),
             # TODO: Better handling of case for dates,
             # accusative is common though
-            "dagsafs": lambda t: cls.time(cls.date(t, case="þf")),
-            "dagsföst": lambda t: cls.time(cls.date(t, case="þf")),
-            "tímapunktur": lambda t: cls.time(cls.date(t, case="þf")),
-            "tímapunkturafs": lambda t: cls.time(cls.date(t, case="þf")),
-            "tímapunkturfast": lambda t: cls.time(cls.date(t, case="þf")),
-            "símanúmer": cls.digits,
-            # TODO: Other terminals we probably want to handle
-            # "amount": lambda t: t,
-            # "gata": lambda t: t,
-            # "grm": lambda t: t, # Greinarmerki
-            # "lén": lambda t: t,
-            # "mælieining": lambda t: t,
-            # "notandanafn": lambda t: t,
-            # "sameind": lambda t: t,
-            # "sequence": lambda t: t,
-            # "vefslóð": lambda t: t,
-            # "vörunúmer": lambda t: t,
+            TOK.DATE: lambda tok, term: cls.date(tok.txt, case="þf"),
+            TOK.DATEABS: lambda tok, term: cls.date(tok.txt, case="þf"),
+            TOK.DATEREL: lambda tok, term: cls.date(tok.txt, case="þf"),
+            TOK.TIMESTAMP: lambda tok, term: cls.time(cls.date(tok.txt, case="þf")),
+            TOK.TIMESTAMPABS: lambda tok, term: cls.time(cls.date(tok.txt, case="þf")),
+            TOK.TIMESTAMPREL: lambda tok, term: cls.time(cls.date(tok.txt, case="þf")),
+            TOK.SSN: lambda tok, term: cls.digits(tok.txt),
+            TOK.TELNO: lambda tok, term: cls.digits(tok.txt),
+            TOK.SERIALNUMBER: lambda tok, term: cls.digits(tok.txt),
+            TOK.MOLECULE: lambda tok, term: cls.molecule(tok.txt),
+            TOK.USERNAME: lambda tok, term: cls.username(tok.txt),
+            TOK.DOMAIN: lambda tok, term: cls.domain(tok.txt),
+            TOK.URL: lambda tok, term: cls.domain(tok.txt),
+            # TOK.AMOUNT: lambda tok, term: tok.txt,
+            # TOK.CURRENCY: lambda tok, term: tok.txt, CURRENCY_SYMBOLS in tokenizer
+            # TOK.MEASUREMENT: lambda tok, term: tok.txt, SI_UNITS in tokenizer
+            TOK.NUMBER: _number,
+            TOK.NUMWLETTER: _numwletter,
+            TOK.ORDINAL: _ordinal,
+            TOK.PERCENT: _percent,
         }
 
         parts: List[str] = []
@@ -692,120 +966,37 @@ class DefaultNormalization:
             s_parts: List[str] = []
             # List of (token, terminal node) pairs.
             # Terminal nodes can be None if the sentence wasn't parseable
-            tk_term_list = list(
+            tk_term_list = tuple(
                 zip(s.tokens, s.terminal_nodes or (None for _ in s.tokens))
             )
-            for i, tk_term in enumerate(tk_term_list):
-                tok, term = tk_term
-                cat = term.tcat if term is not None else None
+            for tok, term in tk_term_list:
                 txt = tok.txt
 
-                if cat in handler_map:
-                    # Found a handler for this token
-                    s_parts.append(handler_map[cat](txt))
-                    continue
-                if txt.isupper():
-                    # Fully uppercase string, probably part of an entity name
-                    s_parts.append(cls.entity(txt))
+                if tok.kind in handler_map:
+                    # Found a handler for this token type
+                    s_parts.append(handler_map[tok.kind](tok, term))
                     continue
 
-                if _ABBREV_RE.match(txt) and (
+                # Fallbacks if no handler found
+                if txt.isupper():
+                    # Fully uppercase string,
+                    # might be part of an entity name
+                    s_parts.append(cls.entity(txt))
+
+                elif _ABBREV_RE.match(txt) and (
                     (term is not None and not _ABBREV_RE.match(term.lemma))
                     or any(not _ABBREV_RE.match(m.stofn) for m in tok.meanings)
                 ):
                     # Probably an abbreviation such as "t.d." or "MSc"
                     s_parts.append(cls.abbrev(txt))
-                    continue
-
-                # Next terminal
-                next_term = (
-                    tk_term_list[i + 1][1] if i + 1 < len(tk_term_list) else None
-                )
-                if next_term is None and txt == ".":
-                    # Period at end of sentence
-                    if s_parts:
-                        # If we already have some text,
-                        # add it the last string,
-                        # otherwise just ignore
-                        s_parts[-1] += "."
-                    continue
-
-                if _NUM_RE.match(txt):
-                    # Text contains some form of a number
-
-                    # Try to deduce correct declension of the number
-                    case, gender = "nf", "hk"
-                    if term is not None:
-                        case = next(
-                            filter(lambda v: v in ALL_CASES, term.variants), "nf"
-                        )
-                        gender = next(
-                            filter(lambda v: v in ALL_GENDERS, term.variants), "hk"
-                        )
-
-                    if cat == "tala":
-                        # Cardinal, e.g. "14", "135" or "17,86"
-                        if "," in txt:
-                            s_parts.append(cls.float(txt, case=case, gender=gender))
-                        else:
-                            s_parts.append(cls.number(txt, case=case, gender=gender))
-                        continue
-                    if cat == "raðnr":
-                        # Ordinal, e.g. "14.", "2."
-                        number = "et"
-                        if next_term is not None:
-                            # Fetch the grammatical number of the following word
-                            number = next(
-                                filter(lambda v: v in ALL_NUMBERS, next_term.variants),
-                                "et",
-                            )
-                        s_parts.append(
-                            cls.ordinal(txt, case=case, gender=gender, number=number)
-                        )
-                        continue
-                    if cat == "talameðbókstaf":
-                        # Number with letter, e.g. "15B", "42A"
-                        for p in _NUM_RE.split(txt):
-                            # e.g. "15B" -> ["", "15", "B"]
-                            if p:
-                                if p.isdecimal():
-                                    s_parts.append(
-                                        cls.number(p, case="nf", gender="hk")
-                                    )
-                                elif p.isupper():
-                                    s_parts.append(cls.spell(p))
-                                else:
-                                    s_parts.append(p)
-                        continue
-                    if cat == "prósenta" or "%" in txt or " prósent" in txt:
-                        # Percentage
-                        gender = "hk"
-                        case = "nf" if "%" in txt else case
-                        for p in _NUM_RE.split(txt):
-                            if p:
-                                if "," in p:
-                                    s_parts.append(
-                                        cls.float(p, case=case, gender=gender)
-                                    )
-                                elif p.isdecimal():
-                                    s_parts.append(
-                                        cls.number(p, case=case, gender=gender)
-                                    )
-                                elif p.strip() == "%":
-                                    s_parts.append("prósent")
-                                else:
-                                    s_parts.append(p)
-                        continue
 
                 # Check whether this is a hyphen denoting a range
-                if (
+                elif (
                     txt in _HYPHEN_SYMBOLS
                     and term is not None
                     and term.parent is not None
                     # Check whether parent nonterminal has at least 3 children (might be a range)
                     and len(term.parent) >= 3
-                    # Check whether middle sibling is a hyphen
-                    # and filter(,term.parent.children)
                 ):
                     # Hyphen found, probably denoting a range
                     if s.lemmas is not None and _SPORTS_LEMMAS.isdisjoint(s.lemmas):
@@ -813,18 +1004,21 @@ class DefaultNormalization:
                         # (as the sentence doesn't contain sports-related lemmas),
                         # so replace the range-denoting hyphen with 'til'
                         s_parts.append("til")
-                    continue
-
-                # No normalization happened
-                s_parts.append(txt)
+                else:
+                    # No transcribing happened
+                    s_parts.append(txt)
 
             # Finished parsing a sentence
-            parts.append(" ".join(s_parts))
+            sent = " ".join(s_parts).strip()
+            parts.append(cls.sentence(sent) if full_text else sent)
+
         # Join sentences
-        return " ".join(parts)
+        para = " ".join(parts)
+        return cls.paragraph(para) if full_text else para
 
     _PERSON_PRONUNCIATION: Mapping[str, str] = {
         "Jr": "djúníor",
+        "Jr.": "djúníor",
     }
 
     @classmethod
@@ -867,13 +1061,19 @@ class DefaultNormalization:
                 parts[i] = roman_numeral_to_ordinal(parts[i], gender=gender)
         return " ".join(parts)
 
+    _VBREAK_STRENGTHS = frozenset(
+        ("none", "x-weak", "weak", "medium", "strong", "x-strong")
+    )
+
     @classmethod
     def vbreak(cls, time: Optional[str] = None, strength: Optional[str] = None) -> str:
         """Create a break in the voice/speech synthesis."""
         if time:
             return f'<break time="{time}" />'
         if strength:
-            assert strength in _STRENGTHS, f"Break strength {strength} is invalid."
+            assert (
+                strength in cls._VBREAK_STRENGTHS
+            ), f"Break strength {strength} is invalid."
             return f'<break strength="{strength}" />'
         return f"<break />"
 

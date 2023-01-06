@@ -45,7 +45,7 @@ from reynir.bindb import GreynirBin
 from queries import Query, AnswerTuple
 from queries.util import gen_answer
 from utility import icequote
-from speech.norm import gssml
+from speech.trans import gssml
 
 
 _WORDTYPE_RX_NOM = "(?:orðið|nafnið|nafnorðið)"
@@ -187,7 +187,7 @@ def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
     response = dict(answer=answ)
 
     # Piece together SSML for speech synthesis
-    v = gssml(word, type="spell")
+    v = gssml(word, type="spell", pause_length="0.3s")
     voice = f"Orðið {icequote(word)} er stafað á eftirfarandi hátt: {gssml(type='vbreak')} {v}"
 
     query.set_qtype("Spelling")

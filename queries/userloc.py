@@ -36,7 +36,7 @@ from queries.util import (
     nom2dat,
     read_grammar_file,
 )
-from speech.norm.num import numbers_to_text
+from speech.trans.num import numbers_to_text
 from tree import Result, Node
 from iceaddr import iceaddr_lookup, postcodes  # type: ignore
 from geo import (

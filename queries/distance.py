@@ -46,7 +46,7 @@ from queries.util import (
     query_geocode_api_addr,
     query_traveltime_api,
 )
-from speech.norm.num import numbers_to_text
+from speech.trans import gssml
 from geo import distance, capitalize_placename
 
 
@@ -277,7 +277,7 @@ def dist_answer_for_loc(matches: Match[str], query: Query) -> Optional[AnswerTup
     loc_nf = capitalize_placename(loc_nf)
     dist = distance_desc(km_dist, case="þf", num_to_str=True)
     # Turn numbers to neutral in loc_nf for voice
-    voice = f"{numbers_to_text(loc_nf)} er {dist} í burtu"
+    voice = f"{gssml(loc_nf, type='numbers', gender='hk')} er {dist} í burtu"
 
     query.set_key(loc_nf)
 

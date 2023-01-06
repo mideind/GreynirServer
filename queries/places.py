@@ -49,7 +49,7 @@ from queries.util import (
     AnswerTuple,
     read_grammar_file,
 )
-from speech.norm.num import numbers_to_text
+from speech.trans import gssml
 from tree import Result, Node
 
 
@@ -178,7 +178,7 @@ def answ_address(placename: str, loc: Optional[LatLonTuple], qtype: str) -> Answ
 
     # Create answer
     answer = final_addr
-    voice = f"{placename} er {prep} {numbers_to_text(final_addr)}"
+    voice = f"{placename} er {prep} {gssml(final_addr, type='numbers', gender='hk')}"
     response = dict(answer=answer)
 
     return response, answer, voice
@@ -258,8 +258,8 @@ def answ_openhours(
             # Format correctly, e.g. "12:00 - 19:00"
             openstr = opens[:2] + ":" + opens[2:]
             closestr = closes[:2] + ":" + opens[2:]
-            p_desc = "{0} - {1}".format(openstr, closestr)
-            p_voice = p_desc.replace("-", "til")
+            p_desc = f"{openstr} - {closestr}"
+            p_voice = gssml(openstr, type='time') + " til " + gssml(closestr, type='time')
 
             today_desc = "Í dag er {0} {1} frá {2}".format(name, open_adj, p_voice)
     except Exception as e:

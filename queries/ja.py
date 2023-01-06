@@ -36,7 +36,7 @@ from reynir import NounPhrase
 from reynir.bindb import GreynirBin
 
 from queries.util import query_json_api, gen_answer, read_grammar_file
-from speech.norm.num import numbers_to_text, digits_to_text
+from speech.trans import gssml
 
 from queries import AnswerTuple, Query, QueryStateDict
 from tree import Result, Node
@@ -176,7 +176,7 @@ def _answer_phonenum4name_query(q: Query, result: Result) -> AnswerTuple:
     phone_number = phone_number.replace("-", "").replace(" ", "")
     answ = phone_number
     fn = NounPhrase(fname).dative or fname
-    voice = f"Síminn hjá {fn} er {digits_to_text(phone_number)}"
+    voice = f"Síminn hjá {fn} er {gssml(phone_number, type='phone')}"
 
     q.set_context(dict(phone_number=phone_number, name=fname))
     q.set_source(_JA_SOURCE)
@@ -194,7 +194,8 @@ def _answer_name4phonenum_query(q: Query, result: Result) -> AnswerTuple:
 
     if not clean_num or len(clean_num) < 3:
         answer = gen_answer(f"{num} er ekki gilt símanúmer")
-        return (answer[0], answer[1], digits_to_text(answer[2]))
+        voice = f"{gssml(num, type='phone')} er ekki gilt símanúmer"
+        return (answer[0], answer[1], voice)
 
     res = query_ja_api(clean_num)
 
@@ -218,13 +219,23 @@ def _answer_name4phonenum_query(q: Query, result: Result) -> AnswerTuple:
     addr = p.get("address", "")
     pstation = p.get("postal_station", "")  # e.g. "101, Reykjavík"
 
-    full_addr = "{0}{1}".format(addr, ", " + pstation if pstation else "")
+    full_addr = addr + (", " + pstation if pstation else "")
+    vfull_addr = gssml(addr, type="numbers", gender="hk") + (
+        ", " + gssml(pstation, type="numbers", gender="kk") if pstation else ""
+    )
 
     # E.g. "Sveinbjörn Þórðarson, fræðimaður, Öldugötu 4, 101 Reykjavík"
-    answ = "{0}{1}{2}".format(
-        name, " " + occup if occup else "", ", " + full_addr if full_addr else ""
+    ans_templ = "{n}{o}{f}"
+    answ = ans_templ.format(
+        n=name,
+        o=f", {occup}" if occup else "",
+        f=f", {full_addr}" if full_addr else "",
     ).strip()
-    voice = numbers_to_text(answ)
+    voice = ans_templ.format(
+        n=name,
+        o=f", {gssml(occup, type='generic')}" if occup else "",
+        f=f", {vfull_addr}" if vfull_addr else "",
+    ).strip()
 
     # Set phone number, name and address as context
     q.set_context(dict(phone_number=clean_num, name=name, address=full_addr))

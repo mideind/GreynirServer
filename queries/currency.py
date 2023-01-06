@@ -42,7 +42,7 @@ from queries.util import (
     read_grammar_file,
 )
 from tree import Result, Node, NonterminalNode
-from speech.norm.num import float_to_text
+from speech.trans import gssml
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS: Sequence[str] = [
@@ -256,19 +256,19 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         # Successfully matched a query type
         val = None
         target_currency = "ISK"
-        gender = None
+        target_gender = None
         suffix = ""
         verb = "er"
 
         if result.op == "index":
             # target_currency = "GVT"
             val = _query_exchange_rate("GVT", "")
-            gender = "kk"
+            target_gender = "kk"
         elif result.op == "exchange":
             # 'Hvert er gengi evru gagnvart dollara?'
             target_currency = result.currencies[0]
             val = _query_exchange_rate(result.currencies[0], result.currencies[1])
-            gender = "kk"
+            target_gender = "kk"
         elif result.op == "general":
             # 'Hvert er gengi dollarans?'
             val = _query_exchange_rate(result.currencies[0], "ISK")
@@ -292,15 +292,17 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 val = round(val, 2)
             answer = iceformat_float(val)
             response = dict(answer=answer)
-            if gender is None:
-                gender = NON_KVK_CURRENCY_GENDERS.get(target_currency, "kvk")
+            if target_gender is None:
+                target_gender = NON_KVK_CURRENCY_GENDERS.get(target_currency, "kvk")
+            from_gender = NON_KVK_CURRENCY_GENDERS.get(result.currencies[0],'kvk')
             voice_answer = "{0} {1} {2}{3}.".format(
-                result.desc,
+                gssml(result.desc,type='floats', gender=from_gender),
                 verb,
-                float_to_text(
+                gssml(
                     val,
+                    type="float",
                     case="nf",
-                    gender=gender,
+                    gender=target_gender,
                     comma_null=(target_currency != "ISK"),
                 ),
                 (" " + suffix) if suffix else "",

@@ -224,17 +224,17 @@ def test_builtin(client: FlaskClient) -> None:
 
     # Builtin module: title
     json = qmcall(client, {"q": "hver er viðar þorsteinsson", "voice": True}, "Person")
-    assert json["voice"].startswith("Viðar Þorsteinsson er ")
+    assert "Viðar Þorsteinsson er " in json["voice"]
     assert json["voice"].endswith(".")
 
     # Builtin module: title
     json = qmcall(client, {"q": "hver er björn þorsteinsson", "voice": True}, "Person")
-    assert json["voice"].startswith("Björn Þorsteinsson er ")
+    assert "Björn Þorsteinsson er " in json["voice"]
     assert json["voice"].endswith(".")
 
     # Builtin module: person
     json = qmcall(client, {"q": "hver er forsætisráðherra", "voice": True}, "Title")
-    assert json["voice"].startswith("Forsætisráðherra er ")
+    assert "Forsætisráðherra er " in json["voice"]
     assert json["voice"].endswith(".")
 
     # Builtin module: person w. title w. uppercase name
@@ -272,7 +272,7 @@ def test_bus(client: FlaskClient) -> None:
         "ArrivalTime",
     )
     assert json["answer"]
-    assert all(not c.isdecimal() for c in json["voice"])
+    assert all(not c.isdecimal() for c in re.sub(r"<break .*?/>", "", json["voice"]))
 
     json = qmcall(
         client,
@@ -280,7 +280,7 @@ def test_bus(client: FlaskClient) -> None:
         "ArrivalTime",
     )
     assert json["answer"].endswith("Spurðu um eina þeirra.")
-    assert all(not c.isdecimal() for c in json["voice"])
+    assert all(not c.isdecimal() for c in re.sub(r"<break .*?/>", "", json["voice"]))
 
     json = qmcall(
         client,
@@ -288,7 +288,7 @@ def test_bus(client: FlaskClient) -> None:
         "ArrivalTime",
     )
     assert json["answer"]
-    assert all(not c.isdecimal() for c in json["voice"])
+    assert all(not c.isdecimal() for c in re.sub(r"<break .*?/>", "", json["voice"]))
 
     json = qmcall(
         client,
@@ -305,7 +305,7 @@ def test_bus(client: FlaskClient) -> None:
         and "stoppa" in json["answer"]
         #   (^ Multiple routes go through Bíó Paradís)
     )
-    assert all(not c.isdecimal() for c in json["voice"])
+    assert all(not c.isdecimal() for c in re.sub(r"<break .*?/>", "", json["voice"]))
     # Following query relies on the query above
     json = qmcall(
         client,
@@ -325,7 +325,7 @@ def test_bus(client: FlaskClient) -> None:
         "ArrivalTime",
     )
     assert json["answer"]
-    assert all(not c.isdecimal() for c in json["voice"])
+    assert all(not c.isdecimal() for c in re.sub(r"<break .*?/>", "", json["voice"]))
 
     json = qmcall(
         client,
@@ -336,7 +336,7 @@ def test_bus(client: FlaskClient) -> None:
         "WhichRoute",
     )
     assert "Mýrarvegi / Hringteig" in json["answer"]
-    assert all(not c.isdecimal() for c in json["voice"])
+    assert all(not c.isdecimal() for c in re.sub(r"<break .*?/>", "",json["voice"]))
 
     # TODO: bus module picks stop closest to user
     return
