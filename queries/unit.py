@@ -35,9 +35,9 @@ import random
 from math import floor, log10
 
 from queries import Query, QueryStateDict, to_dative, to_accusative
-from queries.util import iceformat_float, parse_num, read_grammar_file
+from queries.util import iceformat_float, parse_num, read_grammar_file, is_plural
 from tree import Result, Node
-
+from speech.trans import gssml
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [
@@ -318,7 +318,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             else:
                 answer += " " + result.unit_to_nf
             verb = "eru"
-            if int(val_from) % 10 == 1 and int(val_from) % 100 != 11:
+
+            if not is_plural(val_from):
                 # 'Einn lítri er...', 'Tuttugu og einn lítri er...',
                 # but on the other hand 'Ellefu lítrar eru...'
                 verb = "er"
@@ -328,6 +329,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             unit_to = result.unit_to
             response = dict(answer=answer)
             voice_answer = "{0} {1} {2}.".format(result.desc, verb, answer).capitalize()
+            voice_answer = gssml(voice_answer, type='generic')
             # Store the resulting quantity in the query context
             q.set_context(
                 {

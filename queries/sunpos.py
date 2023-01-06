@@ -25,6 +25,7 @@
 
 # TODO: "Hvenær rís sólin [any date]"
 # TODO: "Hvenær kemur sólin upp"
+# TODO: Use gssml instead of numbers_to_... functions
 
 from typing import Dict, List, Iterable, Tuple, Optional, Union, cast
 
@@ -340,7 +341,7 @@ _ALMANAK_HI_CACHE: TTLCache = TTLCache(maxsize=1, ttl=86400)
 
 def _get_almanak_hi_data() -> Optional[_SOLAR_DICT_TYPE]:
     """Fetch solar calendar from Univeristy of Iceland."""
-    data: Optional[_SOLAR_DICT_TYPE] = _ALMANAK_HI_CACHE.get("data")
+    data = cast(Optional[_SOLAR_DICT_TYPE], _ALMANAK_HI_CACHE.get("data"))
 
     if data:
         return data
