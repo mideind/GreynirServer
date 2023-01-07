@@ -25,8 +25,8 @@ boto3==1.18.40
 # For Azure text-to-speech.
 azure-cognitiveservices-speech>=1.24.2
 # Ours
-reynir>=3.5.1
+reynir>=3.5.3
 iceaddr>=0.5.5
-iceweather>=0.2
+iceweather>=0.2.1
 cityloc>=0.1.1
 straeto>=1.2.0
