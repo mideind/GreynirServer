@@ -341,7 +341,7 @@ def float_to_text(
 def floats_to_text(
     s: str,
     *,
-    regex: str = r"(-)?\b(\d?\d?\d\.)*\d+,\d+\b",
+    regex: str = r"((?<!\d)-)?\b(\d{1,3}\.)*\d+(,\d+)?\b",
     case: CaseType = "nf",
     gender: GenderType = "hk",
     comma_null: bool = False,

@@ -294,7 +294,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 target_gender = NON_KVK_CURRENCY_GENDERS.get(target_currency, "kvk")
             from_gender = NON_KVK_CURRENCY_GENDERS.get(result.currencies[0],'kvk')
             voice_answer = "{0} {1} {2}{3}.".format(
-                gssml(result.desc,type='floats', gender=from_gender),
+                gssml(result.desc, type='floats', gender=from_gender),
                 verb,
                 gssml(
                     val,

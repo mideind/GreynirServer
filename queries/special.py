@@ -2172,6 +2172,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "segðu mér eitthvað merkilegt": _random_trivia,
     "segðu mér staðreynd": _random_trivia,
     "segðu mér áhugaverða staðreynd": _random_trivia,
+    "segðu mér skemmtilega staðreynd": _random_trivia,
     "komdu með eitthvað áhugavert": _random_trivia,
     "komdu með áhugaverða staðreynd": _random_trivia,
     "segðu mér eitthvað um heiminn": _random_trivia,

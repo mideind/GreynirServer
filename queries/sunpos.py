@@ -26,6 +26,7 @@
 # TODO: "Hvenær rís sólin [any date]"
 # TODO: "Hvenær kemur sólin upp"
 # TODO: Use gssml instead of numbers_to_... functions
+# TODO: Use https://vedur.is/gogn/vefgogn/sol/index.html instead of inaccurate HÍ almanak
 
 from typing import Dict, List, Iterable, Tuple, Optional, Union, cast
 
