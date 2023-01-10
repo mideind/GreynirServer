@@ -39,9 +39,9 @@ import importlib
 from inspect import isfunction, ismethod
 from html.parser import HTMLParser
 from collections import deque
-from speech.norm import NORMALIZATION_CLASS, DefaultNormalization, NormMethod
+from speech.trans import TRANSCRIBER_CLASS, DefaultTranscriber, TranscriptionMethod
 
-from utility import GREYNIR_ROOT_DIR, modules_in_dir
+from utility import GREYNIR_ROOT_DIR, cap_first, modules_in_dir
 
 
 VOICES_DIR = GREYNIR_ROOT_DIR / "speech" / "voices"
@@ -95,17 +95,21 @@ assert DEFAULT_VOICE in RECOMMENDED_VOICES
 class GreynirSSMLParser(HTMLParser):
     """
     Parses voice strings containing <greynir> tags and
-    calls normalization handlers corresponding to each tag's type attribute.
+    calls transcription handlers corresponding to each tag's type attribute.
+
+    Note: Removes any other markup tags from the text as that
+          can interfere with the voice engines.
+
     Example:
         # Provide voice engine ID
         gp = GreynirSSMLParser(voice_id)
-        # Normalize voice string
-        voice_string = gp.normalize(voice_string)
+        # Transcribe voice string
+        voice_string = gp.transcribe(voice_string)
     """
 
-    def __init__(self, voice_id: str) -> None:
+    def __init__(self, voice_id: str = DEFAULT_VOICE) -> None:
         """
-        Initialize parser and setup normalization handlers
+        Initialize parser and setup transcription handlers
         for the provided speech synthesis engine.
         """
         super().__init__()
@@ -117,16 +121,16 @@ class GreynirSSMLParser(HTMLParser):
         # Find the module that provides this voice
         module = VOICE_TO_MODULE[voice_id]
 
-        # Fetch normalization handlers for this voice module,
-        # otherwise use DefaultNormalization as fallback
-        self._handler: Type[DefaultNormalization] = getattr(
-            module, NORMALIZATION_CLASS, DefaultNormalization
+        # Fetch transcriber for this voice module,
+        # using DefaultTranscriber as fallback
+        self._handler: Type[DefaultTranscriber] = getattr(
+            module, TRANSCRIBER_CLASS, DefaultTranscriber
         )
 
-    def normalize(self, voice_string: str) -> str:
-        """Parse and return normalized voice string."""
+    def transcribe(self, voice_string: str) -> str:
+        """Parse and return transcribed voice string."""
         # Prepare HTMLParser variables for parsing
-        # (in case normalize is called more
+        # (in case this method is called more
         # than once on a particular instance)
         self.reset()
 
@@ -140,7 +144,7 @@ class GreynirSSMLParser(HTMLParser):
         assert (
             len(self._str_stack) == 1
         ), "Error during parsing, are all markup tags correctly closed?"
-        return self._str_stack[0]
+        return cap_first(self._str_stack[0])
 
     # ----------------------------------------
 
@@ -149,15 +153,11 @@ class GreynirSSMLParser(HTMLParser):
         if tag == "greynir":
             self._str_stack.append("")
             self._attr_stack.append(dict(attrs))
-        else:
-            s = self.get_starttag_text()
-            if s:
-                self._str_stack[-1] += s
 
     def handle_data(self, data: str) -> None:
         """Called when data is encountered."""
         # Append string data to current string in stack
-        self._str_stack[-1] += data
+        self._str_stack[-1] += self._handler.danger_symbols(data)
 
     def handle_endtag(self, tag: str):
         """Called when a tag is closed."""
@@ -168,20 +168,16 @@ class GreynirSSMLParser(HTMLParser):
                 dattrs = self._attr_stack.pop()  # Current tag attributes
                 t: Optional[str] = dattrs.pop("type")
                 assert t, f"Missing type attribute in <greynir> tag around string: {s}"
-                # Fetch corresponding normalization method from handler
-                normf: NormMethod = getattr(self._handler, t)
-                assert ismethod(normf), f"{t} is not a normalization method."
-                # Normalization classmethod found, normalize text
-                s = normf(s, **dattrs)
+                # Fetch corresponding transcription method from handler
+                transf: TranscriptionMethod = getattr(self._handler, t)
+                assert ismethod(transf), f"{t} is not a transcription method."
+                # Transcriber classmethod found, transcribe text
+                s = transf(s, **dattrs)
             # Add to our string stack
             if self._str_stack:
                 self._str_stack[-1] += s
             else:
                 self._str_stack.append(s)
-        else:
-            # Other tags than greynir are ideally kept as-is,
-            # try to close them cleanly when possible
-            self._str_stack[-1] += f"</{tag}>"
 
     def handle_startendtag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]):
         """Called when a empty tag is opened (and closed), e.g. '<greynir ... />'."""
@@ -189,17 +185,12 @@ class GreynirSSMLParser(HTMLParser):
             dattrs = dict(attrs)
             t: Optional[str] = dattrs.pop("type")
             assert t, "Missing type attribute in <greynir> tag"
-            normf: NormMethod = getattr(self._handler, t)
+            transf: TranscriptionMethod = getattr(self._handler, t)
             # If handler found, replace empty greynir tag with output,
             # otherwise simply remove empty greynir tag
-            assert ismethod(normf), f"{t} is not a normalization method."
-            s: str = normf(**dattrs)
+            assert ismethod(transf), f"{t} is not a transcription method."
+            s: str = transf(**dattrs)
             self._str_stack[-1] += s
-        else:
-            # Other tags than greynir are kept as-is
-            st = self.get_starttag_text()
-            if st:
-                self._str_stack[-1] += st
 
 
 def _sanitize_args(args: Dict[str, Any]) -> Dict[str, Any]:

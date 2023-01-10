@@ -42,11 +42,11 @@ import locale
 from urllib.parse import urlencode
 from functools import lru_cache
 
-from tzwhere import tzwhere  # type: ignore
+from timezonefinder import TimezoneFinder
 from pytz import country_timezones
 
 from geo import country_name_for_isocode, iceprep_for_cc, LatLonTuple
-from speech.norm.num import number_to_text, float_to_text
+from speech.trans.num import number_to_text, float_to_text
 from reynir import NounPhrase
 from settings import changedlocale
 from utility import (
@@ -217,11 +217,6 @@ def country_desc(cc: str) -> str:
     return f"{prep} {nom2dat(cn)}"
 
 
-def cap_first(s: str) -> str:
-    """Capitalize first character in a string."""
-    return s[0].upper() + s[1:] if s else s
-
-
 # This could be done at runtime using BÍN lookup, but this is
 # faster, cleaner, and allows for reuse outside the codebase.
 _TIMEUNIT_NOUNS = {
@@ -364,23 +359,20 @@ def iceformat_float(
         return strip_trailing_zeros(res) if strip_zeros else res
 
 
-def icequote(s: str) -> str:
-    """Return string surrounded by Icelandic-style quotation marks."""
-    return "„{0}“".format(s.strip())
-
-
 def gen_answer(a: str) -> AnswerTuple:
     """Convenience function for query modules: response, answer, voice answer"""
     return dict(answer=a), a, a
 
 
-def query_json_api(url: str, headers: Optional[Dict[str, str]] = None) -> JsonResponse:
+def query_json_api(
+    url: str, headers: Optional[Dict[str, str]] = None, *, timeout: int = 10
+) -> JsonResponse:
     """Request the URL, expecting a JSON response which is
     parsed and returned as a Python data structure."""
 
     # Send request
     try:
-        r = requests.get(url, headers=headers, timeout=10)
+        r = requests.get(url, headers=headers, timeout=timeout)
     except Exception as e:
         logging.warning(str(e))
         return None
@@ -555,14 +547,14 @@ def query_place_details(
     return cast(Optional[Dict[str, Any]], query_json_api(url))
 
 
-_TZW: Optional[tzwhere.tzwhere] = None
+_TZW: Optional[TimezoneFinder] = None
 
 
-def _tzwhere_singleton() -> tzwhere.tzwhere:
+def _tzfinder_singleton() -> TimezoneFinder:
     """Lazy-load location/timezone database."""
     global _TZW
-    if not _TZW:
-        _TZW = tzwhere.tzwhere(forceTZ=True)
+    if _TZW is None:
+        _TZW = TimezoneFinder()
     return _TZW
 
 
@@ -572,10 +564,7 @@ def timezone4loc(
     """Returns timezone string given a tuple of coordinates.
     Fallback argument should be a 2-char ISO 3166 country code."""
     if loc is not None:
-        return cast(
-            Optional[str],
-            cast(Any, _tzwhere_singleton()).tzNameAt(loc[0], loc[1], forceTZ=True),
-        )
+        return _tzfinder_singleton().timezone_at(lat=loc[0], lng=loc[1])
     if fallback and fallback in country_timezones:
         return country_timezones[fallback][0]
     return None

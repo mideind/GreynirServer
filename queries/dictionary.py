@@ -30,11 +30,10 @@ import logging
 from queries import Query, QueryStateDict
 from tree import Result, Node
 
+from utility import cap_first, icequote
 from queries.util import (
     query_json_api,
     gen_answer,
-    cap_first,
-    icequote,
     read_grammar_file,
 )
 
@@ -155,9 +154,9 @@ def _answer_dictionary_query(q: Query, result: Result) -> None:
         answ = ""
         # Generate list of the form "í fyrsta lagi a, í öðru lagi b, ..."
         for i, x in enumerate(df[: len(_ENUM_WORDS)]):
-            answ += f"{i + 1}. {x}\n"
+            answ += f"{i+1}. {x}\n"
             enum = f"í {_ENUM_WORDS[i]} lagi,"
-            voice += f"{enum} {x}, "
+            voice += f"{enum} {x.replace('<', '[').replace('>', ']')}, "
         answ = answ.rstrip(",.\n ") + "."
         voice = voice.rstrip(",.\n").strip() + "."
         voice = _clean4voice(voice)

@@ -25,6 +25,8 @@
 
 # TODO: "Hvenær rís sólin [any date]"
 # TODO: "Hvenær kemur sólin upp"
+# TODO: Use gssml instead of numbers_to_... functions
+# TODO: Use https://vedur.is/gogn/vefgogn/sol/index.html instead of inaccurate HÍ almanak
 
 from typing import Dict, List, Iterable, Tuple, Optional, Union, cast
 
@@ -56,7 +58,7 @@ from geo import (
     ICE_PLACENAME_BLACKLIST,
 )
 from iceaddr import placename_lookup
-from speech.norm.num import numbers_to_ordinal, floats_to_text
+from speech.trans.num import numbers_to_ordinal, floats_to_text
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -340,7 +342,7 @@ _ALMANAK_HI_CACHE: TTLCache = TTLCache(maxsize=1, ttl=86400)
 
 def _get_almanak_hi_data() -> Optional[_SOLAR_DICT_TYPE]:
     """Fetch solar calendar from Univeristy of Iceland."""
-    data: Optional[_SOLAR_DICT_TYPE] = _ALMANAK_HI_CACHE.get("data")
+    data = cast(Optional[_SOLAR_DICT_TYPE], _ALMANAK_HI_CACHE.get("data"))
 
     if data:
         return data

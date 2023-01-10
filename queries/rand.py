@@ -31,7 +31,7 @@ import random
 from queries import Query, QueryStateDict, AnswerTuple
 from queries.util import gen_answer, read_grammar_file
 from queries.arithmetic import add_num, terminal_num
-from speech.norm import gssml
+from speech.trans import gssml
 from tree import Result, Node
 
 

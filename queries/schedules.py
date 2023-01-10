@@ -37,9 +37,11 @@ import random
 import datetime
 import cachetools
 
+from tokenizer import split_into_sentences
+
+from speech.trans import gssml
 from settings import changedlocale
 from queries.util import query_json_api, read_grammar_file
-from tokenizer import split_into_sentences
 
 
 _SCHEDULES_QTYPE = "Schedule"
@@ -283,7 +285,7 @@ def _query_schedule_api(channel: str, station: str, date: datetime.date) -> _Sch
         return []
     else:
         url: str = _STATION_ENDPOINTS[station].format(channel, date.isoformat())
-    response = query_json_api(url)
+    response = query_json_api(url, timeout=30)
 
     if response is None:
         return []
@@ -569,6 +571,7 @@ def _answer_program(
     is_now: bool
     is_future: bool = qdatetime > datetime.datetime.now()
     showtime: str = ""
+    vshowtime: str = ""
     showing: str
     prog_endtime: Optional[datetime.datetime] = None
 
@@ -584,20 +587,24 @@ def _answer_program(
         )
 
         showtime = f" klukkan {qdatetime.strftime('%-H:%M')}"
+        vshowtime = " klukkan " + gssml(qdatetime.strftime("%-H:%M"), type="time")
 
         day_diff = qdatetime.date() - datetime.date.today()
 
         if day_diff == datetime.timedelta(days=1):
             showtime += " á morgun"
+            vshowtime += " á morgun"
         elif day_diff == datetime.timedelta(days=-1):
             showtime += " í gær"
+            vshowtime += " í gær"
         elif day_diff != datetime.timedelta(days=0):
             showtime += qdatetime.strftime(" %-d. %B")
+            vshowtime += gssml(qdatetime.strftime(" %-d. %B"), type="date")
 
     if curr_prog:
         curr_title, curr_desc = _extract_title_and_desc(curr_prog, station)
 
-        answer = f"Á {channel}{showtime} {showing} {curr_title}."
+        answer = f"Á {channel}{{showtime}} {showing} {curr_title}."
 
         if curr_desc != "":
             answer += " " + _clean_desc(curr_desc)
@@ -608,11 +615,13 @@ def _answer_program(
         if is_now:
             answer = f"Ekkert er á dagskrá á {channel} í augnablikinu."
         else:
-            answer = f"Ekkert {'verður' if is_future else 'var'} á dagskrá á {channel}{showtime}."
+            answer = f"Ekkert {'verður' if is_future else 'var'} á dagskrá á {channel}{{showtime}}."
 
-    voice = answer
+    # Mark time/date info for transcribing in voice answer
+    voice = answer.format(showtime=vshowtime)
+    answer = answer.format(showtime=showtime)
     return {
-        "response": {"answer": answer, "voice": voice},
+        "response": {"answer": answer},
         "answer": answer,
         "voice": voice,
         "station": station,
@@ -656,18 +665,12 @@ def _get_schedule_answer(result: Result) -> _AnswerDict:
     sched: _SchedType = _query_schedule_api(api_channel, station, qdt.date())
 
     if len(sched) == 0:
-        date: str = ""
-        # Add date if not asking about today
-        if qdt.date() != now_date:
-            with changedlocale(category="LC_TIME"):
-                date = qdt.strftime(" %-d. %B")
-
-        error = f"Ekki tókst að sækja dagskrána {date} á {channel}."
+        error = f"Ekki tókst að sækja dagskrána á {channel}."
 
         return _AnswerDict(
-            response={"answer": error, "voice": error},
+            response={"answer": error},
             answer=error,
-            voice=error,
+            voice=f"Ekki tókst að sækja dagskrána á {gssml(channel, type='numbers', gender='hk')}.",
             station=station,
             channel=channel,
             expire_time=qdt,

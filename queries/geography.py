@@ -35,7 +35,8 @@ from datetime import datetime, timedelta
 from cityloc import capital_for_cc  # type: ignore
 
 from queries import Query, QueryStateDict
-from queries.util import country_desc, nom2dat, cap_first, read_grammar_file
+from utility import cap_first
+from queries.util import country_desc, nom2dat, read_grammar_file
 from reynir import NounPhrase
 from geo import (
     icelandic_city_name,

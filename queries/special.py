@@ -28,16 +28,16 @@
 
 """
 
-from typing import Dict, Union, Callable, cast
+from typing import Dict, Tuple, Union, Callable, cast
 
 from datetime import datetime, timedelta
 from inspect import isfunction
 from random import choice
 
-from queries.util import icequote
+from utility import icequote
 
 from queries import Query
-
+from speech.trans import gssml
 
 # Type definitions
 AnswerEntry = Union[str, bool]
@@ -102,26 +102,58 @@ def _random_joke(qs: str, q: Query) -> AnswerType:
 
 
 # TODO: Add more fun trivia here
-_TRIVIA = (
-    "Árið 1511 var frostavetur í Brussel og lágstéttafólk mótmælti háum kyndingarkostnaði með því að "
-    "eyðileggja snjókarla fyrir utan heimili yfirstéttarfólks.",
-    "Emúastríðið var háð í Ástralíu árið 1932 þegar herinn réðst ítrekað gegn emúahjörð með hríðskotabyssum"
-    " en mistókst að ráða niðurlögum fuglanna.",
-    "Argentínumaðurinn Emilio Palma fæddist á Suðurskautslandinu fyrstur manna, árið 1978.",
-    "Dagsetningin 30. febrúar kom upp á opinbera sænska dagatalinu árið 1712 til að laga skekkju sem hafði "
-    "myndast þegar hlaupár gleymdust vegna stríðsástands árin áður.",
-    "Bandaríska geimferðarstofnunin NASA hefur gert nákvæma efnagreiningu á eplum og appelsínum og komist "
-    "að því að ávextirnir eru á margan hátt sambærilegir.",
-    "Egg komu fram á sjónarsviðið mörgum milljónum ára áður en fyrsta hænan leit dagsins ljós.",
-    "Kolkrabbinn Paul giskaði rétt á úrslit allra sjö leikja þýska karlalandsliðsins í knattspyrnu á "
-    "heimsmeistaramótinu árið 2010.",
-    "Fíkniefnabaróninn Pablo Escobar flutti þónokkurn fjölda flóðhesta til Kólumbíu á sínum tíma. "
-    "Þar lifa þeir villtir enn.",
+_TRIVIA: Tuple[Tuple[str, Dict[str,str]],...] = (
+    (
+        "Árið 1511 var frostavetur í Brussel og lágstéttafólk mótmælti háum kyndingarkostnaði með því að "
+        "eyðileggja snjókarla fyrir utan heimili yfirstéttarfólks.",
+        {"1511": gssml("1511", type="year")},
+    ),
+    (
+        "Emúastríðið var háð í Ástralíu árið 1932 þegar herinn réðst ítrekað gegn emúahjörð með hríðskotabyssum"
+        " en mistókst að ráða niðurlögum fuglanna.",
+        {"1932": gssml("1932", type="year")},
+    ),
+    (
+        "Argentínumaðurinn Emilio Palma fæddist á Suðurskautslandinu fyrstur manna, árið 1978.",
+        {"1978": gssml("1978", type="year")},
+    ),
+    (
+        "Dagsetningin 30. febrúar kom upp á opinbera sænska dagatalinu árið 1712 til að laga skekkju sem hafði "
+        "myndast þegar hlaupár gleymdust vegna stríðsástands árin áður.",
+        {
+            "30.": gssml("30", type="ordinal", case="nf", gender="kk"),
+            "1712": gssml("1712", type="year"),
+        },
+    ),
+    (
+        "Bandaríska geimferðarstofnunin NASA hefur gert nákvæma efnagreiningu á eplum og appelsínum og komist "
+        "að því að ávextirnir eru á margan hátt sambærilegir.",
+        {},
+    ),
+    (
+        "Egg komu fram á sjónarsviðið mörgum milljónum ára áður en fyrsta hænan leit dagsins ljós.",
+        {},
+    ),
+    (
+        "Kolkrabbinn Paul giskaði rétt á úrslit allra sjö leikja þýska karlalandsliðsins í knattspyrnu á "
+        "heimsmeistaramótinu árið 2010.",
+        {"2010": gssml("2010", type="year")},
+    ),
+    (
+        "Fíkniefnabaróninn Pablo Escobar flutti þónokkurn fjölda flóðhesta til Kólumbíu á sínum tíma. "
+        "Þar lifa þeir villtir enn.",
+        {},
+    ),
 )
 
 
 def _random_trivia(qs: str, q: Query) -> AnswerType:
-    return {"answer": choice(_TRIVIA), "is_question": False}
+    ans, v_replace = choice(_TRIVIA)
+    vans = ans
+    for k, v in v_replace.items():
+        # Insert transcription markings for certain words in text
+        vans = vans.replace(k, v)
+    return {"answer": ans, "voice": vans, "is_question": False}
 
 
 _PROVERBS = (
@@ -403,9 +435,11 @@ _FAVORITE_MUSIC: AnswerType = {
     "answer": "Ég er býsna hrifin af rokksveitinni Led Zeppelin."
 }
 
-_FAVORITE_ANIMAL = {"answer": "Ég held mikið upp á ketti. Þeir eru frábærir."}
+_FAVORITE_ANIMAL: AnswerType = {
+    "answer": "Ég held mikið upp á ketti. Þeir eru frábærir."
+}
 
-_FAVORITE_FOOD = {"answer": "Það veit ég ekki, enda þarf ég ekki að borða."}
+_FAVORITE_FOOD: AnswerType = {"answer": "Það veit ég ekki, enda þarf ég ekki að borða."}
 
 _POLITICS: AnswerType = {"answer": "Ég er ekki ekki pólitísk."}
 
@@ -452,11 +486,13 @@ _THREATS: AnswerType = {"answer": "Eigi skal höggva!"}
 
 _I_KNOW_STUFF: AnswerType = {"answer": "Ég veit eitt og annað. Spurðu mig!"}
 
-_I_TRY_BUT_OPINION = {"answer": "Ég reyni að vera það, en sitt sýnist hverjum."}
+_I_TRY_BUT_OPINION: AnswerType = {
+    "answer": "Ég reyni að vera það, en sitt sýnist hverjum."
+}
 
-_AT_LEAST_I_KNOW_ICELANDIC = {"answer": "Ég kann allavega íslensku!"}
+_AT_LEAST_I_KNOW_ICELANDIC: AnswerType = {"answer": "Ég kann allavega íslensku!"}
 
-CAN_YOU_SEE_ME = {"answer": "Nei, ég get ekki séð þig þar sem ég er ekki með augu."}
+CAN_YOU_SEE_ME: AnswerType = {"answer": "Nei, ég get ekki séð þig þar sem ég er ekki með augu."}
 
 
 ###################################
@@ -2137,7 +2173,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "segðu mér eitthvað áhugavert": _random_trivia,
     "segðu eitthvað merkilegt": _random_trivia,
     "segðu mér eitthvað merkilegt": _random_trivia,
+    "segðu mér staðreynd": _random_trivia,
     "segðu mér áhugaverða staðreynd": _random_trivia,
+    "segðu mér skemmtilega staðreynd": _random_trivia,
     "komdu með eitthvað áhugavert": _random_trivia,
     "komdu með áhugaverða staðreynd": _random_trivia,
     "segðu mér eitthvað um heiminn": _random_trivia,

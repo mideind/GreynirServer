@@ -50,6 +50,8 @@ def test_util():
         icelandic_asciify,
         sanitize_filename,
         modules_in_dir,
+        cap_first,
+        icequote,
     )
 
     # Test that the root directory is correctly structured
@@ -116,3 +118,13 @@ def test_util():
 
     # TODO: Test read_api_key
     # from util import read_api_key
+
+    assert cap_first("yolo") == "Yolo"
+    assert cap_first("YOLO") == "YOLO"
+    assert cap_first("yoLo") == "YoLo"
+    assert cap_first("Yolo") == "Yolo"
+    assert cap_first("þristur") == "Þristur"
+    assert cap_first("illur ásetninguR") == "Illur ásetninguR"
+
+    assert icequote("sæll") == "„sæll“"
+    assert icequote(" Góðan daginn ") == "„Góðan daginn“"

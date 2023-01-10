@@ -24,6 +24,7 @@
 """
 
 # TODO: "Hver er ódýrasta bensínstöðin innan X kílómetra? Innan X kílómetra radíus?" etc.
+# TODO: Type hints
 
 from typing import List, Dict, Optional
 
@@ -43,7 +44,7 @@ from queries.util import (
     LatLonTuple,
     read_grammar_file,
 )
-from speech.norm.num import floats_to_text
+from speech.trans import gssml
 
 _PETROL_QTYPE = "Petrol"
 
@@ -220,18 +221,21 @@ def _answ_for_petrol_query(q: Query, result: Result) -> AnswerTuple:
             "{0} er {1} {2} í um það bil {3} fjarlægð. "
             "Þar kostar bensínlítrinn {4} og dísel-lítrinn {5}."
         )
-        dist_nf = distance_desc(station["distance"], case="nf")
-        dist_ef = distance_desc(station["distance"], case="ef", num_to_str=True)
+
         answer = answ_fmt.format(
-            station["company"], station["name"], dist_nf, bensin_kr_desc, diesel_kr_desc
+            station["company"],
+            station["name"],
+            distance_desc(station["distance"], case="nf"),
+            bensin_kr_desc,
+            diesel_kr_desc,
         )
         voice = voice_fmt.format(
             desc,
             station["company"],
             station["name"],
-            dist_ef,
-            floats_to_text(bensin_kr_desc, gender="kvk", comma_null=False),
-            floats_to_text(diesel_kr_desc, gender="kvk", comma_null=False),
+            distance_desc(station["distance"], case="ef", num_to_str=True),
+            gssml(bensin_kr_desc, type="floats", gender="kvk", comma_null=False),
+            gssml(diesel_kr_desc, type="floats", gender="kvk", comma_null=False),
         )
     else:
         answ_fmt = "{0} {1} (bensínverð {2}, díselverð {3})"
@@ -243,8 +247,8 @@ def _answ_for_petrol_query(q: Query, result: Result) -> AnswerTuple:
             desc,
             station["company"],
             station["name"],
-            floats_to_text(bensin_kr_desc, gender="kvk", comma_null=False),
-            floats_to_text(diesel_kr_desc, gender="kvk", comma_null=False),
+            gssml(bensin_kr_desc, type="floats", gender="kvk", comma_null=False),
+            gssml(diesel_kr_desc, type="floats", gender="kvk", comma_null=False),
         )
 
     response = dict(answer=answer)

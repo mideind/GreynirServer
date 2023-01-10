@@ -113,8 +113,6 @@ def text_to_audio_url(
 
     # Special preprocessing for SSML markup
     if text_format == "ssml":
-        # Prevent '&' symbol from breaking markup
-        text = text.replace("&", "&amp;")  # FIXME: What is this nasty hack?
         # Adjust voice speed as appropriate
         if speed != 1.0:
             perc = int(speed * 100)

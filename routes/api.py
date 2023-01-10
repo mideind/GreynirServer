@@ -380,8 +380,9 @@ def query_api(version: int = 1) -> Response:
         # If the result contains a "voice" key, return it
         v = result["voice"]
         if v:
-            # Parse <greynir> SSML tags
-            result["voice"] = v = GreynirSSMLParser(voice_id).normalize(v)
+            # Parse <greynir> SSML tags and
+            # phonetically transcribe their contents
+            result["voice"] = v = GreynirSSMLParser(voice_id).transcribe(v)
             # Create audio data
             url = text_to_audio_url(v, voice_id=voice_id, speed=voice_speed)
             if url:
