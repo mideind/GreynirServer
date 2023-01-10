@@ -551,7 +551,7 @@ _TZW: Optional[TimezoneFinder] = None
 def _tzfinder_singleton() -> TimezoneFinder:
     """Lazy-load location/timezone database."""
     global _TZW
-    if not _TZW:
+    if _TZW is None:
         _TZW = TimezoneFinder()
     return _TZW
 

@@ -492,7 +492,7 @@ _I_TRY_BUT_OPINION: AnswerType = {
 
 _AT_LEAST_I_KNOW_ICELANDIC: AnswerType = {"answer": "Ég kann allavega íslensku!"}
 
-CAN_YOU_SEE_ME = {"answer": "Nei, ég get ekki séð þig þar sem ég er ekki með augu."}
+CAN_YOU_SEE_ME: AnswerType = {"answer": "Nei, ég get ekki séð þig þar sem ég er ekki með augu."}
 
 
 ###################################
