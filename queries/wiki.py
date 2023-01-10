@@ -213,11 +213,14 @@ def _clean_answer(answer: str) -> str:
     return a
 
 
+_BREAK_TIME = "0.5s"
+
+
 def _clean_voice_answer(answer: str) -> str:
     a = answer.replace(" m.a. ", " meðal annars ")
     a = a.replace(" þ.e. ", " það er ")
     a = a.replace(" t.d. ", " til dæmis ")
-    vb = gssml(type="vbreak", time="0.5s")
+    vb = gssml(type="vbreak", time=_BREAK_TIME)
     if _MULTIPLE_MEANINGS_RE.search(answer) is not None:
         # Short voice break between each meaning
         a = a.replace("\n", vb)

@@ -229,10 +229,10 @@ _SPORTS_LEMMAS: FrozenSet[str] = frozenset(("leikur", "vinna", "tapa", "sigra"))
 _HYPHEN_SYMBOLS = frozenset(HYPHENS)
 
 _StrBool = Union[str, bool]
-TranscrMethod = Callable[..., str]
+TranscriptionMethod = Callable[..., str]
 
 
-def _empty_str(f: TranscrMethod) -> TranscrMethod:
+def _empty_str(f: TranscriptionMethod) -> TranscriptionMethod:
     """
     Decorator which returns an empty string
     if the transcription method is called
@@ -247,7 +247,7 @@ def _empty_str(f: TranscrMethod) -> TranscrMethod:
     return _inner
 
 
-def _bool_args(*bool_args: str) -> Callable[[TranscrMethod], TranscrMethod]:
+def _bool_args(*bool_args: str) -> Callable[[TranscriptionMethod], TranscriptionMethod]:
     """
     Returns a decorator which converts keyword arguments in bool_args
     from strings into booleans before calling the decorated function.
@@ -256,7 +256,7 @@ def _bool_args(*bool_args: str) -> Callable[[TranscrMethod], TranscrMethod]:
     Booleans also work when calling the methods directly, e.g. in testing.
     """
 
-    def _decorator(f: TranscrMethod) -> TranscrMethod:
+    def _decorator(f: TranscriptionMethod) -> TranscriptionMethod:
         def _bool_translate(cls: "DefaultTranscriber", *args: str, **kwargs: str):
             # Convert keyword arguments in bool_args from
             # str to boolean before calling decorated function
@@ -681,6 +681,7 @@ class DefaultTranscriber:
             cls.number(x, gender="kk") if x.isdecimal() else cls.spell(x, literal=True)
             for x in _split_substring_types(txt)
         )
+
     @classmethod
     @_empty_str
     def numalpha(cls, txt: str) -> str:

@@ -234,7 +234,7 @@ def handle_plain_text(q: Query) -> bool:
         response = dict(answer=answer)
         # A voice answer is a plain string that will be
         # passed as-is to a voice synthesizer
-        voice = desc + " " + gssml(answer, type="time") + "."
+        voice = f"{desc} {gssml(answer, type='time')}."
 
         q.set_qtype(_TIME_QTYPE)
         q.set_key(tz)  # Query key is the timezone

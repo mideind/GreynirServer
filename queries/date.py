@@ -500,18 +500,18 @@ def howlong_answ(q: Query, result: Result) -> None:
     if days < 0:
         days = abs(days)
         passed = "liðnir" if plural else "liðinn"
-        voice = "Það {0} {1} {2} {3} frá {4}.".format(
-            verb,
-            gssml(days, type="number", gender='kk'),
-            days_desc,
-            passed,
-            gssml(tfmt, type="date", case="þgf"),
+        voice = (
+            f"Það {verb} "
+            f"{gssml(days, type='number', gender='kk')} {days_desc} "
+            f"{passed} frá {gssml(tfmt, type='date', case='þgf')}."
         )
         answer = f"{days} {days_desc}."
     # It's in the future
     else:
-        voice = "Það {0} {1} {2} þar til {3} gengur í garð.".format(
-            verb, gssml(days, type="number", gender='kk'), days_desc, gssml(tfmt, type="date")
+        voice = (
+            f"Það {verb} "
+            f"{gssml(days, type='number', gender='kk')} {days_desc} "
+            f"þar til {gssml(tfmt, type='date')} gengur í garð."
         )
         answer = f"{days} {days_desc}."
 
@@ -523,10 +523,10 @@ def when_answ(q: Query, result: Result) -> None:
     """Generate answer to a question of the form "Hvenær er(u) [hátíðardagur]?" etc."""
     # Use plural 'eru' for 'páskar', 'jól' etc.
     is_verb = "er" if "is_verb" not in result else result.is_verb
-    target_is = cap_first(result.desc) + " " + is_verb + " "
+    target_is = f"{cap_first(result.desc)} {is_verb}"
     target = result.target.strftime("%A %-d. %B").replace("dagur", "daginn")
-    answer = target_is + target
-    voice = target_is + gssml(target, type='date', case="þf")
+    answer = f"{target_is} {target}"
+    voice = f"{target_is} {gssml(target, type='date', case='þf')}"
     response = dict(answer=answer)
 
     q.set_key("WhenSpecialDay")

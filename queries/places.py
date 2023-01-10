@@ -224,6 +224,7 @@ def answ_openhours(
     now = datetime.utcnow()
     wday = now.weekday()
     answer = voice = ""
+    p_voice: Optional[str] = None
 
     try:
         name = res["result"]["name"]
@@ -252,13 +253,13 @@ def answ_openhours(
             closes = p["close"]["time"]
 
             # Format correctly, e.g. "12:00 - 19:00"
-            openstr = opens[:2] + ":" + opens[2:]
-            closestr = closes[:2] + ":" + opens[2:]
+            openstr = f"{opens[:2]}:{opens[2:]}"
+            closestr = f"{closes[:2]}:{opens[2:]}"
             p_desc = f"{openstr} - {closestr}"
-            p_voice = gssml(openstr, type='time') + " til " + gssml(closestr, type='time')
-
-            # TODO: Use GSSML to pronounce times correctly
-            today_desc = f"Í dag er {name} {open_adj} frá {p_voice}"
+            p_voice = (
+                f"{gssml(openstr, type='time')} til {gssml(closestr, type='time')}"
+            )
+            today_desc = f"Í dag er {name} {open_adj} frá {{opening_hours}}"
     except Exception as e:
         logging.warning(f"Exception generating answer for opening hours: {e}")
         return gen_answer(_PLACES_API_ERRMSG)
@@ -266,7 +267,7 @@ def answ_openhours(
     # Generate answer
     if qtype == "OpeningHours":
         answer = p_desc
-        voice = today_desc
+        voice = today_desc.format(opening_hours=p_voice or "")
     # Is X open? Is X closed?
     elif qtype == "IsOpen" or qtype == "IsClosed":
         yes_no = (
@@ -276,8 +277,8 @@ def answ_openhours(
             )
             else "Nei"
         )
-        answer = f"{yes_no}. {today_desc}."
-        voice = answer
+        answer = f"{yes_no}. {today_desc.format(opening_hours=p_desc or '')}."
+        voice = f"{yes_no}. {today_desc.format(opening_hours=p_voice or '')}."
 
     response = dict(answer=answer)
 

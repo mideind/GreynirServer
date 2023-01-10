@@ -32,7 +32,6 @@ from datetime import datetime, timedelta
 from speech.trans import gssml
 from queries.util import parse_num, gen_answer, read_grammar_file
 from queries import Query, QueryStateDict
-from speech.trans import gssml
 from tree import Result, Node
 
 
@@ -113,7 +112,9 @@ def _gen_count(q: Query, result: Result):
     response: Dict[str, str] = dict(answer=answ)
     delay = result.get("delay", _DEFAULT_DELAY)
 
-    voice = gssml(type="vbreak", time=f"{delay}s").join(gssml(n, type="number", gender="kk") for n in num_range)
+    voice = gssml(type="vbreak", time=f"{delay}s").join(
+        gssml(n, type="number", gender="kk") for n in num_range
+    )
 
     return response, answ, voice
 

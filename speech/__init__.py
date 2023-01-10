@@ -39,7 +39,7 @@ import importlib
 from inspect import isfunction, ismethod
 from html.parser import HTMLParser
 from collections import deque
-from speech.trans import TRANSCRIBER_CLASS, DefaultTranscriber, TranscrMethod
+from speech.trans import TRANSCRIBER_CLASS, DefaultTranscriber, TranscriptionMethod
 
 from utility import GREYNIR_ROOT_DIR, cap_first, modules_in_dir
 
@@ -169,7 +169,7 @@ class GreynirSSMLParser(HTMLParser):
                 t: Optional[str] = dattrs.pop("type")
                 assert t, f"Missing type attribute in <greynir> tag around string: {s}"
                 # Fetch corresponding transcription method from handler
-                transf: TranscrMethod = getattr(self._handler, t)
+                transf: TranscriptionMethod = getattr(self._handler, t)
                 assert ismethod(transf), f"{t} is not a transcription method."
                 # Transcriber classmethod found, transcribe text
                 s = transf(s, **dattrs)
@@ -185,7 +185,7 @@ class GreynirSSMLParser(HTMLParser):
             dattrs = dict(attrs)
             t: Optional[str] = dattrs.pop("type")
             assert t, "Missing type attribute in <greynir> tag"
-            transf: TranscrMethod = getattr(self._handler, t)
+            transf: TranscriptionMethod = getattr(self._handler, t)
             # If handler found, replace empty greynir tag with output,
             # otherwise simply remove empty greynir tag
             assert ismethod(transf), f"{t} is not a transcription method."

@@ -172,7 +172,7 @@ def declension_answer_for_word(word: str, query: Query) -> AnswerTuple:
 
 
 # Time to pause after reciting each character name
-_LETTER_INTERVAL = 0.3  # Seconds
+_LETTER_INTERVAL = "0.3s"
 
 
 def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
@@ -186,7 +186,7 @@ def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
     response = dict(answer=answ)
 
     # Piece together GSSML for speech synthesis
-    v = gssml(word, type="spell", pause_length="0.3s")
+    v = gssml(word, type="spell", pause_length=_LETTER_INTERVAL)
     voice = f"Orðið {icequote(word)} er stafað á eftirfarandi hátt: {gssml(type='vbreak')} {v}"
 
     query.set_qtype("Spelling")

@@ -726,7 +726,7 @@ def query_company(
     response = prepare_response(q, prop_func=lambda x: x.definition)
     if response and response[0]["answer"]:
         answer = response[0]["answer"]
-        voice_answer = gssml(name, type="entity") + " er " + answer + "."
+        voice_answer = f"{gssml(name, type='entity')} er {answer}."
     else:
         answer = f"Engin skilgreining finnst á nafninu {icequote(name)}."
         voice_answer = f"Ég veit ekki hvað {gssml(name, type='company')} er."

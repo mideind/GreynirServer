@@ -587,7 +587,7 @@ def _answer_program(
         )
 
         showtime = f" klukkan {qdatetime.strftime('%-H:%M')}"
-        vshowtime = " klukkan "+ gssml(qdatetime.strftime('%-H:%M'), type="time")
+        vshowtime = " klukkan " + gssml(qdatetime.strftime("%-H:%M"), type="time")
 
         day_diff = qdatetime.date() - datetime.date.today()
 
@@ -599,7 +599,7 @@ def _answer_program(
             vshowtime += " í gær"
         elif day_diff != datetime.timedelta(days=0):
             showtime += qdatetime.strftime(" %-d. %B")
-            vshowtime += gssml(qdatetime.strftime(" %-d. %B"), type='date')
+            vshowtime += gssml(qdatetime.strftime(" %-d. %B"), type="date")
 
     if curr_prog:
         curr_title, curr_desc = _extract_title_and_desc(curr_prog, station)
