@@ -1688,8 +1688,6 @@ def test_query_utility_functions() -> None:
     assert not is_plural("276,1")
     assert not is_plural(22.1)
     assert not is_plural(22.41)
-    # FIXME: The float gets rounded to a non-plural form
-    # assert not is_plural(3.1415926535897932384626433832795028841)
     assert not is_plural("3.1415926535897932384626433832795028841")
 
     assert sing_or_plur(21, "maður", "menn") == "21 maður"

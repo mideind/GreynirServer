@@ -492,6 +492,9 @@ _I_TRY_BUT_OPINION: AnswerType = {
 
 _AT_LEAST_I_KNOW_ICELANDIC: AnswerType = {"answer": "Ég kann allavega íslensku!"}
 
+CAN_YOU_SEE_ME = {"answer": "Nei, ég get ekki séð þig þar sem ég er ekki með augu."}
+
+
 ###################################
 
 _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
@@ -2660,6 +2663,14 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "getur þú skipt um rödd": _YES,
     "geturðu skipt um röddu": _YES,
     "getur þú skipt um röddu": _YES,
+    # Sensory input
+    "geturðu séð mig": CAN_YOU_SEE_ME,
+    "getur þú séð mig": CAN_YOU_SEE_ME,
+    "sérðu mig": CAN_YOU_SEE_ME,
+    "sérð þú mig": CAN_YOU_SEE_ME,
+    "sérðu mig núna": CAN_YOU_SEE_ME,
+    "ertu að sjá mig": CAN_YOU_SEE_ME,
+    "ertu að horfa á mig": CAN_YOU_SEE_ME,
 }
 
 

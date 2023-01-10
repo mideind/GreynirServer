@@ -147,7 +147,9 @@
             tooltips: {
                 callbacks: {
                     label: function (tooltipItem, data) {
-                        return queryTypesData.datasets[0].percentage[tooltipItem.index] + '%';
+                        var idx = tooltipItem.index;
+                        return queryTypesData.labels[idx]
+                            + " (" + queryTypesData.datasets[0].percentage[idx] + '%)';
                     },
                 }
             },
@@ -170,7 +172,9 @@
             tooltips: {
                 callbacks: {
                     label: function (tooltipItem, data) {
-                        return clientTypesData.datasets[0].percentage[tooltipItem.index] + '%';
+                        var idx = tooltipItem.index;
+                        return clientTypesData.labels[idx]
+                            + " (" + clientTypesData.datasets[0].percentage[idx] + '%)';
                     },
                 }
             },
