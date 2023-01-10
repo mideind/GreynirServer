@@ -1108,19 +1108,19 @@ def test_schedules(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "dagskrá rúv klukkan 19:00"}, "Schedule")
     assert json["key"] == "RÚV - RÚV"
     assert "RÚV" in json["answer"] and (
-        json["answer"].startswith("Ekkert")
+        caseless_in("ekkert verður á dagskrá", json["answer"])
         or caseless_in("dagskrárlið", json["answer"])
     )
     json = qmcall(client, {"q": "hvað er í sjónvarpinu í kvöld?"}, "Schedule")
     assert json["key"] == "RÚV - RÚV"
     assert "RÚV" in json["answer"] and (
-        json["answer"].startswith("Ekkert")
+        caseless_in("ekkert verður á dagskrá", json["answer"])
         or caseless_in("dagskrárlið", json["answer"])
     )
     json = qmcall(client, {"q": "hvað var í sjónvarpinu í gærkvöldi?"}, "Schedule")
     assert json["key"] == "RÚV - RÚV"
     assert "RÚV" in json["answer"] and (
-        json["answer"].startswith("Ekkert")
+        caseless_in("ekkert var á dagskrá", json["answer"])
         or caseless_in("dagskrárlið", json["answer"])
     )
 
@@ -1128,7 +1128,7 @@ def test_schedules(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "hvað er næsti þáttur á stöð 2"}, "Schedule")
     assert json["key"] == "Stöð 2 - Stöð 2"
     assert "Stöð 2" in json["answer"] and (
-        caseless_in("ekkert á dagskrá", json["answer"])
+        caseless_in("ekkert er á dagskrá", json["answer"])
         or caseless_in("næst á dagskrá", json["answer"])
     )
     json = qmcall(client, {"q": "Hvaða efni er verið að spila á Stöð 2"}, "Schedule")
@@ -1163,13 +1163,13 @@ def test_schedules(client: FlaskClient) -> None:
     )
     assert json["key"] == "RÚV - Rás 1"
     assert "Rás 1" in json["answer"] and (
-        json["answer"].startswith("Ekkert")
+        caseless_in("ekkert var á dagskrá", json["answer"])
         or caseless_in("dagskrárlið", json["answer"])
     )
     json = qmcall(client, {"q": "hvað verður á rás 2 klukkan sjö í kvöld"}, "Schedule")
     assert json["key"] == "RÚV - Rás 2"
     assert "Rás 2" in json["answer"] and (
-        json["answer"].startswith("Ekkert")
+        caseless_in("ekkert verður á dagskrá", json["answer"])
         or caseless_in("dagskrárlið", json["answer"])
     )
     json = qmcall(
@@ -1179,7 +1179,7 @@ def test_schedules(client: FlaskClient) -> None:
     )
     assert json["key"] == "RÚV - Rás 2"
     assert "Rás 2" in json["answer"] and (
-        json["answer"].startswith("Ekkert")
+        caseless_in("ekkert verður á dagskrá", json["answer"])
         or caseless_in("dagskrárlið", json["answer"])
     )
     assert "16:00" in json["answer"]
@@ -1190,7 +1190,7 @@ def test_schedules(client: FlaskClient) -> None:
     )
     assert json["key"] == "RÚV - Rás 2"
     assert "Rás 2" in json["answer"] and (
-        json["answer"].startswith("Ekkert")
+        caseless_in("ekkert verður á dagskrá", json["answer"])
         or caseless_in("dagskrárlið", json["answer"])
     )
     assert "8:00" in json["answer"]
@@ -1199,7 +1199,7 @@ def test_schedules(client: FlaskClient) -> None:
     )
     assert json["key"] == "RÚV - Rás 2"
     assert "Rás 2" in json["answer"] and (
-        json["answer"].startswith("Ekkert")
+        caseless_in("ekkert var á dagskrá", json["answer"])
         or caseless_in("dagskrárlið", json["answer"])
     )
     assert "18:00" in json["answer"]
@@ -1208,7 +1208,7 @@ def test_schedules(client: FlaskClient) -> None:
     )
     assert json["key"] == "RÚV - Rás 2"
     assert "Rás 2" in json["answer"] and (
-        json["answer"].startswith("Ekkert")
+        caseless_in("ekkert var á dagskrá", json["answer"])
         or caseless_in("dagskrárlið", json["answer"])
     )
     assert "2:00" in json["answer"]

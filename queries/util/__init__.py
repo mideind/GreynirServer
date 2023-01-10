@@ -364,13 +364,13 @@ def gen_answer(a: str) -> AnswerTuple:
     return dict(answer=a), a, a
 
 
-def query_json_api(url: str, headers: Optional[Dict[str, str]] = None) -> JsonResponse:
+def query_json_api(url: str, headers: Optional[Dict[str, str]] = None, *, timeout:int=10) -> JsonResponse:
     """Request the URL, expecting a JSON response which is
     parsed and returned as a Python data structure."""
 
     # Send request
     try:
-        r = requests.get(url, headers=headers, timeout=10)
+        r = requests.get(url, headers=headers, timeout=timeout)
     except Exception as e:
         logging.warning(str(e))
         return None

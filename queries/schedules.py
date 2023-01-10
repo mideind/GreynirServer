@@ -285,7 +285,7 @@ def _query_schedule_api(channel: str, station: str, date: datetime.date) -> _Sch
         return []
     else:
         url: str = _STATION_ENDPOINTS[station].format(channel, date.isoformat())
-    response = query_json_api(url)
+    response = query_json_api(url, timeout=30)
 
     if response is None:
         return []
