@@ -29,15 +29,15 @@ import re
 import logging
 
 from queries import Query, QueryStateDict, AnswerTuple
+from utility import cap_first
 from queries.util import (
     gen_answer,
     query_geocode_api_coords,
     country_desc,
     nom2dat,
-    cap_first,
     read_grammar_file,
 )
-from speech.norm.num import numbers_to_text
+from speech.trans.num import numbers_to_text
 from tree import Result, Node
 from iceaddr import iceaddr_lookup, postcodes
 from geo import (

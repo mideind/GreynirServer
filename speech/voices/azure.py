@@ -32,7 +32,7 @@ import pathlib
 import azure.cognitiveservices.speech as speechsdk
 
 from utility import RESOURCES_DIR, STATIC_DIR
-from speech.norm import DefaultNormalization, strip_markup
+from speech.trans import DefaultTranscriber, strip_markup
 from speech.voices import suffix_for_audiofmt
 
 
@@ -212,27 +212,28 @@ def text_to_audio_url(
     # return data_uri
 
 
-class Normalization(DefaultNormalization):
+class Transcriber(DefaultTranscriber):
     """
-    Normalization handler class,
+    Transcription handler class,
     specific to the Azure voice engine.
     """
 
-    # Override some character pronunciations for
-    # normalization, custom for this speech engine
+    # Override some character pronunciations during
+    # transcription (custom for this voice)
     _CHAR_PRONUNCIATION = {
-        **DefaultNormalization._CHAR_PRONUNCIATION,
+        **DefaultTranscriber._CHAR_PRONUNCIATION,
         "b": "bjé",
         "c": "sjé",
         "d": "djé",
         "ð": "eeð",
         "e": "eeh",
         "é": "jé",
-        "g": "gjé",
+        "g": "gjéé",
         "i": "ii",
         "j": "íoð",
         "o": "úa",
         "ó": "oú",
+        "u": "uu",
         "r": "errr",
         "t": "tjéé",
         "ú": "úúu",
@@ -240,4 +241,33 @@ class Normalization(DefaultNormalization):
         "þ": "þodn",
         "æ": "æí",
         "ö": "öö",
+    }
+
+    # Weird entity pronunciations can be added here
+    # when they're encountered
+    _ENTITY_PRONUNCIATIONS = {
+        **DefaultTranscriber._ENTITY_PRONUNCIATIONS,
+        "BYKO": "Býkó",
+        "ELKO": "Elkó",
+        "FIDE": "fídeh",
+        "FIFA": "fííffah",
+        "GIRL": "görl",
+        "LEGO": "llegó",
+        "MIT": "emm æí tíí",
+        "NEW": "njúú",
+        "NOVA": "Nóva",
+        "PLUS": "plöss",
+        "SHAH": "Sjah",
+        "TIME": "tæm",
+        "UEFA": "júei fa",
+        "UENO": "júeenó",
+        "UKIP": "júkipp",
+        "VISA": "vísa",
+        "XBOX": "ex box",
+    }
+
+    # Override some weird name pronunciations
+    _PERSON_PRONUNCIATION = {
+        "Joe": "Djó",
+        "Biden": "Bæden",
     }

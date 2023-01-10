@@ -44,8 +44,9 @@ from islenska.bindb import BinEntryIterable, BinEntryList
 from reynir.bindb import GreynirBin
 
 from queries import Query, AnswerTuple
-from queries.util import gen_answer, icequote
-from speech.norm import spell_out
+from queries.util import gen_answer
+from utility import icequote
+from speech.trans import gssml
 
 
 _WORDTYPE_RX_NOM = "(?:orðið|nafnið|nafnorðið)"
@@ -171,7 +172,7 @@ def declension_answer_for_word(word: str, query: Query) -> AnswerTuple:
 
 
 # Time to pause after reciting each character name
-_LETTER_INTERVAL = 0.3  # Seconds
+_LETTER_INTERVAL = "0.3s"
 
 
 def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
@@ -184,14 +185,9 @@ def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
     answ = " ".join([c.upper() for c in chars])
     response = dict(answer=answ)
 
-    # Piece together SSML for speech synthesis
-    v = spell_out(word)
-    vlist: List[str] = v.split()
-    # TODO: Normalize this using GSSML
-    jfmt = f'<break time="{_LETTER_INTERVAL}s"/>'
-    voice = "Orðið {0} er stafað á eftirfarandi hátt: {1} {2}".format(
-        icequote(word), jfmt, jfmt.join(vlist)
-    )
+    # Piece together GSSML for speech synthesis
+    v = gssml(word, type="spell", pause_length=_LETTER_INTERVAL)
+    voice = f"Orðið {icequote(word)} er stafað á eftirfarandi hátt: {gssml(type='vbreak')} {v}"
 
     query.set_qtype("Spelling")
     query.set_key(word)

@@ -26,6 +26,7 @@
 
 # TODO: Fyrirsagnir, og að styðja "Segðu mér meira um X"
 # TODO: Hvað er helst í fréttum í dag? Fréttir dagsins?
+# TODO: Phonetically transcribe news
 
 from typing import List, Optional, Dict
 
@@ -33,6 +34,7 @@ import logging
 import cachetools  # type: ignore
 import random
 
+from speech.trans import gssml
 from queries import Query, QueryStateDict, AnswerTuple
 from queries.util import gen_answer, query_json_api, read_grammar_file
 from tree import Result, Node
@@ -96,10 +98,6 @@ def _clean_text(txt: str) -> str:
     return txt.strip()
 
 
-_BREAK_LENGTH = 1.0  # Seconds
-_BREAK_SSML = f'<break time="{_BREAK_LENGTH}s"/>'
-
-
 def top_news_answer() -> Optional[AnswerTuple]:
     """Answer query about top news."""
     headlines = _get_news_data()
@@ -108,8 +106,15 @@ def top_news_answer() -> Optional[AnswerTuple]:
 
     items = [_clean_text(h["intro"]) + " " for h in headlines]
     news = "".join(items).strip()
-    # Add a pause between individual news items
-    voice_news = _BREAK_SSML.join(items).strip()
+    voice_news = ""
+    for item in items:
+        # TODO: Transcribing the news using 'generic'
+        # costs 6 seconds when not cached,
+        # this is too costly at the moment
+        # voice_news += gssml(item, type="generic")
+        voice_news += item
+        # Add a pause between individual news items
+        voice_news += gssml(type="vbreak", time="1s")
 
     answer = news
     voice = f"Í fréttum rúv er þetta helst. {voice_news}"

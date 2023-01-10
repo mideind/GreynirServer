@@ -29,7 +29,8 @@ import logging
 from urllib.parse import urlparse
 
 from queries import Query, QueryStateDict
-from queries.util import gen_answer, icequote, read_grammar_file
+from utility import icequote
+from queries.util import gen_answer, read_grammar_file
 from reynir import NounPhrase
 from tree import Result, Node
 from images import get_image_url, Img

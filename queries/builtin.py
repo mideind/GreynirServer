@@ -43,9 +43,11 @@ from treeutil import TreeUtility
 from reynir import TOK, Tok, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
+from speech.trans import gssml
 from queries import AnswerTuple, Query, ResponseDict, ResponseType, QueryStateDict
 from tree import Result, Node
-from queries.util import cap_first, read_grammar_file
+from utility import cap_first, icequote
+from queries.util import read_grammar_file
 
 
 # The type of a name/entity register
@@ -505,14 +507,9 @@ def query_person(query: Query, session: Session, name: str) -> AnswerTuple:
             query.set_error("E_PERSON_NOT_FOUND")
             return dict(answer=""), "", ""
         answer = title
-        v = answer.split()
-        answer = cap_first(answer)
-        for i, w in enumerate(v):
-            if len(w) > 1 and w.isupper():
-                # Probably an abbreviation, such as 'FME' or 'BSÍ':
-                # convert to 'F M E'
-                v[i] = " ".join(w)
-        voice_answer = name + " er " + " ".join(v) + "."
+        voice_answer = (
+            f"{gssml(name, type='person')} er {gssml(answer, type='generic')}."
+        )
         # Set the context for a subsequent query
         query.set_context({"person_name": name})
         # Set source, if known
@@ -532,7 +529,7 @@ def query_person(query: Query, session: Session, name: str) -> AnswerTuple:
             # Set the context for a subsequent query
             query.set_context({"person_name": name})
         else:
-            answer = "Nafnið '" + name + "' finnst ekki."
+            answer = f"Nafnið {icequote(name)} finnst ekki."
     return response, answer, voice_answer
 
 
@@ -623,12 +620,12 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
     response = make_response_list(rd)
     answer: str
     voice_answer: str
+    voice_title = gssml(title, type="generic")
     if response and title and "answer" in response[0]:
         first_response = response[0]
         # Return 'Seðlabankastjóri er Már Guðmundsson.'
-        upper_title = cap_first(title)
         answer = first_response["answer"]
-        voice_answer = upper_title + " er " + answer + "."
+        voice_answer = f"{voice_title} er {gssml(answer, type='person')}."
         # Store the person name in the query context
         # so it can be referred to in subsequent queries
         query.set_context({"person_name": answer})
@@ -636,8 +633,8 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
             first_source = first_response["sources"][0]["domain"]
             query.set_source(first_source)
     else:
-        answer = "Ekkert nafn finnst með titilinn '" + title + "'."
-        voice_answer = "Ég veit ekki hver er " + title + "."
+        answer = f"Ekkert nafn finnst með titilinn {icequote(title)}."
+        voice_answer = f"Ég veit ekki hver er {voice_title}."
     return response, answer, voice_answer
 
 
@@ -673,22 +670,18 @@ def query_entity(query: Query, session: Session, name: str) -> AnswerTuple:
     if titles and "answer" in titles[0]:
         # 'Mál og menning er bókmenntafélag.'
         answer = titles[0]["answer"]
-        v = answer.split()
         answer = cap_first(answer)
         uc_name = cap_first(name)
-        for i, w in enumerate(v):
-            if len(w) > 1 and w.isupper():
-                # Probably an abbreviation, such as 'FME' or 'BSÍ':
-                # convert to 'F M E'
-                v[i] = " ".join(w)
-        voice_answer = uc_name + " er " + " ".join(v) + "."
+        voice_answer = (
+            f"{gssml(uc_name, type='entity')} er {gssml(answer, type='entity')}."
+        )
         if "sources" in titles[0]:
             source = titles[0]["sources"][0]["domain"]
             query.set_source(source)
         query.set_context({"entity_name": uc_name})
     else:
-        answer = "Engin skilgreining finnst á nafninu '" + name + "'."
-        voice_answer = "Ég veit ekki hvað " + name + " er."
+        answer = f"Engin skilgreining finnst á nafninu {icequote(name)}."
+        voice_answer = f"Ég veit ekki hvað {gssml(name, type='entity')} er."
         if query.is_voice:
             # Rather than accept this as a voice query
             # for an entity that is not found, return an
@@ -733,10 +726,10 @@ def query_company(
     response = prepare_response(q, prop_func=lambda x: x.definition)
     if response and response[0]["answer"]:
         answer = response[0]["answer"]
-        voice_answer = name + " er " + answer + "."
+        voice_answer = f"{gssml(name, type='entity')} er {answer}."
     else:
-        answer = "Engin skilgreining finnst á nafninu '" + name + "'."
-        voice_answer = "Ég veit ekki hvað " + name + " er."
+        answer = f"Engin skilgreining finnst á nafninu {icequote(name)}."
+        voice_answer = f"Ég veit ekki hvað {gssml(name, type='company')} er."
     return response, answer, voice_answer
 
 

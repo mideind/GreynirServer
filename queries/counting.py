@@ -23,12 +23,13 @@
 
 """
 
-from typing import Dict, List
+from typing import Dict
 
 import logging
 import random
 from datetime import datetime, timedelta
 
+from speech.trans import gssml
 from queries.util import parse_num, gen_answer, read_grammar_file
 from queries import Query, QueryStateDict
 from tree import Result, Node
@@ -109,12 +110,11 @@ def _gen_count(q: Query, result: Result):
 
     answ = f"{num_range[0]}…{num_range[-1]}"
     response: Dict[str, str] = dict(answer=answ)
-    components: List[str] = []
     delay = result.get("delay", _DEFAULT_DELAY)
-    for n in num_range:
-        # Default delay results in roughly 1 sec per number in count
-        components.append(f'{n} <break time="{delay}s"/>')
-    voice = " ".join(components)
+
+    voice = gssml(type="vbreak", time=f"{delay}s").join(
+        gssml(n, type="number", gender="kk") for n in num_range
+    )
 
     return response, answ, voice
 

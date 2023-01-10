@@ -53,12 +53,12 @@ import random
 from datetime import timedelta, datetime
 
 from queries import Query, QueryStateDict
+from utility import cap_first
 from queries.util import (
     JsonResponse,
     AnswerTuple,
     gen_answer,
     query_json_api,
-    cap_first,
     read_grammar_file,
 )
 from tree import Result, Node
@@ -66,8 +66,7 @@ from geo import in_iceland, RVK_COORDS, near_capital_region, ICE_PLACENAME_BLACK
 from iceaddr import placename_lookup
 from iceweather import observation_for_closest, observation_for_station, forecast_text
 
-from speech.norm import gssml
-
+from speech.trans import gssml
 
 _WEATHER_QTYPE = "Weather"
 

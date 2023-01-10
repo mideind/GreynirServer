@@ -33,9 +33,9 @@ from db.models import Query as QueryModel
 from db.sql import QueryTypesQuery
 
 from queries import Query
-from queries.util import gen_answer, natlang_seq, is_plural, sing_or_plur
+from queries.util import gen_answer, natlang_seq, is_plural, iceformat_float
 from routes.people import top_persons
-
+from speech.trans import gssml
 
 _STATS_QTYPE = "Stats"
 
@@ -260,8 +260,10 @@ def _gen_num_people_answer(q: Query) -> bool:
         verb = "eru" if pl else "er"
         indiv = "einstaklingar" if pl else "einstaklingur"
         count = qr or "engir"
-        answer = f"Í gagnagrunni mínum {verb} {count} {indiv}."
-        voice = answer
+        vcount = gssml(qr, type="number", gender="kk") or "engir"
+        answer = f"Í gagnagrunni mínum {verb} {{count}} {indiv}."
+        voice = answer.format(count=vcount)
+        answer = answer.format(count=count)
         response = dict(answer=answer)
 
         q.set_expires(datetime.utcnow() + timedelta(hours=1))
@@ -287,9 +289,16 @@ def _gen_num_queries_answer(q: Query) -> bool:
             .count()
         )
 
-        fs = sing_or_plur(qr, "fyrirspurn", "fyrirspurnum")
-        answer = f"Á síðustu {_QUERIES_PERIOD} dögum hef ég svarað {fs}."
-        voice = answer
+        fs = "fyrirspurnum" if is_plural(qr) else "fyrirspurn"
+        answer = f"Á síðustu {{ndays}} dögum hef ég svarað {{nfs}} {fs}."
+        voice = answer.format(
+            ndays=gssml(_QUERIES_PERIOD, type="number", case="þgf", gender="kk"),
+            nfs=gssml(qr, type="number", case="þgf", gender="kvk"),
+        )
+        answer = answer.format(
+            ndays=_QUERIES_PERIOD,
+            nfs=iceformat_float(qr),
+        )
         response = dict(answer=answer)
 
         q.set_key("NumQueries")
@@ -299,6 +308,7 @@ def _gen_num_queries_answer(q: Query) -> bool:
     return True
 
 
+# TODO: Qtypes are too inconsistent between modules
 _QTYPE_TO_DESC = {
     "Weather": "spurningum um veðrið",
     "WeatherForecast": "spurningum um veðrið",

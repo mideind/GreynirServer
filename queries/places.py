@@ -41,15 +41,15 @@ from reynir import NounPhrase
 
 from geo import in_iceland, iceprep_for_street, LatLonTuple
 from queries import Query, QueryStateDict
+from utility import icequote
 from queries.util import (
     gen_answer,
     query_places_api,
     query_place_details,
-    icequote,
     AnswerTuple,
     read_grammar_file,
 )
-from speech.norm.num import numbers_to_text
+from speech.trans import gssml
 from tree import Result, Node
 
 
@@ -176,7 +176,7 @@ def answ_address(placename: str, loc: Optional[LatLonTuple], qtype: str) -> Answ
 
     # Create answer
     answer = final_addr
-    voice = f"{placename} er {prep} {numbers_to_text(final_addr)}"
+    voice = f"{placename} er {prep} {gssml(final_addr, type='numbers', gender='hk')}"
     response = dict(answer=answer)
 
     return response, answer, voice
@@ -224,6 +224,7 @@ def answ_openhours(
     now = datetime.utcnow()
     wday = now.weekday()
     answer = voice = ""
+    p_voice: Optional[str] = None
 
     try:
         name = res["result"]["name"]
@@ -252,13 +253,13 @@ def answ_openhours(
             closes = p["close"]["time"]
 
             # Format correctly, e.g. "12:00 - 19:00"
-            openstr = opens[:2] + ":" + opens[2:]
-            closestr = closes[:2] + ":" + opens[2:]
+            openstr = f"{opens[:2]}:{opens[2:]}"
+            closestr = f"{closes[:2]}:{opens[2:]}"
             p_desc = f"{openstr} - {closestr}"
-            p_voice = p_desc.replace("-", "til")
-
-            # TODO: Use GSSML to pronounce times correctly
-            today_desc = f"Í dag er {name} {open_adj} frá {p_voice}"
+            p_voice = (
+                f"{gssml(openstr, type='time')} til {gssml(closestr, type='time')}"
+            )
+            today_desc = f"Í dag er {name} {open_adj} frá {{opening_hours}}"
     except Exception as e:
         logging.warning(f"Exception generating answer for opening hours: {e}")
         return gen_answer(_PLACES_API_ERRMSG)
@@ -266,7 +267,7 @@ def answ_openhours(
     # Generate answer
     if qtype == "OpeningHours":
         answer = p_desc
-        voice = today_desc
+        voice = today_desc.format(opening_hours=p_voice or "")
     # Is X open? Is X closed?
     elif qtype == "IsOpen" or qtype == "IsClosed":
         yes_no = (
@@ -276,8 +277,8 @@ def answ_openhours(
             )
             else "Nei"
         )
-        answer = f"{yes_no}. {today_desc}."
-        voice = answer
+        answer = f"{yes_no}. {today_desc.format(opening_hours=p_desc or '')}."
+        voice = f"{yes_no}. {today_desc.format(opening_hours=p_voice or '')}."
 
     response = dict(answer=answer)
 
