@@ -42,7 +42,7 @@ import locale
 from urllib.parse import urlencode
 from functools import lru_cache
 
-from tzwhere import tzwhere  # type: ignore
+from timezonefinder import TimezoneFinder
 from pytz import country_timezones
 
 from geo import country_name_for_isocode, iceprep_for_cc, LatLonTuple
@@ -545,14 +545,14 @@ def query_place_details(
     return cast(Optional[Dict[str, Any]], query_json_api(url))
 
 
-_TZW: Optional[tzwhere.tzwhere] = None
+_TZW: Optional[TimezoneFinder] = None
 
 
-def _tzwhere_singleton() -> tzwhere.tzwhere:
+def _tzfinder_singleton() -> TimezoneFinder:
     """Lazy-load location/timezone database."""
     global _TZW
     if not _TZW:
-        _TZW = tzwhere.tzwhere(forceTZ=True)
+        _TZW = TimezoneFinder()
     return _TZW
 
 
@@ -562,10 +562,7 @@ def timezone4loc(
     """Returns timezone string given a tuple of coordinates.
     Fallback argument should be a 2-char ISO 3166 country code."""
     if loc is not None:
-        return cast(
-            Optional[str],
-            cast(Any, _tzwhere_singleton()).tzNameAt(loc[0], loc[1], forceTZ=True),
-        )
+        return _tzfinder_singleton().timezone_at(lat=loc[0], lng=loc[1])
     if fallback and fallback in country_timezones:
         return country_timezones[fallback][0]
     return None
