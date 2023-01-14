@@ -2141,4 +2141,6 @@ class HeimildinScraper(ScrapeHelper):
             elm.decompose()
         for elm in content.find_all("div", {"class": "article__body__extras"}):
             elm.decompose()
+        for elm in content.find_all("div", {"class": "paywall"}):
+            elm.decompose()
         return content
