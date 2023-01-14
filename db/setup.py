@@ -240,6 +240,15 @@ ROOTS = [
         "VidskiptabladidScraper",
         True,
     ),
+    (
+        "https://heimildin.is/",
+        "heimildin.is",
+        "Heimildin",
+        0.8,
+        "scrapers.default",
+        "HeimildinScraper",
+        True,
+    ),
 ]
 
 

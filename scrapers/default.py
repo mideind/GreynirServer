@@ -2073,3 +2073,70 @@ class VidskiptabladidScraper(ScrapeHelper):
             if lock:
                 lock.decompose()
         return content
+
+
+class HeimildinScraper(ScrapeHelper):
+    """Scraping helper for heimildin.is"""
+
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["https://heimildin.is/rss/"]
+
+    def get_metadata(self, soup):
+        """Analyze the article soup and return metadata"""
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading.strip()
+
+        # Author
+        author = ScrapeHelper.div_class(soup, "journalist__name")
+        if author is not None:
+            author = author.text.strip()
+        else:
+            author = ScrapeHelper.div_class(soup, "article__columnist__name")
+            if not author:
+                author = "Ritstjórn Heimildarinnar"
+
+        timestamp = datetime.utcnow()
+
+        try:
+            datestr = None
+            div = soup.find("time", {"class": "datetime"})
+            if div:
+                datestr = div.attrs.get("datetime")  # e.g. "2023-01-14 08:00"
+
+                if datestr:
+                    # Parse date
+                    y = datestr[0:4]
+                    m = datestr[5:7]
+                    d = datestr[8:10]
+                    h = datestr[11:13]
+                    min = datestr[14:16]
+                    timestamp = datetime(
+                        year=int(y),
+                        month=int(m),
+                        day=int(d.rstrip(".")),
+                        hour=int(h),
+                        minute=int(min),
+                    )
+        except Exception as e:
+            logging.warning(f"Exception obtaining date of heimildin.is article: {e}")
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def _get_content(self, soup_body):
+        """Find the article content (main text) in the soup"""
+        content = ScrapeHelper.div_class(soup_body, "article__body")
+        if not content:
+            return BeautifulSoup("")
+        for elm in content.find_all("figure"):
+            elm.decompose()
+        for elm in content.find_all("div", {"class": "article__body__extras"}):
+            elm.decompose()
+        return content
