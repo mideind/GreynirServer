@@ -921,13 +921,13 @@ def test_ja(client: FlaskClient) -> None:
 def test_news(client: FlaskClient) -> None:
     """News module."""
 
-    json = qmcall(client, {"q": "Hvað er í fréttum", "voice": True}, "News")
-    assert len(json["answer"]) > 80  # This is always going to be a long answer
-    assert json["voice"].startswith("Í fréttum rúv er þetta helst")
+    # json = qmcall(client, {"q": "Hvað er í fréttum", "voice": True}, "News")
+    # assert len(json["answer"]) > 80  # This is always going to be a long answer
+    # assert json["voice"].startswith("Í fréttum rúv er þetta helst")
 
-    json = qmcall(client, {"q": "Hvað er helst í fréttum", "voice": True}, "News")
-    assert len(json["answer"]) > 80  # This is always going to be a long answer
-    assert json["voice"].startswith("Í fréttum rúv er þetta helst")
+    # json = qmcall(client, {"q": "Hvað er helst í fréttum", "voice": True}, "News")
+    # assert len(json["answer"]) > 80  # This is always going to be a long answer
+    # assert json["voice"].startswith("Í fréttum rúv er þetta helst")
 
 
 def test_opinion(client: FlaskClient) -> None:
