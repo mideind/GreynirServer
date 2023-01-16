@@ -2096,10 +2096,12 @@ class HeimildinScraper(ScrapeHelper):
             author = author.text.strip()
         else:
             author = ScrapeHelper.div_class(soup, "article__columnist__name")
-            if author is not None:
-                author = author.text.strip()
+            if not author:
+                author = soup.find_all("h3", {"class": "article__columnist__name"})
             if not author:
                 author = "Ritstjórn Heimildarinnar"
+            if author is not None:
+                author = author.text.strip()
 
         timestamp = datetime.utcnow()
 
