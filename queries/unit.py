@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -329,7 +329,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             unit_to = result.unit_to
             response = dict(answer=answer)
             voice_answer = "{0} {1} {2}.".format(result.desc, verb, answer).capitalize()
-            voice_answer = gssml(voice_answer, type='generic')
+            voice_answer = gssml(voice_answer, type="generic")
             # Store the resulting quantity in the query context
             q.set_context(
                 {

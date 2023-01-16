@@ -4,7 +4,7 @@
 
     Special query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -102,7 +102,7 @@ def _random_joke(qs: str, q: Query) -> AnswerType:
 
 
 # TODO: Add more fun trivia here
-_TRIVIA: Tuple[Tuple[str, Dict[str,str]],...] = (
+_TRIVIA: Tuple[Tuple[str, Dict[str, str]], ...] = (
     (
         "Árið 1511 var frostavetur í Brussel og lágstéttafólk mótmælti háum kyndingarkostnaði með því að "
         "eyðileggja snjókarla fyrir utan heimili yfirstéttarfólks.",
@@ -492,7 +492,9 @@ _I_TRY_BUT_OPINION: AnswerType = {
 
 _AT_LEAST_I_KNOW_ICELANDIC: AnswerType = {"answer": "Ég kann allavega íslensku!"}
 
-CAN_YOU_SEE_ME: AnswerType = {"answer": "Nei, ég get ekki séð þig þar sem ég er ekki með augu."}
+CAN_YOU_SEE_ME: AnswerType = {
+    "answer": "Nei, ég get ekki séð þig þar sem ég er ekki með augu."
+}
 
 
 ###################################
