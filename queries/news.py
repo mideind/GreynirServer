@@ -70,7 +70,7 @@ def QNewsQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _NEWS_QTYPE
 
 
-_NEWS_API = "https://gamli.ruv.is/json/frettir/hladbord"
+_NEWS_API = "https://ruv.is/json/frettir/hladbord"
 _NEWS_CACHE_TTL = 300  # seconds, ttl = 5 mins
 
 
