@@ -2135,7 +2135,7 @@ class HeimildinScraper(ScrapeHelper):
         return metadata
 
     def get_content(self, soup_body):
-        """Find the article content (main text) in the soup"""
+        """Find the article content (main text) in the soup."""
         content = ScrapeHelper.div_class(soup_body, "article__body")
         if not content:
             return BeautifulSoup("")
