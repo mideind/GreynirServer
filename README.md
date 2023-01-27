@@ -250,7 +250,8 @@ This set of programs is distributed in the hope that it will be useful, but WITH
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-<a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="static/img/GPLv3.png" align="right" style="margin-left:15px;" width="180" height="60"></a>
+<a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="static/img/GPLv3.png"
+align="right" style="margin-left:15px;" width="180" height="60"></a>
 
 The full text of the GNU General Public License v3 is
 [included here](https://github.com/mideind/Greynir/blob/master/LICENSE.txt)
