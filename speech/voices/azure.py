@@ -38,9 +38,13 @@ from speech.voices import suffix_for_audiofmt
 
 NAME = "Azure Cognitive Services"
 AUDIO_FORMATS = frozenset(("mp3", "pcm", "opus"))
-VOICES = frozenset(("Gudrun", "Gunnar"))
+VOICES = frozenset(("Gudrun", "Gunnar", "Abbi"))
 
-_VOICE_TO_ID = {"Gudrun": "is-IS-GudrunNeural", "Gunnar": "is-IS-GunnarNeural"}
+_VOICE_TO_ID = {
+    "Gudrun": "is-IS-GudrunNeural",
+    "Gunnar": "is-IS-GunnarNeural",
+    "Abbi": "en-GB-AbbiNeural",
+}
 _DEFAULT_VOICE_ID = "is-IS-GudrunNeural"
 
 
