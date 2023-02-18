@@ -4,7 +4,7 @@
 
     TreeUtility class
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -55,7 +55,14 @@ from reynir.binparser import (
 )
 from reynir.fastparser import Fast_Parser, Node
 from reynir.incparser import IncrementalParser
-from reynir.simpletree import Annotator, SimpleTreeNode, Simplifier, NonterminalMap, TerminalMap, IdMap
+from reynir.simpletree import (
+    Annotator,
+    SimpleTreeNode,
+    Simplifier,
+    NonterminalMap,
+    TerminalMap,
+    IdMap,
+)
 
 if TYPE_CHECKING:
     from reynir.simpletree import TerminalMap
@@ -329,9 +336,9 @@ class TreeUtility:
     def _simplify_tree(
         tokens: List[Tok],
         tree: Optional[Node],
-        nt_map: Optional[NonterminalMap]=None,
-        id_map: Optional[IdMap]=None,
-        terminal_map: Optional[Mapping[str, str]]=None,
+        nt_map: Optional[NonterminalMap] = None,
+        id_map: Optional[IdMap] = None,
+        terminal_map: Optional[Mapping[str, str]] = None,
     ) -> Optional[CanonicalTokenDict]:
         """Return a simplified parse tree for a sentence, including POS-tagged,
         normalized terminal leaves"""

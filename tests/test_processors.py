@@ -3,7 +3,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -262,7 +262,9 @@ def test_persons():
     )
     session.check(("Jónína Jónsdóttir", "kennari í Háskólanum í Brandenburg", "kvk"))
     session.check(("Jónas Guðmundsson", "sviðsstjóri hjá Ríkisskattstjóra", "kk"))
-    session.check(("Jóhanna Jóhannsdóttir", "forstöðumaður hjá Háskólanum í Reykjavík", "kvk"))
+    session.check(
+        ("Jóhanna Jóhannsdóttir", "forstöðumaður hjá Háskólanum í Reykjavík", "kvk")
+    )
 
     assert session.is_empty()
 

@@ -26,3 +26,6 @@ python3 speak.py -w -f "pcm" --voice "$1" -n --override "dunno07-${VOICE_LOWER}.
 # Error messages
 python3 speak.py -w -f "pcm" --voice "$1" -n --override "err-${VOICE_LOWER}.wav" "Villa kom upp í samskiptum við netþjón."
 python3 speak.py -w -f "pcm" --voice "$1" -n --override "conn-${VOICE_LOWER}.wav" "Ekki næst samband við netið."
+
+# My name is
+python3 speak.py -w -f "pcm" --voice "$1" -n --override "mynameis-${VOICE_LOWER}.wav" "Svona hljómar þessi rödd."

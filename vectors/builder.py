@@ -4,7 +4,7 @@
 
     Document index builder & topic tagger module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
     Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify

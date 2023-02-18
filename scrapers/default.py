@@ -4,7 +4,7 @@
 
     Default scraping helpers module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -157,7 +157,7 @@ class ScrapeHelper:
             # No body in HTML: something is wrong, return None
             logging.warning("get_content returning None")
             return None
-        f = getattr(self, "_get_content")
+        f = getattr(self, "get_content")
         if callable(f):
             content = f(self._get_body(soup))
             if content:
@@ -419,7 +419,7 @@ class KjarninnScraper(ScrapeHelper):
         return metadata
 
     # noinspection PyMethodMayBeStatic
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         article = soup_body.find("article")
         if not article:
@@ -515,7 +515,7 @@ class RuvScraper(ScrapeHelper):
         return metadata
 
     # noinspection PyMethodMayBeStatic
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
 
         content = BeautifulSoup("", _HTML_PARSER)
@@ -688,7 +688,7 @@ class MblScraper(ScrapeHelper):
         metadata.timestamp = timestamp
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         # 'New style' as of May 23, 2016
         soup = ScrapeHelper.div_class(soup_body, "main-layout")
@@ -709,7 +709,7 @@ class MblScraper(ScrapeHelper):
             soup = ScrapeHelper.div_class(soup_body, "newsitem")
         if soup is None:
             logging.warning(
-                "_get_content: "
+                "get_content: "
                 "soup_body.div.main-layout/frett-main/pistill-entry-body is None"
             )
 
@@ -890,7 +890,7 @@ class VisirScraper(ScrapeHelper):
         document, not just the html body"""
         return soup
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
 
         # We shouldn't even try to extract text from the live sport event pages
@@ -968,7 +968,7 @@ class EyjanScraper(ScrapeHelper):
         metadata.timestamp = timestamp
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         # Delete div.container-fluid tags from the content
         article = ScrapeHelper.div_class(soup_body, "article-full")
@@ -1016,7 +1016,7 @@ class StjornlagaradScraper(ScrapeHelper):
         metadata.author = "Stjórnlagaráð"
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         # Delete div#header
         soup = ScrapeHelper.div_id(soup_body, "header")
@@ -1066,7 +1066,7 @@ class StjornarradScraper(ScrapeHelper):
         metadata.author = self._description or "Stjórnarráð Íslands"
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         soup = ScrapeHelper.nested_tag(soup_body, "main", "article", "section")
         if soup is None:
@@ -1146,7 +1146,7 @@ class KvennabladidScraper(ScrapeHelper):
         metadata.timestamp = timestamp
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         article = ScrapeHelper.div_class(soup_body, "blog-content")
         if article:
@@ -1186,7 +1186,7 @@ class AlthingiScraper(ScrapeHelper):
         metadata.timestamp = timestamp
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         article = ScrapeHelper.div_class(soup_body, "pgmain", "news", "boxbody")
         return article
@@ -1239,7 +1239,7 @@ class StundinScraper(ScrapeHelper):
 
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         article = ScrapeHelper.div_class(soup_body, "article__body__text")
         if article:
@@ -1305,7 +1305,7 @@ class HringbrautScraper(ScrapeHelper):
 
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "entryContent")
 
@@ -1441,7 +1441,7 @@ class FrettabladidScraper(ScrapeHelper):
 
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "article-body")
         # Some sports event pages don't have an article__body
@@ -1548,7 +1548,7 @@ class HagstofanScraper(ScrapeHelper):
 
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         content = soup_body.article
         # For some reason, Hagstofan's RSS feed sometimes includes
@@ -1634,7 +1634,7 @@ class DVScraper(ScrapeHelper):
 
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "textinn")
         if not content:
@@ -1698,7 +1698,7 @@ class BBScraper(ScrapeHelper):
 
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "td-post-content")
         if content is None:
@@ -1765,7 +1765,7 @@ class LemurinnScraper(ScrapeHelper):
 
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "post-content")
 
@@ -1821,7 +1821,7 @@ class MannlifScraper(ScrapeHelper):
 
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "tdb_single_content")
         if content:
@@ -1894,7 +1894,7 @@ class VisindavefurScraper(ScrapeHelper):
 
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         for p in soup_body.find_all("p", {"class": "br"}):
             p.replace_with(Tag(soup_body, name="br"))
@@ -1942,7 +1942,7 @@ class SedlabankinnScraper(ScrapeHelper):
 
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "media-body")
         if content is None:
@@ -1982,7 +1982,7 @@ class BaendabladidScraper(ScrapeHelper):
 
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "article-text")
         assert content is not None
@@ -2063,7 +2063,7 @@ class VidskiptabladidScraper(ScrapeHelper):
 
         return metadata
 
-    def _get_content(self, soup_body):
+    def get_content(self, soup_body):
         """Find the article content (main text) in the soup"""
         content = ScrapeHelper.div_class(soup_body, "article-body")
         if not content:
@@ -2072,4 +2072,77 @@ class VidskiptabladidScraper(ScrapeHelper):
             lock = ScrapeHelper.div_class(content, "article-lock")
             if lock:
                 lock.decompose()
+        return content
+
+
+class HeimildinScraper(ScrapeHelper):
+    """Scraping helper for heimildin.is"""
+
+    def __init__(self, root):
+        super().__init__(root)
+        self._feeds = ["https://heimildin.is/rss/"]
+
+    def get_metadata(self, soup):
+        """Analyze the article soup and return metadata"""
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading.strip()
+
+        # Author
+        author = ScrapeHelper.div_class(soup, "journalist__name")
+        if author is not None:
+            author = author.text.strip()
+        else:
+            author = ScrapeHelper.div_class(soup, "article__columnist__name")
+            if not author:
+                author = soup.find_all("h3", {"class": "article__columnist__name"})
+            if not author:
+                author = "Ritstjórn Heimildarinnar"
+            if author is not None:
+                author = author.text.strip()
+
+        timestamp = datetime.utcnow()
+
+        try:
+            datestr = None
+            div = soup.find("time", {"class": "datetime"})
+            if div:
+                datestr = div.attrs.get("datetime")  # e.g. "2023-01-14 08:00"
+
+                if datestr:
+                    # Parse date
+                    y = datestr[0:4]
+                    m = datestr[5:7]
+                    d = datestr[8:10]
+                    h = datestr[11:13]
+                    min = datestr[14:16]
+                    timestamp = datetime(
+                        year=int(y),
+                        month=int(m),
+                        day=int(d.rstrip(".")),
+                        hour=int(h),
+                        minute=int(min),
+                    )
+        except Exception as e:
+            logging.warning(f"Exception obtaining date of heimildin.is article: {e}")
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def get_content(self, soup_body):
+        """Find the article content (main text) in the soup."""
+        content = ScrapeHelper.div_class(soup_body, "article__body")
+        if not content:
+            return BeautifulSoup("")
+        for elm in content.find_all("figure"):
+            elm.decompose()
+        for elm in content.find_all("div", {"class": "article__body__extras"}):
+            elm.decompose()
+        for elm in content.find_all("div", {"class": "paywall"}):
+            elm.decompose()
         return content

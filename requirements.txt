@@ -26,6 +26,7 @@ boto3==1.18.40
 azure-cognitiveservices-speech>=1.24.2
 # Ours
 reynir>=3.5.3
+islenska>=0.4.6
 iceaddr>=0.5.5
 iceweather>=0.2.3
 cityloc>=0.1.1

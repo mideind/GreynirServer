@@ -4,7 +4,7 @@
 
     News query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ def QNewsQuery(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = _NEWS_QTYPE
 
 
-_NEWS_API = "https://gamli.ruv.is/json/frettir/hladbord"
+_NEWS_API = "https://ruv.is/json/frettir/hladbord"
 _NEWS_CACHE_TTL = 300  # seconds, ttl = 5 mins
 
 
