@@ -34,7 +34,7 @@ def handle_plain_text(q: Query) -> bool:
         # Set answer
         answer = "This is an example of me speaking English"
         q.set_answer(*gen_answer(answer))
-        q.set_voice_id("Abbi")
+        q.set_voice_locale("en_GB")
 
         return True
 

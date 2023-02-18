@@ -38,8 +38,6 @@ from speech.voices import suffix_for_audiofmt
 
 NAME = "Azure Cognitive Services"
 AUDIO_FORMATS = frozenset(("mp3", "pcm", "opus"))
-VOICES = frozenset(("Gudrun", "Gunnar", "Abbi"))
-
 _VOICE_TO_ID = {
     # Icelandic
     "Gudrun": "is-IS-GudrunNeural",
@@ -50,9 +48,12 @@ _VOICE_TO_ID = {
     # English (US)
     "Jenny": "en-US-JennyNeural",
     "Brandon": "en-US-BrandonNeural",
+    # German
+    "Amala": "de-DE-AmalaNeural",
     # Many more voices available, see:
     # https://learn.microsoft.com/en-us/azure/cognitive-services/speech-service/language-support
 }
+VOICES = _VOICE_TO_ID.keys()
 _DEFAULT_VOICE_ID = "is-IS-GudrunNeural"
 
 

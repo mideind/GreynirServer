@@ -339,7 +339,9 @@ class Query:
         # Boolean flag for whether this is a voice query
         self._voice = voice
         # Voice synthesizer ID, if any
-        self._voice_id = None
+        self._voice_id: Optional[str] = None
+        # Voice synthesizer locale
+        self._voice_locale: str = "is-IS"
         self._auto_uppercase = auto_uppercase
         self._error: Optional[str] = None
         # A detailed answer, which can be a list or a dict
@@ -852,6 +854,10 @@ class Query:
         """Set the voice ID"""
         self._voice_id = voice_id
 
+    def set_voice_locale(self, voice_locale: str) -> None:
+        """Set voice locale (e.g. 'is_IS', 'en_US', etc.)"""
+        self._voice_locale = voice_locale
+
     @property
     def is_voice(self) -> bool:
         """Return True if this is a voice query"""
@@ -1037,6 +1043,8 @@ class Query:
                 result["voice"] = va
         if self._voice_id:
             result["voice_id"] = self._voice_id
+        if self._voice_locale:
+            result["voice_locale"] = self._voice_locale
         if self._voice:
             # Optimize the response to voice queries:
             # we don't need detailed information about alternative
