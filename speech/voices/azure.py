@@ -48,12 +48,30 @@ _VOICE_TO_ID = {
     # English (US)
     "Jenny": "en-US-JennyNeural",
     "Brandon": "en-US-BrandonNeural",
+    # French
+    "Brigitte": "fr-FR-BrigitteNeural",
+    "Alain": "fr-FR-AlainNeural",
     # German
     "Amala": "de-DE-AmalaNeural",
+    # Danish
+    "Christel": "da-DK-ChristelNeural",
+    "Jeppe": "da-DK-JeppeNeural",
+    # Swedish
+    "Sofie": "sv-SE-SofieNeural",
+    "Mattias": "sv-SE-MattiasNeural",
+    # Norwegian
+    "Finn": "nb-NO-FinnNeural",
+    "Iselin": "nb-NO-IselinNeural",
+    # Spanish
+    "Abril": "es-ES-AbrilNeural",
+    "Alvaro": "es-ES-AlvaroNeural",
+    # Polish
+    "Agnieszka": "pl-PL-AgnieszkaNeural",
+    "Marek": "pl-PL-MarekNeural",
     # Many more voices available, see:
     # https://learn.microsoft.com/en-us/azure/cognitive-services/speech-service/language-support
 }
-VOICES = _VOICE_TO_ID.keys()
+VOICES = frozenset(_VOICE_TO_ID.keys())
 _DEFAULT_VOICE_ID = "is-IS-GudrunNeural"
 
 

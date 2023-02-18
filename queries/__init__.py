@@ -341,7 +341,7 @@ class Query:
         # Voice synthesizer ID, if any
         self._voice_id: Optional[str] = None
         # Voice synthesizer locale
-        self._voice_locale: str = "is-IS"
+        self._voice_locale: str = "is_IS"
         self._auto_uppercase = auto_uppercase
         self._error: Optional[str] = None
         # A detailed answer, which can be a list or a dict

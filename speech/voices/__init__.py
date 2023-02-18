@@ -67,6 +67,12 @@ LOCALE_TO_VOICE_ID = {
     "en_US": "Jenny",
     "en_GB": "Abbi",
     "de_DE": "Amala",
+    "fr_FR": "Brigitte",
+    "da_DK": "Christel",
+    "sv_SE": "Sofie",
+    "nb_NO": "Finn",
+    "es_ES": "Abril",
+    "pl_PL": "Agnieszka",
 }
 assert "is_IS" in LOCALE_TO_VOICE_ID
 
