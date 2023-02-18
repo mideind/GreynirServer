@@ -49,6 +49,7 @@ from speech import (
     RECOMMENDED_VOICES,
     DEFAULT_VOICE_SPEED,
 )
+from speech.voices import voice_for_locale
 from utility import read_api_key, icelandic_asciify
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
@@ -186,7 +187,6 @@ def article_api(version: int = 1) -> Response:
         return better_jsonify(valid=False, reason="No url or id specified in query")
 
     with SessionContext(commit=True) as session:
-
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
         elif url and url.startswith(("http:", "https:")):
@@ -383,8 +383,14 @@ def query_api(version: int = 1) -> Response:
             # Parse <greynir> SSML tags and
             # phonetically transcribe their contents
             result["voice"] = v = GreynirSSMLParser(voice_id).transcribe(v)
+            # Check if a specific voice or voice locale was set by query module
+            vid = voice_id
+            if "voice_id" in result:
+                vid = result["voice_id"]
+            elif "voice_locale" in result:
+                vid = voice_for_locale(result["voice_locale"])
             # Create audio data
-            url = text_to_audio_url(v, voice_id=voice_id, speed=voice_speed)
+            url = text_to_audio_url(v, voice_id=vid, speed=voice_speed)
             if url:
                 result["audio"] = file_url_to_host_url(url, request)
         response = cast(Optional[Dict[str, str]], result.get("response"))

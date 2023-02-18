@@ -38,9 +38,40 @@ from speech.voices import suffix_for_audiofmt
 
 NAME = "Azure Cognitive Services"
 AUDIO_FORMATS = frozenset(("mp3", "pcm", "opus"))
-VOICES = frozenset(("Gudrun", "Gunnar"))
-
-_VOICE_TO_ID = {"Gudrun": "is-IS-GudrunNeural", "Gunnar": "is-IS-GunnarNeural"}
+_VOICE_TO_ID = {
+    # Icelandic
+    "Gudrun": "is-IS-GudrunNeural",
+    "Gunnar": "is-IS-GunnarNeural",
+    # English (UK)
+    "Abbi": "en-GB-AbbiNeural",
+    "Alfie": "en-GB-AlfieNeural",
+    # English (US)
+    "Jenny": "en-US-JennyNeural",
+    "Brandon": "en-US-BrandonNeural",
+    # French
+    "Brigitte": "fr-FR-BrigitteNeural",
+    "Alain": "fr-FR-AlainNeural",
+    # German
+    "Amala": "de-DE-AmalaNeural",
+    # Danish
+    "Christel": "da-DK-ChristelNeural",
+    "Jeppe": "da-DK-JeppeNeural",
+    # Swedish
+    "Sofie": "sv-SE-SofieNeural",
+    "Mattias": "sv-SE-MattiasNeural",
+    # Norwegian
+    "Finn": "nb-NO-FinnNeural",
+    "Iselin": "nb-NO-IselinNeural",
+    # Spanish
+    "Abril": "es-ES-AbrilNeural",
+    "Alvaro": "es-ES-AlvaroNeural",
+    # Polish
+    "Agnieszka": "pl-PL-AgnieszkaNeural",
+    "Marek": "pl-PL-MarekNeural",
+    # Many more voices available, see:
+    # https://learn.microsoft.com/en-us/azure/cognitive-services/speech-service/language-support
+}
+VOICES = frozenset(_VOICE_TO_ID.keys())
 _DEFAULT_VOICE_ID = "is-IS-GudrunNeural"
 
 
