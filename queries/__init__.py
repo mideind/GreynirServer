@@ -327,7 +327,6 @@ class Query:
         client_type: Optional[str],
         client_version: Optional[str],
     ) -> None:
-
         self._query = q = self._preprocess_query_string(query)
         self._session = session
         self._location = location
@@ -339,6 +338,10 @@ class Query:
         self.set_beautified_query(beautify_query(q))
         # Boolean flag for whether this is a voice query
         self._voice = voice
+        # Voice synthesizer ID, if any
+        self._voice_id: Optional[str] = None
+        # Voice synthesizer locale
+        self._voice_locale: str = "is_IS"
         self._auto_uppercase = auto_uppercase
         self._error: Optional[str] = None
         # A detailed answer, which can be a list or a dict
@@ -847,6 +850,14 @@ class Query:
         """Set an error result"""
         self._error = error
 
+    def set_voice_id(self, voice_id: str) -> None:
+        """Set the voice ID"""
+        self._voice_id = voice_id
+
+    def set_voice_locale(self, voice_locale: str) -> None:
+        """Set voice locale (e.g. 'is_IS', 'en_US', etc.)"""
+        self._voice_locale = voice_locale
+
     @property
     def is_voice(self) -> bool:
         """Return True if this is a voice query"""
@@ -1030,6 +1041,10 @@ class Query:
             va = self.voice_answer()
             if va:
                 result["voice"] = va
+        if self._voice_id:
+            result["voice_id"] = self._voice_id
+        if self._voice_locale:
+            result["voice_locale"] = self._voice_locale
         if self._voice:
             # Optimize the response to voice queries:
             # we don't need detailed information about alternative
@@ -1172,7 +1187,6 @@ def process_query(
     bypass_cache: bool = False,
     private: bool = False,
 ) -> ResponseDict:
-
     """Process an incoming natural language query.
     If voice is True, return a voice-friendly string to
     be spoken to the user. If auto_uppercase is True,
@@ -1190,7 +1204,6 @@ def process_query(
     first_qtext = ""
 
     with SessionContext(commit=True) as session:
-
         it: Iterable[str]
         if isinstance(q, str):
             # This is a single string
@@ -1205,7 +1218,6 @@ def process_query(
         # attempting to execute them in turn until we find
         # one that works (or we're stumped)
         for qtext in it:
-
             qtext = qtext.strip()
             clean_q = qtext.rstrip("?")
             if first_clean_q is None:
