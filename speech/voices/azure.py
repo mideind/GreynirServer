@@ -41,9 +41,17 @@ AUDIO_FORMATS = frozenset(("mp3", "pcm", "opus"))
 VOICES = frozenset(("Gudrun", "Gunnar", "Abbi"))
 
 _VOICE_TO_ID = {
+    # Icelandic
     "Gudrun": "is-IS-GudrunNeural",
     "Gunnar": "is-IS-GunnarNeural",
+    # English (UK)
     "Abbi": "en-GB-AbbiNeural",
+    "Alfie": "en-GB-AlfieNeural",
+    # English (US)
+    "Jenny": "en-US-JennyNeural",
+    "Brandon": "en-US-BrandonNeural",
+    # Many more voices available, see:
+    # https://learn.microsoft.com/en-us/azure/cognitive-services/speech-service/language-support
 }
 _DEFAULT_VOICE_ID = "is-IS-GudrunNeural"
 
