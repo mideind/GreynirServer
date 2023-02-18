@@ -56,7 +56,6 @@ from settings import Settings, ConfigError
 from article import Article as ArticleProxy
 from utility import (
     CONFIG_DIR,
-    GREYNIR_ROOT_DIR,
     QUERIES_DIALOGUE_DIR,
     QUERIES_GRAMMAR_DIR,
     QUERIES_UTIL_GRAMMAR_DIR,

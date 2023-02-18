@@ -48,6 +48,7 @@ from sqlalchemy.dialects.postgresql import JSONB, INET
 from sqlalchemy.dialects.postgresql import UUID as psql_UUID
 from sqlalchemy.ext.hybrid import Comparator, hybrid_property
 from sqlalchemy.orm.relationships import RelationshipProperty
+from sqlalchemy.sql.expression import ColumnElement
 
 
 class CaseInsensitiveComparator(Comparator):
@@ -56,7 +57,7 @@ class CaseInsensitiveComparator(Comparator):
 
     # See https://docs.sqlalchemy.org/en/13/orm/extensions/hybrid.html
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: object) -> ColumnElement[Boolean]:
         return func.lower(self.__clause_element__()) == func.lower(other)  # type: ignore
 
 

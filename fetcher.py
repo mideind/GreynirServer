@@ -155,7 +155,7 @@ class Fetcher:
             return text
 
     @staticmethod
-    def extract_text(soup: BeautifulSoup, result: "Fetcher.TextList") -> None:
+    def extract_text(soup: Optional[BeautifulSoup], result: "Fetcher.TextList") -> None:
         """Append the human-readable text found in an HTML soup
         to the result TextList"""
         if soup is None:
