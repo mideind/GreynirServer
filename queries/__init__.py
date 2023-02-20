@@ -432,7 +432,22 @@ class Query:
         ]
         cls._text_processors = [t[1] for t in sorted(text_procs, key=lambda x: -x[0])]
 
-        print(sorted(text_procs, key=lambda x: -x[0]))
+        if Settings.DEBUG:
+            # Print the active processors in descending priority order
+            print("Text processors:")
+            print(
+                "\n".join(
+                    f"{p[0]:4} -> {p[1].__module__}.{p[1].__qualname__}"
+                    for p in sorted(text_procs, key=lambda x: -x[0])
+                )
+            )
+            print("Tree processors:")
+            print(
+                "\n".join(
+                    f"{p[0]:4} -> {p[1].__name__}"
+                    for p in sorted(tree_procs, key=lambda x: -x[0])
+                )
+            )
 
         # Obtain query grammar fragments from the utility modules and tree processors
         grammar_fragments: List[str] = []
@@ -667,11 +682,7 @@ class Query:
                 # Note that passing query=self here means that the
                 # "query" field of the TreeStateDict is populated,
                 # turning it into a QueryStateDict.
-                if self._tree.process_queries(
-                    self,
-                    self._session,
-                    processor,
-                ):
+                if self._tree.process_queries(self, self._session, processor,):
                     # This processor found an answer, which is already stored
                     # in the Query object: return True
                     return True
@@ -1091,15 +1102,17 @@ class Query:
                     name=img.name,
                 )
         result["valid"] = True
+
         if Settings.DEBUG:
             # Dump query results to the console
-            def converter(o):
+            print("\nQuery result:")
+            def converter(o: Any):
                 """Ensure that datetime is output in ISO format to JSON"""
                 if isinstance(o, datetime):
                     return o.isoformat()[0:16]
                 return None
-
             print(json.dumps(result, indent=3, ensure_ascii=False, default=converter))
+
         return result
 
 
@@ -1147,33 +1160,20 @@ def to_accusative(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> st
     """Return the noun phrase after casting it from nominative to accusative case"""
     with GreynirBin.get_db() as db:
         return _to_case(
-            np,
-            db.lookup_g,
-            db.cast_to_accusative,
-            filter_func=filter_func,
+            np, db.lookup_g, db.cast_to_accusative, filter_func=filter_func,
         )
 
 
 def to_dative(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
     """Return the noun phrase after casting it from nominative to dative case"""
     with GreynirBin.get_db() as db:
-        return _to_case(
-            np,
-            db.lookup_g,
-            db.cast_to_dative,
-            filter_func=filter_func,
-        )
+        return _to_case(np, db.lookup_g, db.cast_to_dative, filter_func=filter_func,)
 
 
 def to_genitive(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
     """Return the noun phrase after casting it from nominative to genitive case"""
     with GreynirBin.get_db() as db:
-        return _to_case(
-            np,
-            db.lookup_g,
-            db.cast_to_genitive,
-            filter_func=filter_func,
-        )
+        return _to_case(np, db.lookup_g, db.cast_to_genitive, filter_func=filter_func,)
 
 
 def process_query(

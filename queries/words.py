@@ -33,7 +33,7 @@
 # TODO: Handle numbers ("3" should be spelled as "þrír" etc.)
 # TODO "Hvaða orð rímar við X"
 
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple
 
 import re
 import logging
