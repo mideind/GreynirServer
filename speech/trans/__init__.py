@@ -1027,7 +1027,7 @@ class DefaultTranscriber:
     def person(cls, txt: str) -> str:
         """Voicify the name of a person."""
         with GreynirBin.get_db() as gbin:
-            gender = gbin.lookup_name_gender(txt)
+            gender = cast(GenderType, gbin.lookup_name_gender(txt))
         parts = txt.split()
         for i, p in enumerate(parts):
             if p in cls._PERSON_PRONUNCIATION:
