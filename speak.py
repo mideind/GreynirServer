@@ -21,15 +21,19 @@
     Friendly command line interface for Icelandic speech synthesis.
     Returns 0 on success, 1 on error.
 
+    Run the following command for a list of options:
+
+        ./speak.py --help
+
 """
 
 from typing import Optional, cast, List
 
 import sys
 import subprocess
-import shutil
 import logging
 from pathlib import Path
+from shutil import which
 from urllib.request import urlopen
 import wave
 
@@ -58,7 +62,7 @@ _DATA_URI_PREFIX = "data:"
 
 def _is_data_uri(s: str) -> bool:
     """Returns whether a URL is a data URI (RFC2397). Tolerates upper/mixed case prefix."""
-    return s[: len(_DATA_URI_PREFIX)].lower().startswith(_DATA_URI_PREFIX)
+    return s[: len(_DATA_URI_PREFIX)].lower() == _DATA_URI_PREFIX
 
 
 def _is_file_uri(s: str) -> bool:
@@ -88,15 +92,14 @@ def _fetch_audio_bytes(url: str) -> Optional[bytes]:
         logging.error(f"Error fetching audio file: {e}")
 
 
-def _write_wav(fn: str, data: bytes) -> None:
-    """Write audio data to WAV file."""
+def _write_wav(
+    fn: str, data: bytes, num_channels=1, sample_width=2, sample_rate=16000
+) -> None:
+    """Write audio data to WAV file. Defaults to 16-bit mono 16 kHz PCM."""
     with wave.open(fn, "wb") as wav:
-        # We assume that the data is in this format, i.e. mono 16-bit signed 16 kHz PCM
-        # This will stop working if the speech synthesis modules start delivering PCM
-        # in a different format but that's OK. This exists purely for in-house purposes.
-        wav.setnchannels(1)
-        wav.setsampwidth(2)
-        wav.setframerate(16000)
+        wav.setnchannels(num_channels)
+        wav.setsampwidth(sample_width)
+        wav.setframerate(sample_rate)
         wav.writeframes(data)
 
 
@@ -105,9 +108,9 @@ def _play_audio_file(path: str) -> None:
     on systems with afplay (macOS), mpv, mpg123 or cmdmp3 installed."""
 
     AFPLAY = "/usr/bin/afplay"  # afplay is only present on macOS systems
-    MPV = shutil.which("mpv")  # mpv is a cross-platform player
-    MPG123 = shutil.which("mpg123")  # mpg123 is a cross-platform player
-    CMDMP3 = shutil.which("cmdmp3")  # cmdmp3 is a Windows command line mp3 player
+    MPV = which("mpv")  # mpv is a cross-platform player
+    MPG123 = which("mpg123")  # mpg123 is a cross-platform player
+    CMDMP3 = which("cmdmp3")  # cmdmp3 is a Windows command line mp3 player
 
     cmd: Optional[List[str]] = None
     if Path(AFPLAY).is_file():
@@ -241,7 +244,7 @@ def main() -> None:
     else:
         # Generate file name
         fn = sanitize_filename(text)
-        fn += "." + suffix_for_audiofmt(args.audioformat)
+        fn = f"{fn}.{suffix_for_audiofmt(args.audioformat)}"
 
     # Write audio data to file
     print(f'Writing to file "{fn}".')
