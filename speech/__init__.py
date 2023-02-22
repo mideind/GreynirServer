@@ -18,7 +18,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    Icelandic text to speech via TTS web services.
+    Icelandic speech synthesis via various Text-To-Speech services.
 
 """
 
@@ -36,6 +36,7 @@ from types import ModuleType
 
 import logging
 import importlib
+from pathlib import Path
 from inspect import isfunction, ismethod
 from html.parser import HTMLParser
 from collections import deque
@@ -43,8 +44,6 @@ from speech.trans import TRANSCRIBER_CLASS, DefaultTranscriber, TranscriptionMet
 
 from utility import GREYNIR_ROOT_DIR, cap_first, modules_in_dir
 
-
-VOICES_DIR = GREYNIR_ROOT_DIR / "speech" / "voices"
 
 # Text formats
 # For details about SSML markup, see:
@@ -59,6 +58,9 @@ assert DEFAULT_TEXT_FORMAT in SUPPORTED_TEXT_FORMATS
 DEFAULT_AUDIO_FORMAT = "mp3"
 SUPPORTED_AUDIO_FORMATS = frozenset(("mp3", "ogg_vorbis", "pcm", "opus"))
 assert DEFAULT_AUDIO_FORMAT in SUPPORTED_AUDIO_FORMATS
+
+VOICES_DIR = GREYNIR_ROOT_DIR / "speech" / "voices"
+assert VOICES_DIR.is_dir()
 
 
 def _load_voice_modules() -> Dict[str, ModuleType]:
@@ -90,6 +92,70 @@ DEFAULT_VOICE_SPEED = 1.0
 
 assert DEFAULT_VOICE in SUPPORTED_VOICES
 assert DEFAULT_VOICE in RECOMMENDED_VOICES
+
+
+def _sanitize_args(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Make sure arguments to speech synthesis functions are sane."""
+    # Make sure we have a valid voice ID
+    voice_id = args["voice_id"].lower().capitalize()
+    if voice_id not in SUPPORTED_VOICES:
+        logging.warning(
+            f"Voice '{voice_id}' not in supported voices, reverting to default ({DEFAULT_VOICE})"
+        )
+        args["voice_id"] = DEFAULT_VOICE
+    else:
+        args["voice_id"] = voice_id
+
+    # Clamp speed to 50-200% range
+    args["speed"] = max(min(2.0, args["speed"]), 0.5)
+
+    return args
+
+
+def text_to_audio_data(
+    text: str,
+    text_format: str = DEFAULT_TEXT_FORMAT,
+    audio_format: str = DEFAULT_AUDIO_FORMAT,
+    voice_id: str = DEFAULT_VOICE,
+    speed: float = DEFAULT_VOICE_SPEED,
+) -> bytes:
+    """Returns audio data for speech-synthesized text."""
+    # Fall back to default voice if voice_id param invalid
+    if voice_id not in SUPPORTED_VOICES:
+        voice_id = DEFAULT_VOICE
+    # Create a copy of all function arguments
+    args = locals().copy()
+    # Find the module that provides this voice
+    module = VOICE_TO_MODULE.get(voice_id)
+    assert module is not None
+    # Get the function from the module
+    fn = getattr(module, "text_to_audio_data")
+    assert isfunction(fn)
+    # Call function in module, passing on the arguments
+    return fn(**_sanitize_args(args))
+
+
+def text_to_audio_url(
+    text: str,
+    text_format: str = DEFAULT_TEXT_FORMAT,
+    audio_format: str = DEFAULT_AUDIO_FORMAT,
+    voice_id: str = DEFAULT_VOICE,
+    speed: float = DEFAULT_VOICE_SPEED,
+) -> str:
+    """Returns URL to audio of speech-synthesized text."""
+    # Fall back to default voice if voice_id param invalid
+    if voice_id not in SUPPORTED_VOICES:
+        voice_id = DEFAULT_VOICE
+    # Create a copy of all function arguments
+    args = locals().copy()
+    # Find the module that provides this voice
+    module = VOICE_TO_MODULE.get(voice_id)
+    assert module is not None
+    # Get the function from the module
+    fn = getattr(module, "text_to_audio_url")
+    assert isfunction(fn)
+    # Call function in module, passing on the arguments
+    return fn(**_sanitize_args(args))
 
 
 class GreynirSSMLParser(HTMLParser):
@@ -191,65 +257,3 @@ class GreynirSSMLParser(HTMLParser):
             assert ismethod(transf), f"{t} is not a transcription method."
             s: str = transf(**dattrs)
             self._str_stack[-1] += s
-
-
-def _sanitize_args(args: Dict[str, Any]) -> Dict[str, Any]:
-    """Make sure arguments to speech synthesis functions are sane."""
-    # Make sure we have a valid voice ID
-    voice_id = args["voice_id"].lower().capitalize()
-    if voice_id not in SUPPORTED_VOICES:
-        logging.warning(
-            f"Voice '{voice_id}' not in supported voices, reverting to default ({DEFAULT_VOICE})"
-        )
-        args["voice_id"] = DEFAULT_VOICE
-    else:
-        args["voice_id"] = voice_id
-
-    # Clamp speed to 50-200% range
-    args["speed"] = max(min(2.0, args["speed"]), 0.5)
-
-    return args
-
-
-def text_to_audio_data(
-    text: str,
-    text_format: str = DEFAULT_TEXT_FORMAT,
-    audio_format: str = DEFAULT_AUDIO_FORMAT,
-    voice_id: str = DEFAULT_VOICE,
-    speed: float = DEFAULT_VOICE_SPEED,
-) -> bytes:
-    """Returns audio data for speech-synthesized text."""
-    # Fall back to default voice if voice_id param invalid
-    if voice_id not in SUPPORTED_VOICES:
-        voice_id = DEFAULT_VOICE
-    # Create a copy of all function arguments
-    args = locals().copy()
-    # Find the module that provides this voice
-    module = VOICE_TO_MODULE.get(voice_id)
-    assert module is not None
-    fn = getattr(module, "text_to_audio_data")
-    assert isfunction(fn)
-    # Call function in module, passing on the arguments
-    return fn(**_sanitize_args(args))
-
-
-def text_to_audio_url(
-    text: str,
-    text_format: str = DEFAULT_TEXT_FORMAT,
-    audio_format: str = DEFAULT_AUDIO_FORMAT,
-    voice_id: str = DEFAULT_VOICE,
-    speed: float = DEFAULT_VOICE_SPEED,
-) -> str:
-    """Returns URL to audio of speech-synthesized text."""
-    # Fall back to default voice if voice_id param invalid
-    if voice_id not in SUPPORTED_VOICES:
-        voice_id = DEFAULT_VOICE
-    # Create a copy of all function arguments
-    args = locals().copy()
-    # Find the module that provides this voice
-    module = VOICE_TO_MODULE.get(voice_id)
-    assert module is not None
-    fn = getattr(module, "text_to_audio_url")
-    assert isfunction(fn)
-    # Call function in module, passing on the arguments
-    return fn(**_sanitize_args(args))
