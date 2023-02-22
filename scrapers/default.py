@@ -2096,11 +2096,11 @@ class HeimildinScraper(ScrapeHelper):
         else:
             author = ScrapeHelper.div_class(soup, "article__columnist__name")
             if not author:
-                author = soup.find_all("h3", {"class": "article__columnist__name"})
-            if not author:
-                author = "Ritstjórn Heimildarinnar"
+                author = soup.find("h3", {"class": "article__columnist__name"})
             if author is not None:
                 author = author.text.strip()
+            if not author:
+                author = "Ritstjórn Heimildarinnar"
 
         timestamp = datetime.utcnow()
 
@@ -2141,6 +2141,8 @@ class HeimildinScraper(ScrapeHelper):
         for elm in content.find_all("figure"):
             elm.decompose()
         for elm in content.find_all("div", {"class": "article__body__extras"}):
+            elm.decompose()
+        for elm in content.find_all("h3", {"class": "inline-seemore-label"}):
             elm.decompose()
         for elm in content.find_all("div", {"class": "paywall"}):
             elm.decompose()
