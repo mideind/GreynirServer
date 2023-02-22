@@ -465,8 +465,7 @@ class RuvScraper(ScrapeHelper):
 
     def __init__(self, root):
         super().__init__(root)
-        # This RSS feed is out of date, so we don't use it
-        # self._feeds = ["http://www.ruv.is/rss/frettir"]
+        self._feeds = ["http://www.ruv.is/rss/frettir"]
 
     def skip_url(self, url):
         """Return True if this URL should not be scraped"""
