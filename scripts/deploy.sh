@@ -67,7 +67,6 @@ cp main.py $DEST/main.py
 cp nertokenizer.py $DEST/nertokenizer.py
 cp postagger.py $DEST/postagger.py
 cp processor.py $DEST/processor.py
-cp query.py $DEST/query.py
 cp scraper.py $DEST/scraper.py
 cp search.py $DEST/search.py
 cp settings.py $DEST/settings.py
