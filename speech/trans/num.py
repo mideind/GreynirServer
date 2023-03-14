@@ -220,8 +220,8 @@ NumberType = Literal["et", "ft"]
 def number_to_text(
     n: Union[int, str],
     *,
-    case: CaseType = "nf",
-    gender: GenderType = "hk",
+    case: str = "nf",
+    gender: str = "hk",
     one_hundred: bool = False
 ) -> str:
     """
@@ -248,8 +248,8 @@ def numbers_to_text(
     *,
     regex: str = r"((?<!\d)-)?\b\d+\b",
     # ^ matches "15" & "-15", but matches "1-5" as "1" and "5"
-    case: CaseType = "nf",
-    gender: GenderType = "hk",
+    case: str = "nf",
+    gender: str = "hk",
     one_hundred: bool = False
 ) -> str:
     """
@@ -270,8 +270,8 @@ def numbers_to_text(
 def float_to_text(
     f: Union[float, str],
     *,
-    case: CaseType = "nf",
-    gender: GenderType = "hk",
+    case: str = "nf",
+    gender: str = "hk",
     comma_null: bool = False,
     one_hundred: bool = False
 ) -> str:
@@ -342,8 +342,8 @@ def floats_to_text(
     s: str,
     *,
     regex: str = r"((?<!\d)-)?\b(\d{1,3}\.)*\d+(,\d+)?\b",
-    case: CaseType = "nf",
-    gender: GenderType = "hk",
+    case: str = "nf",
+    gender: str = "hk",
     comma_null: bool = False,
     one_hundred: bool = False
 ) -> str:
@@ -485,9 +485,9 @@ _LARGE_ORDINAL_SUFFIX: _SuffixMapping = {
 
 def _num_to_ordinal(
     word: str,
-    case: CaseType = "nf",
-    gender: GenderType = "kk",
-    number: NumberType = "et",
+    case: str = "nf",
+    gender: str = "kk",
+    number: str = "et",
 ) -> str:
     """
     Helper function. Changes one part of a number (in written form) to ordinal form
@@ -550,9 +550,9 @@ def _num_to_ordinal(
 def neutral_text_to_ordinal(
     s: str,
     *,
-    case: CaseType = "nf",
-    gender: GenderType = "kk",
-    number: NumberType = "et"
+    case: str = "nf",
+    gender: str = "kk",
+    number: str = "et"
 ) -> str:
     """
     Takes Icelandic text representation of number
@@ -588,9 +588,9 @@ def neutral_text_to_ordinal(
 def number_to_ordinal(
     n: Union[int, str],
     *,
-    case: CaseType = "nf",
-    gender: GenderType = "kk",
-    number: NumberType = "et"
+    case: str = "nf",
+    gender: str = "kk",
+    number: str = "et"
 ) -> str:
     """
     Takes number and returns it as an ordinal
@@ -608,9 +608,9 @@ def numbers_to_ordinal(
     s: str,
     *,
     regex: Optional[str] = None,
-    case: CaseType = "nf",
-    gender: GenderType = "kk",
-    number: NumberType = "et"
+    case: str = "nf",
+    gender: str = "kk",
+    number: str = "et"
 ) -> str:
     """
     Converts ordinals of the form '2.', '101.'
@@ -691,9 +691,9 @@ def _roman_numeral_to_int(n: str) -> int:
 def roman_numeral_to_ordinal(
     n: str,
     *,
-    case: CaseType = "nf",
-    gender: GenderType = "kk",
-    number: NumberType = "et"
+    case: str = "nf",
+    gender: str = "kk",
+    number: str = "et"
 ):
     """
     Change a roman numeral into a written Icelandic ordinal.

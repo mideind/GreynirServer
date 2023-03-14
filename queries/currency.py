@@ -215,6 +215,11 @@ def _fetch_exchange_rates() -> Optional[Dict[str, float]]:
     }
 
 
+def fetch_exchange_rates() -> Optional[Dict[str, float]]:
+    """Fetch exchange rate data using cache"""
+    return _fetch_exchange_rates()
+
+
 def _query_exchange_rate(curr1: str, curr2: str) -> Optional[float]:
     """Returns exchange rate of two ISO 4217 currencies"""
     # print("Gengi {0} gagnvart {1}".format(curr1, curr2))

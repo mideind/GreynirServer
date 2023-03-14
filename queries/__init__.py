@@ -73,8 +73,7 @@ from settings import Settings
 from queries.util import read_grammar_file
 
 from db import SessionContext, Session, desc
-from db.models import Query as QueryRow
-from db.models import QueryData, QueryLog
+from db.models import Query as QueryRow, QueryData, QueryLog
 
 from tree import ProcEnv, Tree, TreeStateDict, Node
 
@@ -544,11 +543,10 @@ class Query:
                 try:
                     # Parse the sentence
                     forest = bp.go(sent)
-                    if forest is not None:
-                        num = Fast_Parser.num_combinations(forest)
-                        if num > 1:
-                            # Reduce the resulting forest
-                            forest = rdc.go(forest)
+                    num = Fast_Parser.num_combinations(forest)
+                    if num > 1:
+                        # Reduce the resulting forest
+                        forest = rdc.go(forest)
                 except ParseError:
                     forest = None
                     num = 0

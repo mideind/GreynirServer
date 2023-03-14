@@ -328,25 +328,18 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
     return True
 
 
-def _whatsmynum_handler(q: Query, ql: str) -> bool:
-    """Handle queries of the form "Hvað er símanúmerið mitt?"""
-    return False
-
-
-_MY_PHONE_IS_REGEXES = (
-    r"símanúmer mitt er (.+)$",
-    r"símanúmerið mitt er (.+)$",
-    r"ég er með símanúmer (.+)$",
-    r"ég er með símanúmerið (.+)$",
-)
-
-
-_DUNNO_PHONE_NUM = "Ég veit ekki hvert símanúmer þitt er, en þú getur sagt mér það."
-
-
-def _mynumis_handler(q: Query, ql: str) -> bool:
-    """Handle queries of the form "Hvað er símanúmerið mitt?"""
-    return False
+#def _whatsmynum_handler(q: Query, ql: str) -> bool:
+#    """Handle queries of the form "Hvað er símanúmerið mitt?"""
+#    return False
+#
+#_MY_PHONE_IS_REGEXES = (
+#    r"símanúmer mitt er (.+)$",
+#    r"símanúmerið mitt er (.+)$",
+#    r"ég er með símanúmer (.+)$",
+#    r"ég er með símanúmerið (.+)$",
+#)
+#
+#_DUNNO_PHONE_NUM = "Ég veit ekki hvert símanúmer þitt er, en þú getur sagt mér það."
 
 
 _DEVICE_TYPE_QUERIES = frozenset(

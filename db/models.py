@@ -23,6 +23,8 @@
 
 """
 
+from __future__ import annotations
+
 from db import Session
 from typing import Any, Optional, cast
 
@@ -77,27 +79,33 @@ class Root(Base):
     __tablename__ = "roots"
 
     # Primary key
-    id = Column(Integer, Sequence("roots_id_seq"), primary_key=True)
+    id = cast(int,
+        Column(
+            Integer,
+            Sequence("roots_id_seq"),  # type: ignore  # Don't ask me why
+            primary_key=True
+        )
+    )
 
     # Domain suffix, root URL, human-readable description
-    domain = Column(String, nullable=False)
-    url = Column(String, nullable=False)
-    description = Column(String)
+    domain = cast(str, Column(String, nullable=False))
+    url = cast(str, Column(String, nullable=False))
+    description = cast(str, Column(String))
 
     # Default author
-    author = Column(String)
+    author = cast(str, Column(String))
     # Default authority of this source, 1.0 = most authoritative, 0.0 = least authoritative
-    authority = Column(Float)
+    authority = cast(float, Column(Float))
     # Finish time of last scrape of this root
-    scraped = Column(DateTime, index=True)
+    scraped = cast(datetime, Column(DateTime, index=True))
     # Module to use for scraping
-    scr_module = Column(String(80))
+    scr_module = cast(str, Column(String(80)))
     # Class within module to use for scraping
-    scr_class = Column(String(80))
+    scr_class = cast(str, Column(String(80)))
     # Are articles of this root visible on the Greynir web?
-    visible = Column(Boolean, default=True)
+    visible = cast(bool, Column(Boolean, default=True))
     # Should articles of this root be scraped automatically?
-    scrape = Column(Boolean, default=True)
+    scrape = cast(bool, Column(Boolean, default=True))
 
     # The combination of domain + url must be unique
     __table_args__ = (UniqueConstraint("domain", "url"),)
@@ -176,7 +184,7 @@ class Article(Base):
     topic_vector = cast(Optional[str], Column(String))
 
     # The back-reference to the Root parent of this Article
-    root: RelationshipProperty = relationship(
+    root: RelationshipProperty[Root] = relationship(
         "Root",
         foreign_keys="Article.root_id",
         backref=backref("articles", order_by=url),
@@ -188,13 +196,52 @@ class Article(Base):
         )
 
 
+class Summary(Base):
+    """Represents a summary of an article"""
+
+    __tablename__ = "summaries"
+
+    __table_args__ = (
+        PrimaryKeyConstraint("article_id", "language", name="summaries_pkey"),
+    )
+
+    # The article UUID + the language code is the primary key
+    article_id = Column(
+        psql_UUID(as_uuid=False),
+        ForeignKey("articles.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    # The language code is in a modified BCP 47 format, e.g. 'is_IS' or 'en_US'
+    # (note underscore instead of hyphen)
+    language = cast(str, Column(String(8), nullable=False))
+
+    # A summary of the article
+    summary = cast(str, Column(String, nullable=False, index=False))
+    # The full text of the article
+    text = cast(str, Column(String, nullable=True, index=False))
+    # Summarization time stamp
+    timestamp = cast(datetime, Column(DateTime, index=False))
+
+    # The back-reference to the Root parent of this Article
+    article: RelationshipProperty[Article] = relationship(
+        "Article",
+        backref=backref("summaries"),
+    )
+
+
 class Person(Base):
     """Represents a person"""
 
     __tablename__ = "persons"
 
     # Primary key
-    id = Column(Integer, Sequence("persons_id_seq"), primary_key=True)
+    id = cast(int,
+        Column(
+            Integer,
+            Sequence("persons_id_seq"),  # type: ignore  # Don't ask me why
+            primary_key=True
+        )
+    )
 
     # Foreign key to an article
     article_url = Column(
@@ -239,7 +286,13 @@ class Entity(Base):
     __tablename__ = "entities"
 
     # Primary key
-    id = Column(Integer, Sequence("entities_id_seq"), primary_key=True)
+    id = cast(int,
+        Column(
+            Integer,
+            Sequence("entities_id_seq"),  # type: ignore  # Don't ask me why
+            primary_key=True
+        )
+    )
 
     # Foreign key to an article
     article_url = Column(
@@ -254,10 +307,10 @@ class Entity(Base):
     name = Column(String, index=True)
 
     @hybrid_property
-    def name_lc(self) -> str:  # type: ignore
+    def name_lc(self) -> str:
         return self.name.lower()
 
-    @name_lc.comparator  # type: ignore
+    @name_lc.comparator
     def name_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.name)
 
@@ -273,7 +326,7 @@ class Entity(Base):
     timestamp = Column(DateTime)
 
     # The back-reference to the Article parent of this Entity
-    article = relationship("Article", backref=backref("entities", order_by=name))  # type: ignore
+    article: RelationshipProperty[Article] = relationship("Article", backref=backref("entities", order_by=name))
 
     # Add an index on the entity name in lower case
     name_lc_index = Index("ix_entities_name_lc", func.lower(name))
@@ -365,7 +418,7 @@ class Word(Base):
     cnt = Column(Integer, nullable=False)
 
     # The back-reference to the Article parent of this Word
-    article = relationship("Article", backref=backref("words"))  # type: ignore
+    article: RelationshipProperty[Article] = relationship("Article", backref=backref("words"))
 
     __table_args__ = (
         PrimaryKeyConstraint("article_id", "stem", "cat", name="words_pkey"),
@@ -428,9 +481,9 @@ class ArticleTopic(Base):
     )
 
     # The back-reference to the Article parent of this ArticleTopic
-    article = relationship("Article", backref=backref("atopics"))  # type: ignore
+    article: RelationshipProperty[Article] = relationship("Article", backref=backref("atopics"))
     # The back-reference to the Topic parent of this ArticleTopic
-    topic = relationship("Topic", backref=backref("atopics"))  # type: ignore
+    topic: RelationshipProperty[Topic] = relationship("Topic", backref=backref("atopics"))
 
     __table_args__ = (
         PrimaryKeyConstraint("article_id", "topic_id", name="atopics_pkey"),
@@ -470,7 +523,7 @@ class Trigram(Base):
     __table_args__ = (PrimaryKeyConstraint("t1", "t2", "t3", name="trigrams_pkey"),)
 
     @staticmethod
-    def upsert(session: Session, t1: str, t2: str, t3: str):
+    def upsert(session: Session, t1: str, t2: str, t3: str) -> None:
         """Insert a trigram, or increment the frequency count if already present"""
         # The following code uses "upsert" functionality (INSERT...ON CONFLICT...DO UPDATE)
         # that was introduced in PostgreSQL 9.5. This means that the upsert runs on the
@@ -486,7 +539,7 @@ class Trigram(Base):
         cast(Any, session).execute(Trigram._Q, dict(t1=t1, t2=t2, t3=t3))
 
     @staticmethod
-    def delete_all(session: Session):
+    def delete_all(session: Session) -> None:
         """Delete all trigrams"""
         cast(Any, session).execute("delete from trigrams;")
 
@@ -572,10 +625,10 @@ class Query(Base):
     question = Column(String, index=True, nullable=False)
 
     @hybrid_property
-    def question_lc(self) -> str:  # type: ignore
+    def question_lc(self) -> str:
         return self.question.lower()
 
-    @question_lc.comparator  # type: ignore
+    @question_lc.comparator
     def question_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.question)
 
@@ -586,10 +639,10 @@ class Query(Base):
     answer = Column(String, index=False, nullable=True)
 
     @hybrid_property
-    def answer_lc(self) -> str:  # type: ignore
+    def answer_lc(self) -> str:
         return self.answer.lower()
 
-    @answer_lc.comparator  # type: ignore
+    @answer_lc.comparator
     def answer_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.answer)
 
@@ -597,15 +650,15 @@ class Query(Base):
     voice = Column(String, index=False, nullable=True)
 
     @hybrid_property
-    def voice_lc(self) -> str:  # type: ignore
+    def voice_lc(self) -> str:
         return self.voice.lower()
 
-    @voice_lc.comparator  # type: ignore
+    @voice_lc.comparator
     def voice_lc(cls) -> Comparator:
         return CaseInsensitiveComparator(cls.voice)
 
     # Error code
-    error = Column(String(256), nullable=True)
+    error = cast(Optional[str], Column(String(256), nullable=True))
 
     # When does this answer expire, for caching purposes?
     # NULL=immediately
@@ -691,7 +744,7 @@ class QueryLog(Base):
     error = Column(String(256), nullable=True)
 
     @staticmethod
-    def from_Query(q: Query):
+    def from_Query(q: Query) -> QueryLog:
         """Create QueryLog object from Query object."""
         return QueryLog(
             timestamp=q.timestamp,

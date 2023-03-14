@@ -34,19 +34,20 @@
 
 import re
 from datetime import datetime
+from typing import Any, cast
 
 from db.models import Entity
 from tokenizer import Abbreviations
 
 from queries import QueryStateDict
-from tree import Result, TreeStateDict
+from tree import Node, NonterminalNode, ParamList, Result, TreeStateDict
 
 
 MODULE_NAME = __name__
 PROCESSOR_TYPE = "tree"
 
 # Avoid chaff
-NOT_DEFINITIONS = {
+NOT_DEFINITIONS = frozenset((
     "við",
     "ári",
     "ár",
@@ -90,10 +91,10 @@ NOT_DEFINITIONS = {
     "það sama",
     "svar",
     "rek",
-}
+))
 
 # The following set should contain lowercase words
-NOT_ENTITIES = {
+NOT_ENTITIES = frozenset((
     "hann",
     "hún",
     "það",
@@ -372,7 +373,7 @@ NOT_ENTITIES = {
     "shintótrúin",
     "sjintotrúin",
     "sjintótrúin",
-}
+))
 
 # Lower-case abbreviations that are allowed to be a part of entity names
 ALLOWED_PARTS = frozenset(
@@ -386,7 +387,8 @@ def article_begin(state: TreeStateDict) -> None:
     url = state["url"]  # URL of the article being processed
     # Delete all existing entities for this article
     # pylint: disable=no-member
-    session.execute(Entity.table().delete().where(Entity.article_url == url))
+    etab = cast(Any, Entity).table()
+    session.execute(etab.delete().where(Entity.article_url == url))
     # Create a name mapping dict for the article
     # Last name -> full name
     state["names"] = dict()  # type: ignore
@@ -523,7 +525,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             session.add(e)
 
 
-def visit(state, node):
+def visit(state: Any, node: Node) -> bool:
     """Determine whether to visit a particular node"""
     # We don't visit Skilyrðissetning or any of its children
     # because we know any assertions in there are conditional
@@ -535,7 +537,7 @@ def visit(state, node):
 # tree for a sentence.
 
 
-def EfLiður(node, params, result):
+def EfLiður(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Ekki láta sérnafn lifa í gegn um eignarfallslið, nema
     það sé fyrirtækisnafn, sbr. 'Eimskipafélag Íslands hf.'"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
@@ -546,52 +548,52 @@ def EfLiður(node, params, result):
         result.del_attribs(("fyrirtæki",))
 
 
-def EfLiðurForskeyti(node, params, result):
+def EfLiðurForskeyti(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Ekki láta sérnafn lifa í gegn um eignarfallslið"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
     # Ekki breyta eignarfallsliðum í nefnifall
     result._nominative = result._text
 
 
-def NlSérnafnEf(node, params, result):
+def NlSérnafnEf(node: NonterminalNode, params: ParamList, result: Result) -> None:
     # Ekki breyta eignarfallsliðum í nefnifall
     result._nominative = result._text
 
 
-def OkkarFramhald(node, params, result):
+def OkkarFramhald(node: NonterminalNode, params: ParamList, result: Result) -> None:
     # Ekki breyta eignarfallsliðum í nefnifall
     # Þetta grípur 'einn okkar', 'hvorugur þeirra'
     result._nominative = result._text
 
 
-def AtviksliðurEinkunn(node, params, result):
+def AtviksliðurEinkunn(node: NonterminalNode, params: ParamList, result: Result) -> None:
     # Ekki breyta atviksliðum í nefnifall
     result._nominative = result._text
 
 
-def FsMeðFallstjórn(node, params, result):
+def FsMeðFallstjórn(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Ekki láta sérnafn lifa í gegn um forsetningarlið"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
     # Ekki breyta forsetningarliðum í nefnifall
     result._nominative = result._text
 
 
-def TilvísunarsetningMeðKommu(node, params, result):
+def TilvísunarsetningMeðKommu(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """'...sem Jón í Múla taldi gott fé' - ekki breyta í nefnifall"""
     result._nominative = result._text
 
 
-def SetningÁnF(node, params, result):
+def SetningÁnF(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Ekki láta sérnafn lifa í gegn um setningu án frumlags"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
 
 
-def SetningSo(node, params, result):
+def SetningSo(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Ekki láta sérnafn lifa í gegn um setningu sem hefst á sögn"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
 
 
-def Sérnafn(node, params, result):
+def Sérnafn(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Sérnafn, stutt eða langt"""
     result.sérnafn = result._text
     result.sérnafn_nom = result._nominative
@@ -599,12 +601,12 @@ def Sérnafn(node, params, result):
     result.names = {result._nominative}
 
 
-def Nafn(node, params, result):
+def Nafn(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Við viljum ekki láta laufið Nafn skilgreina nafn á einingu (entity)"""
     result.nafn_flag = True
 
 
-def SérnafnEðaManneskja(node, params, result):
+def SérnafnEðaManneskja(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Sérnafn eða mannsnafn, eða flóknari nafnliður (Nafn)"""
     if "nafn_flag" in result:
         # Flóknari nafnliður: notum hann ekki sem nafn á Entity
@@ -619,20 +621,20 @@ def SérnafnEðaManneskja(node, params, result):
     result.names = {result._nominative}
 
 
-def Fyrirtæki(node, params, result):
+def Fyrirtæki(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Fyrirtækisnafn, þ.e. sérnafn + ehf./hf./Inc. o.s.frv."""
     result.sérnafn = result._text
     result.sérnafn_nom = result._nominative
     result.fyrirtæki = result._text
 
 
-def SvigaInnihaldFsRuna(node, params, result):
+def SvigaInnihaldFsRuna(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Svigainnihald sem er bara forsetningarruna er ekki brúklegt sem skilgreining"""
     result._text = ""
     result._nominative = ""
 
 
-def SvigaInnihald(node, params, result):
+def SvigaInnihald(node: NonterminalNode, params: ParamList, result: Result) -> None:
     if not node.has_variant("et"):
         return
     tengiliður = result.find_child(nt_base="Tilvísunarsetning")
@@ -679,22 +681,22 @@ def SvigaInnihald(node, params, result):
         pass
     else:
         p = params[0]
-        if p is not None and p.has_nt_base("Nl") and p.has_variant("et"):
+        if p.has_nt_base("Nl") and p.has_variant("et"):
             # Nl/fall_et: OK
             result.sviga_innihald = result._nominative
 
 
-def NlKjarni(node, params, result):
+def NlKjarni(node: NonterminalNode, params: ParamList, result: Result) -> None:
     result.del_attribs("sérnafn_eind_nom")
 
 
-def Skst(node, params, result):
+def Skst(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Ekki láta 'fyrirtækið Apple-búðin' skila 'Apple er fyrirtæki'"""
     result.del_attribs("sérnafn")
     result.del_attribs("sérnafn_nom")
 
 
-def Fyrirbæri(node, params, result):
+def Fyrirbæri(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Bæta Fyrirbæri við sem sérnafni ef það uppfyllir skilyrði þar um"""
     if "sérnafn" in result or "entities" in result or "sviga_innihald" in result:
         return
@@ -706,7 +708,7 @@ def Fyrirbæri(node, params, result):
         result.sérnafn_nom = result._nominative
 
 
-def NlEind(node, params, result):
+def NlEind(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Ef sérnafn og sviga_innihald eru rétt undir NlEind þá er það skilgreining"""
 
     if (
@@ -755,7 +757,7 @@ def NlEind(node, params, result):
     result.del_attribs(("sviga_innihald", "sérnafn_eind_nom"))
 
 
-def SamstættFall(node, params, result):
+def SamstættFall(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """'Danska byggingavörukeðjan Bygma'"""
 
     assert len(params) >= 2
@@ -811,17 +813,17 @@ def SamstættFall(node, params, result):
     result.entities.append((entity, "er", definition))
 
 
-def ÓsamstættFall(node, params, result):
+def ÓsamstættFall(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """'(Ég versla við) herrafataverslunina Smekkmaður'"""
     SamstættFall(node, params, result)
 
 
-def Skilgreining(node, params, result):
+def Skilgreining(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """'bandarísku sjóðirnir'"""
     result.skilgreining = result._canonical  # bandarískur sjóður
 
 
-def FyrirbæriMeðGreini(node, params, result):
+def FyrirbæriMeðGreini(node: NonterminalNode, params: ParamList, result: Result) -> None:
     if node.has_variant("ft"):
         # Listi af fyrirbærum: 'bandarísku sjóðirnir Autonomy og Eaton Vance'
         if "skilgreining" in result and "eindir" in result:
@@ -832,7 +834,7 @@ def FyrirbæriMeðGreini(node, params, result):
     result.del_attribs(("skilgreining", "eindir"))
 
 
-def Setning(node, params, result):
+def Setning(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Meðhöndla setningar á forminu 'sérnafn fsliðir* er-sögn eitthvað'"""
 
     if not node.has_variant("p3"):

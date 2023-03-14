@@ -128,8 +128,8 @@ def format_is(r: float, decimals: int = 0) -> str:
 
 @app.template_filter("format_ts")
 def format_ts(ts: datetime) -> str:
-    """Flask/Jinja2 template filter to format a timestamp"""
-    return str(ts)[0:19]
+    """Flask/Jinja2 template filter to format a timestamp as YYYY-MM-DD HH:MM"""
+    return str(ts)[0:16]
 
 
 # Flask cache busting for static .css and .js files
@@ -306,11 +306,12 @@ else:
         werkzeug_log.setLevel(logging.WARNING)
 
     # Log our startup
+    version = sys.version.replace('\n', ' ')
     log_str = (
         f"Greynir instance starting with "
-        "host={Settings.HOST}:{Settings.PORT}, "
-        "db_host={Settings.DB_HOSTNAME}:{Settings.DB_PORT} "
-        "on Python {sys.version.replace('\n', ' ')}"
+        f"host={Settings.HOST}:{Settings.PORT}, "
+        f"db_host={Settings.DB_HOSTNAME}:{Settings.DB_PORT} "
+        f"on Python {version}"
     )
     logging.info(log_str)
     print(log_str)

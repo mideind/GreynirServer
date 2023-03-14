@@ -71,7 +71,7 @@ from geo import in_iceland
 import straeto
 
 # Today's bus schedule, cached
-SCHEDULE_TODAY: Optional[straeto.BusSchedule] = None
+schedule_today: Optional[straeto.BusSchedule] = None
 SCHEDULE_LOCK = Lock()
 
 
@@ -494,11 +494,11 @@ def query_arrival_time(query: Query, result: Result) -> AnswerTuple:
             return dict(answer=answer), answer, voice_answer
 
     # Obtain today's bus schedule
-    global SCHEDULE_TODAY
+    global schedule_today
     with SCHEDULE_LOCK:
-        if SCHEDULE_TODAY is None or not SCHEDULE_TODAY.is_valid_today:
+        if schedule_today is None or not schedule_today.is_valid_today:
             # We don't have today's schedule: create it
-            SCHEDULE_TODAY = straeto.BusSchedule()
+            schedule_today = straeto.BusSchedule()
 
     # Obtain the set of stops that the user may be referring to
     stops: List[straeto.BusStop] = []
@@ -571,7 +571,7 @@ def query_arrival_time(query: Query, result: Result) -> AnswerTuple:
     # !!! route '1' would mean 'AL.1' instead of 'ST.1'.
     if stops:
         for stop in stops:
-            arrivals_dict, arrives = SCHEDULE_TODAY.arrivals(route_number, stop)
+            arrivals_dict, arrives = schedule_today.arrivals(route_number, stop)
             if arrives:
                 break
         arrivals = list(arrivals_dict.items())
@@ -582,7 +582,7 @@ def query_arrival_time(query: Query, result: Result) -> AnswerTuple:
         # Get a predicted arrival time for each direction from the
         # real-time bus location server
         assert stop is not None
-        prediction = SCHEDULE_TODAY.predicted_arrival(route_number, stop)
+        prediction = schedule_today.predicted_arrival(route_number, stop)
         now = datetime.utcnow()
         hms_now = (now.hour, now.minute + (now.second // 30), 0)
         first = True

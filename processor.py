@@ -56,7 +56,7 @@ from tree import Tree, ProcEnv
 from utility import modules_in_dir
 
 
-_PROFILING = False
+_profiling = False
 
 
 class TokenContainer:
@@ -330,7 +330,7 @@ class Processor:
                 for a in q.yield_per(200):
                     yield field(a)
 
-        if _PROFILING:
+        if _profiling:
             # If profiling, just do a simple map within a single thread and process
             for url in iter_parsed_articles():
                 self.go_single(url)
@@ -562,9 +562,9 @@ def main() -> None:
     import cProfile as profile
     import pstats
 
-    global _PROFILING
+    global _profiling
 
-    _PROFILING = True
+    _profiling = True
     filename = "Processor.profile"
     profile.run("_main()", filename)
     stats = pstats.Stats(filename)

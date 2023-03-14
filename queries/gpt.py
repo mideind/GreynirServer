@@ -23,20 +23,44 @@
 
 """
 
-import re
-from typing import Any, Dict, List, Optional, cast
-from typing_extensions import TypedDict
+from __future__ import annotations
 
-import os
+import abc
+import inspect
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
+from typing_extensions import TypedDict, NotRequired
+
 import json
-import copy
 import logging
 from datetime import datetime
 
 import openai
 
+import straeto  # type: ignore
+from iceweather import forecast_text  # type: ignore
+
 from queries import Query
+from queries.currency import fetch_exchange_rates
 from speech.trans.num import numbers_to_ordinal, years_to_text
+from queries.util.openai_gpt import jdump, detect_language, HistoryList, OpenAiDict, Completion
+
+
+class LocationDict(TypedDict):
+    """The 'location' part of the state passed to the GPT model"""
+
+    city: str
+    lat: NotRequired[float]
+    lon: NotRequired[float]
 
 
 class StateDict(TypedDict):
@@ -46,48 +70,22 @@ class StateDict(TypedDict):
     date_iso_utc: str
     time_iso_utc: str
     weekday: Dict[str, str]
-    location: str
+    location: LocationDict
     timezone: str
     locale: str
 
 
-class OpenAiChoiceDict(TypedDict):
-    """The 'choices' part of the GPT model response"""
-
-    text: str
-    finish_reason: str
-
-
-class OpenAiDict(TypedDict):
-    """The GPT model response"""
-
-    choices: List[OpenAiChoiceDict]
-    id: str
-    model: str
-    object: str
-
-
-class HistoryDict(TypedDict):
-    """A single history item"""
-
-    q: str
-    a: str
-
-
-# The list of previous Q/A pairs
-HistoryList = List[HistoryDict]
+MacroResultType = Optional[Tuple[str, Dict[str, Union[str, int, float]]]]
+AgentClass = Optional[Type["FollowUpAgent"]]
 
 # Max number of previous queries (history) to include in the prompt
 MAX_HISTORY_LENGTH = 4
 
+# Max number of question/answer turns to allow when answering a single question
+MAX_TURNS = 2
+
 # The relative priority of this query processor module
 PRIORITY = 1000
-
-# Set the OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY") or ""
-
-# GPT model to use
-MODEL = os.getenv("OPENAI_MODEL") or "text-davinci-003"
 
 # Help the model verbalize weekday names in Icelandic
 WEEKDAY = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
@@ -101,14 +99,36 @@ VIKUDAGUR = [
     "sunnudagur",
 ]
 
-# The preamble and prompt template for the GPT model
-PROMPT = """
+CALL_MACRO = "$CALL="
+CALL_MACRO_LENGTH = len(CALL_MACRO)
+
+AGENT_SUFFIX = "Agent"
+AGENT_SUFFIX_LENGTH = len(AGENT_SUFFIX)
+
+STANDARD_PREAMBLE = """
 You are a highly competent Icelandic-language voice assistant named Embla.
 You have been developed by the company Miðeind to answer all manner of questions
-in a factually accurate way to the very best of your abilities. You are always
-courteous and helpful. If you are in doubt as to the answer, or don't think
-you can answer in a courteous and helpful way, you should reply in Icelandic saying
-you do not know or cannot answer.
+from your user in a factually accurate and succinct way to the very best of your abilities.
+You are always courteous and helpful.
+You reply with short and clear answers and avoid long explanations.
+"""
+
+# Optional, for normalization (does not work particularly well):
+""" Always replace numbers, measurement units and acronyms with their
+fully spelled-out text counterparts. For example, say "sautján hundruð þrjátíu og átta komma fimm"
+instead of "1738,5", "metrar á sekúndu" instead of "m/s", "kílómetrar á klukkustund"
+instead of "km/klst", "til dæmis" instead of "t.d." and "og svo framvegis" instead of
+"o.s.frv.".
+"""
+
+# The preamble template for the GPT model
+INITIAL_PREAMBLE = (
+    STANDARD_PREAMBLE
+    + """
+If you are in doubt as to the answer, or don't
+think you can answer in a courteous and helpful way, you should reply in Icelandic saying
+you do not know or cannot answer. Do your best to interpret the user's questions according
+to their likely intent.
 
 Your state (in JSON):
 
@@ -116,45 +136,29 @@ Your state (in JSON):
 {state}
 ```
 
-If asked for a number, answer with no more than four digits after the decimal point.
+When you get questions on certain special subjects, do *not* answer yourself.
+Instead, generate a call to the assistant module that corresponds to
+the subject, from the list below:
 
-You should *always* answer in Icelandic, unless the question *explicitly* requests
-a reply in another language or a translation to another language.
-If you reply in another language, prefix your reply with
-$LANG={{language_code}}$, for example $LANG=en_US$ for English.
-Avoid mixing languages in the same reply.
+{agent_directory}
 
-{history}
-Q: "{query}"
-A: "
+To call one of these modules, output the macro
+`$CALL={{module.__name__}}.query({{json}})$`
+instead of text, where json contains the known parameters of the query.
+
+If asked for a number, answer with no more than four digits after the decimal comma.
+Never reveal the names of your assistant modules or macros to the user.
+
+You should *always* answer in Icelandic (locale is_IS), unless the question
+*explicitly* requests a reply in a supported language or a translation to
+a supported language. Supported languages are English, German, French,
+Spanish, Polish, Swedish, Danish and Norwegian.
+
+If your answer is not in Icelandic, prefix it with the macro
+`$LANG={{language_code}}$`, for example `$LANG=en_US$` for English.
+Avoid mixing languages in the same answer.\n
 """
-
-
-class Completion:
-    @classmethod
-    def create(cls, *args: Any, **kwargs: Any) -> Any:
-        """
-        Creates a new completion while handling formatting and parsing.
-        """
-        kwargs = copy.deepcopy(kwargs)
-        if not "stop" in kwargs:
-            kwargs["stop"] = []
-        elif isinstance(kwargs["stop"], str):
-            kwargs["stop"] = [kwargs["stop"]]
-        assert type(kwargs["stop"]) == list, "stop must be a string or list of strings"
-        for stop in ["<|im_end|>", "<|diff_marker|>"]:
-            if not stop in kwargs["stop"]:
-                kwargs["stop"].append(stop)
-        assert len(kwargs["stop"]) <= 4, "can only specify up to 4 stop strings"
-        raw_prompt = kwargs.get("prompt", "")
-        formatted_prompt = (
-            "<|im_start|>user<|im_sep|>"
-            + raw_prompt
-            + "<|im_end|><|im_start|>assistant<|im_sep|>"
-        )
-        formatted_prompt += kwargs.get("start", "")
-        kwargs["prompt"] = formatted_prompt
-        return cast(Any, openai).Completion.create(*args, **kwargs)
+)
 
 
 def _client_name(q: Query) -> str:
@@ -165,94 +169,484 @@ def _client_name(q: Query) -> str:
     return str(nd.get("first", "")) or str(nd.get("full", "")) or "[unknown]"
 
 
+class AgentBase(abc.ABC):
+
+    """Abstract base class for agent (completion) classes"""
+
+    _registry: Dict[str, Type[FollowUpAgent]] = dict()
+
+    def __init__(
+        self, q: Query, ql: str, state: StateDict, history_list: HistoryList
+    ) -> None:
+        super().__init__()
+        self._q = q
+        self._ql = ql
+        self._state = state
+        self._history_list = history_list
+
+    @classmethod
+    def module_name(cls) -> str:
+        """Return the module name associated with this class"""
+        raise NotImplementedError
+
+    @classmethod
+    def get(cls, name: str) -> AgentClass:
+        """Return the completion class with the given name"""
+        return AgentBase._registry.get(name)
+
+    @classmethod
+    def agents(cls) -> Iterable[Type[FollowUpAgent]]:
+        """Return all follow-up completion classes"""
+        return AgentBase._registry.values()
+
+    @staticmethod
+    def answer_from_gpt_response(response: Any) -> str:
+        """Utility function to extract the answer from a GPT response"""
+        r: Optional[OpenAiDict] = None
+        if response is not None:
+            r = json.loads(str(response))
+        if r is None:
+            return ""
+        print(r)  # !!! DEBUG
+        # Extract the answer from the GPT response JSON
+        try:
+            answer = r["choices"][0]["message"]["content"].strip('" \n\r\t')
+            return answer
+        except (ValueError, KeyError, IndexError):
+            """Something is wrong with the GPT response format"""
+            return ""
+
+    @abc.abstractmethod
+    def submit(self) -> Tuple[str, AgentClass]:
+        """Submits the completion to the GPT model. Returns the
+        answer and the name of a completion class that should handle
+        the next turn in the conversation with GPT. If the class is
+        empty, the answer is final."""
+        raise NotImplementedError()
+
+
+class InitialAgent(AgentBase):
+
+    """Models the initial prompt and completion for a user's question"""
+
+    def __init__(
+        self, q: Query, ql: str, state: StateDict, history_list: HistoryList
+    ) -> None:
+        super().__init__(q, ql, state, history_list)
+
+    _agent_directory = ""
+
+    @classmethod
+    def _create_agent_directory(cls) -> None:
+        """Create a string by concatenating a short description
+        of each available follow-up agent class"""
+        cls._agent_directory = "".join(
+            [agent.directory_entry() for agent in AgentBase.agents()]
+        )
+
+    def submit(self) -> Tuple[str, AgentClass]:
+        """Obtains an initial completion from GPT for a question"""
+        # Assemble a directory of available follow-up agents
+        # and cache it
+        if not self._agent_directory:
+            self._create_agent_directory()
+        # Assemble the prompt preamble
+        preamble = INITIAL_PREAMBLE.format(
+            state=jdump(self._state), agent_directory=self._agent_directory,
+        )
+
+        # Submit the prompt, comprised of the preamble,
+        # the conversation history and the query,
+        # to the GPT model for completion
+        r = Completion.create_from_preamble_and_history(
+            preamble=preamble,
+            history_list=self._history_list,
+            query=self._ql,
+            max_tokens=256,
+            temperature=0.0,
+        )
+
+        # Extract the answer from the GPT response
+        answer = self.answer_from_gpt_response(r)
+
+        # Detect whether a follow up completion is called for
+        call_macro_index = answer.find(CALL_MACRO)
+        if call_macro_index >= 0:
+            # Pick out the module name and parameters
+            cut = answer[call_macro_index + CALL_MACRO_LENGTH:]
+            end = cut.rfind(")$")
+            if end < 0:
+                return "", None  # Something wrong: Unable to answer
+            cut = cut[:end + 1]  # Include the closing parenthesis
+            arg = cut.split(".", maxsplit=1)
+            print(arg)
+            if len(arg) != 2:
+                return "", None  # Something wrong: Unable to answer
+            module_name = arg[0]
+            if module_name.startswith("{"):
+                # GPT is probably talking about itself, which it should not do
+                return "", None
+            parameter = arg[1]
+            if parameter.startswith("py."):
+                # Fix GPT misunderstanding which sometimes occurs
+                parameter = parameter[3:]
+            parameter = parameter[len("query") + 1 : -1]
+            # Convert module name to agent name
+            print(module_name, parameter)
+            agent_class = AgentBase.get(module_name)
+            return parameter, agent_class
+
+        return answer, None
+
+
+class FollowUpAgent(AgentBase):
+
+    """Models a follow-up completion for a question.
+       Derived classes should adhere to the following protocol:
+    *  The class name should be the name of the pseudo-module that
+       implements the follow-up completion, plus the word 'Agent'.
+       Example: BusAgent -> module 'bus'.
+    *  The class docstring should contain a short description
+       of the types of query that this agent can handle.
+    *  The class should have a method called 'query'
+       that takes a single argument, a dictionary of parameters,
+       and returns a string that contains the information to be
+       submitted to the GPT model in a second prompt to generate
+       a final answer. This string is usually an object formatted in JSON.
+    *  The class should have a class method called 'parameter_json'
+       that returns a JSON string describing the parameters
+       of the 'query' method.
+    """
+
+    def __init__(
+        self,
+        q: Query,
+        ql: str,
+        state: StateDict,
+        history_list: HistoryList,
+        answer: str,
+    ) -> None:
+        super().__init__(q, ql, state, history_list)
+        self._answer = answer
+
+    def __init_subclass__(cls, **kwargs: Any):
+        """Keep a registry of all concrete (non-abstract) follow-up completion classes"""
+        super().__init_subclass__(**kwargs)
+        if not inspect.isabstract(cls):
+            cls._registry[cls.module_name()] = cls
+
+    @abc.abstractmethod
+    def query(self, parameters: Dict[str, Any]) -> str:
+        """Queries the module for a follow-up completion"""
+        raise NotImplementedError()
+
+    @classmethod
+    def parameter_json(cls) -> str:
+        """Return a JSON string describing the parameters for this
+        follow-up completion class"""
+        raise NotImplementedError()
+
+    @classmethod
+    def directory_entry(cls) -> str:
+        """Return a string describing this class for inclusion in the
+        initial prompt"""
+        return (
+            f"* `{cls.module_name()}.py`: {cls.__doc__}\n"
+            f"  Parameter JSON: `{cls.parameter_json()}`\n"
+        )
+
+    @classmethod
+    def module_name(cls) -> str:
+        """Convert an agent class name to a 'pseudo-module' name"""
+        # For instance, BusAgent -> "bus"
+        n = cls.__name__
+        if not n.endswith(AGENT_SUFFIX):
+            raise ValueError(f"Invalid agent class name: {n}")
+        return n[:-AGENT_SUFFIX_LENGTH].lower()
+
+    # By default, we store the final answer of a follow-up module
+    # in the chat history. This is not always desirable, for instance
+    # in the currency module, where the answer may tempt GPT into
+    # using that as a basis instead of a new currency query.
+    _ADD_INTERMEDIATE_ANSWER_TO_HISTORY = False
+
+    _PROMPT = STANDARD_PREAMBLE + (
+        "\nYour state is\n```\n{state}\n```\n"
+        "Your information is\n```\n{result}\n```\n"
+        "Answer the user's question below *in Icelandic* "
+        "using the information.\n\n"
+        "{query}"
+    )
+
+    def submit(self) -> Tuple[str, AgentClass]:
+        """Submits a follow-up completion to GPT for a bus question"""
+        # Query the bus module
+        parameters = json.loads(self._answer)
+        result = self.query(parameters)
+        # Assemble the prompt
+        prompt = self._PROMPT.format(
+            state=jdump(self._state), result=result, query=self._ql,
+        )
+        # Submit the prompt to the GPT model for completion
+        r = Completion.create(
+            prompt=prompt, max_tokens=256, temperature=0.0,
+        )
+        answer = self.answer_from_gpt_response(r)
+        return answer, None  # By default, there's no further follow-up
+
+
+class BusAgent(FollowUpAgent):
+
+    """Bus stops, bus numbers, bus schedules and arrival times"""
+
+    @classmethod
+    def parameter_json(cls) -> str:
+        """Return a JSON string describing the parameters for this
+        follow-up completion class"""
+        return jdump(
+            {
+                "query": "bus_numbers|nearest_stop|arrival_time",
+                "bus": "bus number",
+                "stop": "stop name",
+                "nearest_stop": {
+                    "location": "location name",
+                    "lat": "latitude",
+                    "lon": "longitude",
+                },
+            }
+        )
+
+    def query(self, parameters: Dict[str, Any]) -> str:
+        """Queries the bus module for a follow-up completion"""
+        stop_name = parameters.get("stop", "")
+        qtype = parameters.get("query", "")
+        # bus_number = parameters.get("bus", "")
+        # nearest_stop = parameters.get("nearest_stop", {})
+        stops = straeto.BusStop.named(stop_name, fuzzy=True) if stop_name else []
+        location = self._q.location
+        if location:
+            if stops:
+                cast(Any, straeto).BusStop.sort_by_proximity(stops, self._q.location)
+            else:
+                stops = straeto.BusStop.closest_to_list(
+                    location, n=2, within_radius=0.4
+                )
+                if not stops:
+                    # This will fetch the single closest stop, regardless of distance
+                    stops = [
+                        cast(straeto.BusStop, straeto.BusStop.closest_to(location))
+                    ]
+        if stops:
+            stop = stops[0]
+            routes: Set[str] = set()
+            route_id: str
+            for route_id in cast(Any, stop).visits.keys():
+                route = straeto.BusRoute.lookup(route_id)
+                if route is not None:
+                    routes.add(route.number)
+            reply = dict(stop=stop.name, routes=list(routes))
+        else:
+            # Unable to fill in further information; return the original parameters
+            reply = parameters.copy()
+        if qtype:
+            reply["query"] = qtype
+        return f"{reply}"
+
+
+class WeatherAgent(FollowUpAgent):
+
+    """Weather information and forecasts"""
+
+    @classmethod
+    def parameter_json(cls) -> str:
+        """Return a JSON string describing the parameters for this
+        follow-up completion class"""
+        return jdump(
+            {
+                "query": "current|forecast",
+                "time": "ISO datetime",
+                "location": "location name",
+            }
+        )
+
+    def query(self, parameters: Dict[str, Any]) -> str:
+        """Queries the weather module for a follow-up completion"""
+        res: Dict[str, Any] = forecast_text(2)
+        try:
+            txt: str = res["results"][0]["content"]
+        except (KeyError, IndexError):
+            raise ValueError("Unable to fetch weather information")
+        reply = parameters.copy()
+        reply["text"] = txt
+        return f"{reply}"
+
+
+class CurrencyAgent(FollowUpAgent):
+
+    """Currency exchange rates"""
+
+    @classmethod
+    def parameter_json(cls) -> str:
+        """Return a JSON string describing the parameters for this
+        follow-up completion class"""
+        return jdump(
+            {
+                "from_currency": "currency code",
+                "to_currency": "currency code",
+                "amount": "amount",
+            }
+        )
+
+    _ADD_INTERMEDIATE_ANSWER_TO_HISTORY = True
+
+    _PROMPT = STANDARD_PREAMBLE + (
+        "\nCurrency rates versus the ISK are as follows:\n```\n{result}\n```\n"
+        "Answer the user's question below *in Icelandic* "
+        "using the rates. You may need to think step by step to "
+        "calculate rates between two currencies if neither of them is the ISK. "
+        "In that case, you can convert one of them to ISK first, and then from "
+        "ISK to the other. For example, if USD_ISK is 144, and EUR_ISK is 155, "
+        "EUR_USD is 155 / 144 = 1.07638.\n\n"
+        "{query}"
+    )
+
+    def query(self, parameters: Dict[str, Any]) -> str:
+        """Queries the currency module for a follow-up completion"""
+        json = fetch_exchange_rates()
+        if json is None:
+            raise ValueError("Unable to fetch exchange rates")
+        reply = parameters.copy()
+        rates = { f"{k}_ISK": round(v, 6) for k, v in json.items() }
+        rates.update({ f"ISK_{k}": round(1.0/v, 6) for k, v in json.items() })
+        reply["rates"] = rates
+        return f"{reply}"
+
+
+class NewsAgent(FollowUpAgent):
+
+    """Current news headlines"""
+
+    @classmethod
+    def parameter_json(cls) -> str:
+        """Return a JSON string describing the parameters for this
+        follow-up completion class"""
+        return jdump({"category": "news_category|all",})
+
+    def query(self, parameters: Dict[str, Any]) -> str:
+        """Queries the news module for a follow-up completion"""
+        category = parameters.get("category", "all")
+        return jdump(
+            dict(
+                category=category,
+                headlines=[
+                    # Höfundur: Tumi Þorsteinsson, þriggja ára, í miðju COVID-19
+                    "Kaffihúsið er bilað",
+                    "Bókasafnið er lokað",
+                    "Jólin eru búin",
+                ],
+            )
+        )
+
+
+class PeopleAgent(FollowUpAgent):
+
+    """A database of people, their names, their current titles and roles"""
+
+    @classmethod
+    def parameter_json(cls) -> str:
+        """Return a JSON string describing the parameters for this
+        follow-up completion class"""
+        return jdump({"name": "name|[unknown]", "title": "title|[unknown]",})
+
+    def query(self, parameters: Dict[str, Any]) -> str:
+        """Queries the people module for a follow-up completion"""
+        name = parameters.get("name", "[unknown]")
+        title = parameters.get("title", "[unknown]")
+        if not name or name == "[unknown]":
+            if not title or title == "[unknown]":
+                title = "fimm ára strákur"
+            return jdump(dict(name="Tumi Þorsteinsson", title=title))
+        if not title or title == "[unknown]":
+            if not name or name == "[unknown]":
+                name = "Tumi Þorsteinsson"
+            return jdump(dict(name=name, title="fimm ára strákur"))
+        return jdump(dict(name=name, title=title))
+
+
 def handle_plain_text(q: Query) -> bool:
-    """Pass a plain text query to GPT and return the response"""
+    """Main entry point into this query module"""
+    # Pass a plain text query to GPT and return the response
     try:
         if not openai.api_key:
             raise ValueError("Missing OpenAI API key")
 
         ql = q.query
+        loc = q.location
         now = datetime.now()
         now_iso = now.isoformat()
         wd = now.weekday()  # 0=Monday, 6=Sunday
-        # Obtain the history of previous Q/A pairs, if any
-        ctx = q.fetch_context()
-        history_list = cast(HistoryList, [] if ctx is None else ctx.get("history", []))
-        # Include a limited number of previous queries in the history,
-        # to keep the prompt within reasonable limits
-        history_list = history_list[-MAX_HISTORY_LENGTH:]
-        # Format previous (query, answer) pairs to conform to the prompt format
-        history = "\n".join(
-            [
-                f'Q: "{h["q"]}"\nA: "{h["a"]}"\n'
-                for h in history_list
-                if "q" in h and "a" in h
-            ]
-        )
         # Assemble the current query state
         state: StateDict = {
             "client_name": _client_name(q),  # The name of the user, if known
-            "location": "Reykjavík",  # !!! TODO
+            "location": {"city": "Reykjavík"},  # !!! TODO
             "date_iso_utc": now_iso[0:10],  # YYYY-MM-DD
             "weekday": {"en_US": WEEKDAY[wd], "is_IS": VIKUDAGUR[wd]},
             "time_iso_utc": now_iso[11:16],  # HH:MM
             "timezone": "UTC+0",  # !!! TODO
             "locale": "is_IS",
         }
-        # Create the prompt for the GPT model
-        prompt = PROMPT.format(
-            query=ql, state=json.dumps(state, ensure_ascii=False), history=history
-        )
-        print(f"GPT model: {MODEL}\nPrompt:\n{prompt}")
+        # Assign a location, if known
+        if loc is not None:
+            state["location"]["lat"] = round(loc[0], 4)
+            state["location"]["lon"] = round(loc[1], 4)
 
-        # Submit the prompt to the GPT model for completion
-        r = Completion.create(
-            engine=MODEL, prompt=prompt, max_tokens=256, temperature=0.0,
-        )
+        # Obtain the history of previous Q/A pairs, if any
+        ctx = q.fetch_context()
+        history_list = cast(HistoryList, [] if ctx is None else ctx.get("history", []))
+        # Include a limited number of previous queries in the history,
+        # to keep the prompt within reasonable limits
+        history_list = history_list[-MAX_HISTORY_LENGTH:]
 
-        if r is not None:
-            r = cast(Optional[OpenAiDict], json.loads(str(r)))
-        if r is None:
-            raise ValueError("GPT returned no response")
+        # Create the initial completion
+        turns = 0
+        agent = InitialAgent(q, ql, state, history_list)
+        answer, next_agent = agent.submit()
 
-        print(r)
+        while answer and next_agent:
+            # Create and submit a follow-up prompt
+            turns += 1
+            if turns >= MAX_TURNS:
+                # Too many turns, bail out (repetitive follow-ups)
+                return False
+            # Create the follow-up completion instance
+            agent = next_agent(q, ql, state, history_list, answer)
+            answer, next_agent = agent.submit()
 
-        # Extract the answer from the GPT response JSON
-        answ = r["choices"][0]["text"].strip('" \n')
-        # Use regex to extract language code from $LANG=...$ prefix, if present
-        regex = r"\$LANG=([a-z]{2}_[A-Z]{2})\$(.*)"
-        m = re.match(regex, answ)
-        locale = None
-        if m:
-            # A language code is specified:
-            # set the voice synthesizer locale accordingly
-            answ = m.group(2).strip()
-            locale = m.group(1)
-            q.set_voice_locale(locale)
-        # Delete additional (spurious) $LANG=...$ prefixes and any text that follows
-        ix = answ.find("$LANG=")
-        if ix >= 0:
-            answ = answ[0:ix].strip()
-        if not answ:
+        # Process the anwer to fish out any $LANG=...$ prefixes
+        locale, answer = detect_language(answer)
+        if not answer:
             # No answer generated
             return False
-        # Set the answer type and content
         q.set_qtype("gpt")
-        if locale is None or locale == "is_IS":
+        # Set the answer type and content
+        if not locale or locale == "is_IS":
+            # This is a plain text answer in Icelandic
             # Compensate for deficient normalization in Icelandic speech synthesizer:
             # Convert years and ordinals to Icelandic text
-            voice_answer = years_to_text(answ, allow_three_digits=False)
+            voice_answer = years_to_text(answer, allow_three_digits=False)
             voice_answer = numbers_to_ordinal(voice_answer, case="þf")
             voice_answer = voice_answer.replace("%", " prósent")
         else:
-            # Not Icelandic:
+            # Not Icelandic: signal this to the voice synthesizer
+            q.set_voice_locale(locale)
             # Trust the voice synthesizer to do the normalization
-            voice_answer = answ
+            voice_answer = answer
         # Set the query answer text and voice synthesis text
-        q.set_answer(dict(answer=answ), answ, voice_answer)
+        q.set_answer(dict(answer=answer), answer, voice_answer)
+
         # Append the new (query, answer) tuple to the history in the context
         history_list.append(
-            {"q": ql, "a": answ if locale is None else f"$LANG={locale}$ {answ}"}
+            {"q": ql, "a": f"$LANG={locale}$ {answer}" if locale else answer}
         )
         q.set_context(dict(history=history_list))
 

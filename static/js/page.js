@@ -41,15 +41,15 @@
 
 // Punctuation types
 
-var TP_LEFT = 1;
-var TP_CENTER = 2;
-var TP_RIGHT = 3;
-var TP_NONE = 4; // Tight - no whitespace around
-var TP_WORD = 5;
+const TP_LEFT = 1;
+const TP_CENTER = 2;
+const TP_RIGHT = 3;
+const TP_NONE = 4; // Tight - no whitespace around
+const TP_WORD = 5;
 
 // Token spacing
 
-var TP_SPACE = [
+const TP_SPACE = [
    // Next token is:
    // LEFT    CENTER  RIGHT   NONE    WORD
    // Last token was TP_LEFT:
@@ -64,20 +64,20 @@ var TP_SPACE = [
    [ true,   true,   false,  false,  true]
 ];
 
-var LEFT_PUNCTUATION = "([„«#$€<";
-var RIGHT_PUNCTUATION = ".,:;)]!%?“»”’…°>";
-var NONE_PUNCTUATION = "—–-/'~‘\\";
+const LEFT_PUNCTUATION = "([„«#$€<";
+const RIGHT_PUNCTUATION = ".,:;)]!%?“»”’…°>";
+const NONE_PUNCTUATION = "—–-/'~‘\\";
 // CENTER_PUNCTUATION = '"*&+=@©|'
 
 // Location word categories
-var LOC_FL = ["lönd", "örn", "göt", "borg"];
-var FL_TO_LOC_DESC = {
+const LOC_FL = ["lönd", "örn", "göt", "borg"];
+const FL_TO_LOC_DESC = {
    "lönd": "land",
    "örn": "örnefni",
    "göt": "götuheiti",
    "borg": "borg"
 };
-var FL_TO_LOC_KIND = {
+const FL_TO_LOC_KIND = {
    "lönd": "country",
    "örn": "placename",
    "göt": "street",
@@ -85,10 +85,10 @@ var FL_TO_LOC_KIND = {
 };
 
 // Token array
-var w = [];
+let w = [];
 
 // Name dictionary
-var nameDict = { };
+let nameDict = { };
 
 function debugMode() {
    return false;
@@ -223,24 +223,24 @@ function getPersonImage(name, successFunc) {
 
 function hoverIn() {
    // Hovering over a token
-   var wId = $(this).attr("id");
+   const wId = $(this).attr("id");
    if (wId === null || wId === undefined) {
       // No id: nothing to do
       return;
    }
-   var ix = parseInt(wId.slice(1));
-   var t = w[ix];
+   const ix = parseInt(wId.slice(1));
+   const t = w[ix];
    if (!t) {
       // No token: nothing to do
       return;
    }
    // Save our position
-   var offset = $(this).position();
+   const offset = $(this).position();
    // Highlight the token
    $(this).addClass("highlight");
 
    // Get token info
-   var r = tokenInfo(t, nameDict);
+   const r = tokenInfo(t, nameDict);
 
    if (!r.grammar && !r.lemma && !r.details) {
       // Nothing interesting to show (probably the sentence didn't parse)
@@ -283,7 +283,7 @@ function hoverIn() {
    }
 
    if (t["m"]) {
-      var fl = t["m"][2];
+      const fl = t["m"][2];
 
        // It's a location. Display loc info.
       if (LOC_FL.includes(fl)) {
@@ -291,8 +291,8 @@ function hoverIn() {
          $('#details').html(FL_TO_LOC_DESC[fl]);
          r.tagClass = "glyphicon-globe";
 
-         var name = r.lemma;
-         var kind = FL_TO_LOC_KIND[fl];
+         const name = r.lemma;
+         const kind = FL_TO_LOC_KIND[fl];
 
           // Query server for more information about location
          getLocationInfo(name, kind, function(info) {
@@ -336,8 +336,8 @@ function hoverOut() {
    // Abort any ongoing onhover requests to server.
    // These requests are stored as properties of
    // the functions that sent them.
-   var reqobjs = [getPersonImage, getLocationInfo];
-   for (var idx in reqobjs) {
+   const reqobjs = [getPersonImage, getLocationInfo];
+   for (const idx in reqobjs) {
       if (reqobjs[idx] && reqobjs[idx].request) {
          reqobjs[idx].request.abort();
          reqobjs[idx].request = null;
@@ -465,8 +465,8 @@ function populateStats(stats) {
       "<li>Textinn inniheldur " +
       correctPlural(stats.num_tokens, "eina", "eind", "eindir") +
       " í " +
-      correctPlural(stats.num_sentences, "einni", "málsgrein.", "málsgreinum") +
-      "</li>"
+      correctPlural(stats.num_sentences, "einni", "málsgrein", "málsgreinum") +
+      ".</li>"
    );
    statisticsSummary.append(
       "<li>Það tókst að trjágreina " +

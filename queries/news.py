@@ -28,7 +28,7 @@
 # TODO: Hvað er helst í fréttum í dag? Fréttir dagsins?
 # TODO: Phonetically transcribe news
 
-from typing import List, Optional, Dict
+from typing import Any, List, Optional, Dict, cast
 
 import logging
 import cachetools  # type: ignore
@@ -74,7 +74,7 @@ _NEWS_API = "https://ruv.is/json/frettir/hladbord"
 _NEWS_CACHE_TTL = 300  # seconds, ttl = 5 mins
 
 
-@cachetools.cached(cachetools.TTLCache(1, _NEWS_CACHE_TTL))
+@cachetools.cached(cast(Any, cachetools).TTLCache(1, _NEWS_CACHE_TTL))
 def _get_news_data(max_items: int = 8) -> Optional[List[Dict[str, str]]]:
     """Fetch news headline data from RÚV, preprocess it."""
     res = query_json_api(_NEWS_API)

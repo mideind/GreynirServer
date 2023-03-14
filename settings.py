@@ -55,12 +55,12 @@ class NoIndexWords:
     )
 
     @staticmethod
-    def set_cat(cat: str):
+    def set_cat(cat: str) -> None:
         """Set the category for the following word stems"""
         NoIndexWords._cat = cat
 
     @staticmethod
-    def add(stem: str):
+    def add(stem: str) -> None:
         """Add a word stem and its category. Called from the config file handler."""
         NoIndexWords.SET.add((stem, NoIndexWords._cat))
 

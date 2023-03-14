@@ -30,7 +30,9 @@
 
 """
 
-from typing import Set, cast
+from __future__ import annotations
+
+from typing import Any, Iterable, List, Optional, Set, Union, cast
 
 import sys
 import os
@@ -62,7 +64,7 @@ class ArticleDescr:
 
     """Unit of work descriptor that is shipped between processes"""
 
-    def __init__(self, seq, root, url):
+    def __init__(self, seq: int, root: Root, url: str) -> None:
         self.seq = seq  # Sequence number
         self.root = root
         self.url = url
@@ -72,18 +74,17 @@ class Scraper:
 
     """The worker class that scrapes the known roots"""
 
-    def __init__(self):
-
+    def __init__(self) -> None:
         logging.info("Initializing scraper instance")
 
-    def urls2fetch(self, root, helper):
+    def urls2fetch(self, root: Root, helper) -> Set[str]:
         """Returns a set of URLs to fetch. If the scraper helper class has
         associated RSS feed URLs, these are used to acquire article URLs.
         Otherwise, the URLs are found by scraping the root website and
         searching for links to subpages."""
 
-        fetch_set = set()
-        feeds = None if helper is None else helper.feeds
+        fetch_set: Set[str] = set()
+        feeds: Optional[List[str]] = None if helper is None else helper.feeds
 
         if feeds:
 
@@ -120,7 +121,7 @@ class Scraper:
 
         return fetch_set
 
-    def scrape_root(self, root, helper):
+    def scrape_root(self, root: Root, helper) -> None:
         """Scrape a root URL"""
 
         t0 = time.time()
@@ -165,7 +166,7 @@ class Scraper:
             "Root scrape of {0} completed in {1:.2f} seconds".format(str(root), t1 - t0)
         )
 
-    def scrape_article(self, url, helper):
+    def scrape_article(self, url: str, helper) -> None:
         """Scrape a single article, retrieving its HTML and metadata"""
 
         if helper.skip_url(url):
@@ -186,7 +187,7 @@ class Scraper:
         t1 = time.time()
         logging.info("Scraping completed in {0:.2f} seconds".format(t1 - t0))
 
-    def parse_article(self, seq, url, helper):
+    def parse_article(self, seq: int, url: str, helper) -> None:
         """Parse a single article"""
 
         logging.info("[{1}] Parsing article {0}".format(url, seq))
@@ -209,7 +210,7 @@ class Scraper:
             )
         )
 
-    def _scrape_single_root(self, r):
+    def _scrape_single_root(self, r: Root) -> None:
         """Single root scraper that will be called by a process within a
         multiprocessing pool"""
         if r.domain.endswith(".local"):
@@ -227,7 +228,7 @@ class Scraper:
                 "Exception when scraping root at {0}: {1!r}".format(r.url, e)
             )
 
-    def _scrape_single_article(self, d):
+    def _scrape_single_article(self, d: ArticleDescr) -> None:
         """Single article scraper that will be called by a process within a
         multiprocessing pool"""
         try:
@@ -243,7 +244,7 @@ class Scraper:
             if Settings.DEBUG:
                 traceback.print_stack()
 
-    def _parse_single_article(self, d):
+    def _parse_single_article(self, d: ArticleDescr) -> bool:
         """Single article parser that will be called by a process within a
         multiprocessing pool"""
         try:
@@ -266,7 +267,14 @@ class Scraper:
             # raise
         return True
 
-    def go(self, reparse=False, limit=0, urls=None, uuid=None, numprocs=None):
+    def go(
+        self,
+        reparse: bool = False,
+        limit: int = 0,
+        urls: Optional[str] = None,
+        uuid: Optional[str] = None,
+        numprocs: Optional[int] = None,
+    ):
         """Run a scraping pass from all roots in the scraping database"""
         version = Article.parser_version()
         cnt = 0
@@ -302,7 +310,7 @@ class Scraper:
                     pool.join()
 
                 # noinspection PyComparisonWithNone
-                def iter_unscraped_articles():
+                def iter_unscraped_articles() -> Iterable[ArticleDescr]:
                     """Go through any unscraped articles and scrape them"""
                     # Note that the query(ArticleRow) below cannot be directly changed
                     # to query(ArticleRow.root, ArticleRow.url) since
@@ -331,7 +339,9 @@ class Scraper:
                     pool.join()
 
             # noinspection PyComparisonWithNone
-            def iter_unparsed_articles(reparse, limit):
+            def iter_unparsed_articles(
+                reparse: bool, limit: int
+            ) -> Iterable[ArticleDescr]:
                 """Go through articles to be parsed"""
                 # Fetch 100 rows at a time
                 # Note that the query(ArticleRow) below cannot be directly changed
@@ -354,7 +364,7 @@ class Scraper:
                 for seq, a in enumerate(q):
                     yield ArticleDescr(seq, a.root, a.url)
 
-            def iter_urls(urls):
+            def iter_urls(urls: str) -> Iterable[ArticleDescr]:
                 """Iterate through the text file whose name is given in urls"""
                 seq = 0
                 with open(urls, "r") as f:
@@ -371,7 +381,7 @@ class Scraper:
                                 yield ArticleDescr(seq, a.root, a.url)
                                 seq += 1
 
-            def iter_uuid(uuid):
+            def iter_uuid(uuid: str) -> Iterable[ArticleDescr]:
                 """Reparse a single article having the given UUID"""
                 a = (
                     session.query(ArticleRow)
@@ -397,7 +407,7 @@ class Scraper:
             else:
                 g = iter_unparsed_articles(reparse, limit)
             while True:
-                adlist = []
+                adlist: List[ArticleDescr] = []
                 lcnt = 0
                 for ad in g:
                     adlist.append(ad)
@@ -488,7 +498,13 @@ class Scraper:
         )
 
 
-def scrape_articles(reparse=False, limit=0, urls=None, uuid=None, numprocs=None):
+def scrape_articles(
+    reparse: bool = False,
+    limit: int = 0,
+    urls: Optional[str] = None,
+    uuid: Optional[str] = None,
+    numprocs: Optional[int] = None,
+):
 
     # Create kwargs dict that will be passed to Scraper.go()
     kwargs = dict(locals())
@@ -556,11 +572,11 @@ __doc__ = """
 
 
 class Usage(Exception):
-    def __init__(self, msg):
+    def __init__(self, msg: str) -> None:
         self.msg = msg
 
 
-def main(argv=None):
+def main(argv: Optional[List[str]]=None):
     """Guido van Rossum's pattern for a Python main function"""
 
     if argv is None:
@@ -582,17 +598,17 @@ def main(argv=None):
                 ],
             )
         except getopt.error as msg:
-            raise Usage(msg)
+            raise Usage(str(msg))
         init = False
         # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
         limit = 10
         reparse = False
-        urls = None
-        uuid = None
-        numprocs = None
+        urls: Optional[str] = None
+        uuid: Optional[str] = None
+        numprocs: Optional[int] = None
         debug = False
 
-        def parse_int(i):
+        def parse_int(a: Union[int, str]) -> Optional[int]:
             try:
                 return int(a)
             except ValueError:
@@ -673,8 +689,8 @@ if __name__ == "__main__":
         # import to import multiprocessing.dummy
         import ptvsd  # type: ignore
 
-        ptvsd.enable_attach()
-        ptvsd.wait_for_attach()  # Blocks execution until debugger is attached
+        cast(Any, ptvsd).enable_attach()
+        cast(Any, ptvsd).wait_for_attach()  # Blocks execution until debugger is attached
         ptvsd_attached = True
         print("Attached to PTVSD")
     else:

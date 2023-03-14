@@ -23,17 +23,48 @@
 
 """
 
-from typing import Optional, List, Dict, Any, Union, Match, cast
+from __future__ import annotations
+
+from typing import Optional, List, Any, Match
+from typing_extensions import TypedDict
 
 import re
 import logging
 from random import choice
 
-from pyyoutube import Api, SearchListResponse
+from pyyoutube import Api, SearchListResponse  # type: ignore
 
 from queries import Query
 from queries.util import gen_answer
 from utility import read_api_key
+
+
+class VideoIdDict(TypedDict):
+    """A video ID as a dictionary."""
+
+    videoId: str
+    playlistId: str
+
+
+class SearchDict(TypedDict):
+    """A search result item as a dictionary."""
+
+    id: VideoIdDict
+
+
+class SearchItem:
+    """A single search result item."""
+
+    def to_dict(self) -> SearchDict:
+        ...
+
+
+class SearchResults:
+    """The result of a YouTube search query."""
+
+    @property
+    def items(self) -> Optional[List[SearchItem]]:
+        ...
 
 
 _PLAY_QTYPE = "Play"
@@ -42,22 +73,22 @@ _PLAY_QTYPE = "Play"
 _AFFIRMATIVE = "Skal gert!"
 
 
-_YT_API = None
+_youtube_api: Any = None
 
 
-def yt_api() -> Api:
+def yt_api() -> Any:
     """Lazily instantiate YouTube API client."""
-    global _YT_API
-    if not _YT_API:
-        _YT_API = Api(api_key=read_api_key("GoogleServerKey"))
-    if not _YT_API:
+    global _youtube_api
+    if not _youtube_api:
+        _youtube_api = Api(api_key=read_api_key("GoogleServerKey"))
+    if not _youtube_api:
         logging.error("Unable to instantiate YouTube API client")
-    return _YT_API
+    return _youtube_api
 
 
 def search_youtube(
     q: str, types: List[str] = ["video"], limit: int = 5
-) -> Optional[Union[SearchListResponse, Dict[Any, Any]]]:
+) -> Optional[SearchResults]:
     r = yt_api().search_by_keywords(q=q, search_type=types, limit=limit)
     return r
 
@@ -67,14 +98,13 @@ _YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v={0}"
 
 def find_youtube_videos(q: str, limit: int = 1) -> List[str]:
     """Find video URLs for a given a search string via the YouTube API."""
-    vids = []
+    vids: List[str] = []
     if not q:
         return vids
     try:
         r = search_youtube(q, limit=limit)
         if r is None or r.items is None:
             return vids
-
         for i in r.items:
             item = i.to_dict()
             if "id" not in item or "videoId" not in item["id"]:
@@ -91,7 +121,7 @@ _YOUTUBE_PLAYLIST_URL = "https://www.youtube.com/watch?v={0}&list={1}"
 
 def find_youtube_playlists(q: str, limit: int = 3) -> List[str]:
     """Find URLs for playlists given a search string via the YouTube API."""
-    vids = []
+    vids: List[str] = []
     try:
         r = search_youtube(q, types=["playlist"], limit=limit)
         if r is None or r.items is None:
@@ -114,7 +144,7 @@ def find_youtube_playlists(q: str, limit: int = 3) -> List[str]:
 
 
 def rand_yt_playlist_for_genre(
-    genre_name: str, limit: int = 5, fallback=None
+    genre_name: str, limit: int = 5, fallback: Optional[str]=None
 ) -> Optional[str]:
     """Given a musical genre name, search for YouTube playlists and return a
     URL to a randomly selected one, with an (optional) fallback video URL."""
@@ -169,7 +199,7 @@ def _play_music(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
 _NO_MUSIC_FOUND = "Engin tónlist fannst."
 
 
-def _play_music_by_artist(qs: str, q: Query, matches: Optional[Match[str]]) -> Any:
+def _play_music_by_artist(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
     """Play a song (any song) by a given artist"""
     artist = matches.group(1) if matches else ""
     q.set_key(artist)
@@ -181,7 +211,7 @@ def _play_music_by_artist(qs: str, q: Query, matches: Optional[Match[str]]) -> A
         q.set_url(choice(r))
 
 
-def _play_song_by_artist(qs: str, q: Query, matches: Optional[Match[str]]) -> Any:
+def _play_song_by_artist(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
     """Play a particular, named song by a given artist"""
     song = matches.group(1) if matches else ""
     artist = matches.group(2) if matches else ""
@@ -205,7 +235,7 @@ _FILMS = [
 ]
 
 
-def _play_film(qs: str, q: Query, matches: Optional[Match[str]]) -> Any:
+def _play_film(qs: str, q: Query, matches: Optional[Match[str]]) -> None:
     """Play a randomly selected out-of-copyright film on YouTube."""
     url = "https://www.youtube.com/watch?v=FC6jFoYm3xs"  # Nosferatu, 1922
     urls = find_youtube_videos(choice(_FILMS), limit=1)
