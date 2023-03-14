@@ -415,7 +415,7 @@
    }
 
    function fetchSummaries() {
-      const errmsg = "Ekki tókst að sækja samatekt.";
+      const errmsg = "Ekki tókst að sækja samantekt.";
       serverQuery('/summary.api',
          { id: "{{ article.uuid | safe }}" },
          (resp) => {
