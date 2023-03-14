@@ -87,7 +87,7 @@ _MAX_URLS = 5
 _MAX_MENTIONS = 5
 
 
-def append_answers(rd: RegisterType, q, prop_func: Callable) -> None:
+def append_answers(rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Article], str]) -> None:
     """Iterate over query results and add them to the result dictionary rd"""
     for p in q:
         s = correct_spaces(prop_func(p))
@@ -182,9 +182,10 @@ def name_key_to_update(register: RegisterType, name: str) -> str:
     return name
 
 
-def append_names(rd: RegisterType, q, prop_func) -> None:
+def append_names(rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Article], str]) -> None:
     """Iterate over query results and add them to the result dictionary rd,
     assuming that the key is a person name"""
+    s: Optional[str]
     for p in q:
         s = correct_spaces(prop_func(p))
         ai = dict(
@@ -326,7 +327,7 @@ def prepare_response(q, prop_func):
 
 
 def add_entity_to_register(
-    name: str, register: RegisterType, session, all_names=False
+    name: str, register: RegisterType, session: Session, all_names: bool=False
 ) -> None:
     """Add the entity name and the 'best' definition to the given
     name register dictionary. If all_names is True, we add
@@ -448,7 +449,7 @@ def _query_person_titles(session: Session, name: str):
     return make_response_list(rd)
 
 
-def _query_article_list(session, name: str):
+def _query_article_list(session: Session, name: str):
     """Return a list of dicts with information about articles
     where the given name appears"""
     articles = ArticleListQuery.articles(

@@ -47,7 +47,7 @@ class NoIndexWords:
     not be indexed"""
 
     SET: Set[Tuple[str, str]] = set()
-    _CAT = "so"  # Default category
+    _cat = "so"  # Default category
 
     # The word categories that are indexed in the words table
     CATEGORIES_TO_INDEX = frozenset(
@@ -55,14 +55,14 @@ class NoIndexWords:
     )
 
     @staticmethod
-    def set_cat(cat):
+    def set_cat(cat: str) -> None:
         """Set the category for the following word stems"""
-        NoIndexWords._CAT = cat
+        NoIndexWords._cat = cat
 
     @staticmethod
-    def add(stem):
+    def add(stem: str) -> None:
         """Add a word stem and its category. Called from the config file handler."""
-        NoIndexWords.SET.add((stem, NoIndexWords._CAT))
+        NoIndexWords.SET.add((stem, NoIndexWords._cat))
 
 
 class Settings:

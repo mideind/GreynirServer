@@ -24,7 +24,7 @@
 
 """
 
-from typing import Dict, Callable, Optional, Any
+from typing import Dict, Callable, Union, Optional, Any
 
 import threading
 import time
@@ -50,8 +50,10 @@ from werkzeug.exceptions import HTTPException, InternalServerError
 import flask_caching  # type: ignore
 
 
-utcnow = datetime.utcnow  # Funny hack to satisfy Pylance/Pyright
+CacheableFunc = Callable[..., Union[str, Response]]
 ProgressFunc = Callable[[float], None]
+
+utcnow = datetime.utcnow  # Funny hack to satisfy Pylance/Pyright
 
 # Maximum length of incoming GET/POST parameters
 MAX_TEXT_LENGTH = 16384
@@ -66,13 +68,11 @@ cache: flask_caching.Cache = current_app.config["CACHE"]
 routes: Blueprint = Blueprint("routes", __name__)
 
 
-def max_age(
-    seconds: int,
-) -> Callable[[Callable[..., Response]], Callable[..., Response]]:
+def max_age(seconds: int,) -> Callable[[CacheableFunc], Callable[..., Response]]:
     """Caching decorator for Flask - augments response
     with a max-age cache header"""
 
-    def decorator(f: Callable[..., Response]) -> Callable[..., Response]:
+    def decorator(f: CacheableFunc) -> Callable[..., Response]:
         @wraps(f)
         def decorated_function(*args: Any, **kwargs: Any) -> Response:
             resp = f(*args, **kwargs)
@@ -333,7 +333,7 @@ def async_task(f: Callable[..., Response]) -> Callable[..., Response]:
         # After starting the task on a new thread, we return a 202 response,
         # with a link in the 'Location' header that the client can use
         # to obtain task status
-        return (
+        return Response(
             json.dumps(dict(progress=0.0)),
             202,  # ACCEPTED
             {
@@ -346,7 +346,7 @@ def async_task(f: Callable[..., Response]) -> Callable[..., Response]:
 
 
 @routes.route("/status/<task>", methods=["GET"])
-def get_status(task: str):
+def get_status(task: str) -> Response:
     """Return the status of an asynchronous task. If this request returns a
     202 ACCEPTED status code, it means that task hasn't finished yet.
     Else, the response from the task is returned (normally with a
@@ -361,7 +361,7 @@ def get_status(task: str):
             # Task completed
             return t["rv"]
         # Not completed: report progress
-        return (
+        return Response(
             json.dumps(dict(progress=t["progress"])),
             202,  # ACCEPTED
             {

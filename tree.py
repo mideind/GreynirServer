@@ -28,6 +28,8 @@
 
 """
 
+from __future__ import annotations
+
 from typing import (
     Dict,
     FrozenSet,
@@ -98,9 +100,9 @@ OptionalNode = Optional["Node"]
 FilterFunction = Callable[["Node"], bool]
 SentenceFunction = Callable[[TreeStateDict, Optional["Result"]], None]
 VisitFunction = Callable[[TreeStateDict, "Node"], bool]
-ParamList = List[Optional["Result"]]
-NonterminalFunction = Callable[["Node", ParamList, "Result"], None]
-ChildTuple = Tuple["Node", Optional["Result"]]
+ParamList = List["Result"]
+NonterminalFunction = Callable[["NonterminalNode", ParamList, "Result"], None]
+ChildTuple = Tuple["Node", "Result"]
 LookupSignature = Tuple[str, bool, str]
 
 BIN_ORDFL: Mapping[str, Set[str]] = {
@@ -383,10 +385,10 @@ class Result:
     def user_attribs(self) -> Iterator[Tuple[str, Any]]:
         """Enumerate all user-defined attributes and values of this result object"""
         for key, val in self.dict.items():
-            if isinstance(key, str) and not key.startswith("_") and not callable(val):
+            if not key.startswith("_") and not callable(val):
                 yield (key, val)
 
-    def copy_from(self, p: "Result") -> None:
+    def copy_from(self, p: Optional[Result]) -> None:
         """Copy all user attributes from p into this result"""
         if p is self or p is None:
             return
@@ -405,14 +407,14 @@ class Result:
                 left: Union[List[Any], Set[Any], Dict[str, Any]] = d[key]
                 if isinstance(left, list) and isinstance(val, list):
                     # Extend lists
-                    left.extend(val)
+                    left.extend(cast(List[Any], val))
                 elif isinstance(left, set) and isinstance(val, set):
                     # Return union of sets
                     left |= val
                 elif isinstance(left, dict) and isinstance(val, dict):
                     # Keep the left entries but add any new/additional val entries
                     # (This gives left priority; left.update(val) would give right priority)
-                    d[key] = dict(val, **left)
+                    d[key] = dict(cast(Dict[str, Any], val), **left)
 
     def del_attribs(self, alist: Union[str, Iterable[str]]) -> None:
         """Delete the attribs in alist from the result object"""
@@ -440,10 +442,7 @@ class Result:
         where the child node meets the given test, if any"""
         if self._params:
             for p, c in zip(self._params, self._node.children()):
-                if p is not None:
-                    # yield from p.enum_descendants(test_f)
-                    for d_c, d_p in p.enum_descendants(test_f):
-                        yield (d_c, d_p)
+                yield from p.enum_descendants(test_f)
                 if test_f is None or test_f(c):
                     yield (c, p)
 
@@ -1206,7 +1205,7 @@ class PersonNode(TerminalNode):
             return self.text
         gender = self.td.gender
         # assert self.td.case is not None
-        if self.td.case is None:
+        if not self.td.case:
             case = "NF"
         else:
             case = self.td.case.upper()
@@ -1301,38 +1300,37 @@ class NonterminalNode(Node):
     def root(self, state: TreeStateDict, params: ParamList) -> str:
         """The root form of a nonterminal is a sequence of the root
         forms of its children (parameters)"""
-        return " ".join(p._root for p in params if p is not None and p._root)
+        return " ".join(p._root for p in params if p._root)
 
     def nominative(self, state: TreeStateDict, params: ParamList) -> str:
         """The nominative form of a nonterminal is a sequence of the
         nominative forms of its children (parameters)"""
         return " ".join(
-            p._nominative for p in params if p is not None and p._nominative
+            p._nominative for p in params if p._nominative
         )
 
     def indefinite(self, state: TreeStateDict, params: ParamList) -> str:
         """The indefinite form of a nonterminal is a sequence of the
         indefinite forms of its children (parameters)"""
         return " ".join(
-            p._indefinite for p in params if p is not None and p._indefinite
+            p._indefinite for p in params if p._indefinite
         )
 
     def canonical(self, state: TreeStateDict, params: ParamList) -> str:
         """The canonical form of a nonterminal is a sequence of the canonical
         forms of its children (parameters)"""
-        return " ".join(p._canonical for p in params if p is not None and p._canonical)
+        return " ".join(p._canonical for p in params if p._canonical)
 
     def process(self, state: TreeStateDict, params: ParamList) -> Result:
         """Apply any requested processing to this node"""
         result = Result(self, state, params)
         result._nonterminal = self.nt
         # Calculate the combined text rep of the results of the children
-        result._text = " ".join(p._text for p in params if p is not None and p._text)
+        result._text = " ".join(p._text for p in params if p._text)
         for p in params:
             # Copy all user variables (attributes not starting with an underscore _)
             # coming from the children into the result
-            if p is not None:
-                result.copy_from(p)
+            result.copy_from(p)
         # Invoke a function for this nonterminal, if present
         # in the given processor/processing environment
         # (the current module + the shared utility functions).
@@ -1577,12 +1575,15 @@ class Tree(TreeBase):
         # First check whether the processor has a visit() method
         visit = state.get("_visit")
         if visit is not None and not visit(state, node):
-            # Call the visit() method and if it returns False, we do not visit this node
-            # or its children
+            # Call the visit() method and if it returns False,
+            # we do not visit this node or its children
             return None
-        return node.process(
-            state, [self.visit_children(state, child) for child in node.children()]
-        )
+        p: ParamList = []
+        for child in node.children():
+            pc = self.visit_children(state, child)
+            if pc is not None:
+                p.append(pc)
+        return node.process(state, p)
 
     def process_sentence(self, state: TreeStateDict, tree: Node) -> None:
         """Process a single sentence tree"""

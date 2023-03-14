@@ -21,7 +21,7 @@
 
 """
 
-from typing import Any, Dict, List, Tuple, cast, Counter as CounterType
+from typing import Any, Dict, List, Set, Tuple, cast, Counter as CounterType
 
 from . import routes, max_age, cache, restricted, days_from_period_arg
 
@@ -49,7 +49,7 @@ _TOP_PERSONS_LENGTH = 20
 _TOP_PERSONS_PERIOD = 1  # in days
 
 
-def recent_persons(limit=_RECENT_PERSONS_LENGTH):
+def recent_persons(limit: int=_RECENT_PERSONS_LENGTH):
     """Return a list of names and titles appearing recently in the news"""
     toplist: Dict[str, Tuple[str, str, str, str]] = dict()
 
@@ -64,7 +64,7 @@ def recent_persons(limit=_RECENT_PERSONS_LENGTH):
             .order_by(desc(cast(Column, Article.timestamp)))[0 : limit * 2]
         )
 
-        def is_better_title(new_title, old_title):
+        def is_better_title(new_title: str, old_title: str) -> bool:
             len_new = len(new_title)
             len_old = len(old_title)
             if len_old >= _MAX_TITLE_LENGTH:
@@ -129,7 +129,7 @@ def top_persons(
             .distinct()
         )
 
-        persons = defaultdict(list)
+        persons: Dict[Tuple[str, str], List[Dict[str, str]]] = defaultdict(list)
         for r in q.all():
             article = {
                 "url": r.url,
@@ -153,7 +153,7 @@ def top_persons(
 _DEFAULT_NUM_PERSONS_GRAPH = 50
 
 
-def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
+def graph_data(num_persons: int=_DEFAULT_NUM_PERSONS_GRAPH):
     """Get and prepare data for people graph"""
     with SessionContext(read_only=True) as session:
         # Find all persons mentioned in articles that
@@ -163,7 +163,7 @@ def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
             .filter(Word.cat.like("person_%"))
             .filter(Word.stem.like("% %"))
         )
-        res = q.all()
+        res: List[Tuple[str, str, str]] = q.all()
 
         # Count number of occurrences of each name
         cnt: CounterType[str] = Counter()
@@ -171,10 +171,10 @@ def graph_data(num_persons=_DEFAULT_NUM_PERSONS_GRAPH):
             cnt[name] += 1
 
         # Get most common names
-        names = [name for name, freq in cnt.most_common(num_persons)]
+        names = [name for name, _ in cnt.most_common(num_persons)]
 
         # Generate dict mapping article ids to a set of top names mentioned
-        articles = defaultdict(set)
+        articles: Dict[str, Set[str]] = defaultdict(set)
         for name, art_id, _ in res:
             if name in names:
                 articles[art_id].add(name)

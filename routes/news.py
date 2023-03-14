@@ -21,8 +21,9 @@
 
 """
 
+from __future__ import annotations
 
-from typing import Union, cast
+from typing import List, Optional, Union, cast
 
 from werkzeug.wrappers import Response
 from . import routes, max_age, better_jsonify
@@ -32,7 +33,7 @@ from flask import request, render_template
 
 from settings import changedlocale
 
-from db import SessionContext, desc
+from db import Session, SessionContext, desc
 from db.models import Article, Root, Location, ArticleTopic, Topic, Column
 
 
@@ -42,19 +43,19 @@ _MAX_NUM_ARTICLES = 100
 
 
 def fetch_articles(
-    topic=None,
-    offset=0,
-    limit=_DEFAULT_NUM_ARTICLES,
-    start=None,
-    location=None,
-    country=None,
-    root=None,
-    author=None,
-    enclosing_session=None,
+    topic: Optional[str]=None,
+    offset: int=0,
+    limit: int=_DEFAULT_NUM_ARTICLES,
+    start: Optional[datetime]=None,
+    location: Optional[str]=None,
+    country: Optional[str]=None,
+    root: Optional[str]=None,
+    author: Optional[str]=None,
+    enclosing_session: Optional[Session]=None,
 ):
     """Return a list of articles in chronologically reversed order.
     Articles can be filtered by start date, location, country, root etc."""
-    toplist = []
+    toplist: List[ArticleDisplay] = []
 
     with SessionContext(read_only=True, session=enclosing_session) as session:
         q = (
@@ -104,15 +105,15 @@ def fetch_articles(
 
             def __init__(
                 self,
-                heading,
-                timestamp,
-                url,
-                uuid,
-                num_sentences,
-                num_parsed,
-                icon,
-                localized_date,
-                source,
+                heading: str,
+                timestamp: datetime,
+                url: str,
+                uuid: str,
+                num_sentences: int,
+                num_parsed: int,
+                icon: str,
+                localized_date: str,
+                source: str,
             ):
                 self.heading = heading
                 self.timestamp = timestamp
@@ -125,7 +126,7 @@ def fetch_articles(
                 self.source = source
 
             @property
-            def width(self):
+            def width(self) -> str:
                 """The ratio of parsed sentences to the total number of sentences,
                 expressed as a percentage string"""
                 if self.num_sentences == 0:
@@ -133,17 +134,17 @@ def fetch_articles(
                 return "{0}%".format((100 * self.num_parsed) // self.num_sentences)
 
             @property
-            def time(self):
+            def time(self) -> str:
                 return self.timestamp.isoformat()[11:16]
 
             @property
-            def date(self):
+            def date(self) -> str:
                 if datetime.today().year == self.timestamp.year:
                     return self.localized_date
                 return self.fulldate
 
             @property
-            def fulldate(self):
+            def fulldate(self) -> str:
                 return self.localized_date + self.timestamp.strftime(" %Y")
 
         with changedlocale(category="LC_TIME"):

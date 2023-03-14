@@ -43,8 +43,10 @@
 
 """
 
+from __future__ import annotations
+
 from queries import QueryStateDict
-from tree import Result, TreeStateDict
+from tree import Node, ParamList, Result, TreeStateDict
 
 # from db import Attribute
 
@@ -71,8 +73,8 @@ def article_end(state: TreeStateDict) -> None:
 def sentence(state: QueryStateDict, result: Result) -> None:
     """Called at the end of sentence processing"""
 
-    session = state["session"]  # Database session
-    url = state["url"]  # URL of the article being processed
+    # session = state["session"]  # Database session
+    # url = state["url"]  # URL of the article being processed
 
     _ = """
     if "attribs" in result:
@@ -98,7 +100,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 # tree for a sentence.
 
 
-def FsLiður(node, params, result):
+def FsLiður(node: Node, params: ParamList, result: Result):
     """Ekki breyta forsetningarliðum í nefnifall"""
     result._nominative = result._text
     # Ekki leyfa eignarfallsliðum að lifa í gegn um forsetningarliði á
@@ -106,23 +108,23 @@ def FsLiður(node, params, result):
     result.del_attribs(("ef_nom", "ef_text"))
 
 
-def EfLiður(node, params, result):
+def EfLiður(node: Node, params: ParamList, result: Result):
     """Eignarfallsliður eftir nafnlið"""
     result.ef_nom = result._nominative
     result.ef_text = result._text
 
 
-def Tengiliður(node, params, result):
+def Tengiliður(node: Node, params: ParamList, result: Result):
     """Tengiliður ("sem" setning)"""
     result.del_attribs(("ef_nom", "ef_text"))
 
 
-def SvigaInnihald(node, params, result):
+def SvigaInnihald(node: Node, params: ParamList, result: Result):
     """Tengiliður ("sem" setning)"""
     result.del_attribs(("ef_nom", "ef_text"))
 
 
-def Setning(node, params, result):
+def Setning(node: Node, params: ParamList, result: Result):
     """Meðhöndla setningar á forminu 'eitthvað einhvers fsliðir* er-sögn eitthvað'"""
 
     # return # !!! TODO - DEBUG

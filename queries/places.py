@@ -28,7 +28,7 @@
 # TODO: "Hvenær er X opið?"
 # TODO: Refactor this module (use grammar?)
 
-from typing import List, Dict, Optional
+from typing import Iterable, Mapping, Optional
 
 import logging
 import re
@@ -43,6 +43,7 @@ from geo import in_iceland, iceprep_for_street, LatLonTuple
 from queries import Query, QueryStateDict
 from utility import icequote
 from queries.util import (
+    PlaceDict,
     gen_answer,
     query_places_api,
     query_place_details,
@@ -55,23 +56,6 @@ from tree import Result, Node
 
 _PLACES_QTYPE = "Places"
 
-
-TOPIC_LEMMAS = ["opnunartími", "opna", "loka", "lokunartími"]
-
-
-def help_text(lemma: str) -> str:
-    """Help text to return when query processor is unable to parse a query but
-    one of the above lemmas is found in it"""
-    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-        random.choice(
-            (
-                "Hvað er opið lengi á Forréttabarnum",
-                "Hvenær lokar Bónus á Fiskislóð",
-            )
-        )
-    )
-
-
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
 HANDLE_TREE = True
@@ -82,8 +66,19 @@ QUERY_NONTERMINALS = {"QPlaces"}
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = read_grammar_file("places")
 
+_PLACENAME_MAP: Mapping[str, str] = {}
 
-_PLACENAME_MAP: Dict[str, str] = {}
+TOPIC_LEMMAS = ["opnunartími", "opna", "loka", "lokunartími"]
+
+
+def help_text(lemma: str) -> str:
+    """Help text to return when query processor is unable to parse a query but
+    one of the above lemmas is found in it"""
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice(
+            ("Hvað er opið lengi á Forréttabarnum", "Hvenær lokar Bónus á Fiskislóð",)
+        )
+    )
 
 
 def _fix_placename(pn: str) -> str:
@@ -119,7 +114,7 @@ _PLACES_API_ERRMSG = "Ekki tókst að fletta upp viðkomandi stað"
 _NOT_IN_ICELAND_ERRMSG = "Enginn staður með þetta heiti fannst á Íslandi"
 
 
-def _parse_coords(place: Dict) -> Optional[LatLonTuple]:
+def _parse_coords(place: PlaceDict) -> Optional[LatLonTuple]:
     """Return tuple of coordinates given a place info data structure
     from Google's Places API."""
     try:
@@ -131,7 +126,7 @@ def _parse_coords(place: Dict) -> Optional[LatLonTuple]:
     return None
 
 
-def _top_candidate(cand: List) -> Optional[Dict]:
+def _top_candidate(cand: Iterable[PlaceDict]) -> Optional[PlaceDict]:
     """Return first place in Iceland in Google Places Search API results."""
     for place in cand:
         coords = _parse_coords(place)
@@ -232,9 +227,14 @@ def answ_openhours(
 
         # Generate placename w. street, e.g. "Forréttabarinn á Nýlendugötu"
         street = fmt_addr.split()[0].rstrip(",")
-        street_þgf = NounPhrase(street).dative or street
-
-        name = f"{name} {iceprep_for_street(street)} {street_þgf}"
+        if not street or street.isnumeric():
+            # Street name is a number (probably a postcode), e.g. "101":
+            # Don't treat it as a street name
+            street = ""
+            street_þgf = ""
+        else:
+            street_þgf = NounPhrase(street).dative or street
+            name = f"{name} {iceprep_for_street(street)} {street_þgf}"
 
         # Get correct "open" adjective for place name
         open_adj_map = {"kk": "opinn", "kvk": "opin", "hk": "opið"}

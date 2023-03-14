@@ -79,6 +79,7 @@ LOCALE_TO_VOICE_ID = {
     "da_DK": "Christel",
     "sv_SE": "Sofie",
     "nb_NO": "Finn",
+    "no_NO": "Finn",
     "es_ES": "Abril",
     "pl_PL": "Agnieszka",
 }

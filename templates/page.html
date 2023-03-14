@@ -27,6 +27,11 @@
       font-size: 16px;
    }
 
+   h5#meta-url button {
+      margin-left: 8px;
+      width: 2.5em;
+   }
+
    div#result-translation span i {
       font-style: italic;
       font-size: 1.05em;
@@ -54,6 +59,111 @@
    span#spinner {
       color: #f0ad4e;
    }
+
+   div#summary {
+      margin-bottom: 1em;
+   }
+
+   div#summary p {
+      font-style: italic;
+      font-size: 0.8em;
+      line-height: 1.3em;
+      text-align: right;
+      color: #777777;
+   }
+
+   div.summary-wrapper {
+      display: flex;
+      flex-direction: row;
+   }
+
+   div#summary-text {
+      margin-right: 0.6em;
+   }
+
+   div#summary-text p {
+      margin-left: 35%;
+      font-style: italic;
+      font-size: 0.8em;
+      line-height: 1.3em;
+      text-align: right;
+      color: #777777;
+   }
+
+   div#summary-langs {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      background-color: #dae5ff;
+      border-radius: 0.2em;
+      /*
+      border: 0.05em solid #8899ee;
+      */
+   }
+
+   div#summary-langs .lang {
+      display: flex;
+      flex-direction: row;
+      width: 2.5em;
+      height: 2.0em;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+   }
+
+   div#summary-langs .lang.active {
+      border-radius: 0.2em;
+      border: 0.08em solid #ffb300;
+      background-color: #ffd678;
+   }
+
+   div#summary-langs .lang:hover {
+      border-radius: 0.2em;
+      border: 0.08em solid #ffb300;
+   }
+
+   div#summary-langs .lang img {
+      height: 1em;
+      width: 1.5em;
+   }
+
+   .fadeIn {
+      animation: fadeIn ease 0.5s;
+      -webkit-animation: fadeIn ease 0.5s;
+      -moz-animation: fadeIn ease 0.5s;
+      -o-animation: fadeIn ease 0.5s;
+      -ms-animation: fadeIn ease 0.5s;
+   }
+
+   .fadeOut {
+      animation: fadeIn reverse ease 0.5s;
+      -webkit-animation: fadeIn reverse ease 0.5s;
+      -moz-animation: fadeIn reverse ease 0.5s;
+      -o-animation: fadeIn reverse ease 0.5s;
+      -ms-animation: fadeIn reverse ease 0.5s;
+   }
+
+   @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+   }
+
+   @-moz-keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+   }
+
+   @-webkit-keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+   }
+
+   @-o-keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+   }
+
 </style>
 
 {% endblock %}
@@ -111,7 +221,7 @@
          </h5>
       </div>
 
-      {% if nn_translate_enabled -%}
+{% if nn_translate_enabled -%}
       <div id="language-tabs">
          <ul id="language-hdr" class="nav nav-tabs" role="tablist">
             <li role="presentation" class="active">
@@ -156,10 +266,17 @@
             </div>
          </div>
       </div>
-      {% else %}
+{% else %}
       <div id="result" class="result">
 
          {% include 'hover-infobox.html' %}
+
+         <div id="summary">
+            <!-- Summaries appear here -->
+            <p>Sæki samantekt...
+               <span class="glyphicon glyphicon-restart glyphicon-spin"></span>
+            </p>
+         </div>
 
          <div id="pgs">
             <!-- Result of analysis goes here -->
@@ -168,7 +285,7 @@
             </p>
          </div>
       </div>
-      {% endif %}
+{% endif %}
    </div> <!-- column -->
 
    <div id="register">
@@ -208,20 +325,25 @@
 
    // Include the tokens in the page script as a JSON structure
    // noinspection SyntaxError
-   var j =
+   const j =
       {{ article.tokens | safe }}
    ;
 
    // Name and title list
+   // Note: the variable nameDict has already been declared
    nameDict = {{ register | tojson | safe }};
 
    // Article statistics
-   var stats = {
+   const stats = {
       num_tokens: {{ article.num_tokens }},
       num_sentences: {{ article.num_sentences }},
       num_parsed: {{ article.num_parsed }},
       ambiguity: {{ article.ambiguity }}
    };
+
+   // By default, show summary in Icelandic
+   let currentSummary = {};
+   let summaryLanguage = "is_IS";
 
    function handleError(xhr, status, errorThrown) {
       /* An error occurred on the server or in the communications */
@@ -274,9 +396,10 @@
    }
 
    function checkArticle() {
+      /*
       // Send the text of the current article over to correct.html
       // for spelling and grammar checking
-      /*var txt = "";
+      var txt = "";
       $.each($("div#pgs p"), function () {
          // Handle each paragraph
          var ptxt = "";
@@ -287,15 +410,76 @@
          txt += ptxt + "\n\n";
       });
       // POST to the /correct page
-      serverPost("/correct", { txt: txt });*/
+      serverPost("/correct", { txt: txt });
+      */
+   }
+
+   function fetchSummaries() {
+      const errmsg = "Ekki tókst að sækja samantekt.";
+      serverQuery('/summary.api',
+         { id: "{{ article.uuid | safe }}" },
+         (resp) => {
+            summaryLanguage = "is_IS";
+            if (resp && resp.summary) {
+               // We have a valid set of summaries
+               currentSummary = resp.summary;
+               createSummaryDiv();
+            } else {
+               $("#summary").html("<p>" + errmsg + "</p>");
+            }
+         },
+         null,
+         () => $("#summary").html("<p>" + errmsg + "</p>")
+      );
+   }
+
+   // Create a div for summaries where the user can select a language
+   // from icons on the right hand side
+   function createSummaryDiv() {
+      const lang = summaryLanguage;
+      const html =
+         "<div class='summary-wrapper'>" +
+            "<div id='summary-text'>" +
+               "<p>" + (currentSummary[lang] || "") + "</p>" +
+            "</div>" +
+            "<div>" +
+               "<div id='summary-langs'>" +
+                  "<div class='lang' id='is_IS'>" +
+                     // Icelandic flag icon image
+                     "<img src='{{ url_for('static', filename='img/flags/IS.png') }}' />" +
+                  "</div>" +
+                  "<div class='lang' id='en_US'>" +
+                     // UK flag icon image
+                     "<img src='{{ url_for('static', filename='img/flags/GB.png') }}' />" +
+                  "</div>" +
+                  "<div class='lang' id='pl_PL'>" +
+                     // Polish flag icon image
+                     "<img src='{{ url_for('static', filename='img/flags/PL.png') }}' />" +
+                  "</div>" +
+               "</div>" +
+            "</div>" +
+         "</div>";
+      $("#summary").html(html);
+      $("#summary-langs #" + lang).addClass("active");
+      // Allow switching between languages
+      $("#summary-langs .lang").click(function () {
+         const id = $(this).attr("id");
+         if (id) {
+            summaryLanguage = id;
+            $("#summary-langs .lang").removeClass("active");
+            $(this).addClass("active");
+            const p = $("#summary-text p");
+            p.text(currentSummary[id] || "");
+         }
+      });
    }
 
    function fetchSimilarArticles() {
-      var errmsg = "Ekki tókst að sækja svipaðar greinar.";
+      const errmsg = "Ekki tókst að sækja svipaðar greinar.";
       serverQuery('/similar',
          { id: "{{ article.uuid | safe }}" },
          function (resp) {
-            html = errmsg;
+            let html = errmsg;
             if (resp && resp["err"] === false) {
                html = resp["payload"];
             }
@@ -327,6 +511,9 @@
          $(this).tab('show');
       });
       $('#lang-hdr a:first').tab('show');
+
+      // Lazily fetch summaries
+      fetchSummaries();
 
       // Lazily fetch similar articles (slow)
       fetchSimilarArticles();

@@ -198,8 +198,8 @@ _HOME_LOC = frozenset(
 
 def _addr2nom(address: str) -> str:
     """Convert location name to nominative form."""
-    if address is None or address == "":
-        return address
+    if not address:
+        return ""
     try:
         nom = NounPhrase(cap_first(address)).nominative or address
     except Exception:

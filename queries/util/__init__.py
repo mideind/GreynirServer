@@ -21,6 +21,8 @@
 
 """
 
+from __future__ import annotations
+
 from typing import (
     Any,
     Mapping,
@@ -32,7 +34,7 @@ from typing import (
     Union,
     cast,
 )
-from tree import Node
+from typing_extensions import TypedDict
 
 import logging
 import requests
@@ -48,6 +50,7 @@ from pytz import country_timezones
 from geo import country_name_for_isocode, iceprep_for_cc, LatLonTuple
 from speech.trans.num import number_to_text, float_to_text
 from reynir import NounPhrase
+from tree import Node
 from settings import changedlocale
 from utility import (
     QUERIES_GRAMMAR_DIR,
@@ -60,6 +63,43 @@ from utility import (
 # Type definitions
 AnswerTuple = Tuple[Dict[str, str], str, str]
 JsonResponse = Union[None, List[Any], Dict[str, Any]]
+
+
+class OpeningHoursDict(TypedDict):
+    """Opening hours type data structure"""
+
+    open_now: bool
+    weekday_text: List[str]
+
+
+class LatLonDict(TypedDict):
+    """LatLon type data structure"""
+
+    lat: float
+    lng: float
+
+
+class GeometryDict(TypedDict):
+    """Geometry type data structure"""
+
+    location: LatLonDict
+
+
+class PlaceDict(TypedDict):
+    """Place type data structure"""
+
+    place_id: str
+    opening_hours: OpeningHoursDict
+    formatted_address: str
+    geometry: GeometryDict
+
+
+class QueryPlacesDict(TypedDict):
+    """Result from query_places_api() call"""
+
+    status: str
+    candidates: List[PlaceDict]
+
 
 MONTH_ABBREV_ORDERED: Sequence[str] = (
     "jan",
@@ -483,7 +523,7 @@ def query_places_api(
     userloc: Optional[LatLonTuple] = None,
     radius: float = _PLACES_LOCBIAS_RADIUS,
     fields: Optional[str] = None,
-) -> Optional[Dict[str, Any]]:
+) -> Optional[QueryPlacesDict]:
     """Look up a placename in Google's Places API. For details, see:
     https://developers.google.com/places/web-service/search"""
 
@@ -515,7 +555,7 @@ def query_places_api(
 
     # Send API request
     url = _PLACES_API_URL.format(qstr)
-    return cast(Optional[Dict[str, Any]], query_json_api(url))
+    return cast(Optional[QueryPlacesDict], query_json_api(url))
 
 
 _PLACEDETAILS_API_URL = "https://maps.googleapis.com/maps/api/place/details/json?{0}"
@@ -547,15 +587,15 @@ def query_place_details(
     return cast(Optional[Dict[str, Any]], query_json_api(url))
 
 
-_TZW: Optional[TimezoneFinder] = None
+_tsw: Optional[TimezoneFinder] = None
 
 
 def _tzfinder_singleton() -> TimezoneFinder:
     """Lazy-load location/timezone database."""
-    global _TZW
-    if _TZW is None:
-        _TZW = TimezoneFinder()
-    return _TZW
+    global _tsw
+    if _tsw is None:
+        _tsw = TimezoneFinder()
+    return _tsw
 
 
 def timezone4loc(

@@ -31,10 +31,10 @@ from typing import (
     List,
     Dict,
     Any,
-    TYPE_CHECKING,
     Tuple,
     Union,
     cast,
+    TYPE_CHECKING,
 )
 
 import json
@@ -42,9 +42,11 @@ import uuid
 from datetime import datetime
 from collections import defaultdict
 
-from sqlalchemy.sql.schema import Column
 from sqlalchemy.orm.query import Query as SqlQuery
 from sqlalchemy.sql.expression import func
+
+from tokenizer.version import __version__ as tokenizer_version
+from tokenizer import correct_spaces
 
 from reynir import TOK, Tok
 from reynir.bintokenizer import TokenDict
@@ -59,7 +61,6 @@ from fetcher import Fetcher
 from tree import Tree
 from treeutil import TreeUtility, WordTuple, PgsList
 from settings import Settings, NoIndexWords
-from tokenizer.version import __version__ as tokenizer_version
 
 
 if TYPE_CHECKING:
@@ -73,6 +74,7 @@ MAX_SENTENCE_TOKENS = 90
 
 
 class Article:
+
     """An Article represents a new article typically scraped from a web site,
     as it is tokenized, parsed and stored in the Greynir database."""
 
@@ -138,13 +140,14 @@ class Article:
         # The tokens themselves: Lists of paragraphs of sentences
         # (which are lists of TokenDicts)
         self._raw_tokens: Optional[List[List[List[TokenDict]]]] = None
+        self._text: Optional[str] = None  # The article text
         # The individual word stems, in a dictionary
         self._words: Optional[Dict[WordTuple, int]] = None
 
     @classmethod
     def _init_from_row(cls, ar: ArticleRow) -> "Article":
         """Initialize a fresh Article instance from a database row object"""
-        a = cls(uuid=ar.id)
+        a = cls(uuid=str(ar.id or ""))
         a._url = ar.url
         a._heading = ar.heading
         a._author = ar.author
@@ -167,7 +170,8 @@ class Article:
         a._tokens = ar.tokens
         assert a._raw_tokens is None
         a._root_id = ar.root_id
-        a._root_domain = ar.root.domain if ar.root else None
+        ar_root = cast(Any, ar).root
+        a._root_domain = ar_root.domain if ar_root else None
         return a
 
     @classmethod
@@ -220,7 +224,8 @@ class Article:
             ar = session.query(ArticleRow).filter(ArticleRow.url == url).one_or_none()
             a = cls._init_from_scrape(url, session)
             if a is not None and ar is not None:
-                # This article already existed in the database, so note its UUID
+                # This article already existed in the database,
+                # so note its UUID
                 a._uuid = ar.id
             return a
 
@@ -267,6 +272,31 @@ class Article:
                             # The entity name
                             yield cast(str, t.get("x", ""))
 
+    def gen_text(self) -> Iterator[str]:
+        """A generator for text from an article token stream"""
+        if self._raw_tokens is None and self._tokens:
+            # Lazy generation of the raw tokens from the JSON rep
+            self._raw_tokens = json.loads(self._tokens)
+        if self._raw_tokens:
+            for p in self._raw_tokens:
+                has_sent = False
+                for sent in p:
+                    has_token = False
+                    for t in sent:
+                        x = t.get("x", "")
+                        if x:
+                            yield x
+                            has_token = True
+                    if has_token:
+                        has_sent = True
+                if has_sent:
+                    yield "\n"
+
+    def text(self) -> str:
+        """Return the text of the article as a string"""
+        s = " ".join(self.gen_text())
+        return "\n".join(correct_spaces(p) for p in s.split("\n"))
+
     def create_register(
         self, session: Session, all_names: bool = False
     ) -> "RegisterType":
@@ -290,7 +320,8 @@ class Article:
         """Store word stems"""
         assert session is not None
         # Delete previously stored words for this article
-        session.execute(Word.table().delete().where(Word.article_id == self._uuid))
+        w = cast(Any, Word).table()
+        session.execute(w.delete().where(Word.article_id == self._uuid))
         # Index the words by storing them in the words table
         if self._words:
             for word, cnt in self._words.items():
@@ -438,9 +469,8 @@ class Article:
                     tokens=self._tokens,
                 )
                 # Delete any existing rows with the same URL
-                session.execute(
-                    ArticleRow.table().delete().where(ArticleRow.url == self._url)
-                )
+                ar_table = cast(Any, ArticleRow).table()
+                session.execute(ar_table.delete().where(ArticleRow.url == self._url))
                 # Add the new row with a fresh UUID
                 session.add(ar)
                 # Store the word stems occurring in the article
@@ -607,7 +637,7 @@ class Article:
             q: SqlQuery[ArticleRow] = (
                 session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
                 .filter(ArticleRow.tokens != None)
-                .order_by(desc(cast(Column[datetime], ArticleRow.parsed)))
+                .order_by(desc(ArticleRow.parsed))
                 .yield_per(200)
             )
 
@@ -647,7 +677,7 @@ class Article:
             q: SqlQuery[ArticleRow] = (
                 session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
                 .filter(ArticleRow.tokens != None)
-                .order_by(desc(cast(Column[datetime], ArticleRow.parsed)))
+                .order_by(desc(ArticleRow.parsed))
                 .yield_per(200)
             )
 
@@ -722,7 +752,7 @@ class Article:
 
             if criteria and criteria.get("order_by_parse"):
                 # Order with newest parses first
-                q = q.order_by(desc(cast(Column[datetime], ArticleRow.parsed)))
+                q = q.order_by(desc(ArticleRow.parsed))
             elif criteria and criteria.get("random"):
                 q = q.order_by(func.random())
 
