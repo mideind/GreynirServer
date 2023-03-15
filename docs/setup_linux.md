@@ -144,6 +144,13 @@ alter role your_user_name with superuser;
 create database scraper with encoding 'UTF8' LC_COLLATE='is_IS.UTF-8' LC_CTYPE='is_IS.UTF-8' TEMPLATE=template0;
 ```
 
+Alter the database owner to be the user `reynir`
+(fixes the permissions for PostgreSQL 15+):
+
+```
+alter database scraper owner to reynir;
+```
+
 Enable uuid extension:
 
 ```
