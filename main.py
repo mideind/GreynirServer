@@ -48,6 +48,8 @@ from flask_cors import CORS  # type: ignore
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from dotenv import load_dotenv
+
 import reynir
 from reynir.bindb import GreynirBin
 from reynir.fastparser import Fast_Parser
@@ -195,6 +197,8 @@ def inject_nn_bools() -> Dict[str, Union[str, bool]]:
 
 # Initialize the main module
 try:
+    # Load variables from '.env' file into environment
+    load_dotenv()
     # Read configuration file
     Settings.read(str(Path("config", "Greynir.conf")))
 except ConfigError as e:
@@ -224,7 +228,6 @@ if Settings.DEBUG:
 
 
 if not RUNNING_AS_SERVER:
-
     if ENV.get("GREYNIR_ATTACH_PTVSD"):
         # Attach to the VSCode PTVSD debugger, enabling remote debugging via SSH
         # import ptvsd
@@ -306,7 +309,7 @@ else:
         werkzeug_log.setLevel(logging.WARNING)
 
     # Log our startup
-    version = sys.version.replace('\n', ' ')
+    version = sys.version.replace("\n", " ")
     log_str = (
         f"Greynir instance starting with "
         f"host={Settings.HOST}:{Settings.PORT}, "
