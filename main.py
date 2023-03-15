@@ -71,6 +71,9 @@ from tokenizer.version import __version__ as tokenizer_version
 # but False if the program was invoked directly as a Python main module.
 RUNNING_AS_SERVER = __name__ != "__main__"
 
+# Load variables from '.env' file into environment
+load_dotenv()
+
 # Initialize and configure Flask app
 app = Flask(__name__)
 
@@ -197,8 +200,6 @@ def inject_nn_bools() -> Dict[str, Union[str, bool]]:
 
 # Initialize the main module
 try:
-    # Load variables from '.env' file into environment
-    load_dotenv()
     # Read configuration file
     Settings.read(str(Path("config", "Greynir.conf")))
 except ConfigError as e:
