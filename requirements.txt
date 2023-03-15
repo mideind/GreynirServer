@@ -11,6 +11,7 @@ sqlalchemy2-stubs>=0.0.2a30
 cachetools>=5.2.0
 requests>=2.28.1
 typing-extensions>=4.5.0
+python-dotenv>=0.21.1
 # Scraping
 beautifulsoup4>=4.11.1
 feedparser>=6.0.10
