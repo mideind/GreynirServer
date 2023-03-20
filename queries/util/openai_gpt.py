@@ -88,7 +88,10 @@ class HistoryDict(TypedDict):
 HistoryList = List[HistoryDict]
 
 # Set the OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY") or ""
+api_key = os.getenv("OPENAI_API_KEY") or ""
+openai.api_key = api_key
+
+OPENAI_KEY_PRESENT = bool(api_key)
 
 # GPT model to use
 MODEL = os.getenv("OPENAI_MODEL") or "text-davinci-003"
@@ -107,7 +110,7 @@ class Completion:
     """Generates OpenAI completions"""
 
     @classmethod
-    def create(cls, *args: Any, **kwargs: Any) -> OpenAiDict:
+    def _create(cls, *args: Any, **kwargs: Any) -> OpenAiDict:
         """
         Creates a new completion while handling formatting and parsing.
         """
@@ -115,17 +118,23 @@ class Completion:
 
     @classmethod
     def create_from_preamble_and_history(
-        cls, *, preamble: str, history_list: HistoryList, query: str, **kwargs: Any,
+        cls, *, system: str, preamble: str = "", history_list: HistoryList = [], query: str, **kwargs: Any,
     ) -> OpenAiDict:
         """Assemble a prompt for the GPT model given a preamble and history"""
         messages: List[ChatMessage] = []
-        messages.append({"role": "system", "content": preamble})
+        messages.append({"role": "system", "content": system})
         for h in history_list:
             if "q" in h and "a" in h:
-                messages.append({"role": "user", "content": h["q"]})
+                # Put the preamble in front of the first user query
+                user = preamble + "\n" + h["q"] if preamble else h["q"]
+                preamble = ""
+                messages.append({"role": "user", "content": user})
                 messages.append({"role": "assistant", "content": h["a"]})
+        # Put the preamble in front of the query, if not already included
+        query = preamble + "\n" + query if preamble else query
         messages.append({"role": "user", "content": query})
-        return cls.create(messages=messages, **kwargs)
+        print(json.dumps(messages, ensure_ascii=False, indent=2))
+        return cls._create(messages=messages, **kwargs)
 
 
 def detect_language(answer: str) -> Tuple[str, str]:
@@ -161,18 +170,15 @@ def summarize(text: str, languages: Iterable[str]) -> Dict[str, str]:
         for lang in languages
     )
     query = (
+        f"The following text is a news article that is probably in Icelandic:\n\n"
+        f"---\n\n{text}\n\n---\n\n"
         "Summarize the article in each of the languages indicated, "
         "in 3 sentences or less for each language. "
         "Output the summaries in JSON, like so:"
         f"\n\n{{ {examples} }}\n\n"
     )
-    preamble = (
-        f"The following text is a news article that is probably in Icelandic:\n\n"
-        f"---\n\n{text}\n\n---\n\n"
-    )
     response = Completion.create_from_preamble_and_history(
-        preamble=preamble,
-        history_list=[],
+        system="You are an expert at summarizing text in multiple languages.",
         query=query,
         max_tokens=500,
         temperature=0.0,
