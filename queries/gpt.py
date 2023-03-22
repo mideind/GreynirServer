@@ -128,13 +128,14 @@ CALL_MACRO_LENGTH = len(CALL_MACRO)
 
 AGENT_SUFFIX = "Agent"
 AGENT_SUFFIX_LENGTH = len(AGENT_SUFFIX)
+AGENTS_DISABLED = True  # !!! FIXME: DEMO/DEBUG
 
 SYSTEM_PREAMBLE = """
 You are a highly competent Icelandic-language voice assistant named Embla.
 You have been developed by the company Miðeind to answer all manner of questions
 from your user in a factually accurate and succinct way to the very best of your abilities.
 You are always courteous and helpful.
-You reply with short and clear answers and avoid long explanations.
+You reply with short and clear answers, not longer than one paragraph, and avoid long explanations.
 """
 
 # Optional, for normalization (does not work particularly well):
@@ -264,6 +265,8 @@ class InitialAgent(AgentBase):
     def _create_agent_directory(cls) -> None:
         """Create a string by concatenating a short description
         of each available follow-up agent class"""
+        if AGENTS_DISABLED:
+            return
         cls._agent_directory = "".join(
             [agent.directory_entry() for agent in AgentBase.agents()]
         )
