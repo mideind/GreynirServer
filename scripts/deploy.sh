@@ -57,8 +57,8 @@ echo "Copying files"
 
 cp config/Index.conf $DEST/config/Index.conf
 # Note: config/Greynir.conf is not copied
-cp config/TnT-model.pickle $DEST/config/TnT-model.pickle
 
+cp .env $DEST/.env
 cp article.py $DEST/article.py
 cp fetcher.py $DEST/fetcher.py
 cp geo.py $DEST/geo.py
