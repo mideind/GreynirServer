@@ -254,35 +254,63 @@ class InitialAgent(AgentBase):
 
     """Models the initial prompt and completion for a user's question"""
 
-    def __init__(
-        self, q: Query, ql: str, state: StateDict, history_list: HistoryList
-    ) -> None:
-        super().__init__(q, ql, state, history_list)
-
-    _agent_directory = ""
+    # Cached preamble with a directory of available follow-up agents
+    _agents = ""
 
     @classmethod
     def _create_agent_directory(cls) -> None:
         """Create a string by concatenating a short description
         of each available follow-up agent class"""
-        if AGENTS_DISABLED:
-            return
-        cls._agent_directory = "".join(
-            [agent.directory_entry() for agent in AgentBase.agents()]
+        d = "".join(
+            agent.directory_entry() for agent in AgentBase.agents()
         )
+        cls._agents = AGENTS_PREAMBLE.format(agent_directory=d) if d else ""
+
+    def __init__(
+        self, q: Query, ql: str, state: StateDict, history_list: HistoryList
+    ) -> None:
+        super().__init__(q, ql, state, history_list)
+        if not AGENTS_DISABLED:
+            if not self._agents:
+                # Assemble a preamble with a directory of
+                # available follow-up agents and cache it
+                InitialAgent._create_agent_directory()
+
+    def _extract_follow_up_agent(self, answer: str) -> Tuple[str, AgentClass]:
+        """Extract the name of a follow-up agent from the answer, if any"""
+        call_macro_index = answer.find(CALL_MACRO)
+        if call_macro_index < 0:
+            # The answer does not contain a CALL macro
+            return answer, None
+        # Pick out the module name and parameters
+        cut = answer[call_macro_index + CALL_MACRO_LENGTH :]
+        end = cut.rfind(")$")
+        if end < 0:
+            return "", None  # Something wrong: Unable to answer
+        cut = cut[: end + 1]  # Include the closing parenthesis
+        arg = cut.split(".", maxsplit=1)
+        print(arg)
+        if len(arg) != 2:
+            return "", None  # Something wrong: Unable to answer
+        module_name = arg[0]
+        if module_name.startswith("{"):
+            # GPT is probably talking about itself, which it should not do
+            return "", None
+        parameter = arg[1]
+        if parameter.startswith("py."):
+            # Fix GPT misunderstanding which sometimes occurs
+            parameter = parameter[3:]
+        parameter = parameter[len("query") + 1 : -1]
+        # Convert module name to agent name
+        print(module_name, parameter)
+        agent_class = AgentBase.get(module_name)
+        return parameter, agent_class
 
     def submit(self) -> Tuple[str, AgentClass]:
         """Obtains an initial completion from GPT for a question"""
-        # Assemble a directory of available follow-up agents
-        # and cache it
-        if not self._agent_directory:
-            self._create_agent_directory()
-        # Compile the agent directory, if any
-        d = self._agent_directory
-        agents = AGENTS_PREAMBLE.format(agent_directory=d) if d else ""
         # Assemble the prompt
         preamble = INITIAL_PREAMBLE.format(
-            state=jdump(self._state), agents=agents
+            state=jdump(self._state), agents=self._agents
         )
 
         # Submit the prompt, comprised of the preamble,
@@ -300,34 +328,8 @@ class InitialAgent(AgentBase):
         # Extract the answer from the GPT response
         answer = self.answer_from_gpt_response(r)
 
-        # Detect whether a follow up completion is called for
-        call_macro_index = answer.find(CALL_MACRO)
-        if call_macro_index >= 0:
-            # Pick out the module name and parameters
-            cut = answer[call_macro_index + CALL_MACRO_LENGTH :]
-            end = cut.rfind(")$")
-            if end < 0:
-                return "", None  # Something wrong: Unable to answer
-            cut = cut[: end + 1]  # Include the closing parenthesis
-            arg = cut.split(".", maxsplit=1)
-            print(arg)
-            if len(arg) != 2:
-                return "", None  # Something wrong: Unable to answer
-            module_name = arg[0]
-            if module_name.startswith("{"):
-                # GPT is probably talking about itself, which it should not do
-                return "", None
-            parameter = arg[1]
-            if parameter.startswith("py."):
-                # Fix GPT misunderstanding which sometimes occurs
-                parameter = parameter[3:]
-            parameter = parameter[len("query") + 1 : -1]
-            # Convert module name to agent name
-            print(module_name, parameter)
-            agent_class = AgentBase.get(module_name)
-            return parameter, agent_class
-
-        return answer, None
+        # Return the agent that should follow up on this answer, if any
+        return self._extract_follow_up_agent(answer)
 
 
 class FollowUpAgent(AgentBase):
@@ -401,7 +403,8 @@ class FollowUpAgent(AgentBase):
     # using that as a basis instead of a new currency query.
     _ADD_INTERMEDIATE_ANSWER_TO_HISTORY = False
 
-    _QUERY = (
+    # The query template is overridable in derived classes
+    query_template = (
         "\nYour state is\n```\n{state}\n```\n"
         "Your information is\n```\n{result}\n```\n"
         "Answer the user's question below *in Icelandic* "
@@ -414,7 +417,7 @@ class FollowUpAgent(AgentBase):
         parameters = json.loads(self._answer)
         result = self.query(parameters)
         # Assemble the prompt
-        query = self._QUERY.format(
+        query = self.query_template.format(
             state=jdump(self._state), result=result, query=self._ql,
         )
         # Submit the prompt to the GPT model for completion
