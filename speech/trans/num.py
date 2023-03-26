@@ -387,9 +387,10 @@ def year_to_text(year: Union[int, str]) -> str:
 
         text.append(_SUB_20_NEUTRAL[hundreds])
         text.append("hundruð")
-        if digits in _SUB_20_NEUTRAL or digits in _TENS_NEUTRAL:
-            text.append("og")
-        text.append(number_to_neutral(digits))
+        if digits > 0:
+            if digits in _SUB_20_NEUTRAL or digits in _TENS_NEUTRAL:
+                text.append("og")
+            text.append(number_to_neutral(digits))
 
     # Other years are spoken like regular numbers
     else:

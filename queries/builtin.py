@@ -64,7 +64,7 @@ HANDLE_TREE = True
 
 # Invoke this processor after other tree processors
 # (unless they have even lower priority)
-PRIORITY = -1
+PRIORITY = -100
 
 # The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = {"BuiltinQueries"}

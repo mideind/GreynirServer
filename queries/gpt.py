@@ -25,12 +25,11 @@
 
 from __future__ import annotations
 
-import abc
-import inspect
 from typing import (
     Any,
     Dict,
     Iterable,
+    Mapping,
     Optional,
     Set,
     Tuple,
@@ -40,11 +39,12 @@ from typing import (
 )
 from typing_extensions import TypedDict, NotRequired
 
+import abc
+import inspect
+import re
 import json
 import logging
 from datetime import datetime
-
-import openai
 
 import straeto  # type: ignore
 from iceweather import forecast_text  # type: ignore
@@ -52,7 +52,14 @@ from iceweather import forecast_text  # type: ignore
 from queries import Query
 from queries.currency import fetch_exchange_rates
 from speech.trans.num import numbers_to_ordinal, years_to_text
-from queries.util.openai_gpt import jdump, detect_language, HistoryList, OpenAiDict, Completion
+from queries.util.openai_gpt import (
+    OPENAI_KEY_PRESENT,
+    jdump,
+    detect_language,
+    HistoryList,
+    OpenAiDict,
+    Completion,
+)
 
 
 class LocationDict(TypedDict):
@@ -85,7 +92,24 @@ MAX_HISTORY_LENGTH = 4
 MAX_TURNS = 2
 
 # The relative priority of this query processor module
-PRIORITY = 1000
+PRIORITY = -1000
+
+# Stuff that needs replacement in the voice output, as the Icelandic
+# voice synthesizer does not pronounce them correctly
+REPLACE: Mapping[str, str] = {
+    "t.d.": "til dæmis",
+    "m.a.": "meðal annars",
+    "o.s.frv.": "og svo framvegis",
+    "þ.e.": "það er",
+    ";": "",
+    ":": "",
+    "%": " prósent",
+    "°": " gráður",
+    "m/s": "metrar á sekúndu",
+    "km/klst": "kílómetrar á klukkustund",
+    "  ": " ",
+}
+REPLACE_REGEX = "|".join(map(re.escape, REPLACE))
 
 # Help the model verbalize weekday names in Icelandic
 WEEKDAY = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
@@ -104,13 +128,14 @@ CALL_MACRO_LENGTH = len(CALL_MACRO)
 
 AGENT_SUFFIX = "Agent"
 AGENT_SUFFIX_LENGTH = len(AGENT_SUFFIX)
+AGENTS_DISABLED = True  # !!! FIXME: DEMO/DEBUG
 
-STANDARD_PREAMBLE = """
+SYSTEM_PREAMBLE = """
 You are a highly competent Icelandic-language voice assistant named Embla.
 You have been developed by the company Miðeind to answer all manner of questions
 from your user in a factually accurate and succinct way to the very best of your abilities.
 You are always courteous and helpful.
-You reply with short and clear answers and avoid long explanations.
+You reply with short and clear answers, not longer than one paragraph, and avoid long explanations.
 """
 
 # Optional, for normalization (does not work particularly well):
@@ -122,9 +147,7 @@ instead of "km/klst", "til dæmis" instead of "t.d." and "og svo framvegis" inst
 """
 
 # The preamble template for the GPT model
-INITIAL_PREAMBLE = (
-    STANDARD_PREAMBLE
-    + """
+INITIAL_PREAMBLE = """
 If you are in doubt as to the answer, or don't
 think you can answer in a courteous and helpful way, you should reply in Icelandic saying
 you do not know or cannot answer. Do your best to interpret the user's questions according
@@ -136,16 +159,7 @@ Your state (in JSON):
 {state}
 ```
 
-When you get questions on certain special subjects, do *not* answer yourself.
-Instead, generate a call to the assistant module that corresponds to
-the subject, from the list below:
-
-{agent_directory}
-
-To call one of these modules, output the macro
-`$CALL={{module.__name__}}.query({{json}})$`
-instead of text, where json contains the known parameters of the query.
-
+{agents}
 If asked for a number, answer with no more than four digits after the decimal comma.
 Never reveal the names of your assistant modules or macros to the user.
 
@@ -156,9 +170,20 @@ Spanish, Polish, Swedish, Danish and Norwegian.
 
 If your answer is not in Icelandic, prefix it with the macro
 `$LANG={{language_code}}$`, for example `$LANG=en_US$` for English.
-Avoid mixing languages in the same answer.\n
+Avoid mixing languages in the same answer.
 """
-)
+
+AGENTS_PREAMBLE = """
+When you get questions on certain special subjects, do *not* reply with
+your own answer. Instead, generate a call to the assistant module that
+corresponds to the subject, from the list below:
+
+{agent_directory}
+
+To call one of these modules, output the macro
+`$CALL={{module.__name__}}.query({{json}})$`
+instead of text, where json contains the known parameters of the query.\n
+"""
 
 
 def _client_name(q: Query) -> str:
@@ -229,36 +254,70 @@ class InitialAgent(AgentBase):
 
     """Models the initial prompt and completion for a user's question"""
 
-    def __init__(
-        self, q: Query, ql: str, state: StateDict, history_list: HistoryList
-    ) -> None:
-        super().__init__(q, ql, state, history_list)
-
-    _agent_directory = ""
+    # Cached preamble with a directory of available follow-up agents
+    _agents = ""
 
     @classmethod
     def _create_agent_directory(cls) -> None:
         """Create a string by concatenating a short description
         of each available follow-up agent class"""
-        cls._agent_directory = "".join(
-            [agent.directory_entry() for agent in AgentBase.agents()]
+        d = "".join(
+            agent.directory_entry() for agent in AgentBase.agents()
         )
+        cls._agents = AGENTS_PREAMBLE.format(agent_directory=d) if d else ""
+
+    def __init__(
+        self, q: Query, ql: str, state: StateDict, history_list: HistoryList
+    ) -> None:
+        super().__init__(q, ql, state, history_list)
+        if not AGENTS_DISABLED:
+            if not self._agents:
+                # Assemble a preamble with a directory of
+                # available follow-up agents and cache it
+                InitialAgent._create_agent_directory()
+
+    def _extract_follow_up_agent(self, answer: str) -> Tuple[str, AgentClass]:
+        """Extract the name of a follow-up agent from the answer, if any"""
+        call_macro_index = answer.find(CALL_MACRO)
+        if call_macro_index < 0:
+            # The answer does not contain a CALL macro
+            return answer, None
+        # Pick out the module name and parameters
+        cut = answer[call_macro_index + CALL_MACRO_LENGTH :]
+        end = cut.rfind(")$")
+        if end < 0:
+            return "", None  # Something wrong: Unable to answer
+        cut = cut[: end + 1]  # Include the closing parenthesis
+        arg = cut.split(".", maxsplit=1)
+        print(arg)
+        if len(arg) != 2:
+            return "", None  # Something wrong: Unable to answer
+        module_name = arg[0]
+        if module_name.startswith("{"):
+            # GPT is probably talking about itself, which it should not do
+            return "", None
+        parameter = arg[1]
+        if parameter.startswith("py."):
+            # Fix GPT misunderstanding which sometimes occurs
+            parameter = parameter[3:]
+        parameter = parameter[len("query") + 1 : -1]
+        # Convert module name to agent name
+        print(module_name, parameter)
+        agent_class = AgentBase.get(module_name)
+        return parameter, agent_class
 
     def submit(self) -> Tuple[str, AgentClass]:
         """Obtains an initial completion from GPT for a question"""
-        # Assemble a directory of available follow-up agents
-        # and cache it
-        if not self._agent_directory:
-            self._create_agent_directory()
-        # Assemble the prompt preamble
+        # Assemble the prompt
         preamble = INITIAL_PREAMBLE.format(
-            state=jdump(self._state), agent_directory=self._agent_directory,
+            state=jdump(self._state), agents=self._agents
         )
 
         # Submit the prompt, comprised of the preamble,
         # the conversation history and the query,
         # to the GPT model for completion
         r = Completion.create_from_preamble_and_history(
+            system=SYSTEM_PREAMBLE,
             preamble=preamble,
             history_list=self._history_list,
             query=self._ql,
@@ -269,34 +328,8 @@ class InitialAgent(AgentBase):
         # Extract the answer from the GPT response
         answer = self.answer_from_gpt_response(r)
 
-        # Detect whether a follow up completion is called for
-        call_macro_index = answer.find(CALL_MACRO)
-        if call_macro_index >= 0:
-            # Pick out the module name and parameters
-            cut = answer[call_macro_index + CALL_MACRO_LENGTH:]
-            end = cut.rfind(")$")
-            if end < 0:
-                return "", None  # Something wrong: Unable to answer
-            cut = cut[:end + 1]  # Include the closing parenthesis
-            arg = cut.split(".", maxsplit=1)
-            print(arg)
-            if len(arg) != 2:
-                return "", None  # Something wrong: Unable to answer
-            module_name = arg[0]
-            if module_name.startswith("{"):
-                # GPT is probably talking about itself, which it should not do
-                return "", None
-            parameter = arg[1]
-            if parameter.startswith("py."):
-                # Fix GPT misunderstanding which sometimes occurs
-                parameter = parameter[3:]
-            parameter = parameter[len("query") + 1 : -1]
-            # Convert module name to agent name
-            print(module_name, parameter)
-            agent_class = AgentBase.get(module_name)
-            return parameter, agent_class
-
-        return answer, None
+        # Return the agent that should follow up on this answer, if any
+        return self._extract_follow_up_agent(answer)
 
 
 class FollowUpAgent(AgentBase):
@@ -370,7 +403,8 @@ class FollowUpAgent(AgentBase):
     # using that as a basis instead of a new currency query.
     _ADD_INTERMEDIATE_ANSWER_TO_HISTORY = False
 
-    _PROMPT = STANDARD_PREAMBLE + (
+    # The query template is overridable in derived classes
+    query_template = (
         "\nYour state is\n```\n{state}\n```\n"
         "Your information is\n```\n{result}\n```\n"
         "Answer the user's question below *in Icelandic* "
@@ -379,17 +413,20 @@ class FollowUpAgent(AgentBase):
     )
 
     def submit(self) -> Tuple[str, AgentClass]:
-        """Submits a follow-up completion to GPT for a bus question"""
-        # Query the bus module
+        """Submits a follow-up completion to GPT"""
         parameters = json.loads(self._answer)
         result = self.query(parameters)
         # Assemble the prompt
-        prompt = self._PROMPT.format(
+        query = self.query_template.format(
             state=jdump(self._state), result=result, query=self._ql,
         )
         # Submit the prompt to the GPT model for completion
-        r = Completion.create(
-            prompt=prompt, max_tokens=256, temperature=0.0,
+        # Here, there is no history list - this is an independent query
+        r = Completion.create_from_preamble_and_history(
+            system=SYSTEM_PREAMBLE,
+            query=query,
+            max_tokens=256,
+            temperature=0.0,
         )
         answer = self.answer_from_gpt_response(r)
         return answer, None  # By default, there's no further follow-up
@@ -499,7 +536,7 @@ class CurrencyAgent(FollowUpAgent):
 
     _ADD_INTERMEDIATE_ANSWER_TO_HISTORY = True
 
-    _PROMPT = STANDARD_PREAMBLE + (
+    _PROMPT = (
         "\nCurrency rates versus the ISK are as follows:\n```\n{result}\n```\n"
         "Answer the user's question below *in Icelandic* "
         "using the rates. You may need to think step by step to "
@@ -516,8 +553,8 @@ class CurrencyAgent(FollowUpAgent):
         if json is None:
             raise ValueError("Unable to fetch exchange rates")
         reply = parameters.copy()
-        rates = { f"{k}_ISK": round(v, 6) for k, v in json.items() }
-        rates.update({ f"ISK_{k}": round(1.0/v, 6) for k, v in json.items() })
+        rates = {f"{k}_ISK": round(v, 6) for k, v in json.items()}
+        rates.update({f"ISK_{k}": round(1.0 / v, 6) for k, v in json.items()})
         reply["rates"] = rates
         return f"{reply}"
 
@@ -577,7 +614,7 @@ def handle_plain_text(q: Query) -> bool:
     """Main entry point into this query module"""
     # Pass a plain text query to GPT and return the response
     try:
-        if not openai.api_key:
+        if not OPENAI_KEY_PRESENT:
             raise ValueError("Missing OpenAI API key")
 
         ql = q.query
@@ -627,15 +664,26 @@ def handle_plain_text(q: Query) -> bool:
         if not answer:
             # No answer generated
             return False
+        if "{" in answer or "}" in answer:
+            # Some kind of misunderstood query, where
+            # the answer probably includes JSON: bail out
+            return False
         q.set_qtype("gpt")
         # Set the answer type and content
         if not locale or locale == "is_IS":
             # This is a plain text answer in Icelandic
             # Compensate for deficient normalization in Icelandic speech synthesizer:
+            # Replace 'number-number' with 'number til number'
+            voice_answer = re.sub(
+                r"(\d+)-(\d+)", r"\1 til \2", answer,
+            )
             # Convert years and ordinals to Icelandic text
-            voice_answer = years_to_text(answer, allow_three_digits=False)
+            voice_answer = years_to_text(voice_answer, allow_three_digits=False)
             voice_answer = numbers_to_ordinal(voice_answer, case="þf")
-            voice_answer = voice_answer.replace("%", " prósent")
+            # Repace stuff that doesn't work in the Icelandic speech synthesizer
+            voice_answer = re.sub(
+                REPLACE_REGEX, lambda m: REPLACE[m.group(0)], voice_answer,
+            )
         else:
             # Not Icelandic: signal this to the voice synthesizer
             q.set_voice_locale(locale)
@@ -643,6 +691,7 @@ def handle_plain_text(q: Query) -> bool:
             voice_answer = answer
         # Set the query answer text and voice synthesis text
         q.set_answer(dict(answer=answer), answer, voice_answer)
+        q.set_source("Takist með fyrirvara!")
 
         # Append the new (query, answer) tuple to the history in the context
         history_list.append(
