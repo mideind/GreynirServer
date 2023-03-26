@@ -385,6 +385,8 @@ class Query:
         # Fix common Google ASR mistake: 'hæ embla' is returned as 'bæjarblað'
         if not qf and q == "bæjarblað":
             q = "hæ embla"
+        # Remove any trailing punctuation
+        qf = re.sub(r"[\.\?\!]+$", "", qf)
         # If stripping the prefixes results in an empty query,
         # just return original query string unmodified.
         return qf or q
@@ -680,7 +682,11 @@ class Query:
                 # Note that passing query=self here means that the
                 # "query" field of the TreeStateDict is populated,
                 # turning it into a QueryStateDict.
-                if self._tree.process_queries(self, self._session, processor,):
+                if self._tree.process_queries(
+                    self,
+                    self._session,
+                    processor,
+                ):
                     # This processor found an answer, which is already stored
                     # in the Query object: return True
                     return True
@@ -1104,11 +1110,13 @@ class Query:
         if Settings.DEBUG:
             # Dump query results to the console
             print("\nQuery result:")
+
             def converter(o: Any):
                 """Ensure that datetime is output in ISO format to JSON"""
                 if isinstance(o, datetime):
                     return o.isoformat()[0:16]
                 return None
+
             print(json.dumps(result, indent=3, ensure_ascii=False, default=converter))
 
         return result
@@ -1158,20 +1166,33 @@ def to_accusative(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> st
     """Return the noun phrase after casting it from nominative to accusative case"""
     with GreynirBin.get_db() as db:
         return _to_case(
-            np, db.lookup_g, db.cast_to_accusative, filter_func=filter_func,
+            np,
+            db.lookup_g,
+            db.cast_to_accusative,
+            filter_func=filter_func,
         )
 
 
 def to_dative(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
     """Return the noun phrase after casting it from nominative to dative case"""
     with GreynirBin.get_db() as db:
-        return _to_case(np, db.lookup_g, db.cast_to_dative, filter_func=filter_func,)
+        return _to_case(
+            np,
+            db.lookup_g,
+            db.cast_to_dative,
+            filter_func=filter_func,
+        )
 
 
 def to_genitive(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
     """Return the noun phrase after casting it from nominative to genitive case"""
     with GreynirBin.get_db() as db:
-        return _to_case(np, db.lookup_g, db.cast_to_genitive, filter_func=filter_func,)
+        return _to_case(
+            np,
+            db.lookup_g,
+            db.cast_to_genitive,
+            filter_func=filter_func,
+        )
 
 
 def process_query(

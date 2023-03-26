@@ -58,7 +58,7 @@ functions that are linked to grammar nonterminals.
 
 **Greynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
 and many well-written articles can be parsed completely. It presently has over a million parsed articles
-in its database, containing about 15 million parsed sentences. A recent version of this database is available
+in its database, containing over 15 million parsed sentences. A recent version of this database is available
 via the [GreynirCorpus](https://github.com/mideind/GreynirCorpus) project.
 
 Greynir supports natural language querying of its databases. Users can ask about person names, titles and
