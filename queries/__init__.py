@@ -42,7 +42,7 @@ from typing import (
     Mapping,
     cast,
 )
-from typing_extensions import Protocol
+from typing_extensions import Protocol, Literal
 
 from types import FunctionType, ModuleType
 
@@ -54,14 +54,14 @@ import re
 import random
 from collections import defaultdict, ChainMap
 
-from reynir import TOK, Tok, tokenize, correct_spaces
+from tokenizer import BIN_Tuple, detokenize
+from reynir import TOK, Tok, tokenize
 from reynir.fastparser import (
     Fast_Parser,
     ParseForestDumper,
     ParseError,
     ffi,  # type: ignore
 )
-from tokenizer import BIN_Tuple
 from reynir.binparser import BIN_Grammar, BIN_Token
 from reynir.reducer import Reducer
 from reynir.bindb import GreynirBin
@@ -127,7 +127,9 @@ _IGNORED_QUERY_PREFIXES = (
     "bæjarblað",
     "hæðarblað",
 )
-_IGNORED_PREFIX_RE = r"^({0})\s*".format("|".join(_IGNORED_QUERY_PREFIXES))
+_IGNORED_PREFIX_RE = re.compile(
+    r"^({0})\s*".format("|".join(_IGNORED_QUERY_PREFIXES)), flags=re.IGNORECASE
+)
 # Auto-capitalization corrections
 _CAPITALIZATION_REPLACEMENTS = (("í Dag", "í dag"),)
 
@@ -310,6 +312,8 @@ class Query:
     _utility_functions: ChainMapType[str, FunctionType] = ChainMap()
     # Handler functions within processors that handle plain text
     _text_processors: List[Callable[["Query"], bool]] = []
+    # Handler of last resort for queries that no processor handles
+    _last_resort_processor: Optional[Callable[["Query"], bool]] = None
     # Singleton instance of the query parser
     _parser: Optional[QueryParser] = None
     # Help texts associated with lemmas
@@ -377,16 +381,17 @@ class Query:
 
     def _preprocess_query_string(self, q: str) -> str:
         """Preprocess the query string prior to further analysis"""
+        # Note: Whitespace, periods, question marks, and exclamation marks
+        # have already been stripped off the end of the query string
         if not q:
             return q
-        qf = re.sub(_IGNORED_PREFIX_RE, "", q, flags=re.IGNORECASE)
-        # Remove " embla" suffix, if present
-        # qf = re.sub(r"\s+embla$", "", qf, flags=re.IGNORECASE)
+        # Strip prefixes such as Embla's name, "Hæ Embla", etc.
+        qf = re.sub(_IGNORED_PREFIX_RE, "", q)
         # Fix common Google ASR mistake: 'hæ embla' is returned as 'bæjarblað'
         if not qf and q == "bæjarblað":
             q = "hæ embla"
         # If stripping the prefixes results in an empty query,
-        # just return original query string unmodified.
+        # just return original query string, stripped but otherwise unmodified
         return qf or q
 
     @classmethod
@@ -396,6 +401,7 @@ class Query:
         all_procs: List[ModuleType] = []
         tree_procs: List[Tuple[int, ModuleType]] = []
         text_procs: List[Tuple[int, Callable[["Query"], bool]]] = []
+        last_resort_proc: Optional[Callable[["Query"], bool]] = None
         # Load the query processor modules found in the
         # queries directory. The modules can be tree and/or text processors,
         # and we sort them into two lists, accordingly.
@@ -405,7 +411,25 @@ class Query:
                 m = importlib.import_module(modname)
                 is_proc = False
                 # Obtain module priority, if any
-                priority: int = getattr(m, "PRIORITY", 0)
+                # It can be a number or the string "LAST_RESORT"
+                priority: Union[int, Literal["LAST_RESORT"]] = getattr(m, "PRIORITY", 0)
+                if priority == "LAST_RESORT":
+                    # This is a last-resort query processor
+                    # (i.e. it is invoked if no other processor
+                    # is able to handle the query)
+                    if last_resort_proc is not None:
+                        logging.error(
+                            f"Module {modname} has PRIORITY set to 'LAST_RESORT', "
+                            "but another module already has this priority"
+                        )
+                        continue
+                    last_resort_proc = getattr(m, "handle_plain_text", None)
+                    if last_resort_proc is None:
+                        logging.error(
+                            f"Module {modname} has PRIORITY set to 'LAST_RESORT', "
+                            "but does not define handle_plain_text()"
+                        )
+                    continue
                 if getattr(m, "HANDLE_TREE", False):
                     # This is a tree processor
                     is_proc = True
@@ -430,6 +454,7 @@ class Query:
             for t in sorted(tree_procs, key=lambda x: -x[0])
         ]
         cls._text_processors = [t[1] for t in sorted(text_procs, key=lambda x: -x[0])]
+        cls._last_resort_processor = last_resort_proc
 
         if Settings.DEBUG:
             # Print the active processors in descending priority order
@@ -447,6 +472,11 @@ class Query:
                     for p in sorted(tree_procs, key=lambda x: -x[0])
                 )
             )
+
+            if last_resort_proc is not None:
+                print("Last resort processor:")
+                p = last_resort_proc
+                print(f"        {p.__module__}.{p.__qualname__}")
 
         # Obtain query grammar fragments from the utility modules and tree processors
         grammar_fragments: List[str] = []
@@ -569,7 +599,7 @@ class Query:
     @staticmethod
     def _query_string_from_toklist(toklist: Iterable[Tok]) -> str:
         """Re-create a query string from an auto-capitalized token list"""
-        actual_q = correct_spaces(" ".join(t.txt for t in toklist if t.txt))
+        actual_q = detokenize(toklist, normalize=True)
         if actual_q:
             # Fix stuff that the auto-capitalization tends to get wrong,
             # such as 'í Dag'
@@ -579,7 +609,7 @@ class Query:
             actual_q = actual_q[0].upper() + actual_q[1:]
             # Terminate the query with a question mark,
             # if not otherwise terminated
-            if not any(actual_q.endswith(s) for s in ("?", ".", "!")):
+            if not actual_q.endswith(("?", ".", "!")):
                 actual_q += "?"
         return actual_q
 
@@ -680,7 +710,7 @@ class Query:
                 # Note that passing query=self here means that the
                 # "query" field of the TreeStateDict is populated,
                 # turning it into a QueryStateDict.
-                if self._tree.process_queries(self, self._session, processor,):
+                if self._tree.process_queries(self, self._session, processor):
                     # This processor found an answer, which is already stored
                     # in the Query object: return True
                     return True
@@ -955,11 +985,14 @@ class Query:
         now = datetime.utcnow()
         try:
             with SessionContext(commit=True) as session:
-                row = (
-                    session.query(QueryData)
-                    .filter(QueryData.key == key)
-                    .filter(QueryData.client_id == client_id)
-                ).one_or_none()
+                row = cast(
+                    Optional[QueryData],
+                    (
+                        session.query(QueryData)
+                        .filter(QueryData.key == key)
+                        .filter(QueryData.client_id == client_id)
+                    ).one_or_none(),
+                )
                 if row is None:
                     # Not already present: insert
                     row = QueryData(
@@ -972,8 +1005,8 @@ class Query:
                     session.add(row)
                 else:
                     # Already present: update
-                    row.data = data  # type: ignore
-                    row.modified = now  # type: ignore
+                    row.data = data
+                    row.modified = now
             # The session is auto-committed upon exit from the context manager
             return True
         except Exception as e:
@@ -1012,6 +1045,33 @@ class Query:
             result["answer"] = result["voice"] = help_text_func(lemma)
             result["valid"] = True
 
+    def _execute(self, result: ResponseDict) -> bool:
+        """Execute the query, store the query answer in the result dictionary
+        and return True"""
+        # First, try to handle this from plain text, without parsing:
+        # shortcut to a successful, plain response
+        if self.execute_from_plain_text():
+            return True
+        # Not a plain text query, so try to parse it
+        if not self.parse(result):
+            # Unable to parse the query
+            err = self.error()
+            if err is not None:
+                if Settings.DEBUG:
+                    print(f"Unable to parse query, error {err}")
+                result["error"] = err
+                result["valid"] = False
+                return False
+        if not self.execute_from_tree():
+            # This is a recognized query, but its execution
+            # failed for some reason: return the error
+            # if Settings.DEBUG:
+            #     print(f"Unable to execute query, error {q.error()}")
+            result["error"] = self.error() or "E_UNABLE_TO_EXECUTE_QUERY"
+            result["valid"] = True
+            return False
+        return True
+
     def execute(self) -> ResponseDict:
         """Check whether the parse tree describes a query, and if so,
         execute the query, store the query answer in the result dictionary
@@ -1024,26 +1084,10 @@ class Query:
         # usually starts with an uppercase letter and has a trailing
         # question mark (or other ending punctuation).
         result: ResponseDict = dict(q_raw=self.query, q=self.beautified_query)
-        # First, try to handle this from plain text, without parsing:
-        # shortcut to a successful, plain response
-        if not self.execute_from_plain_text():
-            if not self.parse(result):
-                # Unable to parse the query
-                err = self.error()
-                if err is not None:
-                    if Settings.DEBUG:
-                        print(f"Unable to parse query, error {err}")
-                    result["error"] = err
-                result["valid"] = False
-                return result
-            if not self.execute_from_tree():
-                # This is a query, but its execution failed for some reason:
-                # return the error
-                # if Settings.DEBUG:
-                #     print(f"Unable to execute query, error {q.error()}")
-                result["error"] = self.error() or "E_UNABLE_TO_EXECUTE_QUERY"
-                result["valid"] = True
-                return result
+        # Execute the query, modifying the result dictionary
+        if not self._execute(result):
+            # Error: return it
+            return result
         # Successful query: return the answer in response
         if self._answer:
             result["answer"] = self._answer
@@ -1104,14 +1148,30 @@ class Query:
         if Settings.DEBUG:
             # Dump query results to the console
             print("\nQuery result:")
+
             def converter(o: Any):
                 """Ensure that datetime is output in ISO format to JSON"""
                 if isinstance(o, datetime):
                     return o.isoformat()[0:16]
                 return None
+
             print(json.dumps(result, indent=3, ensure_ascii=False, default=converter))
 
         return result
+
+
+class QueryOfLastResort(Query):
+
+    """A query that is executed if no other query is recognized"""
+
+    def _execute(self, result: ResponseDict) -> bool:
+        """Execute a last-resort query"""
+        handle_plain_text = Query._last_resort_processor
+        if handle_plain_text is None or not self._query:
+            # No last resort processor: return False
+            return False
+        # A last resort processor is a text processor
+        return handle_plain_text(self)
 
 
 def _to_case(
@@ -1174,6 +1234,86 @@ def to_genitive(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
         return _to_case(np, db.lookup_g, db.cast_to_genitive, filter_func=filter_func,)
 
 
+def _get_cached_answer(
+    session: Session, qtext: str, clean_q: str, now: datetime
+) -> ResponseDict:
+    """Attempt to fetch a previously cached answer for the given query"""
+    cached_answer: Optional[QueryRow] = (
+        session.query(QueryRow)
+        .filter(QueryRow.question_lc == clean_q.lower())  # type: ignore
+        .filter(QueryRow.expires >= now)
+        .order_by(desc(QueryRow.expires))
+        .limit(1)
+        .one_or_none()
+    )
+    if cached_answer is None:
+        # Not found in cache: return an empty dict
+        return dict()
+    # The same question is found in the cache and has not expired:
+    # return the previous answer
+    a = cached_answer
+    # !!! TBD: Log the cached answer as well?
+    return dict(
+        valid=True,
+        q_raw=qtext,
+        q=a.bquestion,
+        answer=a.answer,
+        response=dict(answer=a.answer or ""),
+        voice=a.voice,
+        expires=a.expires,
+        qtype=a.qtype,
+        key=a.key,
+    )
+
+
+def _log_query(
+    session: Session,
+    it: List[str],
+    query: Query,
+    clean_q: str,
+    result: ResponseDict,
+    now: datetime,
+    voice: bool,
+    remote_addr: Optional[str],
+    client_id: Optional[str],
+    client_type: Optional[str],
+    client_version: Optional[str],
+) -> None:
+    """Add a query log entry to the database"""
+    try:
+        # Standard query logging
+        qrow = QueryRow(
+            timestamp=now,
+            interpretations=it,
+            question=clean_q,
+            # bquestion is the beautified query string
+            bquestion=result["q"],
+            answer=result["answer"],
+            voice=result.get("voice"),
+            # Only put an expiration on voice queries
+            expires=query.expires if voice else None,
+            qtype=result.get("qtype"),
+            key=result.get("key"),
+            latitude=None,  # Disabled for now
+            longitude=None,  # Disabled for now
+            # Client identifier
+            client_id=client_id[:256] if client_id else None,
+            client_type=client_type[:80] if client_type else None,
+            client_version=client_version[:10] if client_version else None,
+            # IP address
+            remote_addr=remote_addr or None,
+            # Context dict, stored as JSON, if present
+            # (set during query execution)
+            context=query.context,
+            # All other fields are set to NULL
+        )
+        session.add(qrow)
+        # Also log anonymised query
+        session.add(QueryLog.from_Query(qrow))
+    except Exception as e:
+        logging.error(f"Error logging query: {e}")
+
+
 def process_query(
     q: Union[str, Iterable[str]],
     voice: bool,
@@ -1204,14 +1344,14 @@ def process_query(
     first_qtext = ""
 
     with SessionContext(commit=True) as session:
-        it: Iterable[str]
+        it: List[str]
         if isinstance(q, str):
             # This is a single string
             it = [q]
         else:
-            # This should be an array of strings,
+            # This should be an iterable of strings,
             # in decreasing priority order
-            it = q
+            it = list(q)
 
         # Iterate through the submitted query strings,
         # assuming that they are in decreasing order of probability,
@@ -1219,7 +1359,7 @@ def process_query(
         # one that works (or we're stumped)
         for qtext in it:
             qtext = qtext.strip()
-            clean_q = qtext.rstrip("?")
+            clean_q = qtext.rstrip("?.! \n\r\t")
             if first_clean_q is None:
                 # Store the first (most likely) query string
                 # that comes in from the speech-to-text processor,
@@ -1231,38 +1371,16 @@ def process_query(
 
             # First, look in the query cache for the same question
             # (in lower case), having a not-expired answer
-            cached_answer = None
             if voice and not bypass_cache:
                 # Only use the cache for voice queries
                 # (handling detailed responses in other queries
                 # is too much for the cache)
-                cached_answer = (
-                    session.query(QueryRow)
-                    .filter(QueryRow.question_lc == clean_q.lower())
-                    .filter(QueryRow.expires >= now)
-                    .order_by(desc(QueryRow.expires))
-                    .limit(1)
-                    .one_or_none()
-                )
-            if cached_answer is not None:
-                # The same question is found in the cache and has not expired:
-                # return the previous answer
-                a = cached_answer
-                result = dict(
-                    valid=True,
-                    q_raw=qtext,
-                    q=a.bquestion,
-                    answer=a.answer,
-                    response=dict(answer=a.answer or ""),
-                    voice=a.voice,
-                    expires=a.expires,
-                    qtype=a.qtype,
-                    key=a.key,
-                )
-                # !!! TBD: Log the cached answer as well?
-                return result
+                result = _get_cached_answer(session, qtext, clean_q, now)
+                if result:
+                    return result
 
-            # The answer is not found in the cache: Handle the query
+            # The answer is not found in the cache:
+            # Create a fresh query object and call execute() on it
             query = Query(
                 session,
                 qtext,
@@ -1274,48 +1392,60 @@ def process_query(
                 client_version,
             )
             result = query.execute()
-            if result["valid"] and "error" not in result:
+            if result.get("valid", False) and "error" not in result:
                 # Successful: our job is done
+                # If not in private mode, log the result
                 if not private:
-                    # If not in private mode, log the result
-                    try:
-                        # Standard query logging
-                        qrow = QueryRow(
-                            timestamp=now,
-                            interpretations=it,
-                            question=clean_q,
-                            # bquestion is the beautified query string
-                            bquestion=result["q"],
-                            answer=result["answer"],
-                            voice=result.get("voice"),
-                            # Only put an expiration on voice queries
-                            expires=query.expires if voice else None,
-                            qtype=result.get("qtype"),
-                            key=result.get("key"),
-                            latitude=None,  # Disabled for now
-                            longitude=None,  # Disabled for now
-                            # Client identifier
-                            client_id=client_id[:256] if client_id else None,
-                            client_type=client_type[:80] if client_type else None,
-                            client_version=client_version[:10]
-                            if client_version
-                            else None,
-                            # IP address
-                            remote_addr=remote_addr or None,
-                            # Context dict, stored as JSON, if present
-                            # (set during query execution)
-                            context=query.context,
-                            # All other fields are set to NULL
-                        )
-                        session.add(qrow)
-                        # Also log anonymised query
-                        session.add(QueryLog.from_Query(qrow))
-                    except Exception as e:
-                        logging.error(f"Error logging query: {e}")
+                    _log_query(
+                        session,
+                        it,
+                        query,
+                        clean_q,
+                        result,
+                        now,
+                        voice,
+                        remote_addr,
+                        client_id,
+                        client_type,
+                        client_version,
+                    )
                 return result
 
         # Failed to answer the query, i.e. no query processor
-        # module was able to parse the query and provide an answer
+        # module was able to parse the query - in any of the possible
+        # interpretations returned from the speech-to-text module -
+        # and provide an answer
+        # Try the fallback query processor, if any
+        if first_qtext and first_clean_q:
+            query = QueryOfLastResort(
+                session,
+                first_qtext,
+                voice,
+                auto_uppercase,
+                location,
+                client_id,
+                client_type,
+                client_version,
+            )
+            result = query.execute()
+            if result.get("valid", False) and "error" not in result:
+                # If not in private mode, log the result
+                if not private:
+                    _log_query(
+                        session,
+                        it,
+                        query,
+                        first_clean_q,
+                        result,
+                        now,
+                        voice,
+                        remote_addr,
+                        client_id,
+                        client_type,
+                        client_version,
+                    )
+                return result
+
         result = result or dict(valid=False, error="E_NO_RESULT")
         if first_clean_q:
             # Re-insert the query data from the first (most likely)

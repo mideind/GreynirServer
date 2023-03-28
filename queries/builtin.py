@@ -36,7 +36,7 @@ import logging
 from settings import Settings
 
 from db import desc, OperationalError, Session
-from db.models import Article, Person, Entity, Root, Column
+from db.models import Article, Person, Entity, Root, Column, DateTime
 from db.sql import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
 
 from treeutil import TreeUtility
@@ -87,22 +87,25 @@ _MAX_URLS = 5
 _MAX_MENTIONS = 5
 
 
-def append_answers(rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Article], str]) -> None:
+def append_answers(
+    rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Article], str]
+) -> None:
     """Iterate over query results and add them to the result dictionary rd"""
     for p in q:
         s = correct_spaces(prop_func(p))
+        ts = p.timestamp or datetime.utcnow()
         ai = dict(
             domain=p.domain,
             uuid=p.id,
             heading=p.heading,
-            timestamp=p.timestamp,
-            ts=p.timestamp.isoformat()[0:16],
+            timestamp=ts,
+            ts=ts.isoformat()[0:16],
             url=p.url,
         )
         rd[s][p.id] = ai  # Add to a dict of UUIDs
 
 
-def name_key_to_update(register: RegisterType, name: str) -> str:
+def name_key_to_update(register: RegisterType, name: str) -> Optional[str]:
     """Return the name register dictionary key to update with data about
     the given person name. This may be an existing key within the
     dictionary, the given key, or None if no update should happen."""
@@ -182,18 +185,21 @@ def name_key_to_update(register: RegisterType, name: str) -> str:
     return name
 
 
-def append_names(rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Article], str]) -> None:
+def append_names(
+    rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Article], str]
+) -> None:
     """Iterate over query results and add them to the result dictionary rd,
     assuming that the key is a person name"""
     s: Optional[str]
     for p in q:
         s = correct_spaces(prop_func(p))
+        ts = p.timestamp or datetime.utcnow()
         ai = dict(
             domain=p.domain,
             uuid=p.id,
             heading=p.heading,
-            timestamp=p.timestamp,
-            ts=p.timestamp.isoformat()[0:16],
+            timestamp=ts,
+            ts=ts.isoformat()[0:16],
             url=p.url,
         )
         # Obtain the key within rd that should be updated with new
@@ -245,8 +251,8 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
             return w / math.e
         return w
 
-    scores = dict()
-    mention_weights = dict()
+    scores: Dict[str, float] = dict()
+    mention_weights: Dict[str, float] = dict()
 
     for result, articles in rd.items():
         mw = mention_weights[result] = mention_weight(articles)
@@ -264,7 +270,7 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
     rl = sorted(rd.keys(), key=lambda x: mention_weights[x], reverse=True)
     len_rl = len(rl)
 
-    def is_ex(s):
+    def is_ex(s: str) -> bool:
         """Does the given result contain an 'ex' prefix?"""
         return any(
             contained(x, s)
@@ -327,7 +333,7 @@ def prepare_response(q, prop_func):
 
 
 def add_entity_to_register(
-    name: str, register: RegisterType, session: Session, all_names: bool=False
+    name: str, register: RegisterType, session: Session, all_names: bool = False
 ) -> None:
     """Add the entity name and the 'best' definition to the given
     name register dictionary. If all_names is True, we add
@@ -613,7 +619,7 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
         .filter(Root.visible == True)
         .join(Article, Article.url == Entity.article_url)
         .join(Root)
-        .order_by(desc(cast(Column, Article.timestamp)))
+        .order_by(desc(Article.timestamp))
         .limit(QUERY_LIMIT)
         .all()
     )
@@ -692,7 +698,7 @@ def query_entity(query: Query, session: Session, name: str) -> AnswerTuple:
     return response, answer, voice_answer
 
 
-def query_entity_def(session, name: str) -> str:
+def query_entity_def(session: Session, name: str) -> str:
     """Return a single (best) definition of an entity"""
     rl = _query_entity_definitions(session, name)
     return correct_spaces(rl[0]["answer"]) if rl else ""

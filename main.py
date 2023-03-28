@@ -31,7 +31,7 @@
 
 """
 
-from typing import Dict, List, Pattern, Optional, Union
+from typing import Dict, List, Pattern, Optional, Union, Any, cast
 
 import sys
 import re
@@ -84,7 +84,7 @@ app.config["CORS_HEADERS"] = "Content-Type"
 # Fix access to client remote_addr when running behind proxy
 setattr(app, "wsgi_app", ProxyFix(app.wsgi_app))  # type: ignore
 
-app.json.ensure_ascii = False  # We're fine with using Unicode/UTF-8
+cast(Any, app).json.ensure_ascii = False  # We're fine with using Unicode/UTF-8
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB, max upload file size
 app.config["CACHE_NO_NULL_WARNING"] = True  # Don't warn if caching is disabled
 

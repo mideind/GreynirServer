@@ -579,15 +579,15 @@ def test_date(client: FlaskClient) -> None:
         json = qmcall(client, {"q": qstr}, "Date")
 
     json = qmcall(client, {"q": "hver er dagsetningin?", "voice": True}, "Date")
-    assert json["answer"].endswith(datetime.now().strftime("%Y"))
+    assert json["answer"].endswith(datetime.utcnow().strftime("%Y"))
     assert "tvö þúsund" in json["voice"]
 
     json = qmcall(client, {"q": "hvaða dagur er í dag?", "voice": True}, "Date")
-    assert json["answer"].endswith(datetime.now().strftime("%Y"))
+    assert json["answer"].endswith(datetime.utcnow().strftime("%Y"))
     assert "tvö þúsund" in json["voice"]
 
     json = qmcall(client, {"q": "hvaða dagur er á morgun", "voice": True}, "Date")
-    assert json["answer"].endswith(datetime.now().strftime("%Y"))
+    assert json["answer"].endswith(datetime.utcnow().strftime("%Y"))
     assert "tvö þúsund" in json["voice"]
 
     json = qmcall(client, {"q": "hvaða mánaðardagur var í gær", "voice": True}, "Date")

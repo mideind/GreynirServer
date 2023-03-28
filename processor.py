@@ -51,7 +51,7 @@ from pathlib import Path
 
 from settings import Settings, ConfigError
 from db import GreynirDB, Session
-from db.models import Article, Person, Column
+from db.models import Article, Person, Column, DateTime
 from tree import Tree, ProcEnv
 from utility import modules_in_dir
 
@@ -315,15 +315,15 @@ class Processor:
                             # If update, we re-process articles that have been parsed
                             # again in the meantime
                             q = q.filter(
-                                cast(Column[datetime], Article.processed)
-                                < cast(Column[datetime], Article.parsed)
+                                cast(Column[DateTime], Article.processed)
+                                < cast(Column[DateTime], Article.parsed)
                             ).order_by(Article.processed)
                         else:
                             q = q.filter(Article.processed == None)
                     if from_date is not None:
                         # Only go through articles parsed since the given date
                         q = q.filter(
-                            cast(Column[datetime], Article.parsed) >= from_date
+                            cast(Column[DateTime], Article.parsed) >= from_date
                         ).order_by(Article.parsed)
                 if limit > 0:
                     q = q.limit(limit)

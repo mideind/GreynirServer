@@ -53,6 +53,39 @@ from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.sql.expression import ColumnElement
 
 
+# Hacks to get properly typed SQLAlchemy column definitions
+def StringColumnRequired(n: Optional[int] = None, **kwargs: Any) -> str:
+    return cast(str, Column(String(n), nullable=False, **kwargs))
+
+
+def StringColumn(n: Optional[int] = None, **kwargs: Any) -> Optional[str]:
+    return cast(Optional[str], Column(String(n), **kwargs))
+
+
+def FloatColumnRequired(**kwargs: Any) -> float:
+    return cast(float, Column(Float, nullable=False, **kwargs))
+
+
+def FloatColumn(**kwargs: Any) -> Optional[float]:
+    return cast(Optional[float], Column(Float, **kwargs))
+
+
+def IntegerColumnRequired(**kwargs: Any) -> int:
+    return cast(int, Column(Integer, nullable=False, **kwargs))
+
+
+def IntegerColumn(**kwargs: Any) -> Optional[int]:
+    return cast(Optional[int], Column(Integer, **kwargs))
+
+
+def BooleanColumn(**kwargs: Any) -> Optional[bool]:
+    return cast(Optional[bool], Column(Boolean, **kwargs))
+
+
+def DateTimeColumn(**kwargs: Any) -> Optional[datetime]:
+    return cast(Optional[datetime], Column(DateTime, **kwargs))
+
+
 class CaseInsensitiveComparator(Comparator):
     """Boilerplate from the PostgreSQL documentation to implement
     a case-insensitive comparator"""
@@ -79,29 +112,30 @@ class Root(Base):
     __tablename__ = "roots"
 
     # Primary key
-    id = cast(int,
+    id = cast(
+        int,
         Column(
             Integer,
             Sequence("roots_id_seq"),  # type: ignore  # Don't ask me why
-            primary_key=True
-        )
+            primary_key=True,
+        ),
     )
 
     # Domain suffix, root URL, human-readable description
-    domain = cast(str, Column(String, nullable=False))
-    url = cast(str, Column(String, nullable=False))
-    description = cast(str, Column(String))
+    domain = StringColumnRequired()
+    url = StringColumnRequired()
+    description = StringColumn()
 
     # Default author
-    author = cast(str, Column(String))
+    author = StringColumn()
     # Default authority of this source, 1.0 = most authoritative, 0.0 = least authoritative
-    authority = cast(float, Column(Float))
+    authority = FloatColumn()
     # Finish time of last scrape of this root
     scraped = cast(datetime, Column(DateTime, index=True))
     # Module to use for scraping
-    scr_module = cast(str, Column(String(80)))
+    scr_module = StringColumn(80)
     # Class within module to use for scraping
-    scr_class = cast(str, Column(String(80)))
+    scr_class = StringColumn(80)
     # Are articles of this root visible on the Greynir web?
     visible = cast(bool, Column(Boolean, default=True))
     # Should articles of this root be scraped automatically?
@@ -123,15 +157,18 @@ class Article(Base):
     __tablename__ = "articles"
 
     # The article URL is the primary key
-    url = cast(str, Column(String, primary_key=True))
+    url = StringColumnRequired(primary_key=True)
 
     # UUID
-    id = Column(
-        psql_UUID(as_uuid=False),
-        index=True,
-        nullable=False,
-        unique=True,
-        server_default=text("uuid_generate_v1()"),
+    id = cast(
+        str,
+        Column(
+            psql_UUID(as_uuid=False),
+            index=True,
+            nullable=False,
+            unique=True,
+            server_default=text("uuid_generate_v1()"),
+        ),
     )
 
     # Foreign key to a root
@@ -145,43 +182,43 @@ class Article(Base):
     )
 
     # Article heading, if known
-    heading = cast(str, Column(String))
+    heading = StringColumn()
     # Article author, if known
-    author = cast(str, Column(String))
+    author = StringColumn()
     # Article time stamp, if known
-    timestamp = cast(datetime, Column(DateTime, index=True))
+    timestamp = DateTimeColumn(index=True)
 
     # Authority of this article, 1.0 = most authoritative, 0.0 = least authoritative
-    authority = cast(float, Column(Float))
+    authority = FloatColumn()
     # Time of the last scrape of this article
-    scraped = cast(Optional[datetime], Column(DateTime, index=True))
+    scraped = DateTimeColumn(index=True)
     # Time of the last parse of this article
-    parsed = cast(Optional[datetime], Column(DateTime, index=True))
+    parsed = DateTimeColumn(index=True)
     # Time of the last processing of this article
-    processed = cast(Optional[datetime], Column(DateTime, index=True))
+    processed = DateTimeColumn(index=True)
     # Time of the last indexing of this article
-    indexed = cast(Optional[datetime], Column(DateTime, index=True))
+    indexed = DateTimeColumn(index=True)
     # Module used for scraping
-    scr_module = cast(Optional[str], Column(String(80)))
+    scr_module = StringColumn(80)
     # Class within module used for scraping
-    scr_class = cast(Optional[str], Column(String(80)))
+    scr_class = StringColumn(80)
     # Version of scraper class
-    scr_version = cast(Optional[str], Column(String(16)))
+    scr_version = StringColumn(16)
     # Version of parser/grammar/config
-    parser_version = cast(Optional[str], Column(String(64)))
+    parser_version = StringColumn(64)
     # Parse statistics
-    num_sentences = cast(int, Column(Integer))
-    num_parsed = cast(int, Column(Integer))
-    ambiguity = cast(float, Column(Float))
+    num_sentences = IntegerColumn()
+    num_parsed = IntegerColumn()
+    ambiguity = FloatColumn()
 
     # The HTML obtained in the last scrape
-    html = cast(Optional[str], Column(String))
+    html = StringColumn()
     # The parse tree obtained in the last parse
-    tree = cast(Optional[str], Column(String))
+    tree = StringColumn()
     # The tokens of the article in JSON string format
-    tokens = cast(Optional[str], Column(String))
+    tokens = StringColumn()
     # The article topic vector as an array of floats in JSON string format
-    topic_vector = cast(Optional[str], Column(String))
+    topic_vector = StringColumn()
 
     # The back-reference to the Root parent of this Article
     root: RelationshipProperty[Root] = relationship(
@@ -213,19 +250,18 @@ class Summary(Base):
     )
     # The language code is in a modified BCP 47 format, e.g. 'is_IS' or 'en_US'
     # (note underscore instead of hyphen)
-    language = cast(str, Column(String(8), nullable=False))
+    language = StringColumnRequired(8)
 
     # A summary of the article
-    summary = cast(str, Column(String, nullable=False, index=False))
+    summary = StringColumnRequired()
     # The full text of the article
-    text = cast(str, Column(String, nullable=True, index=False))
+    text = StringColumn()
     # Summarization time stamp
-    timestamp = cast(datetime, Column(DateTime, index=False))
+    timestamp = DateTimeColumn()
 
     # The back-reference to the Root parent of this Article
     article: RelationshipProperty[Article] = relationship(
-        "Article",
-        backref=backref("summaries"),
+        "Article", backref=backref("summaries"),
     )
 
 
@@ -235,12 +271,13 @@ class Person(Base):
     __tablename__ = "persons"
 
     # Primary key
-    id = cast(int,
+    id = cast(
+        int,
         Column(
             Integer,
             Sequence("persons_id_seq"),  # type: ignore  # Don't ask me why
-            primary_key=True
-        )
+            primary_key=True,
+        ),
     )
 
     # Foreign key to an article
@@ -253,21 +290,21 @@ class Person(Base):
     )
 
     # Name
-    name = Column(String, index=True)
+    name = StringColumn(index=True)
 
     # Title
-    title = Column(String, index=True)
+    title = StringColumn(index=True)
     # Title in all lowercase
-    title_lc = Column(String, index=True)
+    title_lc = StringColumn(index=True)
 
     # Gender
-    gender = Column(String(3), index=True)
+    gender = StringColumn(3, index=True)
 
     # Authority of this fact, 1.0 = most authoritative, 0.0 = least authoritative
-    authority = Column(Float)
+    authority = FloatColumn()
 
     # Timestamp of this entry
-    timestamp = Column(DateTime)
+    timestamp = DateTimeColumn()
 
     # The back-reference to the Article parent of this Person
     article: RelationshipProperty = relationship(  # type: ignore
@@ -286,12 +323,13 @@ class Entity(Base):
     __tablename__ = "entities"
 
     # Primary key
-    id = cast(int,
+    id = cast(
+        int,
         Column(
             Integer,
             Sequence("entities_id_seq"),  # type: ignore  # Don't ask me why
-            primary_key=True
-        )
+            primary_key=True,
+        ),
     )
 
     # Foreign key to an article
@@ -315,18 +353,20 @@ class Entity(Base):
         return CaseInsensitiveComparator(cls.name)
 
     # Verb ('er', 'var', 'sé')
-    verb = Column(String, index=True)
+    verb = StringColumn(index=True)
     # Entity definition
-    definition = Column(String, index=True)
+    definition = StringColumn(index=True)
 
     # Authority of this fact, 1.0 = most authoritative, 0.0 = least authoritative
-    authority = Column(Float)
+    authority = FloatColumn()
 
     # Timestamp of this entry
-    timestamp = Column(DateTime)
+    timestamp = DateTimeColumn()
 
     # The back-reference to the Article parent of this Entity
-    article: RelationshipProperty[Article] = relationship("Article", backref=backref("entities", order_by=name))
+    article: RelationshipProperty[Article] = relationship(
+        "Article", backref=backref("entities", order_by=name)
+    )
 
     # Add an index on the entity name in lower case
     name_lc_index = Index("ix_entities_name_lc", func.lower(name))
@@ -362,26 +402,26 @@ class Location(Base):
     )
 
     # Name
-    name = Column(String, index=True)
+    name = StringColumn(index=True)
 
     # Kind (e.g. 'address', 'street', 'country', 'region', 'placename')
-    kind = Column(String(16), index=True)
+    kind = StringColumn(16, index=True)
 
     # Country (ISO 3166-1 alpha-2, e.g. 'IS')
-    country = Column(String(2))
+    country = StringColumn(2)
 
     # Continent ISO code (e.g. 'EU')
-    continent = Column(String(2))
+    continent = StringColumn(2)
 
     # Coordinates (WGS84)
-    latitude = Column(Float)
-    longitude = Column(Float)
+    latitude = FloatColumn()
+    longitude = FloatColumn()
 
     # Additional data
     data = Column(JSONB)
 
     # Timestamp of this entry
-    timestamp = Column(DateTime)
+    timestamp = DateTimeColumn()
 
     # The back-reference to the Article parent of this Location
     article = relationship("Article", backref=backref("locations", order_by=name))  # type: ignore
@@ -409,16 +449,18 @@ class Word(Base):
     )
 
     # The word stem
-    stem = Column(String(MAX_WORD_LEN), index=True, nullable=False)
+    stem = StringColumnRequired(MAX_WORD_LEN, index=True)
 
     # The word category
-    cat = Column(String(16), index=True, nullable=False)
+    cat = StringColumnRequired(16, index=True)
 
     # Count of occurrences
-    cnt = Column(Integer, nullable=False)
+    cnt = IntegerColumnRequired()
 
     # The back-reference to the Article parent of this Word
-    article: RelationshipProperty[Article] = relationship("Article", backref=backref("words"))
+    article: RelationshipProperty[Article] = relationship(
+        "Article", backref=backref("words")
+    )
 
     __table_args__ = (
         PrimaryKeyConstraint("article_id", "stem", "cat", name="words_pkey"),
@@ -442,20 +484,20 @@ class Topic(Base):
     )
 
     # The topic name
-    name = Column(String(128), nullable=False, index=True)
+    name = StringColumnRequired(128, index=True)
 
     # An identifier for the topic, such as 'sport', 'business'...
     # The identifier must be usable as a CSS class name.
-    identifier = Column(String(32), nullable=False)
+    identifier = StringColumnRequired(32)
 
     # The topic keywords, in the form word1/cat word2/cat...
-    keywords = Column(String, nullable=False)
+    keywords = StringColumnRequired()
 
     # The associated vector, in JSON format
-    vector = Column(String)  # Is initally NULL
+    vector = StringColumn()  # Is initally NULL
 
     # The cosine distance threshold to apply for this topic
-    threshold = Column(Float)
+    threshold = FloatColumn()
 
     def __repr__(self):
         return "Topic(name='{0}')".format(self.name)
@@ -481,9 +523,13 @@ class ArticleTopic(Base):
     )
 
     # The back-reference to the Article parent of this ArticleTopic
-    article: RelationshipProperty[Article] = relationship("Article", backref=backref("atopics"))
+    article: RelationshipProperty[Article] = relationship(
+        "Article", backref=backref("atopics")
+    )
     # The back-reference to the Topic parent of this ArticleTopic
-    topic: RelationshipProperty[Topic] = relationship("Topic", backref=backref("atopics"))
+    topic: RelationshipProperty[Topic] = relationship(
+        "Topic", backref=backref("atopics")
+    )
 
     __table_args__ = (
         PrimaryKeyConstraint("article_id", "topic_id", name="atopics_pkey"),
@@ -771,19 +817,19 @@ class QueryData(Base):
 
     __table_args__ = (PrimaryKeyConstraint("client_id", "key", name="querydata_pkey"),)
 
-    client_id = Column(String(256), nullable=False)
+    client_id = cast(str, Column(String(256), nullable=False))
 
     # Key to distinguish between different types of JSON data that can be stored
-    key = Column(String(64), nullable=False)
+    key = cast(str, Column(String(64), nullable=False))
 
     # Created timestamp
-    created = Column(DateTime, nullable=False)
+    created = cast(datetime, Column(DateTime, nullable=False))
 
     # Last modified timestamp
-    modified = Column(DateTime, nullable=False)
+    modified = cast(datetime, Column(DateTime, nullable=False))
 
     # JSON data
-    data = Column(JSONB, nullable=False)
+    data = cast(Any, Column(JSONB, nullable=False))
 
     def __repr__(self):
         return "QueryData(client_id='{0}', created='{1}', modified='{2}', key='{3}', data='{4}')".format(

@@ -247,6 +247,8 @@ class Fetcher:
     def _get_helper(cls, root: Root) -> Optional[ModuleType]:
         """Return a scrape helper instance for the given root"""
         # Obtain an instance of a scraper helper class for this root
+        assert root.scr_module is not None
+        assert root.scr_class is not None
         helper_id = root.scr_module + "." + root.scr_class
         if helper_id in Fetcher._helpers:
             # Already instantiated a helper: get it

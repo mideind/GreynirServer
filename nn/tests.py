@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# type: ignore
 """
     Greynir: Natural language processing for Icelandic
 
@@ -18,33 +18,31 @@
 """
 
 from nn.nntree import (
-    tokenize_and_merge_possible_mw_tokens,
-    flat_matching_nonterminal,
-    flat_is_terminal,
-    flat_is_nonterminal,
+    tokenize_and_merge_possible_mw_tokens,  # type: ignore
+    flat_matching_nonterminal,  # type: ignore
+    flat_is_terminal,  # type: ignore
+    flat_is_nonterminal,  # type: ignore
 )
 
 
 def test_merge_person():
     text = "Ingibjörg Sólrún Gísladóttir mun a.m.k. hitta hópinn á morgun"
     flat_tree = "P S-MAIN IP NP-SUBJ person_kvk_nf person_kvk_nf person_kvk_nf /NP-SUBJ VP-SEQ VP so_et_fh_gm_nt_p3 ADVP ao /ADVP so_1_þf_gm_nh NP-OBJ no_et_gr_kk_þf /NP-OBJ /VP ADVP ADVP-DATE-REL ao ao /ADVP-DATE-REL /ADVP /VP-SEQ /IP /S-MAIN /P"
-    text_toks, parse_toks = tokenize_and_merge_possible_mw_tokens(text, flat_tree)
+    text_toks, _ = tokenize_and_merge_possible_mw_tokens(text, flat_tree)
     assert len(text_toks) == 6
 
 
 def test_merge_ao():
     text = "Ingibjörg Sólrún Gísladóttir mun a.m.k. hitta hópinn á morgun"
     flat_tree = "P S-MAIN IP NP-SUBJ person_kvk_nf no_kvk_nf person_kvk_nf /NP-SUBJ VP-SEQ VP so_et_fh_gm_nt_p3 ADVP ao /ADVP so_1_þf_gm_nh NP-OBJ no_et_gr_kk_þf /NP-OBJ /VP ADVP ADVP-DATE-REL ao ao /ADVP-DATE-REL /ADVP /VP-SEQ /IP /S-MAIN /P"
-    text_toks, parse_toks = tokenize_and_merge_possible_mw_tokens(text, flat_tree)
+    text_toks, _ = tokenize_and_merge_possible_mw_tokens(text, flat_tree)
     assert len(text_toks) == 8
 
 
 def test_no_merge():
-    from reynir import bintokenizer
-
     text = "Ingibjörg Sólrún Gísladóttir mun a.m.k. hitta hópinn á morgun"
     flat_tree = "P S-MAIN IP NP-SUBJ person_kvk_nf no_kvk_nf person_kvk_nf /NP-SUBJ VP-SEQ VP so_et_fh_gm_nt_p3 ADVP ao /ADVP so_1_þf_gm_nh NP-OBJ no_et_gr_kk_þf /NP-OBJ /VP ADVP ADVP-DATE-REL fs ao /ADVP-DATE-REL /ADVP /VP-SEQ /IP /S-MAIN /P"
-    text_toks, parse_toks = tokenize_and_merge_possible_mw_tokens(text, flat_tree)
+    text_toks, _ = tokenize_and_merge_possible_mw_tokens(text, flat_tree)
     assert len(text_toks) == 9
 
 

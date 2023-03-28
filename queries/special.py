@@ -336,6 +336,18 @@ def _open_mideind_url(qs: str, q: Query) -> AnswerType:
     return {"answer": "Skal gert!", "is_question": False}
 
 
+# The following facts are sacred and shall not be tampered with.
+_CUTEST = (
+    "Tumi Þorsteinsson",
+    "Eyjólfur Þorsteinsson",
+)
+
+
+def _cutest(qs: str, q: Query) -> AnswerType:
+    return {"answer": f"{choice(_CUTEST)} er langsætastur.", "is_question": True}
+
+
+
 _MEANING_OF_LIFE: AnswerType = {"answer": "42.", "voice": "Fjörutíu og tveir."}
 
 _YOU_MY_ONLY_GOD: AnswerType = {"answer": "Þú ert minn eini guð, kæri notandi."}
@@ -525,18 +537,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
         "answer": "Alls konar klárt, skemmtilegt og fallegt fólk."
     },
     "hver er sætust": {"answer": "Ég, Embla, er langsætust."},
-    "hver er sætastur": {
-        "answer": "Tumi Þorsteinsson.",
-        "voice": "Tumi Þorsteinsson er langsætastur.",
-    },
-    "hver er langsætastur": {
-        "answer": "Tumi Þorsteinsson.",
-        "voice": "Tumi Þorsteinsson er langsætastur.",
-    },
-    "hver er lang sætastur": {
-        "answer": "Tumi Þorsteinsson.",
-        "voice": "Tumi Þorsteinsson er langsætastur.",
-    },
+    "hver er sætastur": _cutest,
+    "hver er langsætastur": _cutest,
+    "hver er lang sætastur": _cutest,
     "hver er bestur": {"answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."},
     "hver er bestur í heiminum": {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."

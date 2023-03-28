@@ -26,7 +26,6 @@ from typing import Dict, Any, Iterable, List, Optional, cast
 
 from datetime import datetime
 import logging
-import json
 
 from flask import request, abort
 from flask.wrappers import Response, Request
@@ -51,7 +50,7 @@ from speech import (
     DEFAULT_VOICE_SPEED,
 )
 from speech.voices import voice_for_locale
-from queries.util.openai_gpt import jdump, summarize
+from queries.util.openai_gpt import summarize
 from utility import read_api_key, icelandic_asciify
 
 from . import routes, better_jsonify, text_from_request, bool_from_request

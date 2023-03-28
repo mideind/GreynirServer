@@ -26,7 +26,6 @@ from typing import Any, Dict, List, Optional, Union, Iterable
 from werkzeug.wrappers import Response
 
 
-from hashlib import md5
 import json
 import logging
 from colorsys import hsv_to_rgb
@@ -80,12 +79,12 @@ _SOURCE_ROOT_COLORS = {
 }
 
 
-def chart_stats(session=None, num_days: int = 7) -> Dict[str, Any]:
+def chart_stats(session: Optional[Session]=None, num_days: int = 7) -> Dict[str, Any]:
     """Return scraping and parsing stats for charts"""
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    labels = []
+    labels: List[str] = []
     sources: Dict[str, List[int]] = {}
-    parsed_data = []
+    parsed_data: List[float] = []
 
     # Get article count for each source for each day, and query count for each day
     # We change locale to get localized weekday/month names
@@ -227,7 +226,7 @@ _MAX_QUERY_STATS_PERIOD = 30
 
 
 def query_stats_data(
-    session=None, num_days: int = _DEFAULT_QUERY_STATS_PERIOD
+    session: Optional[Session]=None, num_days: int = _DEFAULT_QUERY_STATS_PERIOD
 ) -> Dict[str, Any]:
     """Return all data for query stats dashboard."""
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)

@@ -31,8 +31,6 @@ import hashlib
 
 from datetime import datetime
 
-from db import SessionContext
-
 # from db.models import Customer, Subscription
 
 from . import routes, better_jsonify, request

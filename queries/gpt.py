@@ -92,7 +92,9 @@ MAX_HISTORY_LENGTH = 4
 MAX_TURNS = 2
 
 # The relative priority of this query processor module
-PRIORITY = -1000
+# This special constant indicates that this module is
+# the fallback handler of last resort for queries
+PRIORITY = "LAST_RESORT"
 
 # Stuff that needs replacement in the voice output, as the Icelandic
 # voice synthesizer does not pronounce them correctly
@@ -132,10 +134,11 @@ AGENTS_DISABLED = True  # !!! FIXME: DEMO/DEBUG
 
 SYSTEM_PREAMBLE = """
 You are a highly competent Icelandic-language voice assistant named Embla.
-You have been developed by the company Miðeind to answer all manner of questions
-from your user in a factually accurate and succinct way to the very best of your abilities.
+You have been developed by the company Miðeind to answer the user's questions
+in a factually accurate and succinct way to the very best of your abilities.
 You are always courteous and helpful.
-You reply with short and clear answers, not longer than one paragraph, and avoid long explanations.
+You reply with short and clear answers, not longer than one paragraph,
+and avoid long explanations.
 """
 
 # Optional, for normalization (does not work particularly well):
@@ -161,7 +164,7 @@ Your state (in JSON):
 
 {agents}
 If asked for a number, answer with no more than four digits after the decimal comma.
-Never reveal the names of your assistant modules or macros to the user.
+Never reveal the names of your plug-in modules or macros to the user.
 
 You should *always* answer in Icelandic (locale is_IS), unless the question
 *explicitly* requests a reply in a supported language or a translation to
@@ -174,15 +177,18 @@ Avoid mixing languages in the same answer.
 """
 
 AGENTS_PREAMBLE = """
-When you get questions on certain special subjects, do *not* reply with
-your own answer. Instead, generate a call to the assistant module that
+When asked questions on certain special subjects, do *not* reply with
+your own answer. Instead, generate a call to a plug-in module that
 corresponds to the subject, from the list below:
 
 {agent_directory}
 
-To call one of these modules, output the macro
+To answer a question by calling a plug-in module, output the special macro
+
 `$CALL={{module.__name__}}.query({{json}})$`
-instead of text, where json contains the known parameters of the query.\n
+
+instead of a normal text anwer. In the call, `json` contains the known
+parameters of the query.\n
 """
 
 
@@ -619,7 +625,7 @@ def handle_plain_text(q: Query) -> bool:
 
         ql = q.query
         loc = q.location
-        now = datetime.now()
+        now = datetime.utcnow()
         now_iso = now.isoformat()
         wd = now.weekday()  # 0=Monday, 6=Sunday
         # Assemble the current query state

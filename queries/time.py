@@ -224,6 +224,7 @@ def handle_plain_text(q: Query) -> bool:
 
     # We have a timezone. Return formatted answer.
     if tz:
+        # This is one of the very few places where datetime.utcnow() is not used
         now = datetime.now(timezone(tz))
 
         desc = specific_desc or "Klukkan er"
