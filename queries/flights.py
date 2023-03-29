@@ -219,7 +219,7 @@ def _filter_flight_data(
     """
     flight_time: datetime
     flight: FlightType
-    now = datetime.utcnow()
+    now: datetime = datetime.now(timezone.utc) # Timezone aware datetime (don't change to datetime.utcnow()!)
 
     matching_flights: FlightList = []
     for flight in flights:
@@ -388,7 +388,7 @@ def _process_result(result: Result) -> Dict[str, str]:
 
     from_date: datetime
     to_date: datetime
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)  # Timezone aware datetime, don't change to .utcnow()!
     days: int = result.get("day_count", 5)  # Check 5 days into future by default
     from_date = result.get("from_date", now)
     to_date = result.get("to_date", now + timedelta(days=days))

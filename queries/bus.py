@@ -624,7 +624,7 @@ def query_arrival_time(query: Query, result: Result) -> AnswerTuple:
                             )
                         else:
                             # Two to five minutes ahead
-                            deviation = f", en er {-diff} mínútum á undan áætlun"
+                            deviation = f", en er {gssml(-diff, type='number', gender='kvk', case='þgf')} mínútum á undan áætlun"
 
                     elif diff >= 3:
                         # 3 minutes or more behind schedule

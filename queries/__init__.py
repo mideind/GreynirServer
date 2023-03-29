@@ -772,6 +772,20 @@ class Query:
         # This function normally returns a dict that has been decoded from JSON
         return None if ctx is None else ctx[0]
 
+    def count_queries_of_type(self, qtype: str) -> int:
+        """Return the number of queries by this client of the given type"""
+        if not self._client_id:
+            # Can't find the last answer if no client_id given
+            return 0
+        # Count the non-error query results for this client and query type
+        return (
+            self._session.query(QueryRow.id)
+            .filter(QueryRow.client_id == self._client_id)
+            .filter(QueryRow.qtype == qtype)
+            .filter(QueryRow.error == None)
+            .count()
+        )
+
     @property
     def query(self) -> str:
         """The query text, in its original form"""
@@ -1269,7 +1283,7 @@ def _get_cached_answer(
 def _log_query(
     session: Session,
     it: List[str],
-    query: Query,
+    query: Optional[Query],
     clean_q: str,
     result: ResponseDict,
     now: datetime,
@@ -1287,11 +1301,12 @@ def _log_query(
             interpretations=it,
             question=clean_q,
             # bquestion is the beautified query string
-            bquestion=result["q"],
-            answer=result["answer"],
+            bquestion=result.get("q", clean_q),
+            answer=result.get("answer"),
             voice=result.get("voice"),
+            error=result.get("error"),
             # Only put an expiration on voice queries
-            expires=query.expires if voice else None,
+            expires=query.expires if voice and query is not None else None,
             qtype=result.get("qtype"),
             key=result.get("key"),
             latitude=None,  # Disabled for now
@@ -1304,7 +1319,7 @@ def _log_query(
             remote_addr=remote_addr or None,
             # Context dict, stored as JSON, if present
             # (set during query execution)
-            context=query.context,
+            context=None if query is None else query.context,
             # All other fields are set to NULL
         )
         session.add(qrow)
@@ -1353,100 +1368,110 @@ def process_query(
             # in decreasing priority order
             it = list(q)
 
-        # Iterate through the submitted query strings,
-        # assuming that they are in decreasing order of probability,
-        # attempting to execute them in turn until we find
-        # one that works (or we're stumped)
-        for qtext in it:
-            qtext = qtext.strip()
-            clean_q = qtext.rstrip("?.! \n\r\t")
-            if first_clean_q is None:
-                # Store the first (most likely) query string
-                # that comes in from the speech-to-text processor,
-                # since we want to return that one to the client
-                # if no query string is matched - not the last
-                # (least likely) query string
-                first_clean_q = clean_q
-                first_qtext = qtext
+        try:
+            # Iterate through the submitted query strings,
+            # assuming that they are in decreasing order of probability,
+            # attempting to execute them in turn until we find
+            # one that works (or we're stumped)
+            for qtext in it:
+                qtext = qtext.strip()
+                clean_q = qtext.rstrip("?.! \n\r\t")
+                if first_clean_q is None:
+                    # Store the first (most likely) query string
+                    # that comes in from the speech-to-text processor,
+                    # since we want to return that one to the client
+                    # if no query string is matched - not the last
+                    # (least likely) query string
+                    first_clean_q = clean_q
+                    first_qtext = qtext
 
-            # First, look in the query cache for the same question
-            # (in lower case), having a not-expired answer
-            if voice and not bypass_cache:
-                # Only use the cache for voice queries
-                # (handling detailed responses in other queries
-                # is too much for the cache)
-                result = _get_cached_answer(session, qtext, clean_q, now)
-                if result:
+                # First, look in the query cache for the same question
+                # (in lower case), having a not-expired answer
+                if voice and not bypass_cache:
+                    # Only use the cache for voice queries
+                    # (handling detailed responses in other queries
+                    # is too much for the cache)
+                    result = _get_cached_answer(session, qtext, clean_q, now)
+                    if result:
+                        return result
+
+                # The answer is not found in the cache:
+                # Create a fresh query object and call execute() on it
+                query = Query(
+                    session,
+                    qtext,
+                    voice,
+                    auto_uppercase,
+                    location,
+                    client_id,
+                    client_type,
+                    client_version,
+                )
+                result = query.execute()
+                if result.get("valid", False) and "error" not in result:
+                    # Successful: our job is done
+                    # If not in private mode, log the result
+                    if not private:
+                        _log_query(
+                            session,
+                            it,
+                            query,
+                            clean_q,
+                            result,
+                            now,
+                            voice,
+                            remote_addr,
+                            client_id,
+                            client_type,
+                            client_version,
+                        )
                     return result
 
-            # The answer is not found in the cache:
-            # Create a fresh query object and call execute() on it
-            query = Query(
-                session,
-                qtext,
-                voice,
-                auto_uppercase,
-                location,
-                client_id,
-                client_type,
-                client_version,
-            )
-            result = query.execute()
-            if result.get("valid", False) and "error" not in result:
-                # Successful: our job is done
-                # If not in private mode, log the result
-                if not private:
-                    _log_query(
-                        session,
-                        it,
-                        query,
-                        clean_q,
-                        result,
-                        now,
-                        voice,
-                        remote_addr,
-                        client_id,
-                        client_type,
-                        client_version,
-                    )
-                return result
+            # Failed to answer the query, i.e. no query processor
+            # module was able to parse the query - in any of the possible
+            # interpretations returned from the speech-to-text module -
+            # and provide an answer
+            # Try the fallback query processor, if any
+            if first_qtext and first_clean_q:
+                query = QueryOfLastResort(
+                    session,
+                    first_qtext,
+                    voice,
+                    auto_uppercase,
+                    location,
+                    client_id,
+                    client_type,
+                    client_version,
+                )
+                result = query.execute()
+                if result.get("valid", False) and "error" not in result:
+                    # If not in private mode, log the result
+                    if not private:
+                        _log_query(
+                            session,
+                            it,
+                            query,
+                            first_clean_q,
+                            result,
+                            now,
+                            voice,
+                            remote_addr,
+                            client_id,
+                            client_type,
+                            client_version,
+                        )
+                    return result
 
-        # Failed to answer the query, i.e. no query processor
-        # module was able to parse the query - in any of the possible
-        # interpretations returned from the speech-to-text module -
-        # and provide an answer
-        # Try the fallback query processor, if any
-        if first_qtext and first_clean_q:
-            query = QueryOfLastResort(
-                session,
-                first_qtext,
-                voice,
-                auto_uppercase,
-                location,
-                client_id,
-                client_type,
-                client_version,
-            )
-            result = query.execute()
-            if result.get("valid", False) and "error" not in result:
-                # If not in private mode, log the result
-                if not private:
-                    _log_query(
-                        session,
-                        it,
-                        query,
-                        first_clean_q,
-                        result,
-                        now,
-                        voice,
-                        remote_addr,
-                        client_id,
-                        client_type,
-                        client_version,
-                    )
-                return result
+        except Exception as e:
+            logging.error(f"Error processing query: {e}")
+            result = dict(valid=False, error=f"E_EXCEPTION: {e}")
 
-        result = result or dict(valid=False, error="E_NO_RESULT")
+        # If we get here, we failed to answer the query
+        result["valid"] = False
+        if "error" not in result:
+            result["error"] = "E_NO_RESULT"
+
+        # Log the failure
         if first_clean_q:
             # Re-insert the query data from the first (most likely)
             # string returned from the speech-to-text processor,
@@ -1457,27 +1482,18 @@ def process_query(
             # Attempt to include a helpful response in the result
             Query.try_to_help(first_clean_q, result)
 
-            # Log the failure
-            qrow = QueryRow(
-                timestamp=now,
-                interpretations=it,
-                question=first_clean_q,
-                bquestion=result["q"],
-                answer=result.get("answer"),
-                voice=result.get("voice"),
-                error=result.get("error"),
-                latitude=location[0] if location else None,
-                longitude=location[1] if location else None,
-                # Client identifier
-                client_id=client_id,
-                client_type=client_type or None,
-                client_version=client_version or None,
-                # IP address
-                remote_addr=remote_addr or None
-                # All other fields are set to NULL
+            _log_query(
+                session,
+                it,
+                None,
+                first_clean_q,
+                result,
+                now,
+                voice,
+                remote_addr,
+                client_id,
+                client_type,
+                client_version,
             )
-            session.add(qrow)
-            # Also log anonymised query
-            session.add(QueryLog.from_Query(qrow))
 
     return result

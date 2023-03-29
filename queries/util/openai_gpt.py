@@ -42,6 +42,8 @@ import json
 
 import openai
 
+from settings import Settings
+
 
 class ChatMessage(TypedDict):
     """A single chat message"""
@@ -133,7 +135,8 @@ class Completion:
         # Put the preamble in front of the query, if not already included
         query = preamble + "\n" + query if preamble else query
         messages.append({"role": "user", "content": query})
-        print(json.dumps(messages, ensure_ascii=False, indent=2))
+        if Settings.DEBUG:
+            print(json.dumps(messages, ensure_ascii=False, indent=2))
         return cls._create(messages=messages, **kwargs)
 
 

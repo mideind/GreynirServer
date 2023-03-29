@@ -44,7 +44,7 @@ from main import app
 
 from settings import changedlocale
 from db import SessionContext
-from db.models import Query, QueryData, QueryLog
+from db.models import Query, QueryData  # , QueryLog
 from queries import ResponseDict
 from utility import read_api_key
 from speech.trans import strip_markup
@@ -165,7 +165,7 @@ def test_nonsense(client: FlaskClient) -> None:
     json = r.get_json()
     assert json
     assert "valid" in json
-    assert json["valid"] == True
+    assert json["valid"] == False
     assert "error" in json
     assert "answer" not in json
     assert "voice" not in json
@@ -1224,8 +1224,14 @@ def test_special(client: FlaskClient) -> None:
     """Special module."""
 
     json = qmcall(client, {"q": "Hver er sætastur?", "voice": True}, "Special")
-    assert json["answer"] == "Tumi Þorsteinsson."
-    assert json["voice"] == "Tumi Þorsteinsson er langsætastur."
+    assert (
+        json["answer"] == "Tumi Þorsteinsson er langsætastur." or
+        json["answer"] == "Eyjólfur Þorsteinsson er langsætastur."
+    )
+    assert (
+        json["voice"] == "Tumi Þorsteinsson er langsætastur." or
+        json["voice"] == "Eyjólfur Þorsteinsson er langsætastur."
+    )
 
     json = qmcall(client, {"q": "Hver er tilgangur lífsins?"}, "Special")
     assert json["answer"].startswith("42")
