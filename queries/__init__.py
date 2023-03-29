@@ -1362,7 +1362,7 @@ def process_query(
                 # Client identifier
                 client_id=client_id,
                 client_type=client_type or None,
-                client_version=client_version or None,
+                client_version=client_version[:10] if client_version else None,
                 # IP address
                 remote_addr=remote_addr or None
                 # All other fields are set to NULL
