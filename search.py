@@ -26,13 +26,34 @@
 
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Iterable, Iterator, Optional, List, Tuple
+from typing_extensions import TypedDict
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from settings import Settings
+from db import Session
 from db.models import Root, Article
 from similar import SimilarityClient
+
+
+class SimilarDict(TypedDict):
+    """Typed dictionary for the result of a similarity query"""
+
+    heading: str
+    url: str
+    uuid: str
+    domain: str
+    ts: datetime
+    ts_text: str
+    similarity: float
+
+
+class WeightsDict(TypedDict):
+    """Typed dictionary for the result of a similarity query"""
+
+    weights: List[float]
+    articles: List[SimilarDict]
 
 
 class Search:
@@ -54,29 +75,29 @@ class Search:
             cls.similarity_client = SimilarityClient()
 
     @classmethod
-    def list_similar_to_article(cls, session, uuid, n):
+    def list_similar_to_article(cls, session: Session, uuid: str, n: int) -> List[SimilarDict]:
         """List n articles that are similar to the article with the given id"""
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
         assert cls.similarity_client is not None
         result = cls.similarity_client.list_similar_to_article(uuid, n=n + 5)
-        result = result.get("articles", [])
+        articles: List[Tuple[str, float]] = result.get("articles", [])
         # Convert the result tuples into article descriptors
-        return cls.list_articles(session, result, n)
+        return cls.list_articles(session, articles, n)
 
     @classmethod
-    def list_similar_to_topic(cls, session, topic_vector, n):
+    def list_similar_to_topic(cls, session: Session, topic_vector: List[float], n: int) -> List[SimilarDict]:
         """List n articles that are similar to the given topic vector"""
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
         assert cls.similarity_client is not None
         result = cls.similarity_client.list_similar_to_topic(topic_vector, n=n + 5)
-        result = result.get("articles", [])
+        articles: List[Tuple[str, float]] = result.get("articles", [])
         # Convert the result tuples into article descriptors
-        return cls.list_articles(session, result, n)
+        return cls.list_articles(session, articles, n)
 
     @classmethod
-    def list_similar_to_terms(cls, session, terms, n):
+    def list_similar_to_terms(cls, session: Session, terms: List[Tuple[str, str]], n: int) -> WeightsDict:
         """List n articles that are similar to the given terms. The
         terms are expected to be a list of (stem, category) tuples."""
         cls._connect()
@@ -84,92 +105,99 @@ class Search:
         assert cls.similarity_client is not None
         result = cls.similarity_client.list_similar_to_terms(terms, n=n + 5)
         # Convert the result tuples into article descriptors
-        articles = result.get("articles", [])
+        articles: List[Tuple[str, float]] = result.get("articles", [])
         # Obtain the search term weights
-        weights = result.get("weights", [])
-        return dict(weights=weights, articles=cls.list_articles(session, articles, n))
+        weights: List[float] = result.get("weights", [])
+        return WeightsDict(weights=weights, articles=cls.list_articles(session, articles, n))
 
     @classmethod
-    def list_articles(cls, session, result, n):
+    def list_articles(
+        cls, session: Session, result: Iterable[Tuple[str, float]], n: int
+    ) -> List[SimilarDict]:
         """Convert similarity result tuples into article descriptors"""
-        similar: List[Dict[str, Any]] = []
+        similar: List[SimilarDict] = []
         for sid, similarity in result:
             if similarity > 0.9999:
                 # The original article (or at least a verbatim copy of it)
                 continue
             q = session.query(Article).join(Root).filter(Article.id == sid)
-            sa = q.one_or_none()
-            if (
-                sa and sa.heading and sa.heading.strip()
-            ):  # Skip articles without headings
-                # Similarity in percent
-                spercent = 100.0 * similarity
+            sa: Optional[Article] = q.one_or_none()
+            if sa is None:
+                # Article not found
+                continue
+            if not sa.heading:
+                # Skip articles without headings
+                continue
+            # Similarity in percent
+            spercent = 100.0 * similarity
 
-                def is_probably_same_as(last):
-                    """Return True if the current article is probably different from
-                    the one already described in the last object"""
-                    if last["domain"] != sa.root.domain:
-                        # Another root domain: can't be the same content
-                        return False
-                    if abs(last["ts"] - sa.timestamp) > timedelta(minutes=10):
-                        # More than 10 minutes timestamp difference
-                        return False
-                    # Quite similar: probably the same article
-                    ratio = spercent / last["similarity"]
-                    if ratio > 0.993:
-                        if Settings.DEBUG:
-                            print(
-                                "Rejecting {0}, domain {1}, ts {2} because of similarity with {3},"
-                                " {4}, {5}; ratio is {6:.3f}".format(
-                                    sa.heading,
-                                    sa.root.domain,
-                                    sa.timestamp,
-                                    last["heading"],
-                                    last["domain"],
-                                    last["ts"],
-                                    ratio,
-                                )
-                            )
-                        return True
+            def is_probably_same_as(last: SimilarDict) -> bool:
+                """Return True if the current article is probably different from
+                the one already described in the last object"""
+                assert sa is not None
+                if last["domain"] != sa.root.domain:
+                    # Another root domain: can't be the same content
                     return False
-
-                def gen_similar():
-                    """Generate the entries in the result list that are probably
-                    the same as the one we are considering"""
-                    for ix, p in enumerate(similar):
-                        if is_probably_same_as(p):
-                            yield (ix, p)
-
-                d = dict(
-                    heading=sa.heading,
-                    url=sa.url,
-                    uuid=sid,
-                    domain=sa.root.domain,
-                    ts=sa.timestamp,
-                    ts_text=sa.timestamp.isoformat()[0:10],
-                    similarity=spercent,
-                )
-                # Don't add another article with practically the same similarity
-                # as the previous one, as it is very probably a duplicate
-                same = next(gen_similar(), None)
-                if same is None:
-                    # No similar article
-                    similar.append(d)
-                    if len(similar) == n:
-                        # Enough articles: we're done
-                        break
-                elif d["ts"] > same[1]["ts"]:
-                    # Similar article, and the one we're considering is
-                    # newer: replace the one in the list
+                assert sa.timestamp is not None
+                if abs(last["ts"] - sa.timestamp) > timedelta(minutes=10):
+                    # More than 10 minutes timestamp difference
+                    return False
+                # Quite similar: probably the same article
+                ratio = spercent / last["similarity"]
+                if ratio > 0.993:
                     if Settings.DEBUG:
-                        print("Replacing: {0} ({1:.2f})".format(sa.heading, spercent))
-                    similar[same[0]] = d
-                else:
-                    # Similar article, and the previous one is newer:
-                    # drop the one we're considering
-                    if Settings.DEBUG:
-                        print("Ignoring: {0} ({1:.2f})".format(sa.heading, spercent))
-                    pass
+                        print(
+                            "Rejecting {0}, domain {1}, ts {2} because of similarity with {3},"
+                            " {4}, {5}; ratio is {6:.3f}".format(
+                                sa.heading,
+                                sa.root.domain,
+                                sa.timestamp,
+                                last["heading"],
+                                last["domain"],
+                                last["ts"],
+                                ratio,
+                            )
+                        )
+                    return True
+                return False
+
+            def gen_similar() -> Iterator[Tuple[int, SimilarDict]]:
+                """Generate the entries in the result list that are probably
+                the same as the one we are considering"""
+                for ix, p in enumerate(similar):
+                    if is_probably_same_as(p):
+                        yield (ix, p)
+
+            d = SimilarDict(
+                heading=sa.heading,
+                url=sa.url,
+                uuid=sid,
+                domain=sa.root.domain,
+                ts=sa.timestamp,
+                ts_text=sa.timestamp.isoformat()[0:10],
+                similarity=spercent,
+            )
+            # Don't add another article with practically the same similarity
+            # as the previous one, as it is very probably a duplicate
+            same = next(gen_similar(), None)
+            if same is None:
+                # No similar article
+                similar.append(d)
+                if len(similar) == n:
+                    # Enough articles: we're done
+                    break
+            elif d["ts"] > same[1]["ts"]:
+                # Similar article, and the one we're considering is
+                # newer: replace the one in the list
+                if Settings.DEBUG:
+                    print("Replacing: {0} ({1:.2f})".format(sa.heading, spercent))
+                similar[same[0]] = d
+            else:
+                # Similar article, and the previous one is newer:
+                # drop the one we're considering
+                if Settings.DEBUG:
+                    print("Ignoring: {0} ({1:.2f})".format(sa.heading, spercent))
+                pass
 
         if Settings.DEBUG and similar:
             print(

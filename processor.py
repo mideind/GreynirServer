@@ -52,7 +52,8 @@ from pathlib import Path
 from settings import Settings, ConfigError
 from db import GreynirDB, Session
 from db.models import Article, Person, Column, DateTime
-from tree import Tree, ProcEnv
+from tree import Tree, ProcEnv, TreeStateDict
+from treeutil import PgsList
 from utility import modules_in_dir
 
 
@@ -63,7 +64,7 @@ class TokenContainer:
     """Class wrapper around tokens"""
 
     def __init__(self, tokens_json: str, url: str, authority: float) -> None:
-        self.tokens = json.loads(tokens_json)
+        self.tokens = cast(PgsList, json.loads(tokens_json))
         self.url = url
         self.authority = authority
 
@@ -110,12 +111,12 @@ class TokenContainer:
             return
 
         # Initialize state that we keep throughout processing
-        state = {
-            "session": session,
-            "url": self.url,
-            "authority": self.authority,
-            "processor": processor,
-        }
+        state = TreeStateDict(
+            session=session,
+            url=self.url,
+            authority=self.authority,
+            processor=processor,
+        )
 
         if article_begin:
             article_begin(state)

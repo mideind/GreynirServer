@@ -27,16 +27,19 @@
 """
 
 from typing import Callable, Dict, Iterable, Optional, List, Any, Tuple, cast
+from typing_extensions import TypedDict
 
 import math
 from datetime import datetime
 from collections import defaultdict
 import logging
 
+from sqlalchemy import DateTime
+
 from settings import Settings
 
 from db import desc, OperationalError, Session
-from db.models import Article, Person, Entity, Root, Column, DateTime
+from db.models import Article, Person, Entity, Root, Column
 from db.sql import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
 
 from treeutil import TreeUtility
@@ -52,6 +55,13 @@ from queries.util import read_grammar_file
 
 # The type of a name/entity register
 RegisterType = Dict[str, Dict[str, Any]]
+
+
+class TermDict(TypedDict):
+    """A dictionary containing a search term and its associated score"""
+    x: str
+    w: float
+
 
 # --- Begin "magic" module constants ---
 
@@ -88,7 +98,7 @@ _MAX_MENTIONS = 5
 
 
 def append_answers(
-    rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Article], str]
+    rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Any], str]
 ) -> None:
     """Iterate over query results and add them to the result dictionary rd"""
     for p in q:
@@ -186,7 +196,7 @@ def name_key_to_update(register: RegisterType, name: str) -> Optional[str]:
 
 
 def append_names(
-    rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Article], str]
+    rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Any], str]
 ) -> None:
     """Iterate over query results and add them to the result dictionary rd,
     assuming that the key is a person name"""
@@ -226,7 +236,7 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
         """Return True if whole needles are contained in the haystack"""
         return (" " + needle.lower() + " ") in (" " + haystack.lower() + " ")
 
-    def sort_articles(articles):
+    def sort_articles(articles: Dict[str, Any]):
         """Sort the individual article URLs so that the newest one appears first"""
         return sorted(articles.values(), key=lambda x: x["timestamp"], reverse=True)
 
@@ -236,7 +246,7 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
 
     now = datetime.utcnow()
 
-    def mention_weight(articles) -> float:
+    def mention_weight(articles: Dict[str, Any]) -> float:
         """Newer mentions are better than older ones"""
         w = 0.0
         newest_mentions = sort_articles(articles)[0:_MAX_MENTIONS]
@@ -325,7 +335,9 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
     ]
 
 
-def prepare_response(q, prop_func):
+def prepare_response(
+    q: Iterable[Article], prop_func: Callable[[Any], str]
+) -> List[Dict[str, Any]]:
     """Prepare and return a simple (one-query) response"""
     rd: RegisterType = defaultdict(dict)
     append_answers(rd, q, prop_func)
@@ -553,7 +565,7 @@ _DONT_LIKE_TITLE = (
 )
 
 
-def query_person_title(session, name: str) -> Tuple[str, Optional[str]]:
+def query_person_title(session: Session, name: str) -> Tuple[str, Optional[str]]:
     """Return the most likely title for a person"""
 
     def we_dont_like(answer: str) -> bool:
@@ -599,7 +611,7 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
         .filter(Root.visible == True)
         .join(Article, Article.url == Person.article_url)
         .join(Root)
-        .order_by(desc(cast(Column, Article.timestamp)))
+        .order_by(desc(cast(Column[DateTime], Article.timestamp)))
         .limit(QUERY_LIMIT)
         .all()
     )
@@ -755,7 +767,7 @@ def query_word(query: Query, session: Session, stem: str) -> AnswerTuple:
             count=acnt,
             answers=[
                 dict(stem=rstem, cat=rcat)
-                for rstem, rcat, rcnt in rlist
+                for rstem, rcat, _ in rlist
                 if rstem != stem
             ],
         ),
@@ -771,14 +783,14 @@ def launch_search(query: Query, session: Session, qkey: str) -> AnswerTuple:
     pgs, _ = TreeUtility.raw_tag_toklist(toklist)  # root=_QUERY_ROOT
 
     # Collect the list of search terms
-    terms = []
-    tweights = []
-    fixups = []
+    terms: List[Tuple[str, str]] = []
+    tweights: List[TermDict] = []
+    fixups: List[Tuple[TermDict, int]] = []
     for pg in pgs:
         for sent in pg:
             for t in sent:
                 # Obtain search stems for the tokens.
-                d = dict(x=t.get("x", ""), w=0.0)
+                d = TermDict(x=t.get("x", ""), w=0.0)
                 tweights.append(d)
                 # The terms are represented as (stem, category) tuples.
                 stems = stems_of_token(t)
