@@ -18,7 +18,7 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    Icelandic-language text to speech via Tiro's text to speech API.
+    Icelandic-language text to speech via the Google Cloud API.
 
 """
 
@@ -28,17 +28,16 @@ import logging
 import uuid
 from pathlib import Path
 
-import requests
+from google.cloud import texttospeech
 
 from . import AUDIO_SCRATCH_DIR, suffix_for_audiofmt
-from speech.trans import strip_markup
 
-NAME = "Tiro"
-VOICES = frozenset(("Alfur", "Dilja", "Bjartur", "Rosa", "Alfur_v2", "Dilja_v2"))
-AUDIO_FORMATS = frozenset(("mp3", "pcm", "ogg_vorbis"))
+# from speech.trans import strip_markup
 
 
-_TIRO_TTS_URL = "https://tts.tiro.is/v0/speech"
+NAME = "Google"
+VOICES = frozenset(("Anna",))
+AUDIO_FORMATS = frozenset(("mp3"))
 
 
 def text_to_audio_data(
@@ -48,40 +47,35 @@ def text_to_audio_data(
     voice_id: str,
     speed: float = 1.0,
 ) -> Optional[bytes]:
-    """Feeds text to Tiro's TTS API and returns audio data received from server."""
+    """Feeds text to Google's TTS API and returns audio data received from server."""
 
-    # Tiro's API supports a subset of SSML tags
-    # See https://tts.tiro.is/#tag/speech/paths/~1v0~1speech/post
-    # However, for now, we just strip all markup
-    text = strip_markup(text)
-    text_format = "text"
+    # Instantiates a client
+    client = texttospeech.TextToSpeechClient()
 
-    if audio_format not in AUDIO_FORMATS:
-        logging.warn(
-            f"Unsupported audio format for Tiro speech synthesis: {audio_format}."
-            " Falling back to mp3"
-        )
-        audio_format = "mp3"
+    # Set the text input to be synthesized
+    synthesis_input = texttospeech.SynthesisInput(text=text)
 
-    jdict = {
-        "Engine": "standard",
-        "LanguageCode": "is-IS",
-        "OutputFormat": audio_format,
-        "SampleRate": "16000",
-        "Text": text,
-        "TextType": text_format,
-        "VoiceId": voice_id,
-    }
+    # Build the voice request, select the language code
+    # and the SSML voice gender.
+    voice = texttospeech.VoiceSelectionParams(
+        language_code="is-IS", ssml_gender=texttospeech.SsmlVoiceGender.FEMALE
+    )
+
+    # Select the type of audio file you want returned.
+    # We only support mp3 for now.
+    audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.MP3
+    )
 
     try:
-        r = requests.post(_TIRO_TTS_URL, json=jdict, timeout=10)
-        if r.status_code != 200:
-            raise Exception(
-                f"Received HTTP status code {r.status_code} from {NAME} server"
-            )
-        return r.content
+        # Perform the text-to-speech request on the text input with the selected
+        # voice parameters and audio file type
+        response = client.synthesize_speech(
+            input=synthesis_input, voice=voice, audio_config=audio_config
+        )
+        return response.audio_content
     except Exception as e:
-        logging.error(f"Error communicating with Tiro API at {_TIRO_TTS_URL}: {e}")
+        logging.error(f"Error communicating with Google Cloud STT API: {e}")
 
 
 def text_to_audio_url(
