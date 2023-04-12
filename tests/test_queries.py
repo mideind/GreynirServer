@@ -110,7 +110,8 @@ def qmcall(
     assert "answer" in json
     if "voice" in qdict and qdict["voice"]:
         assert "voice" in json
-
+        assert "voice_id" in json
+        assert "voice_locale" in json
     if qtype is not None:
         assert json["qtype"] == qtype
 
@@ -169,6 +170,18 @@ def test_nonsense(client: FlaskClient) -> None:
     assert "error" in json
     assert "answer" not in json
     assert "voice" not in json
+
+
+def test_voice_settings_integrity(client: FlaskClient) -> None:
+    """Make sure that the voice ID is returned to client in
+    response to a voice query, and that it is sane."""
+    json = qmcall(client, {"q": "Hver er tilgangur lífsins", "voice": True}, "Special")
+    assert json["voice_id"] == "Gudrun"
+    assert json["voice_locale"] == "is_IS"
+
+    json = qmcall(client, {"q": "Hver er tilgangur lífsins", "voice": True, "voice_id": "Gunnar"}, "Special")
+    assert json["voice_id"] == "Gunnar"
+    assert json["voice_locale"] == "is_IS"
 
 
 def test_arithmetic(client: FlaskClient) -> None:

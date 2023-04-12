@@ -476,6 +476,7 @@ def query_api(version: int = 1) -> Response:
                 # If a voice locale other than Icelandic is requested,
                 # use the default voice for that locale.
                 vid = voice_for_locale(result["voice_locale"])
+            result["voice_id"] = vid
             # Create audio data
             url = text_to_audio_url(v, voice_id=vid, speed=voice_speed)
             if url:
