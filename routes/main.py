@@ -176,7 +176,7 @@ TableType = List[List[Tuple[int, Any]]]
 
 
 @routes.route("/treegrid", methods=["GET"])
-def tree_grid() -> Response:
+def tree_grid() -> Union[Response,str]:
     """Show a simplified parse tree for a single sentence"""
 
     txt = request.args.get("txt", "")
@@ -426,7 +426,7 @@ def image() -> Response:
 @cache.cached(timeout=30 * 60, key_prefix="suggest", query_string=True)
 def suggest(limit: int=10) -> Response:
     """Return suggestions for query field autocompletion"""
-    limit = request.args.get("limit", limit)
+    limit = int(request.args.get("limit", limit))
     txt = request.args.get("q", "").strip()
 
     suggestions: List[Dict[str, str]] = []
