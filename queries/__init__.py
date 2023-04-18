@@ -325,6 +325,7 @@ class Query:
         client_id: Optional[str],
         client_type: Optional[str],
         client_version: Optional[str],
+        authenticated: bool = False,
     ) -> None:
         self._query = q = self._preprocess_query_string(query)
         self._session = session
@@ -369,6 +370,8 @@ class Query:
         self._client_type = client_type
         # Client version, if known
         self._client_version = client_version
+        # Boolean flag indicating if the client is authenticated
+        self._authenticated = authenticated
         # Source of answer to query
         self._source: Optional[str] = None
         # Query context, which is None until fetched via self.fetch_context()
@@ -894,6 +897,11 @@ class Query:
         """Return client version string, e.g. "1.0.3" """
         return self._client_version
 
+    @property
+    def authenticated(self) -> bool:
+        """Return whether query is authenticated"""
+        return self._authenticated
+
     def response(self) -> Optional[ResponseType]:
         """Return the detailed query answer"""
         return self._response
@@ -1207,6 +1215,7 @@ def process_query(
     client_version: Optional[str] = None,
     bypass_cache: bool = False,
     private: bool = False,
+    authenticated: bool = False,
 ) -> ResponseDict:
     """Process an incoming natural language query.
     If voice is True, return a voice-friendly string to
@@ -1293,6 +1302,7 @@ def process_query(
                 client_id,
                 client_type,
                 client_version,
+                authenticated,
             )
             result = query.execute()
             if result["valid"] and "error" not in result:

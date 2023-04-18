@@ -264,10 +264,12 @@ def summary_api(version: int = 1) -> Response:
 
         # Generate a summary of the article in the indicated languages,
         # if not already available
-        summary_rows: Dict[str, Optional[Summary]] = dict(is_IS=None, en_US=None, pl_PL=None)
-        sr: Iterable[Summary] = session.query(Summary).filter(
-            Summary.article_id == a.uuid
-        ).all()
+        summary_rows: Dict[str, Optional[Summary]] = dict(
+            is_IS=None, en_US=None, pl_PL=None
+        )
+        sr: Iterable[Summary] = (
+            session.query(Summary).filter(Summary.article_id == a.uuid).all()
+        )
         # Collect the summary data we already have
         for s in sr:
             if s.language in summary_rows:
@@ -306,7 +308,7 @@ def summary_api(version: int = 1) -> Response:
             ts=a.timestamp.isoformat()[0:19],
             num_sentences=a.num_sentences,
             topics=topics,
-            summary={ k: v.summary for k, v in summary_rows.items() if v }
+            summary={k: v.summary for k, v in summary_rows.items() if v},
         )
 
 
@@ -458,6 +460,7 @@ def query_api(version: int = 1) -> Response:
         client_version=client_version,
         bypass_cache=True,  # Settings.DEBUG,
         private=private,
+        authenticated=_has_valid_api_key(request),
     )
 
     # Get URL for response synthesized speech audio
@@ -584,7 +587,10 @@ def speech_api(version: int = 1) -> Response:
 
     try:
         url = text_to_audio_url(
-            text, text_format=fmt, voice_id=voice_id, speed=voice_speed,
+            text,
+            text_format=fmt,
+            voice_id=voice_id,
+            speed=voice_speed,
         )
         if url:
             url = file_url_to_host_url(url, request)
