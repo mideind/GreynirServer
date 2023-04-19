@@ -72,6 +72,10 @@ from reynir.cache import LRU_Cache
 ProcEnv = MutableMapping[str, Any]
 
 
+# A location, as returned by the locations module
+Loc = NamedTuple("Loc", [("name", str), ("kind", Optional[str])])
+
+
 class TreeStateDict(TypedDict, total=False):
     session: Required[Session]
     processor: Required[ProcEnv]
@@ -79,6 +83,7 @@ class TreeStateDict(TypedDict, total=False):
     url: str
     authority: float
     index: int
+    locations: Set[Loc]  # A bit of a kludge; only used by the locations module
     _sentence: Optional["SentenceFunction"]
     _visit: Optional["VisitFunction"]
     _default: Optional["NonterminalFunction"]

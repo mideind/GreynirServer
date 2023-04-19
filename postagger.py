@@ -119,13 +119,11 @@ class IFD_Corpus:
         num_files = self.number_of_files(filter_func)
         cnt = 0
         for each in self.file_name_stream(filter_func):
-            tree = ET.parse(each)
-            if tree is not None:
-                root = tree.getroot()
-                if root is not None:
-                    cnt += 1
-                    self.starting_file(each, cnt, num_files)
-                    yield root
+            root = ET.parse(each).getroot()
+            if root is not None:
+                cnt += 1
+                self.starting_file(each, cnt, num_files)
+                yield root
 
     def raw_sentence_stream(
         self,

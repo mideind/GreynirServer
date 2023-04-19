@@ -21,7 +21,7 @@
 
 """
 
-from typing import List, Optional, Union, Tuple, Dict, Any, cast
+from typing import Iterable, List, Optional, Union, Tuple, Dict, Any, cast
 
 import logging
 
@@ -37,7 +37,7 @@ from tokenizer import TOK, Tok
 from reynir.bintokenizer import tokenize
 
 from db import SessionContext, desc
-from db.models import Article, Word, Root, Column
+from db.models import Article, Word, Root, Column, DateTime
 from db.sql import WordFrequencyQuery
 
 
@@ -121,13 +121,13 @@ def _str2words(
     ][:_MAX_NUM_WORDS]
 
 
-def _words2str(words):
+def _words2str(words: Iterable[Tuple[str, str]]) -> str:
     """Create comma-separated string from (word,cat) tuple list,
     e.g. "[(a,b),(c,d)] -> "a:b, c:d"."""
     return ", ".join([":".join(w[:2]) if len(w) >= 2 else w[0] for w in words])
 
 
-def _desc4word(wc: Tuple) -> str:
+def _desc4word(wc: Tuple[str, str]) -> str:
     """Create a human-friendly description string for a word/category tuple."""
     return f"{wc[0]} ({CAT_DESC.get(wc[1], CAT_UNKNOWN)})"
 
@@ -148,7 +148,7 @@ def wordfreq():
 
     # Words param should contain one or more comma-separated word
     # lemmas with optional category specified with :cat suffix
-    warg = request.args.get("words")
+    warg: str = request.args.get("words", "")
     if not warg:
         return better_jsonify(**resp)
 
@@ -180,9 +180,9 @@ def wordfreq():
     wds = _str2words(warg)
 
     # Try to tokenize each item that doesn't have a category
-    nwds = []
+    nwds: List[Tuple[str, str]] = []
     for w, c in wds or []:
-        if c is None or c == CAT_UNKNOWN:
+        if not c or c == CAT_UNKNOWN:
             # Try to tokenize
             tokens = list(filter(lambda x: x.kind in _VALID_TOKENS, tokenize(w)))
             for t in tokens:
@@ -210,7 +210,7 @@ def wordfreq():
                 for i in range(int((delta.days + 1) / 7))
             ]
             # Construct elegant week date labels w. no superfluous information
-            labels = []
+            labels: List[str] = []
             for (d1, d2) in label_dates:
                 if d1.month == d2.month:
                     d1fmt = "%-d."
@@ -313,7 +313,7 @@ def wordfreq_details():
                 .filter(Word.stem == wd)
                 .filter(Word.cat == cat)
                 .join(Root)
-                .order_by(desc(cast(Column, Article.timestamp)))
+                .order_by(desc(cast(Column[DateTime], Article.timestamp)))
             )
             articles = [
                 {"id": a[0], "heading": a[1], "domain": a[2], "cnt": a[3]}

@@ -27,11 +27,14 @@
 """
 
 from typing import Callable, Dict, Iterable, Optional, List, Any, Tuple, cast
+from typing_extensions import TypedDict
 
 import math
 from datetime import datetime
 from collections import defaultdict
 import logging
+
+from sqlalchemy import DateTime
 
 from settings import Settings
 
@@ -52,6 +55,13 @@ from queries.util import read_grammar_file
 
 # The type of a name/entity register
 RegisterType = Dict[str, Dict[str, Any]]
+
+
+class TermDict(TypedDict):
+    """A dictionary containing a search term and its associated score"""
+    x: str
+    w: float
+
 
 # --- Begin "magic" module constants ---
 
@@ -87,22 +97,25 @@ _MAX_URLS = 5
 _MAX_MENTIONS = 5
 
 
-def append_answers(rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Article], str]) -> None:
+def append_answers(
+    rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Any], str]
+) -> None:
     """Iterate over query results and add them to the result dictionary rd"""
     for p in q:
         s = correct_spaces(prop_func(p))
+        ts = p.timestamp or datetime.utcnow()
         ai = dict(
             domain=p.domain,
             uuid=p.id,
             heading=p.heading,
-            timestamp=p.timestamp,
-            ts=p.timestamp.isoformat()[0:16],
+            timestamp=ts,
+            ts=ts.isoformat()[0:16],
             url=p.url,
         )
         rd[s][p.id] = ai  # Add to a dict of UUIDs
 
 
-def name_key_to_update(register: RegisterType, name: str) -> str:
+def name_key_to_update(register: RegisterType, name: str) -> Optional[str]:
     """Return the name register dictionary key to update with data about
     the given person name. This may be an existing key within the
     dictionary, the given key, or None if no update should happen."""
@@ -182,18 +195,21 @@ def name_key_to_update(register: RegisterType, name: str) -> str:
     return name
 
 
-def append_names(rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Article], str]) -> None:
+def append_names(
+    rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Any], str]
+) -> None:
     """Iterate over query results and add them to the result dictionary rd,
     assuming that the key is a person name"""
     s: Optional[str]
     for p in q:
         s = correct_spaces(prop_func(p))
+        ts = p.timestamp or datetime.utcnow()
         ai = dict(
             domain=p.domain,
             uuid=p.id,
             heading=p.heading,
-            timestamp=p.timestamp,
-            ts=p.timestamp.isoformat()[0:16],
+            timestamp=ts,
+            ts=ts.isoformat()[0:16],
             url=p.url,
         )
         # Obtain the key within rd that should be updated with new
@@ -220,7 +236,7 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
         """Return True if whole needles are contained in the haystack"""
         return (" " + needle.lower() + " ") in (" " + haystack.lower() + " ")
 
-    def sort_articles(articles):
+    def sort_articles(articles: Dict[str, Any]):
         """Sort the individual article URLs so that the newest one appears first"""
         return sorted(articles.values(), key=lambda x: x["timestamp"], reverse=True)
 
@@ -230,7 +246,7 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
 
     now = datetime.utcnow()
 
-    def mention_weight(articles) -> float:
+    def mention_weight(articles: Dict[str, Any]) -> float:
         """Newer mentions are better than older ones"""
         w = 0.0
         newest_mentions = sort_articles(articles)[0:_MAX_MENTIONS]
@@ -245,8 +261,8 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
             return w / math.e
         return w
 
-    scores = dict()
-    mention_weights = dict()
+    scores: Dict[str, float] = dict()
+    mention_weights: Dict[str, float] = dict()
 
     for result, articles in rd.items():
         mw = mention_weights[result] = mention_weight(articles)
@@ -264,7 +280,7 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
     rl = sorted(rd.keys(), key=lambda x: mention_weights[x], reverse=True)
     len_rl = len(rl)
 
-    def is_ex(s):
+    def is_ex(s: str) -> bool:
         """Does the given result contain an 'ex' prefix?"""
         return any(
             contained(x, s)
@@ -319,7 +335,9 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
     ]
 
 
-def prepare_response(q, prop_func):
+def prepare_response(
+    q: Iterable[Article], prop_func: Callable[[Any], str]
+) -> List[Dict[str, Any]]:
     """Prepare and return a simple (one-query) response"""
     rd: RegisterType = defaultdict(dict)
     append_answers(rd, q, prop_func)
@@ -327,7 +345,7 @@ def prepare_response(q, prop_func):
 
 
 def add_entity_to_register(
-    name: str, register: RegisterType, session: Session, all_names: bool=False
+    name: str, register: RegisterType, session: Session, all_names: bool = False
 ) -> None:
     """Add the entity name and the 'best' definition to the given
     name register dictionary. If all_names is True, we add
@@ -547,7 +565,7 @@ _DONT_LIKE_TITLE = (
 )
 
 
-def query_person_title(session, name: str) -> Tuple[str, Optional[str]]:
+def query_person_title(session: Session, name: str) -> Tuple[str, Optional[str]]:
     """Return the most likely title for a person"""
 
     def we_dont_like(answer: str) -> bool:
@@ -593,7 +611,7 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
         .filter(Root.visible == True)
         .join(Article, Article.url == Person.article_url)
         .join(Root)
-        .order_by(desc(cast(Column, Article.timestamp)))
+        .order_by(desc(cast(Column[DateTime], Article.timestamp)))
         .limit(QUERY_LIMIT)
         .all()
     )
@@ -613,7 +631,7 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
         .filter(Root.visible == True)
         .join(Article, Article.url == Entity.article_url)
         .join(Root)
-        .order_by(desc(cast(Column, Article.timestamp)))
+        .order_by(desc(Article.timestamp))
         .limit(QUERY_LIMIT)
         .all()
     )
@@ -692,7 +710,7 @@ def query_entity(query: Query, session: Session, name: str) -> AnswerTuple:
     return response, answer, voice_answer
 
 
-def query_entity_def(session, name: str) -> str:
+def query_entity_def(session: Session, name: str) -> str:
     """Return a single (best) definition of an entity"""
     rl = _query_entity_definitions(session, name)
     return correct_spaces(rl[0]["answer"]) if rl else ""
@@ -749,7 +767,7 @@ def query_word(query: Query, session: Session, stem: str) -> AnswerTuple:
             count=acnt,
             answers=[
                 dict(stem=rstem, cat=rcat)
-                for rstem, rcat, rcnt in rlist
+                for rstem, rcat, _ in rlist
                 if rstem != stem
             ],
         ),
@@ -765,14 +783,14 @@ def launch_search(query: Query, session: Session, qkey: str) -> AnswerTuple:
     pgs, _ = TreeUtility.raw_tag_toklist(toklist)  # root=_QUERY_ROOT
 
     # Collect the list of search terms
-    terms = []
-    tweights = []
-    fixups = []
+    terms: List[Tuple[str, str]] = []
+    tweights: List[TermDict] = []
+    fixups: List[Tuple[TermDict, int]] = []
     for pg in pgs:
         for sent in pg:
             for t in sent:
                 # Obtain search stems for the tokens.
-                d = dict(x=t.get("x", ""), w=0.0)
+                d = TermDict(x=t.get("x", ""), w=0.0)
                 tweights.append(d)
                 # The terms are represented as (stem, category) tuples.
                 stems = stems_of_token(t)

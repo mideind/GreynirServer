@@ -24,7 +24,7 @@
 
 """
 
-from typing import List, cast
+from typing import List, Tuple, cast
 
 from enum import IntEnum
 import logging
@@ -435,7 +435,7 @@ def _json_nonterminal_node(tok):
     return new_node
 
 
-def tokenize_and_merge_possible_mw_tokens(text, flat_tree):
+def tokenize_and_merge_possible_mw_tokens(text: str, flat_tree: str) -> Tuple[List[str], List[str]]:
     mw_tokens = list(bintokenizer.tokenize(text))  # multi-word tokens
     mw_tokens = [tok.txt.split(" ") for tok in mw_tokens if tok.txt is not None]
     sw_tokens = [tok for toks in mw_tokens for tok in toks]  # single-word tokens

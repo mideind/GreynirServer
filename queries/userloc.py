@@ -41,6 +41,7 @@ from speech.trans.num import numbers_to_text
 from tree import Result, Node
 from iceaddr import iceaddr_lookup, postcodes
 from geo import (
+    country_name_for_isocode,
     iceprep_for_placename,
     iceprep_for_street,
     in_iceland,
@@ -77,7 +78,7 @@ def QUserLocationCountry(node: Node, params: QueryStateDict, result: Result) -> 
     result.qkey = "CurrentCountry"
 
 
-def _addrinfo_from_api_result(result) -> Tuple:
+def _addrinfo_from_api_result(result) -> Tuple[str, int, str, str, str]:
     """Extract relevant address components from Google API result."""
 
     comp = result["address_components"]
@@ -170,6 +171,30 @@ def _addr4voice(addr: str) -> Optional[str]:
 _LOC_LOOKUP_FAIL_MSG = "Ekki tókst að fletta upp staðsetningu."
 
 
+def locality_and_country(loc: LatLonTuple) -> Optional[str]:
+    """Return the locality and country of the given location, or None"""
+    # Send API request
+    res = query_geocode_api_coords(loc[0], loc[1])
+
+    # Verify that we have at least one valid result
+    if (
+        not res
+        or "results" not in res
+        or not len(res["results"])
+        or not res["results"][0]
+    ):
+        return None
+
+    # Grab top result from API call
+    top = res["results"][0]
+
+    # Extract locality and country info from top result
+    _, _, locality, _, country_code = _addrinfo_from_api_result(top)
+    country_name = country_name_for_isocode(country_code) or country_code
+
+    return locality + ", " + country_name if locality else country_name
+
+
 def answer_for_location(loc: LatLonTuple) -> Optional[AnswerTuple]:
     """Answer user location query, e.g. 'Hvar er ég staddur?'"""
     # Send API request
@@ -210,7 +235,7 @@ def answer_for_location(loc: LatLonTuple) -> Optional[AnswerTuple]:
     else:
         sdesc = ("á " + street) if street else ""
         if num and street:
-            sdesc += " " + num
+            sdesc += f" {num}"
         # e.g. "í París"
         locdesc = f"{iceprep_for_placename(locality)} {locality}" if locality else ""
         # "[á Boulevard St. Germain] [í París] [í Frakklandi]"

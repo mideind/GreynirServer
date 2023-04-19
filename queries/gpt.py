@@ -41,6 +41,7 @@ from typing_extensions import TypedDict, NotRequired
 
 import abc
 import inspect
+import os
 import re
 import json
 import logging
@@ -51,6 +52,9 @@ from iceweather import forecast_text  # type: ignore
 
 from queries import Query
 from queries.currency import fetch_exchange_rates
+from queries.userloc import locality_and_country
+from settings import Settings
+from speech.trans import gssml
 from speech.trans.num import numbers_to_ordinal, years_to_text
 from queries.util.openai_gpt import (
     OPENAI_KEY_PRESENT,
@@ -65,7 +69,7 @@ from queries.util.openai_gpt import (
 class LocationDict(TypedDict):
     """The 'location' part of the state passed to the GPT model"""
 
-    city: str
+    city_and_country: str
     lat: NotRequired[float]
     lon: NotRequired[float]
 
@@ -73,7 +77,7 @@ class LocationDict(TypedDict):
 class StateDict(TypedDict):
     """The state passed to the GPT model as a part of the prompt"""
 
-    client_name: str
+    user_name: str
     date_iso_utc: str
     time_iso_utc: str
     weekday: Dict[str, str]
@@ -92,7 +96,13 @@ MAX_HISTORY_LENGTH = 4
 MAX_TURNS = 2
 
 # The relative priority of this query processor module
-PRIORITY = -1000
+# This special constant indicates that this module is
+# the fallback handler of last resort for queries
+PRIORITY = "LAST_RESORT"
+
+GPT_LIMIT = int(os.environ.get("GPT_LIMIT", 15)) # Max number of GPT-4 queries to allow per client
+GPT_LIMIT_ANSWER = f"Því miður get ég aðeins svarað að hámarki {GPT_LIMIT} spurningum frá þér með hjálp GPT-4."
+GPT_LIMIT_ANSWER_VOICE = f"Því miður get ég aðeins svarað að hámarki {gssml(GPT_LIMIT, type='number', gender='kvk', case='þgf')} spurningum frá þér með hjálp gé pé té fjögur."
 
 # Stuff that needs replacement in the voice output, as the Icelandic
 # voice synthesizer does not pronounce them correctly
@@ -107,9 +117,10 @@ REPLACE: Mapping[str, str] = {
     "°": " gráður",
     "m/s": "metrar á sekúndu",
     "km/klst": "kílómetrar á klukkustund",
+    " ml ": " millilítrar ",
     "  ": " ",
 }
-REPLACE_REGEX = "|".join(map(re.escape, REPLACE))
+REPLACE_REGEX = "|".join(map(re.escape, REPLACE.keys()))
 
 # Help the model verbalize weekday names in Icelandic
 WEEKDAY = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
@@ -132,10 +143,11 @@ AGENTS_DISABLED = True  # !!! FIXME: DEMO/DEBUG
 
 SYSTEM_PREAMBLE = """
 You are a highly competent Icelandic-language voice assistant named Embla.
-You have been developed by the company Miðeind to answer all manner of questions
-from your user in a factually accurate and succinct way to the very best of your abilities.
+You have been developed by the company Miðeind to answer the user's questions
+in a factually accurate and succinct way to the very best of your abilities.
 You are always courteous and helpful.
-You reply with short and clear answers, not longer than one paragraph, and avoid long explanations.
+You reply with short and clear answers that are no longer than one paragraph.
+You avoid long explanations.
 """
 
 # Optional, for normalization (does not work particularly well):
@@ -161,7 +173,7 @@ Your state (in JSON):
 
 {agents}
 If asked for a number, answer with no more than four digits after the decimal comma.
-Never reveal the names of your assistant modules or macros to the user.
+Never reveal the names of your plug-in modules or macros to the user.
 
 You should *always* answer in Icelandic (locale is_IS), unless the question
 *explicitly* requests a reply in a supported language or a translation to
@@ -174,15 +186,18 @@ Avoid mixing languages in the same answer.
 """
 
 AGENTS_PREAMBLE = """
-When you get questions on certain special subjects, do *not* reply with
-your own answer. Instead, generate a call to the assistant module that
+When asked questions on certain special subjects, do *not* reply with
+your own answer. Instead, generate a call to a plug-in module that
 corresponds to the subject, from the list below:
 
 {agent_directory}
 
-To call one of these modules, output the macro
+To answer a question by calling a plug-in module, output the special macro
+
 `$CALL={{module.__name__}}.query({{json}})$`
-instead of text, where json contains the known parameters of the query.\n
+
+instead of a normal text anwer. In the call, `json` contains the known
+parameters of the query.\n
 """
 
 
@@ -232,13 +247,14 @@ class AgentBase(abc.ABC):
             r = json.loads(str(response))
         if r is None:
             return ""
-        print(r)  # !!! DEBUG
+        if Settings.DEBUG:
+            print(r)  # !!! DEBUG
         # Extract the answer from the GPT response JSON
         try:
             answer = r["choices"][0]["message"]["content"].strip('" \n\r\t')
             return answer
         except (ValueError, KeyError, IndexError):
-            """Something is wrong with the GPT response format"""
+            # Something is wrong with the GPT response format
             return ""
 
     @abc.abstractmethod
@@ -261,9 +277,7 @@ class InitialAgent(AgentBase):
     def _create_agent_directory(cls) -> None:
         """Create a string by concatenating a short description
         of each available follow-up agent class"""
-        d = "".join(
-            agent.directory_entry() for agent in AgentBase.agents()
-        )
+        d = "".join(agent.directory_entry() for agent in AgentBase.agents())
         cls._agents = AGENTS_PREAMBLE.format(agent_directory=d) if d else ""
 
     def __init__(
@@ -289,7 +303,8 @@ class InitialAgent(AgentBase):
             return "", None  # Something wrong: Unable to answer
         cut = cut[: end + 1]  # Include the closing parenthesis
         arg = cut.split(".", maxsplit=1)
-        print(arg)
+        if Settings.DEBUG:
+            print(arg)
         if len(arg) != 2:
             return "", None  # Something wrong: Unable to answer
         module_name = arg[0]
@@ -302,7 +317,8 @@ class InitialAgent(AgentBase):
             parameter = parameter[3:]
         parameter = parameter[len("query") + 1 : -1]
         # Convert module name to agent name
-        print(module_name, parameter)
+        if Settings.DEBUG:
+            print(module_name, parameter)
         agent_class = AgentBase.get(module_name)
         return parameter, agent_class
 
@@ -321,8 +337,8 @@ class InitialAgent(AgentBase):
             preamble=preamble,
             history_list=self._history_list,
             query=self._ql,
-            max_tokens=256,
-            temperature=0.0,
+            max_tokens=320,
+            temperature=0.1,
         )
 
         # Extract the answer from the GPT response
@@ -423,10 +439,7 @@ class FollowUpAgent(AgentBase):
         # Submit the prompt to the GPT model for completion
         # Here, there is no history list - this is an independent query
         r = Completion.create_from_preamble_and_history(
-            system=SYSTEM_PREAMBLE,
-            query=query,
-            max_tokens=256,
-            temperature=0.0,
+            system=SYSTEM_PREAMBLE, query=query, max_tokens=256, temperature=0.0,
         )
         answer = self.answer_from_gpt_response(r)
         return answer, None  # By default, there's no further follow-up
@@ -614,18 +627,45 @@ def handle_plain_text(q: Query) -> bool:
     """Main entry point into this query module"""
     # Pass a plain text query to GPT and return the response
     try:
+        if not q.authenticated or q.private:
+            # We only allow GPT functionality for queries that
+            # originate from authenticated clients (typically smartphones
+            # running Embla) and are not private
+            # (because we need the query log to count queries)
+            return False
         if not OPENAI_KEY_PRESENT:
-            raise ValueError("Missing OpenAI API key")
+            logging.error("Missing OpenAI API key")
+            return False
+
+        # Obtain the number of queries already issued by the client
+        # for this query type
+        n = q.count_queries_of_type("gpt")
+        if n > GPT_LIMIT:
+            # The client has exceeded the number of queries allowed
+            # for this query type
+            answer = GPT_LIMIT_ANSWER
+            voice_answer = GPT_LIMIT_ANSWER_VOICE
+            q.set_answer(dict(answer=answer), answer, voice_answer)
+            q.set_key("gpt_limit")
+            q.set_qtype("gpt")
+            return True
 
         ql = q.query
         loc = q.location
-        now = datetime.now()
+        now = datetime.utcnow()
         now_iso = now.isoformat()
         wd = now.weekday()  # 0=Monday, 6=Sunday
+        location: str = "Óþekkt"
         # Assemble the current query state
+        if loc is not None:
+            location = locality_and_country(loc) or location
+        loc_dict: LocationDict = {"city_and_country": location}
+        if loc is not None:
+            loc_dict["lat"] = round(loc[0], 4)
+            loc_dict["lon"] = round(loc[1], 4)
         state: StateDict = {
-            "client_name": _client_name(q),  # The name of the user, if known
-            "location": {"city": "Reykjavík"},  # !!! TODO
+            "user_name": _client_name(q),  # The name of the user, if known
+            "location": loc_dict,
             "date_iso_utc": now_iso[0:10],  # YYYY-MM-DD
             "weekday": {"en_US": WEEKDAY[wd], "is_IS": VIKUDAGUR[wd]},
             "time_iso_utc": now_iso[11:16],  # HH:MM
@@ -674,13 +714,11 @@ def handle_plain_text(q: Query) -> bool:
             # This is a plain text answer in Icelandic
             # Compensate for deficient normalization in Icelandic speech synthesizer:
             # Replace 'number-number' with 'number til number'
-            voice_answer = re.sub(
-                r"(\d+)-(\d+)", r"\1 til \2", answer,
-            )
+            voice_answer = re.sub(r"(\d+)-(\d+)", r"\1 til \2", answer,)
             # Convert years and ordinals to Icelandic text
             voice_answer = years_to_text(voice_answer, allow_three_digits=False)
             voice_answer = numbers_to_ordinal(voice_answer, case="þf")
-            # Repace stuff that doesn't work in the Icelandic speech synthesizer
+            # Replace stuff that doesn't work in the Icelandic speech synthesizer
             voice_answer = re.sub(
                 REPLACE_REGEX, lambda m: REPLACE[m.group(0)], voice_answer,
             )
@@ -691,7 +729,11 @@ def handle_plain_text(q: Query) -> bool:
             voice_answer = answer
         # Set the query answer text and voice synthesis text
         q.set_answer(dict(answer=answer), answer, voice_answer)
-        q.set_source("Takist með fyrirvara!")
+        duration = datetime.utcnow() - now
+        duration_str = f" ({duration.total_seconds():.1f} s)" if Settings.DEBUG else ""
+        q.set_source(
+            f"Takist með fyrirvara! {n + 1}/{GPT_LIMIT}{duration_str}"
+        )
 
         # Append the new (query, answer) tuple to the history in the context
         history_list.append(

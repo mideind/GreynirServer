@@ -32,15 +32,20 @@
 
 """
 
+from typing import Any, List, Tuple, cast
+
 import re
 from datetime import datetime
-from typing import Any, cast
 
 from db.models import Entity
 from tokenizer import Abbreviations
 
 from queries import QueryStateDict
 from tree import Node, NonterminalNode, ParamList, Result, TreeStateDict
+
+
+EntityTuple = Tuple[str, str, str]
+EntityList = List[EntityTuple]
 
 
 MODULE_NAME = __name__
@@ -752,7 +757,7 @@ def NlEind(node: NonterminalNode, params: ParamList, result: Result) -> None:
             if "entities" not in result:
                 result.entities = []
 
-            result.entities.append((entity, verb, definition))
+            cast(EntityList, result.entities).append((entity, verb, definition))
 
     result.del_attribs(("sviga_innihald", "sérnafn_eind_nom"))
 
@@ -810,7 +815,7 @@ def SamstættFall(node: NonterminalNode, params: ParamList, result: Result) -> N
     if "entities" not in result:
         result.entities = []
 
-    result.entities.append((entity, "er", definition))
+    cast(EntityList, result.entities).append((entity, "er", definition))
 
 
 def ÓsamstættFall(node: NonterminalNode, params: ParamList, result: Result) -> None:
@@ -829,8 +834,9 @@ def FyrirbæriMeðGreini(node: NonterminalNode, params: ParamList, result: Resul
         if "skilgreining" in result and "eindir" in result:
             if "entities" not in result:
                 result.entities = []
+            entities = cast(EntityList, result.entities)
             for eind in result.eindir:
-                result.entities.append((eind, "er", result.skilgreining))
+                entities.append((eind, "er", result.skilgreining))
     result.del_attribs(("skilgreining", "eindir"))
 
 
@@ -872,7 +878,7 @@ def Setning(node: NonterminalNode, params: ParamList, result: Result) -> None:
         if "entities" not in result:
             result.entities = []
 
-        result.entities.append((entity, sagnorð._text, andlag._text))
+        cast(EntityList, result.entities).append((entity, sagnorð._text, andlag._text))
 
     finally:
         # Ekki senda sérnöfn upp í tréð ef þau hafa ekki verið höndluð nú þegar

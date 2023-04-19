@@ -25,7 +25,7 @@
 
 """
 
-from typing import Any, cast, Callable
+from typing import Any, List, Optional, Tuple
 
 import os
 import sys
@@ -46,11 +46,12 @@ try:
     import eventlet  # type: ignore
 
     USING_EVENTLET = True
-    socket = eventlet.patcher.original("socket")
+    socket = eventlet.patcher.original("socket")  # type: ignore
+    assert socket is not None
 except ImportError:
-    import socket  # type: ignore
+    import socket
 
-    USING_EVENTLET = False
+    USING_EVENTLET = False  # type: ignore
 
 # The following two functions replicate and hack/tweak corresponding functions
 # from multiprocessing.connection. This is necessary because the original
@@ -58,24 +59,23 @@ except ImportError:
 # on a socket, but this is not allowed by the monkey-patched GreenSocket
 # that eventlet inserts instead of the original socket class.
 
+Address = Tuple[str, int]
 
-def _SocketClient(address):
+
+def _SocketClient(address: Address) -> Connection:
     """Return a connection object connected to the socket given by `address`"""
-    sock = cast(Any, socket)
-    with closing(sock.socket(sock.AF_INET)) as s:
+    with closing(socket.socket(socket.AF_INET)) as s:
         s.setblocking(True)
         s.connect(address)
         # The following cast() hack is required since Connection()
         # appears to have a wrong signature in typeshed
-        return cast(Callable, Connection)(s.detach())
+        return Connection(s.detach())
 
 
-def _Client(address, authkey=None):
+def _Client(address: Address, authkey: Optional[bytes]=None) -> Connection:
     """Returns a connection to the address of a `Listener`"""
     c = _SocketClient(address)
     if authkey is not None:
-        if not isinstance(authkey, bytes):
-            raise TypeError("Expected a byte string as an authentication key")
         answer_challenge(c, authkey)
         deliver_challenge(c, authkey)
     return c
@@ -124,7 +124,7 @@ class SimilarityClient:
             sys.stdout.flush()
             # Leave self._conn set to None
 
-    def _retry_list(self, **kwargs):
+    def _retry_list(self, **kwargs: Any):
         """Connect to the server and send it a request, retrying if the
         server has closed the connection in the meantime. Return a
         dict with a result list or an empty list if no connection."""
@@ -142,7 +142,7 @@ class SimilarityClient:
                 continue
         return dict(articles=[])
 
-    def _retry_cmd(self, **kwargs):
+    def _retry_cmd(self, **kwargs: Any):
         """Connect to the server and send it a command, retrying if the
         server has closed the connection in the meantime."""
         retries = 0
@@ -160,29 +160,29 @@ class SimilarityClient:
                 retries += 1
                 continue
 
-    def list_similar_to_article(self, article_id, n=10):
+    def list_similar_to_article(self, article_id: str, n: int=10):
         """Returns a dict containing a list of (article_id, similarity) tuples"""
         return self._retry_list(cmd="similar", id=article_id, n=n)
 
-    def list_similar_to_topic(self, topic_vector, n=10):
+    def list_similar_to_topic(self, topic_vector: List[float], n: int=10):
         """Returns a dict containing a list of (article_id, similarity) tuples"""
         return self._retry_list(cmd="similar", topic=topic_vector, n=n)
 
-    def list_similar_to_terms(self, terms, n=10):
+    def list_similar_to_terms(self, terms: List[Tuple[str, str]], n: int=10):
         """The terms are a list of (stem, category) tuples.
         Returns a dict where the articles key contains a
         list of (article_id, similarity) tuples"""
         return self._retry_list(cmd="similar", terms=terms, n=n)
 
-    def refresh_topics(self):
+    def refresh_topics(self) -> None:
         """Cause the server to refresh article topic vectors from the database"""
         self._retry_cmd(cmd="refresh")
 
-    def reload_topics(self):
+    def reload_topics(self) -> None:
         """Cause the server to reload article topic vectors from the database"""
         self._retry_cmd(cmd="reload")
 
-    def close(self):
+    def close(self) -> None:
         """Close a client connection"""
         if self._conn is not None:
             self._conn.close()

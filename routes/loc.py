@@ -21,9 +21,10 @@
 
 """
 
-from typing import Dict, Any, Union, cast
+from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple, Union, cast
+from typing_extensions import TypedDict
 
-from . import routes, max_age, better_jsonify, cache, days_from_period_arg
+from . import routes, better_jsonify, cache, days_from_period_arg
 
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -33,7 +34,7 @@ from flask import request, render_template, abort, send_file
 from country_list import countries_for_language  # type: ignore
 
 from db import SessionContext, dbfunc, desc
-from db.models import Location, Article, Root, Column
+from db.models import Location, Article, Root, Column, DateTime
 
 from geo import (
     location_info,
@@ -47,6 +48,39 @@ from geo import (
 from images import get_staticmap_image
 
 
+class ArticleDict(TypedDict):
+
+    url: str
+    id: int
+    heading: str
+    domain: str
+
+
+KeyTuple = Tuple[str, str, str, float, float]  # (name, kind, country, lat, lon)
+
+
+class LocDict(TypedDict):
+
+    name: str
+    kind: str
+    country: str
+    map_url: str
+    articles: List[ArticleDict]
+
+
+MarkerTuple = Tuple[str, float, float]
+
+
+LocTuple = NamedTuple(
+    "LocTuple",
+    [
+        ("name", str),
+        ("latitude", float),
+        ("longitude", float),
+    ]
+)
+
+
 # Default number of top locations to show in /locations
 _TOP_LOC_LENGTH = 20
 _TOP_LOC_PERIOD = 1  # in days
@@ -55,7 +89,11 @@ GMAPS_COORD_URL = "https://www.google.com/maps/place/{0}+{1}/@{0},{1},{2}?hl=is"
 GMAPS_PLACE_URL = "https://www.google.com/maps/place/{0}?hl=is"
 
 
-def top_locations(limit=_TOP_LOC_LENGTH, kind=None, days=_TOP_LOC_PERIOD):
+def top_locations(
+    limit: int = _TOP_LOC_LENGTH,
+    kind: Optional[str] = None,
+    days: int = _TOP_LOC_PERIOD,
+) -> List[LocDict]:
     """Return a list of recent locations along with the list of
     articles in which they are mentioned."""
 
@@ -82,22 +120,22 @@ def top_locations(limit=_TOP_LOC_LENGTH, kind=None, days=_TOP_LOC_PERIOD):
         if kind:
             q = q.filter(Location.kind == kind)
 
-        q = q.order_by(desc(cast(Column, Article.timestamp)))
+        q = q.order_by(desc(cast(Column[DateTime], Article.timestamp)))
 
         # Group articles by unique location
-        locs = defaultdict(list)
+        locs: Dict[KeyTuple, List[ArticleDict]] = defaultdict(list)
         for r in q.all():
-            article = {
+            article: ArticleDict = {
                 "url": r.article_url,
                 "id": r.id,
                 "heading": r.heading,
                 "domain": r.domain,
             }
-            k = (r.name, r.kind, r.country, r.latitude, r.longitude)
+            k: KeyTuple = (r.name, r.kind, r.country, r.latitude, r.longitude)
             locs[k].append(article)
 
         # Create top locations list sorted by article count
-        loclist = []
+        loclist: List[LocDict] = []
         for k, v in locs.items():
             name, kind, country, _, _ = k  # Unpack tuple key
             # Google map links currently use the placename instead of
@@ -121,10 +159,10 @@ def top_locations(limit=_TOP_LOC_LENGTH, kind=None, days=_TOP_LOC_PERIOD):
         return loclist[:limit]
 
 
-def icemap_markers(days=_TOP_LOC_PERIOD):
+def icemap_markers(days: int=_TOP_LOC_PERIOD) -> List[MarkerTuple]:
     """Return a list of recent Icelandic locations and their coordinates."""
     with SessionContext(read_only=True) as session:
-        q = (
+        q: Iterable[LocTuple] = (
             session.query(Location.name, Location.latitude, Location.longitude)
             .join(Article)
             .filter(Article.tree != None)
@@ -140,15 +178,15 @@ def icemap_markers(days=_TOP_LOC_PERIOD):
             .filter(Location.latitude != None)
             .filter(Location.longitude != None)
         )
-        markers = list(set((i.name, i.latitude, i.longitude) for i in q.all()))
+        markers: List[MarkerTuple] = list(set((i.name, i.latitude, i.longitude) for i in q.all()))
 
         return markers
 
 
-def world_map_data(days=_TOP_LOC_PERIOD):
+def world_map_data(days: int=_TOP_LOC_PERIOD) -> Dict[str, int]:
     """Return data for world map. List of country iso codes with article count."""
     with SessionContext(read_only=True) as session:
-        q = (
+        q: Iterable[Tuple[str, int]] = (
             session.query(Location.country, dbfunc.count(Location.id))
             .filter(Location.country != None)
             .join(Article)

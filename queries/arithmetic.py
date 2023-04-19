@@ -473,8 +473,8 @@ _VAT_MULT = 1.24
 
 def calc_arithmetic(query: Query, result: Result) -> Optional[AnswerTuple]:
     """Calculate the answer to an arithmetic query"""
-    op = result.op
-    nums = result.numbers
+    op: str = result.op
+    nums = cast(List[float], result.numbers)
 
     # Shorter names for common gssml function calls
     fmt_num: Callable[..., str] = lambda f, **kw: gssml(

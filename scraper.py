@@ -31,6 +31,7 @@
 """
 
 from __future__ import annotations
+from types import ModuleType
 
 from typing import Any, Iterable, List, Optional, Set, Union, cast
 
@@ -77,7 +78,7 @@ class Scraper:
     def __init__(self) -> None:
         logging.info("Initializing scraper instance")
 
-    def urls2fetch(self, root: Root, helper) -> Set[str]:
+    def urls2fetch(self, root: Root, helper: Optional[ModuleType]) -> Set[str]:
         """Returns a set of URLs to fetch. If the scraper helper class has
         associated RSS feed URLs, these are used to acquire article URLs.
         Otherwise, the URLs are found by scraping the root website and
@@ -121,7 +122,7 @@ class Scraper:
 
         return fetch_set
 
-    def scrape_root(self, root: Root, helper) -> None:
+    def scrape_root(self, root: Root, helper: ModuleType) -> None:
         """Scrape a root URL"""
 
         t0 = time.time()
@@ -166,7 +167,7 @@ class Scraper:
             "Root scrape of {0} completed in {1:.2f} seconds".format(str(root), t1 - t0)
         )
 
-    def scrape_article(self, url: str, helper) -> None:
+    def scrape_article(self, url: str, helper: ModuleType) -> None:
         """Scrape a single article, retrieving its HTML and metadata"""
 
         if helper.skip_url(url):
@@ -187,7 +188,7 @@ class Scraper:
         t1 = time.time()
         logging.info("Scraping completed in {0:.2f} seconds".format(t1 - t0))
 
-    def parse_article(self, seq: int, url: str, helper) -> None:
+    def parse_article(self, seq: int, url: str, helper: ModuleType) -> None:
         """Parse a single article"""
 
         logging.info("[{1}] Parsing article {0}".format(url, seq))

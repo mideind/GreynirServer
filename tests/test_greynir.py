@@ -24,7 +24,6 @@
 import pytest
 import os
 import json
-from urllib.parse import urlencode
 import sys
 
 from flask.testing import FlaskClient
@@ -37,8 +36,6 @@ if mainpath not in sys.path:
     sys.path.insert(0, mainpath)
 
 from main import app  # noqa
-from db import SessionContext  # noqa
-from db.models import Query, QueryData  # noqa
 from utility import read_api_key  # noqa
 
 # pylint: disable=unused-wildcard-import

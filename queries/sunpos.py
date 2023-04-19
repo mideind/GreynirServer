@@ -441,7 +441,7 @@ def _answer_city_solar_data(
 
         if time:
             if in_past is None:
-                in_past = time <= datetime.datetime.now().time()
+                in_past = time <= datetime.datetime.utcnow().time()
 
             # More specific answer when asking about today
             # (this morning/this evening/tonight/...)
