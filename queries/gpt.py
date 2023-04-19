@@ -626,6 +626,11 @@ def handle_plain_text(q: Query) -> bool:
     """Main entry point into this query module"""
     # Pass a plain text query to GPT and return the response
     try:
+        if not q.authenticated:
+            # We only allow GPT functionality for queries that
+            # originate from authenticated clients (typically smartphones
+            # running Embla)
+            return False
         if not OPENAI_KEY_PRESENT:
             logging.error("Missing OpenAI API key")
             return False
