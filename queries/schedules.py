@@ -428,7 +428,6 @@ def _get_current_and_next_program(
 
         # Try to also fetch next program if get_next is True
         if get_next:
-
             # Deal with RÚV sub-events
             if station == _RUV and len(sub_progs):
                 if len(progs) > 1:
@@ -479,7 +478,6 @@ def _extract_title_and_desc(prog: Dict[str, Any], station: str) -> Tuple[str, st
                 desc = prog["details"].get("series-description", "") or ""
 
     elif station == _STOD_TVO:
-
         title = prog.get("isltitill", "") or ""
         # Backup title
         if title == "":

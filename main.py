@@ -31,7 +31,7 @@
 
 """
 
-from typing import Dict, List, Pattern, Optional, Union, Any, cast
+from typing import Dict, List, Pattern, Optional, Tuple, Union, Any, cast
 
 import sys
 import re
@@ -177,16 +177,16 @@ def send_font(path: str) -> Response:
 
 # Custom 404 error handler
 @app.errorhandler(404)
-def page_not_found(_) -> str:
+def page_not_found(_) -> Tuple[str, int]:
     """Return a custom 404 error"""
-    return render_template("404.html")
+    return render_template("404.html"), 404
 
 
 # Custom 500 error handler
 @app.errorhandler(500)
-def server_error(_) -> str:
+def server_error(_) -> Tuple[str, int]:
     """Return a custom 500 error"""
-    return render_template("500.html")
+    return render_template("500.html"), 500
 
 
 @app.context_processor

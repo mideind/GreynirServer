@@ -26,6 +26,10 @@ python3 speak.py -w -f "pcm" --voice "$1" -n --override "dunno07-${VOICE_LOWER}.
 # Error messages
 python3 speak.py -w -f "pcm" --voice "$1" -n --override "err-${VOICE_LOWER}.wav" "Villa kom upp í samskiptum við netþjón."
 python3 speak.py -w -f "pcm" --voice "$1" -n --override "conn-${VOICE_LOWER}.wav" "Ekki næst samband við netið."
+python3 speak.py -w -f "pcm" --voice "$1" -n --override "nomic-${VOICE_LOWER}.wav" "Mig vantar heimild til að nota hljóðnema."
 
 # My name is
 python3 speak.py -w -f "pcm" --voice "$1" -n --override "mynameis-${VOICE_LOWER}.wav" "Svona hljómar þessi rödd."
+
+# Voice speed
+python3 speak.py -w -f "pcm" --voice "$1" -n --override "voicespeed-${VOICE_LOWER}.wav" "Svona hljómar þessi hraði."

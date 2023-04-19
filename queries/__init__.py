@@ -329,6 +329,7 @@ class Query:
         client_id: Optional[str],
         client_type: Optional[str],
         client_version: Optional[str],
+        authenticated: bool = False,
     ) -> None:
         self._query = q = self._preprocess_query_string(query)
         self._session = session
@@ -373,6 +374,8 @@ class Query:
         self._client_type = client_type
         # Client version, if known
         self._client_version = client_version
+        # Boolean flag indicating if the client is authenticated
+        self._authenticated = authenticated
         # Source of answer to query
         self._source: Optional[str] = None
         # Query context, which is None until fetched via self.fetch_context()
@@ -390,6 +393,8 @@ class Query:
         # Fix common Google ASR mistake: 'hæ embla' is returned as 'bæjarblað'
         if not qf and q == "bæjarblað":
             q = "hæ embla"
+        # Remove any trailing punctuation
+        qf = re.sub(r"[\.\?\!]+$", "", qf)
         # If stripping the prefixes results in an empty query,
         # just return original query string, stripped but otherwise unmodified
         return qf or q
@@ -710,7 +715,11 @@ class Query:
                 # Note that passing query=self here means that the
                 # "query" field of the TreeStateDict is populated,
                 # turning it into a QueryStateDict.
-                if self._tree.process_queries(self, self._session, processor):
+                if self._tree.process_queries(
+                    self,
+                    self._session,
+                    processor,
+                ):
                     # This processor found an answer, which is already stored
                     # in the Query object: return True
                     return True
@@ -931,6 +940,11 @@ class Query:
     def client_version(self) -> Optional[str]:
         """Return client version string, e.g. "1.0.3" """
         return self._client_version
+
+    @property
+    def authenticated(self) -> bool:
+        """Return whether query is authenticated"""
+        return self._authenticated
 
     def response(self) -> Optional[ResponseType]:
         """Return the detailed query answer"""
@@ -1232,20 +1246,114 @@ def to_accusative(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> st
     """Return the noun phrase after casting it from nominative to accusative case"""
     with GreynirBin.get_db() as db:
         return _to_case(
-            np, db.lookup_g, db.cast_to_accusative, filter_func=filter_func,
+            np,
+            db.lookup_g,
+            db.cast_to_accusative,
+            filter_func=filter_func,
         )
 
 
 def to_dative(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
     """Return the noun phrase after casting it from nominative to dative case"""
     with GreynirBin.get_db() as db:
-        return _to_case(np, db.lookup_g, db.cast_to_dative, filter_func=filter_func,)
+        return _to_case(
+            np,
+            db.lookup_g,
+            db.cast_to_dative,
+            filter_func=filter_func,
+        )
 
 
 def to_genitive(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
     """Return the noun phrase after casting it from nominative to genitive case"""
     with GreynirBin.get_db() as db:
-        return _to_case(np, db.lookup_g, db.cast_to_genitive, filter_func=filter_func,)
+        return _to_case(
+            np,
+            db.lookup_g,
+            db.cast_to_genitive,
+            filter_func=filter_func,
+        )
+
+
+def _get_cached_answer(
+    session: Session, qtext: str, clean_q: str, now: datetime
+) -> ResponseDict:
+    """Attempt to fetch a previously cached answer for the given query"""
+    cached_answer: Optional[QueryRow] = (
+        session.query(QueryRow)
+        .filter(QueryRow.question_lc == clean_q.lower())  # type: ignore
+        .filter(QueryRow.expires >= now)
+        .order_by(desc(QueryRow.expires))
+        .limit(1)
+        .one_or_none()
+    )
+    if cached_answer is None:
+        # Not found in cache: return an empty dict
+        return dict()
+    # The same question is found in the cache and has not expired:
+    # return the previous answer
+    a = cached_answer
+    # !!! TBD: Log the cached answer as well?
+    return dict(
+        valid=True,
+        q_raw=qtext,
+        q=a.bquestion,
+        answer=a.answer,
+        response=dict(answer=a.answer or ""),
+        voice=a.voice,
+        expires=a.expires,
+        qtype=a.qtype,
+        key=a.key,
+    )
+
+
+def _log_query(
+    session: Session,
+    it: List[str],
+    query: Optional[Query],
+    clean_q: str,
+    result: ResponseDict,
+    now: datetime,
+    voice: bool,
+    remote_addr: Optional[str],
+    client_id: Optional[str],
+    client_type: Optional[str],
+    client_version: Optional[str],
+) -> None:
+    """Add a query log entry to the database"""
+    try:
+        # Standard query logging
+        qrow = QueryRow(
+            timestamp=now,
+            interpretations=it,
+            question=clean_q,
+            # bquestion is the beautified query string
+            bquestion=result.get("q", clean_q),
+            answer=result.get("answer"),
+            voice=result.get("voice"),
+            error=result.get("error"),
+            # Only put an expiration on voice queries
+            expires=query.expires if voice and query is not None else None,
+            qtype=result.get("qtype"),
+            key=result.get("key"),
+            latitude=None,  # Disabled for now
+            longitude=None,  # Disabled for now
+            # Client identifier
+            client_id=client_id[:256] if client_id else None,
+            client_type=client_type[:80] if client_type else None,
+            client_version=client_version[:10] if client_version else None,
+            # IP address
+            remote_addr=remote_addr or None,
+            # Context dict, stored as JSON, if present
+            # (set during query execution)
+            context=None if query is None else query.context,
+            # All other fields are set to NULL
+        )
+        session.add(qrow)
+        # Also log anonymised query
+        session.add(QueryLog.from_Query(qrow))
+    except Exception as e:
+        logging.error(f"Error logging query: {e}")
 
 
 def _get_cached_answer(
@@ -1341,6 +1449,7 @@ def process_query(
     client_version: Optional[str] = None,
     bypass_cache: bool = False,
     private: bool = False,
+    authenticated: bool = False,
 ) -> ResponseDict:
     """Process an incoming natural language query.
     If voice is True, return a voice-friendly string to
@@ -1406,6 +1515,7 @@ def process_query(
                     client_id,
                     client_type,
                     client_version,
+                    authenticated,
                 )
                 result = query.execute()
                 if result.get("valid", False) and "error" not in result:
