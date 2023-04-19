@@ -1471,6 +1471,7 @@ def process_query(
                     client_id,
                     client_type,
                     client_version,
+                    authenticated,
                 )
                 result = query.execute()
                 if result.get("valid", False) and "error" not in result:

@@ -507,9 +507,9 @@ def _has_valid_api_key(req: Request, allow_query_param: bool = False) -> bool:
     """Check that the request has a valid API key.
     The key can be provided either via an Authorization header or
     (optionally) via a query parameter named 'api_key' (for legacy reasons)."""
-    key = request.headers.get("Authorization")
+    key = request.headers.get("Authorization", "")
     if not key and allow_query_param:
-        key = request.values.get("api_key")
+        key = cast(Dict[str, str], request.values).get("api_key", "")
     gak = read_api_key("GreynirServerKey")  # Cached
     return all((gak, key, key == gak))
 

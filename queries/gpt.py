@@ -729,8 +729,9 @@ def handle_plain_text(q: Query) -> bool:
         # Set the query answer text and voice synthesis text
         q.set_answer(dict(answer=answer), answer, voice_answer)
         duration = datetime.utcnow() - now
+        duration_str = f" ({duration.total_seconds():.1f} s)" if Settings.DEBUG else ""
         q.set_source(
-            f"Takist með fyrirvara! {n + 1}/{GPT_LIMIT} ({duration.total_seconds():.1f} s)"
+            f"Takist með fyrirvara! {n + 1}/{GPT_LIMIT}{duration_str}"
         )
 
         # Append the new (query, answer) tuple to the history in the context
