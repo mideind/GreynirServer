@@ -330,6 +330,7 @@ class Query:
         client_type: Optional[str],
         client_version: Optional[str],
         authenticated: bool = False,
+        private: bool = False,
     ) -> None:
         self._query = q = self._preprocess_query_string(query)
         self._session = session
@@ -374,8 +375,10 @@ class Query:
         self._client_type = client_type
         # Client version, if known
         self._client_version = client_version
-        # Boolean flag indicating if the client is authenticated
+        # Boolean flag indicating whether the client is authenticated
         self._authenticated = authenticated
+        # Boolean flag indicating whether the query is private
+        self._private = private
         # Source of answer to query
         self._source: Optional[str] = None
         # Query context, which is None until fetched via self.fetch_context()
@@ -715,11 +718,7 @@ class Query:
                 # Note that passing query=self here means that the
                 # "query" field of the TreeStateDict is populated,
                 # turning it into a QueryStateDict.
-                if self._tree.process_queries(
-                    self,
-                    self._session,
-                    processor,
-                ):
+                if self._tree.process_queries(self, self._session, processor,):
                     # This processor found an answer, which is already stored
                     # in the Query object: return True
                     return True
@@ -943,8 +942,14 @@ class Query:
 
     @property
     def authenticated(self) -> bool:
-        """Return whether query is authenticated"""
+        """Return True if the query is authenticated, i.e.
+            contains a bearer token from the client"""
         return self._authenticated
+
+    @property
+    def private(self) -> bool:
+        """Return True if the query is private"""
+        return self._private
 
     def response(self) -> Optional[ResponseType]:
         """Return the detailed query answer"""
@@ -1246,33 +1251,20 @@ def to_accusative(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> st
     """Return the noun phrase after casting it from nominative to accusative case"""
     with GreynirBin.get_db() as db:
         return _to_case(
-            np,
-            db.lookup_g,
-            db.cast_to_accusative,
-            filter_func=filter_func,
+            np, db.lookup_g, db.cast_to_accusative, filter_func=filter_func,
         )
 
 
 def to_dative(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
     """Return the noun phrase after casting it from nominative to dative case"""
     with GreynirBin.get_db() as db:
-        return _to_case(
-            np,
-            db.lookup_g,
-            db.cast_to_dative,
-            filter_func=filter_func,
-        )
+        return _to_case(np, db.lookup_g, db.cast_to_dative, filter_func=filter_func,)
 
 
 def to_genitive(np: str, *, filter_func: Optional[BinFilterFunc] = None) -> str:
     """Return the noun phrase after casting it from nominative to genitive case"""
     with GreynirBin.get_db() as db:
-        return _to_case(
-            np,
-            db.lookup_g,
-            db.cast_to_genitive,
-            filter_func=filter_func,
-        )
+        return _to_case(np, db.lookup_g, db.cast_to_genitive, filter_func=filter_func,)
 
 
 def _get_cached_answer(
@@ -1435,6 +1427,7 @@ def process_query(
                     client_type,
                     client_version,
                     authenticated,
+                    private,
                 )
                 result = query.execute()
                 if result.get("valid", False) and "error" not in result:
@@ -1472,6 +1465,7 @@ def process_query(
                     client_type,
                     client_version,
                     authenticated,
+                    private,
                 )
                 result = query.execute()
                 if result.get("valid", False) and "error" not in result:
