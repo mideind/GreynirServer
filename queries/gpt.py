@@ -41,6 +41,7 @@ from typing_extensions import TypedDict, NotRequired
 
 import abc
 import inspect
+import os
 import re
 import json
 import logging
@@ -99,7 +100,7 @@ MAX_TURNS = 2
 # the fallback handler of last resort for queries
 PRIORITY = "LAST_RESORT"
 
-GPT_LIMIT = 1000  # Max number of GPT-4 queries to allow per client
+GPT_LIMIT = int(os.environ.get("GPT_LIMIT", 15)) # Max number of GPT-4 queries to allow per client
 GPT_LIMIT_ANSWER = f"Því miður get ég aðeins svarað að hámarki {GPT_LIMIT} spurningum frá þér með hjálp GPT-4."
 GPT_LIMIT_ANSWER_VOICE = f"Því miður get ég aðeins svarað að hámarki {gssml(GPT_LIMIT, type='number', gender='kvk', case='þgf')} spurningum frá þér með hjálp gé pé té fjögur."
 
