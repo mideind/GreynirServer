@@ -27,7 +27,7 @@ boto3==1.18.40
 # Azure text-to-speech.
 azure-cognitiveservices-speech>=1.24.2
 # Google text-to-speech
-google-cloud-texttospeech>=2.14.1
+# google-cloud-texttospeech>=2.14.1
 # Ours
 reynir>=3.5.3
 islenska>=0.4.6
