@@ -34,6 +34,7 @@ import re
 import logging
 import urllib.parse as urlparse
 import requests
+import json
 from datetime import datetime
 
 from bs4 import BeautifulSoup
@@ -477,7 +478,7 @@ class RuvScraper(ScrapeHelper):
 
     def __init__(self, root: Root) -> None:
         super().__init__(root)
-        self._feeds = ["http://www.ruv.is/rss/frettir"]
+        self._feeds = ["https://www.ruv.is/rss/frettir"]
 
     def skip_url(self, url: str) -> bool:
         """Return True if this URL should not be scraped"""
@@ -525,32 +526,27 @@ class RuvScraper(ScrapeHelper):
 
         return metadata
 
-    # noinspection PyMethodMayBeStatic
     def get_content(self, soup: BeautifulSoup) -> Optional[Tag]:
         """Find the article content (main text) in the soup"""
 
         content = BeautifulSoup("", _HTML_PARSER)
 
-        # This catches the summary text
-        summary = soup.find_all("h2", {"class": "text-base"})
-        for s in summary:
-            if "font-normal" in s.get("class", ""):
-                content.append(s)
+        # Note: RÚV now uses client-side rendering. All the article
+        # content is now stored in a huge JSON object in a script tag.
+        script = soup.find("script", {"id": "__NEXT_DATA__"})
+        if not script:
+            return content
 
-        # This catches the main text blocks in the article
-        main_blocks = soup.find_all("div", {"class": "maincontent"})
-        for m in main_blocks:
-            content.append(m)
-
-        # Remove embedded media such as images with captions
-        ScrapeHelper.del_div_class(content, "media-card")
-
-        for elm in content.find_all("aside"):
-            elm.decompose()
-        for elm in content.find_all("h3"):
-            elm.decompose()
-        for elm in content.find_all("h4"):
-            elm.decompose()
+        try:
+            data = json.loads(script.text)
+            bodies: List = data["props"]["pageProps"]["data"]["article"]["body"]
+            for b in bodies:
+                if not b or b["block_type"] != "text_block":
+                    continue
+                content.append(BeautifulSoup(b["text_block"]["html"], _HTML_PARSER))
+        except Exception as e:
+            logging.warning(f"RuvScraper: Could not parse JSON: {e}")
+            return content
 
         return content
 

@@ -88,7 +88,6 @@ class Scraper:
         feeds: Optional[List[str]] = None if helper is None else helper.feeds
 
         if feeds:
-
             for feed_url in feeds:
                 logging.info("Fetching feed {0}".format(feed_url))
                 try:
@@ -99,11 +98,10 @@ class Scraper:
                     )
                     continue
                 for entry in d.entries:
-                    if entry.link and not helper.skip_rss_entry(entry):
+                    if entry.link and helper and not helper.skip_rss_entry(entry):
                         fetch_set.add(entry.link)
 
         else:
-
             # Fetch the root URL and scrape all child URLs
             # that refer to the same domain suffix
             logging.info("Fetching root {0}".format(root.url))
@@ -132,9 +130,7 @@ class Scraper:
         # Add the children whose URLs we don't already have
         # stored in the scraper articles table
         with SessionContext() as session:
-
             for url in fetch_set:
-
                 if helper and helper.skip_url(url):
                     # The helper doesn't want this URL
                     continue
@@ -180,7 +176,6 @@ class Scraper:
         t0 = time.time()
 
         with SessionContext(commit=True) as session:
-
             a = Article.scrape_from_url(url, session)
             if a is not None:
                 a.store(session)
@@ -281,7 +276,6 @@ class Scraper:
         cnt = 0
 
         with SessionContext(commit=True) as session:
-
             # Use a multiprocessing pool to parse the articles.
             # Let the pool work on chunks of articles, recycling the
             # processes after each chunk to contain memory creep.
@@ -289,7 +283,6 @@ class Scraper:
             CPU_COUNT = numprocs or cpu_count() or 1
 
             if urls is None and uuid is None and not reparse:
-
                 # Go through the roots and scrape them, inserting into the articles table
 
                 def iter_roots():
@@ -506,7 +499,6 @@ def scrape_articles(
     uuid: Optional[str] = None,
     numprocs: Optional[int] = None,
 ):
-
     # Create kwargs dict that will be passed to Scraper.go()
     kwargs = dict(locals())
 
@@ -577,7 +569,7 @@ class Usage(Exception):
         self.msg = msg
 
 
-def main(argv: Optional[List[str]]=None):
+def main(argv: Optional[List[str]] = None):
     """Guido van Rossum's pattern for a Python main function"""
 
     if argv is None:
@@ -682,7 +674,6 @@ def main(argv: Optional[List[str]]=None):
 
 
 if __name__ == "__main__":
-
     # pylint: disable=import-error
     if os.environ.get("GREYNIR_ATTACH_PTVSD"):
         # Attach to the VSCode PTVSD debugger, enabling remote debugging via SSH
@@ -691,7 +682,9 @@ if __name__ == "__main__":
         import ptvsd  # type: ignore
 
         cast(Any, ptvsd).enable_attach()
-        cast(Any, ptvsd).wait_for_attach()  # Blocks execution until debugger is attached
+        cast(
+            Any, ptvsd
+        ).wait_for_attach()  # Blocks execution until debugger is attached
         ptvsd_attached = True
         print("Attached to PTVSD")
     else:
