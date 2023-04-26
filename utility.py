@@ -52,7 +52,7 @@ def read_api_key(key_name: str) -> str:
     try:
         return p.read_text().strip()
     except FileNotFoundError:
-        logging.warning("API key file {p} not found")
+        logging.warning(f"API key file {p} not found")
     return ""
 
 
