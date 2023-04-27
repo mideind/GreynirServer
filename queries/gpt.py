@@ -100,7 +100,8 @@ MAX_TURNS = 2
 # the fallback handler of last resort for queries
 PRIORITY = "LAST_RESORT"
 
-GPT_LIMIT = int(os.environ.get("GPT_LIMIT", 15)) # Max number of GPT-4 queries to allow per client
+# Max number of GPT-4 queries to allow per client
+GPT_LIMIT = int(os.environ.get("GPT_LIMIT", 30))
 GPT_LIMIT_ANSWER = f"Því miður get ég aðeins svarað að hámarki {GPT_LIMIT} spurningum frá þér með hjálp GPT-4."
 GPT_LIMIT_ANSWER_VOICE = f"Því miður get ég aðeins svarað að hámarki {gssml(GPT_LIMIT, type='number', gender='kvk', case='þgf')} spurningum frá þér með hjálp gé pé té fjögur."
 
@@ -434,12 +435,17 @@ class FollowUpAgent(AgentBase):
         result = self.query(parameters)
         # Assemble the prompt
         query = self.query_template.format(
-            state=jdump(self._state), result=result, query=self._ql,
+            state=jdump(self._state),
+            result=result,
+            query=self._ql,
         )
         # Submit the prompt to the GPT model for completion
         # Here, there is no history list - this is an independent query
         r = Completion.create_from_preamble_and_history(
-            system=SYSTEM_PREAMBLE, query=query, max_tokens=256, temperature=0.0,
+            system=SYSTEM_PREAMBLE,
+            query=query,
+            max_tokens=256,
+            temperature=0.0,
         )
         answer = self.answer_from_gpt_response(r)
         return answer, None  # By default, there's no further follow-up
@@ -580,7 +586,11 @@ class NewsAgent(FollowUpAgent):
     def parameter_json(cls) -> str:
         """Return a JSON string describing the parameters for this
         follow-up completion class"""
-        return jdump({"category": "news_category|all",})
+        return jdump(
+            {
+                "category": "news_category|all",
+            }
+        )
 
     def query(self, parameters: Dict[str, Any]) -> str:
         """Queries the news module for a follow-up completion"""
@@ -606,7 +616,12 @@ class PeopleAgent(FollowUpAgent):
     def parameter_json(cls) -> str:
         """Return a JSON string describing the parameters for this
         follow-up completion class"""
-        return jdump({"name": "name|[unknown]", "title": "title|[unknown]",})
+        return jdump(
+            {
+                "name": "name|[unknown]",
+                "title": "title|[unknown]",
+            }
+        )
 
     def query(self, parameters: Dict[str, Any]) -> str:
         """Queries the people module for a follow-up completion"""
@@ -714,13 +729,19 @@ def handle_plain_text(q: Query) -> bool:
             # This is a plain text answer in Icelandic
             # Compensate for deficient normalization in Icelandic speech synthesizer:
             # Replace 'number-number' with 'number til number'
-            voice_answer = re.sub(r"(\d+)-(\d+)", r"\1 til \2", answer,)
+            voice_answer = re.sub(
+                r"(\d+)-(\d+)",
+                r"\1 til \2",
+                answer,
+            )
             # Convert years and ordinals to Icelandic text
             voice_answer = years_to_text(voice_answer, allow_three_digits=False)
             voice_answer = numbers_to_ordinal(voice_answer, case="þf")
             # Replace stuff that doesn't work in the Icelandic speech synthesizer
             voice_answer = re.sub(
-                REPLACE_REGEX, lambda m: REPLACE[m.group(0)], voice_answer,
+                REPLACE_REGEX,
+                lambda m: REPLACE[m.group(0)],
+                voice_answer,
             )
         else:
             # Not Icelandic: signal this to the voice synthesizer
@@ -731,9 +752,7 @@ def handle_plain_text(q: Query) -> bool:
         q.set_answer(dict(answer=answer), answer, voice_answer)
         duration = datetime.utcnow() - now
         duration_str = f" ({duration.total_seconds():.1f} s)" if Settings.DEBUG else ""
-        q.set_source(
-            f"Takist með fyrirvara! {n + 1}/{GPT_LIMIT}{duration_str}"
-        )
+        q.set_source(f"Takist með fyrirvara! {n + 1}/{GPT_LIMIT}{duration_str}")
 
         # Append the new (query, answer) tuple to the history in the context
         history_list.append(
