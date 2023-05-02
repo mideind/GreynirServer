@@ -2,14 +2,14 @@
 
 To start the Greynir shell, activate the virtual environment and install IPython:
 
-```
+```bash
 pip install ipython
 ```
 
 You can then run the following command from the repository root:
 
-```
-scripts/shell.sh 
+```bash
+bash scripts/shell.sh 
 ```
 
 This will launch an [IPython](http://ipython.readthedocs.io) shell, a superior alternative to the standard Python REPL. Features include syntax highlighting, auto-pretty-printing, auto-indentation, smart autocompletion, persistent history across sessions, integrated access to pdb and the profiler, and various introspection tools.

@@ -1,5 +1,5 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
+[![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
 [![Build](https://github.com/mideind/Greynir/actions/workflows/python-package.yml/badge.svg)]()
 
 <img src="static/img/greynir-logo-large.png" alt="Greynir" width="200" height="200" align="right" style="margin-left:20px; margin-bottom: 20px;">
@@ -78,7 +78,7 @@ Greynir may in due course be expanded, for instance:
 Greynir is written in [Python 3](https://www.python.org/) except for its core
 Earley-based parser module which is written in C++ and called
 via [CFFI](https://cffi.readthedocs.org/en/latest/index.html).
-Greynir requires Python 3.7 or later, and runs on CPython and
+Greynir requires Python 3.8 or later, and runs on CPython and
 [PyPy](http://pypy.org/), with the latter being recommended for performance reasons.
 
 Greynir works in stages, roughly as follows:
@@ -185,16 +185,16 @@ in [`queries/examples`](queries/examples).
 Once you have followed the installation and setup instructions above, change to the
 Greynir repository and activate the virtual environment:
 
-```
+```bash
 cd Greynir
-venv/bin/activate
+source venv/bin/activate
 ```
 
 You should now be able to run Greynir.
 
 ### Web application
 
-```
+```bash
 python main.py
 ```
 
@@ -203,20 +203,20 @@ changed in [`config/Greynir.conf`](config/Greynir.conf).
 
 ### Web scrapers
 
-```
+```bash
 python scraper.py
 ```
 
 If you are running the scraper on macOS, you may run into problems with Python's `fork()`.
 This can be fixed by setting the following environment variable in your shell:
 
-```
+```bash
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 ```
 
 ### Processors
 
-```
+```bash
 python processor.py
 ```
 
