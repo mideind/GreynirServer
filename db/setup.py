@@ -33,15 +33,15 @@ from .models import Root
 
 ROOTS = [
     # Root URL, top-level domain, description, authority, scr_module, scr_class, scrape
-    (
-        "https://kjarninn.is",
-        "kjarninn.is",
-        "Kjarninn",
-        1.0,
-        "scrapers.default",
-        "KjarninnScraper",
-        True,
-    ),
+    # (
+    #     "https://kjarninn.is",
+    #     "kjarninn.is",
+    #     "Kjarninn",
+    #     1.0,
+    #     "scrapers.default",
+    #     "KjarninnScraper",
+    #     True,
+    # ),
     (
         "https://www.ruv.is",
         "ruv.is",
@@ -69,24 +69,24 @@ ROOTS = [
         "MblScraper",
         True,
     ),
-    (
-        "https://kvennabladid.is",
-        "kvennabladid.is",
-        "Kvennablaðið",
-        0.4,
-        "scrapers.default",
-        "KvennabladidScraper",
-        True,
-    ),
-    (
-        "http://stjornlagarad.is",
-        "stjornlagarad.is",
-        "Stjórnlagaráð",
-        1.0,
-        "scrapers.default",
-        "StjornlagaradScraper",
-        True,
-    ),
+    # (
+    #     "https://kvennabladid.is",
+    #     "kvennabladid.is",
+    #     "Kvennablaðið",
+    #     0.4,
+    #     "scrapers.default",
+    #     "KvennabladidScraper",
+    #     True,
+    # ),
+    # (
+    #     "http://stjornlagarad.is",
+    #     "stjornlagarad.is",
+    #     "Stjórnlagaráð",
+    #     1.0,
+    #     "scrapers.default",
+    #     "StjornlagaradScraper",
+    #     True,
+    # ),
     (
         "https://www.forsaetisraduneyti.is",
         "forsaetisraduneyti.is",
@@ -123,15 +123,15 @@ ROOTS = [
         "AlthingiScraper",
         False,
     ),
-    (
-        "https://stundin.is",
-        "stundin.is",
-        "Stundin",
-        1.0,
-        "scrapers.default",
-        "StundinScraper",
-        True,
-    ),
+    # (
+    #     "https://stundin.is",
+    #     "stundin.is",
+    #     "Stundin",
+    #     1.0,
+    #     "scrapers.default",
+    #     "StundinScraper",
+    #     True,
+    # ),
     # (
     #     "https://hringbraut.frettabladid.is",
     #     "hringbraut.is",
@@ -141,15 +141,15 @@ ROOTS = [
     #     "HringbrautScraper",
     #     True,
     # ),
-    (
-        "https://www.frettabladid.is/",
-        "frettabladid.is",
-        "Fréttablaðið",
-        1.0,
-        "scrapers.default",
-        "FrettabladidScraper",
-        True,
-    ),
+    # (
+    #     "https://www.frettabladid.is/",
+    #     "frettabladid.is",
+    #     "Fréttablaðið",
+    #     1.0,
+    #     "scrapers.default",
+    #     "FrettabladidScraper",
+    #     True,
+    # ),
     (
         "https://www.utanrikisraduneyti.is",
         "utanrikisraduneyti.is",
@@ -263,9 +263,7 @@ def init_roots(wait: bool = False) -> int:
     retries = 36
 
     while True:
-
         try:
-
             db = SessionContext.db
             # pylint: disable=no-member
             db.create_tables()

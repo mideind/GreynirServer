@@ -930,7 +930,6 @@ class VisirScraper(ScrapeHelper):
 
 
 class EyjanScraper(ScrapeHelper):
-
     """Scraping helper for Eyjan.pressan.is"""
 
     def __init__(self, root: Root) -> None:
@@ -1594,7 +1593,7 @@ class HagstofanScraper(ScrapeHelper):
 
 
 class DVScraper(ScrapeHelper):
-    """Scraping helper for hagstofa.is"""
+    """Scraping helper for dv.is"""
 
     def __init__(self, root: Root) -> None:
         super().__init__(root)
