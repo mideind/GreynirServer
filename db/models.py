@@ -346,7 +346,7 @@ class Entity(Base):
     name = Column(String, index=True)
 
     @hybrid_property
-    def name_lc(self) -> str:
+    def name_lc(self) -> str:  # type: ignore
         return self.name.lower()
 
     @name_lc.comparator
@@ -672,7 +672,7 @@ class Query(Base):
     question = Column(String, index=True, nullable=False)
 
     @hybrid_property
-    def question_lc(self) -> str:
+    def question_lc(self) -> str:  # type: ignore
         return self.question.lower()
 
     @question_lc.comparator
@@ -686,7 +686,7 @@ class Query(Base):
     answer = Column(String, index=False, nullable=True)
 
     @hybrid_property
-    def answer_lc(self) -> str:
+    def answer_lc(self) -> str:  # type: ignore
         return self.answer.lower()
 
     @answer_lc.comparator
@@ -697,7 +697,7 @@ class Query(Base):
     voice = Column(String, index=False, nullable=True)
 
     @hybrid_property
-    def voice_lc(self) -> str:
+    def voice_lc(self) -> str:  # type: ignore
         return self.voice.lower()
 
     @voice_lc.comparator

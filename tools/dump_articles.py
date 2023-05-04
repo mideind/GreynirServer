@@ -58,8 +58,8 @@ def main():
             session.query(
                 Article.url, Article.timestamp, Article.heading, Article.tokens  # type: ignore
             )
-            .filter(Article.timestamp > bef)
-            .filter(Article.timestamp < aft)
+            .filter(Article.timestamp > bef)  # type: ignore
+            .filter(Article.timestamp < aft)  # type: ignore
             .order_by(Article.timestamp)
         )
         items = list()

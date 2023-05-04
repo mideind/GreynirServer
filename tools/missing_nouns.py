@@ -22,9 +22,9 @@ with SessionContext(read_only=True) as session:
         session.query(Article.id, Article.timestamp, Article.tokens)  # type: ignore
         .filter(Article.tree != None)
         .filter(Article.timestamp != None)
-        .filter(Article.timestamp <= datetime.utcnow())
-        .filter(Article.heading > "")
-        .filter(Article.num_sentences > 0)
+        .filter(Article.timestamp <= datetime.utcnow())  # type: ignore
+        .filter(Article.heading > "")  # type: ignore
+        .filter(Article.num_sentences > 0)  # type: ignore
     )
 
     nouns = defaultdict(int)
