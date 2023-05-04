@@ -242,7 +242,7 @@ def parse_num(node: Node, num_str: str) -> float:
         if num is not None:
             num = float(num)
     except Exception as e:
-        logging.warning("Unexpected exception: {0}".format(e))
+        logging.warning(f"Unexpected exception in parse_num: {e}")
         raise
     return num or 0.0
 
@@ -378,7 +378,7 @@ def krona_desc(amount: float, case: str = "nf") -> str:
     assert case in _CASE_ABBR
     cidx = _CASE_ABBR.index(case)
     plidx = 1 if is_plural(amount) else 0
-    return "{0} {1}".format(iceformat_float(amount), _KRONA_NOUN[plidx][cidx])
+    return f"{iceformat_float(amount)} {_KRONA_NOUN[plidx][cidx]}"
 
 
 def strip_trailing_zeros(num_str: str) -> str:
@@ -414,12 +414,14 @@ def query_json_api(
     try:
         r = requests.get(url, headers=headers, timeout=timeout)
     except Exception as e:
-        logging.warning(str(e))
+        logging.warning(f"Exception when fetching {url}: {e}")
         return None
 
     # Verify that status is OK
     if r.status_code != 200:
-        logging.warning("Received status {0} from API server".format(r.status_code))
+        logging.warning(
+            f"Received status {r.status_code} from API server when fetching URL {url}"
+        )
         return None
 
     # Parse json API response
@@ -427,7 +429,7 @@ def query_json_api(
         res = json.loads(r.text)
         return res
     except Exception as e:
-        logging.warning("Error parsing JSON API response: {0}".format(e))
+        logging.warning(f"Error parsing JSON API response from {url}: {e}")
     return None
 
 
@@ -548,9 +550,7 @@ def query_places_api(
         "region": "is",
     }
     if userloc:
-        qdict["locationbias"] = "circle:{0}@{1},{2}".format(
-            radius, userloc[0], userloc[1]
-        )
+        qdict["locationbias"] = f"circle:{radius}@{userloc[0]},{userloc[1]}"
     qstr = urlencode(qdict)
 
     # Send API request
