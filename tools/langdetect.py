@@ -30,11 +30,10 @@ def main():
         # Read configuration file
         Settings.read(os.path.join(basepath, "config", "GreynirSimple.conf"))
     except ConfigError as e:
-        print("Configuration error: {0}".format(e))
+        print(f"Configuration error: {e}")
         quit()
 
     with SessionContext(commit=True) as session:
-
         q = (
             session.query(Article.url, Article.heading, Article.tokens)
             # .filter(Article.root_id == 7)

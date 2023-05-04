@@ -313,9 +313,7 @@ def init_roots(wait: bool = False) -> int:
                 if not retries:
                     return 2  # No more retries: Return an error code
                 print(
-                    "Retrying connection in 5 seconds ({0} retries left)...".format(
-                        retries
-                    ),
+                    f"Retrying connection in 5 seconds ({retries} attempts left)...",
                     file=sys.stderr,
                 )
                 sys.stderr.flush()
@@ -324,7 +322,7 @@ def init_roots(wait: bool = False) -> int:
                 SessionContext.cleanup()
                 # Loop to retry
             else:
-                print("Exception in init_roots(): {0}".format(e), file=sys.stderr)
+                print(f"Exception in init_roots(): {e}", file=sys.stderr)
                 sys.stderr.flush()
                 # Re-raise the exception
                 raise

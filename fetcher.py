@@ -215,31 +215,28 @@ class Fetcher:
         """Low-level fetch of an URL, returning a decoded string"""
         html_doc = None
         try:
-
             # Normal external HTTP/HTTPS fetch
             r = requests.get(url, timeout=10)
             # pylint: disable=no-member
             if r.status_code == requests.codes.ok:
                 html_doc = r.text
             else:
-                logging.warning(
-                    "HTTP status {0} for URL {1}".format(r.status_code, url)
-                )
+                logging.warning(f"HTTP status {r.status_code} for URL {url}")
 
         except requests.exceptions.ConnectionError as e:
-            logging.error("ConnectionError: {0} for URL {1}".format(e, url))
+            logging.error(f"ConnectionError: {e} for URL {url}")
             html_doc = None
         except requests.exceptions.ChunkedEncodingError as e:
-            logging.error("ChunkedEncodingError: {0} for URL {1}".format(e, url))
+            logging.error(f"ChunkedEncodingError: {e} for URL {url}")
             html_doc = None
         except HTTPError as e:
-            logging.error("HTTPError: {0} for URL {1}".format(e, url))
+            logging.error(f"HTTPError: {e} for URL {url}")
             html_doc = None
         except UnicodeEncodeError as e:
-            logging.error("Exception when opening URL {0}: {1}".format(url, e))
+            logging.error(f"Exception when opening URL {url}: {e}")
             html_doc = None
         except UnicodeDecodeError as e:
-            logging.error("Exception when decoding HTML of {0}: {1}".format(url, e))
+            logging.error(f"Exception when decoding HTML of {url}: {e}")
             html_doc = None
         return html_doc
 
@@ -259,7 +256,7 @@ class Fetcher:
             helper_class = getattr(mod, root.scr_class, None) if mod else None
             helper = helper_class(root) if helper_class else None
             if not helper:
-                logging.error("Unable to instantiate helper {0}".format(helper_id))
+                logging.error(f"Unable to instantiate helper {helper_id}")
             else:
                 Fetcher._helpers[helper_id] = helper
         return helper
@@ -400,7 +397,6 @@ class Fetcher:
         a tuple (article, metadata, content) or None if error"""
 
         with SessionContext(enclosing_session) as session:
-
             article = cls.find_article(url, session)
             if article is None:
                 return (None, None, None)
@@ -413,7 +409,7 @@ class Fetcher:
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
             if soup is None or soup.html is None:
-                logging.warning("Fetcher.fetch_article({0}): No soup".format(url))
+                logging.warning(f"Fetcher.fetch_article({url}): No soup")
                 return (None, None, None)
 
             # Obtain the metadata and the content from the resulting soup
@@ -429,7 +425,6 @@ class Fetcher:
         a tuple (metadata, content) or None if error"""
 
         with SessionContext(enclosing_session) as session:
-
             helper = cls.helper_for(session, url)
 
             html_doc: Optional[str] = None
@@ -446,14 +441,14 @@ class Fetcher:
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
             if soup is None or soup.html is None:
-                logging.warning(
-                    "Fetcher.fetch_url({0}): No soup or no soup.html".format(url)
-                )
+                logging.warning(f"Fetcher.fetch_url({url}): No soup or no soup.html")
                 return None
 
             # Obtain the metadata and the content from the resulting soup
             metadata = cast(Any, helper).get_metadata(soup) if helper else None
-            content: Optional[Tag] = cast(Any, helper).get_content(soup) if helper else soup.html.body
+            content: Optional[Tag] = (
+                cast(Any, helper).get_content(soup) if helper else soup.html.body
+            )
             return (metadata, content)
 
     @classmethod
@@ -466,7 +461,6 @@ class Fetcher:
         html_doc, metadata, helper = None, None, None
 
         with SessionContext(enclosing_session) as session:
-
             html_doc: Optional[str] = None
             helper = cls.helper_for(session, url)
             if helper is None or not hasattr(helper, "fetch_url"):
@@ -482,7 +476,7 @@ class Fetcher:
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
             if soup is None:
-                logging.warning("Fetcher.fetch_url_html({0}): No soup".format(url))
+                logging.warning(f"Fetcher.fetch_url_html({url}): No soup")
                 return (None, None, None)
 
             # Obtain the metadata from the resulting soup

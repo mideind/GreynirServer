@@ -172,7 +172,6 @@ class Dumper:
 
         db = GreynirDB()
         with closing(db.session) as session, open(output, "w") as file:
-
             """Go through parsed articles and process them"""
             q: Query[Article] = (
                 cast(Any, session).query(Article.tokens).filter(Article.tree != None)
@@ -184,14 +183,13 @@ class Dumper:
             cnt = 0
             for a in q:
                 if cnt % 1000 == 0:
-                    print("Dumped {0} articles".format(cnt), end=chr(13))
+                    print(f"Dumped {cnt} articles", end=chr(13))
                 self.dump(a.tokens, file)
                 cnt += 1
-            print("Dumped {0} articles".format(cnt), end=chr(13))
+            print(f"Dumped {cnt} articles", end=chr(13))
 
 
 def process_articles(limit=0):
-
     print("------ Greynir starting dump -------")
     print("Output file: {0}".format(OUTPUT_FILE))
     if limit:

@@ -59,6 +59,7 @@ RegisterType = Dict[str, Dict[str, Any]]
 
 class TermDict(TypedDict):
     """A dictionary containing a search term and its associated score"""
+
     x: str
     w: float
 
@@ -134,7 +135,6 @@ def name_key_to_update(register: RegisterType, name: str) -> Optional[str]:
     # Check whether the same person is already in the registry under a
     # slightly different name
     for k in register.keys():
-
         parts = k.split()
         if nparts[0] != parts[0] or nparts[-1] != parts[-1]:
             # First or last names different: we don't think these are the same person
@@ -766,9 +766,7 @@ def query_word(query: Query, session: Session, stem: str) -> AnswerTuple:
         dict(
             count=acnt,
             answers=[
-                dict(stem=rstem, cat=rcat)
-                for rstem, rcat, _ in rlist
-                if rstem != stem
+                dict(stem=rstem, cat=rcat) for rstem, rcat, _ in rlist if rstem != stem
             ],
         ),
         "",

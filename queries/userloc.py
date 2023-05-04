@@ -78,7 +78,9 @@ def QUserLocationCountry(node: Node, params: QueryStateDict, result: Result) -> 
     result.qkey = "CurrentCountry"
 
 
-def _addrinfo_from_api_result(result) -> Tuple[str, int, str, str, str]:
+def _addrinfo_from_api_result(
+    result,
+) -> Tuple[Optional[str], Optional[int], Optional[str], Optional[str], Optional[str]]:
     """Extract relevant address components from Google API result."""
 
     comp = result["address_components"]

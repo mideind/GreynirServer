@@ -261,7 +261,8 @@ class Summary(Base):
 
     # The back-reference to the Root parent of this Article
     article: RelationshipProperty[Article] = relationship(
-        "Article", backref=backref("summaries"),
+        "Article",
+        backref=backref("summaries"),
     )
 
 

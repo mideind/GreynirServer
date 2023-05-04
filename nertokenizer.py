@@ -79,7 +79,7 @@ def recognize_entities(
                     q = q.filter(Entity.name == w)
                 return q.all()
             except OperationalError as e:
-                logging.warning("SQL error in fetch_entities(): {0}".format(e))
+                logging.warning(f"SQL error in fetch_entities(): {e}")
                 return []
 
         def query_entities(w: str) -> List[Entity]:
@@ -132,9 +132,7 @@ def recognize_entities(
             return token_ctor.Person(token.txt, tfull.person_names)
 
         try:
-
             while True:
-
                 token = next(token_stream)
 
                 if not token.txt:  # token.kind != TOK.WORD:

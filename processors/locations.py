@@ -188,7 +188,7 @@ def article_end(state: TreeStateDict) -> None:
         loc["article_url"] = url
         loc["timestamp"] = datetime.utcnow()
 
-        print("Location '{0}' is a {1}".format(loc["name"], loc["kind"]))
+        print(f"Location '{loc['name']}' is a {loc['kind']}")
 
         locmodel = Location(**loc)
         session.add(locmodel)
@@ -247,7 +247,7 @@ def token(
         if "k" in next_tok and (
             next_tok["k"] == TOK.NUMBER or next_tok["k"] == TOK.NUMWLETTER
         ):
-            name = "{0} {1}".format(name, next_word)
+            name = f"{name} {next_word}"
             kind = "address"
 
     # Add

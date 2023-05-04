@@ -128,11 +128,10 @@ class ApiClient:
         if request.method == "GET":
             return self.get(parsed_data)
 
-        return abort(400, "Bad method {}".format(request.method))
+        return abort(400, f"Bad method '{request.method}'")
 
 
 class TranslationApiClient(ApiClient):
-
     required_fields = ["contents"]
 
     target = "en"

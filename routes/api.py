@@ -645,7 +645,7 @@ def feedback_api(version: int = 1) -> Response:
                 session.add(qrow)
                 return better_jsonify(valid=True)
             except Exception as e:
-                logging.error("Error saving feedback to db: {0}".format(e))
+                logging.error(f"Error saving feedback to db: {e}")
 
     return better_jsonify(valid=False)
 

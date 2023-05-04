@@ -49,7 +49,6 @@ from images import get_staticmap_image
 
 
 class ArticleDict(TypedDict):
-
     url: str
     id: int
     heading: str
@@ -60,7 +59,6 @@ KeyTuple = Tuple[str, str, str, float, float]  # (name, kind, country, lat, lon)
 
 
 class LocDict(TypedDict):
-
     name: str
     kind: str
     country: str
@@ -77,7 +75,7 @@ LocTuple = NamedTuple(
         ("name", str),
         ("latitude", float),
         ("longitude", float),
-    ]
+    ],
 )
 
 
@@ -159,7 +157,7 @@ def top_locations(
         return loclist[:limit]
 
 
-def icemap_markers(days: int=_TOP_LOC_PERIOD) -> List[MarkerTuple]:
+def icemap_markers(days: int = _TOP_LOC_PERIOD) -> List[MarkerTuple]:
     """Return a list of recent Icelandic locations and their coordinates."""
     with SessionContext(read_only=True) as session:
         q: Iterable[LocTuple] = (
@@ -178,12 +176,14 @@ def icemap_markers(days: int=_TOP_LOC_PERIOD) -> List[MarkerTuple]:
             .filter(Location.latitude != None)
             .filter(Location.longitude != None)
         )
-        markers: List[MarkerTuple] = list(set((i.name, i.latitude, i.longitude) for i in q.all()))
+        markers: List[MarkerTuple] = list(
+            set((i.name, i.latitude, i.longitude) for i in q.all())
+        )
 
         return markers
 
 
-def world_map_data(days: int=_TOP_LOC_PERIOD) -> Dict[str, int]:
+def world_map_data(days: int = _TOP_LOC_PERIOD) -> Dict[str, int]:
     """Return data for world map. List of country iso codes with article count."""
     with SessionContext(read_only=True) as session:
         q: Iterable[Tuple[str, int]] = (
@@ -267,7 +267,7 @@ def staticmap():
 
     imgdata = get_staticmap_image(lat, lon, zoom=zoom)
     if imgdata:
-        fn = "{0}_{1}_{2}.png".format(lat, lon, zoom)
+        fn = f"{lat}_{lon}_{zoom}.png"
         return send_file(imgdata, download_name=fn, mimetype="image/png")
 
     return abort(404)

@@ -89,13 +89,11 @@ class Scraper:
 
         if feeds:
             for feed_url in feeds:
-                logging.info("Fetching feed {0}".format(feed_url))
+                logging.info(f"Fetching feed {feed_url}")
                 try:
                     d = feedparser.parse(feed_url)
                 except Exception as e:
-                    logging.warning(
-                        "Error fetching/parsing feed {0}: {1}".format(feed_url, str(e))
-                    )
+                    logging.warning(f"Error fetching/parsing feed {feed_url}: {e}")
                     continue
                 for entry in d.entries:
                     if entry.link and helper and not helper.skip_rss_entry(entry):
@@ -104,12 +102,12 @@ class Scraper:
         else:
             # Fetch the root URL and scrape all child URLs
             # that refer to the same domain suffix
-            logging.info("Fetching root {0}".format(root.url))
+            logging.info(f"Fetching root {root.url}")
 
             # Read the HTML document at the root URL
             html_doc = Fetcher.raw_fetch_url(root.url)
             if not html_doc:
-                logging.warning("Unable to fetch root {0}".format(root.url))
+                logging.warning(f"Unable to fetch root {root.url}")
                 return set()
 
             # Parse the HTML document
@@ -151,9 +149,7 @@ class Scraper:
                     session.rollback()
                 except Exception as e:
                     logging.warning(
-                        "Rollback due to exception when handling URL '{1}': {0}".format(
-                            e, url
-                        )
+                        f"Rollback due to exception when handling URL '{url}': {e}"
                     )
                     session.rollback()
 
@@ -167,12 +163,12 @@ class Scraper:
         """Scrape a single article, retrieving its HTML and metadata"""
 
         if helper.skip_url(url):
-            logging.info("Skipping article {0}".format(url))
+            logging.info(f"Skipping article {url}")
             return
 
         # Fetch the root URL and scrape all child URLs that refer
         # to the same domain suffix and we haven't seen before
-        logging.info("Scraping article {0}".format(url))
+        logging.info(f"Scraping article {url}")
         t0 = time.time()
 
         with SessionContext(commit=True) as session:
@@ -186,7 +182,7 @@ class Scraper:
     def parse_article(self, seq: int, url: str, helper: ModuleType) -> None:
         """Parse a single article"""
 
-        logging.info("[{1}] Parsing article {0}".format(url, seq))
+        logging.info(f"[{seq}] Parsing article {url}")
         t0 = time.time()
         num_sentences = 0
         num_parsed = 0
@@ -213,16 +209,14 @@ class Scraper:
             # We do not scrape .local roots
             return
         try:
-            logging.info("Scraping root of {0} at {1}...".format(r.description, r.url))
+            logging.info(f"Scraping root of {r.url} at {r.description}...")
             # Process a single top-level domain and root URL,
             # parsing child URLs that have not been seen before
             helper = Fetcher._get_helper(r)
             if helper:
                 self.scrape_root(r, helper)
         except Exception as e:
-            logging.warning(
-                "Exception when scraping root at {0}: {1!r}".format(r.url, e)
-            )
+            logging.warning(f"Exception when scraping root at {r.url}: {e!r}")
 
     def _scrape_single_article(self, d: ArticleDescr) -> None:
         """Single article scraper that will be called by a process within a
@@ -299,7 +293,7 @@ class Scraper:
                         ):
                             pass
                     except Exception as e:
-                        logging.warning("Caught exception: {0}".format(e))
+                        logging.warning(f"Caught exception: {e}")
                     pool.close()
                     pool.join()
 
@@ -328,7 +322,7 @@ class Scraper:
                         ):
                             pass
                     except Exception as e:
-                        logging.warning("Caught exception: {0}".format(e))
+                        logging.warning(f"Caught exception: {e}")
                     pool.close()
                     pool.join()
 
@@ -411,9 +405,7 @@ class Scraper:
                 if lcnt:
                     # Run garbage collection to minimize common memory footprint
                     gc.collect()
-                    logging.info(
-                        "Parser processes forking, chunk of {0} articles".format(lcnt)
-                    )
+                    logging.info(f"Parser processes forking, chunk of {lcnt} articles")
                     with Pool(CPU_COUNT) as pool:
                         try:
                             for _ in pool.imap_unordered(
@@ -421,7 +413,7 @@ class Scraper:
                             ):
                                 pass
                         except Exception as e:
-                            logging.warning("Caught exception: {0}".format(e))
+                            logging.warning(f"Caught exception: {e}")
                         pool.close()
                         pool.join()
                     cnt += lcnt

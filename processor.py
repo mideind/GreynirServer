@@ -103,11 +103,7 @@ class TokenContainer:
                 token_func,
             )
         ):
-            print(
-                "No functions implemented in processor module {0}".format(
-                    str(processor)
-                )
-            )
+            print(f"No functions implemented in processor module {processor}")
             return
 
         # Initialize state that we keep throughout processing
@@ -173,7 +169,6 @@ class Processor:
         single_processor: Optional[str] = None,
         num_workers: Optional[int] = None,
     ) -> None:
-
         Processor._init_class()
         self.num_workers = num_workers
 
@@ -194,7 +189,7 @@ class Processor:
                 m = importlib.import_module(modname)
                 ptype = getattr(m, "PROCESSOR_TYPE")
                 if ptype is not None:
-                    print("Imported processor module {0} ({1})".format(modname, ptype))
+                    print(f"Imported processor module {modname} ({ptype})")
                     # Successful
                     # Note: we can't append the module object m directly to the
                     # processors list, as it will be shared between processes and
@@ -205,7 +200,7 @@ class Processor:
                     # each child process.
                     self.processors.append(modname)
             except Exception as e:
-                print("Error importing processor module {0}: {1}".format(modname, e))
+                print(f"Error importing processor module {modname}: {e}")
 
         if not self.processors:
             if single_processor:
@@ -215,9 +210,7 @@ class Processor:
                     )
                 )
             else:
-                print(
-                    "No processors found in directory {0}".format(processor_directory)
-                )
+                print(f"No processors found in directory {processor_directory}")
 
     def go_single(self, url: str) -> None:
         """Single article processor that will be called by a process within a
@@ -225,7 +218,7 @@ class Processor:
 
         assert self._db is not None
 
-        print("Processing article {0}".format(url))
+        print(f"Processing article {url}")
         sys.stdout.flush()
 
         # If first article within a new process, import the processor modules
@@ -236,7 +229,6 @@ class Processor:
 
         # Load the article
         with closing(self._db.session) as session:
-
             try:
                 article = session.query(Article).filter_by(url=url).one_or_none()
 
@@ -290,7 +282,6 @@ class Processor:
 
         # noinspection PyComparisonWithNone,PyShadowingNames
         def iter_parsed_articles() -> Iterable[str]:
-
             assert self._db is not None
 
             with closing(self._db.session) as session:
@@ -357,21 +348,21 @@ def process_articles(
     """Process multiple articles according to the given parameters"""
     print("------ Greynir starting processing -------")
     if from_date:
-        print("From date: {0}".format(from_date))
+        print(f"From date: {from_date}")
     if limit:
-        print("Limit: {0} articles".format(limit))
+        print(f"Limit: {limit} articles")
     if title is not None:
-        print("Title LIKE: '{0}'".format(title))
+        print(f"Title LIKE: '{title}'")
     elif force:
         print("Force re-processing: Yes")
     elif update:
         print("Update: Yes")
     if processor:
-        print("Invoke single processor: {0}".format(processor))
+        print(f"Invoke single processor: {processor}")
     if num_workers:
-        print("Number of workers: {0}".format(num_workers))
-    ts = "{0}".format(datetime.utcnow())[0:19]
-    print("Time: {0}\n".format(ts))
+        print(f"Number of workers: {num_workers}")
+    ts = str(datetime.utcnow())[0:19]
+    print(f"Time: {ts}\n")
 
     t0 = time.time()
 
@@ -393,8 +384,8 @@ def process_articles(
 
     print("\n------ Processing completed -------")
     print("Total time: {0:.2f} seconds".format(t1 - t0))
-    ts = "{0}".format(datetime.utcnow())[0:19]
-    print("Time: {0}\n".format(ts))
+    ts = str(datetime.utcnow())[0:19]
+    print(f"Time: {ts}\n")
 
 
 def process_article(url: str, processor: Optional[str] = None) -> None:
@@ -420,7 +411,7 @@ def init_db() -> None:
     try:
         db.create_tables()
     except Exception as e:
-        print("{0}".format(e))
+        print(f"Exception initializing database: {e}")
 
 
 __doc__ = """
@@ -522,7 +513,7 @@ def _main(argv: Optional[List[str]] = None) -> int:
                 # Don't run the processor in debug mode
                 Settings.DEBUG = False
             except ConfigError as e:
-                print("Configuration error: {0}".format(e), file=sys.stderr)
+                print(f"Configuration error: {e}", file=sys.stderr)
                 return 2
 
             if url:

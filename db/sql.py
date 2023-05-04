@@ -38,7 +38,6 @@ QueryCountItem = Tuple[int]
 
 
 class _BaseQuery:
-
     _Q = ""
 
     def __init__(self) -> None:
@@ -454,7 +453,7 @@ class WordFrequencyQuery(_BaseQuery):
         with SessionContext(session=enclosing_session, read_only=True) as session:
             assert timeunit in ["week", "day"]
             datefmt = "IYYY-IW" if timeunit == "week" else "YYYY-MM-DD"
-            tu = "1 {0}".format(timeunit)
+            tu = f"1 {timeunit}"
             result = cls().execute(
                 session,
                 stem=stem,

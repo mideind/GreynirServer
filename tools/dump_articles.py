@@ -44,12 +44,11 @@ from tokenizer import correct_spaces
 
 
 def main():
-
     try:
         # Read configuration file
         Settings.read(os.path.join(basepath, "config", "GreynirSimple.conf"))
     except ConfigError as e:
-        print("Configuration error: {0}".format(e))
+        print(f"Configuration error: {e}")
         exit()
 
     with SessionContext(commit=False) as session:

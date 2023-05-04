@@ -212,7 +212,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     if "nöfn" in result:
         # Nöfn og titlar fundust í málsgreininni
         for nafn, titill, kyn in result.nöfn:
-            print("Nafn: '{0}' Kyn: '{2}' Titill: '{1}'".format(nafn, titill, kyn))
+            print(f"Nafn: '{nafn}' Kyn: '{kyn}' Titill: '{titill}'")
             person = Person(
                 article_url=url,
                 name=nafn,
@@ -289,7 +289,7 @@ def Mannsnafn(node: NonterminalNode, params: ParamList, result: Result):
     elif node.has_variant("kvk"):
         result.kyn = "kvk"
     else:
-        print("No gender for name {0}".format(result.mannsnafn))
+        print(f"No gender for name {result.mannsnafn}")
         result.kyn = "hk"
 
 

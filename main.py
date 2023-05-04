@@ -203,7 +203,7 @@ try:
     # Read configuration file
     Settings.read(str(Path("config", "Greynir.conf")))
 except ConfigError as e:
-    logging.error("Greynir did not start due to a configuration error:\n{0}".format(e))
+    logging.error(f"Greynir did not start due to a configuration error: {e}")
     sys.exit(1)
 
 if Settings.DEBUG:
@@ -219,9 +219,7 @@ if Settings.DEBUG:
             Settings.DB_PORT,
             sys.version,
             os_name(),
-            "GreynirPackage {0} - Tokenizer {1}".format(
-                greynir_version, tokenizer_version
-            ),
+            f"GreynirPackage {greynir_version} - Tokenizer {tokenizer_version}",
         )
     )
     # Clobber Settings.DEBUG in GreynirPackage
@@ -290,9 +288,8 @@ if not RUNNING_AS_SERVER:
     except socket_error as e:
         if e.errno == errno.EADDRINUSE:  # Address already in use
             logging.error(
-                "Another application is already running at host {0}:{1}".format(
-                    Settings.HOST, Settings.PORT
-                )
+                f"Another application is already running at"
+                " host {Settings.HOST}:{Settings.PORT}"
             )
             sys.exit(1)
         else:

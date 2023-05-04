@@ -257,7 +257,7 @@ def location_description(loc: Dict[str, str]) -> str:
             c = continent_for_country(loc["country"])
         if c is not None and c in ISO_TO_CONTINENT:
             cname = ISO_TO_CONTINENT[c]
-            desc = "land í {0}u".format(cname[:-1])
+            desc = f"land í {cname[:-1]}u"
         return desc
 
     if kind == "address":
