@@ -211,7 +211,7 @@ def wordfreq():
             ]
             # Construct elegant week date labels w. no superfluous information
             labels: List[str] = []
-            for (d1, d2) in label_dates:
+            for d1, d2 in label_dates:
                 if d1.month == d2.month:
                     d1fmt = "%-d."
                     d2fmt = "%-d. %b"

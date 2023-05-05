@@ -217,7 +217,7 @@ def answer_for_location(loc: LatLonTuple) -> Optional[AnswerTuple]:
     # if the top result doesn't even contain a locality.
 
     # Extract address info from top result
-    street, num, locality, postcode, country_code = _addrinfo_from_api_result(top)
+    street, num, locality, _, country_code = _addrinfo_from_api_result(top)
 
     descr = ""
 

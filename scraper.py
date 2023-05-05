@@ -114,7 +114,10 @@ class Scraper:
             soup = Fetcher.make_soup(html_doc)
 
             # Obtain the set of child URLs to fetch
-            fetch_set = Fetcher.children(root, soup)
+            if soup:
+                fetch_set = Fetcher.children(root, soup)
+            else:
+                fetch_set = set()
 
         return fetch_set
 
