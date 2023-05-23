@@ -207,7 +207,7 @@ def main() -> None:
     if len(args.text) == 0:
         _die("No text provided.")
     text = " ".join(args.text).strip()
-    if len(text) == 0:
+    if not text:
         _die("No text provided.")
 
     if args.wav and args.audioformat != "pcm":

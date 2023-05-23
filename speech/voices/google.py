@@ -22,6 +22,11 @@
 
 """
 
+NAME = "Google"
+VOICES = frozenset(())
+AUDIO_FORMATS = frozenset(("mp3"))
+
+
 # from typing import Optional
 
 # import logging
