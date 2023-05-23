@@ -22,6 +22,16 @@
     <canvas id="queries_chart_canvas" style="padding: 25px;"></canvas>
 </div>
 
+<!-- Unique users count bar chart broken down by days. -->
+<div class="panel panel-default">
+    <div class="panel-heading">
+        Fjöldi stakra notenda síðustu {{ days }} daga
+        <div class="pull-right hidden-xs">Meðaltal: <strong>{{ unique_count_avg | format_is(1) }} á dag</strong>
+        </div>
+    </div>
+    <canvas id="unique_chart_canvas" style="padding: 25px;"></canvas>
+</div>
+
 <!-- Query type pie chart. -->
 <div class="panel panel-default">
     <div class="panel-heading">
@@ -33,7 +43,7 @@
 <!-- Client type pie chart. -->
 <div class="panel panel-default">
     <div class="panel-heading">
-        Biðlaraútgáfur síðustu {{ days }} daga
+        Biðlaraútgáfur síðustu {{ days }} daga (e. fjölda fyrirspurna)
     </div>
     <canvas id="client_types_pie_canvas" style="padding: 25px;"></canvas>
 </div>
@@ -135,6 +145,38 @@
             }
         }
     });
+
+    // Unique user count by days chart
+    var uniqueChartData = {{ unique_count_data | safe }};
+    uniqueChartData.datasets[0].backgroundColor = '#3a74fc';
+    var uniqueCtx = $('#unique_chart_canvas').get(0).getContext('2d');
+    var uniqueChart = new Chart(uniqueCtx, {
+        type: 'bar',
+        data: uniqueChartData,
+        options: {
+            legend: {
+                display: false,
+                position: 'bottom',
+            },
+            responsive: true,
+            scales: {
+                xAxes: [{
+                    stacked: true,
+                }],
+                yAxes: [{
+                    ticks: {
+                        stepSize: 25,
+                        min: 0,
+                        callback: function (tick) {
+                            return tick.toString();
+                        }
+                    },
+                    stacked: true,
+                }]
+            }
+        }
+    });
+
 
     // Query types pie chart
     var queryTypesData = {{ query_types_data | safe }};

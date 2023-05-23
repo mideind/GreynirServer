@@ -34,7 +34,7 @@ ArticleListItem = Tuple[str, str, datetime, str, str]
 ChartQueryItem = Tuple[str, int, int, int]
 RelatedWordsItem = Tuple[str, str, int]
 BestAuthorsItem = Tuple[str, int, int, int, float]
-QueryCountItem = Tuple[int]
+QueryCountItem = Tuple[int, int]
 
 
 class _BaseQuery:
@@ -127,7 +127,7 @@ class QueryCountQuery(_BaseQuery):
     """Statistics on the number of queries received over a given time period."""
 
     _Q = """
-        select count(queries.id) from queries
+        select count(queries.id), count(distinct queries.client_id) from queries
             where timestamp >= :start and timestamp < :end
         """
 

@@ -79,7 +79,7 @@ _SOURCE_ROOT_COLORS = {
 }
 
 
-def chart_stats(session: Optional[Session]=None, num_days: int = 7) -> Dict[str, Any]:
+def chart_stats(session: Optional[Session] = None, num_days: int = 7) -> Dict[str, Any]:
     """Return scraping and parsing stats for charts"""
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     labels: List[str] = []
@@ -104,7 +104,7 @@ def chart_stats(session: Optional[Session]=None, num_days: int = 7) -> Dict[str,
             # Get article count per source for day
             # Also collect parsing stats for parse % chart
             q = ChartsQuery.period(start, end, enclosing_session=session)
-            for (name, cnt, s, p) in q:
+            for name, cnt, s, p in q:
                 sources.setdefault(name, []).append(cnt)
                 sent += s
                 parsed += p
@@ -174,7 +174,6 @@ def stats() -> Union[Response, str]:
 
     try:
         with SessionContext(read_only=True) as session:
-
             # Article stats
             sq = StatsQuery()
             articles_result = sq.execute(session)
@@ -226,13 +225,14 @@ _MAX_QUERY_STATS_PERIOD = 30
 
 
 def query_stats_data(
-    session: Optional[Session]=None, num_days: int = _DEFAULT_QUERY_STATS_PERIOD
+    session: Optional[Session] = None, num_days: int = _DEFAULT_QUERY_STATS_PERIOD
 ) -> Dict[str, Any]:
     """Return all data for query stats dashboard."""
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
 
     labels = []
     query_count_data = []
+    unique_count_data = []
 
     # Get query count for each day
     # We change locale to get localized date weekday/month names
@@ -250,7 +250,11 @@ def query_stats_data(
             q = list(QueryCountQuery.period(start, end, enclosing_session=session))
             query_count_data.append(q[0][0])
 
+            # Get num unique clients for day
+            unique_count_data.append(q[0][1])
+
     query_avg = sum(query_count_data) / num_days
+    unique_avg = sum(unique_count_data) / num_days
 
     start = today - timedelta(days=num_days)
     end = datetime.utcnow()
@@ -330,6 +334,11 @@ def query_stats_data(
             "datasets": [{"data": query_count_data}],
             "avg": query_avg,
         },
+        "unique_count": {
+            "labels": labels,
+            "datasets": [{"data": unique_count_data}],
+            "avg": unique_avg,
+        },
         "query_types": query_types_data,
         "client_types": client_types_data,
         "top_unanswered": top_unanswered,
@@ -365,6 +374,8 @@ def stats_queries() -> Union[Response, str]:
         days=days,
         query_count_data=json.dumps(stats_data["query_count"]),
         queries_avg=stats_data["query_count"]["avg"],
+        unique_count_data=json.dumps(stats_data["unique_count"]),
+        unique_count_avg=stats_data["unique_count"]["avg"],
         query_types_data=json.dumps(stats_data["query_types"]),
         client_types_data=json.dumps(stats_data["client_types"]),
         top_unanswered=stats_data["top_unanswered"],
