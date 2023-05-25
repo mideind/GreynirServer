@@ -73,7 +73,7 @@ from settings import Settings
 from queries.util import read_grammar_file
 
 from db import SessionContext, Session, desc
-from db.models import Query as QueryRow, QueryData, QueryLog
+from db.models import Query as QueryRow, QueryClientData, QueryLog
 
 from tree import ProcEnv, Tree, TreeStateDict, Node
 
@@ -992,9 +992,9 @@ class Query:
         with SessionContext(read_only=True) as session:
             try:
                 client_data = (
-                    session.query(QueryData)
-                    .filter(QueryData.key == key)
-                    .filter(QueryData.client_id == self.client_id)
+                    session.query(QueryClientData)
+                    .filter(QueryClientData.key == key)
+                    .filter(QueryClientData.client_id == self.client_id)
                 ).one_or_none()
                 return (
                     None
@@ -1023,16 +1023,16 @@ class Query:
         try:
             with SessionContext(commit=True) as session:
                 row = cast(
-                    Optional[QueryData],
+                    Optional[QueryClientData],
                     (
-                        session.query(QueryData)
-                        .filter(QueryData.key == key)
-                        .filter(QueryData.client_id == client_id)
+                        session.query(QueryClientData)
+                        .filter(QueryClientData.key == key)
+                        .filter(QueryClientData.client_id == client_id)
                     ).one_or_none(),
                 )
                 if row is None:
                     # Not already present: insert
-                    row = QueryData(
+                    row = QueryClientData(
                         client_id=client_id,
                         key=key,
                         created=now,

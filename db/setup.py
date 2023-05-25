@@ -31,6 +31,7 @@ from . import SessionContext, IntegrityError
 from .models import Root
 
 
+# TODO: Move this to a JSON configuration file?
 ROOTS = [
     # Root URL, top-level domain, description, authority, scr_module, scr_class, scrape
     # (

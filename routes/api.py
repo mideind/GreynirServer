@@ -34,7 +34,7 @@ from settings import Settings
 
 from tnttagger import ifd_tag
 from db import SessionContext
-from db.models import ArticleTopic, Query, Feedback, QueryData, Summary
+from db.models import ArticleTopic, Query, Feedback, QueryClientData, Summary
 from treeutil import TreeUtility
 from reynir.bintokenizer import TokenDict
 from reynir.binparser import canonicalize_token
@@ -550,8 +550,8 @@ def query_history_api(version: int = 1) -> Response:
         # Clear all user query data
         if action == "clear_all":
             # pylint: disable=no-member
-            qd = cast(Any, QueryData).table()
-            session.execute(qd.delete().where(QueryData.client_id == client_id))
+            qd = cast(Any, QueryClientData).table()
+            session.execute(qd.delete().where(QueryClientData.client_id == client_id))
 
     return better_jsonify(**resp)
 

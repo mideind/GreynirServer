@@ -811,7 +811,7 @@ class QueryLog(Base):
         )
 
 
-class QueryData(Base):
+class QueryClientData(Base):
     """Represents client data saved from a processed query."""
 
     __tablename__ = "querydata"
@@ -833,7 +833,7 @@ class QueryData(Base):
     data = cast(Any, Column(JSONB, nullable=False))
 
     def __repr__(self):
-        return "QueryData(client_id='{0}', created='{1}', modified='{2}', key='{3}', data='{4}')".format(
+        return "QueryClientData(client_id='{0}', created='{1}', modified='{2}', key='{3}', data='{4}')".format(
             self.client_id, self.created, self.modified, self.key, self.data
         )
 

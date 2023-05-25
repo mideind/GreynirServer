@@ -44,7 +44,7 @@ from main import app
 
 from settings import changedlocale
 from db import SessionContext
-from db.models import Query, QueryData  # , QueryLog
+from db.models import Query, QueryClientData  # , QueryLog
 from queries import ResponseDict
 from utility import read_api_key
 from speech.trans import strip_markup
@@ -127,7 +127,9 @@ def _query_data_cleanup() -> None:
             Query.table().delete().where(Query.client_id == DUMMY_CLIENT_ID)
         )
         session.execute(
-            QueryData.table().delete().where(QueryData.client_id == DUMMY_CLIENT_ID)
+            QueryClientData.table()
+            .delete()
+            .where(QueryClientData.client_id == DUMMY_CLIENT_ID)
         )
         # Note: there is no client_id associated w. entries in the QueryLog table
         # so we cannot delete the logged queries there by this criterion.
@@ -179,7 +181,11 @@ def test_voice_settings_integrity(client: FlaskClient) -> None:
     assert json["voice_id"] == "Gudrun"
     assert json["voice_locale"] == "is_IS"
 
-    json = qmcall(client, {"q": "Hver er tilgangur lífsins", "voice": True, "voice_id": "Gunnar"}, "Special")
+    json = qmcall(
+        client,
+        {"q": "Hver er tilgangur lífsins", "voice": True, "voice_id": "Gunnar"},
+        "Special",
+    )
     assert json["voice_id"] == "Gunnar"
     assert json["voice_locale"] == "is_IS"
 
@@ -1238,12 +1244,12 @@ def test_special(client: FlaskClient) -> None:
 
     json = qmcall(client, {"q": "Hver er sætastur?", "voice": True}, "Special")
     assert (
-        json["answer"] == "Tumi Þorsteinsson er langsætastur." or
-        json["answer"] == "Eyjólfur Þorsteinsson er langsætastur."
+        json["answer"] == "Tumi Þorsteinsson er langsætastur."
+        or json["answer"] == "Eyjólfur Þorsteinsson er langsætastur."
     )
     assert (
-        json["voice"] == "Tumi Þorsteinsson er langsætastur." or
-        json["voice"] == "Eyjólfur Þorsteinsson er langsætastur."
+        json["voice"] == "Tumi Þorsteinsson er langsætastur."
+        or json["voice"] == "Eyjólfur Þorsteinsson er langsætastur."
     )
 
     json = qmcall(client, {"q": "Hver er tilgangur lífsins?"}, "Special")
@@ -1619,7 +1625,7 @@ def test_query_history_api(client: FlaskClient) -> None:
     def _num_logged_query_info(client_id: str, model_name: str) -> int:
         """Make sure no db model entries associated with
         the provided client_id exists in database."""
-        # assert model_name in ["Query", "QueryData"]
+        # assert model_name in ["Query", "QueryClientData"]
         with SessionContext(read_only=True) as session:
             classn = _str2cls(model_name)
             q = session.query(classn).filter(classn.client_id == client_id)
@@ -1648,7 +1654,7 @@ def test_query_history_api(client: FlaskClient) -> None:
     # Make a query module call that is logged AND saves query data
     qmcall(client, {"q": "Ég heiti Jón Jónsson", "private": False})
     assert _num_logged_query_info(DUMMY_CLIENT_ID, "Query") > 0
-    assert _num_logged_query_info(DUMMY_CLIENT_ID, "QueryData") > 0
+    assert _num_logged_query_info(DUMMY_CLIENT_ID, "QueryClientData") > 0
     # And try to clear query history AND query data via call to API endpoint
     qd = deepcopy(qdict)
     qd["action"] = "clear_all"
@@ -1656,7 +1662,7 @@ def test_query_history_api(client: FlaskClient) -> None:
     json = _verify_basic(r)
     assert json["valid"] == True
     assert _num_logged_query_info(DUMMY_CLIENT_ID, "Query") == 0
-    assert _num_logged_query_info(DUMMY_CLIENT_ID, "QueryData") == 0
+    assert _num_logged_query_info(DUMMY_CLIENT_ID, "QueryClientData") == 0
 
     # Send invalid requests with missing keys
     # We expect "valid" key to be false in dict returned
