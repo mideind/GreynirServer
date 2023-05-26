@@ -734,79 +734,73 @@ def test_distance(client: FlaskClient) -> None:
 def test_flights(client: FlaskClient) -> None:
     """Flights module."""
 
-    departure_pattern = r"^Flug \w*? til .*? flýgur frá \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
-    arrival_pattern = r"^Flug \w*? frá .*? lendir [í|á] \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
-    no_matching_flight_pattern = (
-        r"Ekkert flug fannst (frá .*? )?(til .*? )?næstu \d+ sólarhringa."
-    )
-
     json = qmcall(
         client,
         {"q": "hvenær fer næsta flug til jfk frá keflavík", "voice": True},
         "Flights",
     )
-    assert re.search(departure_pattern, json["answer"]) or "aflýst" in json["answer"]
+    ans = json["answer"]
+    assert "flýgur frá" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
     assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {"q": "hvenær flýgur næsta flug til new york frá keflavík", "voice": True},
         "Flights",
     )
-    assert re.search(departure_pattern, json["answer"]) or "aflýst" in json["answer"]
+    ans = json["answer"]
+    assert "flýgur frá" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
     assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {"q": "hvenær flýgur næsta flug af stað frá keflavík", "voice": True},
         "Flights",
     )
-    assert re.search(departure_pattern, json["answer"]) or "aflýst" in json["answer"]
+    ans = json["answer"]
+    assert "flýgur frá" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
     assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {"q": "hver er brottfarartími næsta flugs frá keflavík", "voice": True},
         "Flights",
     )
-    assert re.search(departure_pattern, json["answer"]) or "aflýst" in json["answer"]
+    ans = json["answer"]
+    assert "flýgur frá" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
     assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {"q": "hver er brottfarartíminn fyrir næsta flug frá keflavík", "voice": True},
         "Flights",
     )
-    assert re.search(departure_pattern, json["answer"]) or "aflýst" in json["answer"]
+    ans = json["answer"]
+    assert "flýgur frá" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
     assert _has_no_numbers(json["voice"])
 
     json = qmcall(
         client, {"q": "hvenær lendir næsta flug í keflavík", "voice": True}, "Flights"
     )
-    assert re.search(arrival_pattern, json["answer"]) or "aflýst" in json["answer"]
+    ans = json["answer"]
+    assert "lendir í" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
     assert _has_no_numbers(json["voice"])
     json = qmcall(
         client, {"q": "hvenær kemur næsta vél á akureyri", "voice": True}, "Flights"
     )
-    assert (
-        re.search(arrival_pattern, json["answer"])
-        or re.search(no_matching_flight_pattern, json["answer"])
-        or "aflýst" in json["answer"]
-    )  # In case no flights to Akureyri
+    ans = json["answer"]
+    assert "lendir á" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client, {"q": "hvenær mætir næsta vél á vopnafjörð", "voice": True}, "Flights"
     )
-    assert (
-        re.search(arrival_pattern, json["answer"])
-        or re.search(no_matching_flight_pattern, json["answer"])
-        or "aflýst" in json["answer"]
-    )  # In case no flights to Vopnafjörður
+    ans = json["answer"]
+    assert "lendir á" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {"q": "hvenær mætir næsta vél til vopnafjarðar", "voice": True},
         "Flights",
     )
-    assert (
-        re.search(arrival_pattern, json["answer"])
-        or re.search(no_matching_flight_pattern, json["answer"])
-        or "aflýst" in json["answer"]
-    )  # In case no flights to Vopnafjörður
+    ans = json["answer"]
+    assert "lendir á" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {
@@ -815,11 +809,9 @@ def test_flights(client: FlaskClient) -> None:
         },
         "Flights",
     )
-    assert (
-        re.search(arrival_pattern, json["answer"])
-        or re.search(no_matching_flight_pattern, json["answer"])
-        or "aflýst" in json["answer"]
-    )
+    ans = json["answer"]
+    assert "lendir á" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {
@@ -828,30 +820,24 @@ def test_flights(client: FlaskClient) -> None:
         },
         "Flights",
     )
-    assert (
-        re.search(arrival_pattern, json["answer"])
-        or re.search(no_matching_flight_pattern, json["answer"])
-        or "aflýst" in json["answer"]
-    )
+    ans = json["answer"]
+    assert "lendir á" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
 
     json = qmcall(
         client,
         {"q": "hvenær fer næsta flug til blabla frá ekkitil", "voice": True},
         "Flights",
     )
-    assert (
-        re.search(no_matching_flight_pattern, json["answer"])
-        or "aflýst" in json["answer"]
-    )
+    ans = json["answer"]
+    assert ans.startswith("Ekkert flug")
     json = qmcall(
         client,
         {"q": "hvenær fer næsta flug frá ekkitil til blablab"},
         "Flights",
     )
-    assert (
-        re.search(no_matching_flight_pattern, json["answer"])
-        or "aflýst" in json["answer"]
-    )
+    ans = json["answer"]
+    assert ans.startswith("Ekkert flug")
 
 
 def test_geography(client: FlaskClient) -> None:

@@ -734,7 +734,7 @@ def query_which_route(query: Query, result: Result):
             route = straeto.BusRoute.lookup(route_id)
             if route is not None:
                 routes.add(route.number)
-        route_seq = natlang_seq(sorted(routes))
+        route_seq = natlang_seq(sorted(routes, key=int))
         stop_verb = "stoppa" if is_plural(len(routes)) else "stoppar"
         answer = f"{bus_noun} númer {route_seq} {stop_verb} á {dative_form(stop.name)}."
         voice_answer = (
