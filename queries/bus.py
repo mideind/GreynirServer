@@ -45,7 +45,7 @@
 #       e.g. if query is "... Naustabraut Davíðshaga austur",
 #            don't pick "... Naustabraut Davíðshaga vestur"
 
-from typing import Dict, Iterable, Optional, List, Set, Tuple, cast
+from typing import Callable, Dict, Iterable, Optional, List, Set, Tuple, cast
 
 import re
 import random
@@ -706,6 +706,7 @@ def query_arrival_time(query: Query, result: Result) -> AnswerTuple:
     voice_answer = assemble(va)
     return dict(answer=answer), answer, voice_answer
 
+_ROUTE_SORT: Callable[[str], int] = lambda num: int("".join(i for i in num if i.isdecimal()))
 
 def query_which_route(query: Query, result: Result):
     """Which routes stop at a given bus stop"""
@@ -734,7 +735,7 @@ def query_which_route(query: Query, result: Result):
             route = straeto.BusRoute.lookup(route_id)
             if route is not None:
                 routes.add(route.number)
-        route_seq = natlang_seq(sorted(routes))
+        route_seq = natlang_seq(sorted(routes, key=_ROUTE_SORT))
         stop_verb = "stoppa" if is_plural(len(routes)) else "stoppar"
         answer = f"{bus_noun} númer {route_seq} {stop_verb} á {dative_form(stop.name)}."
         voice_answer = (
