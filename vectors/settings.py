@@ -214,7 +214,7 @@ class Topics:
 @contextmanager
 def changedlocale(new_locale=None):
     """Change locale for collation temporarily within a context (with-statement)"""
-    # The newone locale parameter should be a tuple: ('is_IS', 'UTF-8')
+    # The new_locale parameter should be a tuple, e.g. ('is_IS', 'UTF-8')
     old_locale = locale.getlocale(locale.LC_COLLATE)
     try:
         locale.setlocale(locale.LC_COLLATE, new_locale or _DEFAULT_SORT_LOCALE)

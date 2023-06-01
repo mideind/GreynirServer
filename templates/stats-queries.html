@@ -37,7 +37,7 @@
     <div class="panel-heading">
         Tegundir fyrirspurna síðustu {{ days }} daga
     </div>
-    <canvas id="query_types_pie_canvas" style="padding: 25px;"></canvas>
+    <canvas id="query_types_canvas" style="padding: 25px;"></canvas>
 </div>
 
 <!-- Client type pie chart. -->
@@ -125,7 +125,6 @@
         options: {
             legend: {
                 display: false,
-                position: 'bottom',
             },
             responsive: true,
             scales: {
@@ -156,7 +155,6 @@
         options: {
             legend: {
                 display: false,
-                position: 'bottom',
             },
             responsive: true,
             scales: {
@@ -180,9 +178,9 @@
 
     // Query types pie chart
     var queryTypesData = {{ query_types_data | safe }};
-    var queryTypesCtx = $('#query_types_pie_canvas').get(0).getContext('2d');
+    var queryTypesCtx = $('#query_types_canvas').get(0).getContext('2d');
     var queryTypesChart = new Chart(queryTypesCtx, {
-        type: 'pie',
+        type: 'bar',
         data: queryTypesData,
         options: {
             responsive: true,
@@ -195,11 +193,9 @@
                     },
                 }
             },
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-            }
+            legend: {
+                display: false,
+            },
         },
     });
 
