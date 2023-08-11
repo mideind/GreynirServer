@@ -78,6 +78,7 @@ def modules_in_dir(p: Path) -> List[str]:
 
 def sanitize_filename(fn: str, maxlen: int = 60) -> str:
     """Sanitize a potential filename string by limiting allowed characters."""
+    assert maxlen >= 1, "maxlen must be positive"
 
     ALLOWED_FILE_CHARS = string.ascii_letters + string.digits + "._-"
 
@@ -95,6 +96,8 @@ def sanitize_filename(fn: str, maxlen: int = 60) -> str:
 def icelandic_asciify(text: str) -> str:
     """Convert Icelandic characters to their ASCII equivalent
     and then remove all non-ASCII characters."""
+    if not text:
+        return text
 
     ICECHARS_TO_ASCII = {
         "ð": "d",

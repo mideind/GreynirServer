@@ -31,8 +31,8 @@ azure-cognitiveservices-speech>=1.28.0
 # For OpenAI GPT support
 openai>=0.27.6
 # Ours
-reynir>=3.5.3
-islenska>=0.4.6
+reynir>=3.5.4
+islenska>=0.4.8
 iceaddr>=0.5.5
 iceweather>=0.2.3
 cityloc>=0.1.1
