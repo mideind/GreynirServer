@@ -1,0 +1,66 @@
+# Grammar for the ATM query module
+
+# TODO: Bæta grammar
+Query →
+    QAtm
+
+QAtm → QAtmQuery '?'?
+
+QAtmQuery →
+    QAtmClosest | QAtmClosestDeposit
+
+# Hvar get ég tekið út pening? x 
+# Hvar get ég fundið hraðbanka? x
+# Hvar finn ég hraðbanka? x 
+# Hvar er næsti hraðbanki íslandsbanka? x 
+# Hvaða hraðbanki er í nágrenninu x 
+# Hvar er hraðbanki nálægt mér? x 
+# Hvar er næsti hraðbanki?
+# Hvar finn ég næsta hraðbanka?
+QAtmClosest →
+    QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka
+    | "hvaða" QAtmHradbankiIslandsbanka "er" "í" "nágrenninu" 
+    | QAtmHvarEr QAtmHradbankiIslandsbanka "nálægt" "mér"
+    | "hvar" "finn" "ég" "næsta"? QAtmHradbankiIslandsbanka
+    | QAtmHvarGetEg "tekið" "út" QAtmMoney
+    | QAtmHvarGetEg fundið "næsta"? QAtmHradbankaIslandsbanka
+
+# Hvar get ég lagt inn pening?
+QAtmClosestDeposit →
+    QAtmHvarGetEg "lagt" "inn" QAtmMoney
+    | QAtmHvarGetEg "lagt" "inn" "á" "reikning"
+
+QAtmHvarEr →
+    "hvar" "er" 
+
+QAtmHvarGetEg → 
+    "hvar" "get" "ég"
+
+QAtmHradbankiIslandsbanka →
+    "hraðbanki" "íslandsbanka"?
+
+QAtmHradbankaIslandsbanka →
+    "hraðbanka" "íslandsbanka"
+
+QAtmMoney →
+    "pening"
+    | "reiðufé"
+    | "seðla"
+
+
+# Hvar get ég lagt inn pening?
+# opnunartímar!
+# Hver er hámarks úttektarupphæð?
+# Hvar er næsti hraðbanki þar sem ég get tekið út erlendan gjaldmiðil?
+# Hvar er hraðbanki sem er opinn?
+# Hvað get ég tekið mikið út?
+
+# "dialogue" options
+# Hvar er næsti hraðbanki
+# -> er hægt að leggja inn peninga þar?
+# -> get ég lagt inn pening þar?
+# -> er hann opinn?
+# -> er hann opinn allan daginn?
+# -> hverjir eru opnunartímarnir þar?
+# -> hver er úttekktarheimildin þar?
+# -> er hægt að skipta á erlendum gjaldmiðlum þar?
