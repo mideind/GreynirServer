@@ -7,7 +7,7 @@ Query →
 QAtm → QAtmQuery '?'?
 
 QAtmQuery →
-    QAtmClosest | QAtmClosestDeposit
+    QAtmClosest | QAtmClosestDeposit | QAtmFurtherInfo
 
 # Hvar get ég tekið út pening? x 
 # Hvar get ég fundið hraðbanka? x
@@ -29,6 +29,30 @@ QAtmClosest →
 QAtmClosestDeposit →
     QAtmHvarGetEg "lagt" "inn" QAtmMoney
     | QAtmHvarGetEg "lagt" "inn" "á" "reikning"
+
+QAtmFurtherInfo →
+    QAtmFurtherInfoDeposit
+    | QAtmFurtherInfoWithdrawalLimit
+    | QAtmFurtherInfoOpeningHours
+#    | QAtmFurtherInfoIsItOpen
+#    | QAtmFurtherInfoForeignExchange
+
+QAtmFurtherInfoDeposit →
+    "er" "hægt" "að" "leggja" "inn" QAtmMoney "þar"
+    | "get" "ég" "lagt" "inn" QAtmMoney "þar"
+
+QAtmFurtherInfoWithdrawalLimit →
+    "hver" "er" "hámarksúttektarheimildin" "þar"
+    | "hver" "er" "hámarks"? "úttektarheimildin" "þar"
+    | "hver" "er" "hámarksúttektin" "þar"
+
+# -> hverjir eru opnunartímarnir þar?
+# -> er hann opinn allan daginn?
+# hvað er hann opinn lengi?
+QAtmFurtherInfoOpeningHours →
+    "hverjir" "eru" "opnunartímarnir" "þar"
+    | "er" "hann" "opinn" "allan" "daginn"
+    | "hvað" "er" "hann" "opinn" "lengi"
 
 QAtmHvarEr →
     "hvar" "er" 
@@ -57,10 +81,5 @@ QAtmMoney →
 
 # "dialogue" options
 # Hvar er næsti hraðbanki
-# -> er hægt að leggja inn peninga þar?
-# -> get ég lagt inn pening þar?
 # -> er hann opinn?
-# -> er hann opinn allan daginn?
-# -> hverjir eru opnunartímarnir þar?
-# -> hver er úttekktarheimildin þar?
 # -> er hægt að skipta á erlendum gjaldmiðlum þar?
