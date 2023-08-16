@@ -33,6 +33,7 @@ import json  # TODO: remove after we fetch json data online
 from geo import distance
 from tree import Result, Node
 from queries import Query, QueryStateDict
+from reynir import NounPhrase
 from queries.util import (
     gen_answer,
     distance_desc,
@@ -40,6 +41,7 @@ from queries.util import (
     LatLonTuple,
     read_grammar_file,
 )
+from speech.trans.num import number_to_text
 
 _ATM_QTYPE = "Atm"
 
@@ -147,6 +149,26 @@ def _closest_atm_deposit(loc: LatLonTuple) -> Optional[Dict]:
     return dist_sorted[0] if dist_sorted else None
 
 
+def _format_voice_street_name(street: str) -> str:
+    """Format street name for voice output"""
+    if street is None:
+        return ""
+    # Formatting street number
+    word_list = street.split()
+    last_word = word_list[-1]
+    if last_word[-1].isnumeric():
+        # check if last word contains "–"
+        # TODO: Notice this is not a regular hyphen, check if this is a problem. Regular hyphen does not work with the data
+        if "–" in last_word:
+            split_street_nr = last_word.split("–")
+            first_number = number_to_text(split_street_nr[0], case="þf")
+            last_number = number_to_text(split_street_nr[-1], case="þf")
+            street_number = first_number + " til " + last_number
+            return " ".join(word_list[:-1]) + " " + street_number
+        return " ".join(word_list[:-1]) + " " + number_to_text(last_word, case="þf")
+    return street
+
+
 _ERRMSG = "Ekki tókst að sækja upplýsingar um hraðbanka."
 
 
@@ -169,16 +191,20 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
     if not atm or "distance" not in atm:
         return gen_answer(_ERRMSG)
 
-    answ_fmt = "{0} er á {1} og er {2} frá þér."
-    voice_fmt = "{0} er á {1} og er {2} frá þér."
+    # TODO: Þarf að skipta upp td Norðurturni Smáralindar áður en meðhöndlað af NounPhrase?
+    # TODO: "við" er ekki rétt í öllum tilfellum, td ætti að vera "í Norðurturni Smáralindar"
+    street_name = NounPhrase(atm["address"]["street"]).accusative
+    voice_street_name = _format_voice_street_name(street_name)
+    answ_fmt = "{0} er við {1} og er {2} frá þér."
+    voice_fmt = "{0} er við {1} og er {2} frá þér."
     answer = answ_fmt.format(
         ans_start,
-        atm["address"]["street"],
+        street_name,
         distance_desc(atm["distance"], case="þgf"),
     )
     voice = voice_fmt.format(
         ans_start,
-        atm["address"]["street"],
+        voice_street_name,
         distance_desc(atm["distance"], case="þgf", num_to_str=True),
     )
 
