@@ -328,13 +328,13 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
             index = opening_hours.find("daga") + 4
             if index != -1:
                 opening_hours = (
-                    opening_hours[:index] + " frá klukkan " + opening_hours[index:]
+                    opening_hours[:index] + " frá klukkan" + opening_hours[index:]
                 )
             opening_hours_list = opening_hours.split()
             opening_hours_list[-1] = number_to_text(opening_hours_list[-1], case="þf")
             opening_hours_list[-2] = "til"
             opening_hours_list[-3] = number_to_text(opening_hours_list[-3], case="þf")
-            opening_hours = " ".join(opening_hours_list)
+            voice_opening_hours = " ".join(opening_hours_list)
             answer = answ_fmt.format(
                 ans_start,
                 street_name,
@@ -343,7 +343,7 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
             voice = voice_fmt.format(
                 ans_start,
                 voice_street_name,
-                _format_voice_street_number(opening_hours),
+                voice_opening_hours,
             )
         else:
             return gen_answer("Ekki tókst að sækja opnunartíma fyrir hraðbankann.")
