@@ -7,7 +7,7 @@ Query →
 QAtm → QAtmQuery '?'?
 
 QAtmQuery →
-    QAtmClosest | QAtmClosestDeposit | QAtmFurtherInfo
+    QAtmClosest | QAtmClosestDeposit | QAtmClosestForeignExchange | QAtmFurtherInfo
 
 # Hvar get ég tekið út pening? x 
 # Hvar get ég fundið hraðbanka? x
@@ -19,16 +19,31 @@ QAtmQuery →
 # Hvar finn ég næsta hraðbanka?
 QAtmClosest →
     QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka
+    | "næsti" QAtmHradbankiIslandsbanka
     | "hvaða" QAtmHradbankiIslandsbanka "er" "í" "nágrenninu" 
-    | QAtmHvarEr QAtmHradbankiIslandsbanka "nálægt" "mér"
-    | "hvar" "finn" "ég" "næsta"? QAtmHradbankiIslandsbanka
+    | QAtmHradbankiIslandsbanka "í" "nágrenninu"
+    | QAtmHvarEr? QAtmHradbankiIslandsbanka "nálægt" "mér"
+    | "hvar" "finn" "ég" "næsta"? QAtmHradbankaIslandsbanka
     | QAtmHvarGetEg "tekið" "út" QAtmMoney
-    | QAtmHvarGetEg fundið "næsta"? QAtmHradbankaIslandsbanka
+    | QAtmHvarGetEg "fundið" "næsta"? QAtmHradbankaIslandsbanka
 
 # Hvar get ég lagt inn pening?
 QAtmClosestDeposit →
     QAtmHvarGetEg "lagt" "inn" QAtmMoney
     | QAtmHvarGetEg "lagt" "inn" "á" "reikning"
+
+# Hvar er næsti hraðbanki sem leyfir kaup á gjaldeyri
+# Hvar er hraðbanki þar sem ég get keypt gjaldeyri
+# Hvar er næsti hraðbanki sem selur gjaldeyri
+# Hraðbanki þar sem hægt er að nálgast gjaldeyri
+# Hraðbanki með erlendum gjaldeyri
+
+QAtmClosestForeignExchange →
+    QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "sem" "leyfir" "kaup" "á" QAtmGjaldeyrir
+    | QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "þar" "sem" "ég" "get" "keypt" QAtmGjaldeyrir
+    | QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "sem" "selur" QAtmGjaldeyrir
+    | "næsti"? QAtmHradbankiIslandsbanka "þar" "sem" "hægt" "er" "að" "nálgast" QAtmGjaldeyrir
+    | "næsti"? QAtmHradbankiIslandsbanka "með" QAtmGjaldeyrir
 
 QAtmFurtherInfo →
     QAtmFurtherInfoDeposit
@@ -40,19 +55,29 @@ QAtmFurtherInfo →
 QAtmFurtherInfoDeposit →
     "er" "hægt" "að" "leggja" "inn" QAtmMoney "þar"
     | "get" "ég" "lagt" "inn" QAtmMoney "þar"
+    | "tekur" "hann" "við" "seðlum"
 
 QAtmFurtherInfoWithdrawalLimit →
     "hver" "er" "hámarksúttektarheimildin" "þar"
     | "hver" "er" "hámarks"? "úttektarheimildin" "þar"
     | "hver" "er" "hámarksúttektin" "þar"
+    | "hvað" QAtmGetEg "tekið" "út" "mikinn" "pening" "þar"
+    | "hvað" QAtmGetEg "tekið" "mikið" "út" "þar"
+    | "hvað" QAtmGetEg "tekið" "út" "mikið" "af" QAtmMoneyPlural "þar"
 
 # -> hverjir eru opnunartímarnir þar?
 # -> er hann opinn allan daginn?
 # hvað er hann opinn lengi?
 QAtmFurtherInfoOpeningHours →
     "hverjir" "eru" "opnunartímarnir" "þar"
+    | "hvernig" "eru" "opnunartímarnir" "þar"
     | "er" "hann" "opinn" "allan" "daginn"
     | "hvað" "er" "hann" "opinn" "lengi"
+    | "hvenær" "er" "hann" "opinn"
+    | "hvenær" "er" "sá" "hraðbanki" "opinn"
+    | "er" "hann" "opinn"
+    | "er" "sá" QAtmHradbankiIslandsbanka "opinn"
+
 
 # -> er hægt að skipta á erlendum? gjaldmiðlum þar?
 # get ég keypt erlendan? gjaldeyri þar?
@@ -84,13 +109,20 @@ QAtmHradbankaIslandsbanka →
 
 QAtmMoney →
     "pening"
+    | "peninga"
     | "reiðufé"
     | "seðla"
+
+QAtmMoneyPlural → 
+    "peningum"
+    | "reiðufé"
+    | "seðlum"
 
 QAtmKeyptFengidNalgast →
     "keypt"
     | "fengið"
     | "nálgast"
+    | "tekið" "út"
 
 QAtmGjaldeyrir →
     "erlenda"? "gjaldmiðla"
@@ -98,17 +130,17 @@ QAtmGjaldeyrir →
     | "erlendan"? "gjaldeyri"
 
 
-# Hvar get ég lagt inn pening?
-# opnunartímar!
-# Hver er hámarks úttektarupphæð?
 # Hvar er næsti hraðbanki þar sem ég get tekið út erlendan gjaldmiðil?
+# Hvar er næsti hraðbanki þar sem ég get lagt inn peninga?
+# Hvar er næsti hraðbanki þar sem ég get keypt erlendan gjaldeyri?
+# Hvar get ég keypt erlendan gjaldeyri?
+# Hvar er hraðbanki þar sem ég get ...
 # Hvar er hraðbanki sem er opinn?
-# Hvað get ég tekið mikið út?
 
-# "dialogue" options
-# Hvar er næsti hraðbanki
-# -> er hann opinn?
-# -> er hægt að skipta á erlendum gjaldmiðlum þar?
-
+# Additional stuff:
 # myntsöluvélar
 # hvað með ef tveir hraðbankar á sama stað með mismunandi þjónustu?
+
+# "dialogue" options
+# -> er hann opinn?
+# Hvar er næsti hraðbanki

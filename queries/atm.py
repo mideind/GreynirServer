@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Petrol query response module
+    Atm query response module
 
     Copyright (C) 2023 Miðeind ehf.
 
@@ -123,6 +123,12 @@ def QAtmFurtherInfoForeignExchange(
     result.qkey = "AtmFurtherInfoForeignExchange"
 
 
+def QAtmClosestForeignExchange(
+    node: Node, params: QueryStateDict, result: Result
+) -> None:
+    result.qkey = "ClosestAtmForeignExchange"
+
+
 def _temp_atm_json_data_from_file() -> dict:
     """Read JSON data from file"""
     try:
@@ -196,6 +202,24 @@ def _closest_atm_deposit(loc: LatLonTuple) -> Optional[Dict]:
     return dist_sorted[0] if dist_sorted else None
 
 
+def _closest_atm_foreign_exchange(loc: LatLonTuple) -> Optional[Dict]:
+    """Find ATM closest to the given location that accepts foreign exchange."""
+    atms = _atms_with_distance(loc)
+    if not atms:
+        return None
+
+    filtered_atms = []
+    for atm in atms:
+        services = atm.get("services", {})
+        if services.get("foreign_exchange", {}).get("active", False) is True:
+            filtered_atms.append(atm)
+    atms = filtered_atms
+
+    # Sort by distance
+    dist_sorted = sorted(atms, key=lambda s: s["distance"])
+    return dist_sorted[0] if dist_sorted else None
+
+
 def _format_voice_street_number(s: str) -> str:
     """
     Format street name for voice output,
@@ -218,6 +242,18 @@ def _format_voice_street_number(s: str) -> str:
             return " ".join(word_list[:-1]) + " " + number
         return " ".join(word_list[:-1]) + " " + number_to_text(last_word, case="þf")
     return s
+
+
+def _get_foreign_exchange_string(atm: Dict) -> str:
+    """Return a string with foreign exchange info for the given ATM"""
+    if atm is None:
+        return ""
+    currency_abr = atm["services"]["foreign_exchange"]["currency"]
+    # Convert currency tags to strings through _FOREIGN_CURRENCY map
+    currencies = list()
+    for i in range(len(currency_abr)):
+        currencies.append(NounPhrase(_FOREIGN_CURRENCY[currency_abr[i]]).accusative)
+    return natlang_seq(currencies)
 
 
 _ERRMSG = "Ekki tókst að sækja upplýsingar um hraðbanka."
@@ -253,7 +289,10 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
         elif result.qkey == "ClosestAtmDeposit":
             atm = _closest_atm_deposit(location)
             ans_start = "Næsti hraðbanki sem tekur við innborgunum"
-        answer = ""
+        elif result.qkey == "ClosestAtmForeignExchange":
+            atm = _closest_atm_foreign_exchange(location)
+
+    answer = ""
 
     if atm is None or "distance" not in atm:
         return gen_answer(_ERRMSG)
@@ -276,6 +315,22 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
         )
         voice = voice_fmt.format(
             ans_start,
+            voice_street_name,
+            distance_desc(atm["distance"], case="þgf", num_to_str=True),
+        )
+    elif result.qkey == "ClosestAtmForeignExchange":
+        currencies_str = _get_foreign_exchange_string(atm)
+        answ_fmt = "Hægt er að kaupa {0} í hraðbankanum við {1} og hann er {2} frá þér."
+        voice_fmt = (
+            "Hægt er að kaupa {0} í hraðbankanum við {1} og hann er {2} frá þér."
+        )
+        answer = answ_fmt.format(
+            currencies_str,
+            street_name,
+            distance_desc(atm["distance"], case="þgf"),
+        )
+        voice = voice_fmt.format(
+            currencies_str,
             voice_street_name,
             distance_desc(atm["distance"], case="þgf", num_to_str=True),
         )
@@ -367,16 +422,7 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
     elif result.qkey == "AtmFurtherInfoForeignExchange":
         # Check if atm accepts foreign exchange
         if atm["services"]["foreign_exchange"]["active"] is True:
-            print("foreign exchange: ", atm["services"]["foreign_exchange"]["currency"])
-            currency_abr = atm["services"]["foreign_exchange"]["currency"]
-            # Convert currency tags to strings through _FOREIGN_CURRENCY map
-            currencies = list()
-            for i in range(len(currency_abr)):
-                currencies.append(
-                    NounPhrase(_FOREIGN_CURRENCY[currency_abr[i]]).accusative
-                )
-            currencies_str: str = natlang_seq(currencies)
-            print("currencies: ", currencies_str)
+            currencies_str = _get_foreign_exchange_string(atm)
             ans_start = "Hægt er að kaupa "
             answ_fmt = "{0}{1} í hraðbankanum við {2}."
             voice_fmt = "{0}{1} í hraðbankanum við {2}."
@@ -425,7 +471,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 q.set_qtype(result.qtype)
                 q.set_key(result.qkey)
                 q.set_answer(*answ)
-                q.set_source("Íslandsbanki")
                 # Pass the result into a query context having
                 # the 'result' property
                 if "last_atm" in result:
