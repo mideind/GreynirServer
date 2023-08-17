@@ -34,8 +34,8 @@ QAtmFurtherInfo →
     QAtmFurtherInfoDeposit
     | QAtmFurtherInfoWithdrawalLimit
     | QAtmFurtherInfoOpeningHours
+    | QAtmFurtherInfoForeignExchange
 #    | QAtmFurtherInfoIsItOpen
-#    | QAtmFurtherInfoForeignExchange
 
 QAtmFurtherInfoDeposit →
     "er" "hægt" "að" "leggja" "inn" QAtmMoney "þar"
@@ -54,11 +54,27 @@ QAtmFurtherInfoOpeningHours →
     | "er" "hann" "opinn" "allan" "daginn"
     | "hvað" "er" "hann" "opinn" "lengi"
 
+# -> er hægt að skipta á erlendum? gjaldmiðlum þar?
+# get ég keypt erlendan? gjaldeyri þar?
+# er hægt að fá erlendan? gjaldeyri þar?
+# get ég keypt erlenda gjaldmiðla þar?
+# get ég nálgast erlendan? gjaldeyri þar?
+QAtmFurtherInfoForeignExchange →
+    QAtmGetEg QAtmKeyptFengidNalgast QAtmGjaldeyrir "þar"
+    | "er" "hægt" "að" QAtmKaupaFa QAtmGjaldeyrir "þar"
+
+QAtmGetEg →
+    "get" "ég"
+
 QAtmHvarEr →
     "hvar" "er" 
 
 QAtmHvarGetEg → 
     "hvar" "get" "ég"
+
+QAtmKaupaFa →
+    "kaupa"
+    | "fá"
 
 QAtmHradbankiIslandsbanka →
     "hraðbanki" "íslandsbanka"?
@@ -70,6 +86,16 @@ QAtmMoney →
     "pening"
     | "reiðufé"
     | "seðla"
+
+QAtmKeyptFengidNalgast →
+    "keypt"
+    | "fengið"
+    | "nálgast"
+
+QAtmGjaldeyrir →
+    "erlenda"? "gjaldmiðla"
+    | "erlendan"? "gjaldmiðil"
+    | "erlendan"? "gjaldeyri"
 
 
 # Hvar get ég lagt inn pening?
@@ -83,3 +109,6 @@ QAtmMoney →
 # Hvar er næsti hraðbanki
 # -> er hann opinn?
 # -> er hægt að skipta á erlendum gjaldmiðlum þar?
+
+# myntsöluvélar
+# hvað með ef tveir hraðbankar á sama stað með mismunandi þjónustu?

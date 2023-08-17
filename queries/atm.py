@@ -23,7 +23,7 @@
 
 """
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Dict, List, Mapping, Optional, cast
 
 import os
 import logging
@@ -38,13 +38,24 @@ from queries.util import (
     gen_answer,
     distance_desc,
     krona_desc,
+    natlang_seq,
+    read_grammar_file,
     AnswerTuple,
     LatLonTuple,
-    read_grammar_file,
 )
 from speech.trans.num import number_to_text
 
 _ATM_QTYPE = "Atm"
+
+_FOREIGN_CURRENCY: Mapping[str, str] = {
+    "USD": "Bandaríkjadalir",
+    "GBP": "sterlingspund",
+    "EUR": "evrur",
+    "DKK": "danskar krónur",
+    "SEK": "sænskar krónur",
+    "PLN": "pólsk slot",
+    "ISK": "íslenskar krónur",
+}
 
 
 def help_text(lemma: str) -> str:
@@ -104,6 +115,12 @@ def QAtmFurtherInfoOpeningHours(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
     result.qkey = "AtmFurtherInfoOpeningHours"
+
+
+def QAtmFurtherInfoForeignExchange(
+    node: Node, params: QueryStateDict, result: Result
+) -> None:
+    result.qkey = "AtmFurtherInfoForeignExchange"
 
 
 def _temp_atm_json_data_from_file() -> dict:
@@ -347,10 +364,45 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
             )
         else:
             return gen_answer("Ekki tókst að sækja opnunartíma fyrir hraðbankann.")
+    elif result.qkey == "AtmFurtherInfoForeignExchange":
+        # Check if atm accepts foreign exchange
+        if atm["services"]["foreign_exchange"]["active"] is True:
+            print("foreign exchange: ", atm["services"]["foreign_exchange"]["currency"])
+            currency_abr = atm["services"]["foreign_exchange"]["currency"]
+            # Convert currency tags to strings through _FOREIGN_CURRENCY map
+            currencies = list()
+            for i in range(len(currency_abr)):
+                currencies.append(
+                    NounPhrase(_FOREIGN_CURRENCY[currency_abr[i]]).accusative
+                )
+            currencies_str: str = natlang_seq(currencies)
+            print("currencies: ", currencies_str)
+            ans_start = "Hægt er að kaupa "
+            answ_fmt = "{0}{1} í hraðbankanum við {2}."
+            voice_fmt = "{0}{1} í hraðbankanum við {2}."
+            answer = answ_fmt.format(
+                ans_start,
+                currencies_str,
+                street_name,
+            )
+            voice = voice_fmt.format(
+                ans_start,
+                currencies_str,
+                voice_street_name,
+            )
+            # Hægt er að kaupa evrur, bandaríkjadali og breskt pund í hraðbankanum við ....
 
-        # Hraðbankinn við ... er opinn alla virka daga frá 10-16
-        # Hraðbankinn við ... fylgir opnunartíma Eiðistorgs
-        # Hraðbankinn við ... er alltaf opinn
+        else:
+            ans_fmt = "Ekki er hægt að kaupa erlendan gjaldeyri í hraðbankanum við {0}."
+            voice_fmt = (
+                "Ekki er hægt að kaupa erlendan gjaldeyri í hraðbankanum við {0}."
+            )
+            answer = ans_fmt.format(
+                street_name,
+            )
+            voice = voice_fmt.format(
+                voice_street_name,
+            )
 
     response = dict(answer=answer)
 
