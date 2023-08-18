@@ -38,14 +38,15 @@ QAtmClosestCoinmachine →
     QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "með" "myntsöluvél"
     | QAtmHvarGetEg "fundið" "næstu"? "myntsöluvél"
     | QAtmHvarGetEg QAtmKeyptFengidNalgast "myntrúllur"
-    | QAtmHvarEr "hægt" "að" "fá" "myntrúllur"
-    | QAtmHvarEr "hægt" "að" "skipta" "seðlum"
+    | QAtmHvarEr "hægt" "að" QAtmKaupaFaNalgastTakaUt "myntrúllur"
+    | QAtmHvarEr "hægt" "að" "skipta" "á"? "seðlum"
 
 QAtmFurtherInfo →
     QAtmFurtherInfoDeposit
     | QAtmFurtherInfoWithdrawalLimit
     | QAtmFurtherInfoOpeningHours
     | QAtmFurtherInfoForeignExchange
+    | QAtmFurtherInfoCoinmachine
 #    | QAtmFurtherInfoIsItOpen
 
 QAtmFurtherInfoDeposit →
@@ -75,6 +76,12 @@ QAtmFurtherInfoOpeningHours →
 QAtmFurtherInfoForeignExchange →
     QAtmGetEg QAtmKeyptFengidNalgast QAtmGjaldeyrir "þar"
     | "er" "hægt" "að" QAtmKaupaFaNalgastTakaUt QAtmGjaldeyrir "þar"
+
+QAtmFurtherInfoCoinmachine →
+    "er" "myntsöluvél" "þar"
+    | "er" "hann" "með" "myntsöluvél"
+    | "er" "hægt" "að" QAtmKaupaFaNalgastTakaUt "myntrúllur" "þar"
+    | "er" "hægt" "að" "skipta" "á"? "seðlum" "þar"
 
 QAtmGetEg →
     "get" "ég"

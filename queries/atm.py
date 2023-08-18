@@ -133,6 +133,12 @@ def QAtmFurtherInfoForeignExchange(
     result.qkey = "AtmFurtherInfoForeignExchange"
 
 
+def QAtmFurtherInfoCoinmachine(
+    node: Node, params: QueryStateDict, result: Result
+) -> None:
+    result.qkey = "AtmFurtherInfoCoinmachine"
+
+
 def _temp_atm_json_data_from_file() -> List[Dict[str, Any]]:
     """Read JSON data from file"""
     try:
@@ -495,6 +501,24 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
             answ_fmt: str = (
                 "Ekki er hægt að kaupa erlendan gjaldeyri í hraðbankanum við {0}."
             )
+            answer: str = answ_fmt.format(
+                street_name,
+            )
+            voice: str = answ_fmt.format(
+                voice_street_name,
+            )
+    elif result.qkey == "AtmFurtherInfoCoinmachine":
+        # Check if atm has a coinmachine
+        if atm_list[0]["services"]["coinmachine"] is True:
+            answ_fmt: str = "Hraðbankinn við {0} er með myntsöluvél."
+            answer: str = answ_fmt.format(
+                street_name,
+            )
+            voice: str = answ_fmt.format(
+                voice_street_name,
+            )
+        else:
+            answ_fmt: str = "Hraðbankinn við {0} er ekki með myntsöluvél."
             answer: str = answ_fmt.format(
                 street_name,
             )
