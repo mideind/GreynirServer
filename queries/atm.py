@@ -280,7 +280,10 @@ def _format_voice_street_number(s: str) -> str:
         # check if last word contains "–"
         # TODO: Notice this is not a regular hyphen, check if this is a problem. Regular hyphen does not work with the data
         if "–" in last_word:
-            split_nr = last_word.split("–")
+            # replace irregular hyphen with regular hyphen
+            last_word.replace("–", "-")
+        if "-" in last_word:
+            split_nr = last_word.split("-")
             first_number = number_to_text(split_nr[0], case="þf")
             last_number = number_to_text(split_nr[-1], case="þf")
             number = first_number + " til " + last_number
@@ -461,14 +464,20 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
             answ_fmt = "{0}{1} er {2}."
             opening_hours = opening_hours.replace("opið", "opinn")
             index = opening_hours.find("daga") + 4
+            # Find opening hours from the string
+            times = opening_hours[index:].replace(" ", "")
+            open_time = times[times.find("-") + 1 :]
+            close_time = times[: times.find("-")]
+
             if index != -1:
                 opening_hours = (
                     opening_hours[:index] + " frá klukkan" + opening_hours[index:]
                 )
+            # Replace opening hour numbers with text equivalent
             opening_hours_list = opening_hours.split()
-            opening_hours_list[-1] = number_to_text(opening_hours_list[-1], case="þf")
+            opening_hours_list[-1] = number_to_text(open_time, case="þf")
             opening_hours_list[-2] = "til"
-            opening_hours_list[-3] = number_to_text(opening_hours_list[-3], case="þf")
+            opening_hours_list[-3] = number_to_text(close_time, case="þf")
             voice_opening_hours = " ".join(opening_hours_list)
             answer = answ_fmt.format(
                 ans_start,
