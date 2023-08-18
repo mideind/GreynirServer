@@ -23,7 +23,7 @@
 
 """
 
-from typing import Dict, List, Mapping, Optional, cast
+from typing import Any, Dict, List, Mapping, Optional, cast
 
 import os
 import logging
@@ -129,7 +129,7 @@ def QAtmClosestForeignExchange(
     result.qkey = "ClosestAtmForeignExchange"
 
 
-def _temp_atm_json_data_from_file() -> dict:
+def _temp_atm_json_data_from_file() -> List[Dict[str, Any]]:
     """Read JSON data from file"""
     try:
         script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
@@ -139,25 +139,25 @@ def _temp_atm_json_data_from_file() -> dict:
             return json.load(f)
     except Exception as e:
         logging.error("Error reading temp_atm.json: %s", e)
-        return None
+        return []
 
 
 # TODO: Add caching
-def _get_atm_data() -> Optional[List]:
+def _get_atm_data() -> Optional[List[Dict[str, Any]]]:
     """Fetch list of atms w. prices from islandsbanki.is"""
     # TODO: Change from file to fetching from islandsbanki.is if they allow it
-    atm_data = _temp_atm_json_data_from_file()
+    atm_data: List[Dict[str, Any]] = _temp_atm_json_data_from_file()
 
     return atm_data
 
 
-def _atms_with_distance(loc: Optional[LatLonTuple]) -> Optional[List]:
+def _atms_with_distance(loc: Optional[LatLonTuple]) -> Optional[List[Dict[str, Any]]]:
     """Return list of atms w. added distance data."""
-    atm_data = _get_atm_data()
+    atm_data: Optional[List[Dict[str, Any]]] = _get_atm_data()
     if not atm_data:
         return None
 
-    filtered_atm_data = []
+    filtered_atm_data: List[Dict[str, Any]] = []
     for s in atm_data:
         """Filter out all non ATMs from the dictionary"""
         item_type: str = s.get("type", "")
@@ -173,24 +173,44 @@ def _atms_with_distance(loc: Optional[LatLonTuple]) -> Optional[List]:
     return atm_data
 
 
-def _closest_atm(loc: LatLonTuple) -> Optional[Dict]:
+def _group_closest_based_on_address(
+    atm_data: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    """
+    Group closest ATMs based on address,
+    returns all atms with the same address or
+    an empty list if no atms are found.
+    """
+    if len(atm_data) == 0:
+        return []
+    atms: List[Dict[str, Any]] = []
+    atms.append(atm_data[0])
+    for idx, atm in enumerate(atm_data[:-1]):
+        if atm["address"]["street"] == atm_data[idx + 1]["address"]["street"]:
+            atms.append(atm_data[idx + 1])
+        else:
+            break
+    return atms
+
+
+def _closest_atm(loc: LatLonTuple) -> List[Dict[str, Any]]:
     """Find ATM closest to the given location."""
-    atms = _atms_with_distance(loc)
+    atms: Optional[List[Dict[str, Any]]] = _atms_with_distance(loc)
     if not atms:
-        return None
+        return []
 
     # Sort by distance
     dist_sorted = sorted(atms, key=lambda s: s["distance"])
-    return dist_sorted[0] if dist_sorted else None
+    return _group_closest_based_on_address(dist_sorted)
 
 
-def _closest_atm_deposit(loc: LatLonTuple) -> Optional[Dict]:
+def _closest_atm_deposit(loc: LatLonTuple) -> List[Dict[str, Any]]:
     """Find ATM closest to the given location that accepts deposits."""
-    atms = _atms_with_distance(loc)
+    atms: Optional[List[Dict[str, Any]]] = _atms_with_distance(loc)
     if not atms:
-        return None
+        return []
 
-    filtered_atms = []
+    filtered_atms: List[Dict[str, Any]] = []
     for atm in atms:
         services = atm.get("services", {})
         if services.get("deposit", False) is True:
@@ -199,16 +219,16 @@ def _closest_atm_deposit(loc: LatLonTuple) -> Optional[Dict]:
 
     # Sort by distance
     dist_sorted = sorted(atms, key=lambda s: s["distance"])
-    return dist_sorted[0] if dist_sorted else None
+    return _group_closest_based_on_address(dist_sorted)
 
 
-def _closest_atm_foreign_exchange(loc: LatLonTuple) -> Optional[Dict]:
+def _closest_atm_foreign_exchange(loc: LatLonTuple) -> List[Dict[str, Any]]:
     """Find ATM closest to the given location that accepts foreign exchange."""
-    atms = _atms_with_distance(loc)
+    atms: Optional[List[Dict[str, Any]]] = _atms_with_distance(loc)
     if not atms:
-        return None
+        return []
 
-    filtered_atms = []
+    filtered_atms: List[Dict[str, Any]] = []
     for atm in atms:
         services = atm.get("services", {})
         if services.get("foreign_exchange", {}).get("active", False) is True:
@@ -217,7 +237,7 @@ def _closest_atm_foreign_exchange(loc: LatLonTuple) -> Optional[Dict]:
 
     # Sort by distance
     dist_sorted = sorted(atms, key=lambda s: s["distance"])
-    return dist_sorted[0] if dist_sorted else None
+    return _group_closest_based_on_address(dist_sorted)
 
 
 def _format_voice_street_number(s: str) -> str:
@@ -226,8 +246,6 @@ def _format_voice_street_number(s: str) -> str:
     also if it contains a range of numbers
     for example: Fiskislóð 7-9 becomes Fiskislóð sjö til níu
     """
-    if s is None:
-        return ""
     # Formatting numbers
     word_list = s.split()
     last_word = word_list[-1]
@@ -244,15 +262,23 @@ def _format_voice_street_number(s: str) -> str:
     return s
 
 
-def _get_foreign_exchange_string(atm: Dict) -> str:
+def _get_foreign_exchange_string(atm_list: List[Dict[str, Any]]) -> str:
     """Return a string with foreign exchange info for the given ATM"""
-    if atm is None:
-        return ""
+    atm: Dict[str, Any] = {}
+    if len(atm_list) == 1:
+        atm = atm_list[0]
+    else:
+        for a in atm_list:
+            if a["services"]["foreign_exchange"]["active"]:
+                atm = a
+                break
     currency_abr = atm["services"]["foreign_exchange"]["currency"]
     # Convert currency tags to strings through _FOREIGN_CURRENCY map
-    currencies = list()
+    currencies: List[str] = list()
     for i in range(len(currency_abr)):
-        currencies.append(NounPhrase(_FOREIGN_CURRENCY[currency_abr[i]]).accusative)
+        currency = NounPhrase(_FOREIGN_CURRENCY[currency_abr[i]]).accusative
+        if currency is not None:
+            currencies.append(currency)
     return natlang_seq(currencies)
 
 
@@ -262,140 +288,136 @@ _ERRMSG = "Ekki tókst að sækja upplýsingar um hraðbanka."
 def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
     """Return an answer tuple for the given ATM query"""
     ans_start = ""
-    atm = None
-    if "context_reference" in result:
+    atm_list: List[Dict[str, Any]] = []
+    if "context_reference" in result and result.last_atm is not None:
         # There is a reference to a previous result
-        atm = result.last_atm
+        # TODO: Handle multiple ATMs in same location, but with different services
+        atm_list = result.last_atm
+        atm_word = "hraðbankanum"  # if len(atm_list) == 1 else "hraðbönkunum"
         if result.qkey == "AtmFurtherInfoDeposit":
-            if atm["services"]["deposit"] is True:
+            # if any(atm["services"]["deposit"] is True for atm in atm_list):
+            if atm_list[0]["services"]["deposit"] is True:
                 ans_start = (
-                    "Já, hægt er að leggja inn á reikninginn þinn í hraðbankanum við "
+                    f"Já, hægt er að leggja inn á reikninginn þinn í {atm_word} við "
                 )
             else:
-                ans_start = "Nei, ekki er hægt að leggja inn á reikninginn þinn í hraðbankanum við "
+                ans_start = f"Nei, ekki er hægt að leggja inn á reikninginn þinn í {atm_word} við "
         elif result.qkey == "AtmFurtherInfoWithdrawalLimit":
-            ans_start = "Hámarksúttekt í hraðbankanum við "
+            ans_start = "Hámarksúttekt í {atm_word} við "
 
     elif "error_context_reference" in result:
-        return gen_answer("Ég veit ekki til hvers þú vísar.")
+        return gen_answer("Ég veit ekki til hvaða hraðbanka þú vísar.")
     else:
         location = q.location
         if location is None:
             return gen_answer("Ég veit ekki hvar þú ert.")
 
         if result.qkey == "ClosestAtm":
-            atm = _closest_atm(location)
+            atm_list = _closest_atm(location)
             ans_start = "Næsti hraðbanki"
         elif result.qkey == "ClosestAtmDeposit":
-            atm = _closest_atm_deposit(location)
+            atm_list = _closest_atm_deposit(location)
             ans_start = "Næsti hraðbanki sem tekur við innborgunum"
         elif result.qkey == "ClosestAtmForeignExchange":
-            atm = _closest_atm_foreign_exchange(location)
+            atm_list = _closest_atm_foreign_exchange(location)
 
     answer = ""
+    voice = ""
 
-    if atm is None or "distance" not in atm:
+    if not atm_list or "distance" not in atm_list[0]:
         return gen_answer(_ERRMSG)
-    assert atm is not None
+    assert atm_list is not None
 
     # store the last atm in result to store for next request
-    result.last_atm = atm
+    result.last_atm = atm_list
+
     # TODO: Þarf að skipta upp td Norðurturni Smáralindar áður en meðhöndlað af NounPhrase?
     # TODO: "við" er ekki rétt í öllum tilfellum, td ætti að vera "í Norðurturni Smáralindar"
-    street_name = NounPhrase(atm["address"]["street"]).accusative
+    street_name: str = NounPhrase(atm_list[0]["address"]["street"]).accusative or ""
     voice_street_name = _format_voice_street_number(street_name)
 
     if result.qkey == "ClosestAtm" or result.qkey == "ClosestAtmDeposit":
         answ_fmt = "{0} er við {1} og er {2} frá þér."
-        voice_fmt = "{0} er við {1} og er {2} frá þér."
         answer = answ_fmt.format(
             ans_start,
             street_name,
-            distance_desc(atm["distance"], case="þgf"),
+            distance_desc(atm_list[0]["distance"], case="þgf"),
         )
-        voice = voice_fmt.format(
+        voice = answ_fmt.format(
             ans_start,
             voice_street_name,
-            distance_desc(atm["distance"], case="þgf", num_to_str=True),
+            distance_desc(atm_list[0]["distance"], case="þgf", num_to_str=True),
         )
     elif result.qkey == "ClosestAtmForeignExchange":
-        currencies_str = _get_foreign_exchange_string(atm)
+        currencies_str = _get_foreign_exchange_string(atm_list)
         answ_fmt = "Hægt er að kaupa {0} í hraðbankanum við {1} og hann er {2} frá þér."
-        voice_fmt = (
-            "Hægt er að kaupa {0} í hraðbankanum við {1} og hann er {2} frá þér."
-        )
         answer = answ_fmt.format(
             currencies_str,
             street_name,
-            distance_desc(atm["distance"], case="þgf"),
+            distance_desc(atm_list[0]["distance"], case="þgf"),
         )
-        voice = voice_fmt.format(
+        voice = answ_fmt.format(
             currencies_str,
             voice_street_name,
-            distance_desc(atm["distance"], case="þgf", num_to_str=True),
+            distance_desc(atm_list[0]["distance"], case="þgf", num_to_str=True),
         )
     elif result.qkey == "AtmFurtherInfoDeposit":
         answ_fmt = "{0}{1}."
-        voice_fmt = "{0}{1}."
         answer = answ_fmt.format(
             ans_start,
             street_name,
         )
-        voice = voice_fmt.format(
+        voice = answ_fmt.format(
             ans_start,
             voice_street_name,
         )
     elif result.qkey == "AtmFurtherInfoWithdrawalLimit":
-        withdrawal_limit = atm["services"]["max_limit"]
+        withdrawal_limit = max(atm["services"]["max_limit"] for atm in atm_list)
         ans_withdrawal_limit = krona_desc(withdrawal_limit)
         temp_string = ans_withdrawal_limit.split()
         temp_string[0] = number_to_text(withdrawal_limit, case="nf")
         voice_withdawal_limit = " ".join(temp_string)
 
         answ_fmt = "{0}{1} er {2}."
-        voice_fmt = "{0}{1} er {2}."
         answer = answ_fmt.format(
             ans_start,
             street_name,
             ans_withdrawal_limit,
         )
 
-        voice = voice_fmt.format(
+        voice = answ_fmt.format(
             ans_start,
             voice_street_name,
             voice_withdawal_limit,
         )
     elif result.qkey == "AtmFurtherInfoOpeningHours":
         ans_start = "Hraðbankinn við "
-        opening_hours: str = atm.get("opening_hours_text").get("is", "")
+        opening_hours: str = atm_list[0]["opening_hours_text"].get("is", "")
         opening_hours = opening_hours[0].lower() + opening_hours[1:]
-        if atm["always_open"] is True:
+        if atm_list[0]["always_open"] is True:
             answ_fmt = "{0}{1} er alltaf opinn."
-            voice_fmt = "{0}{1} er alltaf opinn."
             answer = answ_fmt.format(
                 ans_start,
                 street_name,
             )
-            voice = voice_fmt.format(
+            voice = answ_fmt.format(
                 ans_start,
                 voice_street_name,
             )
         elif len(opening_hours) is not 0 and opening_hours.startswith("opnunartím"):
             answ_fmt = "{0}{1} fylgir {2}."
-            voice_fmt = "{0}{1} fylgir {2}."
             answer = answ_fmt.format(
                 ans_start,
                 street_name,
                 NounPhrase(opening_hours).dative,
             )
-            voice = voice_fmt.format(
+            voice = answ_fmt.format(
                 ans_start,
                 voice_street_name,
                 NounPhrase(opening_hours).dative,
             )
         elif len(opening_hours) is not 0 and opening_hours.startswith("opið"):
             answ_fmt = "{0}{1} er {2}."
-            voice_fmt = "{0}{1} er {2}."
             opening_hours = opening_hours.replace("opið", "opinn")
             index = opening_hours.find("daga") + 4
             if index != -1:
@@ -412,7 +434,7 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
                 street_name,
                 opening_hours,
             )
-            voice = voice_fmt.format(
+            voice = answ_fmt.format(
                 ans_start,
                 voice_street_name,
                 voice_opening_hours,
@@ -421,32 +443,28 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
             return gen_answer("Ekki tókst að sækja opnunartíma fyrir hraðbankann.")
     elif result.qkey == "AtmFurtherInfoForeignExchange":
         # Check if atm accepts foreign exchange
-        if atm["services"]["foreign_exchange"]["active"] is True:
-            currencies_str = _get_foreign_exchange_string(atm)
+        if atm_list[0]["services"]["foreign_exchange"]["active"] is True:
+            currencies_str: str = _get_foreign_exchange_string(atm_list)
             ans_start = "Hægt er að kaupa "
-            answ_fmt = "{0}{1} í hraðbankanum við {2}."
-            voice_fmt = "{0}{1} í hraðbankanum við {2}."
-            answer = answ_fmt.format(
+            answ_fmt: str = "{0}{1} í hraðbankanum við {2}."
+            answer: str = answ_fmt.format(
                 ans_start,
                 currencies_str,
                 street_name,
             )
-            voice = voice_fmt.format(
+            voice: str = answ_fmt.format(
                 ans_start,
                 currencies_str,
                 voice_street_name,
             )
-            # Hægt er að kaupa evrur, bandaríkjadali og breskt pund í hraðbankanum við ....
-
         else:
-            ans_fmt = "Ekki er hægt að kaupa erlendan gjaldeyri í hraðbankanum við {0}."
-            voice_fmt = (
+            answ_fmt: str = (
                 "Ekki er hægt að kaupa erlendan gjaldeyri í hraðbankanum við {0}."
             )
-            answer = ans_fmt.format(
+            answer: str = answ_fmt.format(
                 street_name,
             )
-            voice = voice_fmt.format(
+            voice: str = answ_fmt.format(
                 voice_street_name,
             )
 

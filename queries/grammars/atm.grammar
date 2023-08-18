@@ -1,6 +1,5 @@
 # Grammar for the ATM query module
 
-# TODO: Bæta grammar
 Query →
     QAtm
 
@@ -9,14 +8,6 @@ QAtm → QAtmQuery '?'?
 QAtmQuery →
     QAtmClosest | QAtmClosestDeposit | QAtmClosestForeignExchange | QAtmFurtherInfo
 
-# Hvar get ég tekið út pening? x 
-# Hvar get ég fundið hraðbanka? x
-# Hvar finn ég hraðbanka? x 
-# Hvar er næsti hraðbanki íslandsbanka? x 
-# Hvaða hraðbanki er í nágrenninu x 
-# Hvar er hraðbanki nálægt mér? x 
-# Hvar er næsti hraðbanki?
-# Hvar finn ég næsta hraðbanka?
 QAtmClosest →
     QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka
     | "næsti" QAtmHradbankiIslandsbanka
@@ -27,22 +18,15 @@ QAtmClosest →
     | QAtmHvarGetEg "tekið" "út" QAtmMoney
     | QAtmHvarGetEg "fundið" "næsta"? QAtmHradbankaIslandsbanka
 
-# Hvar get ég lagt inn pening?
 QAtmClosestDeposit →
     QAtmHvarGetEg "lagt" "inn" QAtmMoney
     | QAtmHvarGetEg "lagt" "inn" "á" "reikning"
 
-# Hvar er næsti hraðbanki sem leyfir kaup á gjaldeyri
-# Hvar er hraðbanki þar sem ég get keypt gjaldeyri
-# Hvar er næsti hraðbanki sem selur gjaldeyri
-# Hraðbanki þar sem hægt er að nálgast gjaldeyri
-# Hraðbanki með erlendum gjaldeyri
-
 QAtmClosestForeignExchange →
     QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "sem" "leyfir" "kaup" "á" QAtmGjaldeyrir
-    | QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "þar" "sem" "ég" "get" "keypt" QAtmGjaldeyrir
+    | QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "þar" "sem" "ég" "get" QAtmKeyptFengidNalgast QAtmGjaldeyrir
     | QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "sem" "selur" QAtmGjaldeyrir
-    | "næsti"? QAtmHradbankiIslandsbanka "þar" "sem" "hægt" "er" "að" "nálgast" QAtmGjaldeyrir
+    | "næsti"? QAtmHradbankiIslandsbanka "þar" "sem" "hægt" "er" "að" QAtmKaupaFaNalgastTakaUt QAtmGjaldeyrir
     | "næsti"? QAtmHradbankiIslandsbanka "með" QAtmGjaldeyrir
 
 QAtmFurtherInfo →
@@ -54,7 +38,8 @@ QAtmFurtherInfo →
 
 QAtmFurtherInfoDeposit →
     "er" "hægt" "að" "leggja" "inn" QAtmMoney "þar"
-    | "get" "ég" "lagt" "inn" QAtmMoney "þar"
+    | QAtmGetEg "lagt" "inn" QAtmMoney "þar"
+    | QAtmGetEg "lagt" "inn" "á" "reikning" "þar"
     | "tekur" "hann" "við" "seðlum"
 
 QAtmFurtherInfoWithdrawalLimit →
@@ -65,9 +50,6 @@ QAtmFurtherInfoWithdrawalLimit →
     | "hvað" QAtmGetEg "tekið" "mikið" "út" "þar"
     | "hvað" QAtmGetEg "tekið" "út" "mikið" "af" QAtmMoneyPlural "þar"
 
-# -> hverjir eru opnunartímarnir þar?
-# -> er hann opinn allan daginn?
-# hvað er hann opinn lengi?
 QAtmFurtherInfoOpeningHours →
     "hverjir" "eru" "opnunartímarnir" "þar"
     | "hvernig" "eru" "opnunartímarnir" "þar"
@@ -78,15 +60,9 @@ QAtmFurtherInfoOpeningHours →
     | "er" "hann" "opinn"
     | "er" "sá" QAtmHradbankiIslandsbanka "opinn"
 
-
-# -> er hægt að skipta á erlendum? gjaldmiðlum þar?
-# get ég keypt erlendan? gjaldeyri þar?
-# er hægt að fá erlendan? gjaldeyri þar?
-# get ég keypt erlenda gjaldmiðla þar?
-# get ég nálgast erlendan? gjaldeyri þar?
 QAtmFurtherInfoForeignExchange →
     QAtmGetEg QAtmKeyptFengidNalgast QAtmGjaldeyrir "þar"
-    | "er" "hægt" "að" QAtmKaupaFa QAtmGjaldeyrir "þar"
+    | "er" "hægt" "að" QAtmKaupaFaNalgastTakaUt QAtmGjaldeyrir "þar"
 
 QAtmGetEg →
     "get" "ég"
@@ -96,10 +72,6 @@ QAtmHvarEr →
 
 QAtmHvarGetEg → 
     "hvar" "get" "ég"
-
-QAtmKaupaFa →
-    "kaupa"
-    | "fá"
 
 QAtmHradbankiIslandsbanka →
     "hraðbanki" "íslandsbanka"?
@@ -124,6 +96,12 @@ QAtmKeyptFengidNalgast →
     | "nálgast"
     | "tekið" "út"
 
+QAtmKaupaFaNalgastTakaUt →
+    "kaupa"
+    | "fá"
+    | "nálgast"
+    | "taka" "út"
+
 QAtmGjaldeyrir →
     "erlenda"? "gjaldmiðla"
     | "erlendan"? "gjaldmiðil"
@@ -135,11 +113,11 @@ QAtmGjaldeyrir →
 # Hvar er næsti hraðbanki þar sem ég get keypt erlendan gjaldeyri?
 # Hvar get ég keypt erlendan gjaldeyri?
 # Hvar er hraðbanki þar sem ég get ...
-# Hvar er hraðbanki sem er opinn?
 
 # Additional stuff:
 # myntsöluvélar
 # hvað með ef tveir hraðbankar á sama stað með mismunandi þjónustu?
+# Hvar er hraðbanki sem er opinn?
 
 # "dialogue" options
 # -> er hann opinn?
