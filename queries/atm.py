@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Mapping, Optional, cast
 import os
 import logging
 import random
-import json  # TODO: remove after we fetch json data online
+import json
 
 from geo import distance
 from tree import Result, Node
@@ -47,8 +47,10 @@ from speech.trans.num import number_to_text
 
 _ATM_QTYPE = "Atm"
 
+_PATH_TO_ISB_JSON = "../resources/geo/isb_locations.json"
+
 _FOREIGN_CURRENCY: Mapping[str, str] = {
-    "USD": "Bandaríkjadalir",
+    "USD": "bandaríkjadalir",
     "GBP": "sterlingspund",
     "EUR": "evrur",
     "DKK": "danskar krónur",
@@ -139,25 +141,22 @@ def QAtmFurtherInfoCoinmachine(
     result.qkey = "AtmFurtherInfoCoinmachine"
 
 
-def _temp_atm_json_data_from_file() -> List[Dict[str, Any]]:
-    """Read JSON data from file"""
+def _read_isb_location_data_from_file() -> List[Dict[str, Any]]:
+    """Read isb locations JSON data from file"""
     try:
         script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
-        rel_path = "../resources/geo/atms.json"
+        rel_path = _PATH_TO_ISB_JSON
         abs_file_path = os.path.join(script_dir, rel_path)
         with open(abs_file_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
-        logging.error("Error reading temp_atm.json: %s", e)
+        logging.error("Error reading isb locations json data: %s", e)
         return []
 
 
-# TODO: Add caching
 def _get_atm_data() -> Optional[List[Dict[str, Any]]]:
-    """Fetch list of atms w. prices from islandsbanki.is"""
-    # TODO: Change from file to fetching from islandsbanki.is if they allow it
-    atm_data: List[Dict[str, Any]] = _temp_atm_json_data_from_file()
-
+    """Get ATM data"""
+    atm_data: List[Dict[str, Any]] = _read_isb_location_data_from_file()
     return atm_data
 
 
@@ -293,18 +292,20 @@ def _format_voice_street_number(s: str) -> str:
 def _get_foreign_exchange_string(atm_list: List[Dict[str, Any]]) -> str:
     """Return a string with foreign exchange info for the given ATM"""
     atm: Dict[str, Any] = {}
-    if len(atm_list) == 1:
-        atm = atm_list[0]
-    else:
-        for a in atm_list:
-            if a["services"]["foreign_exchange"]["active"]:
-                atm = a
-                break
+    # if len(atm_list) == 1:
+    atm = atm_list[0]
+    # else:
+    #    for a in atm_list:
+    #        if a["services"]["foreign_exchange"]["active"]:
+    #            atm = a
+    #            break
     currency_abr = atm["services"]["foreign_exchange"]["currency"]
     # Convert currency tags to strings through _FOREIGN_CURRENCY map
     currencies: List[str] = list()
     for i in range(len(currency_abr)):
-        currency = NounPhrase(_FOREIGN_CURRENCY[currency_abr[i]]).accusative
+        print("abr: ", currency_abr[i])
+        currency = NounPhrase(_FOREIGN_CURRENCY[currency_abr[i].strip()]).accusative
+        print("currency: ", currency)
         if currency is not None:
             currencies.append(currency)
     return natlang_seq(currencies)

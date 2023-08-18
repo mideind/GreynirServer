@@ -57,7 +57,11 @@ QAtmFurtherInfoDeposit →
 
 QAtmFurtherInfoWithdrawalLimit →
     "hver" "er" "hámarksúttektarheimildin" "þar"
+    | "hver" "er" "hámarksúttektarheimild" "inn" "þar"
+    | "hver" "er" "hámarksúttektarheimild" "in" "þar"
     | "hver" "er" "hámarks"? "úttektarheimildin" "þar"
+    | "hver" "er" "hámarks" "úttektarheimild" "inn"? "þar"
+    | "hver" "er" "hámarks" "úttektarheimild" "in"? "þar"
     | "hver" "er" "hámarksúttektin" "þar"
     | "hvað" QAtmGetEg "tekið" "út" "mikinn" "pening" "þar"
     | "hvað" QAtmGetEg "tekið" "mikið" "út" "þar"
