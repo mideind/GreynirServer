@@ -277,8 +277,6 @@ def _format_voice_street_number(s: str) -> str:
     word_list = s.split()
     last_word = word_list[-1]
     if last_word[-1].isnumeric():
-        # check if last word contains "–"
-        # TODO: Notice this is not a regular hyphen, check if this is a problem. Regular hyphen does not work with the data
         if "–" in last_word:
             # replace irregular hyphen with regular hyphen
             last_word.replace("–", "-")
