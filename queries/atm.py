@@ -88,6 +88,16 @@ def QAtmClosestDeposit(node: Node, params: QueryStateDict, result: Result) -> No
     result.qkey = "ClosestAtmDeposit"
 
 
+def QAtmClosestForeignExchange(
+    node: Node, params: QueryStateDict, result: Result
+) -> None:
+    result.qkey = "ClosestAtmForeignExchange"
+
+
+def QAtmClosestCoinmachine(node: Node, params: QueryStateDict, result: Result) -> None:
+    result.qkey = "ClosestAtmCoinmachine"
+
+
 def QAtmFurtherInfo(node: Node, params: QueryStateDict, result: Result) -> None:
     """Reference to previous ATM query"""
     q = result.state.get("query")
@@ -121,12 +131,6 @@ def QAtmFurtherInfoForeignExchange(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
     result.qkey = "AtmFurtherInfoForeignExchange"
-
-
-def QAtmClosestForeignExchange(
-    node: Node, params: QueryStateDict, result: Result
-) -> None:
-    result.qkey = "ClosestAtmForeignExchange"
 
 
 def _temp_atm_json_data_from_file() -> List[Dict[str, Any]]:
@@ -240,6 +244,24 @@ def _closest_atm_foreign_exchange(loc: LatLonTuple) -> List[Dict[str, Any]]:
     return _group_closest_based_on_address(dist_sorted)
 
 
+def _closest_atm_coinmachine(loc: LatLonTuple) -> List[Dict[str, Any]]:
+    """Find ATM closest to the given location that has a coinmachine."""
+    atms: Optional[List[Dict[str, Any]]] = _atms_with_distance(loc)
+    if not atms:
+        return []
+
+    filtered_atms: List[Dict[str, Any]] = []
+    for atm in atms:
+        services = atm.get("services", {})
+        if services.get("coinmachine", False) is True:
+            filtered_atms.append(atm)
+    atms = filtered_atms
+
+    # Sort by distance
+    dist_sorted = sorted(atms, key=lambda s: s["distance"])
+    return _group_closest_based_on_address(dist_sorted)
+
+
 def _format_voice_street_number(s: str) -> str:
     """
     Format street name for voice output,
@@ -320,6 +342,8 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
             ans_start = "Næsti hraðbanki sem tekur við innborgunum"
         elif result.qkey == "ClosestAtmForeignExchange":
             atm_list = _closest_atm_foreign_exchange(location)
+        elif result.qkey == "ClosestAtmCoinmachine":
+            atm_list = _closest_atm_coinmachine(location)
 
     answer = ""
     voice = ""
@@ -358,6 +382,16 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
         )
         voice = answ_fmt.format(
             currencies_str,
+            voice_street_name,
+            distance_desc(atm_list[0]["distance"], case="þgf", num_to_str=True),
+        )
+    elif result.qkey == "ClosestAtmCoinmachine":
+        answ_fmt = "Hraðbankinn við {0} er með myntsöluvél og er {1} frá þér."
+        answer = answ_fmt.format(
+            street_name,
+            distance_desc(atm_list[0]["distance"], case="þgf"),
+        )
+        voice = answ_fmt.format(
             voice_street_name,
             distance_desc(atm_list[0]["distance"], case="þgf", num_to_str=True),
         )
