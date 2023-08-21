@@ -435,7 +435,8 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
     elif result.qkey == "AtmFurtherInfoOpeningHours":
         ans_start = "Hraðbankinn við "
         opening_hours: str = atm_list[0]["opening_hours_text"].get("is", "")
-        opening_hours = opening_hours[0].lower() + opening_hours[1:]
+        if len(opening_hours) is not 0:
+            opening_hours = opening_hours[0].lower() + opening_hours[1:]
         if atm_list[0]["always_open"] is True:
             answ_fmt = "{0}{1} er alltaf opinn."
             answer = answ_fmt.format(
@@ -464,19 +465,22 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
             index = opening_hours.find("daga") + 4
             # Find opening hours from the string
             times = opening_hours[index:].replace(" ", "")
-            open_time = times[times.find("-") + 1 :]
-            close_time = times[: times.find("-")]
-
+            open_time = times[: times.find("-")]
+            close_time = times[times.find("-") + 1 :]
+            voice_opening_hours = ""
             if index != -1:
+                voice_opening_hours = opening_hours[:index] + " frá klukkan "
                 opening_hours = (
-                    opening_hours[:index] + " frá klukkan" + opening_hours[index:]
+                    opening_hours[:index]
+                    + " frá klukkan "
+                    + opening_hours[index:].replace(" ", "")
                 )
-            # Replace opening hour numbers with text equivalent
-            opening_hours_list = opening_hours.split()
-            opening_hours_list[-1] = number_to_text(open_time, case="þf")
-            opening_hours_list[-2] = "til"
-            opening_hours_list[-3] = number_to_text(close_time, case="þf")
-            voice_opening_hours = " ".join(opening_hours_list)
+            voice_opening_hours = (
+                voice_opening_hours
+                + number_to_text(open_time, case="þf")
+                + " til "
+                + number_to_text(close_time, case="þf")
+            )
             answer = answ_fmt.format(
                 ans_start,
                 street_name,
