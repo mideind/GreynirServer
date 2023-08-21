@@ -63,9 +63,10 @@ QAtmFurtherInfoWithdrawalLimit →
     | "hver" "er" "hámarks" "úttektarheimild" "inn"? "þar"
     | "hver" "er" "hámarks" "úttektarheimild" "in"? "þar"
     | "hver" "er" "hámarksúttektin" "þar"
-    | "hvað" QAtmGetEg "tekið" "út" "mikinn" "pening" "þar"
+    | "hvað" QAtmGetEg QAtmKeyptFengidNalgast "mikinn" "pening" "þar"
     | "hvað" QAtmGetEg "tekið" "mikið" "út" "þar"
-    | "hvað" QAtmGetEg "tekið" "út" "mikið" "af" QAtmMoneyPlural "þar"
+    | "hvað" QAtmGetEg QAtmKeyptFengidNalgast "mikið" "af" QAtmMoneyPlural "þar"
+    | "hvað" "er" "hægt" "að" QAtmKaupaFaNalgastTakaUt "mikinn" "pening" "þar"
 
 QAtmFurtherInfoOpeningHours →
     "hverjir" "eru" "opnunartímarnir" "þar"
