@@ -333,7 +333,7 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
             else:
                 ans_start = f"Nei, ekki er hægt að leggja inn á reikninginn þinn í {atm_word} við "
         elif result.qkey == "AtmFurtherInfoWithdrawalLimit":
-            ans_start = "Hámarksúttekt í {atm_word} við "
+            ans_start = f"Hámarksúttekt í {atm_word} við "
 
     elif "error_context_reference" in result:
         return gen_answer("Ég veit ekki til hvaða hraðbanka þú vísar.")
