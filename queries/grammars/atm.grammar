@@ -98,9 +98,10 @@ QAtmHvarGetEg →
 
 QAtmHradbankiIslandsbanka →
     "hraðbanki" "íslandsbanka"?
+    | "hraðbankinn" "íslandsbanka"?
 
 QAtmHradbankaIslandsbanka →
-    "hraðbanka" "íslandsbanka"
+    "hraðbanka" "íslandsbanka"?
 
 QAtmMoney →
     "pening"
