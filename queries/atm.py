@@ -363,7 +363,6 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
     # store the last atm in result to store for next request
     result.last_atm = atm_list
 
-    # TODO: Þarf að skipta upp td Norðurturni Smáralindar áður en meðhöndlað af NounPhrase?
     # TODO: "við" er ekki rétt í öllum tilfellum, td ætti að vera "í Norðurturni Smáralindar"
     street_name: str = NounPhrase(atm_list[0]["address"]["street"]).accusative or ""
     voice_street_name = _format_voice_street_number(street_name)
