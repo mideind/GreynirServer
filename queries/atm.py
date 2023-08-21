@@ -144,7 +144,7 @@ def QAtmFurtherInfoCoinmachine(
 def _read_isb_location_data_from_file() -> List[Dict[str, Any]]:
     """Read isb locations JSON data from file"""
     try:
-        script_dir = os.path.dirname(__file__)  # <-- absolute dir the script is in
+        script_dir = os.path.dirname(__file__)
         rel_path = _PATH_TO_ISB_JSON
         abs_file_path = os.path.join(script_dir, rel_path)
         with open(abs_file_path, "r", encoding="utf-8") as f:
