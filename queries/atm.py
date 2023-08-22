@@ -23,7 +23,7 @@
 
 """
 
-from typing import Any, Dict, List, Mapping, Optional, cast
+from typing import Any, Dict, List, Mapping, cast
 
 import cachetools
 import logging
@@ -46,9 +46,12 @@ from queries.util import (
 from speech.trans.num import number_to_text
 from utility import QUERIES_RESOURCES_DIR
 
+# TODO: Handle multiple ATMs in same location, but with different services
+# TODO: "við" er ekki rétt í öllum tilfellum, td ætti að vera "í Norðurturni Smáralindar"
+
 _ATM_QTYPE = "Atm"
 
-_PATH_TO_ISB_JSON = QUERIES_RESOURCES_DIR / "geo" / "isb_locations.json"
+_PATH_TO_ISB_JSON = QUERIES_RESOURCES_DIR / "isb_locations.json"
 
 _FOREIGN_CURRENCY: Mapping[str, str] = {
     "USD": "bandaríkjadalir",
@@ -179,18 +182,15 @@ def _get_atm_data() -> List[Dict[str, Any]]:
     return atm_data
 
 
-def _atms_with_distance(loc: Optional[LatLonTuple]) -> List[Dict[str, Any]]:
+def _atms_with_distance(loc: LatLonTuple) -> List[Dict[str, Any]]:
     """Return list of atms w. added distance data."""
-    atm_data: Optional[List[Dict[str, Any]]] = _get_atm_data()
-    if not atm_data:
-        return None
+    atm_data: List[Dict[str, Any]] = _get_atm_data()
 
-    if loc:
-        # Calculate distance of all atms
-        for s in atm_data:
-            s["distance"] = distance(
-                loc, (s["location"]["latitude"], s["location"]["longitude"])
-            )
+    # Calculate distance of all atms
+    for s in atm_data:
+        s["distance"] = distance(
+            loc, (s["location"]["latitude"], s["location"]["longitude"])
+        )
 
     return atm_data
 
@@ -206,6 +206,8 @@ def _group_closest_based_on_address(
     if len(atm_data) == 0:
         return []
     atms: List[Dict[str, Any]] = []
+    # Sort by distance
+    atm_data.sort(key=lambda s: s["distance"])
     atms.append(atm_data[0])
     for idx, atm in enumerate(atm_data[:-1]):
         if atm["address"]["street"] == atm_data[idx + 1]["address"]["street"]:
@@ -217,19 +219,16 @@ def _group_closest_based_on_address(
 
 def _closest_atm(loc: LatLonTuple) -> List[Dict[str, Any]]:
     """Find ATM closest to the given location."""
-    atms: Optional[List[Dict[str, Any]]] = _atms_with_distance(loc)
-    if not atms:
+    atms: List[Dict[str, Any]] = _atms_with_distance(loc)
+    if len(atms) == 0:
         return []
-
-    # Sort by distance
-    dist_sorted = sorted(atms, key=lambda s: s["distance"])
-    return _group_closest_based_on_address(dist_sorted)
+    return _group_closest_based_on_address(atms)
 
 
 def _closest_atm_deposit(loc: LatLonTuple) -> List[Dict[str, Any]]:
     """Find ATM closest to the given location that accepts deposits."""
-    atms: Optional[List[Dict[str, Any]]] = _atms_with_distance(loc)
-    if not atms:
+    atms: List[Dict[str, Any]] = _atms_with_distance(loc)
+    if len(atms) == 0:
         return []
 
     filtered_atms: List[Dict[str, Any]] = []
@@ -239,15 +238,13 @@ def _closest_atm_deposit(loc: LatLonTuple) -> List[Dict[str, Any]]:
             filtered_atms.append(atm)
     atms = filtered_atms
 
-    # Sort by distance
-    dist_sorted = sorted(atms, key=lambda s: s["distance"])
-    return _group_closest_based_on_address(dist_sorted)
+    return _group_closest_based_on_address(atms)
 
 
 def _closest_atm_foreign_exchange(loc: LatLonTuple) -> List[Dict[str, Any]]:
     """Find ATM closest to the given location that accepts foreign exchange."""
-    atms: Optional[List[Dict[str, Any]]] = _atms_with_distance(loc)
-    if not atms:
+    atms: List[Dict[str, Any]] = _atms_with_distance(loc)
+    if len(atms) == 0:
         return []
 
     filtered_atms: List[Dict[str, Any]] = []
@@ -264,8 +261,8 @@ def _closest_atm_foreign_exchange(loc: LatLonTuple) -> List[Dict[str, Any]]:
 
 def _closest_atm_coinmachine(loc: LatLonTuple) -> List[Dict[str, Any]]:
     """Find ATM closest to the given location that has a coinmachine."""
-    atms: Optional[List[Dict[str, Any]]] = _atms_with_distance(loc)
-    if not atms:
+    atms: List[Dict[str, Any]] = _atms_with_distance(loc)
+    if len(atms) == 0:
         return []
 
     filtered_atms: List[Dict[str, Any]] = []
@@ -317,9 +314,7 @@ def _get_foreign_exchange_string(atm_list: List[Dict[str, Any]]) -> str:
     # Convert currency tags to strings through _FOREIGN_CURRENCY map
     currencies: List[str] = list()
     for i in range(len(currency_abr)):
-        print("abr: ", currency_abr[i])
         currency = NounPhrase(_FOREIGN_CURRENCY[currency_abr[i].strip()]).accusative
-        print("currency: ", currency)
         if currency is not None:
             currencies.append(currency)
     return natlang_seq(currencies)
@@ -328,13 +323,12 @@ def _get_foreign_exchange_string(atm_list: List[Dict[str, Any]]) -> str:
 _ERRMSG = "Ekki tókst að sækja upplýsingar um hraðbanka."
 
 
-def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
+def _answ_for_atm_query(location: LatLonTuple, result: Result) -> AnswerTuple:
     """Return an answer tuple for the given ATM query"""
     ans_start = ""
     atm_list: List[Dict[str, Any]] = []
     if "context_reference" in result and result.last_atm is not None:
         # There is a reference to a previous result
-        # TODO: Handle multiple ATMs in same location, but with different services
         atm_list = result.last_atm
         atm_word = "hraðbankanum"  # if len(atm_list) == 1 else "hraðbönkunum"
         if result.qkey == "AtmFurtherInfoDeposit":
@@ -351,10 +345,6 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
     elif "error_context_reference" in result:
         return gen_answer("Ég veit ekki til hvaða hraðbanka þú vísar.")
     else:
-        location = q.location
-        if location is None:
-            return gen_answer("Ég veit ekki hvar þú ert.")
-
         if result.qkey == "ClosestAtm":
             atm_list = _closest_atm(location)
             ans_start = "Næsti hraðbanki"
@@ -376,7 +366,6 @@ def _answ_for_atm_query(q: Query, result: Result) -> AnswerTuple:
     # store the last atm in result to store for next request
     result.last_atm = atm_list
 
-    # TODO: "við" er ekki rétt í öllum tilfellum, td ætti að vera "í Norðurturni Smáralindar"
     street_name: str = NounPhrase(atm_list[0]["address"]["street"]).accusative or ""
     voice_street_name = _format_voice_street_number(street_name)
 
@@ -563,7 +552,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         try:
             loc = q.location
             if loc:
-                answ = _answ_for_atm_query(q, result)
+                answ = _answ_for_atm_query(loc, result)
             else:
                 # We need a location but don't have one
                 answ = gen_answer("Ég veit ekki hvar þú ert.")
