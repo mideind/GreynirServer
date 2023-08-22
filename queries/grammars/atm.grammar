@@ -25,6 +25,9 @@ QAtmClosest →
 QAtmClosestDeposit →
     QAtmHvarGetEg "lagt" "inn" QAtmMoney
     | QAtmHvarGetEg "lagt" "inn" "á" "reikning"
+    | QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "þar" "sem" "ég" "get" "lagt" "inn" QAtmMoney
+    | QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "þar" "sem" QAtmHaegtEr "að" "leggja" "inn" QAtmMoney
+    | "í" "hvaða" QAtmHradbankaIslandsbanka "er" "hægt" "að" "leggja" "inn" QAtmMoney
 
 QAtmClosestForeignExchange →
     QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "sem" "leyfir" "kaup" "á" QAtmGjaldeyrir
@@ -96,6 +99,11 @@ QAtmHvarEr →
 
 QAtmHvarGetEg → 
     "hvar" "get" "ég"
+
+QAtmHaegtEr →
+    "hægt" "er"
+    | "það" "er" "hægt"
+    | "möguleiki" "er" "á"
 
 QAtmHradbankiIslandsbanka →
     "hraðbanki" "íslandsbanka"?
