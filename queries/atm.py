@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Atm query response module
+    ATM query response module
 
     Copyright (C) 2023 Miðeind ehf.
 
@@ -65,12 +65,35 @@ _FOREIGN_CURRENCY: Mapping[str, str] = {
 
 _ATM_CACHE_TTL = 86400  # 1 day
 
+# Query keys for ATM queries
+_CLOSEST_ATM = "ClosestAtm"
+_CLOSEST_ATM_DEPOSIT = "ClosestAtmDeposit"
+_CLOSEST_ATM_FOREIGN_EXCHANGE = "ClosestAtmForeignExchange"
+_CLOSEST_ATM_COINMACHINE = "ClosestAtmCoinmachine"
+_ATM_FURTHER_INFO_DEPOSIT = "AtmFurtherInfoDeposit"
+_ATM_FURTHER_INFO_WITHDRAWAL_LIMIT = "AtmFurtherInfoWithdrawalLimit"
+_ATM_FURTHER_INFO_OPENING_HOURS = "AtmFurtherInfoOpeningHours"
+_ATM_FURTHER_INFO_FOREIGN_EXCHANGE = "AtmFurtherInfoForeignExchange"
+_ATM_FURTHER_INFO_COINMACHINE = "AtmFurtherInfoCoinmachine"
+
+
+# Lemmas of keywords that could indicate that the user is trying to use this module
+TOPIC_LEMMAS = {
+    "hraðbanki",
+}
+
 
 def help_text(lemma: str) -> str:
     """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-        random.choice(("Hvar er næsti hraðbanki",))
+        random.choice(
+            (
+                "Hvar er næsti hraðbanki",
+                "Hvar get ég lagt inn á reikning",
+                "Hvar get ég keypt erlendan gjaldeyri",
+            )
+        )
     )
 
 
@@ -89,21 +112,21 @@ def QAtmQuery(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QAtmClosest(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qkey = "ClosestAtm"
+    result.qkey = _CLOSEST_ATM
 
 
 def QAtmClosestDeposit(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qkey = "ClosestAtmDeposit"
+    result.qkey = _CLOSEST_ATM_DEPOSIT
 
 
 def QAtmClosestForeignExchange(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
-    result.qkey = "ClosestAtmForeignExchange"
+    result.qkey = _CLOSEST_ATM_FOREIGN_EXCHANGE
 
 
 def QAtmClosestCoinmachine(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qkey = "ClosestAtmCoinmachine"
+    result.qkey = _CLOSEST_ATM_COINMACHINE
 
 
 def QAtmFurtherInfo(node: Node, params: QueryStateDict, result: Result) -> None:
@@ -120,31 +143,31 @@ def QAtmFurtherInfo(node: Node, params: QueryStateDict, result: Result) -> None:
 
 
 def QAtmFurtherInfoDeposit(node: Node, params: QueryStateDict, result: Result) -> None:
-    result.qkey = "AtmFurtherInfoDeposit"
+    result.qkey = _ATM_FURTHER_INFO_DEPOSIT
 
 
 def QAtmFurtherInfoWithdrawalLimit(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
-    result.qkey = "AtmFurtherInfoWithdrawalLimit"
+    result.qkey = _ATM_FURTHER_INFO_WITHDRAWAL_LIMIT
 
 
 def QAtmFurtherInfoOpeningHours(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
-    result.qkey = "AtmFurtherInfoOpeningHours"
+    result.qkey = _ATM_FURTHER_INFO_OPENING_HOURS
 
 
 def QAtmFurtherInfoForeignExchange(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
-    result.qkey = "AtmFurtherInfoForeignExchange"
+    result.qkey = _ATM_FURTHER_INFO_FOREIGN_EXCHANGE
 
 
 def QAtmFurtherInfoCoinmachine(
     node: Node, params: QueryStateDict, result: Result
 ) -> None:
-    result.qkey = "AtmFurtherInfoCoinmachine"
+    result.qkey = _ATM_FURTHER_INFO_COINMACHINE
 
 
 def _read_isb_location_data_from_file() -> List[Dict[str, Any]]:
@@ -331,7 +354,7 @@ def _answ_for_atm_query(location: LatLonTuple, result: Result) -> AnswerTuple:
         # There is a reference to a previous result
         atm_list = result.last_atm
         atm_word = "hraðbankanum"  # if len(atm_list) == 1 else "hraðbönkunum"
-        if result.qkey == "AtmFurtherInfoDeposit":
+        if result.qkey == _ATM_FURTHER_INFO_DEPOSIT:
             # if any(atm["services"]["deposit"] is True for atm in atm_list):
             if atm_list[0]["services"]["deposit"] is True:
                 ans_start = (
@@ -339,21 +362,21 @@ def _answ_for_atm_query(location: LatLonTuple, result: Result) -> AnswerTuple:
                 )
             else:
                 ans_start = f"Nei, ekki er hægt að leggja inn á reikninginn þinn í {atm_word} við "
-        elif result.qkey == "AtmFurtherInfoWithdrawalLimit":
+        elif result.qkey == _ATM_FURTHER_INFO_WITHDRAWAL_LIMIT:
             ans_start = f"Hámarksúttekt í {atm_word} við "
 
     elif "error_context_reference" in result:
         return gen_answer("Ég veit ekki til hvaða hraðbanka þú vísar.")
     else:
-        if result.qkey == "ClosestAtm":
+        if result.qkey == _CLOSEST_ATM:
             atm_list = _closest_atm(location)
             ans_start = "Næsti hraðbanki"
-        elif result.qkey == "ClosestAtmDeposit":
+        elif result.qkey == _CLOSEST_ATM_DEPOSIT:
             atm_list = _closest_atm_deposit(location)
             ans_start = "Næsti hraðbanki sem tekur við innborgunum"
-        elif result.qkey == "ClosestAtmForeignExchange":
+        elif result.qkey == _CLOSEST_ATM_FOREIGN_EXCHANGE:
             atm_list = _closest_atm_foreign_exchange(location)
-        elif result.qkey == "ClosestAtmCoinmachine":
+        elif result.qkey == _CLOSEST_ATM_COINMACHINE:
             atm_list = _closest_atm_coinmachine(location)
 
     answer = ""
@@ -369,7 +392,7 @@ def _answ_for_atm_query(location: LatLonTuple, result: Result) -> AnswerTuple:
     street_name: str = NounPhrase(atm_list[0]["address"]["street"]).accusative or ""
     voice_street_name = _format_voice_street_number(street_name)
 
-    if result.qkey == "ClosestAtm" or result.qkey == "ClosestAtmDeposit":
+    if result.qkey == _CLOSEST_ATM or result.qkey == _CLOSEST_ATM_DEPOSIT:
         answ_fmt = "{0} er við {1} og er {2} frá þér."
         answer = answ_fmt.format(
             ans_start,
@@ -381,7 +404,7 @@ def _answ_for_atm_query(location: LatLonTuple, result: Result) -> AnswerTuple:
             voice_street_name,
             distance_desc(atm_list[0]["distance"], case="þgf", num_to_str=True),
         )
-    elif result.qkey == "ClosestAtmForeignExchange":
+    elif result.qkey == _CLOSEST_ATM_FOREIGN_EXCHANGE:
         currencies_str = _get_foreign_exchange_string(atm_list)
         answ_fmt = "Hægt er að kaupa {0} í hraðbankanum við {1} og hann er {2} frá þér."
         answer = answ_fmt.format(
@@ -394,7 +417,7 @@ def _answ_for_atm_query(location: LatLonTuple, result: Result) -> AnswerTuple:
             voice_street_name,
             distance_desc(atm_list[0]["distance"], case="þgf", num_to_str=True),
         )
-    elif result.qkey == "ClosestAtmCoinmachine":
+    elif result.qkey == _CLOSEST_ATM_COINMACHINE:
         answ_fmt = "Hraðbankinn við {0} er með myntsöluvél og er {1} frá þér."
         answer = answ_fmt.format(
             street_name,
@@ -404,7 +427,7 @@ def _answ_for_atm_query(location: LatLonTuple, result: Result) -> AnswerTuple:
             voice_street_name,
             distance_desc(atm_list[0]["distance"], case="þgf", num_to_str=True),
         )
-    elif result.qkey == "AtmFurtherInfoDeposit":
+    elif result.qkey == _ATM_FURTHER_INFO_DEPOSIT:
         answ_fmt = "{0}{1}."
         answer = answ_fmt.format(
             ans_start,
@@ -414,7 +437,7 @@ def _answ_for_atm_query(location: LatLonTuple, result: Result) -> AnswerTuple:
             ans_start,
             voice_street_name,
         )
-    elif result.qkey == "AtmFurtherInfoWithdrawalLimit":
+    elif result.qkey == _ATM_FURTHER_INFO_WITHDRAWAL_LIMIT:
         withdrawal_limit = max(atm["services"]["max_limit"] for atm in atm_list)
         ans_withdrawal_limit = krona_desc(withdrawal_limit)
         temp_string = ans_withdrawal_limit.split()
@@ -433,7 +456,7 @@ def _answ_for_atm_query(location: LatLonTuple, result: Result) -> AnswerTuple:
             voice_street_name,
             voice_withdawal_limit,
         )
-    elif result.qkey == "AtmFurtherInfoOpeningHours":
+    elif result.qkey == _ATM_FURTHER_INFO_OPENING_HOURS:
         ans_start = "Hraðbankinn við "
         opening_hours: str = atm_list[0]["opening_hours_text"].get("is", "")
         if len(opening_hours) is not 0:
@@ -494,7 +517,7 @@ def _answ_for_atm_query(location: LatLonTuple, result: Result) -> AnswerTuple:
             )
         else:
             return gen_answer("Ekki tókst að sækja opnunartíma fyrir hraðbankann.")
-    elif result.qkey == "AtmFurtherInfoForeignExchange":
+    elif result.qkey == _ATM_FURTHER_INFO_FOREIGN_EXCHANGE:
         # Check if atm accepts foreign exchange
         if atm_list[0]["services"]["foreign_exchange"]["active"] is True:
             currencies_str: str = _get_foreign_exchange_string(atm_list)
@@ -520,7 +543,7 @@ def _answ_for_atm_query(location: LatLonTuple, result: Result) -> AnswerTuple:
             voice: str = answ_fmt.format(
                 voice_street_name,
             )
-    elif result.qkey == "AtmFurtherInfoCoinmachine":
+    elif result.qkey == _ATM_FURTHER_INFO_COINMACHINE:
         # Check if atm has a coinmachine
         if atm_list[0]["services"]["coinmachine"] is True:
             answ_fmt: str = "Hraðbankinn við {0} er með myntsöluvél."
