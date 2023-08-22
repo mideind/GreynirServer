@@ -44,11 +44,11 @@ from queries.util import (
     LatLonTuple,
 )
 from speech.trans.num import number_to_text
-from utility import RESOURCES_DIR
+from utility import QUERIES_RESOURCES_DIR
 
 _ATM_QTYPE = "Atm"
 
-_PATH_TO_ISB_JSON = RESOURCES_DIR / "geo" / "isb_locations.json"
+_PATH_TO_ISB_JSON = QUERIES_RESOURCES_DIR / "geo" / "isb_locations.json"
 
 _FOREIGN_CURRENCY: Mapping[str, str] = {
     "USD": "bandaríkjadalir",
