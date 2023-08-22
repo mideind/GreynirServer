@@ -25,7 +25,7 @@
 
 from typing import Any, Dict, List, Mapping, Optional, cast
 
-import os
+import cachetools
 import logging
 import random
 import json
@@ -44,10 +44,11 @@ from queries.util import (
     LatLonTuple,
 )
 from speech.trans.num import number_to_text
+from utility import RESOURCES_DIR
 
 _ATM_QTYPE = "Atm"
 
-_PATH_TO_ISB_JSON = "../resources/geo/isb_locations.json"
+_PATH_TO_ISB_JSON = RESOURCES_DIR / "geo" / "isb_locations.json"
 
 _FOREIGN_CURRENCY: Mapping[str, str] = {
     "USD": "bandaríkjadalir",
@@ -58,6 +59,8 @@ _FOREIGN_CURRENCY: Mapping[str, str] = {
     "PLN": "pólsk slot",
     "ISK": "íslenskar krónur",
 }
+
+_ATM_CACHE_TTL = 86400  # 1 day
 
 
 def help_text(lemma: str) -> str:
@@ -144,41 +147,51 @@ def QAtmFurtherInfoCoinmachine(
 def _read_isb_location_data_from_file() -> List[Dict[str, Any]]:
     """Read isb locations JSON data from file"""
     try:
-        script_dir = os.path.dirname(__file__)
-        rel_path = _PATH_TO_ISB_JSON
-        abs_file_path = os.path.join(script_dir, rel_path)
-        with open(abs_file_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        return json.loads(_PATH_TO_ISB_JSON.read_text(encoding="utf-8"))
     except Exception as e:
         logging.error("Error reading isb locations json data: %s", e)
         return []
 
 
-def _get_atm_data() -> Optional[List[Dict[str, Any]]]:
-    """Get ATM data"""
-    atm_data: List[Dict[str, Any]] = _read_isb_location_data_from_file()
+@cachetools.cached(cachetools.TTLCache(1, _ATM_CACHE_TTL))
+def _get_atm_data() -> List[Dict[str, Any]]:
+    """
+    Get location data and filter out all non ATMs
+    and ATMs that do not have a location and address.
+    """
+    locations_data: List[Dict[str, Any]] = _read_isb_location_data_from_file()
+
+    # Filter out all non ATMs from the dictionary
+    atm_data: List[Dict[str, Any]] = []
+    for s in locations_data:
+        item_type: str = s.get("type", "")
+        if item_type == "atm":
+            try:
+                # Filter out all ATMs that do not have a location and address
+                if (
+                    s["location"]["latitude"]
+                    or s["location"]["longitude"]
+                    or s["address"]["street"]
+                ):
+                    atm_data.append(s)
+            except Exception as e:
+                logging.warning(f"Exception while filtering ATM locations: {e}")
     return atm_data
 
 
-def _atms_with_distance(loc: Optional[LatLonTuple]) -> Optional[List[Dict[str, Any]]]:
+def _atms_with_distance(loc: Optional[LatLonTuple]) -> List[Dict[str, Any]]:
     """Return list of atms w. added distance data."""
     atm_data: Optional[List[Dict[str, Any]]] = _get_atm_data()
     if not atm_data:
         return None
 
-    filtered_atm_data: List[Dict[str, Any]] = []
-    for s in atm_data:
-        """Filter out all non ATMs from the dictionary"""
-        item_type: str = s.get("type", "")
-        if item_type == "atm":
-            filtered_atm_data.append(s)
-    atm_data = filtered_atm_data
     if loc:
-        # Calculate distance of all stations
+        # Calculate distance of all atms
         for s in atm_data:
             s["distance"] = distance(
                 loc, (s["location"]["latitude"], s["location"]["longitude"])
             )
+
     return atm_data
 
 
