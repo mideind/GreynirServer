@@ -35,6 +35,7 @@ from settings import Settings
 from tnttagger import ifd_tag
 from db import SessionContext
 from db.models import ArticleTopic, Query, Feedback, QueryClientData, Summary
+from geo import LatLonTuple
 from treeutil import TreeUtility
 from reynir.bintokenizer import TokenDict
 from reynir.binparser import canonicalize_token
@@ -400,8 +401,8 @@ def query_api(version: int = 1) -> Response:
     test = bool_from_request(request, "test")
 
     # Obtain the client's location, if present
-    slat: Optional[str] = rv.get("latitude")
-    slon: Optional[str] = rv.get("longitude")
+    slat: str = rv.get("latitude", "")
+    slon: str = rv.get("longitude", "")
 
     # Additional client info
     # !!! FIXME: The client_id for web browser clients is the browser user agent,
@@ -419,25 +420,24 @@ def query_api(version: int = 1) -> Response:
     # Attempt to convert the (lat, lon) location coordinates to floats
     location_present = bool(slat) and bool(slon)
 
-    lat, lon = 0.0, 0.0
+    loc: Optional[LatLonTuple] = None
 
-    if test:
+    if test and not location_present:
         # For testing, insert a synthetic location if not already present
-        if not location_present:
-            lat, lon = _MIDEIND_LOCATION
-            location_present = True
-        else:
-            lat, lon = float(slat), float(slon)
-    elif location_present:
+        loc = _MIDEIND_LOCATION
+        location_present = True
+
+    if location_present:
         try:
-            lat = float(slat or "0")
+            lat = float(slat)
             if not (-90.0 <= lat <= 90.0):
                 raise ValueError("Latitude out of range")
-            lon = float(slon or "0")
+            lon = float(slon)
             if not (-180.0 <= lon <= 180.0):
                 raise ValueError("Longitude out of range")
+            loc = (lat, lon)
         except ValueError:
-            location_present = False
+            pass
 
     # Auto-uppercasing can be turned off by sending autouppercase: false in the query JSON
     auto_uppercase = bool_from_request(request, "autouppercase", True)
@@ -449,7 +449,7 @@ def query_api(version: int = 1) -> Response:
         q,
         voice,
         auto_uppercase=auto_uppercase,
-        location=(lat, lon) if location_present else None,
+        location=loc,
         remote_addr=client_ip,
         client_type=client_type,
         client_id=client_id,
