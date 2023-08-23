@@ -421,24 +421,21 @@ def query_api(version: int = 1) -> Response:
 
     lat, lon = 0.0, 0.0
 
-    # For testing, insert a synthetic location if not already present
-    if not location_present and test:
-        lat, lon = _MIDEIND_LOCATION
-        location_present = True
-
-    if location_present and not test:
+    if test:
+        # For testing, insert a synthetic location if not already present
+        if not location_present:
+            lat, lon = _MIDEIND_LOCATION
+            location_present = True
+        else:
+            lat, lon = float(slat), float(slon)
+    elif location_present:
         try:
             lat = float(slat or "0")
             if not (-90.0 <= lat <= 90.0):
-                location_present = False
-        except ValueError:
-            location_present = False
-
-    if location_present and not test:
-        try:
+                raise ValueError("Latitude out of range")
             lon = float(slon or "0")
             if not (-180.0 <= lon <= 180.0):
-                location_present = False
+                raise ValueError("Longitude out of range")
         except ValueError:
             location_present = False
 
