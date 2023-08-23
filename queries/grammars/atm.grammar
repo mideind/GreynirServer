@@ -21,6 +21,7 @@ QAtmClosest →
     | "hvar" "finn" "ég" "næsta"? QAtmHradbankaIslandsbanka
     | QAtmHvarGetEg "tekið" "út" QAtmMoney
     | QAtmHvarGetEg "fundið" "næsta"? QAtmHradbankaIslandsbanka
+    | "hvaða" QAtmHradbankiIslandsbanka "er" "næst" "mér"
 
 QAtmClosestDeposit →
     QAtmHvarGetEg "lagt" "inn" QAtmMoney
@@ -30,7 +31,7 @@ QAtmClosestDeposit →
     | "í" "hvaða" QAtmHradbankaIslandsbanka "er" "hægt" "að" "leggja" "inn" QAtmMoney
 
 QAtmClosestForeignExchange →
-    QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "sem" "leyfir" "kaup" "á" QAtmGjaldeyrir
+    QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "sem" "leyfir" "kaup" "á" QAtmGjaldeyrirPlural
     | QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "þar" "sem" "ég" "get" QAtmKeyptFengidNalgast QAtmGjaldeyrir
     | QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "sem" "selur" QAtmGjaldeyrir
     | "næsti"? QAtmHradbankiIslandsbanka "þar" "sem" "hægt" "er" "að" QAtmKaupaFaNalgastTakaUt QAtmGjaldeyrir
@@ -80,6 +81,8 @@ QAtmFurtherInfoOpeningHours →
     | "hvenær" "er" "sá" "hraðbanki" "opinn"
     | "er" "hann" "opinn"
     | "er" "sá" QAtmHradbankiIslandsbanka "opinn"
+    | "hver" "er" "opnunartími" "hraðbankans"
+    | "hverjir" "eru" "opnunartímar" "hraðbankans"
 
 QAtmFurtherInfoForeignExchange →
     QAtmGetEg QAtmKeyptFengidNalgast QAtmGjaldeyrir "þar"
@@ -139,6 +142,11 @@ QAtmGjaldeyrir →
     "erlenda"? "gjaldmiðla"
     | "erlendan"? "gjaldmiðil"
     | "erlendan"? "gjaldeyri"
+    
+
+QAtmGjaldeyrirPlural →
+    "erlendum" "gjaldmiðlum"
+    | "erlendum" "gjaldeyri"
 
 # Additional stuff:
 # myntsöluvélar
