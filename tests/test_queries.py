@@ -48,6 +48,7 @@ from db.models import Query, QueryClientData  # , QueryLog
 from queries import ResponseDict
 from utility import read_api_key
 from speech.trans import strip_markup
+from utility import QUERIES_RESOURCES_DIR
 
 
 @pytest.fixture
@@ -156,6 +157,10 @@ def has_ja_api_key() -> bool:
 
 def has_greynir_api_key() -> bool:
     return read_api_key("GreynirServerKey") != ""
+
+
+def has_atm_locations_file() -> bool:
+    return (QUERIES_RESOURCES_DIR / "isb_locations.json").is_file()
 
 
 def test_nonsense(client: FlaskClient) -> None:
@@ -441,6 +446,10 @@ def test_counting(client: FlaskClient) -> None:
 
 def test_atm(client: FlaskClient) -> None:
     """ATM module"""
+
+    if not has_atm_locations_file():
+        # NB: No ATM locations file found, skip this test
+        return
 
     _query_data_cleanup()  # Remove any data logged to DB on account of tests
 
