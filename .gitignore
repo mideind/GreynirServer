@@ -168,3 +168,6 @@ resources/*
 # Coverage test cache
 .coverage
 
+# Ignore files in the query resources folder
+queries/resources/*
+!queries/resources/.gitkeep

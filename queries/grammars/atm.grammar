@@ -1,0 +1,155 @@
+# Grammar for the ATM query module
+
+Query →
+    QAtm
+
+QAtm → QAtmQuery '?'?
+
+QAtmQuery →
+    QAtmClosest 
+    | QAtmClosestDeposit 
+    | QAtmClosestForeignExchange 
+    | QAtmClosestCoinmachine
+    | QAtmFurtherInfo
+
+QAtmClosest →
+    QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka
+    | "næsti" QAtmHradbankiIslandsbanka
+    | "hvaða" QAtmHradbankiIslandsbanka "er" "í" "nágrenninu" 
+    | QAtmHradbankiIslandsbanka "í" "nágrenninu"
+    | QAtmHvarEr? QAtmHradbankiIslandsbanka "nálægt" "mér"
+    | "hvar" "finn" "ég" "næsta"? QAtmHradbankaIslandsbanka
+    | QAtmHvarGetEg "tekið" "út" QAtmMoney
+    | QAtmHvarGetEg "fundið" "næsta"? QAtmHradbankaIslandsbanka
+    | "hvaða" QAtmHradbankiIslandsbanka "er" "næst" "mér"
+
+QAtmClosestDeposit →
+    QAtmHvarGetEg "lagt" "inn" QAtmMoney
+    | QAtmHvarGetEg "lagt" "inn" "á" "reikning"
+    | QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "þar" "sem" "ég" "get" "lagt" "inn" QAtmMoney
+    | QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "þar" "sem" QAtmHaegtEr "að" "leggja" "inn" QAtmMoney
+    | "í" "hvaða" QAtmHradbankaIslandsbanka "er" "hægt" "að" "leggja" "inn" QAtmMoney
+
+QAtmClosestForeignExchange →
+    QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "sem" "leyfir" "kaup" "á" QAtmGjaldeyrirPlural
+    | QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "þar" "sem" "ég" "get" QAtmKeyptFengidNalgast QAtmGjaldeyrir
+    | QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "sem" "selur" QAtmGjaldeyrir
+    | "næsti"? QAtmHradbankiIslandsbanka "þar" "sem" "hægt" "er" "að" QAtmKaupaFaNalgastTakaUt QAtmGjaldeyrir
+    | "næsti"? QAtmHradbankiIslandsbanka "með" QAtmGjaldeyrir
+    | QAtmHvarGetEg QAtmKeyptFengidNalgast QAtmGjaldeyrir
+
+QAtmClosestCoinmachine →
+    QAtmHvarEr "næsti"? QAtmHradbankiIslandsbanka "með" "myntsöluvél"
+    | QAtmHvarGetEg "fundið" "næstu"? "myntsöluvél"
+    | QAtmHvarGetEg QAtmKeyptFengidNalgast "myntrúllur"
+    | QAtmHvarEr "hægt" "að" QAtmKaupaFaNalgastTakaUt "myntrúllur"
+    | QAtmHvarEr "hægt" "að" "skipta" "á"? "seðlum"
+
+QAtmFurtherInfo →
+    QAtmFurtherInfoDeposit
+    | QAtmFurtherInfoWithdrawalLimit
+    | QAtmFurtherInfoOpeningHours
+    | QAtmFurtherInfoForeignExchange
+    | QAtmFurtherInfoCoinmachine
+#    | QAtmFurtherInfoIsItOpen
+
+QAtmFurtherInfoDeposit →
+    "er" "hægt" "að" "leggja" "inn" QAtmMoney "þar"
+    | QAtmGetEg "lagt" "inn" QAtmMoney "þar"
+    | QAtmGetEg "lagt" "inn" "á" "reikning" "þar"
+    | "tekur" "hann" "við" "seðlum"
+
+QAtmFurtherInfoWithdrawalLimit →
+    "hver" "er" "hámarksúttektarheimildin" "þar"
+    | "hver" "er" "hámarksúttektarheimild" "inn" "þar"
+    | "hver" "er" "hámarksúttektarheimild" "in" "þar"
+    | "hver" "er" "hámarks"? "úttektarheimildin" "þar"
+    | "hver" "er" "hámarks" "úttektarheimild" "inn"? "þar"
+    | "hver" "er" "hámarks" "úttektarheimild" "in"? "þar"
+    | "hver" "er" "hámarksúttektin" "þar"
+    | "hvað" QAtmGetEg QAtmKeyptFengidNalgast "mikinn" "pening" "þar"
+    | "hvað" QAtmGetEg "tekið" "mikið" "út" "þar"
+    | "hvað" QAtmGetEg QAtmKeyptFengidNalgast "mikið" "af" QAtmMoneyPlural "þar"
+    | "hvað" "er" "hægt" "að" QAtmKaupaFaNalgastTakaUt "mikinn" "pening" "þar"
+
+QAtmFurtherInfoOpeningHours →
+    "hverjir" "eru" "opnunartímarnir" "þar"
+    | "hvernig" "eru" "opnunartímarnir" "þar"
+    | "er" "hann" "opinn" "allan" "daginn"
+    | "hvað" "er" "hann" "opinn" "lengi"
+    | "hvenær" "er" "hann" "opinn"
+    | "hvenær" "er" "sá" "hraðbanki" "opinn"
+    | "er" "hann" "opinn"
+    | "er" "sá" QAtmHradbankiIslandsbanka "opinn"
+    | "hver" "er" "opnunartími" "hraðbankans"
+    | "hverjir" "eru" "opnunartímar" "hraðbankans"
+
+QAtmFurtherInfoForeignExchange →
+    QAtmGetEg QAtmKeyptFengidNalgast QAtmGjaldeyrir "þar"
+    | "er" "hægt" "að" QAtmKaupaFaNalgastTakaUt QAtmGjaldeyrir "þar"
+
+QAtmFurtherInfoCoinmachine →
+    "er" "myntsöluvél" "þar"
+    | "er" "hann" "með" "myntsöluvél"
+    | "er" "hægt" "að" QAtmKaupaFaNalgastTakaUt "myntrúllur" "þar"
+    | "er" "hægt" "að" "skipta" "á"? "seðlum" "þar"
+
+QAtmGetEg →
+    "get" "ég"
+
+QAtmHvarEr →
+    "hvar" "er" 
+
+QAtmHvarGetEg → 
+    "hvar" "get" "ég"
+
+QAtmHaegtEr →
+    "hægt" "er"
+    | "það" "er" "hægt"
+    | "möguleiki" "er" "á"
+
+QAtmHradbankiIslandsbanka →
+    "hraðbanki" "íslandsbanka"?
+    | "hraðbankinn" "íslandsbanka"?
+
+QAtmHradbankaIslandsbanka →
+    "hraðbanka" "íslandsbanka"?
+
+QAtmMoney →
+    "pening"
+    | "peninga"
+    | "reiðufé"
+    | "seðla"
+
+QAtmMoneyPlural → 
+    "peningum"
+    | "reiðufé"
+    | "seðlum"
+
+QAtmKeyptFengidNalgast →
+    "keypt"
+    | "fengið"
+    | "nálgast"
+    | "tekið" "út"
+
+QAtmKaupaFaNalgastTakaUt →
+    "kaupa"
+    | "fá"
+    | "nálgast"
+    | "taka" "út"
+
+QAtmGjaldeyrir →
+    "erlenda"? "gjaldmiðla"
+    | "erlendan"? "gjaldmiðil"
+    | "erlendan"? "gjaldeyri"
+    
+
+QAtmGjaldeyrirPlural →
+    "erlendum" "gjaldmiðlum"
+    | "erlendum" "gjaldeyri"
+
+# Additional stuff:
+# myntsöluvélar
+# hvað með ef tveir hraðbankar á sama stað með mismunandi þjónustu?
+# Hvar er hraðbanki sem er opinn?
+# -> er hann opinn?
