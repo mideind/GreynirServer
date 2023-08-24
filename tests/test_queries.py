@@ -48,6 +48,7 @@ from db.models import Query, QueryClientData  # , QueryLog
 from queries import ResponseDict
 from utility import read_api_key
 from speech.trans import strip_markup
+from utility import QUERIES_RESOURCES_DIR
 
 
 @pytest.fixture
@@ -156,6 +157,10 @@ def has_ja_api_key() -> bool:
 
 def has_greynir_api_key() -> bool:
     return read_api_key("GreynirServerKey") != ""
+
+
+def has_atm_locations_file() -> bool:
+    return (QUERIES_RESOURCES_DIR / "isb_locations.json").is_file()
 
 
 def test_nonsense(client: FlaskClient) -> None:
@@ -437,6 +442,164 @@ def test_counting(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "teldu upp að 5000", "voice": True}, "Counting")
     assert len(json["voice"]) < 100
     assert _has_no_numbers(json["voice"])
+
+
+def test_atm(client: FlaskClient) -> None:
+    """ATM module"""
+
+    if not has_atm_locations_file():
+        # NB: No ATM locations file found, skip this test
+        return
+
+    _query_data_cleanup()  # Remove any data logged to DB on account of tests
+
+    json = qmcall(
+        client, {"q": "hverjir eru opnunartímarnir þar?", "voice": True}, "Atm"
+    )
+    assert json["answer"].startswith("Ég veit ekki")
+    assert "hraðbanka" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {"q": "hvar er næsti hraðbanki?", "private": False, "voice": True},
+        "Atm",
+    )
+    assert "Eiðistorg" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client, {"q": "hverjir eru opnunartímarnir þar?", "voice": True}, "Atm"
+    )
+    assert json["answer"].startswith("Hraðbankinn við")
+    assert "fylgir" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(client, {"q": "hvar get ég lagt inn peninga?", "voice": True}, "Atm")
+    assert json["answer"].startswith("Næsti hraðbanki")
+    assert "Eiðistorg" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {
+            "q": "hvar er næsti hraðbanki sem leyfir kaup á erlendum gjaldeyri?",
+            "private": False,
+            "voice": True,
+        },
+        "Atm",
+    )
+    assert "Suðurlandsbraut" in json["answer"]
+    assert json["answer"].startswith("Hægt er að kaupa")
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {"q": "hverjir eru opnunartímarnir þar?", "private": False, "voice": True},
+        "Atm",
+    )
+    assert json["answer"].startswith("Hraðbankinn við")
+    assert "Suðurlandsbraut" in json["answer"]
+    assert "frá klukkan" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {"q": "hver er úttektarheimildin þar?", "private": False, "voice": True},
+        "Atm",
+    )
+    assert json["answer"].startswith("Hámarksúttekt í hraðbankanum við")
+    assert "Suðurlandsbraut" in json["answer"]
+    assert "krónur" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client, {"q": "er hægt að kaupa myntrúllur þar?", "voice": True}, "Atm"
+    )
+    assert json["answer"].startswith("Hraðbankinn við")
+    assert "Suðurlandsbraut" in json["answer"]
+    assert "ekki með myntsöluvél" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    _HRAUNBAER_LOCATION = (64.119300, -21.806051)
+    json = qmcall(
+        client,
+        {
+            "q": "hvar er næsti hraðbanki?",
+            "latitude": _HRAUNBAER_LOCATION[0],
+            "longitude": _HRAUNBAER_LOCATION[1],
+            "private": False,
+            "voice": True,
+        },
+        "Atm",
+    )
+    assert json["answer"].startswith("Næsti hraðbanki")
+    assert "Hraunbæ" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {
+            "q": "hverjir eru opnunartímarnir þar?",
+            "latitude": _HRAUNBAER_LOCATION[0],
+            "longitude": _HRAUNBAER_LOCATION[1],
+            "private": False,
+            "voice": True,
+        },
+        "Atm",
+    )
+    assert json["answer"].startswith("Hraðbankinn við")
+    assert "Hraunbæ" in json["answer"]
+    assert "alltaf opinn" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {
+            "q": "er hægt að leggja inn peninga þar?",
+            "latitude": _HRAUNBAER_LOCATION[0],
+            "longitude": _HRAUNBAER_LOCATION[1],
+            "private": False,
+            "voice": True,
+        },
+        "Atm",
+    )
+    assert json["answer"].startswith("Nei")
+    assert "Hraunbæ" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {
+            "q": "er hægt að kaupa gjaldeyri þar?",
+            "latitude": _HRAUNBAER_LOCATION[0],
+            "longitude": _HRAUNBAER_LOCATION[1],
+            "voice": True,
+        },
+        "Atm",
+    )
+    assert json["answer"].startswith("Ekki er hægt")
+    assert "erlendan gjaldeyri" in json["answer"]
+    assert "Hraunbæ" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    _SMARALIND_LOCATION = (64.101144, -21.882910)
+    json = qmcall(
+        client,
+        {
+            "q": "hvar er næsti hraðbanki með myntsöluvél?",
+            "latitude": _SMARALIND_LOCATION[0],
+            "longitude": _SMARALIND_LOCATION[1],
+            "voice": True,
+        },
+        "Atm",
+    )
+    assert json["answer"].startswith("Hraðbankinn við")
+    assert "Norðurturn Smáralindar" in json["answer"]
+    assert "er með myntsöluvél" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    _query_data_cleanup()  # Remove any data logged to DB on account of tests
 
 
 def test_currency(client: FlaskClient) -> None:

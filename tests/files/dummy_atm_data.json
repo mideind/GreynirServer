@@ -1,0 +1,144 @@
+[
+  {
+    "in_service": true,
+    "capital": true,
+    "address": { "zip": "110", "city": "Reykjavík", "street": "Hraunbæ 102" },
+    "opening_hours_text": { "en": "", "is": "", "pl": "" },
+    "name": "Ork­an Hraun­bæ",
+    "always_open": true,
+    "location": {
+      "latitude": 64.11784983288854,
+      "longitude": -21.797424935410103
+    },
+    "services": {
+      "max_limit": 150000,
+      "deposit": false,
+      "foreign_exchange": { "max_limit": 0, "active": false, "currency": [] },
+      "coinmachine": false
+    },
+    "branch_nr": "",
+    "type": "atm"
+  },
+  {
+    "in_service": true,
+    "capital": true,
+    "address": {
+      "zip": "170",
+      "city": "Seltjarnarnes",
+      "street": "Eiðistorgi 17"
+    },
+    "name": "Eiðis­torg",
+    "location": {
+      "latitude": 64.15024494449851,
+      "longitude": -21.985173646290548
+    },
+    "type": "atm",
+    "branch_nr": "",
+    "opening_hours_text": {
+      "pl": "",
+      "en": "Opening hours of Eiðistorg",
+      "is": "Opnunartímar Eiðistorgs"
+    },
+    "always_open": false,
+    "services": {
+      "max_limit": 150000,
+      "foreign_exchange": { "max_limit": 0, "active": false, "currency": [] },
+      "coinmachine": false,
+      "deposit": true
+    }
+  },
+  {
+    "in_service": true,
+    "capital": true,
+    "address": {
+      "zip": "201",
+      "city": "Kópavogur",
+      "street": "Norðurturni Smáralindar"
+    },
+    "opening_hours_text": {
+      "en": "Opening hours of Smáralind",
+      "is": "Opnunartími Smáralindar",
+      "pl": ""
+    },
+    "name": "Norð­urt­urn",
+    "always_open": false,
+    "location": {
+      "latitude": 64.10185372701353,
+      "longitude": -21.88512193207024
+    },
+    "branch_nr": "537",
+    "type": "atm",
+    "services": {
+      "max_limit": 500000,
+      "deposit": true,
+      "coinmachine": true,
+      "foreign_exchange": {
+        "max_limit": 400000,
+        "active": true,
+        "currency": ["USD", "EUR", "GBP", "DKK", "SEK", "PLN ", "ISK"]
+      }
+    }
+  },
+  {
+    "in_service": true,
+    "capital": true,
+    "address": {
+      "zip": "108",
+      "city": "Reykjavík",
+      "street": "Suðurlandsbraut 14"
+    },
+    "name": "Laug­ar­dal­ur úti­bú sjálfsaf­greiðsla",
+    "location": {
+      "latitude": 64.13904185815453,
+      "longitude": -21.880602836608887
+    },
+    "type": "atm",
+    "always_open": false,
+    "branch_nr": "515",
+    "opening_hours_text": {
+      "pl": "",
+      "en": "Open everyday 10 - 19",
+      "is": "Opið alla daga 10 - 19"
+    },
+    "services": {
+      "max_limit": 500000,
+      "deposit": true,
+      "coinmachine": false,
+      "foreign_exchange": {
+        "max_limit": 400000,
+        "active": true,
+        "currency": ["USD", "EUR", "GBP", "DKK", "ISK"]
+      }
+    }
+  },
+  {
+    "capital": true,
+    "address": { "zip": "201", "city": "Kópavogur", "street": "Hagasmára 3" },
+    "opening_hours_text": {
+      "en": "Open weekdays 10-16",
+      "is": "Opið alla virka daga 10-16",
+      "pl": ""
+    },
+    "name": "Norð­urt­urn",
+    "opening_hours": {
+      "thu": { "close": "16:00", "open": "10:00" },
+      "tue": { "close": "16:00", "open": "10:00" },
+      "wed": { "close": "16:00", "open": "10:00" },
+      "fri": { "close": "16:00", "open": "10:00" },
+      "mon": { "close": "16:00", "open": "10:00" }
+    },
+    "location": {
+      "latitude": 64.10178055642089,
+      "longitude": -21.885140385129063
+    },
+    "type": "branch",
+    "branch_nr": "537",
+    "in_service": true,
+    "services": {
+      "individual": true,
+      "corporate": true,
+      "cashiers": true,
+      "mortgage": true
+    }
+  }
+]
