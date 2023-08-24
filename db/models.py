@@ -836,39 +836,3 @@ class QueryClientData(Base):
         return "QueryClientData(client_id='{0}', created='{1}', modified='{2}', key='{3}', data='{4}')".format(
             self.client_id, self.created, self.modified, self.key, self.data
         )
-
-
-class Feedback(Base):
-    """Represents a feedback form submission."""
-
-    __tablename__ = "feedback"
-
-    # UUID
-    id = Column(
-        psql_UUID(as_uuid=False),
-        index=True,
-        nullable=False,
-        unique=True,
-        primary_key=True,
-        server_default=text("uuid_generate_v1()"),
-    )
-
-    # Timestamp of feedback
-    timestamp = Column(DateTime, index=True, nullable=False)
-
-    # Topic (e.g. Embla/Netskrafl/etc.)
-    topic = Column(String, index=True, nullable=True)
-
-    # Name
-    name = Column(String, index=True, nullable=True)
-
-    # Email
-    email = Column(String, index=True, nullable=True)
-
-    # Comment
-    comment = Column(String, index=False, nullable=True)
-
-    def __repr__(self):
-        return "Feedback(name='{0}', email='{1}', topic='{2}', comment='{3}')".format(
-            self.name, self.email, self.topic, self.comment
-        )
