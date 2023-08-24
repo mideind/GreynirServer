@@ -618,38 +618,6 @@ def voices_api(version: int = 1) -> Response:
     )
 
 
-@routes.route("/feedback.api", methods=["POST"])
-@routes.route("/feedback.api/v<int:version>", methods=["POST"])
-def feedback_api(version: int = 1) -> Response:
-    """Endpoint to accept submitted feedback forms"""
-
-    if not (1 <= version <= 1):
-        return better_jsonify(valid=False, reason="Unsupported version")
-
-    rv = cast(Dict[str, str], request.values)
-    name = rv.get("name")
-    email = rv.get("email")
-    comment = rv.get("comment")
-    topic = rv.get("topic")
-
-    if comment:
-        with SessionContext(commit=True) as session:
-            try:
-                qrow = Feedback(
-                    timestamp=datetime.utcnow(),
-                    topic=topic,
-                    name=name,
-                    email=email,
-                    comment=comment,
-                )
-                session.add(qrow)
-                return better_jsonify(valid=True)
-            except Exception as e:
-                logging.error(f"Error saving feedback to db: {e}")
-
-    return better_jsonify(valid=False)
-
-
 @routes.route("/exit.api", methods=["GET"])
 def exit_api():
     """Allow a server to be remotely terminated if running in debug mode"""
