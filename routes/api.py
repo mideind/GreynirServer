@@ -34,7 +34,7 @@ from settings import Settings
 
 from tnttagger import ifd_tag
 from db import SessionContext
-from db.models import ArticleTopic, Query, Feedback, QueryClientData, Summary
+from db.models import ArticleTopic, Query, QueryClientData, Summary
 from geo import LatLonTuple
 from treeutil import TreeUtility
 from reynir.bintokenizer import TokenDict
