@@ -1144,7 +1144,7 @@ def test_pic(client: FlaskClient) -> None:
         # NB: No Google API key on test server
         return
 
-    # TODO: Re-add test with "Katrín Jakobsdóttir" when fixed GreynirPackage is released
+    # TODO: Re-add test with "Katrín Jakobsdóttir" when fixed GreynirEngine is released
     json = qmcall(client, {"q": "Sýndu mér mynd af Bjarna Benediktssyni"}, "Picture")
     assert "image" in json
 
@@ -1583,7 +1583,7 @@ def test_userinfo(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "veistu hvað ég heiti"}, "UserInfo")
     assert json["answer"].startswith("Þú heitir Pétur")
 
-    # TODO: Re-add test for names Gunnar and Gunna when a new GreynirPackage is released
+    # TODO: Re-add test for names Gunnar and Gunna when a new GreynirEngine is released
 
     json = qmcall(client, {"q": "ég heiti Boutros Boutros-Ghali"}, "UserInfo")
     assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]

@@ -19,7 +19,7 @@ Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 
 Greynir periodically scrapes chunks of text from Icelandic news sites on the web.
 It employs the [Tokenizer](https://github.com/mideind/Tokenizer) and
-[GreynirPackage](https://github.com/mideind/GreynirPackage) modules (by the same authors)
+[GreynirEngine](https://github.com/mideind/GreynirEngine) modules (by the same authors)
 to tokenize the text and parse the token streams according to a
 **hand-written context-free grammar** for the Icelandic language.
 The resulting parse forests are disambiguated using
@@ -89,7 +89,7 @@ Greynir works in stages, roughly as follows:
 2. **Tokenizer** ([this one](https://github.com/mideind/Tokenizer)),
   extended to use the [BÍN](http://bin.arnastofnun.is/DMII/) database of Icelandic word forms for lemmatization and
   initial part-of-speech tagging.
-3. **Parser** (from [this module](https://github.com/mideind/GreynirPackage)),
+3. **Parser** (from [this module](https://github.com/mideind/GreynirEngine)),
   using an improved version of the [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser)
   to parse text according to an unconstrained hand-written context-free grammar for Icelandic
   that may yield multiple parse trees (a parse forest) in case of ambiguity.
@@ -115,8 +115,8 @@ sentences and recognizes entities such as dates, numbers,
 amounts and person names, as well as common abbreviations and punctuation.
 
 Grammar rules are laid out in a separate text file,
-[`Greynir.grammar`](https://github.com/mideind/GreynirPackage/blob/master/src/reynir/Greynir.grammar),
-which is a part of [GreynirPackage](https://github.com/mideind/GreynirPackage). The standard
+[`Greynir.grammar`](https://github.com/mideind/GreynirEngine/blob/master/src/reynir/Greynir.grammar),
+which is a part of [GreynirEngine](https://github.com/mideind/GreynirEngine). The standard
 [Backus-Naur form](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form) has been
 augmented with repeat specifiers for right-hand-side tokens (`*` for 0..n instances,
 `+` for 1..n instances, or `?` for 0..1 instances). Also, the grammar allows for

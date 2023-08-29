@@ -219,10 +219,10 @@ if Settings.DEBUG:
             Settings.DB_PORT,
             sys.version,
             os_name(),
-            f"GreynirPackage {greynir_version} - Tokenizer {tokenizer_version}",
+            f"GreynirEngine {greynir_version} - Tokenizer {tokenizer_version}",
         )
     )
-    # Clobber Settings.DEBUG in GreynirPackage
+    # Clobber Settings.DEBUG in GreynirEngine
     reynir.Settings.DEBUG = True
 
 
@@ -246,7 +246,7 @@ if not RUNNING_AS_SERVER:
 
     # Reload web server when config files change
     extra_files.extend(str(p) for p in CONFIG_DIR.resolve().glob("*.conf"))
-    # Config files for GreynirPackage
+    # Config files for GreynirEngine
     extra_files.extend(
         str(p)
         for p in (Path(reynir.__file__).parent.resolve() / "config").glob("*.conf")
@@ -260,7 +260,7 @@ if not RUNNING_AS_SERVER:
     # Add dialogue TOML files
     extra_files.extend(str(p) for p in QUERIES_DIALOGUE_DIR.resolve().glob("*.toml"))
 
-    # Add ord.compressed from GreynirPackage
+    # Add ord.compressed from GreynirEngine
     # extra_files.append(
     #     str(
     #         (

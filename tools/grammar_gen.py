@@ -23,7 +23,7 @@
     This tool reads in one or more grammar files and generates
     all possible sentences from the grammar.
     Uses algorithm from https://github.com/nltk/nltk/blob/develop/nltk/parse/generate.py
-    The algorithm is modified to work with classes from GreynirPackage.
+    The algorithm is modified to work with classes from GreynirEngine.
     Use --help to see more information on usage.
 
 """

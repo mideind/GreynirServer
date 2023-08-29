@@ -2,7 +2,7 @@
 """
 
     Fetch all Icelandic placenames (örnefni) from iceaddr database
-    and try to look them up using GreynirPackage's bindb module.
+    and try to look them up using GreynirEngine's bindb module.
     Print any placenames that could not be found in either
     BÍN proper or using the word combinator (samsetjari).
 

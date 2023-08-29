@@ -111,7 +111,7 @@ class CastFunc(Protocol):
         ...
 
 
-# The grammar root nonterminal for queries; see Greynir.grammar in GreynirPackage
+# The grammar root nonterminal for queries; see Greynir.grammar in GreynirEngine
 QUERY_GRAMMAR_ROOT = "QueryRoot"
 
 # A fixed preamble that is inserted before the concatenated query grammar fragments
