@@ -1,3 +1,4 @@
+
 {% extends "container-fluid.html" %}
 
 /* Copyright (C) 2023 Miðeind ehf. */
@@ -7,6 +8,7 @@
 <link href="{{ url_for('static', filename='css/main-bootstrap.css') }}" rel='stylesheet' type='text/css'>
 
 <style>
+
    /* Styles for D3/SVG tree graph */
 
    .node circle {
@@ -26,7 +28,6 @@
    .node.hk circle {
       stroke: #337ab7;
    }
-
    .node.to circle,
    .node.töl circle,
    .node.tala circle,
@@ -36,25 +37,21 @@
    .node.abfn circle {
       stroke: #5bc0de;
    }
-
    .node.lo circle {
       stroke: #5cb85c;
    }
-
    .node.nhm circle,
    .node.so circle {
       stroke: #d9534f;
    }
-
    .node.st circle,
-   .node.stt circle {
+   .node.stt circle
+   {
       stroke: #f0ad4e;
    }
-
    .node.person-kk circle {
       stroke: #337ab7;
    }
-
    .node.person-kvk circle {
       stroke: #d9534f;
    }
@@ -64,9 +61,7 @@
       fill: #888;
    }
 
-   .node text {
-      font-size: 12px;
-   }
+   .node text { font-size: 12px; }
 
    .node-nonterminal text {
       fill: white;
@@ -105,7 +100,8 @@
    .node-nonterminal.CP-SOURCE rect,
 
    .node-nonterminal.IP rect,
-   .node-nonterminal.IP-INF rect {
+   .node-nonterminal.IP-INF rect
+   {
       fill: #f0ad4e;
       stroke: #f0ad4e;
    }
@@ -122,7 +118,8 @@
    .node-nonterminal.NP-OBJ rect,
    .node-nonterminal.NP-IOBJ rect,
    .node-nonterminal.NP-PRD rect,
-   .node-nonterminal.NP-ADP rect {
+   .node-nonterminal.NP-ADP rect
+   {
       /* Dark blue */
       fill: #337ab7;
       stroke: #337ab7;
@@ -137,13 +134,15 @@
    .node-nonterminal.NP-AGE rect,
    .node-nonterminal.NP-MEASURE rect,
    .node-nonterminal.NP-SOURCE rect,
-   .node-nonterminal.NP-PREFIX rect {
+   .node-nonterminal.NP-PREFIX rect
+   {
       /* Light blue */
       fill: #5bc0de;
       stroke: #5bc0de;
    }
 
-   .node-nonterminal.FOREIGN rect {
+   .node-nonterminal.FOREIGN rect
+   {
       /* Light blue */
       fill: #5bc0de;
       stroke: #5bc0de;
@@ -166,12 +165,14 @@
    .node-nonterminal.ADVP-DUR-ABS rect,
    .node-nonterminal.ADVP-DUR-REL rect,
    .node-nonterminal.ADVP-DUR-TIME rect,
-   .node-nonterminal.ADVP-PCL rect {
+   .node-nonterminal.ADVP-PCL rect
+   {
       fill: #5cb85c;
       stroke: #5cb85c;
    }
 
-   .node-nonterminal.C rect {
+   .node-nonterminal.C rect
+   {
       fill: #f0ad4e;
       stroke: #f0ad4e;
    }
@@ -190,61 +191,52 @@
       font-style: normal;
       cursor: default;
    }
-
    .node-terminal.kk text.symbol,
    .node-terminal.kvk text.symbol,
-   .node-terminal.hk text.symbol {
+   .node-terminal.hk text.symbol
+   {
       fill: #337ab7;
    }
-
    .node-terminal.to text.symbol,
    .node-terminal.töl text.symbol,
    .node-terminal.tala text.symbol,
    .node-terminal.sequence text.symbol,
    .node-terminal.fn text.symbol,
    .node-terminal.pfn text.symbol,
-   .node-terminal.abfn text.symbol {
+   .node-terminal.abfn text.symbol
+   {
       fill: #5bc0de;
    }
-
    .node-terminal.person-kk text.symbol {
       fill: #337ab7;
    }
-
    .node-terminal.person-kvk text.symbol {
       fill: #d9534f;
    }
-
    .node-terminal.entity text.symbol {
       fill: #888;
    }
-
    .node-terminal.st text.symbol,
    .node-terminal.stt text.symbol {
       fill: #f0ad4e;
       transform: rotate(45deg);
    }
-
    .node-terminal.so text.symbol {
       fill: #d9534f;
       transform: rotate(15deg);
    }
-
    .node-terminal.nhm text.symbol {
       fill: #d9534f;
    }
-
    .node-terminal.lo text.symbol {
       fill: #5cb85c;
       transform: rotate(45deg);
    }
-
    .node-terminal.fs text.symbol,
    .node-terminal.uh text.symbol,
    .node-terminal.gr text.symbol {
       fill: #888;
    }
-
    .node-terminal.year text.symbol,
    .node-terminal.currency text.symbol,
    .node-terminal.number text.symbol,
@@ -263,14 +255,15 @@
    .node-terminal.serialnumber text.symbol,
    .node-terminal.molecule text.symbol,
    .node-terminal.ssn text.symbol,
-   .node-terminal.hashtag text.symbol {
+   .node-terminal.hashtag text.symbol
+   {
       fill: #888;
    }
-
    .node-terminal.ao text.symbol,
    .node-terminal.eo text.symbol,
    .node-terminal.tao text.symbol,
-   .node-terminal.spao text.symbol {
+   .node-terminal.spao text.symbol
+   {
       fill: #888;
    }
 
@@ -293,6 +286,7 @@
       /* Start off with the simple tree hidden */
       visibility: hidden;
    }
+
 </style>
 
 {% endblock %}
@@ -311,25 +305,25 @@
    <div class="row">
 
       <table id="tbl-edit-sent">
-         <tr>
-            <td>
-               <button id="edit-sent" title="Breyta málsgrein" class="btn btn-warning">
-                  <span class="glyphicon glyphicon-edit"></span>&nbsp;Breyta
-               </button>
-            </td>
-            <td>
-               <h4 class="txt">{{ txt }}</h4>
-            </td>
-         </tr>
+      <tr>
+      <td>
+         <button id="edit-sent" title="Breyta málsgrein" class="btn btn-warning">
+            <span class="glyphicon glyphicon-edit"></span>&nbsp;Breyta
+         </button>
+      </td>
+      <td>
+         <h4 class="txt">{{ txt }}</h4>
+      </td>
+      </tr>
       </table>
 
    </div>
 
-   {% if not tbl -%}
+{% if not tbl -%}
    <div class="row">
       <p class="options">Engin greining fannst.</p>
    </div>
-   {%- endif %}
+{%- endif %}
 
 </div>
 
@@ -341,15 +335,15 @@
             <span class="glyphicon glyphicon-share" style="transform: rotate(90deg)"></span>&nbsp;Tré
          </a>
       </li>
-      <!-- nntree tab -->
-      {% if nn_parsing_enabled -%}
-      <li role="presentation">
-         <a id="nn-status" href="#nn-tree" aria-controls="nn-tree" role="tab" data-toggle="tab">
-            <span class="glyphicon glyphicon-restart glyphicon-spin"></span>&nbsp;Tauganet
-         </a>
-      </li>
-      {%- endif %}
-      <li role="presentation" class="active"> <!-- This tab is marked active on purpose -->
+       <!-- nntree tab -->
+       {% if nn_parsing_enabled -%}
+           <li role="presentation">
+              <a id="nn-status" href="#nn-tree" aria-controls="nn-tree" role="tab" data-toggle="tab">
+                 <span class="glyphicon glyphicon-restart glyphicon-spin"></span>&nbsp;Tauganet
+              </a>
+           </li>
+        {%- endif %}
+       <li role="presentation" class="active"> <!-- This tab is marked active on purpose -->
          <a href="#simple" aria-controls="simple" role="tab" data-toggle="tab">
             <span class="glyphicon glyphicon-tag"></span>&nbsp;Einfalt
          </a>
@@ -387,87 +381,89 @@
 
       <div role="tabpanel" class="tab-pane active" id="simple">
 
-         <!-- Simple parse tree -->
+<!-- Simple parse tree -->
 
-         <div class="grid">
-            <div class="table-responsive">
-               <table id="treegrid-simple">
-                  {% for r in tbl %}
-                  {%- set row_loop = loop -%}
-                  <tr>
-                     {%- for c in r -%}
-                     {%- if c[1] is none -%}
-                     {%- elif "n" in c[1] -%}
-                     <td class="nt" colspan="{{ c[0] }}" rowspan="1">{{ c[1]["n"] }}</td>
-                     {%- else -%}
-                     <td class="t" colspan="{{ c[0] }}" rowspan="{{ height - row_loop.index0 }}">
-                        {% set tname = c[1]["t"] if "t" in c[1] else "" %}
-                        {%- if tname | first != "'" and tname | first != '"' -%}
-                        {{ tname }}<br>
-                        {%- endif -%}
-                        <span class="tok">{{ c[1]["x"] if "x" in c[1] else ("&nbsp;" | safe) }}</span>
-                     </td>
-                     {%- endif -%}
-                     {%- endfor -%}
-                  </tr>
-                  {% endfor %}
-               </table>
-            </div>
-         </div>
+<div class="grid">
+   <div class="table-responsive">
+      <table id="treegrid-simple">
+{% for r in tbl %}
+{%- set row_loop = loop -%}
+         <tr>
+{%- for c in r -%}
+{%- if c[1] is none -%}
+{%- elif "n" in c[1] -%}
+<td class="nt" colspan="{{ c[0] }}" rowspan="1">{{ c[1]["n"] }}</td>
+{%- else -%}
+<td class="t" colspan="{{ c[0] }}" rowspan="{{ height - row_loop.index0 }}">
+{% set tname = c[1]["t"] if "t" in c[1] else "" %}
+{%- if tname | first != "'" and tname | first != '"' -%}
+{{ tname }}<br>
+{%- endif -%}
+<span class="tok">{{ c[1]["x"] if "x" in c[1] else ("&nbsp;" | safe) }}</span>
+</td>
+{%- endif -%}
+{%- endfor -%}
+         </tr>
+{% endfor %}
+      </table>
+   </div>
+</div>
 
       </div>
 
       <div role="tabpanel" class="tab-pane" id="full">
 
-         <!-- Full parse tree -->
+<!-- Full parse tree -->
 
-         <div class="grid">
-            <div class="table-responsive" id="treegrid-container">
-               <div id="treegrid">
-                  <table id="treegrid-full">
-                     {% for r in full_tbl %}
-                     {%- set row_loop = loop -%}
-                     <tr>
-                        {%- for c in r -%}
-                        {%- set node = c[1] -%}
-                        {%- if node is none -%}
-                        {# pass #}
-                        {%- elif "n" in node -%}
-                        {# Nonterminal #}
-                        {%- set wide = " wide" if c[0] >= 3 else "" -%}
-                        {%- set neg = " neg" if node["sc"] < 0 else "" -%} {%- if node["error"] -%} {# Nonterminal
-                           marked with an error tag #} <td class="nt error{{ wide }}" colspan="{{ c[0] }}" rowspan="1">
-                           {{ node["n"] }}
-                           <span class="score{{ neg }}">{{ node["sc"] }}</span>
-                           </td>
-                           {%- else -%}
-                           <td class="nt{{ wide }}" colspan="{{ c[0] }}" rowspan="1">
-                              {{ node["n"] }}
-                              <span class="score{{ neg }}">{{ node["sc"] }}</span>
-                           </td>
-                           {%- endif -%}
-                           {%- else -%}
-                           {# Terminal #}
-                           <td class="t" colspan="{{ c[0] }}" rowspan="{{ full_height - row_loop.index0 }}">
-                              <span class="score{{ neg }}">{{ node["sc"] }}</span>
-                              {% set tname = node["t"] if "t" in node else "" %}
-                              {%- if tname | first != "'" and tname | first != '"' -%}
-                              <span class="tname">{{ tname }}</span>
-                              {%- endif -%}
-                              <span class="tok">{{ node["x"] if "x" in node else ("&nbsp;" | safe) }}</span>
-                           </td>
-                           {%- endif -%}
-                           {%- endfor -%}
-                     </tr>
-                     {% endfor %}
-                  </table>
-               </div>
-            </div>
-         </div>
+<div class="grid">
+   <div class="table-responsive" id="treegrid-container">
+      <div id="treegrid">
+         <table id="treegrid-full">
+{% for r in full_tbl %}
+{%- set row_loop = loop -%}
+            <tr>
+{%- for c in r -%}
+{%- set node = c[1] -%}
+{%- if node is none -%}
+   {# pass #}
+{%- elif "n" in node -%}
+   {# Nonterminal #}
+   {%- set wide = " wide" if c[0] >= 3 else "" -%}
+   {%- set neg = " neg" if node["sc"] < 0 else "" -%}
+   {%- if node["error"] -%}
+      {# Nonterminal marked with an error tag #}
+      <td class="nt error{{ wide }}" colspan="{{ c[0] }}" rowspan="1">
+         {{ node["n"] }}
+         <span class="score{{ neg }}">{{ node["sc"] }}</span>
+      </td>
+   {%- else -%}
+      <td class="nt{{ wide }}" colspan="{{ c[0] }}" rowspan="1">
+         {{ node["n"] }}
+         <span class="score{{ neg }}">{{ node["sc"] }}</span>
+      </td>
+   {%- endif -%}
+{%- else -%}
+   {# Terminal #}
+      <td class="t" colspan="{{ c[0] }}" rowspan="{{ full_height - row_loop.index0 }}">
+         <span class="score{{ neg }}">{{ node["sc"] }}</span>
+      {% set tname = node["t"] if "t" in node else "" %}
+      {%- if tname | first != "'" and tname | first != '"' -%}
+         <span class="tname">{{ tname }}</span>
+      {%- endif -%}
+         <span class="tok">{{ node["x"] if "x" in node else ("&nbsp;" | safe) }}</span>
+      </td>
+{%- endif -%}
+{%- endfor -%}
+            </tr>
+{% endfor %}
+         </table>
+      </div>
+   </div>
+</div>
 
       </div>
 
-      {% if nn_parsing_enabled -%}
+   {% if nn_parsing_enabled -%}
       <!-- nntree canvas -->
       <div role="tabpanel" class="tab-pane" id="nn-tree">
 
@@ -482,7 +478,7 @@
          </div>
       </div>
       <!-- nntree canvas -->
-      {%- endif %}
+    {%- endif %}
 
 
       <div role="tabpanel" class="tab-pane" id="stats">
@@ -490,37 +486,19 @@
          <!-- Statistics -->
 
          <div class="panel panel-default" id="stats-panel">
-            <table class="table table-hover">
-               <tbody>
-                  <tr>
-                     <td>Fjöldi einda</td>
-                     <td class="count">{{ stats.num_tokens | format_is }}</td>
-                  </tr>
-                  <tr>
-                     <td>Vinnslutími</td>
-                     <td class="count">{{ stats.total_time | format_is(2) }} sek.</td>
-                  </tr>
-                  <tr>
-                     <td>Fjöldi mögulegra trjáa</td>
-                     <td class="count">{{ stats.num_combinations | format_is }}</td>
-                  </tr>
-                  <tr>
-                     <td>Stig besta trés</td>
-                     <td class="count">{{ stats.total_score | format_is }}</td>
-                  </tr>
-                  <tr>
-                     <td>Margræðnistuðull</td>
-                     <td class="count">{{ stats.ambiguity | format_is(2) }}</td>
-                  </tr>
-                  {% if stats.num_combinations > 0 %}
-                  <tr>
-                     <td class="explain" colspan="2">
-                        ({{ stats.ambiguity | format_is(2) }} ^ {{ stats.num_tokens | format_is}} ≈ {{
-                        stats.num_combinations | format_is }})</td>
-                  </tr>
-                  {% endif %}
-               </tbody>
-            </table>
+         <table class="table table-hover">
+         <tbody>
+            <tr><td>Fjöldi einda</td><td class="count">{{ stats.num_tokens | format_is }}</td></tr>
+            <tr><td>Vinnslutími</td><td class="count">{{ stats.total_time | format_is(2) }} sek.</td></tr>
+            <tr><td>Fjöldi mögulegra trjáa</td><td class="count">{{ stats.num_combinations | format_is }}</td></tr>
+            <tr><td>Stig besta trés</td><td class="count">{{ stats.total_score | format_is }}</td></tr>
+            <tr><td>Margræðnistuðull</td><td class="count">{{ stats.ambiguity | format_is(2) }}</td></tr>
+{% if stats.num_combinations > 0 %}
+            <tr><td class="explain" colspan="2">
+               ({{ stats.ambiguity | format_is(2) }} ^ {{ stats.num_tokens | format_is}} ≈ {{ stats.num_combinations | format_is }})</td></tr>
+{% endif %}
+         </tbody>
+         </table>
          </div>
 
       </div>
@@ -537,202 +515,202 @@
 
 <script>
 
-   // Display a tree hierarchy using the D3 library and SVG
+// Display a tree hierarchy using the D3 library and SVG
 
-   var treeData = {{ tree | tojson }};
+var treeData = {{ tree | tojson }};
 
-   // Determine the drawing surface
-   var margin = { top: 60, right: 20, bottom: 30, left: 20 },
-      width = $("#treegrid-simple").width() - margin.right - margin.left,
-      height = {{ 100 + height * 80 }} - margin.top - margin.bottom;
+// Determine the drawing surface
+var margin = { top: 60, right: 20, bottom: 30, left: 20 },
+   width = $("#treegrid-simple").width() - margin.right - margin.left,
+   height = {{ 100 + height * 80 }} - margin.top - margin.bottom;
 
-   // Configure the tree layout object
-   var tree_fn = make_tree_fn(width, height)
+// Configure the tree layout object
+var tree_fn = make_tree_fn(width, height)
 
-   // Create a D3 hierarchy from the parse tree
-   var root = treeData === null ? null : d3.hierarchy(treeData, function (d) {
+// Create a D3 hierarchy from the parse tree
+var root = treeData === null ? null : d3.hierarchy(treeData, function(d) {
       // Yield the children of node d
       return d.p;
    });
 
-   // Dimensions of the graphics canvas
-   var tw = width + margin.right + margin.left;
-   var th = height + margin.top + margin.bottom;
+// Dimensions of the graphics canvas
+var tw = width + margin.right + margin.left;
+var th = height + margin.top + margin.bottom;
 
-   // Create SVG and append graphics container group
-   var svg = d3.select("div#canvas")
-      .append("svg")
-      .attr("width", tw)
-      .attr("height", th);
-   var g = svg.append("g");
+// Create SVG and append graphics container group
+var svg = d3.select("div#canvas")
+   .append("svg")
+   .attr("width", tw)
+   .attr("height", th);
+var g = svg.append("g");
 
-   // Zoom handler for SVG
-   svg.call(d3.zoom().scaleExtent([0.3, 4]).on("zoom", function () {
-      var tr = d3.event.transform;
-      // Proportion of tree that should always be visible
-      var min2show = 0.2;
+// Zoom handler for SVG
+svg.call(d3.zoom().scaleExtent([0.3,4]).on("zoom", function() {
+   var tr = d3.event.transform;
+   // Proportion of tree that should always be visible
+   var min2show = 0.2;
 
-      // Constrain x/y coordinates for panning so that
-      // a certain portion of the tree cannot go outside bounds
-      if (tr.x > 0) {
-         tr.x = Math.min(tw - (min2show * tw * tr.k), tr.x);
-      } else {
-         tr.x = Math.max((1.0 - min2show) * -1 * tw * tr.k, tr.x);
+   // Constrain x/y coordinates for panning so that
+   // a certain portion of the tree cannot go outside bounds
+   if (tr.x > 0) {
+      tr.x = Math.min(tw - (min2show * tw * tr.k), tr.x);
+   } else {
+      tr.x = Math.max((1.0 - min2show) * -1 * tw * tr.k, tr.x);
+   }
+   if (tr.y > 0) {
+      tr.y = Math.min(th - (min2show * th * tr.k), tr.y);
+   } else {
+      tr.y = Math.max((1.0 - min2show) * -1 * th * tr.k, tr.y);
+   }
+   g.attr("transform", tr);
+}));
+
+// Double click should remove any zoom transform
+svg.on("dblclick.zoom", function() {
+   g.attr("transform", d3.zoomIdentity);
+   svg.call(d3.zoom().transform, d3.zoomIdentity);
+});
+
+// Make sure that the info pop-up stays in its place even
+// if the canvas is scrolled horizontally
+// (this especially applies on touchscreens)
+$("div#tree div.grid div.table-responsive")
+   .scroll(function() {
+      var jqCircle = $("#info").data("circle");
+      if (jqCircle) {
+         var pos = jqCircle.offset();
+         $("#info")
+            .css("left", "" + pos.left + "px")
+            .css("top", "" + pos.top + "px")
       }
-      if (tr.y > 0) {
-         tr.y = Math.min(th - (min2show * th * tr.k), tr.y);
-      } else {
-         tr.y = Math.max((1.0 - min2show) * -1 * th * tr.k, tr.y);
-      }
-      g.attr("transform", tr);
-   }));
-
-   // Double click should remove any zoom transform
-   svg.on("dblclick.zoom", function () {
-      g.attr("transform", d3.zoomIdentity);
-      svg.call(d3.zoom().transform, d3.zoomIdentity);
    });
 
-   // Make sure that the info pop-up stays in its place even
-   // if the canvas is scrolled horizontally
-   // (this especially applies on touchscreens)
-   $("div#tree div.grid div.table-responsive")
-      .scroll(function () {
-         var jqCircle = $("#info").data("circle");
-         if (jqCircle) {
-            var pos = jqCircle.offset();
-            $("#info")
-               .css("left", "" + pos.left + "px")
-               .css("top", "" + pos.top + "px")
-         }
-      });
+// Hovering over terminals
 
-   // Hovering over terminals
+function wrapTokenInfo(dd) {
+   // Convert token information from the JSON simplified format
+   // (created in canonicalize_token() in GreynirPackage/bintokenizer.py)
+   // to the complex format expected by tokenInfo()
+   var tv = dd.v;
+   if (dd.k == "AMOUNT")
+      tv = [ dd.v.amount, dd.v.currency ];
+   else
+   if (dd.k == "DATE" || dd.k == "DATEREL" || dd.k == "DATEABS")
+      tv = [ dd.v.y, dd.v.mo, dd.v.d ];
+   else
+   if (dd.k == "TIME")
+      tv = [ dd.v.h, dd.v.m, dd.v.s ];
+   else
+   if (dd.k == "TIMESTAMP" || dd.k == "TIMESTAMPABS" || dd.k == "TIMESTAMPREL")
+      tv = [ dd.v.y, dd.v.mo, dd.v.d, dd.v.h, dd.v.m, dd.v.s ];
+   else
+   if (dd.k == "PERCENT" || dd.k == "NUMBER" || dd.k == "CURRENCY")
+      tv = [ dd.v ];
+   else
+   if (dd.k == "MEASUREMENT")
+      tv = [ dd.v.unit, dd.v.value ];
+   else
+   if (dd.k == "PERSON")
+      tv = dd.s;
+   return tokenInfo(
+      {
+         k: tokId[dd.k],
+         // We use the full terminal variant set (dd.a) if available,
+         // otherwise the smaller (original) subset (dd.t)
+         t: dd.a || dd.t,
+         g: dd.g,
+         // stem, category (ordfl), fl, beyging
+         m: [ dd.s, dd.c, dd.f, dd.b ],
+         x: dd.x,
+         v: tv
+      }, null);
+}
 
-   function wrapTokenInfo(dd) {
-      // Convert token information from the JSON simplified format
-      // (created in canonicalize_token() in GreynirEngine/bintokenizer.py)
-      // to the complex format expected by tokenInfo()
-      var tv = dd.v;
-      if (dd.k == "AMOUNT")
-         tv = [dd.v.amount, dd.v.currency];
-      else
-         if (dd.k == "DATE" || dd.k == "DATEREL" || dd.k == "DATEABS")
-            tv = [dd.v.y, dd.v.mo, dd.v.d];
-         else
-            if (dd.k == "TIME")
-               tv = [dd.v.h, dd.v.m, dd.v.s];
-            else
-               if (dd.k == "TIMESTAMP" || dd.k == "TIMESTAMPABS" || dd.k == "TIMESTAMPREL")
-                  tv = [dd.v.y, dd.v.mo, dd.v.d, dd.v.h, dd.v.m, dd.v.s];
-               else
-                  if (dd.k == "PERCENT" || dd.k == "NUMBER" || dd.k == "CURRENCY")
-                     tv = [dd.v];
-                  else
-                     if (dd.k == "MEASUREMENT")
-                        tv = [dd.v.unit, dd.v.value];
-                     else
-                        if (dd.k == "PERSON")
-                           tv = dd.s;
-      return tokenInfo(
-         {
-            k: tokId[dd.k],
-            // We use the full terminal variant set (dd.a) if available,
-            // otherwise the smaller (original) subset (dd.t)
-            t: dd.a || dd.t,
-            g: dd.g,
-            // stem, category (ordfl), fl, beyging
-            m: [dd.s, dd.c, dd.f, dd.b],
-            x: dd.x,
-            v: tv
-         }, null);
-   }
+function terminalIn(d) {
+   // Get the circle object, even if we're hovering over an associated text
+   var circle = d3.select(this.parentNode).select("circle");
+   // Indicate that we're hovering
+   circle
+      .classed("hovering", true)
+      .attr("r", 11);
 
-   function terminalIn(d) {
-      // Get the circle object, even if we're hovering over an associated text
-      var circle = d3.select(this.parentNode).select("circle");
-      // Indicate that we're hovering
-      circle
-         .classed("hovering", true)
-         .attr("r", 11);
+   // Access the node data
+   var dd = circle.data()[0].data;
+   if (dd.k == "PUNCTUATION")
+      return;
 
-      // Access the node data
-      var dd = circle.data()[0].data;
-      if (dd.k == "PUNCTUATION")
-         return;
+   var jqCircle = $(this).parent().children("circle");
+   var pos = jqCircle.offset();
 
-      var jqCircle = $(this).parent().children("circle");
-      var pos = jqCircle.offset();
+   r = wrapTokenInfo(dd);
 
-      r = wrapTokenInfo(dd);
+   $("#grammar").html(r.grammar || "");
+   $("#lemma").text(r.lemma || "");
+   $("#details").text(r.details || "");
 
-      $("#grammar").html(r.grammar || "");
-      $("#lemma").text(r.lemma || "");
-      $("#details").text(r.details || "");
+   // Display the percentage bar if we have percentage info
+   if (r.percent !== null)
+      makePercentGraph(r.percent);
+   else
+      $("#percent").css("display", "none");
 
-      // Display the percentage bar if we have percentage info
-      if (r.percent !== null)
-         makePercentGraph(r.percent);
-      else
-         $("#percent").css("display", "none");
+   // Set the class of the pop-up div
+   $("#info").removeClass();
+   if (r.class !== null)
+      $("#info").addClass(r.class);
 
-      // Set the class of the pop-up div
-      $("#info").removeClass();
-      if (r.class !== null)
-         $("#info").addClass(r.class);
+   // Set the class of the pop-up tag
+   $("#info span#tag")
+      .removeClass()
+      .addClass("glyphicon")
+      .addClass(r.tagClass ? r.tagClass : "glyphicon-tag");
 
-      // Set the class of the pop-up tag
-      $("#info span#tag")
-         .removeClass()
-         .addClass("glyphicon")
-         .addClass(r.tagClass ? r.tagClass : "glyphicon-tag");
+   // Position the info popup
+   $("#info")
+      .css("left", "" + pos.left + "px")
+      .css("top", "" + pos.top + "px")
+      .css("visibility", "visible")
+      .data("circle", jqCircle);
+}
 
-      // Position the info popup
-      $("#info")
-         .css("left", "" + pos.left + "px")
-         .css("top", "" + pos.top + "px")
-         .css("visibility", "visible")
-         .data("circle", jqCircle);
-   }
+function terminalOut(d) {
+   var circle = d3.select(this.parentNode).select("circle");
+   circle.classed("hovering", false).attr("r", 10);
+   var dd = circle.data()[0].data;
+   if (dd.k == "PUNCTUATION")
+      return;
+   $("#info")
+      .css("visibility", "hidden")
+      .css("left", 0)
+      .css("top", 0)
+      .data("circle", null);
+}
 
-   function terminalOut(d) {
-      var circle = d3.select(this.parentNode).select("circle");
-      circle.classed("hovering", false).attr("r", 10);
-      var dd = circle.data()[0].data;
-      if (dd.k == "PUNCTUATION")
-         return;
-      $("#info")
-         .css("visibility", "hidden")
-         .css("left", 0)
-         .css("top", 0)
-         .data("circle", null);
-   }
+function d3_update(g, source, _tree_fn) {
+   // Create the SVG graphics on the canvas via D3
+   var nodes = source.descendants();
+   var links = source.links();
 
-   function d3_update(g, source, _tree_fn) {
-      // Create the SVG graphics on the canvas via D3
-      var nodes = source.descendants();
-      var links = source.links();
+   // Precalculate the text for each node
+   nodes.forEach(function(d) {
+      d.data.text = d.data.n ? d.data.n : d.data.x;
+   });
 
-      // Precalculate the text for each node
-      nodes.forEach(function (d) {
-         d.data.text = d.data.n ? d.data.n : d.data.x;
-      });
+   // Compute the new tree layout using the D3 layout object
+   _tree_fn(source);
 
-      // Compute the new tree layout using the D3 layout object
-      _tree_fn(source);
+   // Normalize the y coordinates
+   nodes.forEach(function(d) {
+      d.y = d.depth * 80;
+      d.y += 40;
+   });
 
-      // Normalize the y coordinates
-      nodes.forEach(function (d) {
-         d.y = d.depth * 80;
-         d.y += 40;
-      });
-
-      // Declare the links
-      var link = g.selectAll(".link")
-         .data(links)
-         .enter().append("path")
+   // Declare the links
+   var link = g.selectAll(".link")
+      .data(links)
+      .enter().append("path")
          .attr("class", "link")
-         .attr("d", function (d) {
+         .attr("d", function(d) {
             // Define a cubic curve originating at the source
             // and terminating at the target, with vertical
             // exit and entry points from and to the nodes
@@ -742,11 +720,11 @@
                + " " + d.target.x + "," + d.target.y;
          });
 
-      // Declare the nodes
-      var node = g.selectAll(".node")
-         .data(nodes)
-         .enter().append("g")
-         .attr("class", function (d) {
+   // Declare the nodes
+   var node = g.selectAll(".node")
+      .data(nodes)
+      .enter().append("g")
+         .attr("class", function(d) {
             // Assign different classes to nonterminals vs. terminals
             var classes = ["node"];
             if (d.children) {
@@ -763,87 +741,87 @@
                   // In this case, the associated token may be a number or a word
                   classes.push("sequence");
                else
-                  if (d.data.k && d.data.k == "PUNCTUATION")
-                     classes.push("punct")
-                  else
-                     if (d.data.k && (d.data.k == "CURRENCY" || d.data.k == "AMOUNT"))
-                        classes.push("currency");
-                     else
-                        if (d.data.k && (d.data.k == "NUMBER" || d.data.k == "ORDINAL"))
-                           classes.push("number");
-                        else
-                           if (d.data.k && d.data.k == "PERCENT")
-                              classes.push("percent");
-                           else
-                              if (d.data.k && d.data.k == "MEASUREMENT")
-                                 classes.push("measurement");
-                              else
-                                 if (d.data.k && (d.data.k == "TIMESTAMP" || d.data.k == "TIMESTAMPABS" ||
-                                    d.data.k == "TIMESTAMPREL"))
-                                    classes.push("timestamp");
-                                 else
-                                    if (d.data.k && d.data.k == "TIME")
-                                       classes.push("time");
-                                    else
-                                       if (d.data.k && d.data.k == "YEAR")
-                                          classes.push("year");
-                                       else
-                                          if (d.data.k && (d.data.k == "DATE" || d.data.k == "DATEABS" || d.data.k == "DATEREL"))
-                                             classes.push("date");
-                                          else
-                                             if (firstPart == "sérnafn" || firstPart == "entity")
-                                                classes.push("entity");
-                                             else
-                                                if (firstPart == "person")
-                                                   classes.push("person-" + d.data.c);
-                                                else
-                                                   if (firstPart == "ártal")
-                                                      classes.push("year");
-                                                   else
-                                                      if (firstPart == "tala")
-                                                         classes.push("number");
-                                                      else
-                                                         if (firstPart == "lén")
-                                                            classes.push("domain");
-                                                         else
-                                                            if (firstPart == "vefslóð")
-                                                               classes.push("url");
-                                                            else
-                                                               if (firstPart == "tölvupóstfang")
-                                                                  classes.push("email");
-                                                               else
-                                                                  if (firstPart == "vörunúmer")
-                                                                     classes.push("serialnumber");
-                                                                  else
-                                                                     if (firstPart == "sameind")
-                                                                        classes.push("molecule");
-                                                                     else
-                                                                        if (firstPart == "kennitala")
-                                                                           classes.push("ssn");
-                                                                        else
-                                                                           if (firstPart == "myllumerki")
-                                                                              classes.push("hashtag");
-                                                                           else
-                                                                              if (d.data.c)
-                                                                                 // Add a class for the word category
-                                                                                 classes.push(d.data.c);
+               if (d.data.k && d.data.k == "PUNCTUATION")
+                  classes.push("punct")
+               else
+               if (d.data.k && (d.data.k == "CURRENCY" || d.data.k == "AMOUNT"))
+                  classes.push("currency");
+               else
+               if (d.data.k && (d.data.k == "NUMBER" || d.data.k == "ORDINAL"))
+                  classes.push("number");
+               else
+               if (d.data.k && d.data.k == "PERCENT")
+                  classes.push("percent");
+               else
+               if (d.data.k && d.data.k == "MEASUREMENT")
+                  classes.push("measurement");
+               else
+               if (d.data.k && (d.data.k == "TIMESTAMP" || d.data.k == "TIMESTAMPABS" ||
+                  d.data.k == "TIMESTAMPREL"))
+                  classes.push("timestamp");
+               else
+               if (d.data.k && d.data.k == "TIME")
+                  classes.push("time");
+               else
+               if (d.data.k && d.data.k == "YEAR")
+                  classes.push("year");
+               else
+               if (d.data.k && (d.data.k == "DATE" || d.data.k == "DATEABS" || d.data.k == "DATEREL"))
+                  classes.push("date");
+               else
+               if (firstPart == "sérnafn" || firstPart == "entity")
+                  classes.push("entity");
+               else
+               if (firstPart == "person")
+                  classes.push("person-" + d.data.c);
+               else
+               if (firstPart == "ártal")
+                  classes.push("year");
+               else
+               if (firstPart == "tala")
+                  classes.push("number");
+               else
+               if (firstPart == "lén")
+                  classes.push("domain");
+               else
+               if (firstPart == "vefslóð")
+                  classes.push("url");
+               else
+               if (firstPart == "tölvupóstfang")
+                  classes.push("email");
+               else
+               if (firstPart == "vörunúmer")
+                  classes.push("serialnumber");
+               else
+               if (firstPart == "sameind")
+                  classes.push("molecule");
+               else
+               if (firstPart == "kennitala")
+                  classes.push("ssn");
+               else
+               if (firstPart == "myllumerki")
+                  classes.push("hashtag");
+               else
+               if (d.data.c)
+                  // Add a class for the word category
+                  classes.push(d.data.c);
             }
             return classes.join(" ");
          })
-         .attr("transform", function (d) {
+         .attr("transform", function(d) {
             return "translate(" + d.x + "," + d.y + ")";
          });
 
-      g.selectAll(".node-nonterminal")
-         .append("rect")
-         .attr("width", function (d) {
+   g.selectAll(".node-nonterminal")
+      .append("rect")
+         .attr("width", function(d) {
             // Select one of three widths depending on the text length
             return d.data.text.length < 11 ? 64 :
                (d.data.text.length < 14 ? 80 :
-                  (d.data.text.length < 20 ? 108 : 128));
+               (d.data.text.length < 20 ? 108 : 128));
          })
          .attr("height", 20)
-         .attr("transform", function (d) {
+         .attr("transform", function(d) {
             var w = parseInt(this.getAttribute("width"));
             var h = parseInt(this.getAttribute("height"));
             return "translate(" + (-w / 2) + "," + (-h / 2) + ")";
@@ -851,298 +829,299 @@
          .attr("rx", 6)
          .attr("ry", 6);
 
-      g.selectAll(".node-terminal")
-         .append("circle")
+   g.selectAll(".node-terminal")
+      .append("circle")
          .attr("r", 10);
 
-      // Add a symbol on top of terminal circles
-      var DEFAULT_OFFSET = 6;
-      var symbolOffset = []; // Default y offset is 6 pixels
-      symbolOffset["\uE004"] = 5; // user
-      symbolOffset["%"] = 5; // percent sign
-      symbolOffset["!"] = 5; // exclamation mark
-      symbolOffset["?"] = 5; // question mark
-      symbolOffset["\uE066"] = 7; // tag
+   // Add a symbol on top of terminal circles
+   var DEFAULT_OFFSET = 6;
+   var symbolOffset = []; // Default y offset is 6 pixels
+   symbolOffset ["\uE004"] = 5; // user
+   symbolOffset ["%"] = 5; // percent sign
+   symbolOffset ["!"] = 5; // exclamation mark
+   symbolOffset ["?"] = 5; // question mark
+   symbolOffset ["\uE066"] = 7; // tag
 
-      [
-         ["person-kk", "\uE247"], // male
-         ["person-kvk", "\uE248"], // female
-         ["entity", "\uE066"], // tag
-         ["st", "\uE051"], // link
-         ["stt", "\uE051"], // link
-         ["nhm", "\uE212"], // right-arrow
-         ["fs", "\uE224"], // chevron-right
-         ["gr", "\uE174"], // play
-         ["so", "\uE242"], // flash
-         ["kk", "\uE176"], // stop
-         ["kvk", "\uE176"], // stop
-         ["hk", "\uE176"], // stop
-         ["fn", "\u002A"], // asterisk
-         ["pfn", "\uE004"], // user
-         ["abfn", "\uE176"], // stop
-         ["lo", "\uE518"], // options
-         ["year", "\uE055"], // clock
-         ["timestamp", "\uE055"], // clock
-         ["time", "\uE055"], // clock
-         ["date", "\uE055"], // clock
-         ["ao", "\uE049"], // star
-         ["eo", "\uE049"], // star
-         ["spao", "?"], // question mark
-         ["tao", "\uE055"], // clock
-         ["currency", "\u20AC"], // euro
-         ["number", "\uE319"], // more-items
-         ["to", "\uE319"], // more-items
-         ["töl", "\uE319"], // more-items
-         ["tala", "\uE319"], // more-items
-         ["sequence", "\uE518"], // options
-         ["percent", "%"], // percent sign
-         ["measurement", "\uE332"], // dashboard
-         ["domain", "\uE372"], // global
-         ["url", "\uE372"], // global
-         ["email", "\uE372"], // global
-         ["serialnumber", "\uE372"], // global     //TODO pick a more relevant symbol
-         ["molecule", "\uE372"], // global      //TODO pick a more relevant symbol
-         ["ssn", "\uE372"], // global     //TODO pick a more relevant symbol
-         ["hashtag", "\uE372"], // global
-         ["uh", "!"], // exclamation mark
-      ]
-         .forEach(function (d) {
-            g.selectAll(".node-terminal." + d[0])
-               .append("text")
-               .attr("class", "symbol")
-               .attr("text-anchor", "middle")
-               .attr("y", symbolOffset[d[1]] || DEFAULT_OFFSET)
-               .text(d[1])
-         });
+   [
+      ["person-kk", "\uE247"], // male
+      ["person-kvk", "\uE248"], // female
+      ["entity", "\uE066"], // tag
+      ["st", "\uE051"], // link
+      ["stt", "\uE051"], // link
+      ["nhm", "\uE212"], // right-arrow
+      ["fs", "\uE224"], // chevron-right
+      ["gr", "\uE174"], // play
+      ["so", "\uE242"], // flash
+      ["kk", "\uE176"], // stop
+      ["kvk", "\uE176"], // stop
+      ["hk", "\uE176"], // stop
+      ["fn", "\u002A"], // asterisk
+      ["pfn", "\uE004"], // user
+      ["abfn", "\uE176"], // stop
+      ["lo", "\uE518"], // options
+      ["year", "\uE055"], // clock
+      ["timestamp", "\uE055"], // clock
+      ["time", "\uE055"], // clock
+      ["date", "\uE055"], // clock
+      ["ao", "\uE049"], // star
+      ["eo", "\uE049"], // star
+      ["spao", "?"], // question mark
+      ["tao", "\uE055"], // clock
+      ["currency", "\u20AC"], // euro
+      ["number", "\uE319"], // more-items
+      ["to", "\uE319"], // more-items
+      ["töl", "\uE319"], // more-items
+      ["tala", "\uE319"], // more-items
+      ["sequence", "\uE518"], // options
+      ["percent", "%"], // percent sign
+      ["measurement", "\uE332"], // dashboard
+      ["domain", "\uE372"], // global
+      ["url", "\uE372"], // global
+      ["email", "\uE372"], // global
+      ["serialnumber", "\uE372"], // global     //TODO pick a more relevant symbol
+      ["molecule", "\uE372"], // global      //TODO pick a more relevant symbol
+      ["ssn", "\uE372"], // global     //TODO pick a more relevant symbol
+      ["hashtag", "\uE372"], // global
+      ["uh", "!"], // exclamation mark
+   ]
+   .forEach(function(d) {
+      g.selectAll(".node-terminal." + d[0])
+         .append("text")
+            .attr("class", "symbol")
+            .attr("text-anchor", "middle")
+            .attr("y", symbolOffset[d[1]] || DEFAULT_OFFSET)
+            .text(d[1])
+   });
 
-      node.append("text")
-         .attr("y", function (d) {
-            // Nonterminals have their legend above the center point;
-            // terminals have their legend below the center point
-            return (d.children || (d.data.k && d.data.k == "PUNCTUATION")) ? 0 : 22;
-         })
-         .attr("dy", ".35em")
-         .attr("text-anchor", "middle")
-         .text(function (d) {
-            // Return the precalculated text
-            return d.data.text;
-         });
-
-      // Put a hover handler on each terminal
-      g.selectAll(".node-terminal circle")
-         .on("mouseover", terminalIn)
-         .on("mouseout", terminalOut);
-      g.selectAll(".node-terminal text")
-         .on("mouseover", terminalIn)
-         .on("mouseout", terminalOut);
-   }
-
-   // Hold the text to be displayed
-
-   var theText = {{ txt | tojson }};
-
-   function editSentence() {
-      // Navigate to the analysis page with the text pre-set
-      window.location.href = "/analysis?txt=" + encodeURIComponent(theText);
-   }
-
-   function panTreeDisplay() {
-      // Set up panning of the tree display
-      var scrollable = false;
-      var t = $("#canvas svg");
-      var tParent = $("#canvas").parent();
-
-      t.mousedown(function (e) {
-         if (scrollable) {
-            var originX = e.clientX;
-            var scrollX = tParent.scrollLeft();
-            var mouseMove = function (e) {
-               tParent.scrollLeft(Math.max(0, scrollX + (originX - e.clientX)));
-               e.preventDefault();
-            };
-            var mouseUp = function (e) {
-               tParent.scrollLeft(Math.max(0, scrollX + (originX - e.clientX)));
-               window.removeEventListener('mousemove', mouseMove, false);
-               window.removeEventListener('mouseup', mouseUp, false);
-            };
-            window.addEventListener('mousemove', mouseMove, false);
-            window.addEventListener('mouseup', mouseUp, false);
-         }
+   node.append("text")
+      .attr("y", function(d) {
+         // Nonterminals have their legend above the center point;
+         // terminals have their legend below the center point
+         return (d.children || (d.data.k && d.data.k == "PUNCTUATION")) ? 0 : 22;
+      })
+      .attr("dy", ".35em")
+      .attr("text-anchor", "middle")
+      .text(function(d) {
+         // Return the precalculated text
+         return d.data.text;
       });
 
-      // If the browser window is resized, figure out whether the canvas
-      // is scrollable or not
-      var cursorSetter =
-         function (e) {
-            captured = false;
-            scrollable = t.width() > $("#canvas-container").width();
-            t.css("cursor", scrollable ? "move" : "default");
+   // Put a hover handler on each terminal
+   g.selectAll(".node-terminal circle")
+      .on("mouseover", terminalIn)
+      .on("mouseout", terminalOut);
+   g.selectAll(".node-terminal text")
+      .on("mouseover", terminalIn)
+      .on("mouseout", terminalOut);
+}
+
+// Hold the text to be displayed
+
+var theText = {{ txt | tojson }};
+
+function editSentence() {
+   // Navigate to the analysis page with the text pre-set
+   window.location.href = "/analysis?txt=" + encodeURIComponent(theText);
+}
+
+function panTreeDisplay() {
+   // Set up panning of the tree display
+   var scrollable = false;
+   var t = $("#canvas svg");
+   var tParent = $("#canvas").parent();
+
+   t.mousedown(function(e) {
+      if (scrollable) {
+         var originX = e.clientX;
+         var scrollX = tParent.scrollLeft();
+         var mouseMove = function(e) {
+            tParent.scrollLeft(Math.max(0, scrollX + (originX - e.clientX)));
+            e.preventDefault();
          };
-      $(window).resize(cursorSetter);
-      cursorSetter();
-   }
-
-   function panDetailDisplay() {
-      // Set up panning of the detailed display
-      var scrollable = false;
-      var t = $("#treegrid-full");
-      var tParent = $("#treegrid-container");
-
-      t.mousedown(function (e) {
-         if (scrollable) {
-            var originX = e.clientX;
-            var scrollX = tParent.scrollLeft();
-            var mouseMove = function (e) {
-               tParent.scrollLeft(Math.max(0, scrollX + (originX - e.clientX)));
-               e.preventDefault();
-            };
-            var mouseUp = function (e) {
-               tParent.scrollLeft(Math.max(0, scrollX + (originX - e.clientX)));
-               window.removeEventListener('mousemove', mouseMove, false);
-               window.removeEventListener('mouseup', mouseUp, false);
-            };
-            window.addEventListener('mousemove', mouseMove, false);
-            window.addEventListener('mouseup', mouseUp, false);
-         }
-      });
-      // If the browser window is resized, figure out whether the canvas
-      // is scrollable or not
-      var cursorSetter =
-         function (e) {
-            scrollable = t.width() > tParent.width();
-            t.css("cursor", scrollable ? "ew-resize" : "default");
+         var mouseUp = function(e) {
+            tParent.scrollLeft(Math.max(0, scrollX + (originX - e.clientX)));
+            window.removeEventListener('mousemove', mouseMove, false);
+            window.removeEventListener('mouseup', mouseUp, false);
          };
-      $(window).resize(cursorSetter);
-      // When selecting the detailed tree tab,
-      // recalculate the scroll parameters
-      $("#full-hdr").click(cursorSetter);
-   }
+         window.addEventListener('mousemove', mouseMove, false);
+         window.addEventListener('mouseup', mouseUp, false);
+      }
+   });
 
-   function make_tree_fn(_width, _height) {
-      return d3.tree()
-         .size([_width, _height])
-         .separation(function (a, b) {
+   // If the browser window is resized, figure out whether the canvas
+   // is scrollable or not
+   var cursorSetter =
+      function(e) {
+         captured = false;
+         scrollable = t.width() > $("#canvas-container").width();
+         t.css("cursor", scrollable ? "move" : "default");
+      };
+   $(window).resize(cursorSetter);
+   cursorSetter();
+}
+
+function panDetailDisplay() {
+   // Set up panning of the detailed display
+   var scrollable = false;
+   var t = $("#treegrid-full");
+   var tParent = $("#treegrid-container");
+
+   t.mousedown(function(e) {
+      if (scrollable) {
+         var originX = e.clientX;
+         var scrollX = tParent.scrollLeft();
+         var mouseMove = function(e) {
+            tParent.scrollLeft(Math.max(0, scrollX + (originX - e.clientX)));
+            e.preventDefault();
+         };
+         var mouseUp = function(e) {
+            tParent.scrollLeft(Math.max(0, scrollX + (originX - e.clientX)));
+            window.removeEventListener('mousemove', mouseMove, false);
+            window.removeEventListener('mouseup', mouseUp, false);
+         };
+         window.addEventListener('mousemove', mouseMove, false);
+         window.addEventListener('mouseup', mouseUp, false);
+      }
+   });
+   // If the browser window is resized, figure out whether the canvas
+   // is scrollable or not
+   var cursorSetter =
+      function(e) {
+         scrollable = t.width() > tParent.width();
+         t.css("cursor", scrollable ? "ew-resize" : "default");
+      };
+   $(window).resize(cursorSetter);
+   // When selecting the detailed tree tab,
+   // recalculate the scroll parameters
+   $("#full-hdr").click(cursorSetter);
+}
+
+function make_tree_fn(_width, _height) {
+   return d3.tree()
+      .size([_width, _height])
+         .separation(function(a, b) {
             // Horizontal separation between tree nodes
             if (a.parent != b.parent)
                // Nodes are not siblings: double separation
                return 2.2;
-            // For siblings, increase separation linearly with their combined
-            // text (caption) length
-            // var aLen = a.data.text.length;
-            var aLen = a.data.n ? Math.max(a.data.text.length, 11) : a.data.text.length;
-            // var bLen = b.data.text.length;
-            var bLen = b.data.n ? Math.max(b.data.text.length, 11) : b.data.text.length;
-            return Math.max(1.20, 0.115 * (aLen + bLen));
+               // For siblings, increase separation linearly with their combined
+               // text (caption) length
+               // var aLen = a.data.text.length;
+               var aLen = a.data.n ? Math.max(a.data.text.length, 11) : a.data.text.length;
+               // var bLen = b.data.text.length;
+               var bLen = b.data.n ? Math.max(b.data.text.length, 11) : b.data.text.length;
+               return Math.max(1.20, 0.115 * (aLen + bLen));
          });
-   }
-   {% if nn_parsing_enabled -%}
-   // Configure the tree layout object
-   var nnTreeData = null;
-   var nnRoot = null;
-   var nntree_fn = null;
-   function get_nntree(text) {
-      payload = { text: text };
-      $.ajax({
-         url: "{{ url_for('routes.nnparse_api') }}",
-         data: payload,
-         type: "POST",
-         dataType: "json",
-         cache: false,
-         success: function (resp) {
+ }
+{% if nn_parsing_enabled -%}
+ // Configure the tree layout object
+var nnTreeData = null;
+var nnRoot = null;
+var nntree_fn = null;
+function get_nntree(text) {
+   payload = {text: text};
+    $.ajax({
+        url: "{{ url_for('routes.nnparse_api') }}",
+        data: payload,
+        type: "POST",
+        dataType: "json",
+        cache: false,
+        success: function (resp) {
             nn_wait(false);
             result = resp.result
             nnwidth = result.width * 56;
             nnheight = 100 + result.height * 80 - margin.top - margin.bottom;
             nntree_fn = make_tree_fn(nnwidth, nnheight)
             draw_nntree(result.tree, nnwidth, nnheight);
-         },
-         error: function (resp) {
-         },
-         complete: function (resp) {
-         }
-      })
-   }
-   function draw_nntree(_nnTreeData, _width, _height) {
-      nnTreeData = _nnTreeData;
-      nnRoot = nnTreeData === null ? null : d3.hierarchy(nnTreeData, function (d) {
-         // Yield the children of node d
-         return d.p;
-      });
-      var nng = d3.select("div#nn-canvas")
-         .append("svg")
-         .attr("width", _width + margin.right + margin.left)
-         .attr("height", _height + margin.top + margin.bottom)
-         .append("g")
-         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-      $("div#nn-tree div.grid div.table-responsive")
-         .scroll(function () {
+        },
+        error: function (resp) {
+        },
+        complete: function (resp) {
+        }
+    })
+}
+function draw_nntree(_nnTreeData, _width, _height) {
+    nnTreeData = _nnTreeData;
+    nnRoot = nnTreeData === null ? null : d3.hierarchy(nnTreeData, function(d) {
+        // Yield the children of node d
+        return d.p;
+    });
+    var nng = d3.select("div#nn-canvas")
+        .append("svg")
+            .attr("width", _width + margin.right + margin.left)
+            .attr("height", _height + margin.top + margin.bottom)
+        .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    $("div#nn-tree div.grid div.table-responsive")
+        .scroll(function() {
             var jqCircle = $("#info").data("circle");
             if (jqCircle) {
-               var pos = jqCircle.offset();
-               $("#info")
-                  .css("left", "" + pos.left + "px")
-                  .css("top", "" + pos.top + "px")
+                var pos = jqCircle.offset();
+                $("#info")
+                    .css("left", "" + pos.left + "px")
+                    .css("top", "" + pos.top + "px")
             }
-         });
-      if (nnRoot) {
-         d3.select(self.frameElement).style("height", (_height + margin.top + margin.bottom) + "px");
-         d3_update(nng, nnRoot, nntree_fn);
-      }
+        });
+   if (nnRoot) {
+      d3.select(self.frameElement).style("height", (_height + margin.top + margin.bottom) + "px");
+      d3_update(nng, nnRoot, nntree_fn);
    }
-   function nn_wait(state) {
-      // Start or stop a wait spinner
-      class_ok = "glyphicon-jpy"
-      class_waiting = "glyphicon-restart glyphicon-spin"
-      if (state) {
-         $("#nn-status").parent().addClass("disabled")
-         $("#nn-status span").addClass(class_waiting).removeClass(class_ok);
-      }
-      else {
-         $("#nn-status").parent().removeClass("disabled");
-         $("#nn-status span").removeClass(class_waiting).addClass(class_ok).css(
+}
+function nn_wait(state) {
+    // Start or stop a wait spinner
+    class_ok = "glyphicon-jpy"
+    class_waiting = "glyphicon-restart glyphicon-spin"
+    if (state) {
+        $("#nn-status").parent().addClass("disabled")
+        $("#nn-status span").addClass(class_waiting).removeClass(class_ok);
+    }
+    else {
+        $("#nn-status").parent().removeClass("disabled");
+        $("#nn-status span").removeClass(class_waiting).addClass(class_ok).css(
             {
-               "transform": "rotate(180deg)"
+                "transform": "rotate(180deg)"
             }
-         );
-      }
+        );
+    }
+}
+{%- endif %}
+
+function initMain(jQuery) {
+   // Initialization
+   $("#edit-sent").click(editSentence);
+   $("#info")
+      .click(function(ev) {
+         ev.stopPropagation();
+         $(this).css("visibility", "hidden");
+      })
+      .data("circle", null);
+
+   // Enable tabs
+   $('#tree-hdr a').click(function() {
+       $(this).tab('show');
+   });
+   $('#tree-hdr a:first').tab('show');
+   $('div#simple').css("visibility", "visible");
+
+   // Display tree using D3
+   if (root) {
+      d3.select(self.frameElement).style("height", (height + margin.top + margin.bottom) + "px");
+      d3_update(g, root, tree_fn);
    }
-   {% - endif %}
 
-   function initMain(jQuery) {
-      // Initialization
-      $("#edit-sent").click(editSentence);
-      $("#info")
-         .click(function (ev) {
-            ev.stopPropagation();
-            $(this).css("visibility", "hidden");
-         })
-         .data("circle", null);
-
-      // Enable tabs
-      $('#tree-hdr a').click(function () {
-         $(this).tab('show');
-      });
-      $('#tree-hdr a:first').tab('show');
-      $('div#simple').css("visibility", "visible");
-
-      // Display tree using D3
-      if (root) {
-         d3.select(self.frameElement).style("height", (height + margin.top + margin.bottom) + "px");
-         d3_update(g, root, tree_fn);
-      }
-
-      {% if nn_parsing_enabled -%}
+   {% if nn_parsing_enabled -%}
       get_nntree(theText);
       nn_wait(true);
-      {% - endif %}
+   {%- endif %}
 
-      // Set up panning via the mouse
-      panTreeDisplay();
-      panDetailDisplay();
-   }
+   // Set up panning via the mouse
+   panTreeDisplay();
+   panDetailDisplay();
+}
 
-   $(document).ready(initMain);
+$(document).ready(initMain);
 
 </script>
 
 {% endblock %}
+
