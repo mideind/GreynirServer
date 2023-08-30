@@ -137,7 +137,7 @@ def test_read_json_api_key():
 
     # Test reading a key from a JSON file
     assert read_json_api_key(
-        "dummy_json_api_key", folder=GREYNIR_ROOT_DIR / "tests/files"
+        "dummy_json_api_key", folder=GREYNIR_ROOT_DIR / "tests" / "files"
     ) == {"key": 123456789}
 
 
@@ -152,7 +152,7 @@ def test_read_txt_api_key():
     # Test reading a key from a .txt file
     assert (
         read_txt_api_key(
-            "dummy_greynir_api_key", folder=GREYNIR_ROOT_DIR / "tests/files"
+            "dummy_greynir_api_key", folder=GREYNIR_ROOT_DIR / "tests" / "files"
         )
         == "123456789"
     )
