@@ -46,6 +46,7 @@ from queries.util import (
 from speech.trans.num import number_to_text
 from utility import QUERIES_RESOURCES_DIR
 
+# TODO: fetch ATM data from a web service instead of a local file every once in a while
 # TODO: Handle multiple ATMs in same location, but with different services
 # TODO: "við" er ekki rétt í öllum tilfellum, td ætti að vera "í Norðurturni Smáralindar"
 
@@ -459,7 +460,7 @@ def _answ_for_atm_query(location: LatLonTuple, result: Result) -> AnswerTuple:
     elif result.qkey == _ATM_FURTHER_INFO_OPENING_HOURS:
         ans_start = "Hraðbankinn við "
         opening_hours: str = atm_list[0]["opening_hours_text"].get("is", "")
-        if len(opening_hours) is not 0:
+        if len(opening_hours) != 0:
             opening_hours = opening_hours[0].lower() + opening_hours[1:]
         if atm_list[0]["always_open"] is True:
             answ_fmt = "{0}{1} er alltaf opinn."
@@ -471,7 +472,7 @@ def _answ_for_atm_query(location: LatLonTuple, result: Result) -> AnswerTuple:
                 ans_start,
                 voice_street_name,
             )
-        elif len(opening_hours) is not 0 and opening_hours.startswith("opnunartím"):
+        elif len(opening_hours) != 0 and opening_hours.startswith("opnunartím"):
             answ_fmt = "{0}{1} fylgir {2}."
             answer = answ_fmt.format(
                 ans_start,
@@ -483,7 +484,7 @@ def _answ_for_atm_query(location: LatLonTuple, result: Result) -> AnswerTuple:
                 voice_street_name,
                 NounPhrase(opening_hours).dative,
             )
-        elif len(opening_hours) is not 0 and opening_hours.startswith("opið"):
+        elif len(opening_hours) != 0 and opening_hours.startswith("opið"):
             answ_fmt = "{0}{1} er {2}."
             opening_hours = opening_hours.replace("opið", "opinn")
             index = opening_hours.find("daga") + 4
