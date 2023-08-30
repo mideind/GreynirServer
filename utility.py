@@ -20,8 +20,9 @@
     Utility functions used in various places in the codebase.
 
 """
-from typing import List
+from typing import Any, Dict, List, Optional
 
+import json
 import string
 import logging
 from functools import lru_cache
@@ -47,14 +48,35 @@ QUERIES_DIALOGUE_DIR = QUERIES_DIR / "dialogues"
 
 
 @lru_cache(maxsize=32)
-def read_api_key(key_name: str) -> str:
-    """Read the given key from a text file in resources directory. Cached."""
-    p = RESOURCES_DIR / f"{key_name}.txt"
+def read_txt_api_key(key_name: str, *, folder: Optional[Path] = None) -> str:
+    """
+    Read the given key from a text file in resources directory. Cached.
+    Optionally provide a different path to the folder containing the key file.
+    """
+    folder = folder or RESOURCES_DIR
+    p = folder / f"{key_name}.txt"
     try:
         return p.read_text().strip()
     except FileNotFoundError:
-        logging.warning(f"API key file {p} not found")
+        logging.warning(f"API key file {p} not found in {folder}")
     return ""
+
+
+@lru_cache(maxsize=32)
+def read_json_api_key(
+    key_name: str, *, folder: Optional[Path] = None
+) -> Dict[str, Any]:
+    """
+    Read the given key from a JSON file in resources directory. Cached.
+    Optionally provide a different path to the folder containing the key file.
+    """
+    folder = folder or RESOURCES_DIR
+    p = folder / f"{key_name}.json"
+    try:
+        return json.loads(p.read_text())
+    except FileNotFoundError:
+        logging.warning(f"API key file {p} not found in {folder}")
+    return {}
 
 
 def modules_in_dir(p: Path) -> List[str]:
