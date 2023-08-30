@@ -26,14 +26,11 @@ import os
 import re
 import sys
 import datetime
-import logging
+import pytest
 from pathlib import Path
 from itertools import product
 
 import requests
-from speech import text_to_audio_url
-from speech.trans import DefaultTranscriber as DT
-from utility import read_api_key
 
 # Shenanigans to enable Pytest to discover modules in the
 # main workspace directory (the parent of /tests)
@@ -41,6 +38,20 @@ basepath, _ = os.path.split(os.path.realpath(__file__))
 mainpath = os.path.join(basepath, "..")
 if mainpath not in sys.path:
     sys.path.insert(0, mainpath)
+
+from speech import text_to_audio_url
+from speech.trans import DefaultTranscriber as DT
+from utility import read_json_api_key
+
+# TODO: remove these tests once icespeak is released
+
+
+def has_azure_api_key() -> bool:
+    return read_json_api_key("AzureSpeechServerKey") != {}
+
+
+def has_aws_api_key() -> bool:
+    return read_json_api_key("AWSPollyServerKey") != {}
 
 
 def test_voices_utils():
@@ -72,43 +83,51 @@ def test_voices_utils():
     )
 
 
-def test_speech_synthesis():
-    """Test basic speech synthesis functionality."""
+@pytest.mark.skipif(not has_aws_api_key(), reason="No AWS Polly API key found")
+def test_speech_synthesis_aws():
+    """Test basic speech synthesis functionality with AWS Polly."""
 
     _TEXT = "Prufa"
     _MIN_AUDIO_SIZE = 1000
 
     # Test AWS Polly
-    if read_api_key("AWSPollyServerKey.json"):
-        url = text_to_audio_url(
-            text=_TEXT,
-            text_format="text",
-            audio_format="mp3",
-            voice_id="Dora",
-        )
-        assert url and url.startswith("http")
-        r = requests.get(url, timeout=10)
-        assert r.headers.get("Content-Type") == "audio/mpeg", "Expected MP3 audio data"
-        assert len(r.content) > _MIN_AUDIO_SIZE, "Expected longer audio data"
-    else:
-        logging.info("No AWS Polly API key found, skipping test")
+    url = text_to_audio_url(
+        text=_TEXT,
+        text_format="text",
+        audio_format="mp3",
+        voice_id="Dora",
+    )
+    assert url and url.startswith("http")
+    r = requests.get(url, timeout=10)
+    assert r.headers.get("Content-Type") == "audio/mpeg", "Expected MP3 audio data"
+    assert len(r.content) > _MIN_AUDIO_SIZE, "Expected longer audio data"
+
+
+@pytest.mark.skipif(
+    not has_azure_api_key(),
+    reason="No Azure Speech API key found",
+)
+def test_speech_synthesis_azure():
+    """
+    Test basic speech synthesis functionality with Azure Cognitive Services.
+    """
+
+    _TEXT = "Prufa"
+    _MIN_AUDIO_SIZE = 1000
 
     # Test Azure Cognitive Services
-    if read_api_key("AzureSpeechServerKey.json"):
-        url = text_to_audio_url(
-            text=_TEXT,
-            text_format="text",
-            audio_format="mp3",
-            voice_id="Gudrun",
-        )
-        assert url and url.startswith("file://") and url.endswith(".mp3")
-        path_str = url[7:]
-        path = Path(path_str)
-        assert path.is_file(), "Expected audio file to exist"
-        assert path.stat().st_size > _MIN_AUDIO_SIZE, "Expected longer audio data"
-        path.unlink()
-    else:
-        logging.info("No Azure Speech API key found, skipping test")
+    url = text_to_audio_url(
+        text=_TEXT,
+        text_format="text",
+        audio_format="mp3",
+        voice_id="Gudrun",
+    )
+    assert url and url.startswith("file://") and url.endswith(".mp3")
+    path_str = url[7:]
+    path = Path(path_str)
+    assert path.is_file(), "Expected audio file to exist"
+    assert path.stat().st_size > _MIN_AUDIO_SIZE, "Expected longer audio data"
+    path.unlink()
 
 
 def test_gssml():
