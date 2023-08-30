@@ -37,7 +37,7 @@ from reynir.bindb import GreynirBin
 
 from . import routes, cache, max_age
 from settings import changedlocale
-from utility import read_api_key
+from utility import read_txt_api_key
 from db import SessionContext, Session
 from db.sql import (
     StatsQuery,
@@ -354,7 +354,7 @@ def stats_queries() -> Union[Response, str]:
 
     # Accessing this route requires an API key
     key = request.args.get("key")
-    if key is None or key != read_api_key("GreynirServerKey"):
+    if key is None or key != read_txt_api_key("GreynirServerKey"):
         return Response(f"Not authorized", status=401)
 
     days = _DEFAULT_QUERY_STATS_PERIOD

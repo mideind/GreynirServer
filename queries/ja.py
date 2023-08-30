@@ -41,7 +41,7 @@ from speech.trans import gssml
 from queries import AnswerTuple, Query, QueryStateDict
 from tree import Result, Node
 from geo import iceprep_for_street
-from utility import read_api_key, icequote
+from utility import read_txt_api_key, icequote
 
 
 # Module priority
@@ -81,7 +81,7 @@ _JA_API_URL = "https://api.ja.is/search/v6/?{0}"
 
 def query_ja_api(q: str) -> Optional[Dict[str, Any]]:
     """Send query to ja.is API"""
-    key = read_api_key("JaServerKey")
+    key = read_txt_api_key("JaServerKey")
     if not key:
         # No key, can't query the API
         logging.warning("No API key for ja.is")

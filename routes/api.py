@@ -52,7 +52,7 @@ from speech import (
 )
 from speech.voices import voice_for_locale
 from queries.util.openai_gpt import summarize
-from utility import read_api_key, icelandic_asciify
+from utility import read_txt_api_key, icelandic_asciify
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH
@@ -507,7 +507,7 @@ def _has_valid_api_key(req: Request, allow_query_param: bool = False) -> bool:
     key = request.headers.get("Authorization", "")
     if not key and allow_query_param:
         key = cast(Dict[str, str], request.values).get("api_key", "")
-    gak = read_api_key("GreynirServerKey")  # Cached
+    gak = read_txt_api_key("GreynirServerKey")  # Cached
     return all((gak, key, key == gak))
 
 

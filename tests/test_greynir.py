@@ -36,7 +36,7 @@ if mainpath not in sys.path:
     sys.path.insert(0, mainpath)
 
 from main import app  # noqa
-from utility import read_api_key  # noqa
+from utility import read_txt_api_key  # noqa
 
 # pylint: disable=unused-wildcard-import
 from geo import *  # noqa
@@ -60,7 +60,7 @@ def in_ci_environment() -> bool:
     is a dummy value (set in CI config)."""
     global DUMMY_API_KEY
     try:
-        return read_api_key("GreynirServerKey") == DUMMY_API_KEY
+        return read_txt_api_key("GreynirServerKey") == DUMMY_API_KEY
     except Exception:
         return False
 

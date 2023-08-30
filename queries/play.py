@@ -36,7 +36,7 @@ from pyyoutube import Api, SearchListResponse  # type: ignore
 
 from queries import Query
 from queries.util import gen_answer
-from utility import read_api_key
+from utility import read_txt_api_key
 
 
 class VideoIdDict(TypedDict):
@@ -80,7 +80,7 @@ def yt_api() -> Any:
     """Lazily instantiate YouTube API client."""
     global _youtube_api
     if not _youtube_api:
-        _youtube_api = Api(api_key=read_api_key("GoogleServerKey"))
+        _youtube_api = Api(api_key=read_txt_api_key("GoogleServerKey"))
     if not _youtube_api:
         logging.error("Unable to instantiate YouTube API client")
     return _youtube_api
@@ -144,7 +144,7 @@ def find_youtube_playlists(q: str, limit: int = 3) -> List[str]:
 
 
 def rand_yt_playlist_for_genre(
-    genre_name: str, limit: int = 5, fallback: Optional[str]=None
+    genre_name: str, limit: int = 5, fallback: Optional[str] = None
 ) -> Optional[str]:
     """Given a musical genre name, search for YouTube playlists and return a
     URL to a randomly selected one, with an (optional) fallback video URL."""
