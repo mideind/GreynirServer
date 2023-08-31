@@ -2,28 +2,28 @@
 
 To start the Greynir shell, activate the virtual environment and install IPython:
 
-```
+```bash
 pip install ipython
 ```
 
 You can then run the following command from the repository root:
 
-```
-scripts/shell.sh 
+```bash
+bash scripts/shell.sh
 ```
 
 This will launch an [IPython](http://ipython.readthedocs.io) shell, a superior alternative to the standard Python REPL. Features include syntax highlighting, auto-pretty-printing, auto-indentation, smart autocompletion, persistent history across sessions, integrated access to pdb and the profiler, and various introspection tools.
 
-To enable auto-reloading of modules prior to every command, run the following command: 
+To enable auto-reloading of modules prior to every command, run the following command:
 
-```
+```python
 %autoreload 2
 ```
 
 The shell has been configured to automatically import Greynir's database models and create a (commit-disabled) database session when launched. The Greynir parser is also imported.
 
 * `s` - SQLAlchemy database session
-* `g` - Instance of the [Greynir](https://github.com/mideind/GreynirPackage) parser.
+* `g` - Instance of the [Greynir](https://github.com/mideind/GreynirEngine) parser.
 
 For an overview of Greynir's database models, see `db/models.py`.
 
@@ -33,7 +33,7 @@ Shell auto-imports are configured in `.ipython.py` in the repository root. Addit
 
 Get the titles of recent articles:
 
-```
+```python
 In [1]: s.query(Article.heading).order_by(desc(Article.timestamp)) \
    ...: .limit(5).all()
 Out[1]:

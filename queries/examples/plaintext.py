@@ -4,7 +4,7 @@
 
     Example of a plain text query processor module.
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 
 from datetime import datetime, timedelta
 
-from query import Query
+from queries import Query
 
 
 def handle_plain_text(q: Query) -> bool:
@@ -44,7 +44,6 @@ def handle_plain_text(q: Query) -> bool:
 
     if ql == "er þetta prufa":
         q.set_qtype("PlaintextExample")
-        q.set_key("IsTest")
 
         # Set answer
         answer = "Já"

@@ -4,7 +4,7 @@
 
     Scraper database model
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -24,16 +24,16 @@
 """
 
 from typing import Any, Callable, Generic, Optional, Type, TypeVar, cast
+from typing_extensions import Literal
 
 from sqlalchemy import create_engine, desc, func as dbfunc
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.engine.cursor import CursorResult  # type: ignore
+from sqlalchemy.engine.cursor import CursorResult
 
 from sqlalchemy.exc import SQLAlchemyError as DatabaseError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import DataError
 from sqlalchemy.exc import OperationalError
-from typing_extensions import Literal
 
 from settings import Settings, ConfigError
 
@@ -51,7 +51,6 @@ __all__ = (
     "ConfigError",
     "Settings",
     "GreynirDB",
-    "classproperty",
     "SessionContext",
 )
 
@@ -60,7 +59,7 @@ class GreynirDB:
     """Wrapper around the SQLAlchemy connection, engine and session"""
 
     def __init__(self) -> None:
-        """Initialize the SQLAlchemy connection to the scraper database"""
+        """Initialize SQLAlchemy connection to the scraper database"""
 
         # Assemble the connection string, using psycopg2cffi which
         # supports both PyPy and CPython
@@ -157,7 +156,7 @@ class SessionContext:
 
     # noinspection PyUnusedLocal
     def __exit__(
-        self, exc_type: Type[BaseException], exc_value: BaseException, traceback: Any
+        self, exc_type: Optional[Type[BaseException]], exc_value: BaseException, traceback: Any
     ) -> Literal[False]:
         """Python context manager protocol"""
         if self._new_session:

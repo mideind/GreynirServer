@@ -43,7 +43,10 @@ QULocEiginlega →
     "eiginlega"
 
 QULocLocated →
-    "staddur" | "staðsettur" | "niðurkominn" | "niður" "kominn" | QULocLocatedFemAndPlural
+    QULocLocatedMasc | QULocLocatedFemAndPlural
+
+QULocLocatedMasc →
+    "staddur" | "staðsettur" | "niðurkominn" | "niður" "kominn"
 
 QULocLocatedFemAndPlural →
     "stödd" | "staðsett" | "niðurkomin" | "niður" "komin"
@@ -57,6 +60,7 @@ QULocInTheWorld →
     | "á" "Íslandi"
     | "á" "yfirborði" "jarðar"
     | "á" "jarðkringlunni"
+    | "á" "plánetunni" "jörð"?
 
 QULocNow →
     "nákvæmlega"? QULocNowGeneric

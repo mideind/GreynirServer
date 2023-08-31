@@ -4,7 +4,7 @@
 
     Flight schedule query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -34,15 +34,11 @@ import logging
 import cachetools
 from datetime import datetime, timedelta, timezone
 
-from query import Query, QueryStateDict
-from queries import query_json_api, is_plural, read_grammar_file, spell_out
+from queries import Query, QueryStateDict
+from queries.util import query_json_api, is_plural, read_grammar_file
 from tree import ParamList, Result, Node
 from settings import changedlocale
-from queries.util.num import (
-    digits_to_text,
-    numbers_to_ordinal,
-    numbers_to_text,
-)
+from speech.trans import gssml
 
 from reynir import NounPhrase
 from geo import capitalize_placename, iceprep_for_placename, icelandic_city_name
@@ -62,7 +58,7 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
@@ -223,7 +219,7 @@ def _filter_flight_data(
     """
     flight_time: datetime
     flight: FlightType
-    now: datetime = datetime.now(timezone.utc)  # Timezone aware datetime
+    now: datetime = datetime.now(timezone.utc) # Timezone aware datetime (don't change to datetime.utcnow()!)
 
     matching_flights: FlightList = []
     for flight in flights:
@@ -266,8 +262,8 @@ def _filter_flight_data(
     return matching_flights
 
 
-_BREAK_LENGTH = 0.5  # Seconds
-_BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
+# Break in speech synthesis between each flight
+_BREAK_TIME = "0.5s"
 
 
 def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
@@ -305,9 +301,6 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
         if flight_dt is None or airport == "" or api_airport == "":
             continue  # Invalid time or locations
 
-        flight_date_str = flight_dt.strftime("%-d. %B")
-        flight_time_str = flight_dt.strftime("%H:%M")
-
         flight_status = flight.get("Status")  # Whether flight is cancelled or not
 
         if flight.get("Departure"):
@@ -317,13 +310,13 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
             # Catch cancelled flights
             if flight_status and "aflýst" in flight_status.lower():
                 line = (
-                    f"Flugi {flight_number} frá {api_airport} til {airport} er aflýst."
+                    "Flugi {flight_number} frá {api_airport} til {airport} er aflýst."
                 )
             else:
                 line = (
-                    f"Flug {flight_number} til {airport} "
-                    f"flýgur frá {api_airport} {flight_date_str} "
-                    f"klukkan {flight_time_str} að staðartíma."
+                    "Flug {flight_number} til {airport} "
+                    "flýgur frá {api_airport} {flight_date_str} "
+                    "klukkan {flight_time_str} að staðartíma."
                 )
         else:
             airport = NounPhrase(airport).dative or airport
@@ -332,28 +325,44 @@ def _format_flight_answer(flights: FlightList) -> Dict[str, str]:
 
             if flight_status and "aflýst" in flight_status.lower():
                 line = (
-                    f"Flugi {flight_number} frá {airport} til {api_airport} er aflýst."
+                    "Flugi {flight_number} frá {airport} til {api_airport} er aflýst."
                 )
             else:
                 line = (
-                    f"Flug {flight_number} frá {airport} "
-                    f"lendir {prep} {api_airport} {flight_date_str} "
-                    f"klukkan {flight_time_str} að staðartíma."
+                    "Flug {flight_number} frá {airport} "
+                    f"lendir {prep} "
+                    "{api_airport} {flight_date_str} "
+                    "klukkan {flight_time_str} að staðartíma."
                 )
+        fds = flight_dt.strftime("%-d. %B")
+        fts = flight_dt.strftime("%H:%M")
 
-        # Spell out flight number (GS209 -> gé ess tveir núll níu)
-        voice_flight_number = digits_to_text(spell_out(flight_number))
-        voice_line = line.replace(flight_number, voice_flight_number)
-
-        # Convert date ordinals to text for voice ("5. ágúst" -> "fimmta ágúst")
-        voice_line = numbers_to_ordinal(voice_line, case="þf", gender="kk")
-
-        answers.append(line)
+        # Voice answer needs parts of the text to be transcribed
+        # e.g. wrap the flight number in transcription markdown
+        # so e.g. 'GS209' is eventually transcribed
+        # something like 'gé ess tveir núll níu'
+        voice_line = line.format(
+            flight_number=gssml(flight_number, type="numalpha"),
+            airport=airport,
+            api_airport=api_airport,
+            flight_date_str=gssml(fds, type="date", case="þf"),
+            flight_time_str=gssml(fts, type="time"),
+        )
         voice_lines.append(voice_line)
+
+        # Visual answer doesn't need transcribing
+        line = line.format(
+            flight_number=flight_number,
+            airport=airport,
+            api_airport=api_airport,
+            flight_date_str=fds,
+            flight_time_str=fts,
+        )
+        answers.append(line)
 
     return {
         "answer": "<br/>".join(answers).strip(),
-        "voice": _BREAK_SSML.join(voice_lines).strip(),
+        "voice": gssml(type="vbreak", time=_BREAK_TIME).join(voice_lines).strip(),
     }
 
 
@@ -379,9 +388,10 @@ def _process_result(result: Result) -> Dict[str, str]:
 
     from_date: datetime
     to_date: datetime
+    now = datetime.now(timezone.utc)  # Timezone aware datetime, don't change to .utcnow()!
     days: int = result.get("day_count", 5)  # Check 5 days into future by default
-    from_date = result.get("from_date", datetime.now(timezone.utc))
-    to_date = result.get("to_date", datetime.now(timezone.utc) + timedelta(days=days))
+    from_date = result.get("from_date", now)
+    to_date = result.get("to_date", now + timedelta(days=days))
 
     # Normalize airport/city names
     airport = _LOCATION_ABBREV_MAP.get(airport, airport)
@@ -430,19 +440,24 @@ def _process_result(result: Result) -> Dict[str, str]:
         else:
             answ["answer"] = f"Ekkert flug fannst frá {from_airp} til {to_airp} "
 
+        answ["voice"] = answ["answer"]
         if days == 1:
             # Wording if only checking next 24 hours
             answ["answer"] += "næsta sólarhringinn."
+            answ["voice"] += "næsta sólarhringinn."
         else:
             answ["answer"] += (
                 f"næstu {days} sólarhringa."
                 if is_plural(days)
                 else f"næsta {days} sólarhringinn."
             )
-
-        # Convert numbers to text in correct case and gender for voice
-        # ("næstu 4 sólarhringa" -> "næstu fjóra sólarhringa")
-        answ["voice"] = numbers_to_text(answ["answer"], gender="kk", case="þf")
+            # Convert numbers to text in correct case and gender for voice
+            # ("næstu 4 sólarhringa" -> "næstu fjóra sólarhringa")
+            answ["voice"] += (
+                f"næstu {gssml(days, type='number', gender='kk', case='þf')} sólarhringa."
+                if is_plural(days)
+                else f"næsta {gssml(days, type='number', gender='kk', case='þf')} sólarhringinn."
+            )
 
     return answ
 
@@ -462,9 +477,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             q.set_answer(answ, answ["answer"], answ["voice"])
             return
         except Exception as e:
-            logging.warning(
-                "Exception generating answer from flight data: {0}".format(e)
-            )
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception generating answer from flight data: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

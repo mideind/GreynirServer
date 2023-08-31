@@ -3,7 +3,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -44,12 +44,11 @@ from tokenizer import correct_spaces
 
 
 def main():
-
     try:
         # Read configuration file
         Settings.read(os.path.join(basepath, "config", "GreynirSimple.conf"))
     except ConfigError as e:
-        print("Configuration error: {0}".format(e))
+        print(f"Configuration error: {e}")
         exit()
 
     with SessionContext(commit=False) as session:
@@ -59,8 +58,8 @@ def main():
             session.query(
                 Article.url, Article.timestamp, Article.heading, Article.tokens  # type: ignore
             )
-            .filter(Article.timestamp > bef)
-            .filter(Article.timestamp < aft)
+            .filter(Article.timestamp > bef)  # type: ignore
+            .filter(Article.timestamp < aft)  # type: ignore
             .order_by(Article.timestamp)
         )
         items = list()

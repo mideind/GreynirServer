@@ -4,7 +4,7 @@
 
     Processor module to extract entity names & definitions
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -32,347 +32,357 @@
 
 """
 
+from typing import Any, List, Tuple, cast
+
 import re
 from datetime import datetime
 
 from db.models import Entity
 from tokenizer import Abbreviations
 
-from query import QueryStateDict
-from tree import Result, TreeStateDict
+from queries import QueryStateDict
+from tree import Node, NonterminalNode, ParamList, Result, TreeStateDict
+
+
+EntityTuple = Tuple[str, str, str]
+EntityList = List[EntityTuple]
 
 
 MODULE_NAME = __name__
 PROCESSOR_TYPE = "tree"
 
 # Avoid chaff
-NOT_DEFINITIONS = {
-    "við",
-    "ári",
-    "ár",
-    "sæti",
-    "stig",
-    "færi",
-    "var",
-    "varð",
-    "fæddur",
-    "fætt",
-    "fædd",
-    "spurður",
-    "spurt",
-    "spurð",
-    "búinn",
-    "búið",
-    "búin",
-    "þessi",
-    "þetta",
-    "sá",
-    "sú",
-    "það",
-    "lán",
-    "inna",
-    "hjónin",
-    "hjónanna",
-    "hann",
-    "hún",
-    "lokið",
-    "ég",
-    "is",
-    "hvað",
-    "bæði",
-    "ver",
-    "verið",
-    "eitthvað",
-    "einhver",
-    "eitthvert",
-    "sú sama",
-    "sá sami",
-    "það sama",
-    "svar",
-    "rek",
-}
+NOT_DEFINITIONS = frozenset(
+    (
+        "við",
+        "ári",
+        "ár",
+        "sæti",
+        "stig",
+        "færi",
+        "var",
+        "varð",
+        "fæddur",
+        "fætt",
+        "fædd",
+        "spurður",
+        "spurt",
+        "spurð",
+        "búinn",
+        "búið",
+        "búin",
+        "þessi",
+        "þetta",
+        "sá",
+        "sú",
+        "það",
+        "lán",
+        "inna",
+        "hjónin",
+        "hjónanna",
+        "hann",
+        "hún",
+        "lokið",
+        "ég",
+        "is",
+        "hvað",
+        "bæði",
+        "ver",
+        "verið",
+        "eitthvað",
+        "einhver",
+        "eitthvert",
+        "sú sama",
+        "sá sami",
+        "það sama",
+        "svar",
+        "rek",
+    )
+)
 
 # The following set should contain lowercase words
-NOT_ENTITIES = {
-    "hann",
-    "hún",
-    "það",
-    "þeir",
-    "þær",
-    "þau",
-    "sú",
-    "þá",
-    "þar",
-    "þetta",
-    "þessi",
-    "þessu",
-    "the",
-    "to",
-    "aðspurð",
-    "aðspurður",
-    "aðstaða",
-    "aðstæður",
-    "aftur",
-    "þarna",
-    "því",
-    "þó",
-    "hver",
-    "hverju",
-    "hvers",
-    "ekki",
-    "ja",
-    "hundrað",
-    "hundruð",
-    "hundruðir",
-    "þúsund",
-    "þúsundir",
-    "milljón",
-    "milljónir",
-    "milljarður",
-    "milljarðar",
-    "mamma",
-    "mamman",
-    "móðir",
-    "móðirin",
-    "faðir",
-    "faðirinn",
-    "pabbi",
-    "pabbinn",
-    "sonur",
-    "sonurinn",
-    "dóttir",
-    "dóttirin",
-    "afi",
-    "afinn",
-    "amma",
-    "amman",
-    "frændi",
-    "frændinn",
-    "frænka",
-    "frænkan",
-    "bróðir",
-    "bróðirinn",
-    "systir",
-    "systirin",
-    "strákur",
-    "strákurinn",
-    "drengur",
-    "drengurinn",
-    "stelpa",
-    "stelpan",
-    "stúlka",
-    "stúlkan",
-    "karl",
-    "karlinn",
-    "kona",
-    "konan",
-    "maður",
-    "maðurinn",
-    "menn",
-    "mennirnir",
-    "eiginkona",
-    "eiginkonan",
-    "eiginmaður",
-    "eiginmaðurinn",
-    # Very common, but useless, definitions here:
-    "höfundur",
-    "höfundurinn",
-    "ástæða",
-    "ástæðan",
-    "staða",
-    "staðan",
-    "leikur",
-    "leikurinn",
-    "nú",
-    "tilefni",
-    "tilefnið",
-    "fólk",
-    "fólkið",
-    "fólki",
-    "málið",
-    "fjöldi",
-    "fjöldinn",
-    "heildarfjöldi",
-    "heildarfjöldinn",
-    "meðal",
-    "munurinn",
-    "hlutfall",
-    "niðurstaða",
-    "framundan",
-    "já",
-    "nei",
-    "félag",
-    "félagið",
-    "fyrirtæki",
-    "fyrirtækið",
-    "hluti",
-    "sýning",
-    "sýningin",
-    "útlit",
-    "staðreynd",
-    "staðreyndin",
-    "verk",
-    "verkið",
-    "dæmi",
-    "dæmið",
-    "markmið",
-    "markmiðið",
-    "rannsókn",
-    "rannsóknin",
-    "annar",
-    "velta",
-    "veltan",
-    "hlutfall",
-    "hlutfallið",
-    "svar",
-    "svarið",
-    "magn",
-    "magnið",
-    "staða",
-    "staðan",
-    "flokkur",
-    "flokkurinn",
-    "fjölskylda",
-    "fjölskyldan",
-    "verðið",
-    "útkoma",
-    "útkoman",
-    "leið",
-    "leiðin",
-    "tilgangur",
-    "tilgangurinn",
-    "ástand",
-    "ástandið",
-    "vegur",
-    "vegurinn",
-    "markaður",
-    "markaðurinn",
-    "fylgi",
-    "fylgið",
-    "kostnaður",
-    "kostnaðurinn",
-    "ákvörðun",
-    "ákvörðunin",
-    # Terms for groups of people, in some cases derogatory,
-    # that are not stored as entity names with definitions
-    "kristinn",
-    "kristnir",
-    "gyðingur",
-    "gyðingar",
-    "júði",
-    "júðar",
-    "múslimi",
-    "múslími",
-    "múslimar",
-    "múslímar",
-    "hindúi",
-    "hindúar",
-    "búddisti",
-    "búddistar",
-    "ásatrúarmaður",
-    "ásatrúarmenn",
-    "ásatrúarfólk",
-    "heiðingi",
-    "heiðingjar",
-    "trúleysingi",
-    "trúleysingjar",
-    "múhameðstrúarmaður",
-    "múhameðstrúarmenn",
-    "múhameðstrúarfólk",
-    "hvítur",
-    "hvítir",
-    "svertingi",
-    "svertingjar",
-    "blökkumaður",
-    "blökkumenn",
-    "blökkufólk",
-    "negri",
-    "negrar",
-    "eskimói",
-    "eskimóar",
-    "inúíti",
-    "inúítar",
-    "indíáni",
-    "indíánar",
-    "baháíi",
-    "baháíar",
-    "asíubúi",
-    "asíubúar",
-    "asíumaður",
-    "asíumenn",
-    "asíufólk",
-    "afríkubúi",
-    "afríkubúar",
-    "afríkumaður",
-    "afríkumenn",
-    "afríkufólk",
-    "afríkunegri",
-    "afríkunegrar",
-    "evrópubúi",
-    "evrópubúar",
-    "evrópumaður",
-    "evrópumenn",
-    "evrópufólk",
-    "ameríkumaður",
-    "ameríkumenn",
-    "ameríkufólk",
-    # Terms for religions, where media-derived definitions may cause offense
-    "trú",
-    "trúin",
-    "trúleysi",
-    "trúleysið",
-    "trúarbragð",
-    "trúarbrögð",
-    "trúarbrögðin",
-    "trúarleiðtogi",
-    "trúarleiðtoginn",
-    "trúarleiðtogar",
-    "trúarleiðtogarnir",
-    "ásatrú",
-    "ásatrúin",
-    "heiðni",
-    "heiðnin",
-    "heiðingdómur",
-    "heiðingdómurinn",
-    "kristni",
-    "kristnin",
-    "kristindómur",
-    "kristindómurinn",
-    "islam",
-    "íslam",
-    "múhameðstrú",
-    "múhameðstrúin",
-    "búddismi",
-    "búddisminn",
-    "búddatrú",
-    "búddatrúin",
-    "hindúismi",
-    "hindúisminn",
-    "hindútrú",
-    "hindútrúin",
-    "gyðingatrú",
-    "gyðingatrúin",
-    "gyðingdómur",
-    "gyðingdómurinn",
-    "júðatrú",
-    "júðatrúin",
-    "júðadómur",
-    "júðadómurinn",
-    "konfúsíusatrú",
-    "konfúsíusatrúin",
-    "shinto",
-    "shintó",
-    "sjinto",
-    "sjintó",
-    "shintotrú",
-    "shintótrú",
-    "sjintotrú",
-    "sjintótrú",
-    "shintotrúin",
-    "shintótrúin",
-    "sjintotrúin",
-    "sjintótrúin",
-}
+NOT_ENTITIES = frozenset(
+    (
+        "hann",
+        "hún",
+        "það",
+        "þeir",
+        "þær",
+        "þau",
+        "sú",
+        "þá",
+        "þar",
+        "þetta",
+        "þessi",
+        "þessu",
+        "the",
+        "to",
+        "aðspurð",
+        "aðspurður",
+        "aðstaða",
+        "aðstæður",
+        "aftur",
+        "þarna",
+        "því",
+        "þó",
+        "hver",
+        "hverju",
+        "hvers",
+        "ekki",
+        "ja",
+        "hundrað",
+        "hundruð",
+        "hundruðir",
+        "þúsund",
+        "þúsundir",
+        "milljón",
+        "milljónir",
+        "milljarður",
+        "milljarðar",
+        "mamma",
+        "mamman",
+        "móðir",
+        "móðirin",
+        "faðir",
+        "faðirinn",
+        "pabbi",
+        "pabbinn",
+        "sonur",
+        "sonurinn",
+        "dóttir",
+        "dóttirin",
+        "afi",
+        "afinn",
+        "amma",
+        "amman",
+        "frændi",
+        "frændinn",
+        "frænka",
+        "frænkan",
+        "bróðir",
+        "bróðirinn",
+        "systir",
+        "systirin",
+        "strákur",
+        "strákurinn",
+        "drengur",
+        "drengurinn",
+        "stelpa",
+        "stelpan",
+        "stúlka",
+        "stúlkan",
+        "karl",
+        "karlinn",
+        "kona",
+        "konan",
+        "maður",
+        "maðurinn",
+        "menn",
+        "mennirnir",
+        "eiginkona",
+        "eiginkonan",
+        "eiginmaður",
+        "eiginmaðurinn",
+        # Very common, but useless, definitions here:
+        "höfundur",
+        "höfundurinn",
+        "ástæða",
+        "ástæðan",
+        "staða",
+        "staðan",
+        "leikur",
+        "leikurinn",
+        "nú",
+        "tilefni",
+        "tilefnið",
+        "fólk",
+        "fólkið",
+        "fólki",
+        "málið",
+        "fjöldi",
+        "fjöldinn",
+        "heildarfjöldi",
+        "heildarfjöldinn",
+        "meðal",
+        "munurinn",
+        "hlutfall",
+        "niðurstaða",
+        "framundan",
+        "já",
+        "nei",
+        "félag",
+        "félagið",
+        "fyrirtæki",
+        "fyrirtækið",
+        "hluti",
+        "sýning",
+        "sýningin",
+        "útlit",
+        "staðreynd",
+        "staðreyndin",
+        "verk",
+        "verkið",
+        "dæmi",
+        "dæmið",
+        "markmið",
+        "markmiðið",
+        "rannsókn",
+        "rannsóknin",
+        "annar",
+        "velta",
+        "veltan",
+        "hlutfall",
+        "hlutfallið",
+        "svar",
+        "svarið",
+        "magn",
+        "magnið",
+        "staða",
+        "staðan",
+        "flokkur",
+        "flokkurinn",
+        "fjölskylda",
+        "fjölskyldan",
+        "verðið",
+        "útkoma",
+        "útkoman",
+        "leið",
+        "leiðin",
+        "tilgangur",
+        "tilgangurinn",
+        "ástand",
+        "ástandið",
+        "vegur",
+        "vegurinn",
+        "markaður",
+        "markaðurinn",
+        "fylgi",
+        "fylgið",
+        "kostnaður",
+        "kostnaðurinn",
+        "ákvörðun",
+        "ákvörðunin",
+        # Terms for groups of people, in some cases derogatory,
+        # that are not stored as entity names with definitions
+        "kristinn",
+        "kristnir",
+        "gyðingur",
+        "gyðingar",
+        "júði",
+        "júðar",
+        "múslimi",
+        "múslími",
+        "múslimar",
+        "múslímar",
+        "hindúi",
+        "hindúar",
+        "búddisti",
+        "búddistar",
+        "ásatrúarmaður",
+        "ásatrúarmenn",
+        "ásatrúarfólk",
+        "heiðingi",
+        "heiðingjar",
+        "trúleysingi",
+        "trúleysingjar",
+        "múhameðstrúarmaður",
+        "múhameðstrúarmenn",
+        "múhameðstrúarfólk",
+        "hvítur",
+        "hvítir",
+        "svertingi",
+        "svertingjar",
+        "blökkumaður",
+        "blökkumenn",
+        "blökkufólk",
+        "negri",
+        "negrar",
+        "eskimói",
+        "eskimóar",
+        "inúíti",
+        "inúítar",
+        "indíáni",
+        "indíánar",
+        "baháíi",
+        "baháíar",
+        "asíubúi",
+        "asíubúar",
+        "asíumaður",
+        "asíumenn",
+        "asíufólk",
+        "afríkubúi",
+        "afríkubúar",
+        "afríkumaður",
+        "afríkumenn",
+        "afríkufólk",
+        "afríkunegri",
+        "afríkunegrar",
+        "evrópubúi",
+        "evrópubúar",
+        "evrópumaður",
+        "evrópumenn",
+        "evrópufólk",
+        "ameríkumaður",
+        "ameríkumenn",
+        "ameríkufólk",
+        # Terms for religions, where media-derived definitions may cause offense
+        "trú",
+        "trúin",
+        "trúleysi",
+        "trúleysið",
+        "trúarbragð",
+        "trúarbrögð",
+        "trúarbrögðin",
+        "trúarleiðtogi",
+        "trúarleiðtoginn",
+        "trúarleiðtogar",
+        "trúarleiðtogarnir",
+        "ásatrú",
+        "ásatrúin",
+        "heiðni",
+        "heiðnin",
+        "heiðingdómur",
+        "heiðingdómurinn",
+        "kristni",
+        "kristnin",
+        "kristindómur",
+        "kristindómurinn",
+        "islam",
+        "íslam",
+        "múhameðstrú",
+        "múhameðstrúin",
+        "búddismi",
+        "búddisminn",
+        "búddatrú",
+        "búddatrúin",
+        "hindúismi",
+        "hindúisminn",
+        "hindútrú",
+        "hindútrúin",
+        "gyðingatrú",
+        "gyðingatrúin",
+        "gyðingdómur",
+        "gyðingdómurinn",
+        "júðatrú",
+        "júðatrúin",
+        "júðadómur",
+        "júðadómurinn",
+        "konfúsíusatrú",
+        "konfúsíusatrúin",
+        "shinto",
+        "shintó",
+        "sjinto",
+        "sjintó",
+        "shintotrú",
+        "shintótrú",
+        "sjintotrú",
+        "sjintótrú",
+        "shintotrúin",
+        "shintótrúin",
+        "sjintotrúin",
+        "sjintótrúin",
+    )
+)
 
 # Lower-case abbreviations that are allowed to be a part of entity names
 ALLOWED_PARTS = frozenset(
@@ -386,7 +396,8 @@ def article_begin(state: TreeStateDict) -> None:
     url = state["url"]  # URL of the article being processed
     # Delete all existing entities for this article
     # pylint: disable=no-member
-    session.execute(Entity.table().delete().where(Entity.article_url == url))
+    etab = cast(Any, Entity).table()
+    session.execute(etab.delete().where(Entity.article_url == url))
     # Create a name mapping dict for the article
     # Last name -> full name
     state["names"] = dict()  # type: ignore
@@ -437,7 +448,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     # Process potential entities
     for entity, verb, definition in result.entities:
-
         # Cut off ending punctuation
         if entity.endswith(DEL_PUNCTUATION):
             entity = entity[:-2]
@@ -501,7 +511,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             return entity[0].isupper()
 
         if def_ok(definition) and name_ok(entity):
-
             if entity in names:
                 # Probably the last name of a longer-named entity:
                 # define the full name, not the last name
@@ -510,7 +519,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 # print("Mapping entity name '{0}' to full name '{1}'".format(entity, names[entity]))
                 entity = names[entity]
 
-            print("Entity '{0}' {1} '{2}'".format(entity, verb, definition))
+            print(f"Entity '{entity}' {verb} '{definition}'")
 
             e = Entity(
                 article_url=url,
@@ -523,7 +532,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             session.add(e)
 
 
-def visit(state, node):
+def visit(state: Any, node: Node) -> bool:
     """Determine whether to visit a particular node"""
     # We don't visit Skilyrðissetning or any of its children
     # because we know any assertions in there are conditional
@@ -535,7 +544,7 @@ def visit(state, node):
 # tree for a sentence.
 
 
-def EfLiður(node, params, result):
+def EfLiður(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Ekki láta sérnafn lifa í gegn um eignarfallslið, nema
     það sé fyrirtækisnafn, sbr. 'Eimskipafélag Íslands hf.'"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
@@ -546,52 +555,56 @@ def EfLiður(node, params, result):
         result.del_attribs(("fyrirtæki",))
 
 
-def EfLiðurForskeyti(node, params, result):
+def EfLiðurForskeyti(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Ekki láta sérnafn lifa í gegn um eignarfallslið"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
     # Ekki breyta eignarfallsliðum í nefnifall
     result._nominative = result._text
 
 
-def NlSérnafnEf(node, params, result):
+def NlSérnafnEf(node: NonterminalNode, params: ParamList, result: Result) -> None:
     # Ekki breyta eignarfallsliðum í nefnifall
     result._nominative = result._text
 
 
-def OkkarFramhald(node, params, result):
+def OkkarFramhald(node: NonterminalNode, params: ParamList, result: Result) -> None:
     # Ekki breyta eignarfallsliðum í nefnifall
     # Þetta grípur 'einn okkar', 'hvorugur þeirra'
     result._nominative = result._text
 
 
-def AtviksliðurEinkunn(node, params, result):
+def AtviksliðurEinkunn(
+    node: NonterminalNode, params: ParamList, result: Result
+) -> None:
     # Ekki breyta atviksliðum í nefnifall
     result._nominative = result._text
 
 
-def FsMeðFallstjórn(node, params, result):
+def FsMeðFallstjórn(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Ekki láta sérnafn lifa í gegn um forsetningarlið"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
     # Ekki breyta forsetningarliðum í nefnifall
     result._nominative = result._text
 
 
-def TilvísunarsetningMeðKommu(node, params, result):
+def TilvísunarsetningMeðKommu(
+    node: NonterminalNode, params: ParamList, result: Result
+) -> None:
     """'...sem Jón í Múla taldi gott fé' - ekki breyta í nefnifall"""
     result._nominative = result._text
 
 
-def SetningÁnF(node, params, result):
+def SetningÁnF(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Ekki láta sérnafn lifa í gegn um setningu án frumlags"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
 
 
-def SetningSo(node, params, result):
+def SetningSo(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Ekki láta sérnafn lifa í gegn um setningu sem hefst á sögn"""
     result.del_attribs(("sérnafn", "sérnafn_nom"))
 
 
-def Sérnafn(node, params, result):
+def Sérnafn(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Sérnafn, stutt eða langt"""
     result.sérnafn = result._text
     result.sérnafn_nom = result._nominative
@@ -599,12 +612,14 @@ def Sérnafn(node, params, result):
     result.names = {result._nominative}
 
 
-def Nafn(node, params, result):
+def Nafn(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Við viljum ekki láta laufið Nafn skilgreina nafn á einingu (entity)"""
     result.nafn_flag = True
 
 
-def SérnafnEðaManneskja(node, params, result):
+def SérnafnEðaManneskja(
+    node: NonterminalNode, params: ParamList, result: Result
+) -> None:
     """Sérnafn eða mannsnafn, eða flóknari nafnliður (Nafn)"""
     if "nafn_flag" in result:
         # Flóknari nafnliður: notum hann ekki sem nafn á Entity
@@ -619,20 +634,22 @@ def SérnafnEðaManneskja(node, params, result):
     result.names = {result._nominative}
 
 
-def Fyrirtæki(node, params, result):
+def Fyrirtæki(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Fyrirtækisnafn, þ.e. sérnafn + ehf./hf./Inc. o.s.frv."""
     result.sérnafn = result._text
     result.sérnafn_nom = result._nominative
     result.fyrirtæki = result._text
 
 
-def SvigaInnihaldFsRuna(node, params, result):
+def SvigaInnihaldFsRuna(
+    node: NonterminalNode, params: ParamList, result: Result
+) -> None:
     """Svigainnihald sem er bara forsetningarruna er ekki brúklegt sem skilgreining"""
     result._text = ""
     result._nominative = ""
 
 
-def SvigaInnihald(node, params, result):
+def SvigaInnihald(node: NonterminalNode, params: ParamList, result: Result) -> None:
     if not node.has_variant("et"):
         return
     tengiliður = result.find_child(nt_base="Tilvísunarsetning")
@@ -679,22 +696,22 @@ def SvigaInnihald(node, params, result):
         pass
     else:
         p = params[0]
-        if p is not None and p.has_nt_base("Nl") and p.has_variant("et"):
+        if p.has_nt_base("Nl") and p.has_variant("et"):
             # Nl/fall_et: OK
             result.sviga_innihald = result._nominative
 
 
-def NlKjarni(node, params, result):
+def NlKjarni(node: NonterminalNode, params: ParamList, result: Result) -> None:
     result.del_attribs("sérnafn_eind_nom")
 
 
-def Skst(node, params, result):
+def Skst(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Ekki láta 'fyrirtækið Apple-búðin' skila 'Apple er fyrirtæki'"""
     result.del_attribs("sérnafn")
     result.del_attribs("sérnafn_nom")
 
 
-def Fyrirbæri(node, params, result):
+def Fyrirbæri(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Bæta Fyrirbæri við sem sérnafni ef það uppfyllir skilyrði þar um"""
     if "sérnafn" in result or "entities" in result or "sviga_innihald" in result:
         return
@@ -706,7 +723,7 @@ def Fyrirbæri(node, params, result):
         result.sérnafn_nom = result._nominative
 
 
-def NlEind(node, params, result):
+def NlEind(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Ef sérnafn og sviga_innihald eru rétt undir NlEind þá er það skilgreining"""
 
     if (
@@ -739,23 +756,21 @@ def NlEind(node, params, result):
         result._text = params[0]._text
 
     if "sérnafn_eind_nom" in result and "sviga_innihald" in result:
-
         entity = result.sérnafn_eind_nom
         definition = result.sviga_innihald
         verb = result.sviga_sögn if "sviga_sögn" in result else "er"
 
         if definition:
-
             # Append to result list
             if "entities" not in result:
                 result.entities = []
 
-            result.entities.append((entity, verb, definition))
+            cast(EntityList, result.entities).append((entity, verb, definition))
 
     result.del_attribs(("sviga_innihald", "sérnafn_eind_nom"))
 
 
-def SamstættFall(node, params, result):
+def SamstættFall(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """'Danska byggingavörukeðjan Bygma'"""
 
     assert len(params) >= 2
@@ -764,7 +779,6 @@ def SamstættFall(node, params, result):
         sérnafn = params[-1].sérnafn
         sérnafn_nom = params[-1].sérnafn_nom
     else:
-
         # Gæti verið venjulegur nafnliður með upphafsstaf
         sérnafn = params[-1]._text
         sérnafn_nom = params[-1]._nominative
@@ -808,31 +822,34 @@ def SamstættFall(node, params, result):
     if "entities" not in result:
         result.entities = []
 
-    result.entities.append((entity, "er", definition))
+    cast(EntityList, result.entities).append((entity, "er", definition))
 
 
-def ÓsamstættFall(node, params, result):
+def ÓsamstættFall(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """'(Ég versla við) herrafataverslunina Smekkmaður'"""
     SamstættFall(node, params, result)
 
 
-def Skilgreining(node, params, result):
+def Skilgreining(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """'bandarísku sjóðirnir'"""
     result.skilgreining = result._canonical  # bandarískur sjóður
 
 
-def FyrirbæriMeðGreini(node, params, result):
+def FyrirbæriMeðGreini(
+    node: NonterminalNode, params: ParamList, result: Result
+) -> None:
     if node.has_variant("ft"):
         # Listi af fyrirbærum: 'bandarísku sjóðirnir Autonomy og Eaton Vance'
         if "skilgreining" in result and "eindir" in result:
             if "entities" not in result:
                 result.entities = []
+            entities = cast(EntityList, result.entities)
             for eind in result.eindir:
-                result.entities.append((eind, "er", result.skilgreining))
+                entities.append((eind, "er", result.skilgreining))
     result.del_attribs(("skilgreining", "eindir"))
 
 
-def Setning(node, params, result):
+def Setning(node: NonterminalNode, params: ParamList, result: Result) -> None:
     """Meðhöndla setningar á forminu 'sérnafn fsliðir* er-sögn eitthvað'"""
 
     if not node.has_variant("p3"):
@@ -840,7 +857,6 @@ def Setning(node, params, result):
         return
 
     try:
-
         frumlag = result.find_descendant(nt_base="NlFrumlag", variant="nf")
         if not frumlag:
             return
@@ -870,7 +886,7 @@ def Setning(node, params, result):
         if "entities" not in result:
             result.entities = []
 
-        result.entities.append((entity, sagnorð._text, andlag._text))
+        cast(EntityList, result.entities).append((entity, sagnorð._text, andlag._text))
 
     finally:
         # Ekki senda sérnöfn upp í tréð ef þau hafa ekki verið höndluð nú þegar

@@ -5,7 +5,7 @@
 
     Grammar generator
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
     This tool reads in one or more grammar files and generates
     all possible sentences from the grammar.
     Uses algorithm from https://github.com/nltk/nltk/blob/develop/nltk/parse/generate.py
-    The algorithm is modified to work with classes from GreynirPackage.
+    The algorithm is modified to work with classes from GreynirEngine.
     Use --help to see more information on usage.
 
 """
@@ -57,7 +57,7 @@ from islenska import Bin
 from reynir.grammar import Nonterminal, Terminal
 from reynir.binparser import BIN_Parser, BIN_LiteralTerminal
 
-from query import QueryGrammar
+from queries import QueryGrammar
 
 # TODO: Create random traversal functionality (itertools.dropwhile?)
 # TODO: Allow replacing special terminals (no, sérnafn, lo, ...) with words

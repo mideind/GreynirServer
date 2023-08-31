@@ -4,7 +4,7 @@
 
     Repeat-after-me query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -24,10 +24,12 @@
 
 """
 
+# TODO: Migrate repeat functionality in builtin to this module
 # TODO: Hvað spurði ég þig um síðast? Hvert var síðasta svar þitt? Endurtaktu þetta, o.s.frv.
 
-from query import Query
-from queries import gen_answer, icequote
+from queries import Query
+from queries.util import gen_answer
+from utility import icequote
 from datetime import datetime, timedelta
 
 

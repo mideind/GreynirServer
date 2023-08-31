@@ -4,7 +4,7 @@
 
     Bus schedule query module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
     Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
@@ -36,30 +36,42 @@
 
 # TODO: Hvar er nálægasta strætóstoppistöð?
 # TODO: Hvað er ég lengi í næsta strætóskýli?
+# TODO: Hvar stoppar sjöan næst?
+# TODO: Fuzzy matching in straeto package should
+#       catch N/A/S/V <-> norður/austur/suður/vestur
+# TODO: "á" vs. "í" vs. other prepositions before bus stop names
+# TODO: If query includes full name of stop,
+#       don't pick other, closer, stop with similar name
+#       e.g. if query is "... Naustabraut Davíðshaga austur",
+#            don't pick "... Naustabraut Davíðshaga vestur"
 
-from typing import Iterable, Optional, List, Set, Tuple, Union, cast
+from typing import Callable, Dict, Iterable, Optional, List, Set, Tuple, cast
 
+import re
+import random
 from threading import Lock
 from functools import lru_cache
 from datetime import datetime
-import random
 
-from islenska.basics import BinEntry
+from reynir import NounPhrase
 
-import query
-from query import AnswerTuple, Query, QueryStateDict, ResponseType, Session
+from queries import AnswerTuple, Query, QueryStateDict
 from tree import Result, Node, ParamList
-from queries import natlang_seq, cap_first, gen_answer, read_grammar_file, sing_or_plur
-from queries.util.num import floats_to_text, numbers_to_text
+from utility import cap_first
+from queries.util import (
+    is_plural,
+    natlang_seq,
+    gen_answer,
+    read_grammar_file,
+)
+from speech.trans import gssml, strip_markup
 from settings import Settings
-from reynir import correct_spaces
 from geo import in_iceland
 
-import straeto  # type: ignore  # TODO
-
+import straeto
 
 # Today's bus schedule, cached
-SCHEDULE_TODAY: Optional[straeto.BusSchedule] = None
+schedule_today: Optional[straeto.BusSchedule] = None
 SCHEDULE_LOCK = Lock()
 
 
@@ -110,7 +122,7 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
@@ -156,7 +168,7 @@ def QBusStop(node: Node, params: ParamList, result: Result) -> None:
 
 def QBusStopName(node: Node, params: ParamList, result: Result) -> None:
     """Save the bus stop name"""
-    result.stop_name = result._nominative
+    result.stop_name = result._root
 
 
 def QBusStopThere(node: Node, params: ParamList, result: Result) -> None:
@@ -234,49 +246,6 @@ _BUS_WORDS = {
     "tía": 10,
     "ellefa": 11,
     "tólfa": 12,
-    "einn": 1,
-    "eitt": 1,
-    "tveir": 2,
-    "tvö": 2,
-    "þrír": 3,
-    "þrjú": 3,
-    "fjórir": 4,
-    "fjögur": 4,
-    "fimm": 5,
-    "sex": 6,
-    "sjö": 7,
-    "níu": 9,
-    "tíu": 10,
-    "ellefu": 11,
-    "tólf": 12,
-    "þrettán": 13,
-    "fjórtán": 14,
-    "fimmtán": 15,
-    "sextán": 16,
-    "sautján": 17,
-    "átján": 18,
-    "nítján": 19,
-    "tuttugu": 20,
-    "þrjátíu": 30,
-    "fjörutíu": 40,
-    "fimmtíu": 50,
-    "sextíu": 60,
-    "sjötíu": 70,
-    "áttatíu": 80,
-    "níutíu": 90,
-    # Hack to catch common ASR error
-    "hundrað eitt": 101,
-    "hundrað tvö": 102,
-    "hundrað þrjú": 103,
-    "hundrað fjögur": 104,
-    "hundrað fimm": 105,
-    "hundrað sex": 106,
-    "hundrað og eitt": 101,
-    "hundrað og tvö": 102,
-    "hundrað og þrjú": 103,
-    "hundrað og fjögur": 104,
-    "hundrað og fimm": 105,
-    "hundrað og sex": 106,
 }
 
 
@@ -297,79 +266,151 @@ def QBusWord(node: Node, params: ParamList, result: Result) -> None:
 
 def QBusNumber(node: Node, params: ParamList, result: Result) -> None:
     """Reflect back the phrase used to specify the bus,
-    but in nominative case."""
+    but in nominative case. Also fetch specified bus number."""
     # 'vagni númer 17' -> 'vagn númer 17'
     # 'leið fimm' -> 'leið fimm'
     result.bus_name = result._nominative
 
-
-def QBusNumberWord(node: Node, params: ParamList, result: Result) -> None:
-    """Obtain the bus number as an integer from word or number terminals."""
-    # Use the nominative, singular, indefinite form
-    number = result._canonical
-    try:
-        # Handle digits ("17")
-        result.bus_number = int(number)
-    except ValueError:
-        # Handle number words ("sautján")
-        result.bus_number = _BUS_WORDS.get(number, 0)
-        if Settings.DEBUG and result.bus_number == 0:
-            print("Unexpected bus number word: {0}".format(number))
-    except Exception as e:
-        if Settings.DEBUG:
-            print("Unexpected exception: {0}".format(e))
-        raise
+    if "numbers" in result and result.numbers:
+        result.bus_number = result.numbers[0]
 
 
 # End of grammar nonterminal handlers
 
+_BETTER_NAMES = {
+    "BSÍ": "Umferðarmiðstöðin",
+    "FMOS": "Framhaldsskólinn í Mosfellsbæ",
+    "KEF - Airport": "Keflavíkurflugvöllur",
+    "KR": "Knattspyrnufélag Reykjavíkur",
+    "RÚV": "Útvarpshúsið",
+}
+_ABBREV_RE = re.compile(r"\b[A-ZÁÐÉÍÓÚÝÞÆÖ]+\b")
 
-def _filter_func(mm: Iterable[BinEntry]) -> List[BinEntry]:
-    """Filter word meanings when casting bus stop names
-    to cases other than nominative"""
-    # Handle secondary and ternary forms (ÞFFT2, ÞGFET3...)
-    # This is a bit hacky, but necessary for optimal results.
-    # For place names, ÞGFET2 seems often to be a better choice
-    # than ÞGFET, since it has a trailing -i
-    # (for instance 'Skjólvangi' instead of 'Skjólvang')
-    mm2 = [m for m in mm if "ÞGF" in m.mark and "2" in m.mark]
-    if not mm2:
-        # Did not find the preferred ÞGF2, so we go for the
-        # normal form and cut away the secondary and ternary ones
-        mm2 = [m for m in mm if "2" not in m.mark and "3" not in m.mark]
-    return mm2 or list(mm)
+
+def _replace_abbreviations(stop_nf: str, stop_name: str) -> str:
+    """
+    Replace '... N/A/S/V' with '... norður/austur/suður/vestur'
+    and surround other abbreviations with 'spell' GSSML.
+    stop_nf is the stop name in nominative case,
+    while stop_name can be in another case (e.g. accusative or dative).
+    """
+    if stop_name.endswith(" N") and straeto.BusStop.named(stop_nf[:-1] + "S"):
+        stop_name = stop_name[:-1] + "norður"
+    elif stop_name.endswith(" A") and straeto.BusStop.named(stop_nf[:-1] + "V"):
+        stop_name = stop_name[:-1] + "austur"
+    elif stop_name.endswith(" S") and straeto.BusStop.named(stop_nf[:-1] + "N"):
+        stop_name = stop_name[:-1] + "suður"
+    elif stop_name.endswith(" V") and straeto.BusStop.named(stop_nf[:-1] + "A"):
+        stop_name = stop_name[:-1] + "vestur"
+    # Spell out any remaining abbreviations for the speech synthesis engine
+    return _ABBREV_RE.sub(lambda m: gssml(m.group(0), type="spell"), stop_name)
+
+
+def _get_split_symbol(stop: str) -> Optional[str]:
+    if " / " in stop:
+        return " / "
+    if " - " in stop:
+        return " - "
+    return None
+
+
+def voicify_stop_name(np: str) -> str:
+    """Fix stop name to better suit speech synthesis."""
+    np = _BETTER_NAMES.get(np, np)
+    return cap_first(_replace_abbreviations(np, np))
 
 
 @lru_cache(maxsize=None)
-def to_accusative(np: str) -> str:
-    """Return the noun phrase after casting it from nominative to accusative case"""
-    np = straeto.BusStop.voice(np)
-    return query.to_accusative(np, filter_func=_filter_func)
+def accusative_form(np: str, voice: bool = False) -> str:
+    """
+    Return accusative case of the stop name,
+    optionally expanding abbreviations for speech synthesis.
+    """
+    orig_stop_name = np
+    if voice:
+        # Replace with better name before inflecting
+        np = _BETTER_NAMES.get(np, np)
+
+    split_symb = _get_split_symbol(np)
+
+    if split_symb is None:
+        # Bus stop is single noun phrase
+        np = NounPhrase(np).accusative or np
+    else:
+        # Bus stop consists of two (at least) noun phrases
+        # separated by split_symb, inflect them separately
+        new_np: List[str] = []
+        for n in np.split(split_symb):
+            if not n.isupper():
+                # Not an all-uppercase abbreviation, try to inflect it
+                n = NounPhrase(n).accusative or n
+            new_np.append(n)
+        np = split_symb.join(new_np)
+    if voice:
+        np = _replace_abbreviations(orig_stop_name, np)
+    return cap_first(np)
 
 
 @lru_cache(maxsize=None)
-def to_dative(np: str) -> str:
-    """Return the noun phrase after casting it from nominative to dative case"""
-    np = straeto.BusStop.voice(np)
-    return query.to_dative(np, filter_func=_filter_func)
+def dative_form(np: str, voice: bool = False) -> str:
+    """
+    Return dative case of the stop name,
+    optionally expanding abbreviations for speech synthesis.
+    """
+    orig_stop_name = np
+    if voice:
+        np = _BETTER_NAMES.get(np, np)
+
+    split_symb = _get_split_symbol(np)
+
+    if split_symb is None:
+        # Bus stop is single noun phrase
+        np = NounPhrase(np).dative or np
+    else:
+        # Bus stop consists of two (at least) noun phrases
+        # separated by split_symb, inflect them separately
+        new_np: List[str] = []
+        for n in np.split(split_symb):
+            if not n.isupper():
+                # Not an uppercase abbreviation, inflect it
+                n = NounPhrase(n).dative or n
+            new_np.append(n)
+        np = split_symb.join(new_np)
+    if voice:
+        np = _replace_abbreviations(orig_stop_name, np)
+    return cap_first(np)
 
 
 def voice_distance(d: float) -> str:
     """Convert a distance, given as a float in units of kilometers, to a string
-    that can be read aloud in Icelandic"""
+    that can be read aloud in Icelandic starting with 'þangað er' or 'þangað eru'."""
+    are = "eru"
     # Distance more than 1 kilometer
     if d >= 1:
-        km: float = round(d, 1)
-        out_str = sing_or_plur(km, "kílómetri", "kílómetrar")
-        return floats_to_text(out_str, gender="kk", comma_null=False)
+        km = round(d, 1)
+        vdist = gssml(km, type="float", gender="kk")
+        if is_plural(km):
+            unit = "kílómetrar"
+        else:
+            are = "er"
+            unit = "kílómetri"
+    else:
+        # Distance less than 1 km: Round to 10 meters
+        m = int(round(d * 1000, -1))
+        vdist = gssml(m, type="number", gender="kk")
+        unit = "metrar"
+    return " ".join(("þangað", are, vdist, unit))
 
-    # Distance less than 1 km: Round to 10 meters
-    m: int = int(round(d * 1000, -1))
-    return numbers_to_text(f"{m} metrar", gender="kk")
+
+# Hours, minutes, seconds
+_HMSTuple = Tuple[int, int, int]
 
 
-def hms_fmt(hms: Tuple[int, int, int]) -> str:
-    """Format a (h, m, s) tuple to a HH:MM string"""
+def hms_fmt(hms: _HMSTuple, voice: bool = False) -> str:
+    """
+    Format a (h, m, s) tuple to a HH:MM string,
+    optionally enclosed by <greynir type='time'>
+    """
     h, m, s = hms
     if s >= 30:
         # Round upwards
@@ -384,24 +425,24 @@ def hms_fmt(hms: Tuple[int, int, int]) -> str:
         m -= 60
     if h >= 24:
         h -= 24
-    return "{0:02}:{1:02}".format(h, m)
+    return gssml(f"{h:02}:{m:02}", type="time") if voice else f"{h:02}:{m:02}"
 
 
-def hms_diff(hms1: Tuple, hms2: Tuple) -> int:
+def hms_diff(hms1: _HMSTuple, hms2: _HMSTuple) -> int:
     """Return (hms1 - hms2) in minutes, where both are (h, m, s) tuples"""
     return (hms1[0] - hms2[0]) * 60 + (hms1[1] - hms2[1])
 
 
-def query_nearest_stop(query: Query, session: Session, result: Result) -> AnswerTuple:
+def query_nearest_stop(query: Query, result: Result) -> AnswerTuple:
     """A query for the stop closest to the user"""
     # Retrieve the client location
     location = query.location
     if location is None:
         # No location provided in the query
-        answer = "Staðsetning óþekkt"
-        response = dict(answer=answer)
+        answer = "Staðsetning óþekkt."
         voice_answer = "Ég veit ekki hvar þú ert."
-        return response, answer, voice_answer
+        return dict(answer=answer), answer, voice_answer
+
     if not in_iceland(location):
         # User's location is not in Iceland
         return gen_answer("Ég þekki ekki strætósamgöngur utan Íslands.")
@@ -410,26 +451,20 @@ def query_nearest_stop(query: Query, session: Session, result: Result) -> Answer
     stop = straeto.BusStop.closest_to(location)
     if stop is None:
         return gen_answer("Ég finn enga stoppistöð nálægt þér.")
-    answer = stop.name
+
+    answer = stop.name + "."
     # Use the same word for the bus stop as in the query
-    stop_word = result.stop_word if "stop_word" in result else "stoppistöð"
-    va = [
-        "Næsta",
-        stop_word,
-        "er",
-        stop.name + ";",
-        "þangað",
-        "eru",
-        voice_distance(straeto.distance(location, stop.location)),
-    ]
+    stop_word = result.get("stop_word", "stoppistöð")
+    voice_answer = (
+        f"Næsta {stop_word} er {voicify_stop_name(stop.name)}; "
+        f"{voice_distance(straeto.distance(location, stop.location))}."
+    )
     # Store a location coordinate and a bus stop name in the context
     query.set_context({"location": stop.location, "bus_stop": stop.name})
-    voice_answer = " ".join(va) + "."
-    response = dict(answer=answer)
-    return response, answer, voice_answer
+    return dict(answer=answer), answer, voice_answer
 
 
-def query_arrival_time(query: Query, session: Session, result: Result):
+def query_arrival_time(query: Query, result: Result) -> AnswerTuple:
     """Answers a query for the arrival time of a bus"""
 
     # Examples:
@@ -449,24 +484,21 @@ def query_arrival_time(query: Query, session: Session, result: Result):
         if ctx and "bus_stop" in ctx:
             stop_name = cast(str, ctx["bus_stop"])
         else:
-            answer = voice_answer = "Ég veit ekki við hvaða stað þú átt."
-            response = dict(answer=answer)
-            return response, answer, voice_answer
+            return gen_answer("Ég veit ekki við hvaða stað þú átt.")
 
     if not stop_name:
         location = query.location
         if location is None:
-            answer = "Staðsetning óþekkt"
-            response = dict(answer=answer)
+            answer = "Staðsetning óþekkt."
             voice_answer = "Ég veit ekki hvar þú ert."
-            return response, answer, voice_answer
+            return dict(answer=answer), answer, voice_answer
 
     # Obtain today's bus schedule
-    global SCHEDULE_TODAY
+    global schedule_today
     with SCHEDULE_LOCK:
-        if SCHEDULE_TODAY is None or not SCHEDULE_TODAY.is_valid_today:
+        if schedule_today is None or not schedule_today.is_valid_today:
             # We don't have today's schedule: create it
-            SCHEDULE_TODAY = straeto.BusSchedule()
+            schedule_today = straeto.BusSchedule()
 
     # Obtain the set of stops that the user may be referring to
     stops: List[straeto.BusStop] = []
@@ -479,10 +511,7 @@ def query_arrival_time(query: Query, session: Session, result: Result):
     else:
         # Obtain the closest stops (at least within 400 meters radius)
         assert location is not None
-        stops = cast(
-            List[straeto.BusStop],
-            straeto.BusStop.closest_to_list(location, n=2, within_radius=0.4),
-        )
+        stops = straeto.BusStop.closest_to_list(location, n=2, within_radius=0.4)
         if not stops:
             # This will fetch the single closest stop, regardless of distance
             stops = [cast(straeto.BusStop, straeto.BusStop.closest_to(location))]
@@ -498,35 +527,41 @@ def query_arrival_time(query: Query, session: Session, result: Result):
                 if route is not None:
                     numbers.add(route.number)
                     stops_canonical.add(stop.name)
-        routes = sorted(list(numbers), key=lambda r: int(r))
-        if len(routes) != 1:
+
+        if len(numbers) != 1:
             # More than one route possible: ask user to clarify
-            route_seq = natlang_seq(list(map(str, routes)))
+            route_seq = natlang_seq(sorted(numbers, key=lambda n: int(n)))
             # "Einarsnesi eða Einarsnesi/Bauganesi"
-            stops_list = " eða ".join([to_dative(s) for s in stops_canonical])
-            answer = (
-                " ".join(["Leiðir", route_seq, "stoppa á", stops_list])
-                + ". Spurðu um eina þeirra."
+            stops_list = natlang_seq([dative_form(s) for s in sorted(stops_canonical)])
+            va_stops_list = " eða ".join(
+                [dative_form(s, voice=True) for s in sorted(stops_canonical)]
             )
+            answer = f"Leiðir {route_seq} stoppa á {stops_list}. Spurðu um eina þeirra."
             voice_answer = (
-                " ".join(["Leiðir", numbers_to_text(route_seq), "stoppa á", stops_list])
-                + ". Spurðu um eina þeirra."
+                f"Leiðir {gssml(route_seq, type='numbers')}"
+                f" stoppa á {va_stops_list}."
+                " Spurðu um eina þeirra."
             )
-            response = dict(answer=answer)
-            return response, answer, voice_answer
+            return dict(answer=answer), answer, voice_answer
+
         # Only one route: use it as the query subject
-        bus_number = routes[0]
-        bus_name = "strætó númer {0}".format(bus_number)
+        bus_number = numbers.pop()
+        bus_name = f"Strætó númer {bus_number}"
+        va = [f"Strætó númer {gssml(bus_number, type='number')}"]
     else:
-        bus_number = result.bus_number if "bus_number" in result else 0
-        bus_name = result.bus_name if "bus_name" in result else "Óþekkt"
+        bus_number = result.get("bus_number", 0)
+        bus_name = cap_first(result.bus_name) if "bus_name" in result else "Óþekkt"
+        va = [gssml(bus_name, type="numbers")]
+        if bus_number < 0:
+            # Negative bus numbers don't exist
+            answer = f"{bus_name} er ekki til."
+            voice_answer = f"{va[0]} er ekki til."
+            return dict(answer=answer), answer, voice_answer
 
     # Prepare results
-    bus_name = cap_first(bus_name)
-    va = [numbers_to_text(bus_name)]
-    a = []
-    arrivals = []
-    arrivals_dict = {}
+    a: List[str] = []
+    arrivals: List[Tuple[str, List[_HMSTuple]]] = []
+    arrivals_dict: Dict[str, List[_HMSTuple]] = {}
     arrives = False
     route_number = str(bus_number)
 
@@ -536,18 +571,18 @@ def query_arrival_time(query: Query, session: Session, result: Result):
     # !!! route '1' would mean 'AL.1' instead of 'ST.1'.
     if stops:
         for stop in stops:
-            arrivals_dict, arrives = SCHEDULE_TODAY.arrivals(route_number, stop)
+            arrivals_dict, arrives = schedule_today.arrivals(route_number, stop)
             if arrives:
                 break
         arrivals = list(arrivals_dict.items())
         assert stop is not None
-        a = ["Á", to_accusative(stop.name), "í átt að"]
+        a = [f"Á {accusative_form(stop.name)} í átt að"]
 
     if arrivals:
         # Get a predicted arrival time for each direction from the
         # real-time bus location server
         assert stop is not None
-        prediction = SCHEDULE_TODAY.predicted_arrival(route_number, stop)
+        prediction = schedule_today.predicted_arrival(route_number, stop)
         now = datetime.utcnow()
         hms_now = (now.hour, now.minute + (now.second // 30), 0)
         first = True
@@ -562,9 +597,9 @@ def query_arrival_time(query: Query, session: Session, result: Result):
             if not first:
                 va.append(", og")
                 a.append(". Í átt að")
-            va.extend(["í átt að", to_dative(direction)])
-            a.append(to_dative(direction))
-            deviation = []
+            va.append(f"í átt að {dative_form(direction, voice=True)}")
+            a.append(dative_form(direction))
+            deviation: str = ""
             if prediction and direction in prediction:
                 # We have a predicted arrival time
                 hms_sched = times[0]
@@ -573,7 +608,7 @@ def query_arrival_time(query: Query, session: Session, result: Result):
                 # now, and skip it if it is 1 minute or less
                 diff = hms_diff(hms_pred, hms_now)
                 if abs(diff) <= 1:
-                    deviation = [", en er að fara núna"]
+                    deviation = ", en er að fara núna"
                 else:
                     # Calculate the difference in minutes between the
                     # schedule and the prediction, with a positive number
@@ -583,29 +618,27 @@ def query_arrival_time(query: Query, session: Session, result: Result):
                         # More than one minute ahead of schedule
                         if diff < -5:
                             # More than 5 minutes ahead
-                            deviation = [
-                                ", en kemur sennilega fyrr, eða",
-                                hms_fmt(hms_pred),
-                            ]
+                            deviation = (
+                                ", en kemur sennilega fyrr, "
+                                f"eða {hms_fmt(hms_pred, voice=True)}"
+                            )
                         else:
                             # Two to five minutes ahead
-                            deviation = [
-                                ", en er",
-                                str(-diff),
-                                "mínútum á undan áætlun",
-                            ]
+                            deviation = f", en er {gssml(-diff, type='number', gender='kvk', case='þgf')} mínútum á undan áætlun"
+
                     elif diff >= 3:
                         # 3 minutes or more behind schedule
-                        deviation = [
-                            ", en kemur sennilega ekki fyrr en",
-                            hms_fmt(hms_pred),
-                        ]
+                        deviation = (
+                            ", en kemur sennilega ekki fyrr "
+                            f"en {hms_fmt(hms_pred, voice=True)}"
+                        )
             if first:
                 assert stop is not None
                 if deviation:
-                    va.extend(["á að koma á", to_accusative(stop.name)])
+                    va.append("á að koma á")
                 else:
-                    va.extend(["kemur á", to_accusative(stop.name)])
+                    va.append("kemur á")
+                va.append(accusative_form(stop.name, voice=True))
             va.append("klukkan")
             a.append("klukkan")
             if len(times) == 1 or (
@@ -614,34 +647,34 @@ def query_arrival_time(query: Query, session: Session, result: Result):
                 # Either we have only one arrival time, or the next arrival is
                 # at least 10 minutes away: only pronounce one time
                 hms = times[0]
-                time_text = hms_fmt(hms)
+                time_text = hms_fmt(hms, voice=True)
             else:
                 # Return two or more times
-                time_text = " og ".join(hms_fmt(hms) for hms in times)
+                time_text = " og ".join(hms_fmt(hms, voice=True) for hms in times)
             va.append(time_text)
-            a.append(time_text)
-            va.extend(deviation)
-            a.extend(deviation)
+            a.append(strip_markup(time_text))  # Remove greynir SSML tags
+            if deviation:
+                va.append(deviation)
+                a.append(strip_markup(deviation))
             first = False
 
     elif arrives:
         # The given bus has already completed its scheduled halts at this stop today
         assert stops
         stop = stops[0]
-        reply = ["kemur ekki aftur á", to_accusative(stop.name), "í dag"]
-        va.extend(reply)
-        a = [bus_name] + reply
+        va.append(f"kemur ekki aftur á {accusative_form(stop.name, voice=True)} í dag")
+        a = [bus_name, "kemur ekki aftur á", accusative_form(stop.name), "í dag"]
 
     elif stops:
         # The given bus doesn't stop at all at either of the two closest stops
         stop = stops[0]
-        va.extend(["stoppar ekki á", to_dative(stop.name)])
-        a = [bus_name, "stoppar ekki á", to_dative(stop.name)]
+        va.append(f"stoppar ekki á {dative_form(stop.name, voice=True)}")
+        a = [bus_name, "stoppar ekki á", dative_form(stop.name)]
 
     else:
         # The bus stop name is not recognized
         assert stop_name is not None
-        va = a = [stop_name.capitalize(), "er ekki biðstöð"]
+        va = a = [f"{stop_name.capitalize()} er ekki biðstöð"]
 
     if stop is not None:
         # Store a location coordinate and a bus stop name in the context
@@ -661,72 +694,63 @@ def query_arrival_time(query: Query, session: Session, result: Result):
         bq = bq.replace(*t)
     query.set_beautified_query(bq)
 
-    def assemble(x):
+    def assemble(x: Iterable[str]) -> str:
         """Intelligently join answer string components."""
-        return (" ".join(x) + ".").replace(" .", ".").replace(" ,", ",")
+        s = " ".join(x) + "."
+        s = re.sub(r"\s\s+", r" ", s)  # Shorten repeated whitespace
+        s = re.sub(r"\s([.,])", r"\1", s)  # Whitespace before comma/period
+        s = re.sub(r"([.,])+", r"\1", s)  # Multiple commas/periods
+        return s
 
-    voice_answer = assemble(va)
     answer = assemble(a)
-    response = dict(answer=answer)
-    return response, answer, voice_answer
+    voice_answer = assemble(va)
+    return dict(answer=answer), answer, voice_answer
 
 
-def query_which_route(query: Query, session: Session, result: Result):
+_ROUTE_SORT: Callable[[str], int] = lambda num: int(
+    "".join(i for i in num if i.isdecimal())
+)
+
+
+def query_which_route(query: Query, result: Result):
     """Which routes stop at a given bus stop"""
-    stop_name = cast(str, result.stop_name)  # 'Einarsnes', 'Fiskislóð'...
+    user_stop_name = cast(str, result.stop_name)  # 'Einarsnes', 'Fiskislóð'...
 
-    if stop_name in {"þar", "þangað"}:
+    if user_stop_name in {"þar", "þangað"}:
         # Referring to a bus stop mentioned earlier
         ctx = query.fetch_context()
         if ctx and "bus_stop" in ctx:
-            stop_name = cast(str, ctx["bus_stop"])
-            result.qkey = stop_name
+            user_stop_name = cast(str, ctx["bus_stop"])
+            result.qkey = user_stop_name
         else:
-            answer = voice_answer = "Ég veit ekki við hvaða stað þú átt."
-            response = dict(answer=answer)
-            return response, answer, voice_answer
+            return gen_answer("Ég veit ekki við hvaða stað þú átt.")
 
     bus_noun = result.bus_noun  # 'strætó', 'vagn', 'leið'...
-    stops = straeto.BusStop.named(stop_name, fuzzy=True)
+    stops = straeto.BusStop.named(user_stop_name, fuzzy=True)
     if not stops:
-        a = [stop_name, "þekkist ekki."]
-        va = ["Ég", "þekki", "ekki", "biðstöðina", stop_name.capitalize()]
+        answer = f"{user_stop_name} þekkist ekki."
+        voice_answer = f"Ég þekki ekki biðstöðina {user_stop_name}."
     else:
-        routes = set()
+        routes: Set[str] = set()
         if query.location:
             straeto.BusStop.sort_by_proximity(stops, query.location)
         stop = stops[0]
         for route_id in stop.visits.keys():
             route = straeto.BusRoute.lookup(route_id)
             if route is not None:
-                number = route.number
-                routes.add(number)
-        va = [bus_noun, "númer"]
-        a = va[:]
-        nroutes = len(routes)
-        cnt = 0
-        for rn in sorted(routes, key=lambda t: int(t)):
-            if cnt:
-                sep = "og" if cnt + 1 == nroutes else ","
-                va.append(sep)
-                a.append(sep)
-            # We convert inflectable numbers to their text equivalents
-            # since the speech engine can't be relied upon to get the
-            # inflection of numbers right
-            va.append(numbers_to_text(rn))
-            a.append(rn)
-            cnt += 1
-        tail = ["stoppar á", to_dative(stop.name)]
-        va.extend(tail)
-        a.extend(tail)
+                routes.add(route.number)
+        route_seq = natlang_seq(sorted(routes, key=_ROUTE_SORT))
+        stop_verb = "stoppa" if is_plural(len(routes)) else "stoppar"
+        answer = f"{bus_noun} númer {route_seq} {stop_verb} á {dative_form(stop.name)}."
+        voice_answer = (
+            f"{bus_noun} númer {gssml(route_seq, type='numbers')} "
+            f"{stop_verb} á {dative_form(stop.name, voice=True)}."
+        )
+        query.set_key(stop.name)
         # Store a location coordinate and a bus stop name in the context
         query.set_context({"location": stop.location, "bus_stop": stop.name})
 
-    voice_answer = correct_spaces(" ".join(va) + ".")
-    answer = correct_spaces(" ".join(a))
-    answer = cap_first(answer)
-    response = dict(answer=answer)
-    return response, answer, voice_answer
+    return dict(answer=answer), cap_first(answer), cap_first(voice_answer)
 
 
 # Dispatcher for the various query types implemented in this module
@@ -747,29 +771,14 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         # Successfully matched a query type
         q.set_qtype(result.qtype)
         q.set_key(result.qkey)
-        # SQLAlchemy session, if required
-        session = state["session"]
         # Select a query function and execute it
         qfunc = _QFUNC.get(result.qtype)
-        answer: Optional[str] = None
-        if qfunc is None:
-            # Something weird going on - should not happen
-            answer = cast(str, result.qtype) + ": " + cast(str, result.qkey)
-            q.set_answer(dict(answer=answer), answer)
-        else:
-            try:
-                voice_answer = None
-                response: Union[AnswerTuple, ResponseType] = qfunc(q, session, result)
-                if isinstance(response, tuple):
-                    # We have both a normal and a voice answer
-                    response, answer, voice_answer = response
-                assert answer is not None
-                q.set_answer(response, answer, voice_answer)
-            except AssertionError:
+        try:
+            assert qfunc is not None, "qfunc is None"
+            q.set_answer(*qfunc(q, result))
+        except Exception as e:
+            if Settings.DEBUG:
                 raise
-            except Exception as e:
-                if Settings.DEBUG:
-                    raise
-                q.set_error("E_EXCEPTION: {0}".format(e))
+            q.set_error(f"E_EXCEPTION: {e}")
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

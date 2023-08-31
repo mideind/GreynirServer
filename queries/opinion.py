@@ -4,7 +4,7 @@
 
     Opinion query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -26,8 +26,8 @@
 
 from datetime import datetime, timedelta
 
-from query import Query, QueryStateDict
-from queries import gen_answer, read_grammar_file
+from queries import Query, QueryStateDict
+from queries.util import gen_answer, read_grammar_file
 from tree import ParamList, Result, Node
 
 

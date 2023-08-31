@@ -1,6 +1,6 @@
 # Grammar files for query modules
 
-This directory contains various `.grammar` files with the
+This directory stores various `.grammar` files containing the
 context-free grammar used by Greynir's query modules.
 
 To get syntax highlighting in your editor of choice, see the

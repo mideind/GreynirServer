@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -33,9 +33,9 @@ from reynir import NounPhrase
 from reynir.bindb import GreynirBin
 
 from geo import icelandic_addr_info, iceprep_for_placename, iceprep_for_street
-from query import ClientDataDict, Query
-from . import gen_answer
-from queries.util.num import numbers_to_text
+from queries import ClientDataDict, Query
+from queries.util import gen_answer
+from speech.trans.num import numbers_to_text
 
 
 _USERINFO_QTYPE = "UserInfo"
@@ -244,7 +244,7 @@ def _whatsmyaddr_handler(q: Query, ql: str) -> bool:
         addr = cast(Dict[str, str], ad)
         street = addr["street"]
         prep = iceprep_for_street(street)
-        answ = "Þú átt heima {0} {1}".format(prep, _addr2str(addr, case="þgf"))
+        answ = f'Þú átt heima {prep} {_addr2str(addr, case="þgf")}'
         voice = numbers_to_text(answ)
         resp = dict(answer=answ)
         q.set_answer(resp, answ, voice)
@@ -320,7 +320,7 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
         q.set_client_data("address", d)
 
         # Generate answer
-        answ = "Heimilisfang þitt hefur verið skráð sem {0}".format(_addr2str(d))
+        answ = f"Heimilisfang þitt hefur verið skráð sem {_addr2str(d)}"
         q.set_answer(*gen_answer(answ))
     else:
         q.set_answer(*gen_answer(_ADDR_CLIENT_ID_MISSING))
@@ -328,25 +328,18 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
     return True
 
 
-def _whatsmynum_handler(q: Query, ql: str) -> bool:
-    """Handle queries of the form "Hvað er símanúmerið mitt?"""
-    return False
-
-
-_MY_PHONE_IS_REGEXES = (
-    r"símanúmer mitt er (.+)$",
-    r"símanúmerið mitt er (.+)$",
-    r"ég er með símanúmer (.+)$",
-    r"ég er með símanúmerið (.+)$",
-)
-
-
-_DUNNO_PHONE_NUM = "Ég veit ekki hvert símanúmer þitt er, en þú getur sagt mér það."
-
-
-def _mynumis_handler(q: Query, ql: str) -> bool:
-    """Handle queries of the form "Hvað er símanúmerið mitt?"""
-    return False
+#def _whatsmynum_handler(q: Query, ql: str) -> bool:
+#    """Handle queries of the form "Hvað er símanúmerið mitt?"""
+#    return False
+#
+#_MY_PHONE_IS_REGEXES = (
+#    r"símanúmer mitt er (.+)$",
+#    r"símanúmerið mitt er (.+)$",
+#    r"ég er með símanúmer (.+)$",
+#    r"ég er með símanúmerið (.+)$",
+#)
+#
+#_DUNNO_PHONE_NUM = "Ég veit ekki hvert símanúmer þitt er, en þú getur sagt mér það."
 
 
 _DEVICE_TYPE_QUERIES = frozenset(

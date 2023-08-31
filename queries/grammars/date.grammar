@@ -11,7 +11,7 @@ QDateQuery →
     | QDateNextDay
     | QDatePrevDay
     | QDateHowLongUntil
-    # | QDateHowLongSince  # Disabled for now.
+    | QDateHowLongSince
     | QDateWhenIs
     | QDateWhichYear
     | QDateLeapYear
@@ -96,8 +96,8 @@ QDateHowLongUntil →
     # | "hvað" "eru" "margir" "mánuðir" "í" QDateItem_þf
 
 QDateHowLongSince →
-    # "hvað" "er" "langt" "síðan" QDateItem
-    "hvað" "er" "langt" "um"? "liðið" "frá" QDateItem_þgf
+    "hvað" "er" "langt" "síðan" QDateItem_þf
+    | "hvað" "er" "langt" "um"? "liðið" "frá" QDateItem_þgf
     | "hvað" "er" "langur" "tími" "liðinn" "frá" QDateItem_þgf
     | "hvað" "eru" "margir" "dagar" "liðnir" "frá" QDateItem_þgf
     | "hvað" "eru" "margir" "mánuðir" "liðnir" "frá" QDateItem_þgf

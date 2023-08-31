@@ -4,7 +4,7 @@
 
     Petrol query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 """
 
 # TODO: "Hver er ódýrasta bensínstöðin innan X kílómetra? Innan X kílómetra radíus?" etc.
+# TODO: Type hints
 
 from typing import List, Dict, Optional
 
@@ -33,8 +34,8 @@ import random
 
 from geo import distance
 from tree import ParamList, Result, Node
-from query import Query, QueryStateDict
-from queries import (
+from queries import Query, QueryStateDict
+from queries.util import (
     query_json_api,
     gen_answer,
     distance_desc,
@@ -43,7 +44,7 @@ from queries import (
     LatLonTuple,
     read_grammar_file,
 )
-from queries.util.num import floats_to_text
+from speech.trans import gssml
 
 _PETROL_QTYPE = "Petrol"
 
@@ -64,7 +65,7 @@ TOPIC_LEMMAS: List[str] = [
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
@@ -220,18 +221,21 @@ def _answ_for_petrol_query(q: Query, result: Result) -> AnswerTuple:
             "{0} er {1} {2} í um það bil {3} fjarlægð. "
             "Þar kostar bensínlítrinn {4} og dísel-lítrinn {5}."
         )
-        dist_nf = distance_desc(station["distance"], case="nf")
-        dist_ef = distance_desc(station["distance"], case="ef", num_to_str=True)
+
         answer = answ_fmt.format(
-            station["company"], station["name"], dist_nf, bensin_kr_desc, diesel_kr_desc
+            station["company"],
+            station["name"],
+            distance_desc(station["distance"], case="nf"),
+            bensin_kr_desc,
+            diesel_kr_desc,
         )
         voice = voice_fmt.format(
             desc,
             station["company"],
             station["name"],
-            dist_ef,
-            floats_to_text(bensin_kr_desc, gender="kvk", comma_null=False),
-            floats_to_text(diesel_kr_desc, gender="kvk", comma_null=False),
+            distance_desc(station["distance"], case="ef", num_to_str=True),
+            gssml(bensin_kr_desc, type="floats", gender="kvk", comma_null=False),
+            gssml(diesel_kr_desc, type="floats", gender="kvk", comma_null=False),
         )
     else:
         answ_fmt = "{0} {1} (bensínverð {2}, díselverð {3})"
@@ -243,8 +247,8 @@ def _answ_for_petrol_query(q: Query, result: Result) -> AnswerTuple:
             desc,
             station["company"],
             station["name"],
-            floats_to_text(bensin_kr_desc, gender="kvk", comma_null=False),
-            floats_to_text(diesel_kr_desc, gender="kvk", comma_null=False),
+            gssml(bensin_kr_desc, type="floats", gender="kvk", comma_null=False),
+            gssml(diesel_kr_desc, type="floats", gender="kvk", comma_null=False),
         )
 
     response = dict(answer=answer)
@@ -270,8 +274,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 q.set_answer(*answ)
                 q.set_source("Gasvaktin")
         except Exception as e:
-            logging.warning("Exception while processing petrol query: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception while processing petrol query: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
             raise
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

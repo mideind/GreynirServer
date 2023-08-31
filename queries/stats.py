@@ -4,7 +4,7 @@
 
     Stats query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -32,10 +32,10 @@ from db.models import Person
 from db.models import Query as QueryModel
 from db.sql import QueryTypesQuery
 
-from query import Query
-from queries import gen_answer, natlang_seq, is_plural, sing_or_plur
+from queries import Query
+from queries.util import gen_answer, natlang_seq, is_plural, iceformat_float
 from routes.people import top_persons
-
+from speech.trans import gssml
 
 _STATS_QTYPE = "Stats"
 
@@ -255,11 +255,15 @@ def _gen_num_people_answer(q: Query) -> bool:
     with SessionContext(read_only=True) as session:
         qr = session.query(Person.name).distinct().count()
 
+        # TODO: Use single_or_plural() here
         pl = is_plural(qr)
         verb = "eru" if pl else "er"
         indiv = "einstaklingar" if pl else "einstaklingur"
-        answer = "Í gagnagrunni mínum {0} {1} {2}.".format(verb, qr or "engir", indiv)
-        voice = answer
+        count = qr or "engir"
+        vcount = gssml(qr, type="number", gender="kk") or "engir"
+        answer = f"Í gagnagrunni mínum {verb} {{count}} {indiv}."
+        voice = answer.format(count=vcount)
+        answer = answer.format(count=count)
         response = dict(answer=answer)
 
         q.set_expires(datetime.utcnow() + timedelta(hours=1))
@@ -285,9 +289,16 @@ def _gen_num_queries_answer(q: Query) -> bool:
             .count()
         )
 
-        fs = sing_or_plur(qr, "fyrirspurn", "fyrirspurnum")
-        answer = "Á síðustu {0} dögum hef ég svarað {1}.".format(_QUERIES_PERIOD, fs)
-        voice = answer
+        fs = "fyrirspurnum" if is_plural(qr) else "fyrirspurn"
+        answer = f"Á síðustu {{ndays}} dögum hef ég svarað {{nfs}} {fs}."
+        voice = answer.format(
+            ndays=gssml(_QUERIES_PERIOD, type="number", case="þgf", gender="kk"),
+            nfs=gssml(qr, type="number", case="þgf", gender="kvk"),
+        )
+        answer = answer.format(
+            ndays=_QUERIES_PERIOD,
+            nfs=iceformat_float(qr),
+        )
         response = dict(answer=answer)
 
         q.set_key("NumQueries")
@@ -297,6 +308,7 @@ def _gen_num_queries_answer(q: Query) -> bool:
     return True
 
 
+# TODO: Qtypes are too inconsistent between modules
 _QTYPE_TO_DESC = {
     "Weather": "spurningum um veðrið",
     "WeatherForecast": "spurningum um veðrið",
@@ -344,7 +356,7 @@ def _gen_most_freq_queries_answer(q: Query) -> bool:
         if qr:
             top_qtype = qr[0][1]
             desc = _QTYPE_TO_DESC.get(top_qtype, "óskilgreindum fyrirspurnum")
-            answer = "Undanfarið hef ég mest svarað {0}.".format(desc)
+            answer = f"Undanfarið hef ég mest svarað {desc}."
         else:
             answer = "Ég hef ekki svarað neinum fyrirspurnum upp á síðkastið."
 
@@ -376,7 +388,7 @@ def _gen_most_mentioned_answer(q: Query) -> bool:
     else:
         answer = natlang_seq([t["name"] for t in top if "name" in t])
         response = dict(answer=answer)
-        voice = "Umtöluðustu einstaklingar síðustu daga eru {0}.".format(answer)
+        voice = f"Umtöluðustu einstaklingar síðustu daga eru {answer}."
         q.set_expires(datetime.utcnow() + timedelta(hours=1))
         q.set_answer(response, answer, voice)
 

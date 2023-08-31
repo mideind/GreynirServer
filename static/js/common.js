@@ -8,7 +8,7 @@
    JS utility functions for token display, formatting, etc. shared by
    the Greynir front-end.
 
-   Copyright (C) 2022 Miðeind ehf.
+   Copyright (C) 2023 Miðeind ehf.
 
       This program is free software: you can redistribute it and/or modify
       it under the terms of the GNU General Public License as published by
@@ -155,7 +155,7 @@ tokIcons[TOK_DOMAIN] = "glyphicon-world";
 tokIcons[TOK_HASHTAG] = "glyphicon-world";
 tokIcons[TOK_MOLECULE] = "glyphicon-chemistry";
 tokIcons[TOK_USERNAME] = "glyphicon-userhandle";
-tokIcons[TOK_SSN] = "glyphicon-world";    // TODO check for a more appropriate icon
+tokIcons[TOK_SSN] = "glyphicon-user";
 tokIcons[TOK_SERIALNUMBER] = "glyphicon-barcode";
 tokIcons[TOK_COMPANY] = "glyphicon-tag";
 
@@ -538,7 +538,7 @@ function tokenInfo(t, nameDict) {
       t.x: ordmynd
       t.v: extra info, eventually in a tuple
    */
-   var r = {
+   const r = {
       class: null,
       tagClass: null,
       lemma: null,

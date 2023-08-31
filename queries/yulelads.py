@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -28,14 +28,14 @@
 import random
 from datetime import datetime
 
-from query import Query, QueryStateDict
+from queries import Query, QueryStateDict
 from tree import ParamList, Result, Node, TerminalNode
-from queries import read_grammar_file
-from queries.util.num import numbers_to_ordinal
+from queries.util import read_grammar_file
+from speech.trans.num import numbers_to_ordinal
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
@@ -142,9 +142,7 @@ QUERY_NONTERMINALS = {"QYuleQuery"}
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = read_grammar_file(
     "yulelads",
-    yulelad_names=" | ".join(
-        "'{0}'/fall".format(name) for name in _YULE_LADS_BY_NAME.keys()
-    ),
+    yulelad_names=" | ".join(f"'{name}'/fall" for name in _YULE_LADS_BY_NAME.keys()),
 )
 
 
@@ -319,7 +317,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     voice_answer = numbers_to_ordinal(answer, case="ef", gender="kk")
     response = dict(answer=answer)
-    # !!! TODO
+    # TODO: Add context
     # q.set_context({"date": xxx})
     q.set_key(result.qkey)
     q.set_answer(response, answer, voice_answer)

@@ -1,4 +1,3 @@
-
 {% extends "container-normal.html" %}
 
 {% block styles %}
@@ -17,11 +16,12 @@
    </div>
    <div class="panel-body">
       <p>Forritaskil Greynis taka við beiðnum um að málgreina texta í UTF-8 sniði í gegn um HTTPS.
-        Þau skila niðurstöðum í JSON formi.</p>
+         Þau skila niðurstöðum í JSON formi.</p>
       <p>Ef til stendur að málgreina mikið magn texta getur verið hyggilegt að sækja
-      <a href="https://greynir.is/doc/" target="_blank">Python-pakkann <b>Reyni</b></a>
-      (<code>pip install reynir</code>) og nota hann á eigin vélbúnaði fremur en að
-      reiða sig á þessa vefþjónustu.</p>
+         <a href="https://greynir.is/doc/" target="_blank">Python-pakkann <b>Reyni</b></a>
+         (<code>pip install reynir</code>) og nota hann á eigin vélbúnaði fremur en að
+         reiða sig á þessa vefþjónustu.
+      </p>
    </div>
 </div>
 
@@ -33,93 +33,97 @@
    </div>
    <div class="panel-body">
       <p>Forritaskilin eru ennþá á prófunarstigi og geta breyst. Notendur eru hvattir
-      til að koma athugasemdum og ábendingum á framfæri, til dæmis í
-      <a href="https://www.facebook.com/groups/835777623244578/" target="_blank">Facebook-hópi Greynis</a>.</p>
+         til að koma athugasemdum og ábendingum á framfæri, til dæmis í
+         <a href="https://www.facebook.com/groups/835777623244578/" target="_blank">Facebook-hópi Greynis</a>.
+      </p>
    </div>
 </div>
 
 <div>
 
-<h1 class="page-header">Mörkun <small><i>POS tagging</i></small></h1>
+   <h1 class="page-header">Mörkun <small><i>POS tagging</i></small></h1>
 
-<p class="lead">Þjónustan <code>postag.api</code> tekur inn texta og skilar til baka
-hverju orði hans með ítarlegri mörkun (<i>part-of-speech tag</i>),
-þ.e. upplýsingum um orðflokk, stofn, beygingu o.fl. Einnig fylgir með nafnalisti yfir fólk og
-fyrirbæri með sérnöfn.</p>
+   <p class="lead">Þjónustan <code>postag.api</code> tekur inn texta og skilar til baka
+      hverju orði hans með ítarlegri mörkun (<i>part-of-speech tag</i>),
+      þ.e. upplýsingum um orðflokk, stofn, beygingu o.fl. Einnig fylgir með nafnalisti yfir fólk og
+      fyrirbæri með sérnöfn.</p>
 
-<p>Stutta texta sem eru einungis ein málsgrein má málgreina með einföldu <code>HTTPS <b>GET</b></code>
-   þar sem textinn er sendur sem hluti af vefslóð (URL):</p>
+   <p>Stutta texta sem eru einungis ein málsgrein má málgreina með einföldu <code>HTTPS <b>GET</b></code>
+      þar sem textinn er sendur sem hluti af vefslóð (URL):</p>
 
-<pre><b>GET</b> https://greynir.is/postag.api/v1?t=<i>Hér er dæmi um texta til að málgreina</i></pre>
+   <pre><b>GET</b> https://greynir.is/postag.api/v1?t=<i>Hér er dæmi um texta til að málgreina</i></pre>
 
-<p>Lengri texta má senda með <code>HTTP <b>POST</b></code> í <code>application/x-www-form-urlencoded</code> formi,
-   í svæði sem heitir <code>text</code>.</p>
+   <p>Lengri texta má senda með <code>HTTP <b>POST</b></code> í <code>application/x-www-form-urlencoded</code> formi,
+      í svæði sem heitir <code>text</code>.</p>
 
-<p>Dæmi um hvernig nota má POST kallið frá <code>curl</code> í GNU/Linux:</p>
+   <p>Dæmi um hvernig nota má POST kallið frá <code>curl</code> í GNU/Linux:</p>
 
-<pre>$ curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/postag.api/v1</pre>
+   <pre>$ curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/postag.api/v1</pre>
 
-<p>Enn lengri texta má senda með <code>HTTP <b>POST</b></code> í <code>text/plain</code> formi,
-kóðaða í UTF-8 og með línuskiptum (<i>newline</i>, <code>\n</code>) milli málsgreina. Dæmi:</p>
+   <p>Enn lengri texta má senda með <code>HTTP <b>POST</b></code> í <code>text/plain</code> formi,
+      kóðaða í UTF-8 og með línuskiptum (<i>newline</i>, <code>\n</code>) milli málsgreina. Dæmi:</p>
 
-<pre>$ curl -d @example.txt https://greynir.is/postag.api/v1 --header "Content-Type: text/plain"</pre>
+   <pre>$ curl -d @example.txt https://greynir.is/postag.api/v1 --header "Content-Type: text/plain"</pre>
 
-<p><code>postag.api/v1</code> þjónustan skilar JSON skjali með eftirfarandi undirgreinum:</p>
-<ul>
-   <li><code>result</code> er listi af málsgreinum þar sem hver málsgrein er aftur listi
-      af eindum (<i>tokens</i>). Hver eind innifelur eftirfarandi upplýsingar:
-      <ul>
-         <li><code>k</code> er tegund eindar, þ.e. WORD, PERSON, PUNCTUATION, YEAR, AMOUNT o.s.frv.</li>
-         <li><code>x</code> er upphaflegur texti eindarinnar eins og hann var í innsendu skjali.</li>
-         <li><code>s</code> er orðstofn. Hann getur innihaldið bandstrik '-' ef stofninn er ekki í 
-            BÍN og Greynir hefur notast við samsettan orðstofn.</li>
-         <li><code>c</code> er orðflokkur (<b>kk</b>/<b>kvk</b>/<b>hk</b>, <b>so</b>, <b>lo</b>,
-            <b>ao</b>, <b>fs</b>, <b>st</b> o.s.frv.).</li>
-         <li><code>b</code> er beygingarform orðsins eins og það birtist í BÍN. Getur verið bandstrik '-' ef
-            orðið er óbeygt.</li>
-         <li><code>t</code> er lauf (<i>terminal</i>) sem eindin tengist í
-            <a href="https://github.com/mideind/GreynirPackage/blob/master/src/reynir/Greynir.grammar"
-            target="_blank">samhengisfrjálsri málfræði Greynis</a>.</li>
-         <li><code>v</code> er gildi eindarinnar ef við á, til dæmis tala, upphæð, dagsetning eða
-            nafn gjaldmiðils.</li>
-         <li><code>f</code> er flokkur í BÍN (<b>alm</b>, <b>ism</b>, <b>fyr</b>, <b>örn</b> o.s.frv.).</li>
-      </ul>
-      Ef ekki tekst að greina málsgrein eru aðeins svæði <code>k</code> og <code>x</code> fyrir hendi
-      í eindum hennar. Jafnframt er sú eind þar sem málgreinirinn gafst upp merkt með svæði
-      <code>err</code> sem hefur gildið 1. Þar fannst engin málfræðiregla sem leyfði viðkomandi
-      eind á þeim stað. Ástæðan er þá annað hvort sú að einhverju sé ábótavant í
-      málfræði eða stafsetningu málsgreinarinnar, eða að málfræðireglur Greynis séu ekki
-      nógu víðtækar.
-   </li>
-   <li><code>register</code> er nafnalisti</li>
-   <li><code>stats</code> er samantekt af tölfræði, m.a. fjölda málsgreina og einda í textanum:
-      <ul>
-         <li><code>ambiguity</code> er margræðnistuðull, skilgreindur sem vegið meðaltal af
-            (fjölda trjágreininga)^(1/(fjölda einda)) fyrir allar málsgreinar í textanum. Stuðullinn
-            gefur m.ö.o. til kynna hvernig mögulegum trjágreiningum fjölgar við hverja viðbótar eind
-            í textanum.
-            Algengur stuðull er á bilinu 1,5 - 1,6. Ef hann er hærri er textinn óvenju margræður af
-            einhverjum orsökum, t.d. gætu verið margir mismunandi möguleikar á að tengja forsetningarliði við
-            nafnliði og sagnliði. Ef stuðullinn er 1 finnst aðeins ein möguleg trjágreining á textanum og
-            margræðni því engin.
-         </li>
-         <li><code>num_sentences</code> er fjöldi málsgreina í textanum.</li>
-         <li><code>num_parsed</code> er fjöldi málsgreina í textanum sem tókst að trjágreina.</li>
-         <li><code>num_tokens</code> er fjöldi einda í textanum. Allar eindir sem Greynir þekkir eru
-            taldar með. Greynir sleppir hins vegar ýmsum táknum sem hann þekkir ekki.</li>
-         <li><code>parse_time</code> er tími, í sekúndum, sem þáttun (<i>parsing</i>) tók. Hver
-            fyrirspurn er höndluð í einum þræði, en Greynir getur unnið að mörgum
-            fyrirspurnum samtímis.</li>
-         <li><code>tok_time</code> er tími, í sekúndum, sem eindagreining (<i>tokenization</i>) tók.</li>
-         <li><code>total_time</code> er heildartími, í sekúndum, sem úrvinnsla textans tók.
-            Summa af <code>tok_time</code> og <code>parse_time</code>.</li>
-      </ul>
-   </li>
-</ul>
+   <p><code>postag.api/v1</code> þjónustan skilar JSON skjali með eftirfarandi undirgreinum:</p>
+   <ul>
+      <li><code>result</code> er listi af málsgreinum þar sem hver málsgrein er aftur listi
+         af eindum (<i>tokens</i>). Hver eind innifelur eftirfarandi upplýsingar:
+         <ul>
+            <li><code>k</code> er tegund eindar, þ.e. WORD, PERSON, PUNCTUATION, YEAR, AMOUNT o.s.frv.</li>
+            <li><code>x</code> er upphaflegur texti eindarinnar eins og hann var í innsendu skjali.</li>
+            <li><code>s</code> er orðstofn. Hann getur innihaldið bandstrik '-' ef stofninn er ekki í
+               BÍN og Greynir hefur notast við samsettan orðstofn.</li>
+            <li><code>c</code> er orðflokkur (<b>kk</b>/<b>kvk</b>/<b>hk</b>, <b>so</b>, <b>lo</b>,
+               <b>ao</b>, <b>fs</b>, <b>st</b> o.s.frv.).
+            </li>
+            <li><code>b</code> er beygingarform orðsins eins og það birtist í BÍN. Getur verið bandstrik '-' ef
+               orðið er óbeygt.</li>
+            <li><code>t</code> er lauf (<i>terminal</i>) sem eindin tengist í
+               <a href="https://github.com/mideind/GreynirEngine/blob/master/src/reynir/Greynir.grammar"
+                  target="_blank">samhengisfrjálsri málfræði Greynis</a>.
+            </li>
+            <li><code>v</code> er gildi eindarinnar ef við á, til dæmis tala, upphæð, dagsetning eða
+               nafn gjaldmiðils.</li>
+            <li><code>f</code> er flokkur í BÍN (<b>alm</b>, <b>ism</b>, <b>fyr</b>, <b>örn</b> o.s.frv.).</li>
+         </ul>
+         Ef ekki tekst að greina málsgrein eru aðeins svæði <code>k</code> og <code>x</code> fyrir hendi
+         í eindum hennar. Jafnframt er sú eind þar sem málgreinirinn gafst upp merkt með svæði
+         <code>err</code> sem hefur gildið 1. Þar fannst engin málfræðiregla sem leyfði viðkomandi
+         eind á þeim stað. Ástæðan er þá annað hvort sú að einhverju sé ábótavant í
+         málfræði eða stafsetningu málsgreinarinnar, eða að málfræðireglur Greynis séu ekki
+         nógu víðtækar.
+      </li>
+      <li><code>register</code> er nafnalisti</li>
+      <li><code>stats</code> er samantekt af tölfræði, m.a. fjölda málsgreina og einda í textanum:
+         <ul>
+            <li><code>ambiguity</code> er margræðnistuðull, skilgreindur sem vegið meðaltal af
+               (fjölda trjágreininga)^(1/(fjölda einda)) fyrir allar málsgreinar í textanum. Stuðullinn
+               gefur m.ö.o. til kynna hvernig mögulegum trjágreiningum fjölgar við hverja viðbótar eind
+               í textanum.
+               Algengur stuðull er á bilinu 1,5 - 1,6. Ef hann er hærri er textinn óvenju margræður af
+               einhverjum orsökum, t.d. gætu verið margir mismunandi möguleikar á að tengja forsetningarliði við
+               nafnliði og sagnliði. Ef stuðullinn er 1 finnst aðeins ein möguleg trjágreining á textanum og
+               margræðni því engin.
+            </li>
+            <li><code>num_sentences</code> er fjöldi málsgreina í textanum.</li>
+            <li><code>num_parsed</code> er fjöldi málsgreina í textanum sem tókst að trjágreina.</li>
+            <li><code>num_tokens</code> er fjöldi einda í textanum. Allar eindir sem Greynir þekkir eru
+               taldar með. Greynir sleppir hins vegar ýmsum táknum sem hann þekkir ekki.</li>
+            <li><code>parse_time</code> er tími, í sekúndum, sem þáttun (<i>parsing</i>) tók. Hver
+               fyrirspurn er höndluð í einum þræði, en Greynir getur unnið að mörgum
+               fyrirspurnum samtímis.</li>
+            <li><code>tok_time</code> er tími, í sekúndum, sem eindagreining (<i>tokenization</i>) tók.</li>
+            <li><code>total_time</code> er heildartími, í sekúndum, sem úrvinnsla textans tók.
+               Summa af <code>tok_time</code> og <code>parse_time</code>.</li>
+         </ul>
+      </li>
+   </ul>
 
-<p><button data-toggle="collapse" data-target="#postag-example"><span class="caret"></span> Dæmi</button> um mörkun málsgreinarinnar <i>Halldór Laxness fékk nóbelsverðlaunin í bókmenntum árið 1955.</i></p>
+   <p><button data-toggle="collapse" data-target="#postag-example"><span class="caret"></span> Dæmi</button> um mörkun
+      málsgreinarinnar <i>Halldór Laxness fékk nóbelsverðlaunin í bókmenntum árið 1955.</i></p>
 
-<pre id="postag-example" class="collapse">
+   <pre id="postag-example" class="collapse">
 {
   "register": {
     "Halldór Laxness": {
@@ -205,50 +209,52 @@ kóðaða í UTF-8 og með línuskiptum (<i>newline</i>, <code>\n</code>) milli 
 }
 </pre>
 
-<p class="lead" style="padding-top: 1.6em">Þjónustan <code>ifdtag.api</code> tekur inn texta og skilar til baka
-hverju orði hans með einfaldri mörkun (<i>part-of-speech tag</i>) úr
-<a href="http://www.malfong.is/files/ot_tagset_files_is.pdf" target="_blank">markaskrá Íslensku
-orðtíðnibókarinnar (IFD)</a>.</p>
+   <p class="lead" style="padding-top: 1.6em">Þjónustan <code>ifdtag.api</code> tekur inn texta og skilar til baka
+      hverju orði hans með einfaldri mörkun (<i>part-of-speech tag</i>) úr
+      <a href="http://www.malfong.is/files/ot_tagset_files_is.pdf" target="_blank">markaskrá Íslensku
+         orðtíðnibókarinnar (IFD)</a>.
+   </p>
 
-<p><code>ifdtag.api</code> notar markara sem byggir á tölfræði úr stóru textasafni, ekki á málfræðireglum.
-Þjónustan getur því markað texta sem Greyni tekst ekki að þátta. Á móti kemur að nákvæmnin er
-tilviljanakenndari og samkvæmni stundum minni en í <code>postag.api</code> sem byggir á þáttun.</p>
+   <p><code>ifdtag.api</code> notar markara sem byggir á tölfræði úr stóru textasafni, ekki á málfræðireglum.
+      Þjónustan getur því markað texta sem Greyni tekst ekki að þátta. Á móti kemur að nákvæmnin er
+      tilviljanakenndari og samkvæmni stundum minni en í <code>postag.api</code> sem byggir á þáttun.</p>
 
-<p>Stutta texta sem eru einungis ein málsgrein má málgreina með einföldu <code>HTTPS <b>GET</b></code>
-þar sem textinn er sendur sem hluti af vefslóð (URL):</p>
+   <p>Stutta texta sem eru einungis ein málsgrein má málgreina með einföldu <code>HTTPS <b>GET</b></code>
+      þar sem textinn er sendur sem hluti af vefslóð (URL):</p>
 
-<pre><b>GET</b> https://greynir.is/ifdtag.api/v1?t=<i>Hér er dæmi um texta til að málgreina</i></pre>
+   <pre><b>GET</b> https://greynir.is/ifdtag.api/v1?t=<i>Hér er dæmi um texta til að málgreina</i></pre>
 
-<p>Lengri texta má senda með <code>HTTP <b>POST</b></code> í <code>application/x-www-form-urlencoded</code> formi,
-í svæði sem heitir <code>text</code>.</p>
+   <p>Lengri texta má senda með <code>HTTP <b>POST</b></code> í <code>application/x-www-form-urlencoded</code> formi,
+      í svæði sem heitir <code>text</code>.</p>
 
-<p>Dæmi um hvernig nota má POST kallið frá <code>curl</code> í GNU/Linux:</p>
+   <p>Dæmi um hvernig nota má POST kallið frá <code>curl</code> í GNU/Linux:</p>
 
-<pre>$ curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/ifdtag.api/v1</pre>
+   <pre>$ curl -d "text=Í dag er ágætt veður en mikil hálka er á götum." https://greynir.is/ifdtag.api/v1</pre>
 
-<p>Enn lengri texta má senda með <code>HTTP <b>POST</b></code> í <code>text/plain</code> formi,
-kóðaða í UTF-8 og með línuskiptum (<i>newline</i>, <code>\n</code>) milli málsgreina. Dæmi:</p>
+   <p>Enn lengri texta má senda með <code>HTTP <b>POST</b></code> í <code>text/plain</code> formi,
+      kóðaða í UTF-8 og með línuskiptum (<i>newline</i>, <code>\n</code>) milli málsgreina. Dæmi:</p>
 
-<pre>$ curl -d @example.txt https://greynir.is/ifdtag.api/v1 --header "Content-Type: text/plain"</pre>
+   <pre>$ curl -d @example.txt https://greynir.is/ifdtag.api/v1 --header "Content-Type: text/plain"</pre>
 
-<p><code>ifdtag.api/v1</code> þjónustan skilar JSON skjali með eftirfarandi undirgreinum:</p>
-<ul>
-   <li><code>result</code> er listi af málsgreinum þar sem hver málsgrein er aftur listi
-      af eindum (<i>tokens</i>). Hver eind er listi með tveimur stökum:
-      <ul>
-        <li><code>[0]</code> Upphaflega orðið eins og það kom fyrir í textanum</li>
-        <li><code>[1]</code> Mark orðsins skv.
-          <a href="http://www.malfong.is/files/ot_tagset_files_is.pdf" target="_blank">markaskrá
-          Íslensku orðtíðnibókarinnar</a>
-        </li>
-      </ul>
-  </li>
-   <li><code>valid</code> er <code>true</code> ef mörkun tókst, annars <code>false</code></li>
-</ul>
+   <p><code>ifdtag.api/v1</code> þjónustan skilar JSON skjali með eftirfarandi undirgreinum:</p>
+   <ul>
+      <li><code>result</code> er listi af málsgreinum þar sem hver málsgrein er aftur listi
+         af eindum (<i>tokens</i>). Hver eind er listi með tveimur stökum:
+         <ul>
+            <li><code>[0]</code> Upphaflega orðið eins og það kom fyrir í textanum</li>
+            <li><code>[1]</code> Mark orðsins skv.
+               <a href="http://www.malfong.is/files/ot_tagset_files_is.pdf" target="_blank">markaskrá
+                  Íslensku orðtíðnibókarinnar</a>
+            </li>
+         </ul>
+      </li>
+      <li><code>valid</code> er <code>true</code> ef mörkun tókst, annars <code>false</code></li>
+   </ul>
 
-<p><button data-toggle="collapse" data-target="#ifdtag-example"><span class="caret"></span> Dæmi</button> um mörkun málsgreinarinnar <i>Halldór Laxness fékk nóbelsverðlaunin í bókmenntum árið 1955.</i></p>
+   <p><button data-toggle="collapse" data-target="#ifdtag-example"><span class="caret"></span> Dæmi</button> um mörkun
+      málsgreinarinnar <i>Halldór Laxness fékk nóbelsverðlaunin í bókmenntum árið 1955.</i></p>
 
-<pre id="ifdtag-example" class="collapse">
+   <pre id="ifdtag-example" class="collapse">
 {
   "result": [
     [
@@ -294,96 +300,104 @@ kóðaða í UTF-8 og með línuskiptum (<i>newline</i>, <code>\n</code>) milli 
 }
 </pre>
 
-<h1 class="page-header">Fyrirspurnir</h1>
+   <h1 class="page-header">Fyrirspurnir</h1>
 
-<p class="lead">Þjónustan <code>query.api</code> svarar fyrirspurnum um fólk og titla og um skilgreiningar
-sérnafna. Einnig er unnt að spyrja um orð sem tengjast gefnum orðum.</p>
+   <p class="lead">Þjónustan <code>query.api</code> svarar fyrirspurnum um fólk og titla og um skilgreiningar
+      sérnafna. Einnig er unnt að spyrja um orð sem tengjast gefnum orðum.</p>
 
-<p>Nánar til tekið má spyrja um eftirfarandi:</p>
+   <p>Nánar til tekið má spyrja um eftirfarandi:</p>
 
-<ul>
-   <li>Mannanöfn:
-      <a href="/query.api/v1?q=Hver er Smári McCarthy?" target="_blank"><i>Hver er Smári McCarthy?</i></a>
-      / <a href="/query.api/v1?q=Segðu mér frá Oddnýju G. Harðardóttur" target="_blank"><i>Segðu mér frá Oddnýju G. Harðardóttur</i></a>
-   </li>
-   <li>Titla:
-      <a href="/query.api/v1?q=Hver er forstjóri Útlendingastofnunar?" target="_blank"><i>Hver er forstjóri Útlendingastofnunar?</i></a>
-      / <a href="/query.api/v1?q=Hver gegnir starfi seðlabankastjóra?" target="_blank"><i>Hver gegnir starfi
-      Seðlabankastjóra?</i></a>
-   </li>
-   <li>Sérnöfn:
-      <a href="/query.api/v1?q=Hvað er WHO?" target="_blank"><i>Hvað er WHO?</i></a></li>
-   <li>Tengsl orða:
-      <a href="/query.api/v1?q=Hvað tengist orðinu gagnaver?" target="_blank"><i>Hvað tengist orðinu gagnaver?</i></a></li>
-</ul>
+   <ul>
+      <li>Mannanöfn:
+         <a href="/query.api/v1?q=Hver er Smári McCarthy?" target="_blank"><i>Hver er Smári McCarthy?</i></a>
+         / <a href="/query.api/v1?q=Segðu mér frá Oddnýju G. Harðardóttur" target="_blank"><i>Segðu mér frá Oddnýju G.
+               Harðardóttur</i></a>
+      </li>
+      <li>Titla:
+         <a href="/query.api/v1?q=Hver er forstjóri Útlendingastofnunar?" target="_blank"><i>Hver er forstjóri
+               Útlendingastofnunar?</i></a>
+         / <a href="/query.api/v1?q=Hver gegnir starfi seðlabankastjóra?" target="_blank"><i>Hver gegnir starfi
+               Seðlabankastjóra?</i></a>
+      </li>
+      <li>Sérnöfn:
+         <a href="/query.api/v1?q=Hvað er WHO?" target="_blank"><i>Hvað er WHO?</i></a>
+      </li>
+      <li>Tengsl orða:
+         <a href="/query.api/v1?q=Hvað tengist orðinu gagnaver?" target="_blank"><i>Hvað tengist orðinu
+               gagnaver?</i></a>
+      </li>
+   </ul>
 
-<p>Einfaldast er að senda fyrirspurn með <code>HTTPS <b>GET</b></code>
-þar sem hún er hluti af vefslóð (URL):</p>
+   <p>Einfaldast er að senda fyrirspurn með <code>HTTPS <b>GET</b></code>
+      þar sem hún er hluti af vefslóð (URL):</p>
 
-<pre><b>GET</b> https://greynir.is/query.api/v1?q=<i>Fyrirspurnin kemur hér</i></pre>
+   <pre><b>GET</b> https://greynir.is/query.api/v1?q=<i>Fyrirspurnin kemur hér</i></pre>
 
-<p>Fyrirspurn má einnig senda með <code>HTTP <b>POST</b></code> í <code>application/x-www-form-urlencoded</code>
-formi, í svæði sem heitir <code>q</code>.</p>
+   <p>Fyrirspurn má einnig senda með <code>HTTP <b>POST</b></code> í <code>application/x-www-form-urlencoded</code>
+      formi, í svæði sem heitir <code>q</code>.</p>
 
-<p>Dæmi um hvernig nota má POST kallið frá <code>curl</code> í GNU/Linux:</p>
+   <p>Dæmi um hvernig nota má POST kallið frá <code>curl</code> í GNU/Linux:</p>
 
-<pre>$ curl -d "q=Hver er bankastjóri Landsbankans?" https://greynir.is/query.api/v1</pre>
+   <pre>$ curl -d "q=Hver er bankastjóri Landsbankans?" https://greynir.is/query.api/v1</pre>
 
-<p><code>query.api/v1</code> þjónustan skilar JSON skjali með eftirfarandi undirgreinum:</p>
+   <p><code>query.api/v1</code> þjónustan skilar JSON skjali með eftirfarandi undirgreinum:</p>
 
-<ul>
-   <li><code>valid</code> er <code>true</code> ef fyrirspurnin er gild, annars <code>false</code>.</li>
-   <li><code>key</code> er lykillinn sem leitað var eftir í gagnagrunni Greynis.</li>
-   <li><code>q</code> er upphaflega fyrirspurnin.</li>
-   <li><code>qtype</code> er tegund fyrirspurnar, þ.e. <b>Title</b> (titill), <b>Person</b> (mannsnafn), <b>Entity</b> (sérnafn) eða <b>Word</b> (tengd orð).</li>
-   <li><code>response</code> er niðurstaða fyrirspurnarinnar. Hún er mismunandi eftir tegundum:
-      <ul>
-         <li><b>Title</b>: listi af nöfnum þeirra sem bera titilinn. Hvert stak í listanum inniheldur:
-            <ul>
-               <li><code>answer</code> er nafn</li>
-               <li><code>sources</code> er listi yfir heimildir, þar sem hvert stak inniheldur:
-                  <ul>
-                     <li><code>domain</code> er lén heimildarinnar, t.d. ruv.is</li>
-                     <li><code>heading</code> er fyrirsögn heimildarinnar</li>
-                     <li><code>ts</code> er tímastimpill heimildarinnar á ISO formi (YYYY-MM-DD<b>T</b>HH:MM)</li>
-                     <li><code>url</code> er vefslóð heimildarinnar</li>
-                     <li><code>uuid</code> er einkvæmt einkenni heimildarinnar (<i>UUID</i>) í grunni Greynis</li>
-                  </ul>
-               </li>
-            </ul>
-         </li>
-         <li><b>Person</b>: Tvö undirsvæði:
-            <ul>
-               <li><code>answers</code> er listi yfir titla fólks með því nafni sem spurt var um. Hvert stak inniheldur:
-                  <ul>
-                     <li><code>answer</code> er titill</li>
-                     <li><code>sources</code> er listi yfir heimildir, sbr. <b>Title</b> hér að ofan.</li>
-                  </ul>
-               </li>
-               <li><code>sources</code> er listi yfir greinar þar sem nafnið kemur fyrir,
-               sbr. <b>Title</b> hér að ofan.</li>
-            </ul>
-         </li>
-         <li><b>Entity</b>: Niðurstaða er eins og fyrir <b>Person</b>, nema hvað í stað titla koma
-            skilgreiningar á sérnafninu sem spurt var um.</li>
-         <li><b>Word</b>: Eitt undirsvæði:
-            <ul>
-               <li><code>answers</code> er listi yfir tengd orð, þar sem hvert stak inniheldur:
-                  <ul>
-                     <li><code>stem</code> er orðstofn tengds orðs</li>
-                     <li><code>cat</code> er orðflokkur tengds orðs</li>
-                  </ul>
-               </li>
-            </ul>
-         </li>
-      </ul>
-   </li>
-</ul>
+   <ul>
+      <li><code>valid</code> er <code>true</code> ef fyrirspurnin er gild, annars <code>false</code>.</li>
+      <li><code>key</code> er lykillinn sem leitað var eftir í gagnagrunni Greynis.</li>
+      <li><code>q</code> er upphaflega fyrirspurnin.</li>
+      <li><code>qtype</code> er tegund fyrirspurnar, þ.e. <b>Title</b> (titill), <b>Person</b> (mannsnafn),
+         <b>Entity</b> (sérnafn) eða <b>Word</b> (tengd orð).
+      </li>
+      <li><code>response</code> er niðurstaða fyrirspurnarinnar. Hún er mismunandi eftir tegundum:
+         <ul>
+            <li><b>Title</b>: listi af nöfnum þeirra sem bera titilinn. Hvert stak í listanum inniheldur:
+               <ul>
+                  <li><code>answer</code> er nafn</li>
+                  <li><code>sources</code> er listi yfir heimildir, þar sem hvert stak inniheldur:
+                     <ul>
+                        <li><code>domain</code> er lén heimildarinnar, t.d. ruv.is</li>
+                        <li><code>heading</code> er fyrirsögn heimildarinnar</li>
+                        <li><code>ts</code> er tímastimpill heimildarinnar á ISO formi (YYYY-MM-DD<b>T</b>HH:MM)</li>
+                        <li><code>url</code> er vefslóð heimildarinnar</li>
+                        <li><code>uuid</code> er einkvæmt einkenni heimildarinnar (<i>UUID</i>) í grunni Greynis</li>
+                     </ul>
+                  </li>
+               </ul>
+            </li>
+            <li><b>Person</b>: Tvö undirsvæði:
+               <ul>
+                  <li><code>answers</code> er listi yfir titla fólks með því nafni sem spurt var um. Hvert stak
+                     inniheldur:
+                     <ul>
+                        <li><code>answer</code> er titill</li>
+                        <li><code>sources</code> er listi yfir heimildir, sbr. <b>Title</b> hér að ofan.</li>
+                     </ul>
+                  </li>
+                  <li><code>sources</code> er listi yfir greinar þar sem nafnið kemur fyrir,
+                     sbr. <b>Title</b> hér að ofan.</li>
+               </ul>
+            </li>
+            <li><b>Entity</b>: Niðurstaða er eins og fyrir <b>Person</b>, nema hvað í stað titla koma
+               skilgreiningar á sérnafninu sem spurt var um.</li>
+            <li><b>Word</b>: Eitt undirsvæði:
+               <ul>
+                  <li><code>answers</code> er listi yfir tengd orð, þar sem hvert stak inniheldur:
+                     <ul>
+                        <li><code>stem</code> er orðstofn tengds orðs</li>
+                        <li><code>cat</code> er orðflokkur tengds orðs</li>
+                     </ul>
+                  </li>
+               </ul>
+            </li>
+         </ul>
+      </li>
+   </ul>
 
-<p><button data-toggle="collapse" data-target="#query-example"><span class="caret"></span> Dæmi</button>
-um svar við fyrirspurninni <i>Hver er dómsmálaráðherra Bretlands?</i></p>
+   <p><button data-toggle="collapse" data-target="#query-example"><span class="caret"></span> Dæmi</button>
+      um svar við fyrirspurninni <i>Hver er dómsmálaráðherra Bretlands?</i></p>
 
-<pre id="query-example" class="collapse">
+   <pre id="query-example" class="collapse">
 {
    "valid": true, 
    "key": "dómsmálaráðherra Bretlands", 
@@ -422,63 +436,65 @@ um svar við fyrirspurninni <i>Hver er dómsmálaráðherra Bretlands?</i></p>
 }
 </pre>
 
-<h1 class="page-header">Greinar</h1>
+   <h1 class="page-header">Greinar</h1>
 
-<p class="lead">Þjónustan <code>article.api</code> skilar upplýsingum um tiltekna grein eða frétt í
-gagnagrunni Greynis, m.a. sérnöfnum, nöfnum og titlum fólks sem kemur fyrir í greininni, og
-efnisflokkum greinarinnar.</p>
+   <p class="lead">Þjónustan <code>article.api</code> skilar upplýsingum um tiltekna grein eða frétt í
+      gagnagrunni Greynis, m.a. sérnöfnum, nöfnum og titlum fólks sem kemur fyrir í greininni, og
+      efnisflokkum greinarinnar.</p>
 
-<p>Sækja má grein eftir vefslóð (<i>URL</i>) eða einkenni hennar í gagnagrunni Greynis (<i>UUID</i>).</p>
+   <p>Sækja má grein eftir vefslóð (<i>URL</i>) eða einkenni hennar í gagnagrunni Greynis (<i>UUID</i>).</p>
 
-<p>Spyrja má um grein með <code>HTTPS <b>GET</b></code> ásamt <code>url</code> eða <code>id</code>:</p>
+   <p>Spyrja má um grein með <code>HTTPS <b>GET</b></code> ásamt <code>url</code> eða <code>id</code>:</p>
 
-<pre><b>GET</b> https://greynir.is/article.api/v1?<b>url</b>=<i>Vefslóð kemur hér</i></pre>
+   <pre><b>GET</b> https://greynir.is/article.api/v1?<b>url</b>=<i>Vefslóð kemur hér</i></pre>
 
-<p>eða:</p>
+   <p>eða:</p>
 
-<pre><b>GET</b> https://greynir.is/article.api/v1?<b>id</b>=<i>Einkenni (UUID) kemur hér</i></pre>
+   <pre><b>GET</b> https://greynir.is/article.api/v1?<b>id</b>=<i>Einkenni (UUID) kemur hér</i></pre>
 
-<p>Sama gildir um <code>HTTP <b>POST</b></code> í <code>application/x-www-form-urlencoded</code>
-formi.</p>
+   <p>Sama gildir um <code>HTTP <b>POST</b></code> í <code>application/x-www-form-urlencoded</code>
+      formi.</p>
 
-<p>Dæmi um hvernig nota má POST kallið frá <code>curl</code> í GNU/Linux:</p>
+   <p>Dæmi um hvernig nota má POST kallið frá <code>curl</code> í GNU/Linux:</p>
 
-<pre>$ curl -d "url=http://www.ruv.is/frett/segir-nafn-svavars-gudnasonar-eydilagt" https://greynir.is/article.api/v1</pre>
+   <pre>$ curl -d "url=http://www.ruv.is/frett/segir-nafn-svavars-gudnasonar-eydilagt" https://greynir.is/article.api/v1</pre>
 
-<p><code>article.api/v1</code> þjónustan skilar JSON skjali með eftirfarandi undirgreinum:</p>
+   <p><code>article.api/v1</code> þjónustan skilar JSON skjali með eftirfarandi undirgreinum:</p>
 
-<ul>
-   <li><code>valid</code> er <code>true</code> ef beiðnin er gild, annars <code>false</code>.</li>
-   <li><code>author</code> er höfundur greinarinnar, ef hann er þekktur.</li>
-   <li><code>heading</code> er fyrirsögn greinarinnar.</li>
-   <li><code>id</code> er einkvæmt einkenni (<i>UUID</i>) greinarinnar í gagnagrunni Greynis.</li>
-   <li><code>url</code> er vefslóð greinarinnar.</li>
-   <li><code>ts</code> er tímastimpill greinarinnar, á ISO formi (YYYY-MM-DD<b>T</b>HH:MM:SS).</li>
-   <li><code>num_sentences</code> er fjöldi málsgreina í greininni.</li>
-   <li><code>num_parsed</code> er fjöldi málsgreina sem Greyni tókst að þátta.</li>
-   <li><code>register</code> er nafnalisti sem inniheldur undirskjöl með nafni fólks og sérnöfnum
-      sem koma fyrir í greininni. Í hverju undirskjali eru eftirfarandi undirgreinar:
-      <ul>
-         <li><code>kind</code> getur verið <b>entity</b> (sérnafn) eða <b>name</b> (mannsnafn).</li>
-         <li><code>title</code> er titill manns eða skilgreining sérnafns. Ef titill eða skilgreining
-            eru ekki þekkt er gildið <code>null</code>.</li>
-      </ul>
-   </li>
-   <li><code>topics</code> er listi yfir efnisflokka sem greinin heyrir undir. Hver eind
-      í listanum inniheldur eftirfarandi:
-      <ul>
-         <li><code>id</code> er einkenni efnisflokksins, svo sem <b>culture</b>, <b>sport</b> eða
-            <b>economy</b>.</li>
-         <li><code>name</code> er íslenskt heiti efnisflokksins, svo sem <b>Menning og listir</b>,
-            <b>Íþróttir</b> eða <b>Efnahagsmál</b>.</li>
-      </ul>
-   </li>
-</ul>
+   <ul>
+      <li><code>valid</code> er <code>true</code> ef beiðnin er gild, annars <code>false</code>.</li>
+      <li><code>author</code> er höfundur greinarinnar, ef hann er þekktur.</li>
+      <li><code>heading</code> er fyrirsögn greinarinnar.</li>
+      <li><code>id</code> er einkvæmt einkenni (<i>UUID</i>) greinarinnar í gagnagrunni Greynis.</li>
+      <li><code>url</code> er vefslóð greinarinnar.</li>
+      <li><code>ts</code> er tímastimpill greinarinnar, á ISO formi (YYYY-MM-DD<b>T</b>HH:MM:SS).</li>
+      <li><code>num_sentences</code> er fjöldi málsgreina í greininni.</li>
+      <li><code>num_parsed</code> er fjöldi málsgreina sem Greyni tókst að þátta.</li>
+      <li><code>register</code> er nafnalisti sem inniheldur undirskjöl með nafni fólks og sérnöfnum
+         sem koma fyrir í greininni. Í hverju undirskjali eru eftirfarandi undirgreinar:
+         <ul>
+            <li><code>kind</code> getur verið <b>entity</b> (sérnafn) eða <b>name</b> (mannsnafn).</li>
+            <li><code>title</code> er titill manns eða skilgreining sérnafns. Ef titill eða skilgreining
+               eru ekki þekkt er gildið <code>null</code>.</li>
+         </ul>
+      </li>
+      <li><code>topics</code> er listi yfir efnisflokka sem greinin heyrir undir. Hver eind
+         í listanum inniheldur eftirfarandi:
+         <ul>
+            <li><code>id</code> er einkenni efnisflokksins, svo sem <b>culture</b>, <b>sport</b> eða
+               <b>economy</b>.
+            </li>
+            <li><code>name</code> er íslenskt heiti efnisflokksins, svo sem <b>Menning og listir</b>,
+               <b>Íþróttir</b> eða <b>Efnahagsmál</b>.
+            </li>
+         </ul>
+      </li>
+   </ul>
 
-<p><button data-toggle="collapse" data-target="#article-example"><span class="caret"></span> Dæmi</button>
-um upplýsingar um greinina <code>http://www.ruv.is/frett/segir-nafn-svavars-gudnasonar-eydilagt</code></p>
+   <p><button data-toggle="collapse" data-target="#article-example"><span class="caret"></span> Dæmi</button>
+      um upplýsingar um greinina <code>http://www.ruv.is/frett/segir-nafn-svavars-gudnasonar-eydilagt</code></p>
 
-<pre id="article-example" class="collapse">
+   <pre id="article-example" class="collapse">
 {
   "ambiguity": 1.58401878459231, 
   "author": "Sigríður Hagalín Björnsdóttir", 
@@ -529,4 +545,3 @@ um upplýsingar um greinina <code>http://www.ruv.is/frett/segir-nafn-svavars-gud
 </script>
 
 {% endblock %}
-

@@ -4,7 +4,7 @@
 
     Distance query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 """
 
 # TODO: This module should probably use grammar instead of regexes
+# TODO: "Hvað er ég langt frá heimili mínu?", "Hvað er ég lengi að ganga heim?"
 # TODO: "Hvað er langt á milli X og Y?", "Hvað er langt frá A til B?"
 # TODO: "Hvað er langt til tunglsins?", "Hvað er langt til Mars?"
 # TODO: Identify when user is present at the location, respond "Þú ert í/á X"
@@ -37,16 +38,16 @@ import re
 import logging
 
 from reynir import NounPhrase
-from query import AnswerTuple, Query
-from queries import (
+from queries import AnswerTuple, Query
+from utility import cap_first
+from queries.util import (
     gen_answer,
-    cap_first,
     time_period_desc,
     distance_desc,
     query_geocode_api_addr,
     query_traveltime_api,
 )
-from queries.util.num import numbers_to_text
+from speech.trans import gssml
 from geo import distance, capitalize_placename
 
 
@@ -197,8 +198,8 @@ _HOME_LOC = frozenset(
 
 def _addr2nom(address: str) -> str:
     """Convert location name to nominative form."""
-    if address is None or address == "":
-        return address
+    if not address:
+        return ""
     try:
         nom = NounPhrase(cap_first(address)).nominative or address
     except Exception:
@@ -246,7 +247,7 @@ def dist_answer_for_loc(matches: Match[str], query: Query) -> Optional[AnswerTup
         else:
             is_home = True
             loc = (cast(float, ad["lat"]), cast(float, ad["lon"]))
-            loc_nf = "{0} {1}".format(ad["street"], ad["number"])
+            loc_nf = f'{ad["street"]} {ad["number"]}'
     else:
         # Talk to geocode API
         res = query_geocode_api_addr(loc_nf)
@@ -277,7 +278,7 @@ def dist_answer_for_loc(matches: Match[str], query: Query) -> Optional[AnswerTup
     loc_nf = capitalize_placename(loc_nf)
     dist = distance_desc(km_dist, case="þf", num_to_str=True)
     # Turn numbers to neutral in loc_nf for voice
-    voice = f"{numbers_to_text(loc_nf)} er {dist} í burtu"
+    voice = f"{gssml(loc_nf, type='numbers', gender='hk')} er {dist} í burtu"
 
     query.set_key(loc_nf)
 
@@ -391,8 +392,8 @@ def handle_plain_text(q: Query) -> bool:
         else:
             answ = gen_answer(_UNKNOWN_LOC_RESP)
     except Exception as e:
-        logging.warning("Exception gen. answer from geocode API: {0}".format(e))
-        q.set_error("E_EXCEPTION: {0}".format(e))
+        logging.warning(f"Exception generating answer from geocode API: {e}")
+        q.set_error(f"E_EXCEPTION: {e}")
         answ = None
 
     if answ:

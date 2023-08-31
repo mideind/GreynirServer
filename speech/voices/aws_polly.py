@@ -3,7 +3,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@
 
 from typing import Optional, Any, cast
 
-import os
 import json
 import logging
 from threading import Lock
@@ -34,10 +33,12 @@ import cachetools
 import boto3  # type: ignore
 from botocore.exceptions import ClientError  # type: ignore
 
+from utility import RESOURCES_DIR
+
 
 NAME = "Amazon Polly"
 VOICES = frozenset(("Karl", "Dora"))
-AUDIO_FORMATS = frozenset(("mp3", "pcm"))
+AUDIO_FORMATS = frozenset(("mp3", "pcm", "ogg_vorbis"))
 
 # The AWS Polly API access keys
 # You must obtain your own keys if you want to use this code
@@ -49,9 +50,9 @@ AUDIO_FORMATS = frozenset(("mp3", "pcm"))
 # }
 #
 _AWS_KEYFILE_NAME = "AWSPollyServerKey.json"
-_AWS_API_KEYS_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "resources", _AWS_KEYFILE_NAME
-)
+_AWS_API_KEYS_PATH = str(RESOURCES_DIR / _AWS_KEYFILE_NAME)
+
+
 _aws_api_client: Optional[boto3.Session] = None
 _aws_api_client_lock = Lock()
 
@@ -76,23 +77,26 @@ def _initialize_aws_client() -> Optional[boto3.Session]:
         return _api_client  # type: ignore
 
 
-# Time to live (in seconds) for synthesised text URL caching
+# Time to live (in seconds) for synthesized text URL caching
 # Add a safe 30 second margin to ensure that clients are never provided with an
-# audio URL that's just about to expire and might do so before playback starts.
-_AWS_URL_TTL = 300  # 5 mins in seconds
+# audio URL that is just about to expire and might do so before playback starts.
+_AWS_URL_TTL = 600  # 10 mins in seconds
 _AWS_CACHE_TTL = _AWS_URL_TTL - 30  # seconds
 _AWS_CACHE_MAXITEMS = 30
 
 
 @cachetools.cached(cachetools.TTLCache(_AWS_CACHE_MAXITEMS, _AWS_CACHE_TTL))
-def _aws_polly_synthesized_text_url(
+def text_to_audio_url(
     text: str,
     text_format: str,
     audio_format: str,
     voice_id: Optional[str],
     speed: float = 1.0,
 ) -> Optional[str]:
-    """Returns AWS Polly URL to audio file with speech-synthesised text."""
+    """Returns Amazon Polly URL to audio file with speech-synthesized text."""
+
+    assert voice_id in VOICES
+    assert audio_format in AUDIO_FORMATS
 
     # Set up client lazily
     client = _initialize_aws_client()
@@ -100,10 +104,15 @@ def _aws_polly_synthesized_text_url(
         logging.warning("Unable to instantiate AWS client")
         return None
 
+    if audio_format not in AUDIO_FORMATS:
+        logging.warn(
+            f"Unsupported audio format for Amazon Polly speech synthesis: {audio_format}."
+            " Falling back to mp3"
+        )
+        audio_format = "mp3"
+
     # Special preprocessing for SSML markup
     if text_format == "ssml":
-        # Prevent '&' symbol from breaking markup
-        text = text.replace("&", "&amp;")
         # Adjust voice speed as appropriate
         if speed != 1.0:
             perc = int(speed * 100)
@@ -122,8 +131,8 @@ def _aws_polly_synthesized_text_url(
         "VoiceId": voice_id,
         # Valid values for mp3 and ogg_vorbis are "8000", "16000", and "22050".
         # The default value is "22050".
-        # "SampleRate": "",
-        # "text" or "ssml"
+        "SampleRate": "16000",
+        # Either "text" or "ssml"
         "TextType": text_format,
         # Only required for bilingual voices
         # "LanguageCode": "is-IS"
@@ -150,24 +159,13 @@ def text_to_audio_data(
     voice_id: str,
     speed: float,
 ) -> Optional[bytes]:
-    """Returns audio data for speech-synthesised text."""
-    url = _aws_polly_synthesized_text_url(**locals())
+    """Returns audio data for speech-synthesized text."""
+    url = text_to_audio_url(**locals())
     if not url:
         return None
     try:
-        r = requests.get(url)
+        r = requests.get(url, timeout=10)
         return r.content
     except Exception as e:
         logging.error(f"Error fetching URL {url}: {e}")
     return None
-
-
-def text_to_audio_url(
-    text: str,
-    text_format: str,
-    audio_format: str,
-    voice_id: str,
-    speed: float,
-) -> Optional[str]:
-    """Returns URL to audio of speech-synthesised text."""
-    return _aws_polly_synthesized_text_url(**locals())

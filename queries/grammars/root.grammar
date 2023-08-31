@@ -1,0 +1,11 @@
+# Root query grammar
+
+QueryRoot →
+    Query
+
+# Mark the QueryRoot nonterminal as a root in the grammar
+$root(QueryRoot)
+
+# Keep all child families of Query, i.e. all possible query
+# trees, rather than just the highest-scoring one
+$tag(no_reduce) Query

@@ -5,7 +5,7 @@
 
     Processor module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -51,19 +51,20 @@ from pathlib import Path
 
 from settings import Settings, ConfigError
 from db import GreynirDB, Session
-from db.models import Article, Person, Column
-from tree import Tree, ProcEnv
+from db.models import Article, Person, Column, DateTime
+from tree import Tree, ProcEnv, TreeStateDict
+from treeutil import PgsList
 from utility import modules_in_dir
 
 
-_PROFILING = False
+_profiling = False
 
 
 class TokenContainer:
     """Class wrapper around tokens"""
 
     def __init__(self, tokens_json: str, url: str, authority: float) -> None:
-        self.tokens = json.loads(tokens_json)
+        self.tokens = cast(PgsList, json.loads(tokens_json))
         self.url = url
         self.authority = authority
 
@@ -102,20 +103,16 @@ class TokenContainer:
                 token_func,
             )
         ):
-            print(
-                "No functions implemented in processor module {0}".format(
-                    str(processor)
-                )
-            )
+            print(f"No functions implemented in processor module {processor}")
             return
 
         # Initialize state that we keep throughout processing
-        state = {
-            "session": session,
-            "url": self.url,
-            "authority": self.authority,
-            "processor": processor,
-        }
+        state = TreeStateDict(
+            session=session,
+            url=self.url,
+            authority=self.authority,
+            processor=processor,
+        )
 
         if article_begin:
             article_begin(state)
@@ -172,7 +169,6 @@ class Processor:
         single_processor: Optional[str] = None,
         num_workers: Optional[int] = None,
     ) -> None:
-
         Processor._init_class()
         self.num_workers = num_workers
 
@@ -193,7 +189,7 @@ class Processor:
                 m = importlib.import_module(modname)
                 ptype = getattr(m, "PROCESSOR_TYPE")
                 if ptype is not None:
-                    print("Imported processor module {0} ({1})".format(modname, ptype))
+                    print(f"Imported processor module {modname} ({ptype})")
                     # Successful
                     # Note: we can't append the module object m directly to the
                     # processors list, as it will be shared between processes and
@@ -204,7 +200,7 @@ class Processor:
                     # each child process.
                     self.processors.append(modname)
             except Exception as e:
-                print("Error importing processor module {0}: {1}".format(modname, e))
+                print(f"Error importing processor module {modname}: {e}")
 
         if not self.processors:
             if single_processor:
@@ -214,9 +210,7 @@ class Processor:
                     )
                 )
             else:
-                print(
-                    "No processors found in directory {0}".format(processor_directory)
-                )
+                print(f"No processors found in directory {processor_directory}")
 
     def go_single(self, url: str) -> None:
         """Single article processor that will be called by a process within a
@@ -224,7 +218,7 @@ class Processor:
 
         assert self._db is not None
 
-        print("Processing article {0}".format(url))
+        print(f"Processing article {url}")
         sys.stdout.flush()
 
         # If first article within a new process, import the processor modules
@@ -235,7 +229,6 @@ class Processor:
 
         # Load the article
         with closing(self._db.session) as session:
-
             try:
                 article = session.query(Article).filter_by(url=url).one_or_none()
 
@@ -289,7 +282,6 @@ class Processor:
 
         # noinspection PyComparisonWithNone,PyShadowingNames
         def iter_parsed_articles() -> Iterable[str]:
-
             assert self._db is not None
 
             with closing(self._db.session) as session:
@@ -315,22 +307,22 @@ class Processor:
                             # If update, we re-process articles that have been parsed
                             # again in the meantime
                             q = q.filter(
-                                cast(Column[datetime], Article.processed)
-                                < cast(Column[datetime], Article.parsed)
+                                cast(Column[DateTime], Article.processed)
+                                < cast(Column[DateTime], Article.parsed)
                             ).order_by(Article.processed)
                         else:
                             q = q.filter(Article.processed == None)
                     if from_date is not None:
                         # Only go through articles parsed since the given date
                         q = q.filter(
-                            cast(Column[datetime], Article.parsed) >= from_date
+                            cast(Column[DateTime], Article.parsed) >= from_date
                         ).order_by(Article.parsed)
                 if limit > 0:
                     q = q.limit(limit)
                 for a in q.yield_per(200):
                     yield field(a)
 
-        if _PROFILING:
+        if _profiling:
             # If profiling, just do a simple map within a single thread and process
             for url in iter_parsed_articles():
                 self.go_single(url)
@@ -356,21 +348,21 @@ def process_articles(
     """Process multiple articles according to the given parameters"""
     print("------ Greynir starting processing -------")
     if from_date:
-        print("From date: {0}".format(from_date))
+        print(f"From date: {from_date}")
     if limit:
-        print("Limit: {0} articles".format(limit))
+        print(f"Limit: {limit} articles")
     if title is not None:
-        print("Title LIKE: '{0}'".format(title))
+        print(f"Title LIKE: '{title}'")
     elif force:
         print("Force re-processing: Yes")
     elif update:
         print("Update: Yes")
     if processor:
-        print("Invoke single processor: {0}".format(processor))
+        print(f"Invoke single processor: {processor}")
     if num_workers:
-        print("Number of workers: {0}".format(num_workers))
-    ts = "{0}".format(datetime.utcnow())[0:19]
-    print("Time: {0}\n".format(ts))
+        print(f"Number of workers: {num_workers}")
+    ts = str(datetime.utcnow())[0:19]
+    print(f"Time: {ts}\n")
 
     t0 = time.time()
 
@@ -392,8 +384,8 @@ def process_articles(
 
     print("\n------ Processing completed -------")
     print("Total time: {0:.2f} seconds".format(t1 - t0))
-    ts = "{0}".format(datetime.utcnow())[0:19]
-    print("Time: {0}\n".format(ts))
+    ts = str(datetime.utcnow())[0:19]
+    print(f"Time: {ts}\n")
 
 
 def process_article(url: str, processor: Optional[str] = None) -> None:
@@ -419,7 +411,7 @@ def init_db() -> None:
     try:
         db.create_tables()
     except Exception as e:
-        print("{0}".format(e))
+        print(f"Exception initializing database: {e}")
 
 
 __doc__ = """
@@ -512,7 +504,7 @@ def _main(argv: Optional[List[str]] = None) -> int:
                 num_workers = int(a) if int(a) else None
 
         if init:
-            # Initialize the scraper database
+            # Initialize the database
             init_db()
         else:
             # Read the configuration settings file
@@ -521,7 +513,7 @@ def _main(argv: Optional[List[str]] = None) -> int:
                 # Don't run the processor in debug mode
                 Settings.DEBUG = False
             except ConfigError as e:
-                print("Configuration error: {0}".format(e), file=sys.stderr)
+                print(f"Configuration error: {e}", file=sys.stderr)
                 return 2
 
             if url:
@@ -562,9 +554,9 @@ def main() -> None:
     import cProfile as profile
     import pstats
 
-    global _PROFILING
+    global _profiling
 
-    _PROFILING = True
+    _profiling = True
     filename = "Processor.profile"
     profile.run("_main()", filename)
     stats = pstats.Stats(filename)

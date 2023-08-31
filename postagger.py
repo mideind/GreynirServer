@@ -4,7 +4,7 @@
 
     POS tagger module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -78,7 +78,6 @@ from treeutil import TreeUtility
 
 
 class IFD_Corpus:
-
     """A utility class to access the IFD corpus of XML files, by default
     assumed to be located in the `ifd` directory."""
 
@@ -120,13 +119,11 @@ class IFD_Corpus:
         num_files = self.number_of_files(filter_func)
         cnt = 0
         for each in self.file_name_stream(filter_func):
-            tree = ET.parse(each)
-            if tree is not None:
-                root = tree.getroot()
-                if root is not None:
-                    cnt += 1
-                    self.starting_file(each, cnt, num_files)
-                    yield root
+            root = ET.parse(each).getroot()
+            if root is not None:
+                cnt += 1
+                self.starting_file(each, cnt, num_files)
+                yield root
 
     def raw_sentence_stream(
         self,
@@ -183,7 +180,6 @@ class IFD_Corpus:
 
 
 class NgramCounter:
-
     """A container for the dictionary of known n-grams along with their
     counts. The container can store and load itself from a compact
     text file."""
@@ -237,7 +233,6 @@ class NgramCounter:
 
 
 class NgramTagger:
-
     """A class to assign Icelandic Frequency Dictionary (IFD) tags
     to sentences consisting of 'raw' tokens coming out of the
     tokenizer. A parse tree is not required, so the class can

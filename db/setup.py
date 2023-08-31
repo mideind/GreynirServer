@@ -4,7 +4,7 @@
 
     Scraper database initialization module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -31,17 +31,18 @@ from . import SessionContext, IntegrityError
 from .models import Root
 
 
+# TODO: Move this to a JSON configuration file?
 ROOTS = [
     # Root URL, top-level domain, description, authority, scr_module, scr_class, scrape
-    (
-        "https://kjarninn.is",
-        "kjarninn.is",
-        "Kjarninn",
-        1.0,
-        "scrapers.default",
-        "KjarninnScraper",
-        True,
-    ),
+    # (
+    #     "https://kjarninn.is",
+    #     "kjarninn.is",
+    #     "Kjarninn",
+    #     1.0,
+    #     "scrapers.default",
+    #     "KjarninnScraper",
+    #     True,
+    # ),
     (
         "https://www.ruv.is",
         "ruv.is",
@@ -69,24 +70,24 @@ ROOTS = [
         "MblScraper",
         True,
     ),
-    (
-        "https://kvennabladid.is",
-        "kvennabladid.is",
-        "Kvennablaðið",
-        0.4,
-        "scrapers.default",
-        "KvennabladidScraper",
-        True,
-    ),
-    (
-        "http://stjornlagarad.is",
-        "stjornlagarad.is",
-        "Stjórnlagaráð",
-        1.0,
-        "scrapers.default",
-        "StjornlagaradScraper",
-        True,
-    ),
+    # (
+    #     "https://kvennabladid.is",
+    #     "kvennabladid.is",
+    #     "Kvennablaðið",
+    #     0.4,
+    #     "scrapers.default",
+    #     "KvennabladidScraper",
+    #     True,
+    # ),
+    # (
+    #     "http://stjornlagarad.is",
+    #     "stjornlagarad.is",
+    #     "Stjórnlagaráð",
+    #     1.0,
+    #     "scrapers.default",
+    #     "StjornlagaradScraper",
+    #     True,
+    # ),
     (
         "https://www.forsaetisraduneyti.is",
         "forsaetisraduneyti.is",
@@ -123,15 +124,15 @@ ROOTS = [
         "AlthingiScraper",
         False,
     ),
-    (
-        "https://stundin.is",
-        "stundin.is",
-        "Stundin",
-        1.0,
-        "scrapers.default",
-        "StundinScraper",
-        True,
-    ),
+    # (
+    #     "https://stundin.is",
+    #     "stundin.is",
+    #     "Stundin",
+    #     1.0,
+    #     "scrapers.default",
+    #     "StundinScraper",
+    #     True,
+    # ),
     # (
     #     "https://hringbraut.frettabladid.is",
     #     "hringbraut.is",
@@ -141,15 +142,15 @@ ROOTS = [
     #     "HringbrautScraper",
     #     True,
     # ),
-    (
-        "https://www.frettabladid.is/",
-        "frettabladid.is",
-        "Fréttablaðið",
-        1.0,
-        "scrapers.default",
-        "FrettabladidScraper",
-        True,
-    ),
+    # (
+    #     "https://www.frettabladid.is/",
+    #     "frettabladid.is",
+    #     "Fréttablaðið",
+    #     1.0,
+    #     "scrapers.default",
+    #     "FrettabladidScraper",
+    #     True,
+    # ),
     (
         "https://www.utanrikisraduneyti.is",
         "utanrikisraduneyti.is",
@@ -240,6 +241,15 @@ ROOTS = [
         "VidskiptabladidScraper",
         True,
     ),
+    (
+        "https://heimildin.is/",
+        "heimildin.is",
+        "Heimildin",
+        0.8,
+        "scrapers.default",
+        "HeimildinScraper",
+        True,
+    ),
 ]
 
 
@@ -254,9 +264,7 @@ def init_roots(wait: bool = False) -> int:
     retries = 36
 
     while True:
-
         try:
-
             db = SessionContext.db
             # pylint: disable=no-member
             db.create_tables()
@@ -306,9 +314,7 @@ def init_roots(wait: bool = False) -> int:
                 if not retries:
                     return 2  # No more retries: Return an error code
                 print(
-                    "Retrying connection in 5 seconds ({0} retries left)...".format(
-                        retries
-                    ),
+                    f"Retrying connection in 5 seconds ({retries} attempts left)...",
                     file=sys.stderr,
                 )
                 sys.stderr.flush()
@@ -317,7 +323,7 @@ def init_roots(wait: bool = False) -> int:
                 SessionContext.cleanup()
                 # Loop to retry
             else:
-                print("Exception in init_roots(): {0}".format(e), file=sys.stderr)
+                print(f"Exception in init_roots(): {e}", file=sys.stderr)
                 sys.stderr.flush()
                 # Re-raise the exception
                 raise

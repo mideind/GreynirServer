@@ -4,7 +4,7 @@
 
     Built-in query module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
     Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
@@ -27,11 +27,14 @@
 """
 
 from typing import Callable, Dict, Iterable, Optional, List, Any, Tuple, cast
+from typing_extensions import TypedDict
 
 import math
 from datetime import datetime
 from collections import defaultdict
 import logging
+
+from sqlalchemy import DateTime
 
 from settings import Settings
 
@@ -43,14 +46,23 @@ from treeutil import TreeUtility
 from reynir import TOK, Tok, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
-from query import AnswerTuple, Query, ResponseDict, ResponseType, QueryStateDict
-from queries import read_grammar_file
+from speech.trans import gssml
+from queries import AnswerTuple, Query, ResponseDict, ResponseType, QueryStateDict
 from tree import Result, Node, ParamList
+from utility import cap_first, icequote
+from queries.util import read_grammar_file
 
-from queries import cap_first
 
 # The type of a name/entity register
 RegisterType = Dict[str, Dict[str, Any]]
+
+
+class TermDict(TypedDict):
+    """A dictionary containing a search term and its associated score"""
+
+    x: str
+    w: float
+
 
 # --- Begin "magic" module constants ---
 
@@ -63,7 +75,7 @@ HANDLE_TREE = True
 
 # Invoke this processor after other tree processors
 # (unless they have even lower priority)
-PRIORITY = -1
+PRIORITY = -100
 
 # The grammar nonterminals this module wants to handle
 QUERY_NONTERMINALS = {"BuiltinQueries"}
@@ -86,22 +98,25 @@ _MAX_URLS = 5
 _MAX_MENTIONS = 5
 
 
-def append_answers(rd: RegisterType, q, prop_func: Callable) -> None:
+def append_answers(
+    rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Any], str]
+) -> None:
     """Iterate over query results and add them to the result dictionary rd"""
     for p in q:
         s = correct_spaces(prop_func(p))
+        ts = p.timestamp or datetime.utcnow()
         ai = dict(
             domain=p.domain,
             uuid=p.id,
             heading=p.heading,
-            timestamp=p.timestamp,
-            ts=p.timestamp.isoformat()[0:16],
+            timestamp=ts,
+            ts=ts.isoformat()[0:16],
             url=p.url,
         )
         rd[s][p.id] = ai  # Add to a dict of UUIDs
 
 
-def name_key_to_update(register: RegisterType, name: str) -> str:
+def name_key_to_update(register: RegisterType, name: str) -> Optional[str]:
     """Return the name register dictionary key to update with data about
     the given person name. This may be an existing key within the
     dictionary, the given key, or None if no update should happen."""
@@ -120,7 +135,6 @@ def name_key_to_update(register: RegisterType, name: str) -> str:
     # Check whether the same person is already in the registry under a
     # slightly different name
     for k in register.keys():
-
         parts = k.split()
         if nparts[0] != parts[0] or nparts[-1] != parts[-1]:
             # First or last names different: we don't think these are the same person
@@ -181,17 +195,21 @@ def name_key_to_update(register: RegisterType, name: str) -> str:
     return name
 
 
-def append_names(rd: RegisterType, q, prop_func) -> None:
+def append_names(
+    rd: RegisterType, q: Iterable[Article], prop_func: Callable[[Any], str]
+) -> None:
     """Iterate over query results and add them to the result dictionary rd,
     assuming that the key is a person name"""
+    s: Optional[str]
     for p in q:
         s = correct_spaces(prop_func(p))
+        ts = p.timestamp or datetime.utcnow()
         ai = dict(
             domain=p.domain,
             uuid=p.id,
             heading=p.heading,
-            timestamp=p.timestamp,
-            ts=p.timestamp.isoformat()[0:16],
+            timestamp=ts,
+            ts=ts.isoformat()[0:16],
             url=p.url,
         )
         # Obtain the key within rd that should be updated with new
@@ -218,7 +236,7 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
         """Return True if whole needles are contained in the haystack"""
         return (" " + needle.lower() + " ") in (" " + haystack.lower() + " ")
 
-    def sort_articles(articles):
+    def sort_articles(articles: Dict[str, Any]):
         """Sort the individual article URLs so that the newest one appears first"""
         return sorted(articles.values(), key=lambda x: x["timestamp"], reverse=True)
 
@@ -228,7 +246,7 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
 
     now = datetime.utcnow()
 
-    def mention_weight(articles) -> float:
+    def mention_weight(articles: Dict[str, Any]) -> float:
         """Newer mentions are better than older ones"""
         w = 0.0
         newest_mentions = sort_articles(articles)[0:_MAX_MENTIONS]
@@ -243,8 +261,8 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
             return w / math.e
         return w
 
-    scores = dict()
-    mention_weights = dict()
+    scores: Dict[str, float] = dict()
+    mention_weights: Dict[str, float] = dict()
 
     for result, articles in rd.items():
         mw = mention_weights[result] = mention_weight(articles)
@@ -262,7 +280,7 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
     rl = sorted(rd.keys(), key=lambda x: mention_weights[x], reverse=True)
     len_rl = len(rl)
 
-    def is_ex(s):
+    def is_ex(s: str) -> bool:
         """Does the given result contain an 'ex' prefix?"""
         return any(
             contained(x, s)
@@ -317,7 +335,9 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
     ]
 
 
-def prepare_response(q, prop_func):
+def prepare_response(
+    q: Iterable[Article], prop_func: Callable[[Any], str]
+) -> List[Dict[str, Any]]:
     """Prepare and return a simple (one-query) response"""
     rd: RegisterType = defaultdict(dict)
     append_answers(rd, q, prop_func)
@@ -325,7 +345,7 @@ def prepare_response(q, prop_func):
 
 
 def add_entity_to_register(
-    name: str, register: RegisterType, session, all_names=False
+    name: str, register: RegisterType, session: Session, all_names: bool = False
 ) -> None:
     """Add the entity name and the 'best' definition to the given
     name register dictionary. If all_names is True, we add
@@ -418,7 +438,7 @@ def _query_person_titles(session: Session, name: str):
             .all()
         )
     except OperationalError as e:
-        logging.warning("SQL error in _query_person_titles(): {0}".format(e))
+        logging.warning(f"SQL error in _query_person_titles(): {e}")
         q = []
     # Append titles from the persons table
     append_answers(rd, q, prop_func=lambda x: x.title)
@@ -441,13 +461,13 @@ def _query_person_titles(session: Session, name: str):
             .all()
         )
     except OperationalError as e:
-        logging.warning("SQL error in _query_person_titles(): {0}".format(e))
+        logging.warning(f"SQL error in _query_person_titles(): {e}")
         q = []
     append_answers(rd, q, prop_func=lambda x: x.definition)
     return make_response_list(rd)
 
 
-def _query_article_list(session, name: str):
+def _query_article_list(session: Session, name: str):
     """Return a list of dicts with information about articles
     where the given name appears"""
     articles = ArticleListQuery.articles(
@@ -506,14 +526,9 @@ def query_person(query: Query, session: Session, name: str) -> AnswerTuple:
             query.set_error("E_PERSON_NOT_FOUND")
             return dict(answer=""), "", ""
         answer = title
-        v = answer.split()
-        answer = cap_first(answer)
-        for i, w in enumerate(v):
-            if len(w) > 1 and w.isupper():
-                # Probably an abbreviation, such as 'FME' or 'BSÍ':
-                # convert to 'F M E'
-                v[i] = " ".join(w)
-        voice_answer = name + " er " + " ".join(v) + "."
+        voice_answer = (
+            f"{gssml(name, type='person')} er {gssml(answer, type='generic')}."
+        )
         # Set the context for a subsequent query
         query.set_context({"person_name": name})
         # Set source, if known
@@ -533,7 +548,7 @@ def query_person(query: Query, session: Session, name: str) -> AnswerTuple:
             # Set the context for a subsequent query
             query.set_context({"person_name": name})
         else:
-            answer = "Nafnið '" + name + "' finnst ekki."
+            answer = f"Nafnið {icequote(name)} finnst ekki."
     return response, answer, voice_answer
 
 
@@ -550,7 +565,7 @@ _DONT_LIKE_TITLE = (
 )
 
 
-def query_person_title(session, name: str) -> Tuple[str, Optional[str]]:
+def query_person_title(session: Session, name: str) -> Tuple[str, Optional[str]]:
     """Return the most likely title for a person"""
 
     def we_dont_like(answer: str) -> bool:
@@ -596,7 +611,7 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
         .filter(Root.visible == True)
         .join(Article, Article.url == Person.article_url)
         .join(Root)
-        .order_by(desc(cast(Column, Article.timestamp)))
+        .order_by(desc(cast(Column[DateTime], Article.timestamp)))
         .limit(QUERY_LIMIT)
         .all()
     )
@@ -616,7 +631,7 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
         .filter(Root.visible == True)
         .join(Article, Article.url == Entity.article_url)
         .join(Root)
-        .order_by(desc(cast(Column, Article.timestamp)))
+        .order_by(desc(Article.timestamp))
         .limit(QUERY_LIMIT)
         .all()
     )
@@ -624,12 +639,12 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
     response = make_response_list(rd)
     answer: str
     voice_answer: str
+    voice_title = gssml(title, type="generic")
     if response and title and "answer" in response[0]:
         first_response = response[0]
         # Return 'Seðlabankastjóri er Már Guðmundsson.'
-        upper_title = cap_first(title)
         answer = first_response["answer"]
-        voice_answer = upper_title + " er " + answer + "."
+        voice_answer = f"{voice_title} er {gssml(answer, type='person')}."
         # Store the person name in the query context
         # so it can be referred to in subsequent queries
         query.set_context({"person_name": answer})
@@ -637,8 +652,8 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
             first_source = first_response["sources"][0]["domain"]
             query.set_source(first_source)
     else:
-        answer = "Ekkert nafn finnst með titilinn '" + title + "'."
-        voice_answer = "Ég veit ekki hver er " + title + "."
+        answer = f"Ekkert nafn finnst með titilinn {icequote(title)}."
+        voice_answer = f"Ég veit ekki hver er {voice_title}."
     return response, answer, voice_answer
 
 
@@ -674,22 +689,18 @@ def query_entity(query: Query, session: Session, name: str) -> AnswerTuple:
     if titles and "answer" in titles[0]:
         # 'Mál og menning er bókmenntafélag.'
         answer = titles[0]["answer"]
-        v = answer.split()
         answer = cap_first(answer)
         uc_name = cap_first(name)
-        for i, w in enumerate(v):
-            if len(w) > 1 and w.isupper():
-                # Probably an abbreviation, such as 'FME' or 'BSÍ':
-                # convert to 'F M E'
-                v[i] = " ".join(w)
-        voice_answer = uc_name + " er " + " ".join(v) + "."
+        voice_answer = (
+            f"{gssml(uc_name, type='entity')} er {gssml(answer, type='entity')}."
+        )
         if "sources" in titles[0]:
             source = titles[0]["sources"][0]["domain"]
             query.set_source(source)
         query.set_context({"entity_name": uc_name})
     else:
-        answer = "Engin skilgreining finnst á nafninu '" + name + "'."
-        voice_answer = "Ég veit ekki hvað " + name + " er."
+        answer = f"Engin skilgreining finnst á nafninu {icequote(name)}."
+        voice_answer = f"Ég veit ekki hvað {gssml(name, type='entity')} er."
         if query.is_voice:
             # Rather than accept this as a voice query
             # for an entity that is not found, return an
@@ -699,7 +710,7 @@ def query_entity(query: Query, session: Session, name: str) -> AnswerTuple:
     return response, answer, voice_answer
 
 
-def query_entity_def(session, name: str) -> str:
+def query_entity_def(session: Session, name: str) -> str:
     """Return a single (best) definition of an entity"""
     rl = _query_entity_definitions(session, name)
     return correct_spaces(rl[0]["answer"]) if rl else ""
@@ -734,10 +745,10 @@ def query_company(
     response = prepare_response(q, prop_func=lambda x: x.definition)
     if response and response[0]["answer"]:
         answer = response[0]["answer"]
-        voice_answer = name + " er " + answer + "."
+        voice_answer = f"{gssml(name, type='entity')} er {answer}."
     else:
-        answer = "Engin skilgreining finnst á nafninu '" + name + "'."
-        voice_answer = "Ég veit ekki hvað " + name + " er."
+        answer = f"Engin skilgreining finnst á nafninu {icequote(name)}."
+        voice_answer = f"Ég veit ekki hvað {gssml(name, type='company')} er."
     return response, answer, voice_answer
 
 
@@ -755,9 +766,7 @@ def query_word(query: Query, session: Session, stem: str) -> AnswerTuple:
         dict(
             count=acnt,
             answers=[
-                dict(stem=rstem, cat=rcat)
-                for rstem, rcat, rcnt in rlist
-                if rstem != stem
+                dict(stem=rstem, cat=rcat) for rstem, rcat, _ in rlist if rstem != stem
             ],
         ),
         "",
@@ -772,14 +781,14 @@ def launch_search(query: Query, session: Session, qkey: str) -> AnswerTuple:
     pgs, _ = TreeUtility.raw_tag_toklist(toklist)  # root=_QUERY_ROOT
 
     # Collect the list of search terms
-    terms = []
-    tweights = []
-    fixups = []
+    terms: List[Tuple[str, str]] = []
+    tweights: List[TermDict] = []
+    fixups: List[Tuple[TermDict, int]] = []
     for pg in pgs:
         for sent in pg:
             for t in sent:
                 # Obtain search stems for the tokens.
-                d = dict(x=t.get("x", ""), w=0.0)
+                d = TermDict(x=t.get("x", ""), w=0.0)
                 tweights.append(d)
                 # The terms are represented as (stem, category) tuples.
                 stems = stems_of_token(t)
@@ -790,7 +799,7 @@ def launch_search(query: Query, session: Session, qkey: str) -> AnswerTuple:
     assert sum(n for _, n in fixups) == len(terms)
 
     if Settings.DEBUG:
-        print("Terms are:\n   {0}".format(terms))
+        print(f"Terms are:\n   {terms}")
 
     # Launch the search and return the answers, as well as the
     # search terms augmented with information about
@@ -885,7 +894,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     except AssertionError:
         raise
     except Exception as e:
-        q.set_error("E_EXCEPTION: {0}".format(e))
+        q.set_error(f"E_EXCEPTION: {e}")
 
 
 # The following functions correspond to grammar nonterminals (see Greynir.grammar)

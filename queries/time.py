@@ -4,7 +4,7 @@
 
     Time query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -18,12 +18,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
-
-    This module is an example of a plug-in query response module
-    for the Greynir query subsystem. It handles plain text queries, i.e.
-    ones that do not require parsing the query text. For this purpose
-    it only needs to implement the handle_plain_text() function, as
-    shown below.
 
     This particular module handles queries related to time and timezones.
 
@@ -45,8 +39,10 @@ from geo import (
     iceprep_for_cc,
     iceprep_for_placename,
 )
-from query import Query
-from queries import timezone4loc, gen_answer, icequote
+from queries import Query
+from queries.util import timezone4loc, gen_answer
+from speech.trans import gssml
+from utility import icequote
 
 _TIME_QTYPE = "Time"
 
@@ -56,7 +52,7 @@ TOPIC_LEMMAS = ["klukka", "tími"]
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
@@ -216,31 +212,30 @@ def handle_plain_text(q: Query) -> bool:
         if tz:
             # "Klukkan í Lundúnum er" - Used for voice answer
             dat = NounPhrase(loc_nom).dative or loc
-            specific_desc = "Klukkan {0} {1} er".format(prep, dat)
+            specific_desc = f"Klukkan {prep} {dat} er"
         else:
             # Unable to find the specified location
             q.set_qtype(_TIME_QTYPE)
             q.set_key(loc)
             q.set_answer(
-                *gen_answer(
-                    "Ég gat ekki flett upp staðsetningunni {0}".format(icequote(loc))
-                )
+                *gen_answer(f"Ég gat ekki flett upp staðsetningunni {icequote(loc)}")
             )
             return True
 
     # We have a timezone. Return formatted answer.
     if tz:
+        # This is one of the very few places where datetime.utcnow() is not used
         now = datetime.now(timezone(tz))
 
         desc = specific_desc or "Klukkan er"
 
         # Create displayable answer
-        answer = "{0:02}:{1:02}".format(now.hour, now.minute)
+        answer = f"{now.hour:02}:{now.minute:02}"
         # A detailed response object is usually a list or a dict
         response = dict(answer=answer)
         # A voice answer is a plain string that will be
         # passed as-is to a voice synthesizer
-        voice = "{0} {1}:{2:02}.".format(desc, now.hour, now.minute)
+        voice = f"{desc} {gssml(answer, type='time')}."
 
         q.set_qtype(_TIME_QTYPE)
         q.set_key(tz)  # Query key is the timezone

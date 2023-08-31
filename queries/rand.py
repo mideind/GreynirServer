@@ -4,7 +4,7 @@
 
     Randomness query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -28,10 +28,10 @@
 import logging
 import random
 
-from query import Query, QueryStateDict, AnswerTuple
-from queries import gen_answer, read_grammar_file
+from queries import Query, QueryStateDict, AnswerTuple
+from queries.util import gen_answer, read_grammar_file
 from queries.arithmetic import add_num, terminal_num
-from queries.util.num import number_to_text
+from speech.trans import gssml
 from tree import ParamList, Result, Node
 
 
@@ -41,7 +41,7 @@ TOPIC_LEMMAS = ["teningur", "skjaldarmerki", "handahóf"]
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég skil þig ef þú segir til dæmis: {0}.".format(
         random.choice(
@@ -95,12 +95,12 @@ def QRandNumber(node: Node, params: ParamList, result: Result) -> None:
         add_num(result._nominative, result)
 
 
-def gen_multiple_die_rolls_answer(q: Query, result):
+def gen_multiple_die_rolls_answer(q: Query, result: Result):
     # TODO: Implement me
     pass
 
 
-def gen_random_answer(q: Query, result):
+def gen_random_answer(q: Query, result: Result):
     """Generate answer to a query asking for a random number between two numbers."""
     (num1, num2) = (1, 6)  # Default
 
@@ -121,15 +121,15 @@ def gen_random_answer(q: Query, result):
     response = dict(answer=answer)
     if result.action == "dieroll":
         voice_answer = (
-            f"Talan {number_to_text(answer, gender='kk')} kom upp á teningnum"
+            f"Talan {gssml(answer, type='number', gender='kk')} kom upp á teningnum"
         )
     else:
-        voice_answer = f"Ég vel töluna {number_to_text(answer, gender='kk')}"
+        voice_answer = f"Ég vel töluna {gssml(answer, type='number', gender='kk')}"
 
     return response, str(answer), voice_answer
 
 
-def heads_or_tails(q: Query, result) -> AnswerTuple:
+def heads_or_tails(q: Query, result: Result) -> AnswerTuple:
     """Generate answer to "heads or tails" queries, i.e. "fiskur eða skjaldarmerki."""
     q.set_key("HeadsOrTails")
     return gen_answer(random.choice(("Skjaldarmerki", "Fiskur")))
@@ -151,6 +151,6 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         if r:
             q.set_answer(*r)
     except Exception as e:
-        logging.warning("Exception while processing random query: {0}".format(e))
-        q.set_error("E_EXCEPTION: {0}".format(e))
+        logging.warning(f"Exception while processing random query: {e}")
+        q.set_error(f"E_EXCEPTION: {e}")
         raise

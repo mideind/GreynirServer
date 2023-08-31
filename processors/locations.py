@@ -1,7 +1,7 @@
 """
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -21,20 +21,19 @@
 
 """
 
-from typing import Any, Dict, NamedTuple, Optional
+from typing import List
 from datetime import datetime
 
 from db.models import Location
 from tokenizer import TOK
 from geo import location_info
-from tree import TreeStateDict
+from tree import TreeStateDict, Loc
+from treeutil import TokenDict
 
 
 MODULE_NAME = __name__
 PROCESSOR_TYPE = "token"
 
-
-Loc = NamedTuple("Loc", [("name", str), ("kind", Optional[str])])
 
 LOCFL = ["lönd", "göt", "örn", "borg"]
 LOCFL_TO_KIND = dict(zip(LOCFL, ["country", "street", "placename", "placename"]))
@@ -160,10 +159,10 @@ def article_begin(state: TreeStateDict) -> None:
     url = state["url"]  # URL of the article being processed
 
     # Delete all existing locations for this article
-    session.execute(Location.table().delete().where(Location.article_url == url))
+    session.execute(Location.table().delete().where(Location.article_url == url))  # type: ignore
 
     # Set that will contain all unique locations found in the article
-    state["locations"] = set()  # type: ignore
+    state["locations"] = set()
 
 
 def article_end(state: TreeStateDict) -> None:
@@ -189,7 +188,7 @@ def article_end(state: TreeStateDict) -> None:
         loc["article_url"] = url
         loc["timestamp"] = datetime.utcnow()
 
-        print("Location '{0}' is a {1}".format(loc["name"], loc["kind"]))
+        print(f"Location '{loc['name']}' is a {loc['kind']}")
 
         locmodel = Location(**loc)
         session.add(locmodel)
@@ -211,14 +210,20 @@ def article_end(state: TreeStateDict) -> None:
 #     pass
 
 
-def token(state: Dict[str, Any], paragraph, sentence, token, idx):
+def token(
+    state: TreeStateDict,
+    paragraph: List[List[TokenDict]],
+    sentence: List[TokenDict],
+    token: TokenDict,
+    idx: int,
+) -> None:
     """Called for each token in each sentence. idx is the
     index of the token within the sentence."""
     if "m" not in token or len(token["m"]) < 3:
         return
 
-    name: str = token["m"][0]  # Nominative case
-    fl: str = token["m"][2]  # BÍN category
+    name = token["m"][0]  # Nominative case
+    fl = token["m"][2]  # BÍN category
     if fl not in LOCFL and name not in ALWAYS_LOCATION:
         return
 
@@ -242,7 +247,7 @@ def token(state: Dict[str, Any], paragraph, sentence, token, idx):
         if "k" in next_tok and (
             next_tok["k"] == TOK.NUMBER or next_tok["k"] == TOK.NUMWLETTER
         ):
-            name = "{0} {1}".format(name, next_word)
+            name = f"{name} {next_word}"
             kind = "address"
 
     # Add

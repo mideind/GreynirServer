@@ -4,7 +4,7 @@
 
     Places query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 # TODO: "Hvenær er X opið?"
 # TODO: Refactor this module (use grammar?)
 
-from typing import List, Dict, Optional
+from typing import Iterable, Mapping, Optional
 
 import logging
 import re
@@ -37,38 +37,24 @@ from datetime import datetime
 
 from reynir import NounPhrase
 
+# from iceaddr import nearest_addr, nearest_placenames
+
 from geo import in_iceland, iceprep_for_street, LatLonTuple
-from query import Query, QueryStateDict
-from queries import (
+from queries import Query, QueryStateDict
+from utility import icequote
+from queries.util import (
+    PlaceDict,
     gen_answer,
     query_places_api,
     query_place_details,
-    icequote,
     AnswerTuple,
     read_grammar_file,
 )
-from queries.util.num import numbers_to_text
+from speech.trans import gssml
 from tree import ParamList, Result, Node
 
 
 _PLACES_QTYPE = "Places"
-
-
-TOPIC_LEMMAS = ["opnunartími", "opna", "loka", "lokunartími"]
-
-
-def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
-    one of the above lemmas is found in it"""
-    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
-        random.choice(
-            (
-                "Hvað er opið lengi á Forréttabarnum",
-                "Hvenær lokar Bónus á Fiskislóð",
-            )
-        )
-    )
-
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -80,8 +66,19 @@ QUERY_NONTERMINALS = {"QPlaces"}
 # The context-free grammar for the queries recognized by this plug-in module
 GRAMMAR = read_grammar_file("places")
 
+_PLACENAME_MAP: Mapping[str, str] = {}
 
-_PLACENAME_MAP: Dict[str, str] = {}
+TOPIC_LEMMAS = ["opnunartími", "opna", "loka", "lokunartími"]
+
+
+def help_text(lemma: str) -> str:
+    """Help text to return when query processor is unable to parse a query but
+    one of the above lemmas is found in it"""
+    return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
+        random.choice(
+            ("Hvað er opið lengi á Forréttabarnum", "Hvenær lokar Bónus á Fiskislóð",)
+        )
+    )
 
 
 def _fix_placename(pn: str) -> str:
@@ -117,7 +114,7 @@ _PLACES_API_ERRMSG = "Ekki tókst að fletta upp viðkomandi stað"
 _NOT_IN_ICELAND_ERRMSG = "Enginn staður með þetta heiti fannst á Íslandi"
 
 
-def _parse_coords(place: Dict) -> Optional[LatLonTuple]:
+def _parse_coords(place: PlaceDict) -> Optional[LatLonTuple]:
     """Return tuple of coordinates given a place info data structure
     from Google's Places API."""
     try:
@@ -125,13 +122,11 @@ def _parse_coords(place: Dict) -> Optional[LatLonTuple]:
         lng = float(place["geometry"]["location"]["lng"])
         return (lat, lng)
     except Exception as e:
-        logging.warning(
-            "Unable to parse place coords for place {0}: {1}".format(place, e)
-        )
+        logging.warning(f"Unable to parse place coords for place '{place}': {e}")
     return None
 
 
-def _top_candidate(cand: List) -> Optional[Dict]:
+def _top_candidate(cand: Iterable[PlaceDict]) -> Optional[PlaceDict]:
     """Return first place in Iceland in Google Places Search API results."""
     for place in cand:
         coords = _parse_coords(place)
@@ -168,15 +163,15 @@ def answ_address(placename: str, loc: Optional[LatLonTuple], qtype: str) -> Answ
     prep = "í" if maybe_postcode else iceprep_for_street(street_name)
     # Split addr into street name w. number, and remainder
     street_addr = addr.split(",")[0]
-    remaining = re.sub(r"^{0}".format(street_addr), "", addr)
+    remaining = re.sub(rf"^{street_addr}", "", addr)
     # Get street name in dative case
     addr_þgf = NounPhrase(street_addr).dative or street_addr
     # Assemble final address
-    final_addr = "{0}{1}".format(addr_þgf, remaining)
+    final_addr = f"{addr_þgf}{remaining}"
 
     # Create answer
     answer = final_addr
-    voice = f"{placename} er {prep} {numbers_to_text(final_addr)}"
+    voice = f"{placename} er {prep} {gssml(final_addr, type='numbers', gender='hk')}"
     response = dict(answer=answer)
 
     return response, answer, voice
@@ -224,6 +219,7 @@ def answ_openhours(
     now = datetime.utcnow()
     wday = now.weekday()
     answer = voice = ""
+    p_voice: Optional[str] = None
 
     try:
         name = res["result"]["name"]
@@ -231,9 +227,14 @@ def answ_openhours(
 
         # Generate placename w. street, e.g. "Forréttabarinn á Nýlendugötu"
         street = fmt_addr.split()[0].rstrip(",")
-        street_þgf = NounPhrase(street).dative or street
-
-        name = "{0} {1} {2}".format(name, iceprep_for_street(street), street_þgf)
+        if not street or street.isnumeric():
+            # Street name is a number (probably a postcode), e.g. "101":
+            # Don't treat it as a street name
+            street = ""
+            street_þgf = ""
+        else:
+            street_þgf = NounPhrase(street).dative or street
+            name = f"{name} {iceprep_for_street(street)} {street_þgf}"
 
         # Get correct "open" adjective for place name
         open_adj_map = {"kk": "opinn", "kvk": "opin", "hk": "opið"}
@@ -244,9 +245,7 @@ def answ_openhours(
         periods = res["result"]["opening_hours"]["periods"]
         if len(periods) == 1 or wday >= len(periods):
             # Open 24 hours a day
-            today_desc = p_desc = "{0} er {1} allan sólarhringinn".format(
-                name, open_adj
-            )
+            today_desc = p_desc = f"{name} er {open_adj} allan sólarhringinn"
         else:
             # Get period
             p = periods[wday]
@@ -254,20 +253,21 @@ def answ_openhours(
             closes = p["close"]["time"]
 
             # Format correctly, e.g. "12:00 - 19:00"
-            openstr = opens[:2] + ":" + opens[2:]
-            closestr = closes[:2] + ":" + opens[2:]
-            p_desc = "{0} - {1}".format(openstr, closestr)
-            p_voice = p_desc.replace("-", "til")
-
-            today_desc = "Í dag er {0} {1} frá {2}".format(name, open_adj, p_voice)
+            openstr = f"{opens[:2]}:{opens[2:]}"
+            closestr = f"{closes[:2]}:{opens[2:]}"
+            p_desc = f"{openstr} - {closestr}"
+            p_voice = (
+                f"{gssml(openstr, type='time')} til {gssml(closestr, type='time')}"
+            )
+            today_desc = f"Í dag er {name} {open_adj} frá {{opening_hours}}"
     except Exception as e:
-        logging.warning("Exception generating answer for opening hours: {0}".format(e))
+        logging.warning(f"Exception generating answer for opening hours: {e}")
         return gen_answer(_PLACES_API_ERRMSG)
 
     # Generate answer
     if qtype == "OpeningHours":
         answer = p_desc
-        voice = today_desc
+        voice = today_desc.format(opening_hours=p_voice or "")
     # Is X open? Is X closed?
     elif qtype == "IsOpen" or qtype == "IsClosed":
         yes_no = (
@@ -277,8 +277,8 @@ def answ_openhours(
             )
             else "Nei"
         )
-        answer = "{0}. {1}.".format(yes_no, today_desc)
-        voice = answer
+        answer = f"{yes_no}. {today_desc.format(opening_hours=p_desc or '')}."
+        voice = f"{yes_no}. {today_desc.format(opening_hours=p_voice or '')}."
 
     response = dict(answer=answer)
 
@@ -306,13 +306,13 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 q.set_answer(*res)
                 q.set_source("Google Maps")
             else:
-                errmsg = "Ekki tókst að fletta upp staðnum {0}".format(icequote(subj))
+                errmsg = f"Ekki tókst að fletta upp staðnum {icequote(subj)}"
                 q.set_answer(*gen_answer(errmsg))
             q.set_qtype(result.qtype)
             q.set_key(subj)
         except Exception as e:
-            logging.warning("Exception answering places query: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception answering places query: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
             return
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

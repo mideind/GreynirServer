@@ -4,7 +4,7 @@
 
     Settings module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ class ConfigError(Exception):
         s = Exception.__str__(self)
         if not self.fname:
             return s
-        return "File {0}, line {1}: {2}".format(self.fname, self.line, s)
+        return f"File {self.fname}, line {self.line}: {s}"
 
 
 class LineReader:
@@ -119,17 +119,13 @@ class LineReader:
             if self._outer_fname:
                 # This is an include file within an outer config file
                 c = ConfigError(
-                    "Error while opening or reading include file '{0}'".format(
-                        self._fname
-                    )
+                    f"Error while opening or reading include file '{self._fname}'"
                 )
                 c.set_pos(self._outer_fname, self._outer_line)
             else:
                 # This is an outermost config file
                 c = ConfigError(
-                    "Error while opening or reading config file '{0}'".format(
-                        self._fname
-                    )
+                    f"Error while opening or reading config file '{self._fname}'"
                 )
             raise c
 
@@ -218,7 +214,7 @@ class Topics:
 @contextmanager
 def changedlocale(new_locale=None):
     """Change locale for collation temporarily within a context (with-statement)"""
-    # The newone locale parameter should be a tuple: ('is_IS', 'UTF-8')
+    # The new_locale parameter should be a tuple, e.g. ('is_IS', 'UTF-8')
     old_locale = locale.getlocale(locale.LC_COLLATE)
     try:
         locale.setlocale(locale.LC_COLLATE, new_locale or _DEFAULT_SORT_LOCALE)
@@ -238,7 +234,6 @@ def sort_strings(strings, loc=None):
 
 
 class Settings:
-
     # Postgres SQL database server hostname and port
     DB_HOSTNAME = os.environ.get("GREYNIR_DB_HOST", "localhost")
     DB_PORT = os.environ.get("GREYNIR_DB_PORT", "5432")  # Default PostgreSQL port
@@ -248,9 +243,7 @@ class Settings:
     try:
         DB_PORT = int(DB_PORT)
     except ValueError:
-        raise ConfigError(
-            "Invalid environment variable value: DB_PORT = {0}".format(DB_PORT)
-        )
+        raise ConfigError(f"Invalid environment variable value: DB_PORT = {DB_PORT}")
 
     # Flask server host and port
     HOST = os.environ.get("GREYNIR_HOST", "localhost")
@@ -258,9 +251,7 @@ class Settings:
     try:
         PORT = int(PORT)
     except ValueError:
-        raise ConfigError(
-            "Invalid environment variable value: GREYNIR_PORT = {0}".format(PORT)
-        )
+        raise ConfigError(f"Invalid environment variable value: GREYNIR_PORT = {PORT}")
 
     # Flask debug parameter
     DEBUG = False
@@ -272,9 +263,7 @@ class Settings:
         SIMSERVER_PORT = int(SIMSERVER_PORT)
     except ValueError:
         raise ConfigError(
-            "Invalid environment variable value: SIMSERVER_PORT = {0}".format(
-                SIMSERVER_PORT
-            )
+            f"Invalid environment variable value: SIMSERVER_PORT = {SIMSERVER_PORT}"
         )
 
     # Configuration settings from the Greynir.conf file
@@ -307,9 +296,9 @@ class Settings:
             elif par == "debug":
                 Settings.DEBUG = bool(val)
             else:
-                raise ConfigError("Unknown configuration parameter '{0}'".format(par))
+                raise ConfigError(f"Unknown configuration parameter '{par}'")
         except ValueError:
-            raise ConfigError("Invalid parameter value: {0} = {1}".format(par, val))
+            raise ConfigError(f"Invalid parameter value: {par} = {val}")
 
     @staticmethod
     def _handle_noindex_words(s):
@@ -322,7 +311,7 @@ class Settings:
             if par == "category":
                 NoIndexWords.set_cat(val)
             else:
-                raise ConfigError("Unknown setting '{0}' in noindex_words".format(par))
+                raise ConfigError(f"Unknown setting '{par}' in noindex_words")
             return
         assert len(a) == 1
         NoIndexWords.add(par)
@@ -338,7 +327,7 @@ class Settings:
             if par.lower() == "topic":
                 Topics.set_name(val)
             else:
-                raise ConfigError("Unknown setting '{0}' in topics".format(par))
+                raise ConfigError(f"Unknown setting '{par}' in topics")
             return
         assert len(a) == 1
         Topics.add(par)
@@ -372,9 +361,9 @@ class Settings:
                     if section in CONFIG_HANDLERS:
                         handler = CONFIG_HANDLERS[section]
                         continue
-                    raise ConfigError("Unknown section name '{0}'".format(section))
+                    raise ConfigError(f"Unknown section name '{section}'")
                 if handler is None:
-                    raise ConfigError("No handler for config line '{0}'".format(s))
+                    raise ConfigError(f"No handler for config line '{s}'")
                 # Call the correct handler depending on the section
                 handler(s)
 

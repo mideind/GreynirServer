@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -33,8 +33,8 @@ import cachetools  # type: ignore
 import random
 import logging
 
-from query import Query, QueryStateDict
-from queries import (
+from queries import Query, QueryStateDict
+from queries.util import (
     query_json_api,
     iceformat_float,
     gen_answer,
@@ -42,7 +42,7 @@ from queries import (
     read_grammar_file,
 )
 from tree import Result, Node, NonterminalNode, ParamList
-from queries.util.num import float_to_text
+from speech.trans import gssml
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS: Sequence[str] = [
@@ -66,7 +66,7 @@ TOPIC_LEMMAS: Sequence[str] = [
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
@@ -206,15 +206,18 @@ def _fetch_exchange_rates() -> Optional[Dict[str, float]]:
     """Fetch exchange rate data from apis.is and cache it."""
     res = query_json_api(_CURR_API_URL)
     if not isinstance(res, dict) or "results" not in res:
-        logging.warning(
-            "Unable to fetch exchange rate data from {0}".format(_CURR_API_URL)
-        )
+        logging.warning(f"Unable to fetch exchange rate data from {_CURR_API_URL}")
         return None
     return {
         c["shortName"]: c["value"]
         for c in res["results"]
         if "shortName" in c and "value" in c
     }
+
+
+def fetch_exchange_rates() -> Optional[Dict[str, float]]:
+    """Fetch exchange rate data using cache"""
+    return _fetch_exchange_rates()
 
 
 def _query_exchange_rate(curr1: str, curr2: str) -> Optional[float]:
@@ -256,19 +259,19 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         # Successfully matched a query type
         val = None
         target_currency = "ISK"
-        gender = None
+        target_gender = None
         suffix = ""
         verb = "er"
 
         if result.op == "index":
             # target_currency = "GVT"
             val = _query_exchange_rate("GVT", "")
-            gender = "kk"
+            target_gender = "kk"
         elif result.op == "exchange":
             # 'Hvert er gengi evru gagnvart dollara?'
             target_currency = result.currencies[0]
             val = _query_exchange_rate(result.currencies[0], result.currencies[1])
-            gender = "kk"
+            target_gender = "kk"
         elif result.op == "general":
             # 'Hvert er gengi dollarans?'
             val = _query_exchange_rate(result.currencies[0], "ISK")
@@ -282,7 +285,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             val = _query_exchange_rate(result.currencies[0], result.currencies[1])
             val = val * result.amount if val else None
         else:
-            raise Exception("Unknown operator: {0}".format(result.op))
+            raise Exception(f"Unknown operator: {result.op}")
 
         if val:
             if target_currency == "ISK":
@@ -292,15 +295,17 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 val = round(val, 2)
             answer = iceformat_float(val)
             response = dict(answer=answer)
-            if gender is None:
-                gender = NON_KVK_CURRENCY_GENDERS.get(target_currency, "kvk")
+            if target_gender is None:
+                target_gender = NON_KVK_CURRENCY_GENDERS.get(target_currency, "kvk")
+            from_gender = NON_KVK_CURRENCY_GENDERS.get(result.currencies[0], "kvk")
             voice_answer = "{0} {1} {2}{3}.".format(
-                result.desc,
+                gssml(result.desc, type="floats", gender=from_gender),
                 verb,
-                float_to_text(
+                gssml(
                     val,
+                    type="float",
                     case="nf",
-                    gender=gender,
+                    gender=target_gender,
                     comma_null=(target_currency != "ISK"),
                 ),
                 (" " + suffix) if suffix else "",

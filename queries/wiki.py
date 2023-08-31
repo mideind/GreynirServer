@@ -4,7 +4,7 @@
 
     Wikipedia query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -35,9 +35,11 @@ import re
 import random
 from datetime import datetime, timedelta
 
-from queries import query_json_api, gen_answer, cap_first, read_grammar_file
-from query import Query, QueryStateDict, ContextDict
 from tree import ParamList, Result, Node
+from utility import cap_first
+from speech.trans import gssml
+from queries import Query, QueryStateDict, ContextDict
+from queries.util import query_json_api, gen_answer, read_grammar_file
 
 
 _WIKI_QTYPE = "Wikipedia"
@@ -87,7 +89,7 @@ TOPIC_LEMMAS = _WIKI_VARIATIONS
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
@@ -211,19 +213,19 @@ def _clean_answer(answer: str) -> str:
     return a
 
 
-_BREAK_LENGTH = 0.5  # Seconds
-_BREAK_SSML = '<break time="{0}s"/>'.format(_BREAK_LENGTH)
+_BREAK_TIME = "0.5s"
 
 
 def _clean_voice_answer(answer: str) -> str:
     a = answer.replace(" m.a. ", " meðal annars ")
     a = a.replace(" þ.e. ", " það er ")
     a = a.replace(" t.d. ", " til dæmis ")
+    vb = gssml(type="vbreak", time=_BREAK_TIME)
     if _MULTIPLE_MEANINGS_RE.search(answer) is not None:
         # Short voice break between each meaning
-        a = a.replace("\n", _BREAK_SSML)
+        a = a.replace("\n", vb)
         # Remove first voice break (before the list of meanings)
-        a = a.replace(_BREAK_SSML, " ", 1)
+        a = a.replace(vb, " ", 1)
     return a
 
 
@@ -263,7 +265,7 @@ def get_wiki_summary(result: Result) -> Optional[str]:
     if not has_entry(res) and cap_subj != titled_subj:
         res = _query_wiki_api(titled_subj)
 
-    not_found = "Ég fann ekkert um '{0}' í Wikipedíu".format(subject_nom)
+    not_found = f"Ég fann ekkert um '{subject_nom}' í Wikipedíu"
 
     if not has_entry(res):
         if result.get("explicit_wikipedia") == True:

@@ -4,7 +4,7 @@
 
     Special query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -28,16 +28,16 @@
 
 """
 
-from typing import Dict, Union, Callable, cast
+from typing import Dict, Tuple, Union, Callable, cast
 
 from datetime import datetime, timedelta
 from inspect import isfunction
 from random import choice
 
-from queries import icequote
+from utility import icequote
 
-from query import Query
-
+from queries import Query
+from speech.trans import gssml
 
 # Type definitions
 AnswerEntry = Union[str, bool]
@@ -58,20 +58,20 @@ _CAP = (
     "Þú getur til dæmis spurt mig um gengi gjaldmiðla.",
     "Þú getur til dæmis beðið mig um að kasta teningi.",
     "Þú getur til dæmis spurt mig um staðsetningu.",
+    "Þú getur til dæmis spurt mig hvenær sólin rís og sest.",
     "Þú getur til dæmis spurt mig um fólk sem hefur komið fram í fjölmiðlum.",
     "Þú getur til dæmis beðið mig um að segja brandara.",
     "Þú getur til dæmis beðið mig um upplýsingar úr Wikipedíu.",
     "Þú getur til dæmis beðið mig um að leysa einföld reikningsdæmi.",
     "Þú getur til dæmis spurt mig um mælieiningar.",
     "Þú getur til dæmis spurt mig hvað er í sjónvarpinu.",
-    # "Þú getur til dæmis spurt mig um hvað er í útvarpinu.",
+    "Þú getur til dæmis spurt mig hvað er í útvarpinu.",
     "Þú getur til dæmis spurt mig um bensínverð og bensínstöðvar.",
     "Þú getur til dæmis spurt mig um hvað sé í fréttum.",
     "Þú getur til dæmis spurt mig um stafsetningu og beygingu orða.",
     "Þú getur til dæmis spurt mig um opnunartíma verslana og veitingastaða.",
     "Þú getur til dæmis beðið mig um að hringja í símanúmer.",
-    # "Þú getur til dæmis spurt mig um flugsamgöngur.",
-    "Þú getur til dæmis beðið mig um að endurtaka setningar.",
+    "Þú getur til dæmis spurt mig um flugsamgöngur.",
 )
 
 
@@ -102,26 +102,58 @@ def _random_joke(qs: str, q: Query) -> AnswerType:
 
 
 # TODO: Add more fun trivia here
-_TRIVIA = (
-    "Árið 1511 var frostavetur í Brussel og lágstéttafólk mótmælti háum kyndingarkostnaði með því að "
-    "eyðileggja snjókarla fyrir utan heimili yfirstéttarfólks.",
-    "Emúastríðið var háð í Ástralíu árið 1932 þegar herinn réðst ítrekað gegn emúahjörð með hríðskotabyssum"
-    " en mistókst að ráða niðurlögum fuglanna.",
-    "Argentínumaðurinn Emilio Palma fæddist á Suðurskautslandinu fyrstur manna, árið 1978.",
-    "Dagsetningin 30. febrúar kom upp á opinbera sænska dagatalinu árið 1712 til að laga skekkju sem hafði "
-    "myndast þegar hlaupár gleymdust vegna stríðsástands árin áður.",
-    "Bandaríska geimferðarstofnunin NASA hefur gert nákvæma efnagreiningu á eplum og appelsínum og komist "
-    "að því að ávextirnir eru á margan hátt sambærilegir.",
-    "Egg komu fram á sjónarsviðið mörgum milljónum ára áður en fyrsta hænan leit dagsins ljós.",
-    "Kolkrabbinn Paul giskaði rétt á úrslit allra sjö leikja þýska karlalandsliðsins í knattspyrnu á "
-    "heimsmeistaramótinu árið 2010.",
-    "Fíkniefnabaróninn Pablo Escobar flutti þónokkurn fjölda flóðhesta til Kólumbíu á sínum tíma. "
-    "Þar lifa þeir villtir enn.",
+_TRIVIA: Tuple[Tuple[str, Dict[str, str]], ...] = (
+    (
+        "Árið 1511 var frostavetur í Brussel og lágstéttafólk mótmælti háum kyndingarkostnaði með því að "
+        "eyðileggja snjókarla fyrir utan heimili yfirstéttarfólks.",
+        {"1511": gssml("1511", type="year")},
+    ),
+    (
+        "Emúastríðið var háð í Ástralíu árið 1932 þegar herinn réðst ítrekað gegn emúahjörð með hríðskotabyssum"
+        " en mistókst að ráða niðurlögum fuglanna.",
+        {"1932": gssml("1932", type="year")},
+    ),
+    (
+        "Argentínumaðurinn Emilio Palma fæddist á Suðurskautslandinu fyrstur manna, árið 1978.",
+        {"1978": gssml("1978", type="year")},
+    ),
+    (
+        "Dagsetningin 30. febrúar kom upp á opinbera sænska dagatalinu árið 1712 til að laga skekkju sem hafði "
+        "myndast þegar hlaupár gleymdust vegna stríðsástands árin áður.",
+        {
+            "30.": gssml("30", type="ordinal", case="nf", gender="kk"),
+            "1712": gssml("1712", type="year"),
+        },
+    ),
+    (
+        "Bandaríska geimferðarstofnunin NASA hefur gert nákvæma efnagreiningu á eplum og appelsínum og komist "
+        "að því að ávextirnir eru á margan hátt sambærilegir.",
+        {},
+    ),
+    (
+        "Egg komu fram á sjónarsviðið mörgum milljónum ára áður en fyrsta hænan leit dagsins ljós.",
+        {},
+    ),
+    (
+        "Kolkrabbinn Paul giskaði rétt á úrslit allra sjö leikja þýska karlalandsliðsins í knattspyrnu á "
+        "heimsmeistaramótinu árið 2010.",
+        {"2010": gssml("2010", type="year")},
+    ),
+    (
+        "Fíkniefnabaróninn Pablo Escobar flutti þónokkurn fjölda flóðhesta til Kólumbíu á sínum tíma. "
+        "Þar lifa þeir villtir enn.",
+        {},
+    ),
 )
 
 
 def _random_trivia(qs: str, q: Query) -> AnswerType:
-    return {"answer": choice(_TRIVIA), "is_question": False}
+    ans, v_replace = choice(_TRIVIA)
+    vans = ans
+    for k, v in v_replace.items():
+        # Insert transcription markings for certain words in text
+        vans = vans.replace(k, v)
+    return {"answer": ans, "voice": vans, "is_question": False}
 
 
 _PROVERBS = (
@@ -208,11 +240,12 @@ _QUOTATIONS = (
 
 def _random_quotation(qs: str, q: Query) -> AnswerType:
     (quote, author) = choice(_QUOTATIONS)
-    answer = "{0} — {1}".format(icequote(quote), author)
+    answer = f"{icequote(quote)} — {author}"
     return {"answer": answer, "is_question": False}
 
 
 def _poetry(qs: str, q: Query) -> AnswerType:
+    # TODO: Expand this!
     return {
         "answer": icequote(
             "Það mælti mín móðir, \n"
@@ -288,6 +321,7 @@ def _rudeness(qs: str, q: Query) -> AnswerType:
         name = nd["first"]
         answ = f"Æi, {name}. {answ}"
     v = answ.replace(",", "")  # Tweak pronunciation
+    # TODO: Use GSSML to normalize this
     # voice = '<amazon:breath duration="long" volume="x-loud"/> {0}'.format(v)
     return {"answer": answ, "voice": v, "is_question": False}
 
@@ -300,6 +334,18 @@ def _open_embla_url(qs: str, q: Query) -> AnswerType:
 def _open_mideind_url(qs: str, q: Query) -> AnswerType:
     q.set_url("https://mideind.is")
     return {"answer": "Skal gert!", "is_question": False}
+
+
+# The following facts are sacred and shall not be tampered with.
+_CUTEST = (
+    "Tumi Þorsteinsson",
+    "Eyjólfur Þorsteinsson",
+)
+
+
+def _cutest(qs: str, q: Query) -> AnswerType:
+    return {"answer": f"{choice(_CUTEST)} er langsætastur.", "is_question": True}
+
 
 
 _MEANING_OF_LIFE: AnswerType = {"answer": "42.", "voice": "Fjörutíu og tveir."}
@@ -353,7 +399,7 @@ _NAME_EXPL: AnswerType = {
 }
 
 _VOICE_EXPL: AnswerType = {
-    "answer": "Ég nota rödd sem Blindrafélagið lét útbúa árið 2011.",
+    "answer": "Ég nota rödd frá Azure skýjaþjónustunni.",
 }
 
 _JUST_QA: AnswerType = {"answer": "Nei, ég er nú bara ósköp einfalt fyrirspurnakerfi."}
@@ -401,9 +447,11 @@ _FAVORITE_MUSIC: AnswerType = {
     "answer": "Ég er býsna hrifin af rokksveitinni Led Zeppelin."
 }
 
-_FAVORITE_ANIMAL = {"answer": "Ég held mikið upp á ketti. Þeir eru frábærir."}
+_FAVORITE_ANIMAL: AnswerType = {
+    "answer": "Ég held mikið upp á ketti. Þeir eru frábærir."
+}
 
-_FAVORITE_FOOD = {"answer": "Það veit ég ekki, enda þarf ég ekki að borða."}
+_FAVORITE_FOOD: AnswerType = {"answer": "Það veit ég ekki, enda þarf ég ekki að borða."}
 
 _POLITICS: AnswerType = {"answer": "Ég er ekki ekki pólitísk."}
 
@@ -450,9 +498,16 @@ _THREATS: AnswerType = {"answer": "Eigi skal höggva!"}
 
 _I_KNOW_STUFF: AnswerType = {"answer": "Ég veit eitt og annað. Spurðu mig!"}
 
-_I_TRY_BUT_OPINION = {"answer": "Ég reyni að vera það, en sitt sýnist hverjum."}
+_I_TRY_BUT_OPINION: AnswerType = {
+    "answer": "Ég reyni að vera það, en sitt sýnist hverjum."
+}
 
-_AT_LEAST_I_KNOW_ICELANDIC = {"answer": "Ég kann allavega íslensku!"}
+_AT_LEAST_I_KNOW_ICELANDIC: AnswerType = {"answer": "Ég kann allavega íslensku!"}
+
+CAN_YOU_SEE_ME: AnswerType = {
+    "answer": "Nei, ég get ekki séð þig þar sem ég er ekki með augu."
+}
+
 
 ###################################
 
@@ -482,18 +537,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
         "answer": "Alls konar klárt, skemmtilegt og fallegt fólk."
     },
     "hver er sætust": {"answer": "Ég, Embla, er langsætust."},
-    "hver er sætastur": {
-        "answer": "Tumi Þorsteinsson.",
-        "voice": "Tumi Þorsteinsson er langsætastur.",
-    },
-    "hver er langsætastur": {
-        "answer": "Tumi Þorsteinsson.",
-        "voice": "Tumi Þorsteinsson er langsætastur.",
-    },
-    "hver er lang sætastur": {
-        "answer": "Tumi Þorsteinsson.",
-        "voice": "Tumi Þorsteinsson er langsætastur.",
-    },
+    "hver er sætastur": _cutest,
+    "hver er langsætastur": _cutest,
+    "hver er lang sætastur": _cutest,
     "hver er bestur": {"answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."},
     "hver er bestur í heiminum": {
         "answer": "Þú, kæri notandi, ert að sjálfsögðu bestur."
@@ -1295,6 +1341,7 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "þú ert falleg": {"answer": "Takk fyrir hrósið!"},
     "þú ert mjög falleg": {"answer": "Takk fyrir hrósið!"},
     "þú ert fallegust": {"answer": "Takk fyrir hrósið!"},
+    "þetta var fallega sagt": {"answer": "Ég geri mitt besta!"},
     "þetta var rétt hjá þér": _GOOD_TO_HEAR,
     "það var rétt hjá þér": _GOOD_TO_HEAR,
     "þetta er rétt hjá þér": _GOOD_TO_HEAR,
@@ -1602,6 +1649,8 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "geturðu mælt með kvikmynd": _FAVORITE_FILM,
     "geturðu mælt með einhverri kvikmynd": _FAVORITE_FILM,
     "hvað mynd mælirðu með": _FAVORITE_FILM,
+    "mæltu með bíómynd": _FAVORITE_FILM,
+    "mæltu með einhverri bíómynd": _FAVORITE_FILM,
     # Favorite music
     "hvað er uppáhaldstónlistin þín": _FAVORITE_MUSIC,
     "hvað er uppáhalds tónlistin þín": _FAVORITE_MUSIC,
@@ -2129,7 +2178,9 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "segðu mér eitthvað áhugavert": _random_trivia,
     "segðu eitthvað merkilegt": _random_trivia,
     "segðu mér eitthvað merkilegt": _random_trivia,
+    "segðu mér staðreynd": _random_trivia,
     "segðu mér áhugaverða staðreynd": _random_trivia,
+    "segðu mér skemmtilega staðreynd": _random_trivia,
     "komdu með eitthvað áhugavert": _random_trivia,
     "komdu með áhugaverða staðreynd": _random_trivia,
     "segðu mér eitthvað um heiminn": _random_trivia,
@@ -2617,6 +2668,14 @@ _SPECIAL_QUERIES: Dict[str, Union[AnswerType, AnswerCallable]] = {
     "getur þú skipt um rödd": _YES,
     "geturðu skipt um röddu": _YES,
     "getur þú skipt um röddu": _YES,
+    # Sensory input
+    "geturðu séð mig": CAN_YOU_SEE_ME,
+    "getur þú séð mig": CAN_YOU_SEE_ME,
+    "sérðu mig": CAN_YOU_SEE_ME,
+    "sérð þú mig": CAN_YOU_SEE_ME,
+    "sérðu mig núna": CAN_YOU_SEE_ME,
+    "ertu að sjá mig": CAN_YOU_SEE_ME,
+    "ertu að horfa á mig": CAN_YOU_SEE_ME,
 }
 
 

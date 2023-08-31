@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 
 """
 
-from typing import List, Optional, Union, Tuple, Dict, Any, cast
+from typing import Iterable, List, Optional, Union, Tuple, Dict, Any, cast
 
 import logging
 
@@ -37,7 +37,7 @@ from tokenizer import TOK, Tok
 from reynir.bintokenizer import tokenize
 
 from db import SessionContext, desc
-from db.models import Article, Word, Root, Column
+from db.models import Article, Word, Root, Column, DateTime
 from db.sql import WordFrequencyQuery
 
 
@@ -53,6 +53,8 @@ def words_trends():
     return render_template("words/trends.html", title="Orð")
 
 
+CAT_UNKNOWN = "??"
+
 # Word categories permitted in word frequency search
 _VALID_WCATS = frozenset(
     (
@@ -65,12 +67,11 @@ _VALID_WCATS = frozenset(
         "person_kvk",
         "person_hk",
         "entity",
-        "??",
+        CAT_UNKNOWN,
     )
 )
 
 # Human-readable descriptions of word categories
-CAT_UNKNOWN = "??"
 CAT_DESC = {
     "kk": "kk. no.",
     "kvk": "kvk. no.",
@@ -120,15 +121,15 @@ def _str2words(
     ][:_MAX_NUM_WORDS]
 
 
-def _words2str(words):
+def _words2str(words: Iterable[Tuple[str, str]]) -> str:
     """Create comma-separated string from (word,cat) tuple list,
     e.g. "[(a,b),(c,d)] -> "a:b, c:d"."""
     return ", ".join([":".join(w[:2]) if len(w) >= 2 else w[0] for w in words])
 
 
-def _desc4word(wc):
+def _desc4word(wc: Tuple[str, str]) -> str:
     """Create a human-friendly description string for a word/category tuple."""
-    return "{0} ({1})".format(wc[0], CAT_DESC.get(wc[1]))
+    return f"{wc[0]} ({CAT_DESC.get(wc[1], CAT_UNKNOWN)})"
 
 
 @routes.route("/wordfreq", methods=["GET", "POST"])
@@ -142,19 +143,19 @@ def wordfreq():
         date_from = datetime.strptime(request.args.get("date_from", ""), date_fmt)
         date_to = datetime.strptime(request.args.get("date_to", ""), date_fmt)
     except Exception as e:
-        logging.warning("Failed to parse date arg: {0}".format(e))
+        logging.warning(f"Failed to parse date arg: {e}")
         return better_jsonify(**resp)
 
     # Words param should contain one or more comma-separated word
     # lemmas with optional category specified with :cat suffix
-    warg = request.args.get("words")
+    warg: str = request.args.get("words", "")
     if not warg:
         return better_jsonify(**resp)
 
     # Create word/cat pair from token
     def cat4token(t: Tok) -> Tuple[str, str]:
         assert t.kind in (TOK.WORD, TOK.PERSON, TOK.ENTITY)
-        # TODO: Use GreynirPackage lemma lookup function for this
+        # TODO: Use GreynirEngine lemma lookup function for this
         w, cat = t.txt, ""
         if t.kind == TOK.WORD:
             val = list(filter(lambda m: m.stofn == m.ordmynd, t.meanings)) or t.meanings
@@ -179,9 +180,9 @@ def wordfreq():
     wds = _str2words(warg)
 
     # Try to tokenize each item that doesn't have a category
-    nwds = []
+    nwds: List[Tuple[str, str]] = []
     for w, c in wds or []:
-        if c is None or c == CAT_UNKNOWN:
+        if not c or c == CAT_UNKNOWN:
             # Try to tokenize
             tokens = list(filter(lambda x: x.kind in _VALID_TOKENS, tokenize(w)))
             for t in tokens:
@@ -209,8 +210,8 @@ def wordfreq():
                 for i in range(int((delta.days + 1) / 7))
             ]
             # Construct elegant week date labels w. no superfluous information
-            labels = []
-            for (d1, d2) in label_dates:
+            labels: List[str] = []
+            for d1, d2 in label_dates:
                 if d1.month == d2.month:
                     d1fmt = "%-d."
                     d2fmt = "%-d. %b"
@@ -259,11 +260,11 @@ def wordfreq():
                 or []
             )
             # Generate data and config for chart
-            label = "{0} ({1})".format(wd, CAT_DESC.get(cat))
+            label = f"{wd} ({CAT_DESC.get(cat)})"
             ds: Dict[str, Any] = dict(label=label, fill=False, lineTension=0)
             ds["borderColor"] = ds["backgroundColor"] = colors.pop(0)
             ds["data"] = [r[1] for r in res]
-            ds["word"] = "{0}:{1}".format(wd, cat)
+            ds["word"] = f"{wd}:{cat}"
             data["datasets"].append(ds)
 
     # Create response
@@ -294,7 +295,7 @@ def wordfreq_details():
             # If only one date provided, assume it's a period spanning a single day
             date_to = date_from + timedelta(days=1)
     except Exception as e:
-        logging.warning("Failed to parse date arg: {0}".format(e))
+        logging.warning(f"Failed to parse date arg: {e}")
         return better_jsonify(**resp)
 
     # Fetch list of articles for each word for the given period
@@ -312,7 +313,7 @@ def wordfreq_details():
                 .filter(Word.stem == wd)
                 .filter(Word.cat == cat)
                 .join(Root)
-                .order_by(desc(cast(Column, Article.timestamp)))
+                .order_by(desc(cast(Column[DateTime], Article.timestamp)))
             )
             articles = [
                 {"id": a[0], "heading": a[1], "domain": a[2], "cnt": a[3]}

@@ -5,7 +5,7 @@
 
     Web server main module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
     Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@
 
 """
 
-from typing import Dict, List, Pattern, Optional, Union
+from typing import Dict, List, Pattern, Optional, Tuple, Union, Any, cast
 
 import sys
 import re
@@ -48,13 +48,20 @@ from flask_cors import CORS  # type: ignore
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from dotenv import load_dotenv
+
 import reynir
 from reynir.bindb import GreynirBin
 from reynir.fastparser import Fast_Parser
 
 from settings import Settings, ConfigError
 from article import Article as ArticleProxy
-from utility import CONFIG_DIR, GREYNIR_ROOT_DIR, QUERIES_DIALOGUE_DIR, QUERIES_GRAMMAR_DIR, QUERIES_UTIL_GRAMMAR_DIR
+from utility import (
+    CONFIG_DIR,
+    QUERIES_DIALOGUE_DIR,
+    QUERIES_GRAMMAR_DIR,
+    QUERIES_UTIL_GRAMMAR_DIR,
+)
 
 from reynir.version import __version__ as greynir_version
 from tokenizer.version import __version__ as tokenizer_version
@@ -63,6 +70,9 @@ from tokenizer.version import __version__ as tokenizer_version
 # RUNNING_AS_SERVER is True if we're executing under nginx/Gunicorn,
 # but False if the program was invoked directly as a Python main module.
 RUNNING_AS_SERVER = __name__ != "__main__"
+
+# Load variables from '.env' file into environment
+load_dotenv()
 
 # Initialize and configure Flask app
 app = Flask(__name__)
@@ -74,7 +84,7 @@ app.config["CORS_HEADERS"] = "Content-Type"
 # Fix access to client remote_addr when running behind proxy
 setattr(app, "wsgi_app", ProxyFix(app.wsgi_app))  # type: ignore
 
-app.config["JSON_AS_ASCII"] = False  # We're fine with using Unicode/UTF-8
+cast(Any, app).json.ensure_ascii = False  # We're fine with using Unicode/UTF-8
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB, max upload file size
 app.config["CACHE_NO_NULL_WARNING"] = True  # Don't warn if caching is disabled
 
@@ -123,8 +133,8 @@ def format_is(r: float, decimals: int = 0) -> str:
 
 @app.template_filter("format_ts")
 def format_ts(ts: datetime) -> str:
-    """Flask/Jinja2 template filter to format a timestamp"""
-    return str(ts)[0:19]
+    """Flask/Jinja2 template filter to format a timestamp as YYYY-MM-DD HH:MM"""
+    return str(ts)[0:16]
 
 
 # Flask cache busting for static .css and .js files
@@ -167,16 +177,16 @@ def send_font(path: str) -> Response:
 
 # Custom 404 error handler
 @app.errorhandler(404)
-def page_not_found(_) -> str:
+def page_not_found(_) -> Tuple[str, int]:
     """Return a custom 404 error"""
-    return render_template("404.html")
+    return render_template("404.html"), 404
 
 
 # Custom 500 error handler
 @app.errorhandler(500)
-def server_error(_) -> str:
+def server_error(_) -> Tuple[str, int]:
     """Return a custom 500 error"""
-    return render_template("500.html")
+    return render_template("500.html"), 500
 
 
 @app.context_processor
@@ -193,7 +203,7 @@ try:
     # Read configuration file
     Settings.read(str(Path("config", "Greynir.conf")))
 except ConfigError as e:
-    logging.error("Greynir did not start due to a configuration error:\n{0}".format(e))
+    logging.error(f"Greynir did not start due to a configuration error: {e}")
     sys.exit(1)
 
 if Settings.DEBUG:
@@ -209,17 +219,14 @@ if Settings.DEBUG:
             Settings.DB_PORT,
             sys.version,
             os_name(),
-            "GreynirPackage {0} - Tokenizer {1}".format(
-                greynir_version, tokenizer_version
-            ),
+            f"GreynirEngine {greynir_version} - Tokenizer {tokenizer_version}",
         )
     )
-    # Clobber Settings.DEBUG in GreynirPackage
+    # Clobber Settings.DEBUG in GreynirEngine
     reynir.Settings.DEBUG = True
 
 
 if not RUNNING_AS_SERVER:
-
     if ENV.get("GREYNIR_ATTACH_PTVSD"):
         # Attach to the VSCode PTVSD debugger, enabling remote debugging via SSH
         # import ptvsd
@@ -238,32 +245,22 @@ if not RUNNING_AS_SERVER:
     extra_files: List[str] = []
 
     # Reload web server when config files change
+    extra_files.extend(str(p) for p in CONFIG_DIR.resolve().glob("*.conf"))
+    # Config files for GreynirEngine
     extra_files.extend(
-        str(p) for p in CONFIG_DIR.resolve().glob("*.conf")
-    )
-    # Config files for GreynirPackage
-    extra_files.extend(
-        str(p) for p in (Path(reynir.__file__).parent.resolve() / "config").glob("*.conf")
+        str(p)
+        for p in (Path(reynir.__file__).parent.resolve() / "config").glob("*.conf")
     )
 
     # Add grammar files
+    extra_files.extend(str(p) for p in QUERIES_GRAMMAR_DIR.resolve().glob("*.grammar"))
     extra_files.extend(
-        str(p)
-        for p in QUERIES_GRAMMAR_DIR.resolve().glob("*.grammar")
-    )
-    extra_files.extend(
-        str(p)
-        for p in QUERIES_UTIL_GRAMMAR_DIR.resolve().glob(
-            "*.grammar"
-        )
+        str(p) for p in QUERIES_UTIL_GRAMMAR_DIR.resolve().glob("*.grammar")
     )
     # Add dialogue TOML files
-    extra_files.extend(
-        str(p)
-        for p in QUERIES_DIALOGUE_DIR.resolve().glob("*.toml")
-    )
+    extra_files.extend(str(p) for p in QUERIES_DIALOGUE_DIR.resolve().glob("*.toml"))
 
-    # Add ord.compressed from GreynirPackage
+    # Add ord.compressed from GreynirEngine
     # extra_files.append(
     #     str(
     #         (
@@ -291,9 +288,8 @@ if not RUNNING_AS_SERVER:
     except socket_error as e:
         if e.errno == errno.EADDRINUSE:  # Address already in use
             logging.error(
-                "Greynir web app is already running at host {0}:{1}".format(
-                    Settings.HOST, Settings.PORT
-                )
+                f"Another application is already running at"
+                " host {Settings.HOST}:{Settings.PORT}"
             )
             sys.exit(1)
         else:
@@ -311,11 +307,12 @@ else:
         werkzeug_log.setLevel(logging.WARNING)
 
     # Log our startup
+    version = sys.version.replace("\n", " ")
     log_str = (
         f"Greynir instance starting with "
-        "host={Settings.HOST}:{Settings.PORT}, "
-        "db_host={Settings.DB_HOSTNAME}:{Settings.DB_PORT} "
-        "on Python {sys.version.replace('\n', ' ')}"
+        f"host={Settings.HOST}:{Settings.PORT}, "
+        f"db_host={Settings.DB_HOSTNAME}:{Settings.DB_PORT} "
+        f"on Python {version}"
     )
     logging.info(log_str)
     print(log_str)

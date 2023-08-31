@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -35,31 +35,26 @@ if mainpath not in sys.path:
 
 
 def test_util():
-    """Test functions in utility.py"""
+    """Test functions in utility.py."""
 
     from utility import (
-        icelandic_asciify,
         GREYNIR_ROOT_DIR,
-        modules_in_dir,
         QUERIES_DIR,
         QUERIES_UTIL_DIR,
         QUERIES_GRAMMAR_DIR,
         QUERIES_JS_DIR,
         QUERIES_UTIL_GRAMMAR_DIR,
-        CONFIG_DIR
+        CONFIG_DIR,
+        RESOURCES_DIR,
+        STATIC_DIR,
+        icelandic_asciify,
+        sanitize_filename,
+        modules_in_dir,
+        cap_first,
+        icequote,
     )
 
-    is2ascii = {
-        "það mikið er þetta gaman": "thad mikid er thetta gaman",
-        "HVAÐ ER EIGINLEGA Í GANGI?": "HVAD ER EIGINLEGA I GANGI?",
-        "Örnólfur Gyrðir Möðvarsson": "Ornolfur Gyrdir Modvarsson",
-        "Dóra": "Dora",
-        "Álfur": "Alfur",
-        "GUÐRÚN": "GUDRUN",
-    }
-    for k, v in is2ascii.items():
-        assert icelandic_asciify(k) == v
-
+    # Test that the root directory is correctly structured
     assert (
         # utility should be in the root dir
         (GREYNIR_ROOT_DIR / "utility.py").is_file()
@@ -70,12 +65,43 @@ def test_util():
     ), f"Was utility.py moved from the root folder?"
 
     assert CONFIG_DIR.exists() and CONFIG_DIR.is_dir()
+    assert RESOURCES_DIR.exists() and RESOURCES_DIR.is_dir()
+    assert STATIC_DIR.exists() and STATIC_DIR.is_dir()
     assert QUERIES_DIR.exists() and QUERIES_DIR.is_dir()
     assert QUERIES_GRAMMAR_DIR.exists() and QUERIES_GRAMMAR_DIR.is_dir()
     assert QUERIES_JS_DIR.exists() and QUERIES_JS_DIR.is_dir()
     assert QUERIES_UTIL_DIR.exists() and QUERIES_UTIL_DIR.is_dir()
     assert QUERIES_UTIL_GRAMMAR_DIR.exists() and QUERIES_UTIL_GRAMMAR_DIR.is_dir()
 
+    # Test icelandic_asciify
+    is2ascii = {
+        "það mikið er þetta gaman": "thad mikid er thetta gaman",
+        "HVAÐ ER EIGINLEGA Í GANGI?": "HVAD ER EIGINLEGA I GANGI?",
+        "Örnólfur Gyrðir Möðvarsson": "Ornolfur Gyrdir Modvarsson",
+        "Dóra": "Dora",
+        "Álfur": "Alfur",
+        "GUÐRÚN": "GUDRUN",
+        "Guðrún": "Gudrun",
+        "ÞÓRIR": "THORIR",
+        "þÓRIR": "thORIR",
+        "Þórir": "THorir",
+        "Ævilöng Ánauð": "AEvilong Anaud",
+    }
+    for k, v in is2ascii.items():
+        assert icelandic_asciify(k) == v
+
+    # Test sanitize_filename
+    unsan2san = {
+        "Hvað er eiginlega í gangi?": "hvad_er_eiginlega_i_gangi",
+        "ALDREI FÓR ÉG SUÐUR": "aldrei_for_eg_sudur",
+        "ekki Benda á miG...": "ekki_benda_a_mig",
+        "Þetta er bara einhver texti": "thetta_er_bara_einhver_texti",
+        "Sæll vert þú, Þórir": "saell_vert_thu_thorir",
+    }
+    for k, v in unsan2san.items():
+        assert sanitize_filename(k) == v
+
+    # Test modules_in_dir
     def get_modules(*path: str):
         return [
             ".".join(i.relative_to(GREYNIR_ROOT_DIR).with_suffix("").parts)
@@ -90,5 +116,43 @@ def test_util():
         QUERIES_UTIL_DIR.relative_to(GREYNIR_ROOT_DIR)
     ) == get_modules("queries", "util")
 
-    # TODO: Test this function
-    # from util import read_api_key
+    assert cap_first("yolo") == "Yolo"
+    assert cap_first("YOLO") == "YOLO"
+    assert cap_first("yoLo") == "YoLo"
+    assert cap_first("Yolo") == "Yolo"
+    assert cap_first("þristur") == "Þristur"
+    assert cap_first("illur ásetninguR") == "Illur ásetninguR"
+
+    assert icequote("sæll") == "„sæll“"
+    assert icequote(" Góðan daginn ") == "„Góðan daginn“"
+
+
+def test_read_json_api_key():
+    """Test reading API keys from JSON files."""
+
+    from utility import read_json_api_key, GREYNIR_ROOT_DIR
+
+    # Test reading a non-existent key
+    assert read_json_api_key("nonexistent") == {}
+
+    # Test reading a key from a JSON file
+    assert read_json_api_key(
+        "dummy_json_api_key", folder=GREYNIR_ROOT_DIR / "tests" / "files"
+    ) == {"key": 123456789}
+
+
+def test_read_txt_api_key():
+    """Test reading API keys from .txt files."""
+
+    from utility import read_txt_api_key, GREYNIR_ROOT_DIR
+
+    # Test reading a non-existent key
+    assert read_txt_api_key("nonexistent") == ""
+
+    # Test reading a key from a .txt file
+    assert (
+        read_txt_api_key(
+            "dummy_greynir_api_key", folder=GREYNIR_ROOT_DIR / "tests" / "files"
+        )
+        == "123456789"
+    )

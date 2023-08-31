@@ -5,7 +5,7 @@
 
     Scraper module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
     Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
@@ -30,7 +30,10 @@
 
 """
 
-from typing import Set, cast
+from __future__ import annotations
+from types import ModuleType
+
+from typing import Any, Iterable, List, Optional, Set, Union, cast
 
 import sys
 import os
@@ -62,7 +65,7 @@ class ArticleDescr:
 
     """Unit of work descriptor that is shipped between processes"""
 
-    def __init__(self, seq, root, url):
+    def __init__(self, seq: int, root: Root, url: str) -> None:
         self.seq = seq  # Sequence number
         self.root = root
         self.url = url
@@ -72,55 +75,53 @@ class Scraper:
 
     """The worker class that scrapes the known roots"""
 
-    def __init__(self):
-
+    def __init__(self) -> None:
         logging.info("Initializing scraper instance")
 
-    def urls2fetch(self, root, helper):
+    def urls2fetch(self, root: Root, helper: Optional[ModuleType]) -> Set[str]:
         """Returns a set of URLs to fetch. If the scraper helper class has
         associated RSS feed URLs, these are used to acquire article URLs.
         Otherwise, the URLs are found by scraping the root website and
         searching for links to subpages."""
 
-        fetch_set = set()
-        feeds = None if helper is None else helper.feeds
+        fetch_set: Set[str] = set()
+        feeds: Optional[List[str]] = None if helper is None else helper.feeds
 
         if feeds:
-
             for feed_url in feeds:
-                logging.info("Fetching feed {0}".format(feed_url))
+                logging.info(f"Fetching feed {feed_url}")
                 try:
                     d = feedparser.parse(feed_url)
                 except Exception as e:
-                    logging.warning(
-                        "Error fetching/parsing feed {0}: {1}".format(feed_url, str(e))
-                    )
+                    logging.warning(f"Error fetching/parsing feed {feed_url}: {e}")
                     continue
                 for entry in d.entries:
-                    if entry.link and not helper.skip_rss_entry(entry):
+                    if entry.link and helper and not helper.skip_rss_entry(entry):
                         fetch_set.add(entry.link)
 
         else:
-
             # Fetch the root URL and scrape all child URLs
             # that refer to the same domain suffix
-            logging.info("Fetching root {0}".format(root.url))
+            logging.info(f"Fetching root {root.url}")
 
             # Read the HTML document at the root URL
             html_doc = Fetcher.raw_fetch_url(root.url)
             if not html_doc:
-                logging.warning("Unable to fetch root {0}".format(root.url))
+                logging.warning(f"Unable to fetch root {root.url}")
                 return set()
 
             # Parse the HTML document
             soup = Fetcher.make_soup(html_doc)
 
             # Obtain the set of child URLs to fetch
-            fetch_set = Fetcher.children(root, soup)
+            if soup:
+                fetch_set = Fetcher.children(root, soup)
+            else:
+                fetch_set = set()
 
         return fetch_set
 
-    def scrape_root(self, root, helper):
+    def scrape_root(self, root: Root, helper: ModuleType) -> None:
         """Scrape a root URL"""
 
         t0 = time.time()
@@ -130,9 +131,7 @@ class Scraper:
         # Add the children whose URLs we don't already have
         # stored in the scraper articles table
         with SessionContext() as session:
-
             for url in fetch_set:
-
                 if helper and helper.skip_url(url):
                     # The helper doesn't want this URL
                     continue
@@ -153,9 +152,7 @@ class Scraper:
                     session.rollback()
                 except Exception as e:
                     logging.warning(
-                        "Rollback due to exception when handling URL '{1}': {0}".format(
-                            e, url
-                        )
+                        f"Rollback due to exception when handling URL '{url}': {e}"
                     )
                     session.rollback()
 
@@ -165,20 +162,19 @@ class Scraper:
             "Root scrape of {0} completed in {1:.2f} seconds".format(str(root), t1 - t0)
         )
 
-    def scrape_article(self, url, helper):
+    def scrape_article(self, url: str, helper: ModuleType) -> None:
         """Scrape a single article, retrieving its HTML and metadata"""
 
         if helper.skip_url(url):
-            logging.info("Skipping article {0}".format(url))
+            logging.info(f"Skipping article {url}")
             return
 
         # Fetch the root URL and scrape all child URLs that refer
         # to the same domain suffix and we haven't seen before
-        logging.info("Scraping article {0}".format(url))
+        logging.info(f"Scraping article {url}")
         t0 = time.time()
 
         with SessionContext(commit=True) as session:
-
             a = Article.scrape_from_url(url, session)
             if a is not None:
                 a.store(session)
@@ -186,10 +182,10 @@ class Scraper:
         t1 = time.time()
         logging.info("Scraping completed in {0:.2f} seconds".format(t1 - t0))
 
-    def parse_article(self, seq, url, helper):
+    def parse_article(self, seq: int, url: str, helper: ModuleType) -> None:
         """Parse a single article"""
 
-        logging.info("[{1}] Parsing article {0}".format(url, seq))
+        logging.info(f"[{seq}] Parsing article {url}")
         t0 = time.time()
         num_sentences = 0
         num_parsed = 0
@@ -209,25 +205,23 @@ class Scraper:
             )
         )
 
-    def _scrape_single_root(self, r):
+    def _scrape_single_root(self, r: Root) -> None:
         """Single root scraper that will be called by a process within a
         multiprocessing pool"""
         if r.domain.endswith(".local"):
             # We do not scrape .local roots
             return
         try:
-            logging.info("Scraping root of {0} at {1}...".format(r.description, r.url))
+            logging.info(f"Scraping root of {r.url} at {r.description}...")
             # Process a single top-level domain and root URL,
             # parsing child URLs that have not been seen before
             helper = Fetcher._get_helper(r)
             if helper:
                 self.scrape_root(r, helper)
         except Exception as e:
-            logging.warning(
-                "Exception when scraping root at {0}: {1!r}".format(r.url, e)
-            )
+            logging.warning(f"Exception when scraping root at {r.url}: {e!r}")
 
-    def _scrape_single_article(self, d):
+    def _scrape_single_article(self, d: ArticleDescr) -> None:
         """Single article scraper that will be called by a process within a
         multiprocessing pool"""
         try:
@@ -243,7 +237,7 @@ class Scraper:
             if Settings.DEBUG:
                 traceback.print_stack()
 
-    def _parse_single_article(self, d):
+    def _parse_single_article(self, d: ArticleDescr) -> bool:
         """Single article parser that will be called by a process within a
         multiprocessing pool"""
         try:
@@ -266,13 +260,19 @@ class Scraper:
             # raise
         return True
 
-    def go(self, reparse=False, limit=0, urls=None, uuid=None, numprocs=None):
+    def go(
+        self,
+        reparse: bool = False,
+        limit: int = 0,
+        urls: Optional[str] = None,
+        uuid: Optional[str] = None,
+        numprocs: Optional[int] = None,
+    ):
         """Run a scraping pass from all roots in the scraping database"""
         version = Article.parser_version()
         cnt = 0
 
         with SessionContext(commit=True) as session:
-
             # Use a multiprocessing pool to parse the articles.
             # Let the pool work on chunks of articles, recycling the
             # processes after each chunk to contain memory creep.
@@ -280,7 +280,6 @@ class Scraper:
             CPU_COUNT = numprocs or cpu_count() or 1
 
             if urls is None and uuid is None and not reparse:
-
                 # Go through the roots and scrape them, inserting into the articles table
 
                 def iter_roots():
@@ -297,12 +296,12 @@ class Scraper:
                         ):
                             pass
                     except Exception as e:
-                        logging.warning("Caught exception: {0}".format(e))
+                        logging.warning(f"Caught exception: {e}")
                     pool.close()
                     pool.join()
 
                 # noinspection PyComparisonWithNone
-                def iter_unscraped_articles():
+                def iter_unscraped_articles() -> Iterable[ArticleDescr]:
                     """Go through any unscraped articles and scrape them"""
                     # Note that the query(ArticleRow) below cannot be directly changed
                     # to query(ArticleRow.root, ArticleRow.url) since
@@ -326,12 +325,14 @@ class Scraper:
                         ):
                             pass
                     except Exception as e:
-                        logging.warning("Caught exception: {0}".format(e))
+                        logging.warning(f"Caught exception: {e}")
                     pool.close()
                     pool.join()
 
             # noinspection PyComparisonWithNone
-            def iter_unparsed_articles(reparse, limit):
+            def iter_unparsed_articles(
+                reparse: bool, limit: int
+            ) -> Iterable[ArticleDescr]:
                 """Go through articles to be parsed"""
                 # Fetch 100 rows at a time
                 # Note that the query(ArticleRow) below cannot be directly changed
@@ -354,7 +355,7 @@ class Scraper:
                 for seq, a in enumerate(q):
                     yield ArticleDescr(seq, a.root, a.url)
 
-            def iter_urls(urls):
+            def iter_urls(urls: str) -> Iterable[ArticleDescr]:
                 """Iterate through the text file whose name is given in urls"""
                 seq = 0
                 with open(urls, "r") as f:
@@ -371,7 +372,7 @@ class Scraper:
                                 yield ArticleDescr(seq, a.root, a.url)
                                 seq += 1
 
-            def iter_uuid(uuid):
+            def iter_uuid(uuid: str) -> Iterable[ArticleDescr]:
                 """Reparse a single article having the given UUID"""
                 a = (
                     session.query(ArticleRow)
@@ -397,7 +398,7 @@ class Scraper:
             else:
                 g = iter_unparsed_articles(reparse, limit)
             while True:
-                adlist = []
+                adlist: List[ArticleDescr] = []
                 lcnt = 0
                 for ad in g:
                     adlist.append(ad)
@@ -407,9 +408,7 @@ class Scraper:
                 if lcnt:
                     # Run garbage collection to minimize common memory footprint
                     gc.collect()
-                    logging.info(
-                        "Parser processes forking, chunk of {0} articles".format(lcnt)
-                    )
+                    logging.info(f"Parser processes forking, chunk of {lcnt} articles")
                     with Pool(CPU_COUNT) as pool:
                         try:
                             for _ in pool.imap_unordered(
@@ -417,7 +416,7 @@ class Scraper:
                             ):
                                 pass
                         except Exception as e:
-                            logging.warning("Caught exception: {0}".format(e))
+                            logging.warning(f"Caught exception: {e}")
                         pool.close()
                         pool.join()
                     cnt += lcnt
@@ -488,8 +487,13 @@ class Scraper:
         )
 
 
-def scrape_articles(reparse=False, limit=0, urls=None, uuid=None, numprocs=None):
-
+def scrape_articles(
+    reparse: bool = False,
+    limit: int = 0,
+    urls: Optional[str] = None,
+    uuid: Optional[str] = None,
+    numprocs: Optional[int] = None,
+):
     # Create kwargs dict that will be passed to Scraper.go()
     kwargs = dict(locals())
 
@@ -556,11 +560,11 @@ __doc__ = """
 
 
 class Usage(Exception):
-    def __init__(self, msg):
+    def __init__(self, msg: str) -> None:
         self.msg = msg
 
 
-def main(argv=None):
+def main(argv: Optional[List[str]] = None):
     """Guido van Rossum's pattern for a Python main function"""
 
     if argv is None:
@@ -582,17 +586,17 @@ def main(argv=None):
                 ],
             )
         except getopt.error as msg:
-            raise Usage(msg)
+            raise Usage(str(msg))
         init = False
         # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
         limit = 10
         reparse = False
-        urls = None
-        uuid = None
-        numprocs = None
+        urls: Optional[str] = None
+        uuid: Optional[str] = None
+        numprocs: Optional[int] = None
         debug = False
 
-        def parse_int(i):
+        def parse_int(a: Union[int, str]) -> Optional[int]:
             try:
                 return int(a)
             except ValueError:
@@ -665,7 +669,6 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-
     # pylint: disable=import-error
     if os.environ.get("GREYNIR_ATTACH_PTVSD"):
         # Attach to the VSCode PTVSD debugger, enabling remote debugging via SSH
@@ -673,8 +676,10 @@ if __name__ == "__main__":
         # import to import multiprocessing.dummy
         import ptvsd  # type: ignore
 
-        ptvsd.enable_attach()
-        ptvsd.wait_for_attach()  # Blocks execution until debugger is attached
+        cast(Any, ptvsd).enable_attach()
+        cast(
+            Any, ptvsd
+        ).wait_for_attach()  # Blocks execution until debugger is attached
         ptvsd_attached = True
         print("Attached to PTVSD")
     else:

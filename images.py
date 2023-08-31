@@ -4,7 +4,7 @@
 
     Image retrieval module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -37,27 +37,30 @@ from urllib.error import HTTPError
 from io import BytesIO
 from datetime import datetime, timedelta
 from contextlib import closing
+
 import requests
+
 from db import Session, SessionContext
 from db.models import Link, BlacklistedLink
 from settings import Settings
-from utility import read_api_key
+from utility import read_txt_api_key
 
 # HTTP request timeout
 QUERY_TIMEOUT = 4.0
 
 
 def _server_query(url: str, q: Dict[str, Union[int, str]]) -> Optional[bytes]:
-    """Query a server via HTTP GET with a URL-encoded query string obtained q"""
+    """Query a server via HTTP GET with a URL-encoded query string."""
     doc = None
     if len(q):
         url += "?" + urllib.parse.urlencode(q)
     try:
         with closing(urllib.request.urlopen(url, timeout=QUERY_TIMEOUT)) as response:
             if response:
-                # Decode the HTML Content-type header to obtain the
-                # document type and the charset (content encoding), if specified
+                # Decode the HTML Content-type header to obtain the document
+                # type and the charset (content encoding), if specified
                 encoding = "ISO-8859-1"
+                # TODO: Why is this parsing done manually instead of using the stdlib?
                 ctype = response.getheader("Content-type", "")
                 if ";" in ctype:
                     s = ctype.split(";")
@@ -70,8 +73,8 @@ def _server_query(url: str, q: Dict[str, Union[int, str]]) -> Optional[bytes]:
                     doc = response.read()  # doc is a bytes object
                     if doc:
                         doc = doc.decode(encoding)
-    except HTTPError as ex:
-        logging.warning("server_query exception: {0}".format(ex))
+    except HTTPError as e:
+        logging.warning(f"server_query exception: {e}")
     return doc
 
 
@@ -110,7 +113,7 @@ def get_image_url(
     enclosing_session: Optional[Session] = None,
     cache_only: bool = False,
 ) -> Optional[Img]:
-    """Use Google Custom Search API to obtain an image corresponding to a (person) name"""
+    """Use Google Custom Search API to obtain an image corresponding to a (person) name."""
     jdoc = None
     ctype = _CTYPE + size
 
@@ -135,7 +138,7 @@ def get_image_url(
 
         if not jdoc:
             # Not found in cache: prepare to ask Google
-            key = read_api_key("GoogleServerKey")
+            key = read_txt_api_key("GoogleServerKey")
             if not key:
                 # No API key: can't ask for an image
                 logging.warning("No API key for image lookup")
@@ -156,12 +159,10 @@ def get_image_url(
                 key=key,
             )
             if Settings.DEBUG:
-                print(
-                    "Sending Google image search request for '{0}'".format(search_str)
-                )
+                print(f"Sending Google image search request for '{search_str}'")
             jdoc = _server_query("https://www.googleapis.com/customsearch/v1", q)
             if Settings.DEBUG:
-                print("Back from Google image search for '{0}'".format(search_str))
+                print(f"Back from Google image search for '{search_str}'")
             if jdoc:
                 # Store in the cache
                 lnk = Link(
@@ -195,7 +196,7 @@ def get_image_url(
 
 
 def blacklist_image_url(name: str, url: str) -> Optional[Img]:
-    """Blacklist image URL for a given key"""
+    """Blacklist image URL for a given key."""
 
     with SessionContext(commit=True) as session:
         # Verify that URL exists in DB
@@ -233,10 +234,10 @@ def update_broken_image_url(name: str, url: str) -> Optional[Img]:
 
 
 def check_image_url(url: str) -> bool:
-    """Check if image exists at URL by sending HEAD request"""
+    """Check if image exists at URL by sending HEAD request."""
     req = urllib.request.Request(url, method="HEAD")
     try:
-        response = urllib.request.urlopen(req, timeout=2.0)
+        response = urllib.request.urlopen(req, timeout=QUERY_TIMEOUT)
         return response.status == 200
     except Exception:
         pass
@@ -247,7 +248,7 @@ def check_image_url(url: str) -> bool:
 def _blacklisted_urls_for_key(
     key: str, enclosing_session: Optional[Session] = None
 ) -> List[str]:
-    """Fetch blacklisted urls for a given key"""
+    """Fetch blacklisted urls for a given key."""
     with SessionContext(commit=True, session=enclosing_session) as session:
         q = (
             session.query(BlacklistedLink.url)
@@ -260,7 +261,7 @@ def _blacklisted_urls_for_key(
 
 
 def _get_cached_entry(name: str, url: str, enclosing_session: Optional[Session] = None):
-    """Fetch cached entry by key and url"""
+    """Fetch cached entry by key and URL."""
     with SessionContext(commit=True, session=enclosing_session) as session:
         # TODO: content column should be converted to jsonb
         # from varchar to query faster & more intelligently
@@ -277,7 +278,7 @@ def _purge_single(
     ctype: Optional[str] = None,
     enclosing_session: Optional[Session] = None,
 ) -> None:
-    """Remove cache entry"""
+    """Remove cache entry."""
     with SessionContext(commit=True, session=enclosing_session) as session:
         filters = [Link.key == key]
         if ctype:
@@ -286,8 +287,8 @@ def _purge_single(
         session.query(Link).filter(*filters).delete()
 
 
-def _purge():
-    """Remove all cache entries"""
+def _purge() -> None:
+    """Remove all cache entries. Should only be invoked from the command line."""
     if input("Purge all cached data? (y/n): ").lower().startswith("y"):
         with SessionContext(commit=True) as session:
             session.query(Link).delete()
@@ -308,23 +309,23 @@ def get_staticmap_image(
     width: int = 180,
     height: int = 180,
 ) -> Optional[BytesIO]:
-    """Request image from Google Static Maps API, return image data as bytes"""
-    key = read_api_key("GoogleServerKey")
+    """Request image from Google Static Maps API, return image data as bytes."""
+    key = read_txt_api_key("GoogleServerKey")
     if not key:
         return None
 
     url = STATICMAP_URL.format(zoom, width, height, key, latitude, longitude)
     try:
-        r = requests.get(url, stream=True)
+        r = requests.get(url, stream=True, timeout=10)
     except Exception as e:
-        logging.warning(str(e))
+        logging.warning(f"Exception fetching {url}: {e}")
         return None
 
     if r.status_code == 200:
         r.raw.decode_content = True
         return BytesIO(r.raw.data)
 
-    logging.warning("Status {0} when requesting static map image".format(r.status_code))
+    logging.warning(f"Status {r.status_code} when requesting static map image")
     return None
 
 
@@ -333,19 +334,18 @@ def _test():
     print("Testing...")
     print("Bjarni Benediktsson")
     img = get_image_url("Bjarni Benediktsson")
-    print("{0}".format(img))
+    print(str(img))
 
     print("Vilhjálmur Þorsteinsson")
     img = get_image_url("Vilhjálmur Þorsteinsson")
-    print("{0}".format(img))
+    print(str(img))
 
     print("Blængur Klængsson Eyfjörð")
     img = get_image_url("Blængur Klængsson Eyfjörð")
-    print("{0}".format(img))  # Should be None
+    print(str(img))  # Should be None
 
 
 if __name__ == "__main__":
-
     cmap = {"test": _test, "purge": _purge}
 
     cmd = sys.argv[1] if len(sys.argv) > 1 else "test"
@@ -355,4 +355,4 @@ if __name__ == "__main__":
     elif cmd:
         # Any other arg is a name to fetch an image for
         img = get_image_url(cmd)
-        print("{0}".format(img))
+        print(str(img))

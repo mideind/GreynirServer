@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -21,33 +21,40 @@
 
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Iterable
 
 from werkzeug.wrappers import Response
 
-from . import routes, max_age, cache
 
 import json
+import logging
+from colorsys import hsv_to_rgb
 from datetime import datetime, timedelta
 from decimal import Decimal
 
 from flask import request, render_template
+from reynir.bindb import GreynirBin
 
+from . import routes, cache, max_age
 from settings import changedlocale
+from utility import read_txt_api_key
 from db import SessionContext, Session
 from db.sql import (
     StatsQuery,
     ChartsQuery,
     GenderQuery,
     BestAuthorsQuery,
-    QueriesQuery,
+    QueryCountQuery,
+    QueryTypesQuery,
+    QueryClientTypeQuery,
+    TopUnansweredQueriesQuery,
+    TopAnsweredQueriesQuery,
 )
-from reynir.bindb import GreynirBin
 
 
 # Days
 _DEFAULT_STATS_PERIOD = 10
-_MAX_STATS_PERIOD = 30
+_MAX_STATS_PERIOD = 90
 _TOP_AUTHORS_PERIOD = 30
 
 # TODO: This should be put in a column in the roots table
@@ -68,19 +75,19 @@ _SOURCE_ROOT_COLORS = {
     "Hagstofan": "#828282",
     "Bændablaðið": "#41938A",
     "Viðskiptablaðið": "#00ffff",
+    "Heimildin": "#f17030",
 }
 
 
-def chart_stats(session=None, num_days: int = 7) -> Dict[str, Any]:
+def chart_stats(session: Optional[Session] = None, num_days: int = 7) -> Dict[str, Any]:
     """Return scraping and parsing stats for charts"""
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    labels = []
+    labels: List[str] = []
     sources: Dict[str, List[int]] = {}
-    parsed_data = []
-    query_data = []
+    parsed_data: List[float] = []
 
     # Get article count for each source for each day, and query count for each day
-    # We change locale to get localized date weekday/month names
+    # We change locale to get localized weekday/month names
     with changedlocale(category="LC_TIME"):
         for n in range(0, num_days):
             days_back = num_days - n - 1
@@ -97,17 +104,13 @@ def chart_stats(session=None, num_days: int = 7) -> Dict[str, Any]:
             # Get article count per source for day
             # Also collect parsing stats for parse % chart
             q = ChartsQuery.period(start, end, enclosing_session=session)
-            for (name, cnt, s, p) in q:
+            for name, cnt, s, p in q:
                 sources.setdefault(name, []).append(cnt)
                 sent += s
                 parsed += p
 
             percent = round((parsed / sent) * 100, 2) if sent else 0
             parsed_data.append(percent)
-
-            # Get query count for day
-            q = list(QueriesQuery.period(start, end, enclosing_session=session))
-            query_data.append(q[0][0])
 
     # Create datasets for bar chart
     datasets = []
@@ -120,7 +123,6 @@ def chart_stats(session=None, num_days: int = 7) -> Dict[str, Any]:
     # Calculate averages
     scrape_avg = article_count / num_days
     parse_avg = sum(parsed_data) / num_days
-    query_avg = sum(query_data) / num_days
 
     return {
         "scraped": {"labels": labels, "datasets": datasets, "avg": scrape_avg},
@@ -128,11 +130,6 @@ def chart_stats(session=None, num_days: int = 7) -> Dict[str, Any]:
             "labels": labels,
             "datasets": [{"data": parsed_data}],
             "avg": parse_avg,
-        },
-        "queries": {
-            "labels": labels,
-            "datasets": [{"data": query_data}],
-            "avg": query_avg,
         },
     }
 
@@ -175,48 +172,212 @@ def stats() -> Union[Response, str]:
 
     chart_data: Dict[str, Any] = dict()
 
-    with SessionContext(read_only=True) as session:
+    try:
+        with SessionContext(read_only=True) as session:
+            # Article stats
+            sq = StatsQuery()
+            articles_result = sq.execute(session)
+            articles_total = dict(art=Decimal(), sent=Decimal(), parsed=Decimal())
+            for r in articles_result:
+                articles_total["art"] += r.art
+                articles_total["sent"] += r.sent
+                articles_total["parsed"] += r.parsed
 
-        # Article stats
-        sq = StatsQuery()
-        result = sq.execute(session)
-        total = dict(art=Decimal(), sent=Decimal(), parsed=Decimal())
-        for r in result:
-            total["art"] += r.art
-            total["sent"] += r.sent
-            total["parsed"] += r.parsed
+            # Gender stats
+            gq = GenderQuery()
+            gender_result = gq.execute(session)
 
-        # Gender stats
-        gq = GenderQuery()
-        gresult = gq.execute(session)
+            gender_total = dict(
+                kvk=Decimal(), kk=Decimal(), hk=Decimal(), total=Decimal()
+            )
+            for r in gender_result:
+                gender_total["kvk"] += r.kvk
+                gender_total["kk"] += r.kk
+                gender_total["hk"] += r.hk
+                gender_total["total"] += r.kvk + r.kk + r.hk
 
-        gtotal = dict(kvk=Decimal(), kk=Decimal(), hk=Decimal(), total=Decimal())
-        for r in gresult:
-            gtotal["kvk"] += r.kvk
-            gtotal["kk"] += r.kk
-            gtotal["hk"] += r.hk
-            gtotal["total"] += r.kvk + r.kk + r.hk
+            # Author stats
+            author_result = top_authors(session=session, days=days)
 
-        # Author stats
-        authresult = top_authors(session=session)
+            # Scraping and parsing stats
+            chart_data = chart_stats(session=session, num_days=days)
 
-        # Chart stats
-        chart_data = chart_stats(session=session, num_days=days)
+            return render_template(
+                "stats.html",
+                title="Tölfræði",
+                articles_result=articles_result,
+                articles_total=articles_total,
+                gender_result=gender_result,
+                gender_total=gender_total,
+                author_result=author_result,
+                scraped_chart_data=json.dumps(chart_data["scraped"]),
+                scraped_avg=int(round(chart_data["scraped"]["avg"])),
+                parsed_chart_data=json.dumps(chart_data["parsed"]),
+                parsed_avg=round(chart_data["parsed"]["avg"], 1),
+            )
+    except Exception as e:
+        logging.error(f"Error rendering stats page: {e}")
+        return Response(f"Error: {e}", status=500)
 
-        return render_template(
-            "stats.html",
-            title="Tölfræði",
-            result=result,
-            total=total,
-            gresult=gresult,
-            gtotal=gtotal,
-            authresult=authresult,
-            scraped_chart_data=json.dumps(chart_data["scraped"]),
-            parsed_chart_data=json.dumps(chart_data["parsed"]),
-            queries_chart_data=json.dumps(chart_data["queries"]),
-            scraped_avg=int(round(chart_data["scraped"]["avg"])),
-            parsed_avg=round(chart_data["parsed"]["avg"], 1),
-            queries_avg=round(chart_data["queries"]["avg"], 1),
+
+_DEFAULT_QUERY_STATS_PERIOD = 30
+_MAX_QUERY_STATS_PERIOD = 30
+
+
+def query_stats_data(
+    session: Optional[Session] = None, num_days: int = _DEFAULT_QUERY_STATS_PERIOD
+) -> Dict[str, Any]:
+    """Return all data for query stats dashboard."""
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    labels = []
+    query_count_data = []
+    unique_count_data = []
+
+    # Get query count for each day
+    # We change locale to get localized date weekday/month names
+    with changedlocale(category="LC_TIME"):
+        for n in range(0, num_days):
+            days_back = num_days - n - 1
+            start = today - timedelta(days=days_back)
+            end = today - timedelta(days=days_back - 1)
+
+            # Generate date label
+            dfmtstr = "%a %-d. %b"
+            labels.append(start.strftime(dfmtstr))
+
+            # Get query count for day
+            q = list(QueryCountQuery.period(start, end, enclosing_session=session))
+            query_count_data.append(q[0][0])
+
+            # Get num unique clients for day
+            unique_count_data.append(q[0][1])
+
+    query_avg = sum(query_count_data) / num_days
+    unique_avg = sum(unique_count_data) / num_days
+
+    start = today - timedelta(days=num_days)
+    end = datetime.utcnow()
+
+    # Query types
+    res = list(
+        QueryTypesQuery.period(
+            start=start,
+            end=end,
+            enclosing_session=session,
         )
+    )
+    total = sum([k[0] for k in res])
 
-    return Response("Error", status=403)
+    # This function is used to ensure that all the query
+    # types have a fixed, unique color on the pie chart.
+    def gen_distinct_hex_colors(num: int) -> List[str]:
+        """Generate a list of perceptually distinct hex colors."""
+        hsv_tuples = [(x * 1.0 / num, 0.9, 0.9) for x in range(num)]
+        hex_out = []
+        for hsv in hsv_tuples:
+            rgb = map(lambda x: int(x * 255), hsv_to_rgb(*hsv))
+            hex_out.append("#%02x%02x%02x" % tuple(rgb))
+        return hex_out
+
+    query_types_data = {
+        "labels": [k[1] for k in res],
+        "datasets": [
+            {
+                "data": [k[0] for k in res],
+                "percentage": [round(k[0] / total * 100, 1) for k in res],
+                "backgroundColor": gen_distinct_hex_colors(len(res)),
+            }
+        ],
+    }
+
+    # Client types
+    _CLIENT_COLORS = {
+        "ios": "#4c8bf5",
+        "ios_flutter": "#4c8bf5",
+        "android": "#a4c639",
+        "android_flutter": "#a4c639",
+        "python": "#ffff00",
+        "www": "#f7b924",
+    }
+    res = QueryClientTypeQuery.period(start, end)
+    total = sum([k[2] for k in res])
+    client_types_data = {
+        "labels": [f"{k[0]} {k[1] or ''}".rstrip() for k in res],
+        "datasets": [
+            {
+                "data": [k[2] for k in res],
+                "percentage": [round(k[2] / total * 100, 1) for k in res],
+                "backgroundColor": [_CLIENT_COLORS.get(k[0], "#ccc") for k in res],
+            }
+        ],
+    }
+    # TODO: Add iOS, Android percentages
+
+    # Top queries (answered and unanswered)
+    def prep_top_answ_data(res: Iterable) -> List[Dict[str, Any]]:
+        rl = list(res)  # Consume generator
+        highest_count = rl[0][1]
+        toplist = []
+        for q in rl:
+            toplist.append({"query": q[0], "count": q[1], "freq": q[1] / highest_count})
+        return toplist
+
+    res = TopUnansweredQueriesQuery.period(start, end, enclosing_session=session)
+    top_unanswered = prep_top_answ_data(res)
+    res = TopAnsweredQueriesQuery.period(start, end, enclosing_session=session)
+    top_answered = prep_top_answ_data(res)
+
+    return {
+        "query_count": {
+            "labels": labels,
+            "datasets": [{"data": query_count_data}],
+            "avg": query_avg,
+        },
+        "unique_count": {
+            "labels": labels,
+            "datasets": [{"data": unique_count_data}],
+            "avg": unique_avg,
+        },
+        "query_types": query_types_data,
+        "client_types": client_types_data,
+        "top_unanswered": top_unanswered,
+        "top_answered": top_answered,
+    }
+
+
+@routes.route("/stats/queries", methods=["GET"])
+@cache.cached(timeout=30 * 60, key_prefix="stats_queries", query_string=True)
+@max_age(seconds=30 * 60)
+def stats_queries() -> Union[Response, str]:
+    """Render a page containing various statistics on query engine usage."""
+
+    # Accessing this route requires an API key
+    key = request.args.get("key")
+    if key is None or key != read_txt_api_key("GreynirServerKey"):
+        return Response(f"Not authorized", status=401)
+
+    days = _DEFAULT_QUERY_STATS_PERIOD
+    try:
+        days = min(
+            _MAX_QUERY_STATS_PERIOD,
+            int(request.args.get("days", _DEFAULT_QUERY_STATS_PERIOD)),
+        )
+    except Exception:
+        pass
+
+    stats_data = query_stats_data(num_days=days)
+
+    return render_template(
+        "stats-queries.html",
+        title="Tölfræði fyrirspurnakerfis",
+        days=days,
+        query_count_data=json.dumps(stats_data["query_count"]),
+        queries_avg=stats_data["query_count"]["avg"],
+        unique_count_data=json.dumps(stats_data["unique_count"]),
+        unique_count_avg=stats_data["unique_count"]["avg"],
+        query_types_data=json.dumps(stats_data["query_types"]),
+        client_types_data=json.dumps(stats_data["client_types"]),
+        top_unanswered=stats_data["top_unanswered"],
+        top_answered=stats_data["top_answered"],
+    )

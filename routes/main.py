@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 
 """
 
-from typing import Dict, Any, List, Optional, Sequence, Tuple, Union, cast
+from typing import Dict, Any, Iterable, List, Optional, Sequence, Tuple, Union, cast
 from typing_extensions import TypedDict
 
 import platform
@@ -37,7 +37,6 @@ except ModuleNotFoundError:
     import tomli as tomllib  # Used for Python <3.11
 
 from flask import render_template, request, redirect, url_for
-from werkzeug.wrappers import Response
 
 import tokenizer
 import reynir
@@ -52,7 +51,7 @@ from search import Search
 from treeutil import TreeUtility, StatsDict
 from images import Img, get_image_url, update_broken_image_url, blacklist_image_url
 
-from . import routes, max_age, cache, text_from_request, better_jsonify, restricted
+from . import routes, max_age, cache, better_jsonify, restricted, Response
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH, MAX_TEXT_LENGTH_VIA_URL
 
 
@@ -84,7 +83,7 @@ PARSEFAIL_MAX = 250
 
 @routes.route("/")
 @max_age(seconds=60)
-def main():
+def main() -> str:
     """Handler for the main (index) page"""
     txt = request.args.get("txt")
     if txt:
@@ -96,7 +95,7 @@ def main():
 
 
 @routes.route("/analysis")
-def analysis():
+def analysis() -> str:
     """Handler for a page with grammatical analysis of user-entered text"""
     txt = request.args.get("txt", "")[0:MAX_TEXT_LENGTH_VIA_URL]
     return render_template("analysis.html", title="Málgreining", default_text=txt)
@@ -165,8 +164,9 @@ def similar() -> Response:
     resp: Dict[str, Any] = dict(err=True)
 
     # Parse query args
+    rv = cast(Dict[str, str], request.values)
     try:
-        uuid = request.values.get("id")
+        uuid = rv.get("id")
         if uuid:
             uuid = uuid.strip()[0:MAX_UUID_LENGTH]
     except Exception:
@@ -183,8 +183,6 @@ def similar() -> Response:
         resp["err"] = False
 
         return better_jsonify(**resp)
-
-    return Response("Error", status=403)
 
 
 @routes.route("/page")
@@ -234,11 +232,12 @@ def page() -> Union[Response, str]:
             "page.html", title=a.heading, article=a, register=register, topics=topics
         )
 
-    return Response("Error", status=403)
+
+TableType = List[List[Tuple[int, Any]]]
 
 
 @routes.route("/treegrid", methods=["GET"])
-def tree_grid():
+def tree_grid() -> Union[Response,str]:
     """Show a simplified parse tree for a single sentence"""
 
     txt = request.args.get("txt", "")
@@ -254,9 +253,9 @@ def tree_grid():
 
     # Preprocess the trees for display, projecting them to a 2d table structure
     def _wrap_build_tbl(
-        tbl, root, is_nt_func, children_func, nt_info_func, t_info_func
+        tbl: TableType, root: Any, is_nt_func, children_func, nt_info_func, t_info_func
     ):
-        def _build_tbl(level, offset, nodelist):
+        def _build_tbl(level: int, offset: int, nodelist: Iterable[Any]) -> int:
             """Add the tree node data to be displayed at a particular
             level (row) in the result table"""
             while len(tbl) <= level:
@@ -286,7 +285,7 @@ def tree_grid():
 
         return _build_tbl(0, 0, [root])
 
-    def _normalize_tbl(tbl, width):
+    def _normalize_tbl(tbl: TableType, width: int) -> None:
         """Fill out the table with blanks so that it is square"""
         for row in tbl:
             rw = sum(t[0] for t in row)
@@ -295,7 +294,7 @@ def tree_grid():
                 row.append((1, None))
                 rw += 1
 
-    tbl: List[List[Tuple[int, Any]]] = []
+    tbl: TableType = []
     full_tbl: List[List[Tuple[int, Any]]] = []
     if tree is None:
         full_tree = None
@@ -348,7 +347,7 @@ def tree_grid():
 
 
 @routes.route("/parsefail")
-def parsefail():
+def parsefail() -> str:
     """Handler for a page showing recent sentences where parsing failed"""
 
     num = request.args.get("num", PARSEFAIL_DEFAULT)
@@ -396,28 +395,28 @@ def parsefail():
 
 @routes.route("/apidoc")
 @max_age(seconds=10 * 60)
-def apidoc():
+def apidoc() -> str:
     """Handler for an API documentation page"""
     return render_template("apidoc.html", title="Forritaskil (API)")
 
 
 @routes.route("/buy")
 @max_age(seconds=10 * 60)
-def buy():
+def buy() -> str:
     """Handler for a subscription purchase page"""
     return render_template("buy.html", title="Afnot")
 
 
 @routes.route("/terms")
 @max_age(seconds=10 * 60)
-def terms():
+def terms() -> str:
     """Handler for terms & conditions page"""
     return render_template("terms.html", title="Skilmálar")
 
 
 @routes.route("/about")
 @max_age(seconds=10 * 60)
-def about():
+def about() -> str:
     """Handler for the 'About' page"""
     try:
         parser_version = reynir.version.__version__
@@ -443,7 +442,7 @@ def about():
 
 
 @routes.route("/reportimage", methods=["POST"])
-def reportimage():
+def reportimage() -> Response:
     """Notification that a (person) image is wrong or broken"""
     resp: Dict[str, Any] = dict(found_new=False)
 
@@ -465,7 +464,7 @@ def reportimage():
 
 
 @routes.route("/image", methods=["GET"])
-def image():
+def image() -> Response:
     """Get image for (person) name"""
     resp: Dict[str, Union[bool, Img]] = dict(found=False)
 
@@ -486,9 +485,9 @@ def image():
 
 @routes.route("/suggest", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="suggest", query_string=True)
-def suggest(limit=10):
+def suggest(limit: int=10) -> Response:
     """Return suggestions for query field autocompletion"""
-    limit = request.args.get("limit", limit)
+    limit = int(request.args.get("limit", limit))
     txt = request.args.get("q", "").strip()
 
     suggestions: List[Dict[str, str]] = []
@@ -538,7 +537,7 @@ def suggest(limit=10):
 
 @routes.route("/translate")
 @restricted
-def translate():
+def translate() -> str:
     """Handler for a page with machine translation of user-entered text"""
     txt = request.args.get("txt", "")[0:MAX_TEXT_LENGTH_VIA_URL]
     return render_template("translate.html", title="Vélþýðing", default_text=txt)

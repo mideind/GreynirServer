@@ -20,7 +20,7 @@ from db import SessionContext
 from db.models import QueryLog
 from queries.special import _SPECIAL_QUERIES
 
-from Levenshtein import StringMatcher
+from Levenshtein import StringMatcher  # type: ignore
 
 
 _MAX_DISTANCE = 5
@@ -28,7 +28,6 @@ _MIN_QUERY_LEN = 10
 
 
 def main() -> None:
-
     uniq = set()
     special = _SPECIAL_QUERIES.keys()
 

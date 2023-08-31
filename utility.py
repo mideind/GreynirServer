@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -20,8 +20,11 @@
     Utility functions used in various places in the codebase.
 
 """
-from typing import List
+from typing import Any, Dict, List, Optional
 
+import json
+import string
+import logging
 from functools import lru_cache
 from pathlib import Path
 
@@ -31,22 +34,49 @@ GREYNIR_ROOT_DIR: Path = Path(__file__).parent.resolve()
 # Other useful paths
 CONFIG_DIR = GREYNIR_ROOT_DIR / "config"
 
+RESOURCES_DIR = GREYNIR_ROOT_DIR / "resources"
+
+STATIC_DIR = GREYNIR_ROOT_DIR / "static"
+
 QUERIES_DIR = GREYNIR_ROOT_DIR / "queries"
 QUERIES_GRAMMAR_DIR = QUERIES_DIR / "grammars"
 QUERIES_JS_DIR = QUERIES_DIR / "js"
+QUERIES_RESOURCES_DIR = QUERIES_DIR / "resources"
 QUERIES_UTIL_DIR = QUERIES_DIR / "util"
 QUERIES_UTIL_GRAMMAR_DIR = QUERIES_UTIL_DIR / "grammars"
 QUERIES_DIALOGUE_DIR = QUERIES_DIR / "dialogues"
 
+
 @lru_cache(maxsize=32)
-def read_api_key(key_name: str) -> str:
-    """Read the given key from a text file in resources directory. Cached."""
-    p = GREYNIR_ROOT_DIR / "resources" / f"{key_name}.txt"
+def read_txt_api_key(key_name: str, *, folder: Optional[Path] = None) -> str:
+    """
+    Read the given key from a text file in resources directory. Cached.
+    Optionally provide a different path to the folder containing the key file.
+    """
+    folder = folder or RESOURCES_DIR
+    p = folder / f"{key_name}.txt"
     try:
         return p.read_text().strip()
     except FileNotFoundError:
-        pass
+        logging.warning(f"API key file {p} not found in {folder}")
     return ""
+
+
+@lru_cache(maxsize=32)
+def read_json_api_key(
+    key_name: str, *, folder: Optional[Path] = None
+) -> Dict[str, Any]:
+    """
+    Read the given key from a JSON file in resources directory. Cached.
+    Optionally provide a different path to the folder containing the key file.
+    """
+    folder = folder or RESOURCES_DIR
+    p = folder / f"{key_name}.json"
+    try:
+        return json.loads(p.read_text())
+    except FileNotFoundError:
+        logging.warning(f"API key file {p} not found in {folder}")
+    return {}
 
 
 def modules_in_dir(p: Path) -> List[str]:
@@ -63,15 +93,34 @@ def modules_in_dir(p: Path) -> List[str]:
     # Return list of python files in
     # import-like format ('.' instead of '/', no '.py')
     return [
-        ".".join(pyfile.with_suffix("").parts)
-        for pyfile in p.relative_to(GREYNIR_ROOT_DIR).glob("*.py")
+        ".".join(pyfile.relative_to(GREYNIR_ROOT_DIR).with_suffix("").parts)
+        for pyfile in p.glob("*.py")
         if not pyfile.name.startswith("_")
     ]
+
+
+def sanitize_filename(fn: str, maxlen: int = 60) -> str:
+    """Sanitize a potential filename string by limiting allowed characters."""
+    assert maxlen >= 1, "maxlen must be positive"
+
+    ALLOWED_FILE_CHARS = string.ascii_letters + string.digits + "._-"
+
+    # Replace whitespace with underscore
+    fn = "_".join([t for t in fn.lower().split()])
+
+    # Rm non-ASCII chars, non-filename chars and limit length
+    fn = "".join(c for c in icelandic_asciify(fn) if c in ALLOWED_FILE_CHARS)[
+        :maxlen
+    ].rstrip("._")
+
+    return fn
 
 
 def icelandic_asciify(text: str) -> str:
     """Convert Icelandic characters to their ASCII equivalent
     and then remove all non-ASCII characters."""
+    if not text:
+        return text
 
     ICECHARS_TO_ASCII = {
         "ð": "d",
@@ -105,3 +154,13 @@ def icelandic_asciify(text: str) -> str:
     t = t.encode("ascii", "ignore").decode()
 
     return t
+
+
+def icequote(s: str) -> str:
+    """Return string surrounded by Icelandic-style quotation marks."""
+    return f"„{s.strip()}“"
+
+
+def cap_first(s: str) -> str:
+    """Capitalize first character in a string."""
+    return s[0].upper() + s[1:] if s else s

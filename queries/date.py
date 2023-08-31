@@ -4,7 +4,7 @@
 
     Date query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -63,21 +63,17 @@ import random
 from datetime import datetime, timedelta
 from calendar import monthrange, isleap
 
-from query import Query, QueryStateDict
-from queries import (
+from queries import Query, QueryStateDict
+from utility import cap_first
+from queries.util import (
     gen_answer,
     is_plural,
     sing_or_plur,
-    cap_first,
     read_grammar_file,
 )
 from tree import Result, Node, TerminalNode, ParamList
 from settings import changedlocale
-from queries.util.num import (
-    numbers_to_ordinal,
-    years_to_text,
-    numbers_to_text,
-)
+from speech.trans import gssml
 
 
 _DATE_QTYPE = "Date"
@@ -120,7 +116,7 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
@@ -218,7 +214,7 @@ def QDateAbsOrRel(node: Node, params: ParamList, result: Result) -> None:
             result["days_in_month"] = ndays
             result["target"] = datetime(day=1, month=m, year=y)
     else:
-        raise ValueError("No date in {0}".format(str(datenode)))
+        raise ValueError(f"No date in {str(datenode)}")
 
 
 def QDateWhitsun(node: Node, params: ParamList, result: Result) -> None:
@@ -476,7 +472,7 @@ def howlong_answ(q: Query, result: Result) -> None:
     if target.date() == now.date():
         answ = gen_answer(f"Það er {target.strftime('%-d. %B')} í dag.")
         q.set_answer(
-            answ[0], answ[1], numbers_to_ordinal(answ[2], case="nf", gender="kk")
+            answ[0], answ[1], gssml(answ[2], type="ordinals", case="nf", gender="kk")
         )
         return
     # Check if it's tomorrow
@@ -484,7 +480,7 @@ def howlong_answ(q: Query, result: Result) -> None:
     if target.date() == now.date() + timedelta(days=1):
         answ = gen_answer(f"Það er {target.strftime('%-d. %B')} á morgun.")
         q.set_answer(
-            answ[0], answ[1], numbers_to_ordinal(answ[2], case="nf", gender="kk")
+            answ[0], answ[1], gssml(answ[2], type="ordinals", case="nf", gender="kk")
         )
         return
 
@@ -504,39 +500,33 @@ def howlong_answ(q: Query, result: Result) -> None:
     if days < 0:
         days = abs(days)
         passed = "liðnir" if plural else "liðinn"
-        voice = "Það {0} {1} {2} {3} frá {4}.".format(
-            verb, days, days_desc, passed, tfmt
+        voice = (
+            f"Það {verb} "
+            f"{gssml(days, type='number', gender='kk')} {days_desc} "
+            f"{passed} frá {gssml(tfmt, type='date', case='þgf')}."
         )
-        # Convert e.g. '25.' to 'tuttugasta og fimmta'
-        voice = numbers_to_ordinal(voice, case="þgf", gender="kk")
         answer = f"{days} {days_desc}."
     # It's in the future
     else:
-        voice = "Það {0} {1} {2} þar til {3} gengur í garð.".format(
-            verb, days, days_desc, tfmt
+        voice = (
+            f"Það {verb} "
+            f"{gssml(days, type='number', gender='kk')} {days_desc} "
+            f"þar til {gssml(tfmt, type='date')} gengur í garð."
         )
-        # Convert e.g. '25.' to 'tuttugasti og fimmti'
-        voice = numbers_to_ordinal(voice, case="nf", gender="kk")
         answer = f"{days} {days_desc}."
 
-    # Convert years to spoken text, along with day count
-    voice = numbers_to_text(years_to_text(voice), gender="kk")
     response = dict(answer=answer)
-
     q.set_answer(response, answer, voice)
 
 
 def when_answ(q: Query, result: Result) -> None:
     """Generate answer to a question of the form "Hvenær er(u) [hátíðardagur]?" etc."""
-    # TODO: Fix this so it includes weekday, e.g.
-    # "Sunnudaginn 1. október"
     # Use plural 'eru' for 'páskar', 'jól' etc.
     is_verb = "er" if "is_verb" not in result else result.is_verb
-    date_str = result.desc + " " + is_verb + " " + result.target.strftime("%-d. %B")
-    answer = voice = cap_first(date_str)
-    # Put a spelled-out ordinal number instead of the numeric one,
-    # in accusative case
-    voice = numbers_to_ordinal(voice, case="þf", gender="kk")
+    target_is = f"{cap_first(result.desc)} {is_verb}"
+    target = result.target.strftime("%A %-d. %B").replace("dagur", "daginn")
+    answer = f"{target_is} {target}"
+    voice = f"{target_is} {gssml(target, type='date', case='þf')}"
     response = dict(answer=answer)
 
     q.set_key("WhenSpecialDay")
@@ -549,11 +539,7 @@ def curr_date_answ(q: Query, result: Result) -> None:
     date_str = now.strftime("%A %-d. %B %Y")
     answer = date_str.capitalize()
     response = dict(answer=answer)
-    voice = f"Í dag er {date_str}"
-
-    # Put a spelled-out ordinal number instead of the numeric one
-    # to get the grammar right. Also fixes year pronunciation.
-    voice = years_to_text(numbers_to_ordinal(voice, case="nf", gender="kk"))
+    voice = f"Í dag er {gssml(date_str, type='date')}"
 
     q.set_key("CurrentDate")
     q.set_answer(response, answer, voice)
@@ -565,11 +551,7 @@ def tomorrow_date_answ(q: Query, result: Result) -> None:
     date_str = now.strftime("%A %-d. %B %Y")
     answer = date_str.capitalize()
     response = dict(answer=answer)
-    voice = f"Á morgun er {date_str}"
-
-    # Put a spelled-out ordinal number instead of the numeric one
-    # to get the grammar right. Also fixes year pronunciation.
-    voice = years_to_text(numbers_to_ordinal(voice, case="nf", gender="kk"))
+    voice = f"Á morgun er {gssml(date_str, type='date')}"
 
     q.set_key("TomorrowDate")
     q.set_answer(response, answer, voice)
@@ -581,11 +563,7 @@ def yesterday_date_answ(q: Query, result: Result) -> None:
     date_str = now.strftime("%A %-d. %B %Y")
     answer = date_str.capitalize()
     response = dict(answer=answer)
-    voice = f"Dagurinn í gær var {date_str}"
-
-    # Put a spelled-out ordinal number instead of the numeric one
-    # to get the grammar right. Also fixes year pronunciation.
-    voice = years_to_text(numbers_to_ordinal(voice, case="nf", gender="kk"))
+    voice = f"Dagurinn í gær var {gssml(date_str, type='date')}"
 
     q.set_key("YesterdayDate")
     q.set_answer(response, answer, voice)
@@ -599,13 +577,10 @@ def days_in_month_answ(q: Query, result: Result) -> None:
     answer = sing_or_plur(ndays, "dagar.", "dagur.")
     response = dict(answer=answer)
     voice = (
-        f"Það eru {ndays} dagar í {mname} {t.year}"
+        f"Það eru {gssml(ndays, type='number', gender='kk')} dagar í {mname} {gssml(t.year, type='year')}"
         if is_plural(ndays)
-        else f"Það er {ndays} dagur í {mname} {t.year}"
+        else f"Það er {gssml(ndays, type='number', gender='kk')} dagur í {mname} {gssml(t.year, type='year')}"
     )
-
-    # Convert year and ndays to text for voice
-    voice = numbers_to_text(years_to_text(voice), case="nf", gender="kk")
 
     q.set_key("DaysInMonth")
     q.set_answer(response, answer, voice)
@@ -617,7 +592,7 @@ def year_answ(q: Query, result: Result) -> None:
     y = now.year
     answer = f"{y}."
     response = dict(answer=answer)
-    voice = years_to_text(f"Það er árið {y}.")
+    voice = f"Það er árið {gssml(y, type='year')}."
 
     q.set_key("WhichYear")
     q.set_answer(response, answer, voice)
@@ -629,10 +604,11 @@ def leap_answ(q: Query, result: Result) -> None:
     t = result.get("target")
     y = t.year if t else now.year
     verb = "er" if y >= now.year else "var"
-    answer = "Árið {0} {1} {2}hlaupár.".format(y, verb, "" if isleap(y) else "ekki ")
-    response = dict(answer=answer)
-    voice = years_to_text(answer)
+    s = f"Árið {{}} {verb} {'' if isleap(y) else 'ekki '}hlaupár."
+    answer = s.format(y)
+    voice = s.format(gssml(y, type="year"))
 
+    response = dict(answer=answer)
     q.set_key("IsLeapYear")
     q.set_answer(response, answer, voice)
 
@@ -671,7 +647,5 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                     break
 
     except Exception as e:
-        logging.warning(
-            "Exception {0} while processing date query '{1}'".format(e, q.query)
-        )
-        q.set_error("E_EXCEPTION: {0}".format(e))
+        logging.warning(f"Exception {e} while processing date query '{q.query}'")
+        q.set_error(f"E_EXCEPTION: {e}")

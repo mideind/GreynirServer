@@ -50,7 +50,7 @@
          <p>Greynir les <a href="{{ url_for('routes.stats') }}">nýjustu fréttir og greinar</a>
             jafnóðum af helstu íslensku fréttavefjunum.
             Hann þáttar textann í málsgreinatré samkvæmt
-            <a href="https://github.com/mideind/GreynirPackage/blob/master/src/reynir/Greynir.grammar"
+            <a href="https://github.com/mideind/GreynirEngine/blob/master/src/reynir/Greynir.grammar"
                target="_blank">innbyggðum málfræðireglum fyrir íslensku</a>.
             Trén innihalda og endurspegla setningarhluta, svo sem frumlög, andlög,
             aðra nafnliði, sagnliði, forsetningarliði, samtengingar og svo framvegis.
@@ -92,14 +92,14 @@
                   style="margin-top:14px; float:left; margin-right: 28px; margin-bottom: 14px;"></a>
          </p>
          <p>
-            <b>Höfundaréttur &copy; 2022 Miðeind ehf.</b>
+            <b>Höfundaréttur &copy; 2023 Miðeind ehf.</b>
             <br>
             <span>[Þróunarútgáfa]</span> <!-- This text is replaced by a date stamp in deploy.sh -->
             &bull;
             <span>[Git-útgáfa]</span> <!-- This text is replaced by git commit hash in deploy.sh -->
             <br>
             {%- if parser_version %}
-            <span>GreynirPackage {{ parser_version }}</span>
+            <span>GreynirEngine {{ parser_version }}</span>
             {%- endif -%}
             {%- if tokenizer_version %}
             &bull;
@@ -121,7 +121,7 @@
          <p>
             Samhengisfrjálsa málfræði (<i>context-free grammar</i>) Greynis
             fyrir íslensku má
-            <a href="https://github.com/mideind/GreynirPackage/blob/master/src/reynir/Greynir.grammar"
+            <a href="https://github.com/mideind/GreynirEngine/blob/master/src/reynir/Greynir.grammar"
                target="_blank">sjá hér</a>.
             Forritaskil (API) Greynis eru
             <a href="{{ url_for('routes.apidoc') }}">skjöluð hér</a>.

@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -34,10 +34,10 @@ from typing import Tuple
 import random
 from math import floor, log10
 
-from query import Query, QueryStateDict, to_dative, to_accusative
-from queries import iceformat_float, parse_num, read_grammar_file
+from queries import Query, QueryStateDict, to_dative, to_accusative
+from queries.util import iceformat_float, parse_num, read_grammar_file, is_plural
 from tree import ParamList, Result, Node
-
+from speech.trans import gssml
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [
@@ -73,7 +73,7 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
@@ -318,7 +318,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             else:
                 answer += " " + result.unit_to_nf
             verb = "eru"
-            if int(val_from) % 10 == 1 and int(val_from) % 100 != 11:
+
+            if not is_plural(val_from):
                 # 'Einn lítri er...', 'Tuttugu og einn lítri er...',
                 # but on the other hand 'Ellefu lítrar eru...'
                 verb = "er"
@@ -328,6 +329,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             unit_to = result.unit_to
             response = dict(answer=answer)
             voice_answer = "{0} {1} {2}.".format(result.desc, verb, answer).capitalize()
+            voice_answer = gssml(voice_answer, type="generic")
             # Store the resulting quantity in the query context
             q.set_context(
                 {

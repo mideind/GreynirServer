@@ -4,7 +4,7 @@
 
     'What is?' query module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
     Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
@@ -29,8 +29,8 @@
 
 from typing import Set
 
-from query import ResponseType, QueryStateDict
-from queries import read_grammar_file
+from queries import ResponseType, QueryStateDict
+from queries.util import read_grammar_file
 from tree import Node, ParamList, Result
 
 # --- Begin "magic" module constants ---

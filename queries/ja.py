@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -35,13 +35,13 @@ from datetime import datetime, timedelta
 from reynir import NounPhrase
 from reynir.bindb import GreynirBin
 
-from queries import query_json_api, gen_answer, icequote, read_grammar_file
-from queries.util.num import numbers_to_text, digits_to_text
+from queries.util import query_json_api, gen_answer, read_grammar_file
+from speech.trans import gssml
 
-from query import AnswerTuple, Query, QueryStateDict
+from queries import AnswerTuple, Query, QueryStateDict
 from tree import ParamList, Result, Node
 from geo import iceprep_for_street
-from utility import read_api_key
+from utility import read_txt_api_key, icequote
 
 
 # Module priority
@@ -81,7 +81,7 @@ _JA_API_URL = "https://api.ja.is/search/v6/?{0}"
 
 def query_ja_api(q: str) -> Optional[Dict[str, Any]]:
     """Send query to ja.is API"""
-    key = read_api_key("JaServerKey")
+    key = read_txt_api_key("JaServerKey")
     if not key:
         # No key, can't query the API
         logging.warning("No API key for ja.is")
@@ -133,7 +133,7 @@ def _answer_phonenum4name_query(q: Query, result: Result) -> AnswerTuple:
 
     res = phonenums4name(result.qkey)
     if not res:
-        return gen_answer("Ekki tókst að fletta upp {0}.".format(nþgf))
+        return gen_answer(f"Ekki tókst að fletta upp {nþgf}.")
 
     # Check if we have a single canonical match from API
     allp = res
@@ -163,20 +163,20 @@ def _answer_phonenum4name_query(q: Query, result: Result) -> AnswerTuple:
                 )
                 break
             except (KeyError, ValueError) as e:
-                logging.warning("Exception: " + str(e))
+                logging.warning(f"Exception: {e}")
                 continue
         return gen_answer(msg)
 
     # Scan API call result, try to find the best phone number
     phone_number = _best_phone_number(first)
     if not phone_number:
-        return gen_answer("Ég finn ekki símanúmerið hjá {0}".format(nþgf))
+        return gen_answer(f"Ég finn ekki símanúmerið hjá {nþgf}")
 
     # Sanitize number and generate answer
     phone_number = phone_number.replace("-", "").replace(" ", "")
     answ = phone_number
     fn = NounPhrase(fname).dative or fname
-    voice = f"Síminn hjá {fn} er {digits_to_text(phone_number)}"
+    voice = f"Síminn hjá {fn} er {gssml(phone_number, type='phone')}"
 
     q.set_context(dict(phone_number=phone_number, name=fname))
     q.set_source(_JA_SOURCE)
@@ -194,7 +194,8 @@ def _answer_name4phonenum_query(q: Query, result: Result) -> AnswerTuple:
 
     if not clean_num or len(clean_num) < 3:
         answer = gen_answer(f"{num} er ekki gilt símanúmer")
-        return (answer[0], answer[1], digits_to_text(answer[2]))
+        voice = f"{gssml(num, type='phone')} er ekki gilt símanúmer"
+        return (answer[0], answer[1], voice)
 
     res = query_ja_api(clean_num)
 
@@ -218,13 +219,23 @@ def _answer_name4phonenum_query(q: Query, result: Result) -> AnswerTuple:
     addr = p.get("address", "")
     pstation = p.get("postal_station", "")  # e.g. "101, Reykjavík"
 
-    full_addr = "{0}{1}".format(addr, ", " + pstation if pstation else "")
+    full_addr = addr + (", " + pstation if pstation else "")
+    vfull_addr = gssml(addr, type="numbers", gender="hk") + (
+        ", " + gssml(pstation, type="numbers", gender="kk") if pstation else ""
+    )
 
     # E.g. "Sveinbjörn Þórðarson, fræðimaður, Öldugötu 4, 101 Reykjavík"
-    answ = "{0}{1}{2}".format(
-        name, " " + occup if occup else "", ", " + full_addr if full_addr else ""
+    ans_templ = "{n}{o}{f}"
+    answ = ans_templ.format(
+        n=name,
+        o=f", {occup}" if occup else "",
+        f=f", {full_addr}" if full_addr else "",
     ).strip()
-    voice = numbers_to_text(answ)
+    voice = ans_templ.format(
+        n=name,
+        o=f", {gssml(occup, type='generic')}" if occup else "",
+        f=f", {vfull_addr}" if vfull_addr else "",
+    ).strip()
 
     # Set phone number, name and address as context
     q.set_context(dict(phone_number=clean_num, name=name, address=full_addr))
@@ -250,12 +261,12 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         try:
             r = _QTYPE2HANDLER[result.qtype](q, result)
             if not r:
-                r = gen_answer("Ég fann ekki {0}.".format(icequote(result.qkey)))
+                r = gen_answer(f"Ég fann ekki {icequote(result.qkey)}.")
             q.set_answer(*r)
             q.set_qtype(result.qtype)
             q.set_key(result.qkey)
         except Exception as e:
-            logging.warning("Exception while processing ja.is query: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception while processing ja.is query: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

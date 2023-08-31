@@ -1,7 +1,7 @@
 """
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -32,9 +32,10 @@ import sys
 import os
 import math
 
-from iceaddr import iceaddr_lookup, placename_lookup  # type: ignore
+from iceaddr import iceaddr_lookup, placename_lookup
 from cityloc import city_lookup  # type: ignore
-from country_list import countries_for_language, available_languages  # type: ignore
+from country_list import countries_for_language, available_languages
+
 
 LatLonTuple = Tuple[float, float]
 
@@ -256,7 +257,7 @@ def location_description(loc: Dict[str, str]) -> str:
             c = continent_for_country(loc["country"])
         if c is not None and c in ISO_TO_CONTINENT:
             cname = ISO_TO_CONTINENT[c]
-            desc = "land í {0}u".format(cname[:-1])
+            desc = f"land í {cname[:-1]}u"
         return desc
 
     if kind == "address":
@@ -527,7 +528,7 @@ def coords_for_street_name(
 
 
 def coords_from_addr_info(info: Optional[Dict[str, float]]) -> Optional[LatLonTuple]:
-    """Get coordinates from the address dict provided by iceaddr package."""
+    """Get coordinates from the address dict provided by the iceaddr package."""
     if info is not None and "lat_wgs84" in info and "long_wgs84" in info:
         return (info["lat_wgs84"], info["long_wgs84"])
     return None

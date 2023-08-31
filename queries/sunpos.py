@@ -4,7 +4,7 @@
 
     Solar position query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -25,13 +25,15 @@
 
 # TODO: "Hvenær rís sólin [any date]"
 # TODO: "Hvenær kemur sólin upp"
+# TODO: Use gssml instead of numbers_to_... functions
+# TODO: Use https://vedur.is/gogn/vefgogn/sol/index.html instead of inaccurate HÍ almanak
 
 from typing import Dict, List, Iterable, Tuple, Optional, Union, cast
 
 from tree import ParamList, Result, Node
-from query import Query, QueryStateDict
+from queries import Query, QueryStateDict
 
-from queries import (
+from queries.util import (
     AnswerTuple,
     LatLonTuple,
     MONTH_ABBREV_ORDERED,
@@ -55,8 +57,8 @@ from geo import (
     capitalize_placename,
     ICE_PLACENAME_BLACKLIST,
 )
-from iceaddr import placename_lookup  # type: ignore
-from queries.util.num import numbers_to_ordinal, floats_to_text
+from iceaddr import placename_lookup
+from speech.trans.num import numbers_to_ordinal, floats_to_text
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -87,7 +89,7 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
@@ -340,19 +342,19 @@ _ALMANAK_HI_CACHE: TTLCache = TTLCache(maxsize=1, ttl=86400)
 
 def _get_almanak_hi_data() -> Optional[_SOLAR_DICT_TYPE]:
     """Fetch solar calendar from Univeristy of Iceland."""
-    data: Optional[_SOLAR_DICT_TYPE] = _ALMANAK_HI_CACHE.get("data")
+    data = cast(Optional[_SOLAR_DICT_TYPE], _ALMANAK_HI_CACHE.get("data"))
 
     if data:
         return data
 
     try:
-        r = requests.get(_ALMANAK_HI_URL)
+        r = requests.get(_ALMANAK_HI_URL, timeout=10)
     except Exception as e:
         logging.warning(str(e))
         return None
 
     if r.status_code != 200:
-        logging.warning("Received status {0} from Almanak HÍ".format(r.status_code))
+        logging.warning(f"Received status {r.status_code} from Almanak HÍ")
         return None
 
     try:
@@ -371,7 +373,7 @@ def _get_almanak_hi_data() -> Optional[_SOLAR_DICT_TYPE]:
 
         return data
     except Exception as e:
-        logging.warning("Error parsing Almanak HÍ response: {0}".format(e))
+        logging.warning(f"Error parsing Almanak HÍ response: {e}")
 
     return None
 
@@ -439,7 +441,7 @@ def _answer_city_solar_data(
 
         if time:
             if in_past is None:
-                in_past = time <= datetime.datetime.now().time()
+                in_past = time <= datetime.datetime.utcnow().time()
 
             # More specific answer when asking about today
             # (this morning/this evening/tonight/...)

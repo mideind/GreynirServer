@@ -4,7 +4,7 @@
 
     User location query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
+
     This module handles queries related to user location ("Where am I?").
 
 """
@@ -27,19 +28,20 @@ from typing import Any, Tuple, Optional, cast
 import re
 import logging
 
-from query import Query, QueryStateDict, AnswerTuple
-from queries import (
+from queries import Query, QueryStateDict, AnswerTuple
+from utility import cap_first
+from queries.util import (
     gen_answer,
     query_geocode_api_coords,
     country_desc,
     nom2dat,
-    cap_first,
     read_grammar_file,
 )
-from queries.util.num import numbers_to_text
+from speech.trans.num import numbers_to_text
 from tree import ParamList, Result, Node
-from iceaddr import iceaddr_lookup, postcodes  # type: ignore
+from iceaddr import iceaddr_lookup, postcodes
 from geo import (
+    country_name_for_isocode,
     iceprep_for_placename,
     iceprep_for_street,
     in_iceland,
@@ -76,7 +78,9 @@ def QUserLocationCountry(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "CurrentCountry"
 
 
-def _addrinfo_from_api_result(result) -> Tuple:
+def _addrinfo_from_api_result(
+    result,
+) -> Tuple[Optional[str], Optional[int], Optional[str], Optional[str], Optional[str]]:
     """Extract relevant address components from Google API result."""
 
     comp = result["address_components"]
@@ -169,6 +173,30 @@ def _addr4voice(addr: str) -> Optional[str]:
 _LOC_LOOKUP_FAIL_MSG = "Ekki tókst að fletta upp staðsetningu."
 
 
+def locality_and_country(loc: LatLonTuple) -> Optional[str]:
+    """Return the locality and country of the given location, or None"""
+    # Send API request
+    res = query_geocode_api_coords(loc[0], loc[1])
+
+    # Verify that we have at least one valid result
+    if (
+        not res
+        or "results" not in res
+        or not len(res["results"])
+        or not res["results"][0]
+    ):
+        return None
+
+    # Grab top result from API call
+    top = res["results"][0]
+
+    # Extract locality and country info from top result
+    _, _, locality, _, country_code = _addrinfo_from_api_result(top)
+    country_name = country_name_for_isocode(country_code) or country_code
+
+    return locality + ", " + country_name if locality else country_name
+
+
 def answer_for_location(loc: LatLonTuple) -> Optional[AnswerTuple]:
     """Answer user location query, e.g. 'Hvar er ég staddur?'"""
     # Send API request
@@ -189,7 +217,7 @@ def answer_for_location(loc: LatLonTuple) -> Optional[AnswerTuple]:
     # if the top result doesn't even contain a locality.
 
     # Extract address info from top result
-    street, num, locality, postcode, country_code = _addrinfo_from_api_result(top)
+    street, num, locality, _, country_code = _addrinfo_from_api_result(top)
 
     descr = ""
 
@@ -209,14 +237,11 @@ def answer_for_location(loc: LatLonTuple) -> Optional[AnswerTuple]:
     else:
         sdesc = ("á " + street) if street else ""
         if num and street:
-            sdesc += " " + num
-        locdesc = (
-            "{0} {1}".format(iceprep_for_placename(locality), locality)
-            if locality
-            else ""
-        )
+            sdesc += f" {num}"
+        # e.g. "í París"
+        locdesc = f"{iceprep_for_placename(locality)} {locality}" if locality else ""
         # "[á Boulevard St. Germain] [í París] [í Frakklandi]"
-        descr = "{0} {1} {2}".format(sdesc, locdesc, country_desc(country_code)).strip()
+        descr = f"{sdesc} {locdesc} {country_desc(country_code)}".strip()
 
     if not descr:
         # Fall back on the formatted address string provided by Google
@@ -224,7 +249,7 @@ def answer_for_location(loc: LatLonTuple) -> Optional[AnswerTuple]:
 
     answer = cap_first(descr)
     response = dict(answer=answer)
-    voice = "Þú ert {0}".format(_addr4voice(descr))
+    voice = f"Þú ert {_addr4voice(descr)}"
 
     return response, answer, voice
 
@@ -254,9 +279,9 @@ def answer_for_postcode(loc: LatLonTuple):
     # Only support Icelandic postcodes for now
     if country_code == "IS" and postcode:
         pc = cast(Any, postcodes).get(int(postcode))
-        pd = "{0} {1}".format(postcode, pc["stadur_nf"])
+        pd = f'{postcode} {pc["stadur_nf"]}'
         (response, answer, voice) = gen_answer(pd)
-        voice = "Þú ert í {0}".format(pd)
+        voice = f"Þú ert í {pd}"
         return response, answer, voice
     else:
         return gen_answer("Ég veit ekki í hvaða póstnúmeri þú ert.")
@@ -292,7 +317,7 @@ def answer_for_country(loc: LatLonTuple):
 
 
 def sentence(state: QueryStateDict, result: Result) -> None:
-    """Called when sentence processing is complete"""
+    """Called when sentence processing is complete."""
     q: Query = state["query"]
     if "qtype" in result and "qkey" in result:
         # Successfully matched a query type
@@ -320,6 +345,9 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 answ = gen_answer("Ég veit ekki hvar þú ert.")
 
             ql = q.query_lower
+            # This is a hack to fix issue where speech recognition
+            # identifies "hvar er ég" as "hvað er ég". We assume it's
+            # not actually a moment of existential angst ;)
             if ql.startswith("hvað er ég"):
                 bq = re.sub(
                     r"^hvað er ég",
@@ -332,8 +360,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             q.set_answer(*answ)
 
         except Exception as e:
-            logging.warning("Exception while processing location query: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception while processing location query: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
             raise
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

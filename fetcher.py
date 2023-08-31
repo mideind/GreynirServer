@@ -4,7 +4,7 @@
 
     Fetcher module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 
 """
 
-from typing import Any, Dict, Iterator, List, Optional, Tuple, cast
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, cast
 from types import ModuleType
 
 import re
@@ -34,7 +34,7 @@ import requests
 import urllib.parse as urlparse
 from urllib.error import HTTPError
 
-from bs4 import BeautifulSoup, NavigableString  # type: ignore
+from bs4 import BeautifulSoup, NavigableString, Tag  # type: ignore
 
 from reynir import tokenize, Tok
 from nertokenizer import recognize_entities
@@ -48,7 +48,6 @@ _HTML_PARSER = "html.parser"
 
 
 class Fetcher:
-
     """The worker class that scrapes the known roots"""
 
     # HTML tags that we explicitly don't want to look at
@@ -118,30 +117,30 @@ class Fetcher:
             self._result.append(w)
             self._white = False
 
-        def append_whitespace(self):
+        def append_whitespace(self) -> None:
             if self._nesting == 0:
                 # No need to append whitespace if we're just inside a begin-block
                 if not self._white:
                     self._result.append(" ")
                     self._white = True
 
-        def begin(self):
+        def begin(self) -> None:
             self._nesting += 1
 
-        def end(self):
+        def end(self) -> None:
             if self._nesting > 0:
                 self._nesting -= 1
             else:
                 self._result.append("]]")
                 self._white = True
 
-        def insert_break(self):
+        def insert_break(self) -> None:
             """Used to cut paragraphs at <br> and <hr> tags"""
             if self._nesting == 0:
                 self._result.append("]][[")
                 self._white = True
 
-        def result(self):
+        def result(self) -> str:
             """Return the accumulated result as a string"""
             assert self._nesting == 0
             text = "".join(self._result).strip()
@@ -156,7 +155,7 @@ class Fetcher:
             return text
 
     @staticmethod
-    def extract_text(soup: BeautifulSoup, result: "Fetcher.TextList") -> None:
+    def extract_text(soup: Optional[Tag], result: "Fetcher.TextList") -> None:
         """Append the human-readable text found in an HTML soup
         to the result TextList"""
         if soup is None:
@@ -167,6 +166,8 @@ class Fetcher:
                 result.append(cast(str, t))
             elif isinstance(t, NavigableString):
                 # Comment, CDATA or other text data: ignore
+                pass
+            elif not isinstance(t, Tag):
                 pass
             elif t.name in Fetcher._BREAK_TAGS:
                 result.insert_break()
@@ -196,7 +197,7 @@ class Fetcher:
 
     @staticmethod
     def to_tokens(
-        soup: BeautifulSoup, enclosing_session: Optional[Session] = None
+        soup: Tag, enclosing_session: Optional[Session] = None
     ) -> Iterator[Tok]:
         """Convert an HTML soup root into a parsable token stream"""
 
@@ -214,34 +215,28 @@ class Fetcher:
         """Low-level fetch of an URL, returning a decoded string"""
         html_doc = None
         try:
-
             # Normal external HTTP/HTTPS fetch
-            r = requests.get(url)
-            if r is None:
-                logging.warning("No document returned for URL {0}".format(url))
-                return None
+            r = requests.get(url, timeout=10)
             # pylint: disable=no-member
             if r.status_code == requests.codes.ok:
                 html_doc = r.text
             else:
-                logging.warning(
-                    "HTTP status {0} for URL {1}".format(r.status_code, url)
-                )
+                logging.warning(f"HTTP status {r.status_code} for URL {url}")
 
         except requests.exceptions.ConnectionError as e:
-            logging.error("ConnectionError: {0} for URL {1}".format(e, url))
+            logging.error(f"ConnectionError: {e} for URL {url}")
             html_doc = None
         except requests.exceptions.ChunkedEncodingError as e:
-            logging.error("ChunkedEncodingError: {0} for URL {1}".format(e, url))
+            logging.error(f"ChunkedEncodingError: {e} for URL {url}")
             html_doc = None
         except HTTPError as e:
-            logging.error("HTTPError: {0} for URL {1}".format(e, url))
+            logging.error(f"HTTPError: {e} for URL {url}")
             html_doc = None
         except UnicodeEncodeError as e:
-            logging.error("Exception when opening URL {0}: {1}".format(url, e))
+            logging.error(f"Exception when opening URL {url}: {e}")
             html_doc = None
         except UnicodeDecodeError as e:
-            logging.error("Exception when decoding HTML of {0}: {1}".format(url, e))
+            logging.error(f"Exception when decoding HTML of {url}: {e}")
             html_doc = None
         return html_doc
 
@@ -249,6 +244,8 @@ class Fetcher:
     def _get_helper(cls, root: Root) -> Optional[ModuleType]:
         """Return a scrape helper instance for the given root"""
         # Obtain an instance of a scraper helper class for this root
+        assert root.scr_module is not None
+        assert root.scr_class is not None
         helper_id = root.scr_module + "." + root.scr_class
         if helper_id in Fetcher._helpers:
             # Already instantiated a helper: get it
@@ -259,13 +256,13 @@ class Fetcher:
             helper_class = getattr(mod, root.scr_class, None) if mod else None
             helper = helper_class(root) if helper_class else None
             if not helper:
-                logging.error("Unable to instantiate helper {0}".format(helper_id))
+                logging.error(f"Unable to instantiate helper {helper_id}")
             else:
                 Fetcher._helpers[helper_id] = helper
         return helper
 
     @staticmethod
-    def make_soup(doc, helper=None):
+    def make_soup(doc: str, helper: Optional[ModuleType] = None) -> Optional[Tag]:
         """Convert a document to a soup, using the helper if available"""
         if helper is None:
             soup = BeautifulSoup(doc, _HTML_PARSER) if doc else None
@@ -283,6 +280,7 @@ class Fetcher:
         with SessionContext(enclosing_session) as session:
             helper = cls.helper_for(session, url)
             soup = Fetcher.make_soup(html, helper)
+            content: Optional[Tag]
             if soup is None or soup.html is None:
                 content = None
             elif helper is None:
@@ -297,7 +295,7 @@ class Fetcher:
             )
 
     @staticmethod
-    def children(root, soup):
+    def children(root: Root, soup: Tag) -> Set[str]:
         """Return a set of child URLs within a HTML soup,
         relative to the given root"""
         # Establish the root URL base parameters
@@ -307,9 +305,9 @@ class Fetcher:
             (root_s.scheme, root_s.netloc, "/", root_s.query, "")
         )
         # Collect all interesting <a> tags from the soup and obtain their href-s:
-        fetch = set()
+        fetch: Set[str] = set()
         for link in soup.find_all("a"):
-            href = link.get("href")
+            href: Optional[str] = link.get("href")
             if not href:
                 continue
             # Split the href into its components
@@ -354,8 +352,9 @@ class Fetcher:
     def helper_for(cls, session: Session, url: str) -> Optional[ModuleType]:
         """Return a scrape helper for the root of the given url"""
         s = urlparse.urlsplit(url)
-        root = None
+        root: Optional[Root] = None
         # Find which root this URL belongs to, if any
+        r: Root
         for r in session.query(Root).all():
             root_s = urlparse.urlsplit(r.url)
             # Find the root of the domain, i.e. www.ruv.is -> ruv.is
@@ -386,17 +385,18 @@ class Fetcher:
 
     # noinspection PyComparisonWithNone
     @classmethod
-    def is_known_url(cls, url, session=None):
+    def is_known_url(cls, url: str, session: Optional[Session] = None) -> bool:
         """Return True if the URL has already been scraped"""
         return cls.find_article(url, session) is not None
 
     @classmethod
-    def fetch_article(cls, url, enclosing_session=None):
+    def fetch_article(
+        cls, url: str, enclosing_session: Optional[Session] = None
+    ) -> Tuple[Optional[ArticleRow], Any, Optional[Tag]]:
         """Fetch a previously scraped article, returning
         a tuple (article, metadata, content) or None if error"""
 
         with SessionContext(enclosing_session) as session:
-
             article = cls.find_article(url, session)
             if article is None:
                 return (None, None, None)
@@ -409,7 +409,7 @@ class Fetcher:
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
             if soup is None or soup.html is None:
-                logging.warning("Fetcher.fetch_article({0}): No soup".format(url))
+                logging.warning(f"Fetcher.fetch_article({url}): No soup")
                 return (None, None, None)
 
             # Obtain the metadata and the content from the resulting soup
@@ -420,14 +420,14 @@ class Fetcher:
     @classmethod
     def fetch_url(
         cls, url: str, enclosing_session: Optional[Session] = None
-    ) -> Optional[Tuple[Any, Any]]:
+    ) -> Optional[Tuple[Any, Optional[Tag]]]:
         """Fetch a URL using the scraping mechanism, returning
         a tuple (metadata, content) or None if error"""
 
         with SessionContext(enclosing_session) as session:
-
             helper = cls.helper_for(session, url)
 
+            html_doc: Optional[str] = None
             if helper is None or not hasattr(helper, "fetch_url"):
                 # Do a straight HTTP fetch
                 html_doc = cls.raw_fetch_url(url)
@@ -441,29 +441,28 @@ class Fetcher:
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
             if soup is None or soup.html is None:
-                logging.warning(
-                    "Fetcher.fetch_url({0}): No soup or no soup.html".format(url)
-                )
+                logging.warning(f"Fetcher.fetch_url({url}): No soup or no soup.html")
                 return None
 
             # Obtain the metadata and the content from the resulting soup
             metadata = cast(Any, helper).get_metadata(soup) if helper else None
-            content = cast(Any, helper).get_content(soup) if helper else soup.html.body
+            content: Optional[Tag] = (
+                cast(Any, helper).get_content(soup) if helper else soup.html.body
+            )
             return (metadata, content)
 
     @classmethod
     def fetch_url_html(
         cls, url: str, enclosing_session: Optional[Session] = None
-    ) -> Tuple[Optional[str], Any, Any]:
+    ) -> Tuple[Optional[str], Any, Optional[ModuleType]]:
         """Fetch a URL using the scraping mechanism, returning
         a tuple (html, metadata, helper) or None if error"""
 
         html_doc, metadata, helper = None, None, None
 
         with SessionContext(enclosing_session) as session:
-
+            html_doc: Optional[str] = None
             helper = cls.helper_for(session, url)
-
             if helper is None or not hasattr(helper, "fetch_url"):
                 # Do a straight HTTP fetch
                 html_doc = cls.raw_fetch_url(url)
@@ -477,7 +476,7 @@ class Fetcher:
             # Parse the HTML
             soup = Fetcher.make_soup(html_doc, helper)
             if soup is None:
-                logging.warning("Fetcher.fetch_url_html({0}): No soup".format(url))
+                logging.warning(f"Fetcher.fetch_url_html({url}): No soup")
                 return (None, None, None)
 
             # Obtain the metadata from the resulting soup

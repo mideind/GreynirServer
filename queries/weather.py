@@ -4,7 +4,7 @@
 
     Weather query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -23,8 +23,10 @@
 
 """
 
-# TODO: Natural language weather forecasts for different parts of the country (N-land, etc.)
+# TODO: Fall back on other source of weather data if iceweather fails
 # TODO: Provide weather info for locations outside Iceland
+# TODO: GSSML processing of forecast text
+# TODO: Natural language weather forecasts for different parts of the country (N-land, etc.)
 # TODO: Add more info to description of current weather conditions?
 # TODO: More detailed forecast, time specific? E.g. "hvernig verður veðrið klukkan þrjú?"
 # TODO: "Mun rigna í dag?" "Verður mikið rok í dag?" "Verður kalt í kvöld?" "Þarf ég regnhlíf?"
@@ -33,7 +35,7 @@
 # TODO: "Hvernig er færðin?"
 # TODO: "Hversu hvasst er úti?"
 # TODO: "Hvað er hitastigið á egilsstöðum?" "Hvað er mikill hiti úti?"
-# TODO: "Hvar er heitast á landinu?"
+# TODO: "Hvar er heitast á landinu?" "Hvar er kaldast á landinu?"
 # TODO: "Er gott veður úti?"
 # TODO: "Hvað er mikið frost?" "Hversu mikið frost er úti?"
 # TODO: "Verður snjór á morgun?"
@@ -41,9 +43,10 @@
 # TODO: "Hvernig er veðurspáin fyrir garðabæ?"
 # TODO: "Hvernig er færðin"
 # TODO: Er rigning úti? Er sól úti? Er sól á Húsavík? Er rigning í Reykjavík?
-# TODO: "Hvernig eru loftgæðin [í Reykjavík] etc."
 
-from typing import Optional
+from __future__ import annotations
+
+from typing import Dict, Mapping, Optional, Union
 
 import os
 import re
@@ -51,14 +54,13 @@ import logging
 import random
 from datetime import timedelta, datetime
 
-from query import Query, QueryStateDict
-from queries import (
+from queries import Query, QueryStateDict
+from utility import cap_first
+from queries.util import (
     JsonResponse,
+    AnswerTuple,
     gen_answer,
     query_json_api,
-    cap_first,
-    sing_or_plur,
-    AnswerTuple,
     read_grammar_file,
 )
 from tree import ParamList, Result, Node
@@ -66,6 +68,7 @@ from geo import in_iceland, RVK_COORDS, near_capital_region, ICE_PLACENAME_BLACK
 from iceaddr import placename_lookup  # type: ignore
 from iceweather import observation_for_closest, observation_for_station, forecast_text  # type: ignore
 
+from speech.trans import gssml
 
 _WEATHER_QTYPE = "Weather"
 
@@ -108,7 +111,7 @@ TOPIC_LEMMAS = [
 
 
 def help_text(lemma: str) -> str:
-    """Help text to return when query.py is unable to parse a query but
+    """Help text to return when query processor is unable to parse a query but
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
@@ -134,7 +137,7 @@ GRAMMAR = read_grammar_file("weather")
 
 # The OpenWeatherMap API key (you must obtain your
 # own key if you want to use this code)
-_OWM_API_KEY = ""
+_owm_api_key = ""
 _OWM_KEY_PATH = os.path.join(
     os.path.dirname(__file__), "..", "resources", "OpenWeatherMapKey.txt"
 )
@@ -142,19 +145,19 @@ _OWM_KEY_PATH = os.path.join(
 
 def _get_OWM_API_key() -> str:
     """Read OpenWeatherMap API key from file"""
-    global _OWM_API_KEY
-    if not _OWM_API_KEY:
+    global _owm_api_key
+    if not _owm_api_key:
         try:
             # You need to obtain your own key and put it in
             # _OWM_API_KEY if you want to use this code.
             with open(_OWM_KEY_PATH) as f:
-                _OWM_API_KEY = f.read().rstrip()
+                _owm_api_key = f.read().rstrip()
         except FileNotFoundError:
             logging.warning(
                 "Could not read OpenWeatherMap API key from {0}".format(_OWM_KEY_PATH)
             )
-            _OWM_API_KEY = ""
-    return _OWM_API_KEY
+            _owm_api_key = ""
+    return _owm_api_key
 
 
 def _postprocess_owm_data(d: JsonResponse) -> JsonResponse:
@@ -191,7 +194,7 @@ def _query_owm_by_coords(lat: float, lon: float) -> JsonResponse:
 _BFT_THRESHOLD = (0.3, 1.5, 3.4, 5.4, 7.9, 10.7, 13.8, 17.1, 20.7, 24.4, 28.4, 32.6)
 
 
-def _wind_bft(ms: float) -> int:
+def _wind_bft(ms: Optional[float]) -> int:
     """Convert wind from metres per second to Beaufort scale"""
     if ms is None:
         return 0
@@ -203,7 +206,7 @@ def _wind_bft(ms: float) -> int:
 
 
 # From https://www.vedur.is/vedur/frodleikur/greinar/nr/1098
-_BFT_ICEDESC = {
+_BFT_ICEDESC: Mapping[int, str] = {
     0: "logn",
     1: "andvari",
     2: "kul",
@@ -314,10 +317,10 @@ def get_currweather_answer(query: Query, result: Result) -> AnswerTuple:
     try:
         # Round to nearest whole number
         temp = int(round(float(res["T"].replace(",", "."))))
-        desc = res["W"].lower()
+        desc: str = res["W"].lower()
         windsp = float(res["F"].replace(",", "."))
     except Exception as e:
-        logging.warning("Exception parsing weather API result: {0}".format(e))
+        logging.warning(f"Exception parsing weather API result: {e}")
         return gen_answer(_API_ERRMSG)
 
     wind_desc = _wind_descr(windsp)
@@ -329,15 +332,16 @@ def get_currweather_answer(query: Query, result: Result) -> AnswerTuple:
 
     # Meters per second string for voice. Say nothing if "logn".
     msec = int(wind_ms_str)
-    # msec_numword = number_to_text(msec)
-    voice_ms = (
-        ", {0} á sekúndu".format(sing_or_plur(msec, "metri", "metrar"))
-        if wind_ms_str != "0"
-        else ""
-    )
+    voice_ms = ""
+    if wind_ms_str != "0":
+        msec_numword = gssml(msec, type="number", gender="kk", case="nf")
+        meters = "metrar" if msec > 1 else "metri"
+        voice_ms = f", {msec_numword} {meters} á sekúndu"
+
+    temp_numw = gssml(abs(temp), type="number", gender="kk", case="ef")
 
     # Format voice string
-    voice = f"{locdesc.capitalize()} er {abs(temp)} stiga {temp_type}{mdesc} og {wind_desc}{voice_ms}"
+    voice = f"{locdesc.capitalize()} er {temp_numw} stiga {temp_type}{mdesc} og {wind_desc}{voice_ms}"
 
     # Text answer
     answer = f"{temp} °C{mdesc} og {wind_desc} ({wind_ms_str} m/s)"
@@ -345,6 +349,12 @@ def get_currweather_answer(query: Query, result: Result) -> AnswerTuple:
     response = dict(answer=answer)
 
     return response, answer, voice
+
+
+def gpt_query(q: Query, query: str, time: str, location: str) -> Dict[str, Union[str, int, float]]:
+    """Return a string response for a GPT query"""
+    weather: Dict[str, Union[str, int, float]] = dict(temperature=random.randint(-10, 30), wind=random.randint(0, 20))
+    return weather
 
 
 # Abbreviations to expand in natural language weather
@@ -399,7 +409,7 @@ def get_forecast_answer(query: Query, result: Result) -> AnswerTuple:
     try:
         res = forecast_text(txt_id)
     except Exception as e:
-        logging.warning("Failed to fetch weather text: {0}".format(e))
+        logging.warning(f"Failed to fetch weather text: {e}")
         res = None
 
     if (
@@ -410,7 +420,7 @@ def get_forecast_answer(query: Query, result: Result) -> AnswerTuple:
     ):
         return gen_answer(_API_ERRMSG)
 
-    answer = res["results"][0]["content"]
+    answer: str = res["results"][0]["content"]
     response = dict(answer=answer)
     voice = _descr4voice(answer)
 
@@ -508,8 +518,8 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             if r:
                 q.set_answer(*r)
         except Exception as e:
-            logging.warning("Exception while processing weather query: {0}".format(e))
-            q.set_error("E_EXCEPTION: {0}".format(e))
+            logging.warning(f"Exception while processing weather query: {e}")
+            q.set_error(f"E_EXCEPTION: {e}")
             raise
     else:
         q.set_error("E_QUERY_NOT_UNDERSTOOD")

@@ -4,7 +4,7 @@
 
    CSS file for Greynir web interface
 
-   Copyright (C) 2022 Miðeind ehf.
+   Copyright (C) 2023 Miðeind ehf.
 
       This program is free software: you can redistribute it and/or modify
       it under the terms of the GNU General Public License as published by
@@ -1192,7 +1192,7 @@ div.result i {
    padding-left: 1px;
    padding-right: 1px;
    padding-bottom: 2px;
-   margin-right: -4px;
+   margin-right: -3px;
 }
 
 div.result i.nf {

@@ -1,5 +1,5 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/)
+[![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
 [![Build](https://github.com/mideind/Greynir/actions/workflows/python-package.yml/badge.svg)]()
 
 <img src="static/img/greynir-logo-large.png" alt="Greynir" width="200" height="200" align="right" style="margin-left:20px; margin-bottom: 20px;">
@@ -19,7 +19,7 @@ Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 
 Greynir periodically scrapes chunks of text from Icelandic news sites on the web.
 It employs the [Tokenizer](https://github.com/mideind/Tokenizer) and
-[GreynirPackage](https://github.com/mideind/GreynirPackage) modules (by the same authors)
+[GreynirEngine](https://github.com/mideind/GreynirEngine) modules (by the same authors)
 to tokenize the text and parse the token streams according to a
 **hand-written context-free grammar** for the Icelandic language.
 The resulting parse forests are disambiguated using
@@ -57,8 +57,8 @@ These trees can then be further processed and acted upon by sets of Python
 functions that are linked to grammar nonterminals.
 
 **Greynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
-and many well-written articles can be parsed completely. It presently has over 800,000 parsed articles
-in its database, containing about 13 million parsed sentences. A recent version of this database is available
+and many well-written articles can be parsed completely. It presently has over a million parsed articles
+in its database, containing over 15 million parsed sentences. A recent version of this database is available
 via the [GreynirCorpus](https://github.com/mideind/GreynirCorpus) project.
 
 Greynir supports natural language querying of its databases. Users can ask about person names, titles and
@@ -78,7 +78,7 @@ Greynir may in due course be expanded, for instance:
 Greynir is written in [Python 3](https://www.python.org/) except for its core
 Earley-based parser module which is written in C++ and called
 via [CFFI](https://cffi.readthedocs.org/en/latest/index.html).
-Greynir requires Python 3.7 or later, and runs on CPython and
+Greynir requires Python 3.8 or later, and runs on CPython and
 [PyPy](http://pypy.org/), with the latter being recommended for performance reasons.
 
 Greynir works in stages, roughly as follows:
@@ -89,7 +89,7 @@ Greynir works in stages, roughly as follows:
 2. **Tokenizer** ([this one](https://github.com/mideind/Tokenizer)),
   extended to use the [BÍN](http://bin.arnastofnun.is/DMII/) database of Icelandic word forms for lemmatization and
   initial part-of-speech tagging.
-3. **Parser** (from [this module](https://github.com/mideind/GreynirPackage)),
+3. **Parser** (from [this module](https://github.com/mideind/GreynirEngine)),
   using an improved version of the [Earley algorithm](http://en.wikipedia.org/wiki/Earley_parser)
   to parse text according to an unconstrained hand-written context-free grammar for Icelandic
   that may yield multiple parse trees (a parse forest) in case of ambiguity.
@@ -115,8 +115,8 @@ sentences and recognizes entities such as dates, numbers,
 amounts and person names, as well as common abbreviations and punctuation.
 
 Grammar rules are laid out in a separate text file,
-[`Greynir.grammar`](https://github.com/mideind/GreynirPackage/blob/master/src/reynir/Greynir.grammar),
-which is a part of [GreynirPackage](https://github.com/mideind/GreynirPackage). The standard
+[`Greynir.grammar`](https://github.com/mideind/GreynirEngine/blob/master/src/reynir/Greynir.grammar),
+which is a part of [GreynirEngine](https://github.com/mideind/GreynirEngine). The standard
 [Backus-Naur form](http://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form) has been
 augmented with repeat specifiers for right-hand-side tokens (`*` for 0..n instances,
 `+` for 1..n instances, or `?` for 0..1 instances). Also, the grammar allows for
@@ -151,51 +151,50 @@ in [`queries/examples`](queries/examples).
 
 ## File details
 
-* [`main.py`](main.py): WSGI web server application and main module for command-line invocation
-* [`routes/*.py`](routes/): Routes for the web application
-* [`query.py`](query.py): Natural language query processor
-* [`queries/*.py`](queries/): Query-answering modules
+* [`article.py`](article.py): Representation of an article through its life cycle
+* [`config/Greynir.conf`](config/Greynir.conf): Editable configuration file
 * [`db/*.py`](db/): Database models, queries and functions via SQLAlchemy
+* [`fetcher.py`](fetcher.py): Utility classes for fetching articles given their URLs
+* [`geo.py`](geo.py): Geography and location-related utility functions
+* [`main.py`](main.py): WSGI web server application and main module for command-line invocation
+* [`nertokenizer.py`](nertokenizer.py): A layer on top of the tokenizer for named entity recognition
+* [`postagger.py`](postagger.py): Part-of-speech tagging
+* [`processor.py`](processor.py): Information extraction from parse trees and token streams
+* [`queries/*.py`](queries/): Natural language query processor and query-answering modules
+* [`routes/*.py`](routes/): Routes for the web application
 * [`scraper.py`](scraper.py): Web scraper, collecting articles from a set of pre-selected websites
 * [`scrapers/*.py`](scrapers): Scraper code for various websites
 * [`settings.py`](settings.py): Management of global settings and configuration data
-* [`config/Greynir.conf`](config/Greynir.conf): Editable configuration file
-* [`fetcher.py`](fetcher.py): Utility classes for fetching articles given their URLs
-* [`nertokenizer.py`](nertokenizer.py): A layer on top of the tokenizer for named entity recognition
-* [`processor.py`](processor.py): Information extraction from parse trees and token streams
-* [`postagger.py`](postagger.py): Part-of-speech tagging
-* [`article.py`](article.py): Representation of an article through its life cycle
-* [`vectors/builder.py`](vectors/builder.py): Article indexer and LSA topic vector builder
-* [`geo.py`](geo.py): Geography and location-related utility functions
+* [`speak.py`](speak.py): Command line interface for speech synthesis
 * [`speech/*.py`](speech/): Speech synthesizer modules
-* [`stt.py`](stt.py): Command line interface for speech synthesis
-* [`tools/*.py`](tools/): Various command line utility tools
 * [`tnttagger.py`](tnttagger.py): Statistical Part-of-speech tagging
+* [`tools/*.py`](tools/): Various command line utility tools
 * [`tree.py`](tree.py): Representation of parse trees for processing
 * [`treeutil.py`](treeutil.py): Utility functions for working with parse trees and tokens
 * [`utility.py`](utility.py): Assorted utility functions used throughout the codebase
+* [`vectors/builder.py`](vectors/builder.py): Article indexer and LSA topic vector builder
 
 ## Installation and setup
 
-  * [Instructions for Ubuntu/Debian GNU/Linux](docs/setup_linux.md)
-  * [Instructions for macOS](docs/setup_macos.md)
-  * [Docker container](https://github.com/vthorsteinsson/greynir-docker)
+* [Instructions for Ubuntu/Debian GNU/Linux](docs/setup_linux.md)
+* [Instructions for macOS](docs/setup_macos.md)
+* [Docker container](https://github.com/vthorsteinsson/greynir-docker)
 
 ## Running Greynir
 
 Once you have followed the installation and setup instructions above, change to the
 Greynir repository and activate the virtual environment:
 
-```
+```bash
 cd Greynir
-venv/bin/activate
+source venv/bin/activate
 ```
 
 You should now be able to run Greynir.
 
 ### Web application
 
-```
+```bash
 python main.py
 ```
 
@@ -204,20 +203,20 @@ changed in [`config/Greynir.conf`](config/Greynir.conf).
 
 ### Web scrapers
 
-```
+```bash
 python scraper.py
 ```
 
 If you are running the scraper on macOS, you may run into problems with Python's `fork()`.
 This can be fixed by setting the following environment variable in your shell:
 
-```
+```bash
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 ```
 
 ### Processors
 
-```
+```bash
 python processor.py
 ```
 
@@ -236,7 +235,7 @@ See [Contributing to Greynir](CONTRIBUTING.md).
 
 ## License
 
-Greynir is Copyright &copy; 2022 [Miðeind ehf.](https://mideind.is)
+Greynir is Copyright &copy; 2023 [Miðeind ehf.](https://mideind.is)  
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
 <a href="https://mideind.is"><img src="static/img/mideind-horizontal-small.png" alt="Miðeind ehf."
@@ -251,7 +250,8 @@ This set of programs is distributed in the hope that it will be useful, but WITH
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-<a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="static/img/GPLv3.png" align="right" style="margin-left:15px;" width="180" height="60"></a>
+<a href="https://www.gnu.org/licenses/gpl-3.0.html"><img src="static/img/GPLv3.png"
+align="right" style="margin-left:15px;" width="180" height="60"></a>
 
 The full text of the GNU General Public License v3 is
 [included here](https://github.com/mideind/Greynir/blob/master/LICENSE.txt)

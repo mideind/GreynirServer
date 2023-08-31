@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@
 import pytest
 import os
 import json
-from urllib.parse import urlencode
 import sys
 
 from flask.testing import FlaskClient
@@ -37,9 +36,7 @@ if mainpath not in sys.path:
     sys.path.insert(0, mainpath)
 
 from main import app  # noqa
-from db import SessionContext  # noqa
-from db.models import Query, QueryData  # noqa
-from utility import read_api_key  # noqa
+from utility import read_txt_api_key  # noqa
 
 # pylint: disable=unused-wildcard-import
 from geo import *  # noqa
@@ -63,7 +60,7 @@ def in_ci_environment() -> bool:
     is a dummy value (set in CI config)."""
     global DUMMY_API_KEY
     try:
-        return read_api_key("GreynirServerKey") == DUMMY_API_KEY
+        return read_txt_api_key("GreynirServerKey") == DUMMY_API_KEY
     except Exception:
         return False
 
@@ -84,6 +81,7 @@ SKIP_ROUTES = frozenset(
         "/salescloud/nyskraning",
         "/salescloud/breyting",
         "/register_query_data.api",
+        "/stats/queries",
     )
 )
 
@@ -103,6 +101,8 @@ def test_routes(client: FlaskClient):
                 method = getattr(client, m.lower())
                 resp = method(route)
                 assert resp.status in ("200 OK", "202 ACCEPTED")
+    resp = client.get("/this_does_not_exist")
+    assert resp.status in ("404 NOT FOUND")
 
 
 API_CONTENT_TYPE = "application/json"
@@ -223,7 +223,7 @@ def test_postagger():
 def test_query():
     # TODO: Import all query modules and test whether
     # they include all necessary functions/variables
-    from query import Query
+    from queries import Query
     from queries.builtin import HANDLE_TREE
     from queries.special import handle_plain_text
 

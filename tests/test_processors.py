@@ -3,7 +3,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -232,6 +232,15 @@ def test_persons():
 
     Nikulás Tesla, serbneskur uppfinningamaður, lagði grunninn að riðstraumskerfum.
 
+    Lofthæna Guðrúnardóttir, lektor við Háskóla Íslands og rektor Listaháskólans,
+    tók til máls á ráðstefnunni.
+
+    Jónína Jónsdóttir (kennari í Háskólanum í Brandenburg) tók einnig til máls.
+
+    Jónas Guðmundsson, sviðsstjóri hjá Ríkisskattstjóra, hafði mikið um málið að segja.
+
+    "Það er ótrúlegt hve margir heita Jó-eitthvað," samkvæmt Jóhönnu Jóhannsdóttur, forstöðumanni hjá Háskólanum í Reykjavík.
+
     """
 
     tree, _ = _make_tree(text)
@@ -244,6 +253,18 @@ def test_persons():
     session.check(("Jói Biden", "bandaríkjaforseti", "kk"))
     session.check(("Albert Bourla", "forstjóri Pfizer", "kk"))
     session.check(("Nikulás Tesla", "serbneskur uppfinningamaður", "kk"))
+    session.check(
+        (
+            "Lofthæna Guðrúnardóttir",
+            "lektor við Háskóla Íslands og rektor Listaháskólans",
+            "kvk",
+        )
+    )
+    session.check(("Jónína Jónsdóttir", "kennari í Háskólanum í Brandenburg", "kvk"))
+    session.check(("Jónas Guðmundsson", "sviðsstjóri hjá Ríkisskattstjóra", "kk"))
+    session.check(
+        ("Jóhanna Jóhannsdóttir", "forstöðumaður hjá Háskólanum í Reykjavík", "kvk")
+    )
 
     assert session.is_empty()
 

@@ -4,7 +4,7 @@
 
     Word properties query response module
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -26,13 +26,14 @@
 
 # "Hvernig orð er X", "Hvers konar orð er X"
 # "Er X [tegund af orði]"
+# TODO: Er orðið X í BÍN?
 # TODO: Handle definite article in declension ("Hvernig beygist orðið 'kötturinn'?")
 # TODO: Declension queries should support adjectives etc.
 # TODO: Beautify query by placing word being asked about within quotation marks
 # TODO: Handle numbers ("3" should be spelled as "þrír" etc.)
 # TODO "Hvaða orð rímar við X"
 
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple
 
 import re
 import logging
@@ -42,8 +43,10 @@ from tokenizer.definitions import BIN_Tuple
 from islenska.bindb import BinEntryIterable, BinEntryList
 from reynir.bindb import GreynirBin
 
-from query import Query, AnswerTuple
-from queries import gen_answer, icequote, spell_out
+from queries import Query, AnswerTuple
+from queries.util import gen_answer
+from utility import icequote
+from speech.trans import gssml
 
 
 _WORDTYPE_RX_NOM = "(?:orðið|nafnið|nafnorðið)"
@@ -159,9 +162,7 @@ def declension_answer_for_word(word: str, query: Query) -> AnswerTuple:
     response = dict(answer=answ)
     # TODO: Handle plural e.g. "Hér eru"
     cases_desc = "Hér er {0}, um {1}, frá {2}, til {3}".format(*forms)
-    voice = "Orðið {0} beygist á eftirfarandi hátt: {1}.".format(
-        icequote(word), cases_desc
-    )
+    voice = f"Orðið {icequote(word)} beygist á eftirfarandi hátt: {cases_desc}."
 
     # Beautify by placing word in query within quotation marks
     bq = re.sub(word + r"\??$", icequote(word) + "?", query.beautified_query)
@@ -171,7 +172,7 @@ def declension_answer_for_word(word: str, query: Query) -> AnswerTuple:
 
 
 # Time to pause after reciting each character name
-_LETTER_INTERVAL = 0.3  # Seconds
+_LETTER_INTERVAL = "0.3s"
 
 
 def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
@@ -184,13 +185,9 @@ def spelling_answer_for_word(word: str, query: Query) -> AnswerTuple:
     answ = " ".join([c.upper() for c in chars])
     response = dict(answer=answ)
 
-    # Piece together SSML for speech synthesis
-    v = spell_out(word)
-    vlist: List[str] = v.split()
-    jfmt = '<break time="{0}s"/>'.format(_LETTER_INTERVAL)
-    voice = "Orðið {0} er stafað á eftirfarandi hátt: {1} {2}".format(
-        icequote(word), jfmt, jfmt.join(vlist)
-    )
+    # Piece together GSSML for speech synthesis
+    v = gssml(word, type="spell", pause_length=_LETTER_INTERVAL)
+    voice = f"Orðið {icequote(word)} er stafað á eftirfarandi hátt: {gssml(type='vbreak')} {v}"
 
     query.set_qtype("Spelling")
     query.set_key(word)

@@ -57,8 +57,8 @@ echo "Copying files"
 
 cp config/Index.conf $DEST/config/Index.conf
 # Note: config/Greynir.conf is not copied
-cp config/TnT-model.pickle $DEST/config/TnT-model.pickle
 
+cp .env $DEST/.env
 cp article.py $DEST/article.py
 cp fetcher.py $DEST/fetcher.py
 cp geo.py $DEST/geo.py
@@ -67,12 +67,11 @@ cp main.py $DEST/main.py
 cp nertokenizer.py $DEST/nertokenizer.py
 cp postagger.py $DEST/postagger.py
 cp processor.py $DEST/processor.py
-cp query.py $DEST/query.py
 cp scraper.py $DEST/scraper.py
 cp search.py $DEST/search.py
 cp settings.py $DEST/settings.py
 cp similar.py $DEST/similar.py
-cp stt.py $DEST/stt.py
+cp speak.py $DEST/speak.py
 cp tnttagger.py $DEST/tnttagger.py
 cp tree.py $DEST/tree.py
 cp treeutil.py $DEST/treeutil.py
@@ -96,7 +95,7 @@ ABOUT_TPL="${DEST}/templates/about.html"
 sed -i "s/\[Þróunarútgáfa\]/Útgáfa $(date "+%Y-%m-%d %H:%M")/g" "${ABOUT_TPL}"
 GITVERS=$(git rev-parse HEAD) # Get git commit ID
 GITVERS=${GITVERS:0:7} # Truncate it
-sed -i "s/\[Git-útgáfa\]/${GITVERS}/g" "{$ABOUT_TPL}"
+sed -i "s/\[Git-útgáfa\]/${GITVERS}/g" "${ABOUT_TPL}"
 
 echo "Reloading gunicorn server..."
 

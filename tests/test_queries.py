@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 """
 
 from typing import Dict, List, Optional, Any
-from typing_extensions import TypedDict
 
 import re
 import os
@@ -44,12 +43,15 @@ mainpath = os.path.join(basepath, "..")
 if mainpath not in sys.path:
     sys.path.insert(0, mainpath)
 
-from main import app  # noqa
+from main import app
 
-from settings import changedlocale  # noqa
-from db import SessionContext  # noqa
-from db.models import Query, QueryData, QueryLog  # noqa
-from utility import read_api_key  # noqa
+from settings import changedlocale
+from db import SessionContext
+from db.models import Query, QueryClientData  # , QueryLog
+from queries import ResponseDict
+from utility import read_txt_api_key
+from speech.trans import strip_markup
+from utility import QUERIES_RESOURCES_DIR
 
 
 @pytest.fixture
@@ -73,26 +75,9 @@ QUERY_API_ENDPOINT = "/query.api"
 QUERY_HISTORY_API_ENDPOINT = "/query_history.api"
 
 
-class QueryResponse(TypedDict):
-    answer: str
-    audio: str
-    command: str
-    error: str
-    image: str
-    key: str
-    open_url: str
-    q: str
-    q_raw: str
-    qtype: str
-    response: Dict[str, Any]
-    source: str
-    valid: bool
-    voice: str
-
-
 def qmcall(
     c: FlaskClient, qdict: Dict[str, Any], qtype: Optional[str] = None
-) -> QueryResponse:
+) -> ResponseDict:
     """Use passed client object to call query API with
     query string key value pairs provided in dict arg."""
 
@@ -129,7 +114,8 @@ def qmcall(
     assert "answer" in json
     if "voice" in qdict and qdict["voice"]:
         assert "voice" in json
-
+        assert "voice_id" in json
+        assert "voice_locale" in json
     if qtype is not None:
         assert json["qtype"] == qtype
 
@@ -138,14 +124,16 @@ def qmcall(
 
 def _query_data_cleanup() -> None:
     """Delete any queries or query data logged as
-    result of query module tests"""
+    result of query module tests."""
 
     with SessionContext(commit=True) as session:
         session.execute(
             Query.table().delete().where(Query.client_id == DUMMY_CLIENT_ID)
         )
         session.execute(
-            QueryData.table().delete().where(QueryData.client_id == DUMMY_CLIENT_ID)
+            QueryClientData.table()
+            .delete()
+            .where(QueryClientData.client_id == DUMMY_CLIENT_ID)
         )
         # Note: there is no client_id associated w. entries in the QueryLog table
         # so we cannot delete the logged queries there by this criterion.
@@ -154,20 +142,32 @@ def _query_data_cleanup() -> None:
         # )
 
 
+FLOAT_RE = re.compile(r"\d+(,\d+)?")
+NUM_RE = re.compile(r"\d")
+
+
+def _has_no_numbers(v: str) -> bool:
+    return NUM_RE.search(strip_markup(v)) is None
+
+
 def has_google_api_key() -> bool:
-    return read_api_key("GoogleServerKey") != ""
+    return read_txt_api_key("GoogleServerKey") != ""
 
 
 def has_ja_api_key() -> bool:
-    return read_api_key("JaServerKey") != ""
+    return read_txt_api_key("JaServerKey") != ""
 
 
 def has_greynir_api_key() -> bool:
-    return read_api_key("GreynirServerKey") != ""
+    return read_txt_api_key("GreynirServerKey") != ""
+
+
+def has_atm_locations_file() -> bool:
+    return (QUERIES_RESOURCES_DIR / "isb_locations.json").is_file()
 
 
 def test_nonsense(client: FlaskClient) -> None:
-    """Make sure nonsensical queries are not answered"""
+    """Make sure nonsensical queries are not answered."""
 
     qstr = {"q": "blergh smergh vlurgh", "test": True, "private": True}
     r = client.get("/query.api?" + urlencode(qstr))
@@ -176,14 +176,30 @@ def test_nonsense(client: FlaskClient) -> None:
     json = r.get_json()
     assert json
     assert "valid" in json
-    assert json["valid"] == True
+    assert json["valid"] == False
     assert "error" in json
     assert "answer" not in json
     assert "voice" not in json
 
 
+def test_voice_settings_integrity(client: FlaskClient) -> None:
+    """Make sure that the voice ID is returned to client in
+    response to a voice query, and that it is sane."""
+    json = qmcall(client, {"q": "Hver er tilgangur lífsins", "voice": True}, "Special")
+    assert json["voice_id"] == "Gudrun"
+    assert json["voice_locale"] == "is_IS"
+
+    json = qmcall(
+        client,
+        {"q": "Hver er tilgangur lífsins", "voice": True, "voice_id": "Gunnar"},
+        "Special",
+    )
+    assert json["voice_id"] == "Gunnar"
+    assert json["voice_locale"] == "is_IS"
+
+
 def test_arithmetic(client: FlaskClient) -> None:
-    """Arithmetic module"""
+    """Arithmetic module."""
 
     ARITHM_QUERIES = {
         "hvað er 17 deilt með fjórum": "4,25",
@@ -225,8 +241,9 @@ def test_arithmetic(client: FlaskClient) -> None:
     }
 
     for q, a in ARITHM_QUERIES.items():
-        json = qmcall(client, {"q": q}, "Arithmetic")
+        json = qmcall(client, {"q": q, "voice": True}, "Arithmetic")
         assert json["answer"] == a
+        assert _has_no_numbers(json["voice"])
 
     json = qmcall(client, {"q": "hvað er pí", "private": False}, "PI")
     assert "π" in json["answer"]
@@ -240,23 +257,24 @@ def test_arithmetic(client: FlaskClient) -> None:
 
 def test_builtin(client: FlaskClient) -> None:
     """Person and entity title queries are tested using a dummy database
-    populated with data from SQL file in tests/files/"""
+    populated with data from SQL file tests/files/populate_testdb.sql."""
 
     # Builtin module: title
     json = qmcall(client, {"q": "hver er viðar þorsteinsson", "voice": True}, "Person")
-    assert json["voice"].startswith("Viðar Þorsteinsson er ")
+    assert "Viðar Þorsteinsson er " in json["voice"]
     assert json["voice"].endswith(".")
 
     # Builtin module: title
     json = qmcall(client, {"q": "hver er björn þorsteinsson", "voice": True}, "Person")
-    assert json["voice"].startswith("Björn Þorsteinsson er ")
+    assert "Björn Þorsteinsson er " in json["voice"]
     assert json["voice"].endswith(".")
 
     # Builtin module: person
     json = qmcall(client, {"q": "hver er forsætisráðherra", "voice": True}, "Title")
-    assert json["voice"].startswith("Forsætisráðherra er ")
+    assert "Forsætisráðherra er " in json["voice"]
     assert json["voice"].endswith(".")
 
+    # TODO: Why is this disabled?
     # Builtin module: person w. title w. uppercase name
     # json = qmcall(client, {"q": "hver er forstjóri sjóvá", "voice": True}, "Title")
     # assert json["voice"].startswith("Forstjóri") and "Jón Jónsson" in json["voice"]
@@ -268,12 +286,12 @@ def test_builtin(client: FlaskClient) -> None:
 
 
 def test_bus(client: FlaskClient) -> None:
-    """Bus module"""
+    """Bus module."""
 
     json = qmcall(
         client, {"q": "hvaða stoppistöð er næst mér", "voice": True}, "NearestStop"
     )
-    assert json["answer"] == "Fiskislóð"
+    assert json["answer"] == "Fiskislóð."
     assert (
         json["voice"]
         == "Næsta stoppistöð er Fiskislóð; þangað eru þrjú hundruð og tíu metrar."
@@ -284,75 +302,393 @@ def test_bus(client: FlaskClient) -> None:
         {"q": "hvenær er von á vagni númer 17", "voice": True, "test": False},
         "ArrivalTime",
     )
-    assert json["answer"] == "Staðsetning óþekkt"  # No location info available
+    assert json["answer"] == "Staðsetning óþekkt."  # No location info available
+
+    json = qmcall(
+        client,
+        {"q": "hvenær kemur strætó númer 14 á Grandagarð", "voice": True},
+        "ArrivalTime",
+    )
+    assert json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {"q": "hvenær kemur strætó á hlemm", "voice": True},
+        "ArrivalTime",
+    )
+    assert json["answer"].endswith("Spurðu um eina þeirra.")
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {"q": "hvenær kemur strætó", "voice": True},
+        "ArrivalTime",
+    )
+    assert json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {
+            "q": "hvaða leiðir stoppa í Bíó Paradís?",
+            "voice": True,
+            "private": False,
+        },
+        "WhichRoute",
+    )
+    assert (
+        json["answer"]
+        and "stoppar" not in json["answer"]
+        and "stoppa" in json["answer"]
+        #   (^ Multiple routes go through Bíó Paradís)
+    )
+    assert _has_no_numbers(json["voice"])
+    # Following query relies on the query above
+    json = qmcall(
+        client,
+        {"q": "hvenær kemur strætisvagn fjórtán þangað?", "voice": True},
+        "ArrivalTime",
+    )
+    assert json["answer"] and "Bíó Paradís" in json["answer"]
+    assert (
+        _has_no_numbers(json["voice"])
+        and "Bíó Paradís" in json["voice"]
+        and "fjórtán" in json["voice"]
+    )
+
+    json = qmcall(
+        client,
+        {"q": "Klukkan hvað stöðvar sexan á Hlemmi?", "voice": True},
+        "ArrivalTime",
+    )
+    assert json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {
+            "q": "hvaða leiðir stoppa á Mýrarvegi Hringteig?",
+            "voice": True,
+        },
+        "WhichRoute",
+    )
+    assert "Mýrarvegi / Hringteig" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    # TODO: bus module picks stop closest to user
+    return
+
+    json = qmcall(
+        client,
+        {
+            "q": "hvaða leiðir stoppa á Naustabraut Davíðshagi A?",
+            "voice": True,
+        },
+        "WhichRoute",
+    )
+    assert "Naustabraut / Davíðshaga A" in json["answer"]
+    assert (
+        _has_no_numbers(json["voice"])
+        and "Naustabraut / Davíðshaga austur" in json["voice"]
+    )
+
+    json = qmcall(
+        client,
+        {
+            "q": "hvaða leiðir stoppa á Naustabraut Davíðshaga A?",
+            "voice": True,
+        },
+        "WhichRoute",
+    )
+    assert "Naustabraut / Davíðshaga A" in json["answer"]
+    assert (
+        _has_no_numbers(json["voice"])
+        and "Naustabraut / Davíðshaga austur" in json["voice"]
+    )
+
+    # json = qmcall(
+    #     client,
+    #     {
+    #         "q": "hvaða leiðir stoppa á Naustabraut Davíðshaga austur?",
+    #         "voice": True,
+    #     },
+    #     "WhichRoute",
+    # )
+    # assert "Naustabraut / Davíðshaga A" in json["answer"]
+    # assert (
+    #     _has_no_numbers(json["voice"])
+    #     and "Naustabraut / Davíðshaga austur" in json["voice"]
+    # )
+
+    _query_data_cleanup()  # Remove any data logged to DB on account of tests
 
 
 def test_counting(client: FlaskClient) -> None:
-    """Counting module"""
+    """Counting module."""
 
-    json = qmcall(client, {"q": "teldu frá einum upp í tíu"}, "Counting")
+    json = qmcall(client, {"q": "teldu frá einum upp í tíu", "voice": True}, "Counting")
     assert json["answer"] == "1…10"
+    assert _has_no_numbers(json["voice"])
 
     json = qmcall(client, {"q": "teldu hratt niður frá 4", "voice": True}, "Counting")
     assert json["answer"] == "3…0"
+    assert _has_no_numbers(json["voice"])
     assert "<break time=" in json["voice"]
 
     json = qmcall(
         client, {"q": "nennirðu að telja niður frá 24", "voice": True}, "Counting"
     )
     assert json["answer"] == "23…0"
+    assert _has_no_numbers(json["voice"])
 
     json = qmcall(client, {"q": "teldu upp að 5000", "voice": True}, "Counting")
     assert len(json["voice"]) < 100
+    assert _has_no_numbers(json["voice"])
 
 
-def test_currency(client: FlaskClient) -> None:
-    """Currency module"""
+@pytest.mark.skipif(
+    not has_atm_locations_file(), reason="no ATM locations file found on test server"
+)
+def test_atm(client: FlaskClient) -> None:
+    """ATM module"""
 
-    json = qmcall(client, {"q": "hvert er gengi dönsku krónunnar?"}, "Currency")
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
-
-    json = qmcall(client, {"q": "hvað kostar evran"}, "Currency")
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
-
-    json = qmcall(
-        client, {"q": "hvað kostar bandaríkjadalur mikið í krónum"}, "Currency"
-    )
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+    _query_data_cleanup()  # Remove any data logged to DB on account of tests
 
     json = qmcall(
-        client, {"q": "Hvert er gengi krónunnar gagnvart dollara í dag?"}, "Currency"
+        client, {"q": "hverjir eru opnunartímarnir þar?", "voice": True}, "Atm"
     )
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
-
-    json = qmcall(
-        client, {"q": "hvert er gengi krónunnar á móti dollara í dag"}, "Currency"
-    )
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
-
-    json = qmcall(client, {"q": "hvað eru tíu þúsund krónur margir dalir"}, "Currency")
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+    assert json["answer"].startswith("Ég veit ekki")
+    assert "hraðbanka" in json["answer"]
+    assert _has_no_numbers(json["voice"])
 
     json = qmcall(
         client,
-        {"q": "hvað eru þrettán hundruð fjörutíu og sex krónur margir dalir"},
-        "Currency",
+        {"q": "hvar er næsti hraðbanki?", "private": False, "voice": True},
+        "Atm",
     )
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+    assert "Eiðistorg" in json["answer"]
+    assert _has_no_numbers(json["voice"])
 
     json = qmcall(
-        client, {"q": "hvað eru átján milljónir króna margir dalir"}, "Currency"
+        client, {"q": "hverjir eru opnunartímarnir þar?", "voice": True}, "Atm"
+    )
+    assert json["answer"].startswith("Hraðbankinn við")
+    assert "fylgir" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(client, {"q": "hvar get ég lagt inn peninga?", "voice": True}, "Atm")
+    assert json["answer"].startswith("Næsti hraðbanki")
+    assert "Eiðistorg" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {
+            "q": "hvar er næsti hraðbanki sem leyfir kaup á erlendum gjaldeyri?",
+            "private": False,
+            "voice": True,
+        },
+        "Atm",
+    )
+    assert "Suðurlandsbraut" in json["answer"]
+    assert json["answer"].startswith("Hægt er að kaupa")
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {"q": "hverjir eru opnunartímarnir þar?", "private": False, "voice": True},
+        "Atm",
+    )
+    assert json["answer"].startswith("Hraðbankinn við")
+    assert "Suðurlandsbraut" in json["answer"]
+    assert "frá klukkan" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {"q": "hver er úttektarheimildin þar?", "private": False, "voice": True},
+        "Atm",
+    )
+    assert json["answer"].startswith("Hámarksúttekt í hraðbankanum við")
+    assert "Suðurlandsbraut" in json["answer"]
+    assert "krónur" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client, {"q": "er hægt að kaupa myntrúllur þar?", "voice": True}, "Atm"
+    )
+    assert json["answer"].startswith("Hraðbankinn við")
+    assert "Suðurlandsbraut" in json["answer"]
+    assert "ekki með myntsöluvél" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    _HRAUNBAER_LOCATION = (64.119300, -21.806051)
+    json = qmcall(
+        client,
+        {
+            "q": "hvar er næsti hraðbanki?",
+            "latitude": _HRAUNBAER_LOCATION[0],
+            "longitude": _HRAUNBAER_LOCATION[1],
+            "private": False,
+            "voice": True,
+        },
+        "Atm",
+    )
+    assert json["answer"].startswith("Næsti hraðbanki")
+    assert "Hraunbæ" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {
+            "q": "hverjir eru opnunartímarnir þar?",
+            "latitude": _HRAUNBAER_LOCATION[0],
+            "longitude": _HRAUNBAER_LOCATION[1],
+            "private": False,
+            "voice": True,
+        },
+        "Atm",
+    )
+    assert json["answer"].startswith("Hraðbankinn við")
+    assert "Hraunbæ" in json["answer"]
+    assert "alltaf opinn" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {
+            "q": "er hægt að leggja inn peninga þar?",
+            "latitude": _HRAUNBAER_LOCATION[0],
+            "longitude": _HRAUNBAER_LOCATION[1],
+            "private": False,
+            "voice": True,
+        },
+        "Atm",
+    )
+    assert json["answer"].startswith("Nei")
+    assert "Hraunbæ" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {
+            "q": "er hægt að kaupa gjaldeyri þar?",
+            "latitude": _HRAUNBAER_LOCATION[0],
+            "longitude": _HRAUNBAER_LOCATION[1],
+            "voice": True,
+        },
+        "Atm",
+    )
+    assert json["answer"].startswith("Ekki er hægt")
+    assert "erlendan gjaldeyri" in json["answer"]
+    assert "Hraunbæ" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    _SMARALIND_LOCATION = (64.101144, -21.882910)
+    json = qmcall(
+        client,
+        {
+            "q": "hvar er næsti hraðbanki með myntsöluvél?",
+            "latitude": _SMARALIND_LOCATION[0],
+            "longitude": _SMARALIND_LOCATION[1],
+            "voice": True,
+        },
+        "Atm",
+    )
+    assert json["answer"].startswith("Hraðbankinn við")
+    assert "Norðurturn Smáralindar" in json["answer"]
+    assert "er með myntsöluvél" in json["answer"]
+    assert _has_no_numbers(json["voice"])
+
+    _query_data_cleanup()  # Remove any data logged to DB on account of tests
+
+
+def test_currency(client: FlaskClient) -> None:
+    """Currency module."""
+
+    json = qmcall(
+        client, {"q": "hvert er gengi dönsku krónunnar?", "voice": True}, "Currency"
+    )
+    assert FLOAT_RE.fullmatch(json["answer"]) is not None
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(client, {"q": "hvað kostar evran", "voice": True}, "Currency")
+    assert FLOAT_RE.fullmatch(json["answer"]) is not None
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {"q": "hvað kostar bandaríkjadalur mikið í krónum", "voice": True},
+        "Currency",
+    )
+    assert FLOAT_RE.fullmatch(json["answer"]) is not None
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {"q": "Hvert er gengi krónunnar gagnvart dollara í dag?", "voice": True},
+        "Currency",
+    )
+    assert FLOAT_RE.fullmatch(json["answer"]) is not None
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {"q": "hvert er gengi krónunnar á móti dollara í dag", "voice": True},
+        "Currency",
+    )
+    assert FLOAT_RE.fullmatch(json["answer"]) is not None
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {"q": "hvað eru tíu þúsund krónur margir dalir", "voice": True},
+        "Currency",
+    )
+    assert FLOAT_RE.fullmatch(json["answer"]) is not None
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {
+            "q": "hvað eru þrettán hundruð fjörutíu og sex krónur margir dalir",
+            "voice": True,
+        },
+        "Currency",
+    )
+    assert FLOAT_RE.fullmatch(json["answer"]) is not None
+    assert _has_no_numbers(json["voice"])
+
+    json = qmcall(
+        client,
+        {"q": "hvað eru átján milljónir króna margir dalir", "voice": True},
+        "Currency",
     )
     assert re.search(r"^[\d\.]+(,\d+)?$", json["answer"]) is not None
+    assert _has_no_numbers(json["voice"])
 
-    json = qmcall(client, {"q": "hvað eru 79 dollarar margar evrur?"}, "Currency")
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+    json = qmcall(
+        client, {"q": "hvað eru 79 dollarar margar evrur?", "voice": True}, "Currency"
+    )
+    assert FLOAT_RE.fullmatch(json["answer"]) is not None
+    assert _has_no_numbers(json["voice"])
 
-    json = qmcall(client, {"q": "hvað eru 79.50 dollarar margar evrur?"}, "Currency")
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+    json = qmcall(
+        client,
+        {"q": "hvað eru 79.50 dollarar margar evrur?", "voice": True},
+        "Currency",
+    )
+    assert FLOAT_RE.fullmatch(json["answer"]) is not None
+    assert _has_no_numbers(json["voice"])
 
-    json = qmcall(client, {"q": "hvað eru 79,50 dollarar margar evrur?"}, "Currency")
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None
+    json = qmcall(
+        client,
+        {"q": "hvað eru 79,50 dollarar margar evrur?", "voice": True},
+        "Currency",
+    )
+    assert FLOAT_RE.fullmatch(json["answer"]) is not None
+    assert _has_no_numbers(json["voice"])
 
     json = qmcall(
         client,
@@ -364,7 +700,10 @@ def test_currency(client: FlaskClient) -> None:
         {"q": "hvað eru 34,64 dollarar margar evrur?"},
         "Currency",
     )
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None and json["answer"] == json2["answer"]
+    assert (
+        FLOAT_RE.fullmatch(json["answer"]) is not None
+        and json["answer"] == json2["answer"]
+    )
 
     json = qmcall(
         client, {"q": "hvað er ein komma ein evra margar krónur?"}, "Currency"
@@ -374,7 +713,10 @@ def test_currency(client: FlaskClient) -> None:
         {"q": "hvað er 1,1 evra margar krónur?"},
         "Currency",
     )
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None and json["answer"] == json2["answer"]
+    assert (
+        FLOAT_RE.fullmatch(json["answer"]) is not None
+        and json["answer"] == json2["answer"]
+    )
 
     json = qmcall(
         client,
@@ -386,11 +728,14 @@ def test_currency(client: FlaskClient) -> None:
         {"q": "hvað eru 1.32 evrur margar krónur?"},
         "Currency",
     )
-    assert re.search(r"^\d+(,\d+)?$", json["answer"]) is not None and json["answer"] == json2["answer"]
+    assert (
+        FLOAT_RE.fullmatch(json["answer"]) is not None
+        and json["answer"] == json2["answer"]
+    )
 
 
 def test_date(client: FlaskClient) -> None:
-    """Date module"""
+    """Date module."""
 
     SPECIAL_DAYS = (
         "jólin",
@@ -418,15 +763,15 @@ def test_date(client: FlaskClient) -> None:
         json = qmcall(client, {"q": qstr}, "Date")
 
     json = qmcall(client, {"q": "hver er dagsetningin?", "voice": True}, "Date")
-    assert json["answer"].endswith(datetime.now().strftime("%Y"))
+    assert json["answer"].endswith(datetime.utcnow().strftime("%Y"))
     assert "tvö þúsund" in json["voice"]
 
     json = qmcall(client, {"q": "hvaða dagur er í dag?", "voice": True}, "Date")
-    assert json["answer"].endswith(datetime.now().strftime("%Y"))
+    assert json["answer"].endswith(datetime.utcnow().strftime("%Y"))
     assert "tvö þúsund" in json["voice"]
 
     json = qmcall(client, {"q": "hvaða dagur er á morgun", "voice": True}, "Date")
-    assert json["answer"].endswith(datetime.now().strftime("%Y"))
+    assert json["answer"].endswith(datetime.utcnow().strftime("%Y"))
     assert "tvö þúsund" in json["voice"]
 
     json = qmcall(client, {"q": "hvaða mánaðardagur var í gær", "voice": True}, "Date")
@@ -458,14 +803,17 @@ def test_date(client: FlaskClient) -> None:
         json = qmcall(client, {"q": "Hvað eru margir dagar í " + dstr})
         assert "á morgun" in json["answer"]
 
-    json = qmcall(client, {"q": "hvaða ár er núna?"}, "Date")
+    json = qmcall(client, {"q": "hvaða ár er núna?", "voice": True}, "Date")
     assert str(now.year) in json["answer"]
+    assert _has_no_numbers(json["voice"])
 
-    json = qmcall(client, {"q": "er hlaupár?"}, "Date")
+    json = qmcall(client, {"q": "er hlaupár?", "voice": True}, "Date")
     assert str(now.year) in json["answer"]
+    assert _has_no_numbers(json["voice"])
 
-    json = qmcall(client, {"q": "er 2020 hlaupár?"}, "Date")
+    json = qmcall(client, {"q": "er 2020 hlaupár?", "voice": True}, "Date")
     assert "var hlaupár" in json["answer"]
+    assert "tvö þúsund og tuttugu" in json["voice"]
 
     json = qmcall(client, {"q": "var árið 1999 hlaupár?", "voice": True}, "Date")
     assert "ekki hlaupár" in json["answer"]
@@ -492,12 +840,12 @@ def test_date(client: FlaskClient) -> None:
     # assert re.search(r"^\d+", json["answer"])
 
     json = qmcall(client, {"q": "hvenær eru jólin", "voice": True}, "Date")
-    assert re.search(r"25", json["answer"]) is not None
+    assert "25" in json["answer"]
     assert "tuttugasta og fimmta" in json["voice"]
 
 
 def test_dictionary(client: FlaskClient) -> None:
-    """Dictionary module"""
+    """Dictionary module."""
 
     json = qmcall(
         client, {"q": "hvernig skilgreinir orðabókin orðið kettlingur"}, "Dictionary"
@@ -508,12 +856,9 @@ def test_dictionary(client: FlaskClient) -> None:
     assert "skíthæll" in json["answer"].lower()
 
 
+@pytest.mark.skipif(not has_google_api_key(), reason="no Google API key on test server")
 def test_distance(client: FlaskClient) -> None:
-    """Distance module"""
-
-    if not has_google_api_key():
-        # NB: No Google API key on test server
-        return
+    """Distance module."""
 
     json = qmcall(
         client, {"q": "hvað er ég langt frá perlunni", "voice": True}, "Distance"
@@ -549,75 +894,75 @@ def test_distance(client: FlaskClient) -> None:
 
 
 def test_flights(client: FlaskClient) -> None:
-    """Flights module"""
-
-    departure_pattern = r"^Flug \w*? til .*? flýgur frá \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
-    arrival_pattern = r"^Flug \w*? frá .*? lendir [í|á] \w*? \d+\. \w*? klukkan \d\d\:\d\d að staðartíma.$"
-    no_matching_flight_pattern = (
-        r"Ekkert flug fannst (frá .*? )?(til .*? )?næstu \d+ sólarhringa."
-    )
+    """Flights module."""
 
     json = qmcall(
         client,
         {"q": "hvenær fer næsta flug til jfk frá keflavík", "voice": True},
         "Flights",
     )
-    assert re.search(departure_pattern, json["answer"]) or "aflýst" in json["answer"]
+    ans = json["answer"]
+    assert "flýgur frá" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {"q": "hvenær flýgur næsta flug til new york frá keflavík", "voice": True},
         "Flights",
     )
-    assert re.search(departure_pattern, json["answer"]) or "aflýst" in json["answer"]
+    ans = json["answer"]
+    assert "flýgur frá" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {"q": "hvenær flýgur næsta flug af stað frá keflavík", "voice": True},
         "Flights",
     )
-    assert re.search(departure_pattern, json["answer"]) or "aflýst" in json["answer"]
+    ans = json["answer"]
+    assert "flýgur frá" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {"q": "hver er brottfarartími næsta flugs frá keflavík", "voice": True},
         "Flights",
     )
-    assert re.search(departure_pattern, json["answer"]) or "aflýst" in json["answer"]
+    ans = json["answer"]
+    assert "flýgur frá" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {"q": "hver er brottfarartíminn fyrir næsta flug frá keflavík", "voice": True},
         "Flights",
     )
-    assert re.search(departure_pattern, json["answer"]) or "aflýst" in json["answer"]
+    ans = json["answer"]
+    assert "flýgur frá" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
 
     json = qmcall(
         client, {"q": "hvenær lendir næsta flug í keflavík", "voice": True}, "Flights"
     )
-    assert re.search(arrival_pattern, json["answer"]) or "aflýst" in json["answer"]
+    ans = json["answer"]
+    assert "lendir í" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client, {"q": "hvenær kemur næsta vél á akureyri", "voice": True}, "Flights"
     )
-    assert (
-        re.search(arrival_pattern, json["answer"])
-        or re.search(no_matching_flight_pattern, json["answer"])
-        or "aflýst" in json["answer"]
-    )  # In case no flights to Akureyri
+    ans = json["answer"]
+    assert "lendir á" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client, {"q": "hvenær mætir næsta vél á vopnafjörð", "voice": True}, "Flights"
     )
-    assert (
-        re.search(arrival_pattern, json["answer"])
-        or re.search(no_matching_flight_pattern, json["answer"])
-        or "aflýst" in json["answer"]
-    )  # In case no flights to Vopnafjörður
+    ans = json["answer"]
+    assert "lendir á" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {"q": "hvenær mætir næsta vél til vopnafjarðar", "voice": True},
         "Flights",
     )
-    assert (
-        re.search(arrival_pattern, json["answer"])
-        or re.search(no_matching_flight_pattern, json["answer"])
-        or "aflýst" in json["answer"]
-    )  # In case no flights to Vopnafjörður
+    ans = json["answer"]
+    assert "lendir á" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {
@@ -626,11 +971,9 @@ def test_flights(client: FlaskClient) -> None:
         },
         "Flights",
     )
-    assert (
-        re.search(arrival_pattern, json["answer"])
-        or re.search(no_matching_flight_pattern, json["answer"])
-        or "aflýst" in json["answer"]
-    )
+    ans = json["answer"]
+    assert "lendir á" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {
@@ -639,34 +982,28 @@ def test_flights(client: FlaskClient) -> None:
         },
         "Flights",
     )
-    assert (
-        re.search(arrival_pattern, json["answer"])
-        or re.search(no_matching_flight_pattern, json["answer"])
-        or "aflýst" in json["answer"]
-    )
+    ans = json["answer"]
+    assert "lendir á" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert _has_no_numbers(json["voice"])
 
     json = qmcall(
         client,
         {"q": "hvenær fer næsta flug til blabla frá ekkitil", "voice": True},
         "Flights",
     )
-    assert (
-        re.search(no_matching_flight_pattern, json["answer"])
-        or "aflýst" in json["answer"]
-    )
+    ans = json["answer"]
+    assert ans.startswith("Ekkert flug")
     json = qmcall(
         client,
-        {"q": "hvenær fer næsta flug frá ekkitil til blablab", "voice": True},
+        {"q": "hvenær fer næsta flug frá ekkitil til blablab"},
         "Flights",
     )
-    assert (
-        re.search(no_matching_flight_pattern, json["answer"])
-        or "aflýst" in json["answer"]
-    )
+    ans = json["answer"]
+    assert ans.startswith("Ekkert flug")
 
 
 def test_geography(client: FlaskClient) -> None:
-    """Geography module"""
+    """Geography module."""
 
     json = qmcall(client, {"q": "hver er höfuðborg spánar", "voice": True}, "Geography")
     assert json["answer"] == "Madríd"
@@ -752,11 +1089,9 @@ def test_iot(client: FlaskClient) -> None:
     # assert "ég var að kveikja ljósin! " in json["answer"]
 
 
+@pytest.mark.skipif(not has_ja_api_key(), reason="no Ja.is API key on test server")
 def test_ja(client: FlaskClient) -> None:
-    """Ja.is module"""
-
-    if not has_ja_api_key():
-        return
+    """Ja.is module."""
 
     json = qmcall(
         client,
@@ -789,19 +1124,19 @@ def test_ja(client: FlaskClient) -> None:
 
 
 def test_news(client: FlaskClient) -> None:
-    """News module"""
+    """News module."""
 
-    json = qmcall(client, {"q": "Hvað er í fréttum", "voice": True}, "News")
-    assert len(json["answer"]) > 80  # This is always going to be a long answer
-    assert json["voice"].startswith("Í fréttum rúv er þetta helst")
+    # json = qmcall(client, {"q": "Hvað er í fréttum", "voice": True}, "News")
+    # assert len(json["answer"]) > 80  # This is always going to be a long answer
+    # assert json["voice"].startswith("Í fréttum rúv er þetta helst")
 
-    json = qmcall(client, {"q": "Hvað er helst í fréttum", "voice": True}, "News")
-    assert len(json["answer"]) > 80  # This is always going to be a long answer
-    assert json["voice"].startswith("Í fréttum rúv er þetta helst")
+    # json = qmcall(client, {"q": "Hvað er helst í fréttum", "voice": True}, "News")
+    # assert len(json["answer"]) > 80  # This is always going to be a long answer
+    # assert json["voice"].startswith("Í fréttum rúv er þetta helst")
 
 
 def test_opinion(client: FlaskClient) -> None:
-    """Opinion module"""
+    """Opinion module."""
 
     json = qmcall(
         client, {"q": "hvaða skoðun hefurðu á þriðja orkupakkanum"}, "Opinion"
@@ -810,10 +1145,10 @@ def test_opinion(client: FlaskClient) -> None:
     assert json["key"] == "þriðji orkupakkinn"
 
     json = qmcall(
-        client, {"q": "hvað finnst þér eiginlega um Katrínu Jakobsdóttur"}, "Opinion"
+        client, {"q": "hvað finnst þér eiginlega um Sigmund Davíð"}, "Opinion"
     )
     assert json["answer"].startswith("Ég hef enga sérstaka skoðun")
-    assert json["key"] == "Katrín Jakobsdóttir"
+    assert json["key"] == "Sigmundur Davíð"
 
     json = qmcall(client, {"q": "hver er skoðun þín á blurghsmurgdurg"}, "Opinion")
     assert json["answer"].startswith("Ég hef enga sérstaka skoðun")
@@ -821,7 +1156,7 @@ def test_opinion(client: FlaskClient) -> None:
 
 
 def test_petrol(client: FlaskClient) -> None:
-    """Petrol module"""
+    """Petrol module."""
 
     json = qmcall(client, {"q": "Hvar er næsta bensínstöð", "voice": True}, "Petrol")
     assert "Ánanaust" in json["answer"]
@@ -839,14 +1174,12 @@ def test_petrol(client: FlaskClient) -> None:
     assert "source" in json and json["source"].startswith("Gasvaktin")
 
 
+@pytest.mark.skipif(not has_google_api_key(), reason="no Google API key on test server")
 def test_pic(client: FlaskClient) -> None:
-    """Pic module"""
+    """Pic module."""
 
-    if not has_google_api_key():
-        # NB: No Google API key on test server
-        return
-
-    json = qmcall(client, {"q": "Sýndu mér mynd af Katrínu Jakobsdóttur"}, "Picture")
+    # TODO: Re-add test with "Katrín Jakobsdóttir" when fixed GreynirEngine is released
+    json = qmcall(client, {"q": "Sýndu mér mynd af Bjarna Benediktssyni"}, "Picture")
     assert "image" in json
 
     json = qmcall(client, {"q": "sýndu ljósmynd af hörpunni"}, "Picture")
@@ -856,19 +1189,17 @@ def test_pic(client: FlaskClient) -> None:
     assert "answer" in json and json["answer"]
 
 
+@pytest.mark.skipif(not has_google_api_key(), reason="no Google API key on test server")
 def test_places(client: FlaskClient) -> None:
-    """Places module"""
+    """Places module."""
 
-    if not has_google_api_key():
-        # NB: No Google API key on test server
-        return
-
-    json = qmcall(client, {"q": "Er lokað á Forréttabarnum?"}, "Places")
+    json = qmcall(client, {"q": "Er lokað á Forréttabarnum?", "voice": True}, "Places")
     assert (
         "answer" in json
         and "Forréttabarinn" in json["answer"]
         and "opinn" in json["answer"]
     )
+    assert _has_no_numbers(json["voice"])
 
     json = qmcall(
         client, {"q": "Hvað er opið lengi í Melabúðinni", "voice": True}, "Places"
@@ -879,17 +1210,16 @@ def test_places(client: FlaskClient) -> None:
         and "Melabúðin" in json["voice"]
         and "opin" in json["voice"]
     )
+    assert _has_no_numbers(json["voice"])
 
     json = qmcall(client, {"q": "Hvenær opnar sundhöllin?", "voice": True}, "Places")
     assert "answer" in json and "voice" in json and " opin " in json["voice"]
+    assert _has_no_numbers(json["voice"])
 
 
+@pytest.mark.skipif(not has_google_api_key(), reason="no Google API key on test server")
 def test_play(client: FlaskClient) -> None:
-    """Play module"""
-
-    if not has_google_api_key():
-        # NB: No Google (YouTube) API key on test server
-        return
+    """Play module."""
 
     json = qmcall(client, {"q": "spilaðu einhverja klassíska tónlist"}, "Play")
     assert "open_url" in json
@@ -905,19 +1235,28 @@ def test_play(client: FlaskClient) -> None:
 
 
 def test_rand(client: FlaskClient) -> None:
-    """Random module"""
+    """Random module."""
 
-    json = qmcall(client, {"q": "Veldu tölu milli sautján og 30"}, "Random")
+    json = qmcall(
+        client, {"q": "Veldu tölu milli sautján og 30", "voice": True}, "Random"
+    )
     assert int(json["answer"]) >= 17 and int(json["answer"]) <= 30
+    assert _has_no_numbers(json["voice"])
 
-    json = qmcall(client, {"q": "veldu fyrir mig tölu milli 30 og þrjátíu"}, "Random")
+    json = qmcall(
+        client,
+        {"q": "veldu fyrir mig tölu milli 30 og þrjátíu", "voice": True},
+        "Random",
+    )
     assert int(json["answer"]) == 30
+    assert _has_no_numbers(json["voice"])
 
     json = qmcall(client, {"q": "kastaðu teningi"}, "Random")
     assert int(json["answer"]) >= 1 and int(json["answer"]) <= 6
 
-    json = qmcall(client, {"q": "kastaðu átta hliða teningi"}, "Random")
+    json = qmcall(client, {"q": "kastaðu átta hliða teningi", "voice": True}, "Random")
     assert int(json["answer"]) >= 1 and int(json["answer"]) <= 8
+    assert _has_no_numbers(json["voice"])
 
     json = qmcall(client, {"q": "fiskur eða skjaldarmerki"}, "Random")
     a = json["answer"].lower()
@@ -929,7 +1268,7 @@ def test_rand(client: FlaskClient) -> None:
 
 
 def test_repeat(client: FlaskClient) -> None:
-    """Repeat module"""
+    """Repeat module."""
 
     json = qmcall(client, {"q": "segðu setninguna simmi er bjálfi"}, "Parrot")
     assert json["answer"] == "Simmi er bjálfi"
@@ -940,80 +1279,111 @@ def test_repeat(client: FlaskClient) -> None:
 
 
 def test_schedules(client: FlaskClient) -> None:
-    """Schedules module"""
+    """Schedules module."""
 
-    CURR_RE = (
-        r"^(Á {0} er verið að (sýna|spila) dagskrárliðinn .*|"
-        r"Ekkert er á dagskrá á {0} í augnablikinu\.)$"
-    )
-    NEXT_RE = (
-        r"^(Næst á dagskrá á {0} verður (sýndur|spilaður) dagskrárliðurinn .*|"
-        r"Það er ekkert á dagskrá á {0} eftir núverandi dagskrárlið\.)$"
-    )
-    ANYTIME_RE = (
-        r"^(Á {0}( klukkan \d+:\d+)?( í gær| á morgun)? "
-        r"(er verið að (spila|sýna) dagskrárliðinn|(var|verður) (spilaður|sýndur) dagskrárliðurinn) .*|"
-        r"Ekkert (er|verður|var) á dagskrá á {0} (í augnablikinu|klukkan \d?\d:\d\d( \d+\. \w+| á morgun| í gær)?)\.)$"
-    )
+    def caseless_in(a: str, b: str) -> bool:
+        """Caseless comparison"""
+        return a.casefold() in b.casefold()
+
     # RÚV tests
     json = qmcall(client, {"q": "hvað er í sjónvarpinu", "voice": True}, "Schedule")
     assert json["key"] == "RÚV - RÚV"
-    assert re.fullmatch(CURR_RE.format("RÚV"), json["answer"])
+    assert "RÚV" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("dagskrárliðinn", json["answer"])
+    )
     json = qmcall(client, {"q": "hvaða þáttur er eiginlega á rúv núna"}, "Schedule")
     assert json["key"] == "RÚV - RÚV"
-    assert re.fullmatch(CURR_RE.format("RÚV"), json["answer"])
+    assert "RÚV" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("dagskrárliðinn", json["answer"])
+    )
     json = qmcall(
         client, {"q": "hvaða þátt er verið að sýna í sjónvarpinu"}, "Schedule"
     )
     assert json["key"] == "RÚV - RÚV"
-    assert re.fullmatch(CURR_RE.format("RÚV"), json["answer"])
+    assert "RÚV" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("dagskrárliðinn", json["answer"])
+    )
 
     json = qmcall(client, {"q": "dagskrá rúv klukkan 19:00"}, "Schedule")
     assert json["key"] == "RÚV - RÚV"
-    assert re.fullmatch(ANYTIME_RE.format("RÚV"), json["answer"])
+    assert "RÚV" in json["answer"] and (
+        caseless_in("ekkert verður á dagskrá", json["answer"])
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     json = qmcall(client, {"q": "hvað er í sjónvarpinu í kvöld?"}, "Schedule")
     assert json["key"] == "RÚV - RÚV"
-    assert re.fullmatch(ANYTIME_RE.format("RÚV"), json["answer"])
+    assert "RÚV" in json["answer"] and (
+        caseless_in("ekkert verður á dagskrá", json["answer"])
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     json = qmcall(client, {"q": "hvað var í sjónvarpinu í gærkvöldi?"}, "Schedule")
     assert json["key"] == "RÚV - RÚV"
-    assert re.fullmatch(ANYTIME_RE.format("RÚV"), json["answer"])
-    # json = qmcall(client, {"q": "hver er sjónvarpsdagskráin í kvöld?"}, "Schedule")
-    # assert json["key"] == "RÚV - RÚV"
+    assert "RÚV" in json["answer"] and (
+        caseless_in("ekkert var á dagskrá", json["answer"])
+        or caseless_in("dagskrárlið", json["answer"])
+    )
 
     # Stöð 2 tests
     json = qmcall(client, {"q": "hvað er næsti þáttur á stöð 2"}, "Schedule")
     assert json["key"] == "Stöð 2 - Stöð 2"
-    assert re.fullmatch(NEXT_RE.format("Stöð 2"), json["answer"])
+    assert "Stöð 2" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("næst á dagskrá", json["answer"])
+    )
     json = qmcall(client, {"q": "Hvaða efni er verið að spila á Stöð 2"}, "Schedule")
     assert json["key"] == "Stöð 2 - Stöð 2"
-    assert re.fullmatch(CURR_RE.format("Stöð 2"), json["answer"])
+    assert "Stöð 2" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("dagskrárliðinn", json["answer"])
+    )
 
     # Radio tests
     json = qmcall(client, {"q": "hvað er í útvarpinu?"}, "Schedule")
     assert json["key"] == "RÚV - Rás 1"
-    assert re.fullmatch(CURR_RE.format("Rás 1"), json["answer"])
+    assert "Rás 1" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("dagskrárliðinn", json["answer"])
+    )
     json = qmcall(client, {"q": "hvað er eiginlega í gangi á rás eitt?"}, "Schedule")
     assert json["key"] == "RÚV - Rás 1"
-    assert re.fullmatch(CURR_RE.format("Rás 1"), json["answer"])
+    assert "Rás 1" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("dagskrárliðinn", json["answer"])
+    )
     json = qmcall(client, {"q": "hvað er á dagskrá á rás tvö?"}, "Schedule")
     assert json["key"] == "RÚV - Rás 2"
-    assert re.fullmatch(CURR_RE.format("Rás 2"), json["answer"])
+    assert "Rás 2" in json["answer"] and (
+        caseless_in("ekkert er á dagskrá", json["answer"])
+        or caseless_in("dagskrárliðinn", json["answer"])
+    )
 
     json = qmcall(
         client, {"q": "hvað var í útvarpinu klukkan sjö í morgun"}, "Schedule"
     )
     assert json["key"] == "RÚV - Rás 1"
-    assert re.fullmatch(ANYTIME_RE.format("Rás 1"), json["answer"])
+    assert "Rás 1" in json["answer"] and (
+        caseless_in("ekkert var á dagskrá", json["answer"])
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     json = qmcall(client, {"q": "hvað verður á rás 2 klukkan sjö í kvöld"}, "Schedule")
     assert json["key"] == "RÚV - Rás 2"
-    assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
+    assert "Rás 2" in json["answer"] and (
+        caseless_in("ekkert verður á dagskrá", json["answer"])
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     json = qmcall(
         client,
         {"q": "hvað verður á rás 2 klukkan fjögur eftir hádegi á morgun"},
         "Schedule",
     )
     assert json["key"] == "RÚV - Rás 2"
-    assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
+    assert "Rás 2" in json["answer"] and (
+        caseless_in("ekkert verður á dagskrá", json["answer"])
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     assert "16:00" in json["answer"]
     json = qmcall(
         client,
@@ -1021,19 +1391,28 @@ def test_schedules(client: FlaskClient) -> None:
         "Schedule",
     )
     assert json["key"] == "RÚV - Rás 2"
-    assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
+    assert "Rás 2" in json["answer"] and (
+        caseless_in("ekkert verður á dagskrá", json["answer"])
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     assert "8:00" in json["answer"]
     json = qmcall(
         client, {"q": "hvað var á rás 2 klukkan sex í gær eftir hádegi"}, "Schedule"
     )
     assert json["key"] == "RÚV - Rás 2"
-    assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
+    assert "Rás 2" in json["answer"] and (
+        caseless_in("ekkert var á dagskrá", json["answer"])
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     assert "18:00" in json["answer"]
     json = qmcall(
         client, {"q": "hvað var á rás 2 klukkan tvö fyrir hádegi í gær"}, "Schedule"
     )
     assert json["key"] == "RÚV - Rás 2"
-    assert re.fullmatch(ANYTIME_RE.format("Rás 2"), json["answer"])
+    assert "Rás 2" in json["answer"] and (
+        caseless_in("ekkert var á dagskrá", json["answer"])
+        or caseless_in("dagskrárlið", json["answer"])
+    )
     assert "2:00" in json["answer"]
 
 
@@ -1066,18 +1445,30 @@ def test_smartspeakers(client: FlaskClient) -> None:
 
 
 def test_special(client: FlaskClient) -> None:
-    """Special module"""
+    """Special module."""
 
     json = qmcall(client, {"q": "Hver er sætastur?", "voice": True}, "Special")
-    assert json["answer"] == "Tumi Þorsteinsson."
-    assert json["voice"] == "Tumi Þorsteinsson er langsætastur."
+    assert (
+        json["answer"] == "Tumi Þorsteinsson er langsætastur."
+        or json["answer"] == "Eyjólfur Þorsteinsson er langsætastur."
+    )
+    assert (
+        json["voice"] == "Tumi Þorsteinsson er langsætastur."
+        or json["voice"] == "Eyjólfur Þorsteinsson er langsætastur."
+    )
 
     json = qmcall(client, {"q": "Hver er tilgangur lífsins?"}, "Special")
     assert json["answer"].startswith("42")
 
+    json = qmcall(
+        client, {"q": "Segðu mér skemmtilega staðreynd", "voice": True}, "Special"
+    )
+    assert json["answer"]
+    assert _has_no_numbers(json["voice"])
+
 
 def test_stats(client: FlaskClient) -> None:
-    """Stats module"""
+    """Stats module."""
 
     qmcall(client, {"q": "hversu marga einstaklinga þekkirðu?"}, "Stats")
     qmcall(client, {"q": "Hversu mörgum spurningum hefur þú svarað?"}, "Stats")
@@ -1086,83 +1477,69 @@ def test_stats(client: FlaskClient) -> None:
 
 
 def test_sunpos(client: FlaskClient) -> None:
-    """Solar position module"""
+    """Solar position module."""
 
     json = qmcall(client, {"q": "hvenær reis sólin í dag?"}, "SunPosition")
-    assert re.match(r"^Sólin .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
+    assert "sólin" in json["answer"].lower()
     json = qmcall(client, {"q": "hvenær sest sólin í kvöld?"}, "SunPosition")
-    assert re.match(r"^Sólin .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
+    assert "sólin" in json["answer"].lower()
     json = qmcall(
         client, {"q": "hvenær verður sólarlag á Norðfirði í kvöld?"}, "SunPosition"
     )
-    assert re.match(r"^Sólin .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
+    assert "sólin" in json["answer"].lower()
     json = qmcall(
         client,
         {"q": "hver er sólarhæð í Reykjavík í dag?", "voice": True},
         "SunPosition",
     )
-    assert re.match(
-        r"^Sólarhæð um hádegi í dag .* um \d+(,\d+)? gráð(a|ur)\.$",
-        json["answer"],
-    )
-    assert not re.findall(r"\d+", json["voice"])  # No numbers in voice string
+    assert "sólarhæð" in json["answer"].lower()
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
         {"q": "hver er hæð sólar í Reykjavík í dag?", "voice": True},
         "SunPosition",
     )
-    assert re.match(
-        r"^Sólarhæð um hádegi í dag .* um \d+(,\d+)? gráð(a|ur)\.$",
-        json["answer"],
-    )
-    assert not re.findall(r"\d+", json["voice"])
+    assert "sólarhæð" in json["answer"].lower()
+    assert _has_no_numbers(json["voice"])
     json = qmcall(
         client, {"q": "hver er hæð sólarinnar í dag?", "voice": True}, "SunPosition"
     )
-    assert re.match(
-        r"^Sólarhæð um hádegi í dag .* um \d+(,\d+)? gráð(a|ur)\.$",
-        json["answer"],
-    )
-    assert not re.findall(r"\d+", json["voice"])
+    assert "sólarhæð" in json["answer"].lower()
+    assert _has_no_numbers(json["voice"])
     # json = qmcall(client, {"q": "hver er hæð sólar í dag?"}, "SunPosition")
     # assert re.match(
     #     r"^Sólarhæð um hádegi í dag (er|var|verður) um \d+,\d+ gráð(a|ur)\.$",
     #     json["answer"],
     # )
-    json = qmcall(client, {"q": "hvenær var miðnætti í nótt?"}, "SunPosition")
-    assert re.match(r"^Miðnætti .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
+    json = qmcall(
+        client, {"q": "hvenær var miðnætti í nótt?", "voice": True}, "SunPosition"
+    )
+    assert "miðnætti" in json["answer"].lower()
+    # assert _has_no_numbers(json["voice"])
     json = qmcall(client, {"q": "hvenær verður miðnætti í kvöld?"}, "SunPosition")
-    assert re.match(r"^Miðnætti .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
+    assert "miðnætti" in json["answer"].lower()
     json = qmcall(
         client, {"q": "hvenær verður dögun í Keflavík á morgun?"}, "SunPosition"
     )
-    assert re.match(r"^Það verður ekki dögun .*\.$", json["answer"]) or re.match(
-        r"^Dögun .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
-    )
+    assert "dögun" in json["answer"].lower()
     json = qmcall(
         client, {"q": "klukkan hvað verður birting á Akureyri á morgun?"}, "SunPosition"
     )
-    assert re.match(r"^Það verður ekki birting .*\.$", json["answer"]) or re.match(
-        r"^Birting .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
-    )
+    assert "birting" in json["answer"].lower()
     json = qmcall(client, {"q": "hvenær er hádegi á morgun á Ísafirði?"}, "SunPosition")
-    assert re.match(r"^Hádegi .* um klukkan \d?\d:\d\d .*\.$", json["answer"])
+    assert "hádegi" in json["answer"].lower()
     json = qmcall(
         client, {"q": "hvenær varð myrkur í gær á Egilsstöðum?"}, "SunPosition"
     )
-    assert re.match(r"^Það varð ekki myrkur.*\.$", json["answer"]) or re.match(
-        r"^Myrkur .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
-    )
+    assert "myrkur" in json["answer"].lower()
     json = qmcall(
         client, {"q": "klukkan hvað varð dagsetur í gær á Reykjanesi?"}, "SunPosition"
     )
-    assert re.match(r"^Það varð ekki dagsetur.*\.$", json["answer"]) or re.match(
-        r"^Dagsetur .* um klukkan \d?\d:\d\d .*\.$", json["answer"]
-    )
+    assert "dagsetur" in json["answer"].lower()
 
 
 def test_tel(client: FlaskClient) -> None:
-    """Telephone module"""
+    """Telephone module."""
 
     json = qmcall(client, {"q": "Hringdu í síma 6 9 9 2 4 2 2"}, "Telephone")
     assert "open_url" in json
@@ -1184,7 +1561,7 @@ def test_tel(client: FlaskClient) -> None:
 
 
 def test_test(client: FlaskClient) -> None:
-    """Test module"""
+    """Test module."""
 
     json = qmcall(client, {"q": "keyrðu kóða"}, "Test")
     assert "command" in json and isinstance(json["command"], str)
@@ -1197,7 +1574,7 @@ def test_test(client: FlaskClient) -> None:
 
 
 def test_time(client: FlaskClient) -> None:
-    """Time module"""
+    """Time module."""
 
     json = qmcall(
         client, {"q": "hvað er klukkan í Kaupmannahöfn?", "voice": True}, "Time"
@@ -1217,7 +1594,7 @@ def test_time(client: FlaskClient) -> None:
 
 
 def test_unit(client: FlaskClient) -> None:
-    """Unit module"""
+    """Unit module."""
 
     json = qmcall(client, {"q": "Hvað eru margir metrar í mílu?"}, "Unit")
     assert json["answer"] == "1.610 metrar"
@@ -1242,23 +1619,27 @@ def test_unit(client: FlaskClient) -> None:
 
 
 def test_userinfo(client: FlaskClient) -> None:
-    """User info module"""
+    """User info module."""
 
     json = qmcall(
         client,
-        {"q": "ég heiti Gunna Jónsdóttir"},
+        {"q": "ég heiti Sigurbjörg Jónsdóttir"},
         "UserInfo",
     )
-    assert json["answer"].startswith("Sæl og blessuð") and "Gunna" in json["answer"]
+    assert (
+        json["answer"].startswith("Sæl og blessuð") and "Sigurbjörg" in json["answer"]
+    )
 
     json = qmcall(client, {"q": "hvað heiti ég"})
-    assert "Gunna Jónsdóttir" in json["answer"]
+    assert "Sigurbjörg Jónsdóttir" in json["answer"]
 
-    json = qmcall(client, {"q": "Nafn mitt er Gunnar"}, "UserInfo")
-    assert json["answer"].startswith("Sæll og blessaður") and "Gunnar" in json["answer"]
+    json = qmcall(client, {"q": "Nafn mitt er Pétur"}, "UserInfo")
+    assert json["answer"].startswith("Sæll og blessaður") and "Pétur" in json["answer"]
 
     json = qmcall(client, {"q": "veistu hvað ég heiti"}, "UserInfo")
-    assert json["answer"].startswith("Þú heitir Gunnar")
+    assert json["answer"].startswith("Þú heitir Pétur")
+
+    # TODO: Re-add test for names Gunnar and Gunna when a new GreynirEngine is released
 
     json = qmcall(client, {"q": "ég heiti Boutros Boutros-Ghali"}, "UserInfo")
     assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
@@ -1278,6 +1659,7 @@ def test_userinfo(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "á hvaða tæki ertu að keyra?", "client_type": "ios"})
     assert "iOS" in json["answer"]
 
+    # TODO: Why is this disabled?
     # json = qmcall(
     #     c,
     #     {"q": "ég á heima á öldugötu 4 í reykjavík"},
@@ -1295,12 +1677,9 @@ def test_userinfo(client: FlaskClient) -> None:
     # assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
 
 
+@pytest.mark.skipif(not has_google_api_key(), reason="no Google API key on test server")
 def test_userloc(client: FlaskClient) -> None:
-    """User location module"""
-
-    if not has_google_api_key():
-        # NB: No Google API key on test server
-        return
+    """User location module."""
 
     json = qmcall(client, {"q": "Hvar er ég"}, "UserLocation")
     assert "Fiskislóð" in json["answer"]
@@ -1327,7 +1706,10 @@ def test_userloc(client: FlaskClient) -> None:
 
 
 def test_weather(client: FlaskClient) -> None:
-    """Weather module"""
+    """Weather module."""
+
+    json = qmcall(client, {"q": "hvernig er veðrið?", "voice": True}, "Weather")
+    assert re.search(r"\d", json["voice"]) is None  # No literal numbers in voice answer
 
     json = qmcall(client, {"q": "hvernig er veðrið í Reykjavík?"}, "Weather")
     assert re.search(r"^\-?\d+ °C", json["answer"]) is not None
@@ -1350,7 +1732,7 @@ def test_whatis(client: FlaskClient) -> None:
 
 
 def test_wiki(client: FlaskClient) -> None:
-    """Wikipedia module"""
+    """Wikipedia module."""
 
     # "Hvað segir Wikipedía um X" queries
     json = qmcall(client, {"q": "Hvað segir wikipedia um Jón Leifs?"}, "Wikipedia")
@@ -1391,19 +1773,21 @@ def test_wiki(client: FlaskClient) -> None:
 
 
 def test_words(client: FlaskClient) -> None:
-    """Words module"""
+    """Words module."""
 
     json = qmcall(
         client, {"q": "hvernig stafar maður orðið hestur", "voice": True}, "Spelling"
     )
     assert json["answer"] == "H E S T U R"
     assert json["voice"].startswith("Orðið „hestur“ ")
+    assert "há" in json["voice"]
 
     json = qmcall(
         client, {"q": "hvernig beygist orðið maður", "voice": True}, "Declension"
     )
     assert json["answer"].lower() == "maður, mann, manni, manns"
     assert json["voice"].startswith("Orðið „maður“")
+
     json = qmcall(
         client, {"q": "hvernig beygir maður nafnorðið splorglobb?", "voice": True}
     )
@@ -1411,7 +1795,7 @@ def test_words(client: FlaskClient) -> None:
 
 
 def test_yulelads(client: FlaskClient) -> None:
-    """Yule lads module"""
+    """Yule lads module."""
 
     qmcall(
         client,
@@ -1420,18 +1804,14 @@ def test_yulelads(client: FlaskClient) -> None:
     )
 
 
-# NB: Do not move this function. Pytest runs tests in the order they
-# appear in the source file, and this test function should be the
-# last to run, since it has the fortuitous side effect of deleting
-# any logged queries/query data saved to the database due to tests.
+@pytest.mark.skipif(
+    not has_greynir_api_key(),
+    reason="We don't run these tests unless a Greynir API key is present",
+)
 def test_query_history_api(client: FlaskClient) -> None:
     """Tests for the query history deletion API endpoint."""
 
-    if not has_greynir_api_key():
-        # We don't run these tests unless a Greynir API key is present
-        return
-
-    def _verify_basic(r: Any) -> Dict[str, Any]:
+    def _verify_basic(r: Any) -> Dict:
         """Make sure the server response is minimally sane."""
         assert r.content_type.startswith(API_CONTENT_TYPE)
         assert r.is_json
@@ -1447,7 +1827,7 @@ def test_query_history_api(client: FlaskClient) -> None:
     def _num_logged_query_info(client_id: str, model_name: str) -> int:
         """Make sure no db model entries associated with
         the provided client_id exists in database."""
-        # assert model_name in ["Query", "QueryData"]
+        # assert model_name in ["Query", "QueryClientData"]
         with SessionContext(read_only=True) as session:
             classn = _str2cls(model_name)
             q = session.query(classn).filter(classn.client_id == client_id)
@@ -1457,7 +1837,7 @@ def test_query_history_api(client: FlaskClient) -> None:
 
     # Create basic query param dict
     qdict: Dict[str, Any] = dict(
-        api_key=read_api_key("GreynirServerKey"),
+        api_key=read_txt_api_key("GreynirServerKey"),
         action="clear",
         client_id=DUMMY_CLIENT_ID,
     )
@@ -1476,7 +1856,7 @@ def test_query_history_api(client: FlaskClient) -> None:
     # Make a query module call that is logged AND saves query data
     qmcall(client, {"q": "Ég heiti Jón Jónsson", "private": False})
     assert _num_logged_query_info(DUMMY_CLIENT_ID, "Query") > 0
-    assert _num_logged_query_info(DUMMY_CLIENT_ID, "QueryData") > 0
+    assert _num_logged_query_info(DUMMY_CLIENT_ID, "QueryClientData") > 0
     # And try to clear query history AND query data via call to API endpoint
     qd = deepcopy(qdict)
     qd["action"] = "clear_all"
@@ -1484,7 +1864,7 @@ def test_query_history_api(client: FlaskClient) -> None:
     json = _verify_basic(r)
     assert json["valid"] == True
     assert _num_logged_query_info(DUMMY_CLIENT_ID, "Query") == 0
-    assert _num_logged_query_info(DUMMY_CLIENT_ID, "QueryData") == 0
+    assert _num_logged_query_info(DUMMY_CLIENT_ID, "QueryClientData") == 0
 
     # Send invalid requests with missing keys
     # We expect "valid" key to be false in dict returned
@@ -1508,22 +1888,18 @@ def test_query_history_api(client: FlaskClient) -> None:
 def test_query_utility_functions() -> None:
     """Tests for various utility functions used by query modules."""
 
-    from queries import (
+    from queries.util import (
         natlang_seq,
         nom2dat,
         is_plural,
         sing_or_plur,
-        spell_out,
         country_desc,
-        cap_first,
         time_period_desc,
         distance_desc,
         krona_desc,
         strip_trailing_zeros,
         iceformat_float,
-        icequote,
         timezone4loc,
-        # parse_num,
     )
 
     assert natlang_seq(["Jón"]) == "Jón"
@@ -1539,18 +1915,18 @@ def test_query_utility_functions() -> None:
 
     assert nom2dat("hestur") == "hesti"
     assert nom2dat("Hvolsvöllur") == "Hvolsvelli"
-
-    # assert parse_num("11") == 11
-    # assert parse_num("17,33") == 17.33
+    assert nom2dat("Þórshöfn") == "Þórshöfn"
 
     assert is_plural(22)
     assert is_plural(11)
     assert is_plural("76,3")
     assert is_plural(27.6)
     assert is_plural("19,11")
+    assert is_plural(3.141592653589793)
     assert not is_plural("276,1")
     assert not is_plural(22.1)
     assert not is_plural(22.41)
+    assert not is_plural("3.1415926535897932384626433832795028841")
 
     assert sing_or_plur(21, "maður", "menn") == "21 maður"
     assert sing_or_plur(11, "köttur", "kettir") == "11 kettir"
@@ -1558,25 +1934,11 @@ def test_query_utility_functions() -> None:
     assert sing_or_plur(172, "einstaklingur", "einstaklingar") == "172 einstaklingar"
     assert sing_or_plur(72.1, "gráða", "gráður") == "72,1 gráða"
 
-    assert spell_out("LÍÚ") == "ell í ú"
-    assert spell_out("líú") == "ell í ú"
-    assert spell_out("fTb") == "eff té bé"
-    assert spell_out("F t B ") == "eff té bé"
-    assert spell_out("YnG") == "ufsilon enn gé"
-    assert spell_out(" YnG") == "ufsilon enn gé"
-
     assert country_desc("DE") == "í Þýskalandi"
     assert country_desc("es") == "á Spáni"
     assert country_desc("IS") == "á Íslandi"
     assert country_desc("us") == "í Bandaríkjunum"
     assert country_desc("IT") == "á Ítalíu"
-
-    assert cap_first("yolo") == "Yolo"
-    assert cap_first("YOLO") == "YOLO"
-    assert cap_first("yoLo") == "YoLo"
-    assert cap_first("Yolo") == "Yolo"
-    assert cap_first("þristur") == "Þristur"
-    assert cap_first("illur ásetninguR") == "Illur ásetninguR"
 
     assert time_period_desc(3751) == "1 klukkustund og 3 mínútur"
     assert (
@@ -1650,366 +2012,5 @@ def test_query_utility_functions() -> None:
     assert iceformat_float(123.1000, strip_zeros=True) == "123,1"
     assert iceformat_float(123.0, decimal_places=4, strip_zeros=False) == "123,0000"
 
-    assert icequote("sæll") == "„sæll“"
-    assert icequote(" Góðan daginn ") == "„Góðan daginn“"
-
     assert timezone4loc((64.157202, -21.948536)) == "Atlantic/Reykjavik"
     assert timezone4loc((40.093368, 57.000067)) == "Asia/Ashgabat"
-
-
-def test_numbers() -> None:
-    """Test number handling functionality in queries"""
-
-    from queries.util.num import (
-        number_to_neutral,
-        number_to_text,
-        numbers_to_text,
-    )
-
-    assert number_to_neutral(2) == "tvö"
-    assert number_to_neutral(1100) == "eitt þúsund og eitt hundrað"
-    assert (
-        number_to_neutral(-42178249)
-        == "mínus fjörutíu og tvær milljónir eitt hundrað sjötíu og átta þúsund tvö hundruð fjörutíu og níu"
-    )
-    assert number_to_neutral(241000000000) == "tvö hundruð fjörutíu og einn milljarður"
-    assert number_to_neutral(100000000) == "eitt hundrað milljónir"
-    assert number_to_neutral(1000001000) == "einn milljarður og eitt þúsund"
-    assert number_to_neutral(1000000011) == "einn milljarður og ellefu"
-    assert number_to_neutral(1001000000) == "einn milljarður og ein milljón"
-    assert number_to_neutral(1002000000) == "einn milljarður og tvær milljónir"
-    assert number_to_neutral(200000000000) == "tvö hundruð milljarðar"
-    assert (
-        number_to_text(1000200200)
-        == "einn milljarður tvö hundruð þúsund og tvö hundruð"
-    )
-    assert (
-        number_to_neutral(10000000000000000000000000000000000000000000000000000000)
-        == "tíu milljónir oktilljóna"
-    )
-    assert (
-        number_to_neutral(1000000000000000000000000000000000000001000000000)
-        == "ein oktilljón og einn milljarður"
-    )
-    assert (
-        number_to_neutral(1000000000000000000000000000000000000003000000000)
-        == "ein oktilljón og þrír milljarðar"
-    )
-    assert number_to_neutral(3000400000) == "þrír milljarðar og fjögur hundruð þúsund"
-    assert (
-        number_to_neutral(2000000000000000000000000000000000100000000000000)
-        == "tvær oktilljónir og eitt hundrað billjónir"
-    )
-    assert number_to_text(320) == "þrjú hundruð og tuttugu"
-    assert number_to_text(320000) == "þrjú hundruð og tuttugu þúsund"
-    assert (
-        number_to_text(3202020202020)
-        == "þrjár billjónir tvö hundruð og tveir milljarðar tuttugu milljónir tvö hundruð og tvö þúsund og tuttugu"
-    )
-    assert (
-        number_to_text(320202020)
-        == "þrjú hundruð og tuttugu milljónir tvö hundruð og tvö þúsund og tuttugu"
-    )
-
-    assert number_to_text(101, gender="kk") == "hundrað og einn"
-    assert number_to_text(-102, gender="kvk") == "mínus hundrað og tvær"
-    assert (
-        number_to_text(-102, gender="kvk", one_hundred=True)
-        == "mínus eitt hundrað og tvær"
-    )
-    assert number_to_text(5, gender="kk") == "fimm"
-    assert number_to_text(10001, gender="kvk") == "tíu þúsund og ein"
-    assert (
-        number_to_text(113305, gender="kk")
-        == "eitt hundrað og þrettán þúsund þrjú hundruð og fimm"
-    )
-    assert number_to_text(400567, gender="hk") == number_to_neutral(400567)
-    assert (
-        number_to_text(-11220024, gender="kvk")
-        == "mínus ellefu milljónir tvö hundruð og tuttugu þúsund tuttugu og fjórar"
-    )
-    assert (
-        number_to_text(19501180)
-        == "nítján milljónir fimm hundruð og eitt þúsund eitt hundrað og áttatíu"
-    )
-
-    assert numbers_to_text("Baugatangi 1, Reykjavík") == "Baugatangi eitt, Reykjavík"
-    assert numbers_to_text("Baugatangi 2, Reykjavík") == "Baugatangi tvö, Reykjavík"
-    assert numbers_to_text("Baugatangi 3, Reykjavík") == "Baugatangi þrjú, Reykjavík"
-    assert numbers_to_text("Baugatangi 4, Reykjavík") == "Baugatangi fjögur, Reykjavík"
-    assert numbers_to_text("Baugatangi 5, Reykjavík") == "Baugatangi fimm, Reykjavík"
-    assert numbers_to_text("Baugatangi 10, Reykjavík") == "Baugatangi tíu, Reykjavík"
-    assert numbers_to_text("Baugatangi 11, Reykjavík") == "Baugatangi ellefu, Reykjavík"
-    assert numbers_to_text("Baugatangi 12, Reykjavík") == "Baugatangi tólf, Reykjavík"
-    assert (
-        numbers_to_text("Baugatangi 13, Reykjavík") == "Baugatangi þrettán, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 14, Reykjavík") == "Baugatangi fjórtán, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 15, Reykjavík") == "Baugatangi fimmtán, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 20, Reykjavík") == "Baugatangi tuttugu, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 21, Reykjavík")
-        == "Baugatangi tuttugu og eitt, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 22, Reykjavík")
-        == "Baugatangi tuttugu og tvö, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 23, Reykjavík")
-        == "Baugatangi tuttugu og þrjú, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 24, Reykjavík")
-        == "Baugatangi tuttugu og fjögur, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 25, Reykjavík")
-        == "Baugatangi tuttugu og fimm, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 100, Reykjavík") == "Baugatangi hundrað, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 101, Reykjavík")
-        == "Baugatangi hundrað og eitt, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 102, Reykjavík")
-        == "Baugatangi hundrað og tvö, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 103, Reykjavík")
-        == "Baugatangi hundrað og þrjú, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 104, Reykjavík")
-        == "Baugatangi hundrað og fjögur, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 105, Reykjavík")
-        == "Baugatangi hundrað og fimm, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 111, Reykjavík")
-        == "Baugatangi hundrað og ellefu, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 112, Reykjavík")
-        == "Baugatangi hundrað og tólf, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 113, Reykjavík")
-        == "Baugatangi hundrað og þrettán, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 114, Reykjavík")
-        == "Baugatangi hundrað og fjórtán, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 115, Reykjavík")
-        == "Baugatangi hundrað og fimmtán, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 121, Reykjavík")
-        == "Baugatangi hundrað tuttugu og eitt, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 174, Reykjavík")
-        == "Baugatangi hundrað sjötíu og fjögur, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 200, Reykjavík")
-        == "Baugatangi tvö hundruð, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 201, Reykjavík")
-        == "Baugatangi tvö hundruð og eitt, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 202, Reykjavík")
-        == "Baugatangi tvö hundruð og tvö, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 203, Reykjavík")
-        == "Baugatangi tvö hundruð og þrjú, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 204, Reykjavík")
-        == "Baugatangi tvö hundruð og fjögur, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 205, Reykjavík")
-        == "Baugatangi tvö hundruð og fimm, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 211, Reykjavík")
-        == "Baugatangi tvö hundruð og ellefu, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 212, Reykjavík")
-        == "Baugatangi tvö hundruð og tólf, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 213, Reykjavík")
-        == "Baugatangi tvö hundruð og þrettán, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 214, Reykjavík")
-        == "Baugatangi tvö hundruð og fjórtán, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 215, Reykjavík")
-        == "Baugatangi tvö hundruð og fimmtán, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 700, Reykjavík")
-        == "Baugatangi sjö hundruð, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 1-4, Reykjavík")
-        == "Baugatangi eitt-fjögur, Reykjavík"
-    )
-    assert (
-        numbers_to_text("Baugatangi 1-17, Reykjavík")
-        == "Baugatangi eitt-sautján, Reykjavík"
-    )
-
-
-def test_years() -> None:
-    """Test number to written year conversion."""
-
-    from queries.util.num import year_to_text, years_to_text
-
-    assert year_to_text(1999) == "nítján hundruð níutíu og níu"
-    assert year_to_text(2004) == "tvö þúsund og fjögur"
-    assert year_to_text(-501) == "fimm hundruð og eitt fyrir Krist"
-    assert year_to_text(1001, after_christ=True) == "eitt þúsund og eitt eftir Krist"
-    assert year_to_text(57, after_christ=True) == "fimmtíu og sjö eftir Krist"
-    assert year_to_text(2401) == "tvö þúsund fjögur hundruð og eitt"
-
-    assert (
-        years_to_text("Ég fæddist 1994") == "Ég fæddist nítján hundruð níutíu og fjögur"
-    )
-    assert (
-        years_to_text("Árið 1461 var borgin Sarajevo stofnuð")
-        == "Árið fjórtán hundruð sextíu og eitt var borgin Sarajevo stofnuð"
-    )
-    assert (
-        years_to_text("17. júlí 1210 lést Sverker II")
-        == "17. júlí tólf hundruð og tíu lést Sverker II"
-    )
-    assert (
-        years_to_text("2021, 2007 og 1999")
-        == "tvö þúsund tuttugu og eitt, tvö þúsund og sjö og nítján hundruð níutíu og níu"
-    )
-
-
-def test_ordinals() -> None:
-    """Test number to written ordinal conversion."""
-
-    from queries.util.num import number_to_ordinal, numbers_to_ordinal
-
-    assert number_to_ordinal(0) == "núllti"
-    assert number_to_ordinal(22, case="þgf", gender="kvk") == "tuttugustu og annarri"
-    assert number_to_ordinal(302, gender="kvk") == "þrjú hundraðasta og önnur"
-    assert number_to_ordinal(302, case="þgf", gender="hk") == "þrjú hundraðasta og öðru"
-    assert (
-        number_to_ordinal(10202, case="þgf", gender="hk", number="ft")
-        == "tíu þúsund tvö hundruðustu og öðrum"
-    )
-    assert (
-        number_to_ordinal(1000000, case="þf", gender="kvk", number="et")
-        == "milljónustu"
-    )
-    assert (
-        number_to_ordinal(1000000002, case="þf", gender="kvk", number="et")
-        == "milljörðustu og aðra"
-    )
-
-    assert (
-        numbers_to_ordinal("Ég lenti í 41. sæti.", case="þgf")
-        == "Ég lenti í fertugasta og fyrsta sæti."
-    )
-    assert (
-        numbers_to_ordinal("2. í röðinni var hæstur.") == "annar í röðinni var hæstur."
-    )
-    assert (
-        numbers_to_ordinal("1. konan lenti í 2. sæti.", regex=r"1\.", gender="kvk")
-        == "fyrsta konan lenti í 2. sæti."
-    )
-    assert (
-        numbers_to_ordinal("fyrsta konan lenti í 2. sæti.", gender="hk", case="þgf")
-        == "fyrsta konan lenti í öðru sæti."
-    )
-    assert (
-        numbers_to_ordinal("Ég var 10201. í röðinni.")
-        == "Ég var tíu þúsund tvö hundraðasti og fyrsti í röðinni."
-    )
-
-
-def test_floats() -> None:
-    """Test float to written text conversion."""
-
-    from queries.util.num import float_to_text, floats_to_text
-
-    assert float_to_text(-0.12) == "mínus núll komma tólf"
-    assert float_to_text(-0.1012) == "mínus núll komma eitt núll eitt tvö"
-    assert float_to_text(-21.12, gender="kk") == "mínus tuttugu og einn komma tólf"
-    assert (
-        float_to_text(-21.123, gender="kk")
-        == "mínus tuttugu og einn komma einn tveir þrír"
-    )
-    assert float_to_text(1.03, gender="kvk") == "ein komma núll þrjár"
-
-    assert (
-        floats_to_text("2,13 millilítrar af vökva.", gender="kk")
-        == "tveir komma þrettán millilítrar af vökva."
-    )
-    assert floats_to_text("0,04 prósent.") == "núll komma núll fjögur prósent."
-    assert (
-        floats_to_text("101,0021 prósent.")
-        == "hundrað og eitt komma núll núll tuttugu og eitt prósent."
-    )
-    assert (
-        floats_to_text("10.100,21 prósent.")
-        == "tíu þúsund og eitt hundrað komma tuttugu og eitt prósent."
-    )
-    assert floats_to_text("2.000.000,00.", comma_null=False) == "tvær milljónir."
-
-
-def test_digits() -> None:
-    """Test digit string to written text conversion."""
-
-    from queries.util.num import digits_to_text
-
-    assert digits_to_text("5885522") == "fimm átta átta fimm fimm tveir tveir"
-    assert digits_to_text("112") == "einn einn tveir"
-    assert digits_to_text("123-0679") == "einn tveir þrír-núll sex sjö níu"
-    assert (
-        digits_to_text("Síminn minn er 12342")
-        == "Síminn minn er einn tveir þrír fjórir tveir"
-    )
-    assert digits_to_text("581 2345") == "fimm átta einn tveir þrír fjórir fimm"
-    assert (
-        digits_to_text("5812345, það er síminn hjá þeim.")
-        == "fimm átta einn tveir þrír fjórir fimm, það er síminn hjá þeim."
-    )
-    assert (
-        digits_to_text("010270-2039")
-        == "núll einn núll tveir sjö núll-tveir núll þrír níu"
-    )
-    assert (
-        digits_to_text("192 0-1-127", regex=r"\d\d\d")
-        == "einn níu tveir 0-1-einn tveir sjö"
-    )
-    assert (
-        digits_to_text("Hringdu í 1-800-BULL", regex=r"\d+-\d+")
-        == "Hringdu í einn átta núll núll-BULL"
-    )

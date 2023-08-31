@@ -5,7 +5,7 @@
 
     Neural Network Query Client
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -99,13 +99,17 @@ class ApiClient:
     def get(self, data):
         """Handler for GET requests"""
         assert self._url is not None
-        response = requests.get(self._url, json.dumps(data), headers=self.headers)
+        response = requests.get(
+            self._url, json.dumps(data), headers=self.headers, timeout=10
+        )
         return json.loads(response.text)
 
     def post(self, data):
         """Handler for POST requests"""
         assert self._url is not None
-        response = requests.post(self._url, json.dumps(data), headers=self.headers)
+        response = requests.post(
+            self._url, json.dumps(data), headers=self.headers, timeout=10
+        )
         return response.text
 
     def dispatch(self, request):
@@ -124,11 +128,10 @@ class ApiClient:
         if request.method == "GET":
             return self.get(parsed_data)
 
-        return abort(400, "Bad method {}".format(request.method))
+        return abort(400, f"Bad method '{request.method}'")
 
 
 class TranslationApiClient(ApiClient):
-
     required_fields = ["contents"]
 
     target = "en"

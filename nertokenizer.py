@@ -4,7 +4,7 @@
 
     High-level tokenizer and named entity recognizer
 
-    Copyright (C) 2022 Miðeind ehf.
+    Copyright (C) 2023 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 
     Named entity recognition requires access to the SQL scraper database
     and is thus not appropriate for inclusion in reynir.bintokenizer,
-    as GreynirPackage does not (and should not) require a database to be present.
+    as GreynirEngine does not (and should not) require a database to be present.
 
 """
 
@@ -47,14 +47,11 @@ def recognize_entities(
     enclosing_session: Optional[Session] = None,
     token_ctor: Type[TOK] = TOK,
 ) -> Iterator[Tok]:
-
     """Parse a stream of tokens looking for (capitalized) entity names
     The algorithm implements N-token lookahead where N is the
     length of the longest entity name having a particular initial word.
     Adds a named entity recognition layer on top of the
-    reynir.bintokenizer.tokenize() function.
-
-    """
+    reynir.bintokenizer.tokenize() function."""
 
     # Token queue
     tq: List[Tok] = []
@@ -82,7 +79,7 @@ def recognize_entities(
                     q = q.filter(Entity.name == w)
                 return q.all()
             except OperationalError as e:
-                logging.warning("SQL error in fetch_entities(): {0}".format(e))
+                logging.warning(f"SQL error in fetch_entities(): {e}")
                 return []
 
         def query_entities(w: str) -> List[Entity]:
@@ -135,9 +132,7 @@ def recognize_entities(
             return token_ctor.Person(token.txt, tfull.person_names)
 
         try:
-
             while True:
-
                 token = next(token_stream)
 
                 if not token.txt:  # token.kind != TOK.WORD:
