@@ -63,7 +63,7 @@ from queries.util import (
     query_json_api,
     read_grammar_file,
 )
-from tree import Result, Node
+from tree import ParamList, Result, Node
 from geo import in_iceland, RVK_COORDS, near_capital_region, ICE_PLACENAME_BLACKLIST
 from iceaddr import placename_lookup  # type: ignore
 from iceweather import observation_for_closest, observation_for_station, forecast_text  # type: ignore
@@ -438,56 +438,56 @@ def get_umbrella_answer(query: Query, result: Result) -> Optional[AnswerTuple]:
     return None
 
 
-def QWeather(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWeather(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = _WEATHER_QTYPE
 
 
-def QWeatherCapitalRegion(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWeatherCapitalRegion(node: Node, params: ParamList, result: Result) -> None:
     result["location"] = "capital"
 
 
-def QWeatherCountry(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWeatherCountry(node: Node, params: ParamList, result: Result) -> None:
     result["location"] = "general"
 
 
-def QWeatherOpenLoc(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWeatherOpenLoc(node: Node, params: ParamList, result: Result) -> None:
     """Store preposition and placename to use in voice
     description, e.g. "Á Raufarhöfn" """
     result["subject"] = result._node.contained_text().title()
 
 
-def Nl(node: Node, params: QueryStateDict, result: Result) -> None:
+def Nl(node: Node, params: ParamList, result: Result) -> None:
     """Noun phrase containing name of specific location"""
     result["location"] = cap_first(result._nominative)
 
 
-def EfLiður(node: Node, params: QueryStateDict, result: Result) -> None:
+def EfLiður(node: Node, params: ParamList, result: Result) -> None:
     """Don't change the case of possessive clauses"""
     result._nominative = result._text
 
 
-def FsMeðFallstjórn(node: Node, params: QueryStateDict, result: Result) -> None:
+def FsMeðFallstjórn(node: Node, params: ParamList, result: Result) -> None:
     """Don't change the case of prepositional clauses"""
     result._nominative = result._text
 
 
-def QWeatherCurrent(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWeatherCurrent(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "CurrentWeather"
 
 
-def QWeatherWind(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWeatherWind(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "CurrentWeather"
 
 
-def QWeatherForecast(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWeatherForecast(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "WeatherForecast"
 
 
-def QWeatherTemperature(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWeatherTemperature(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "CurrentWeather"
 
 
-def QWeatherUmbrella(node: Node, params: QueryStateDict, result: Result) -> None:
+def QWeatherUmbrella(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "Umbrella"
 
 

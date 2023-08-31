@@ -706,7 +706,11 @@ def query_arrival_time(query: Query, result: Result) -> AnswerTuple:
     voice_answer = assemble(va)
     return dict(answer=answer), answer, voice_answer
 
-_ROUTE_SORT: Callable[[str], int] = lambda num: int("".join(i for i in num if i.isdecimal()))
+
+_ROUTE_SORT: Callable[[str], int] = lambda num: int(
+    "".join(i for i in num if i.isdecimal())
+)
+
 
 def query_which_route(query: Query, result: Result):
     """Which routes stop at a given bus stop"""

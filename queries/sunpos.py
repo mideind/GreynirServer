@@ -30,7 +30,7 @@
 
 from typing import Dict, List, Iterable, Tuple, Optional, Union, cast
 
-from tree import Result, Node
+from tree import ParamList, Result, Node
 from queries import Query, QueryStateDict
 
 from queries.util import (
@@ -139,12 +139,12 @@ _SOLAR_ENUM_TO_WORD: Dict[_SOLAR_POS_ENUM, str] = {
 }
 
 
-def QSunQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunQuery(node: Node, params: ParamList, result: Result) -> None:
     # Set the query type
     result.qtype = _SUN_QTYPE
 
 
-def QSunIsWillWas(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunIsWillWas(node: Node, params: ParamList, result: Result) -> None:
     if result._nominative == "verður":
         result["will_be"] = True
 
@@ -152,65 +152,65 @@ def QSunIsWillWas(node: Node, params: QueryStateDict, result: Result) -> None:
 ### QSunPositions ###
 
 
-def QSunMiðnætti(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunMiðnætti(node: Node, params: ParamList, result: Result) -> None:
     result["solar_position"] = _SOLAR_POSITIONS.MIÐNÆTTI
 
 
-def QSunDögun(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunDögun(node: Node, params: ParamList, result: Result) -> None:
     result["solar_position"] = _SOLAR_POSITIONS.DÖGUN
 
 
-def QSunBirting(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunBirting(node: Node, params: ParamList, result: Result) -> None:
     result["solar_position"] = _SOLAR_POSITIONS.BIRTING
 
 
-def QSunSólris(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunSólris(node: Node, params: ParamList, result: Result) -> None:
     result["solar_position"] = _SOLAR_POSITIONS.SÓLRIS
 
 
-def QSunHádegi(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunHádegi(node: Node, params: ParamList, result: Result) -> None:
     result["solar_position"] = _SOLAR_POSITIONS.HÁDEGI
 
 
-def QSunSólarlag(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunSólarlag(node: Node, params: ParamList, result: Result) -> None:
     result["solar_position"] = _SOLAR_POSITIONS.SÓLARLAG
 
 
-def QSunMyrkur(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunMyrkur(node: Node, params: ParamList, result: Result) -> None:
     result["solar_position"] = _SOLAR_POSITIONS.MYRKUR
 
 
-def QSunDagsetur(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunDagsetur(node: Node, params: ParamList, result: Result) -> None:
     result["solar_position"] = _SOLAR_POSITIONS.DAGSETUR
 
 
-def QSunSólarhæð(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunSólarhæð(node: Node, params: ParamList, result: Result) -> None:
     result["solar_position"] = _SOLAR_POSITIONS.SÓLARHÆÐ
 
 
 ### QSunDates ###
 
 
-def QSunToday(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunToday(node: Node, params: ParamList, result: Result) -> None:
     result["date"] = datetime.date.today()
 
 
-def QSunYesterday(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunYesterday(node: Node, params: ParamList, result: Result) -> None:
     result["date"] = datetime.date.today() - datetime.timedelta(days=1)
 
 
-def QSunTomorrow(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunTomorrow(node: Node, params: ParamList, result: Result) -> None:
     result["date"] = datetime.date.today() + datetime.timedelta(days=1)
 
 
 ### QSunLocation ###
 
 
-def QSunCapitalRegion(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunCapitalRegion(node: Node, params: ParamList, result: Result) -> None:
     result["city"] = "Reykjavík"
 
 
-def QSunArbitraryLocation(node: Node, params: QueryStateDict, result: Result) -> None:
+def QSunArbitraryLocation(node: Node, params: ParamList, result: Result) -> None:
     result["city"] = capitalize_placename(result._nominative)
 
 

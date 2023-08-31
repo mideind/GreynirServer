@@ -1,0 +1,43 @@
+
+[connections.philips_hue]
+display_name = "Philips Hue Hub"
+mdns_name = "_hue._tcp.local"
+db_name = "philips_hue"
+name = "Hue Hub"
+brand = "Philips"
+group = "iot_lights"
+logo = "https://upload.wikimedia.org/wikipedia/en/a/a1/Philips_hue_logo.png"
+# lightbulb_outline_rounded
+icon = 0xf854
+webview_home = '{host}/iot/hue-instructions?client_id={client_id}&iot_group=iot_lights&iot_name=philips_hue'
+webview_connect = '{host}/iot/hue-connection?client_id={client_id}&request_url={host}'
+
+[connections.sonos]
+display_name = "Sonos"
+mdns_name = "_sonos._tcp.local"
+db_name = "sonos"
+name = "Sonos"
+brand = "Sonos Inc."
+group = "iot_speakers"
+logo = "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Sonos-company.png/800px-Sonos-company.png"
+# speaker_outlined
+icon = 0xf3c1
+webview_home = '{host}/iot/sonos-instructions?client_id={client_id}&iot_group=iot_speakers&iot_name=sonos'
+webview_connect = '{host}/iot/sonos-connection?client_id={client_id}&request_url={host}'
+connect_url = 'https://api.sonos.com/login/v3/oauth?client_id={api_key}&response_type=code&state={client_id}&scope=playback-control-all&redirect_uri={host}%2Fconnect_sonos.api'
+api_key_filename = "SonosKey"
+
+
+# [connections.spotify]
+# display_name = "Spotify"
+# db_name = "spotify"
+# name = "Spotify"
+# brand = "Spotify"
+# group = "iot_streaming"
+# logo = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/168px-Spotify_logo_without_text.svg.png"
+# # music_note_outlined
+# icon = 0xf1fb
+# webview_home = '{host}/iot/spotify-instructions?client_id={client_id}&iot_group=iot_streaming&iot_name=spotify'
+# webview_connect = '{host}/iot/spotify-connection?client_id={client_id}&request_url={host}'
+# connect_url = 'https://accounts.spotify.com/authorize?client_id={api_key}&response_type=code&redirect_uri={host}%2Fconnect_spotify.api&state={client_id}&scope=user-read-playback-state+user-modify-playback-state+user-read-playback-position+user-read-recently-played+app-remote-control+user-top-read+user-read-currently-playing+playlist-read-private+streaming'
+# api_key_filename = "SpotifyKey"

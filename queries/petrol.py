@@ -33,7 +33,7 @@ import cachetools  # type: ignore
 import random
 
 from geo import distance
-from tree import Result, Node
+from tree import ParamList, Result, Node
 from queries import Query, QueryStateDict
 from queries.util import (
     query_json_api,
@@ -89,20 +89,20 @@ QUERY_NONTERMINALS = {"QPetrol"}
 GRAMMAR = read_grammar_file("petrol")
 
 
-def QPetrolQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPetrolQuery(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = _PETROL_QTYPE
 
 
-def QPetrolClosestStation(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPetrolClosestStation(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "ClosestStation"
 
 
-def QPetrolCheapestStation(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPetrolCheapestStation(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = "CheapestStation"
 
 
 def QPetrolClosestCheapestStation(
-    node: Node, params: QueryStateDict, result: Result
+    node: Node, params: ParamList, result: Result
 ) -> None:
     result.qkey = "ClosestCheapestStation"
 

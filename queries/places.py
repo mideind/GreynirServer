@@ -51,7 +51,7 @@ from queries.util import (
     read_grammar_file,
 )
 from speech.trans import gssml
-from tree import Result, Node
+from tree import ParamList, Result, Node
 
 
 _PLACES_QTYPE = "Places"
@@ -86,27 +86,27 @@ def _fix_placename(pn: str) -> str:
     return _PLACENAME_MAP.get(p, p)
 
 
-def QPlacesQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPlacesQuery(node: Node, params: ParamList, result: Result) -> None:
     result["qtype"] = _PLACES_QTYPE
 
 
-def QPlacesOpeningHours(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPlacesOpeningHours(node: Node, params: ParamList, result: Result) -> None:
     result["qkey"] = "OpeningHours"
 
 
-def QPlacesIsOpen(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPlacesIsOpen(node: Node, params: ParamList, result: Result) -> None:
     result["qkey"] = "IsOpen"
 
 
-def QPlacesIsClosed(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPlacesIsClosed(node: Node, params: ParamList, result: Result) -> None:
     result["qkey"] = "IsClosed"
 
 
-def QPlacesAddress(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPlacesAddress(node: Node, params: ParamList, result: Result) -> None:
     result["qkey"] = "PlaceAddress"
 
 
-def QPlacesSubject(node: Node, params: QueryStateDict, result: Result) -> None:
+def QPlacesSubject(node: Node, params: ParamList, result: Result) -> None:
     result["subject_nom"] = _fix_placename(result._nominative)
 
 

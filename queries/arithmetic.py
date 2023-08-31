@@ -48,7 +48,7 @@ import random
 
 from queries import AnswerTuple, ContextDict, Query, QueryStateDict
 from queries.util import iceformat_float, gen_answer, read_grammar_file
-from tree import Result, Node, TerminalNode
+from tree import Result, Node, TerminalNode, ParamList
 from speech.trans import gssml
 
 
@@ -315,7 +315,7 @@ def terminal_num(t: Optional[Result]) -> Optional[Union[str, int, float]]:
     return None
 
 
-def QArNumberWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArNumberWord(node: Node, params: ParamList, result: Result) -> None:
     result._canonical = result._text
     if "context_reference" in result or "error_context_reference" in result:
         # Already pushed the context reference
@@ -328,11 +328,11 @@ def QArNumberWord(node: Node, params: QueryStateDict, result: Result) -> None:
         add_num(result._nominative, result)
 
 
-def QArOrdinalWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArOrdinalWord(node: Node, params: ParamList, result: Result) -> None:
     add_num(result._canonical, result)
 
 
-def QArFractionWord(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArFractionWord(node: Node, params: ParamList, result: Result) -> None:
     fn = result._canonical.lower()
     fp = _FRACTION_WORDS.get(fn)
     if not fp:
@@ -344,13 +344,13 @@ def QArFractionWord(node: Node, params: QueryStateDict, result: Result) -> None:
     result.frac_desc = fn  # Used in voice answer
 
 
-def QArMultOperator(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArMultOperator(node: Node, params: ParamList, result: Result) -> None:
     """'tvisvar_sinnum', 'þrisvar_sinnum', 'fjórum_sinnum'"""
     add_num(result._nominative, result)
     result.op = "multiply"
 
 
-def QArLastResult(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArLastResult(node: Node, params: ParamList, result: Result) -> None:
     """Reference to previous result, usually via the words
     'það' or 'því' ('Hvað er það sinnum sautján?')"""
     q = result.state.get("query")
@@ -364,45 +364,43 @@ def QArLastResult(node: Node, params: QueryStateDict, result: Result) -> None:
         result.context_reference = True
 
 
-def QArPlusOperator(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArPlusOperator(node: Node, params: ParamList, result: Result) -> None:
     result.op = "plus"
 
 
-def QArSumOperator(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArSumOperator(node: Node, params: ParamList, result: Result) -> None:
     result.op = "plus"
 
 
-def QArMinusOperator(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArMinusOperator(node: Node, params: ParamList, result: Result) -> None:
     result.op = "minus"
 
 
-def QArDivisionOperator(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArDivisionOperator(node: Node, params: ParamList, result: Result) -> None:
     result.op = "divide"
 
 
-def QArMultiplicationOperator(
-    node: Node, params: QueryStateDict, result: Result
-) -> None:
+def QArMultiplicationOperator(node: Node, params: ParamList, result: Result) -> None:
     result.op = "multiply"
 
 
-def QArSquareRootOperator(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArSquareRootOperator(node: Node, params: ParamList, result: Result) -> None:
     result.op = "sqrt"
 
 
-def QArPowOperator(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArPowOperator(node: Node, params: ParamList, result: Result) -> None:
     result.op = "pow"
 
 
-def QArPercentOperator(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArPercentOperator(node: Node, params: ParamList, result: Result) -> None:
     result.op = "percent"
 
 
-def QArFractionOperator(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArFractionOperator(node: Node, params: ParamList, result: Result) -> None:
     result.op = "fraction"
 
 
-def Prósenta(node: Node, params: QueryStateDict, result: Result) -> None:
+def Prósenta(node: Node, params: ParamList, result: Result) -> None:
     # Find percentage terminal
     d = result.find_descendant(t_base="prósenta")
     if d:
@@ -412,7 +410,7 @@ def Prósenta(node: Node, params: QueryStateDict, result: Result) -> None:
         raise ValueError("No auxiliary information in percentage token")
 
 
-def QArCurrencyOrNum(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArCurrencyOrNum(node: Node, params: ParamList, result: Result) -> None:
     amount: Optional[Node] = node.first_child(lambda n: n.has_t_base("amount"))
     if amount is not None:
         # Found an amount terminal node
@@ -422,15 +420,15 @@ def QArCurrencyOrNum(node: Node, params: QueryStateDict, result: Result) -> None
             add_num(result.amount, result)
 
 
-def QArPiQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArPiQuery(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = "PI"
 
 
-def QArWithVAT(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArWithVAT(node: Node, params: ParamList, result: Result) -> None:
     result.op = "with_vat"
 
 
-def QArWithoutVAT(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArWithoutVAT(node: Node, params: ParamList, result: Result) -> None:
     result.op = "without_vat"
 
 
@@ -438,7 +436,7 @@ def QArVAT(node: Node, params: QueryStateDict, result: Result) -> None:
     result.qtype = "VSK"
 
 
-def QArithmetic(node: Node, params: QueryStateDict, result: Result) -> None:
+def QArithmetic(node: Node, params: ParamList, result: Result) -> None:
     # Set query type
     result.qtype = _ARITHMETIC_QTYPE
 

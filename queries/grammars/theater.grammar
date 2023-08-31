@@ -1,0 +1,222 @@
+Query →
+    QTheater '?'?
+
+QTheater →
+    QTheaterQuery
+    | QTheaterHotWord
+
+QTheaterQuery →
+    QTheaterDialogue
+
+QTheaterHotWord →
+    QTheaterNames
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "leikhúsmiða"
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "miða" "í" QTheaterNames
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "miða" "á" QTheaterNames "sýningu"
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta QTheaterNames
+    | QTheaterEgVil? QTheaterKaupaFaraFaPanta "leikhússýningu"
+
+QTheaterNames →
+    'leikhús'
+    | 'þjóðleikhús'
+    | 'Þjóðleikhús'
+    | 'Borgarleikhús'
+    | 'borgarleikhús'
+
+
+QTheaterKaupaFaraFaPanta →
+    "kaupa" "mér"?
+    | "fara" "á"
+    | "fara" "í"
+    | "fá"
+    | "panta"
+
+QTheaterDialogue →
+    QTheaterShowQuery
+    | QTheaterShowDateQuery
+    | QTheaterMoreDates
+    | QTheaterPreviousDates
+    | QTheaterShowSeatCountQuery
+    | QTheaterShowLocationQuery
+    | QTheaterShowPrice
+    | QTheaterShowLength
+    | QTheaterOptions
+    | QTheaterYes
+    | QTheaterNo
+    | QTheaterCancel
+    | QTheaterStatus
+
+QTheaterOptions →
+    QTheaterGeneralOptions
+    | QTheaterShowOptions
+    | QTheaterDateOptions
+    | QTheaterRowOptions
+    | QTheaterSeatOptions
+
+QTheaterGeneralOptions →
+    "hverjir"? "eru"? "valmöguleikarnir"
+    | "hvert" "er" "úrvalið"
+    | "hvað" "er" "í" "boði"
+
+QTheaterShowOptions →  
+    "hvaða" "sýningar" "eru" "í" "boði"
+
+QTheaterDateOptions →
+    "hvaða" "dagsetningar" "eru" "í" "boði"
+    | "hvaða" "dagar" "eru" "í" "boði"
+    | "hvaða" "dagsetningar" "er" "hægt" "að" "velja" "á" "milli"
+
+QTheaterRowOptions →
+    "hvaða" "raðir" "eru" QTheaterIBodiLausar
+    | "hvaða" "röð" "er" QTheaterIBodiLausar
+    | "hvaða" "bekkir" "eru" QTheaterIBodiLausar
+    | "hvaða" "bekkur" "er" QTheaterIBodiLausar
+
+QTheaterSeatOptions →
+    "hvaða" "sæti" "eru" QTheaterIBodiLausar
+    | "hverjir" "eru" "sæta" "valmöguleikarnir"
+
+QTheaterIBodiLausar →
+    "í" "boði"
+    | "lausar"
+    | "lausir"
+    | "laus"
+
+QTheaterShowQuery → QTheaterEgVil? "velja" 'sýning' QTheaterShowName 
+    > QTheaterEgVil? "fara" "á" 'sýning' QTheaterShowName
+    > QTheaterShowOnlyName
+
+QTheaterShowOnlyName → QTheaterShowName
+
+QTheaterShowName → Nl
+
+
+QTheaterShowPrice →
+    "hvað" "kostar" "einn"? 'miði'
+    | "hvað" "kostar" "1"? 'miði'
+    | "hvað" "kostar" "einn"? 'miðinn' "á" "sýninguna"
+
+QTheaterShowLength →
+    "hvað" "er" "sýningin" "löng"
+
+QTheaterShowDateQuery →
+    QTheaterEgVil? "fara"? "á"? 'sýning'? QTheaterShowDate
+
+QTheaterShowDate →
+    QTheaterDateTime | QTheaterDate | QTheaterTime
+
+QTheaterDateTime →
+    tímapunkturafs
+
+QTheaterDate →
+    dagsafs
+    | dagsföst
+
+QTheaterTime →
+    "klukkan"? tími
+
+QTheaterMoreDates →
+    "hverjar"? "eru"? "næstu" "þrjár"? QSyningarTimar
+    | "hverjir" "eru" "næstu" "þrír"? QSyningarTimar
+    | "get" "ég" "fengið" "að" "sjá" "næstu" "þrjá"? QSyningarTimar
+    | QTheaterEgVil? "sjá"? "fleiri" QSyningarTimar 
+    | QTheaterEgVil? "sjá"? "næstu" "þrjá"? QSyningarTimar
+
+QTheaterPreviousDates →
+    QTheaterEgVil "sjá" "fyrri" QSyningarTimar
+    | "hvaða" QSyningarTimar "eru" "á" "undan" "þessum"?
+    | "get" "ég" "fengið" "að" "sjá" QSyningarTimar "á" "undan" "þessum"?
+    | QTheaterEgVil? "sjá"? QSyningarTimar "á" "undan" "þessum"?
+
+QSyningarTimar →
+    'sýningartíma'
+    | "dagsetningar"
+    | "sýningartímana"
+
+QTheaterShowSeatCountQuery →
+    QTheaterSeatCountNum 
+    | QTheaterEgVil? "fá"? QTheaterNum "sæti"
+    | QTheaterEgVil? "fá"? QTheaterNum "miða"
+    | QTheaterEgVil? "fá"? QTheaterNum "miða" "á" "sýninguna"
+
+QTheaterSeatCountNum →
+    to | töl | tala
+
+QTheaterShowLocationQuery →
+    QTheaterShowRow
+    | QTheaterShowSeats
+
+QTheaterShowRow →
+    QTheaterRodBekkur
+    | QTheaterEgVil QTheaterVeljaRod QTheaterRodBekkur
+
+QTheaterVeljaRod →
+    "velja" "sæti"? "í"?
+    | "sitja" "í"
+    | "fá" "sæti" "í"
+    | "fá" "sæti" "á"
+
+QTheaterRodBekkur →
+    QTheaterRowNum
+    | QTheaterRodBekk "númer"? QTheaterNum
+    | QTheaterNum "bekk"
+    | QTheaterNum "röð"
+
+QTheaterRowNum →
+    to | töl | tala
+
+QTheaterShowSeats →
+    QTheaterShowSeatsNum
+    | QTheaterEgVil? "sæti"? "númer"? QTheaterNum "til" QTheaterNum? 
+    | QTheaterEgVil? "sæti" "númer"? QTheaterNum "og" QTheaterNum? 
+    | "ég" "vil" "sitja" "í" "röð" "númer" QTheaterNum
+
+QTheaterShowSeatsNum →
+    to | töl | tala
+
+QTheaterDateOptions → 
+    "hvaða" "dagsetningar" "eru" "í" "boði"
+
+QTheaterRodBekk → "röð" | "bekk"
+
+QTheaterEgVil →
+    "ég"? "vil"
+    | "ég" "vill"
+    | "mig" "langar" "að"
+    | "mig" "langar" "í"
+
+QTheaterNum →
+    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
+    # töl is an undeclinable number word ('sautján')
+    # tala is a number ('17')
+    to | töl | tala
+
+QTheaterYes → "já" "já"* | "endilega" | "já" "takk" | "játakk" | "já" "þakka" "þér" "fyrir" | "já" "takk" "kærlega" "fyrir"? | "jább" "takk"?
+
+QTheaterNo → "nei" "takk"? | "nei" "nei"* | "neitakk" | "ómögulega"
+
+QTheaterCancel → "ég" "hætti" "við"
+    | QTheaterEgVil "hætta" "við" QTheaterPontun?
+
+QTheaterStatus →
+    "staðan"
+    | "hver" "er" "staðan" "á" QTheaterPontun?
+    | "hver" "er" "staðan"
+    | "segðu" "mér" "stöðuna"
+    | "hvernig" "er" "staðan"
+    | "hvar" "var" "ég"
+    | "hvert" "var" "ég" 'kominn'
+    | "hvert" "var" "ég" 'kominn' "í" QTheaterPontun
+    | "hver" "var" "staðan" "á"? QTheaterPontun
+    | QTheaterEgVil "halda" "áfram" "með" QTheaterPontun
+
+QTheaterPontun →
+    "pöntuninni"
+    | "leikhús" "pöntuninni"
+    | "leikhús" "pöntunina"
+    | "leikhúsmiða" "pöntuninni"
+    | "leikhúsmiða" "pöntunina"
+    | "leikhúsmiðapöntunina"
+    | "leikhúsmiðapöntuninni"
+    | "leikhús" "miða" "pöntunina"
+    | "leikhús" "miða" "pöntuninni"

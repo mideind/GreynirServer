@@ -24,4 +24,5 @@ INSERT INTO queries ("id", "timestamp", "interpretations", "question", "bquestio
 
 INSERT INTO querydata ("client_id", "key", "created", "modified", "data") VALUES
 ('123456789', 'name', '2020-09-26 21:12:56.20056', '2020-09-26 21:21:15.873656', '{"full": "Sveinbjörn Þórðarson", "first": "Sveinbjörn", "gender": "kk"}'),
+('QueryTesting123', 'iot', '2022-09-26 21:13:56.20056', '2022-10-26 15:21:15.873656', '{"iot_lights": {"philips_hue": {"credentials": {"username": "DummyData", "ip_address": "127.0.0.1"}}}}'),
 ('9A30D6B7-F0C9-48CF-A567-4E9E7D8997C5', 'name', '2020-09-26 22:13:11.164278', '2020-09-28 14:50:52.701844', '{"full": "Sveinbjörn Þórðarson", "first": "Sveinbjörn", "gender": "kk"}');

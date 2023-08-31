@@ -21,15 +21,18 @@
 
 """
 
-from typing import Dict, Optional, Any
+from typing import Dict, List, Optional, Any
 
 import re
 import os
 import sys
 import pytest
+import json as jsonlib
+from pathlib import Path
 from copy import deepcopy
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
+from unittest.mock import patch
 
 from flask.testing import FlaskClient
 
@@ -1046,6 +1049,46 @@ def test_geography(client: FlaskClient) -> None:
     assert "Noregi" in json["answer"]
 
 
+def test_iot(client: FlaskClient) -> None:
+    json = qmcall(
+        client, {"q": "breyttu litnum á ljósunum í eldhúsinu í rauðan"}, "IoT"
+    )
+    assert "ég var að kveikja ljósin! " in json["answer"]
+
+    json = qmcall(client, {"q": "settu á grænan lit í eldhúsinu"}, "IoT")
+    assert "ég var að kveikja ljósin! " in json["answer"]
+
+    json = qmcall(client, {"q": "stilltu lit ljóssins í eldhúsinu á grænan"}, "IoT")
+    assert "ég var að kveikja ljósin! " in json["answer"]
+
+    json = qmcall(client, {"q": "kveiktu á ljósunum í eldhúsinu"}, "IoT")
+    assert "ég var að kveikja ljósin! " in json["answer"]
+
+    json = qmcall(client, {"q": "hækkaðu birtuna í eldhúsinu"}, "IoT")
+    assert "ég var að kveikja ljósin! " in json["answer"]
+
+    json = qmcall(client, {"q": "gerðu meiri birtu í eldhúsinu"}, "IoT")
+    assert "ég var að kveikja ljósin! " in json["answer"]
+
+    json = qmcall(client, {"q": "gerðu eldhúsið bjartara"}, "IoT")
+    assert "ég var að kveikja ljósin! " in json["answer"]
+
+    json = qmcall(client, {"q": "gerðu birtu ljóssins inni í eldhúsi meiri"}, "IoT")
+    assert "ég var að kveikja ljósin! " in json["answer"]
+
+    json = qmcall(client, {"q": "slökktu ljósið inni í eldhúsi"}, "IoT")
+    assert "ég var að kveikja ljósin! " in json["answer"]
+
+    # json = qmcall(client, {"q": "gerðu meiri birtu inni í eldhúsi"}, "IoT")
+    # assert "ég var að kveikja ljósin! " in json["answer"]
+
+    # json = qmcall(client, {"q": "gerðu ljósið inni í eldhúsi minna bjart"}, "IoT")
+    # assert "ég var að kveikja ljósin! " in json["answer"]
+
+    # json = qmcall(client, {"q": "gerðu grænt í eldhúsinu"}, "IoT")
+    # assert "ég var að kveikja ljósin! " in json["answer"]
+
+
 @pytest.mark.skipif(not has_ja_api_key(), reason="no Ja.is API key on test server")
 def test_ja(client: FlaskClient) -> None:
     """Ja.is module."""
@@ -1371,6 +1414,34 @@ def test_schedules(client: FlaskClient) -> None:
         or caseless_in("dagskrárlið", json["answer"])
     )
     assert "2:00" in json["answer"]
+
+
+def test_smartlights(client: FlaskClient) -> None:
+    """Smartlights module"""
+    q_file = Path(__file__).parent.resolve() / "files" / "smartlights.json"
+    qs = jsonlib.loads(q_file.read_text())
+    assert isinstance(qs, dict)
+    qkey: str
+    ql: List[str]
+    for qkey, ql in qs.items():
+        for q in ql:
+            resp = qmcall(client, {"q": q}, "Smartlights")
+            assert resp["key"] == qkey
+
+
+def test_smartspeakers(client: FlaskClient) -> None:
+    """Smartspeakers module (mocked SonosClient)"""
+    # TODO: Add more tests!
+    with patch("queries.extras.sonos.SonosClient") as SonosMock:
+        resp = qmcall(
+            client,
+            {"q": "Kveiktu á útvarpsstöðinni rondó", "client_id": "9cc79e5f6b7c65c9"},
+            "Smartspeakers",
+        )
+        assert resp["key"] == "radio"
+        SonosMock.assert_called()
+        name, args, _ = SonosMock.mock_calls[-1]
+        assert 'play_radio_stream' in name and 'rondo' in args[0]
 
 
 def test_special(client: FlaskClient) -> None:

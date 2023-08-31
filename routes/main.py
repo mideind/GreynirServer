@@ -22,12 +22,19 @@
 """
 
 from typing import Dict, Any, Iterable, List, Optional, Sequence, Tuple, Union, cast
+from typing_extensions import TypedDict
 
 import platform
 import sys
 import random
 import json
+from pathlib import Path
 from datetime import datetime
+
+try:
+    import tomllib  # type: ignore (module not available in Python <3.11)
+except ModuleNotFoundError:
+    import tomli as tomllib  # Used for Python <3.11
 
 from flask import render_template, request, redirect, url_for
 
@@ -92,6 +99,60 @@ def analysis() -> str:
     """Handler for a page with grammatical analysis of user-entered text"""
     txt = request.args.get("txt", "")[0:MAX_TEXT_LENGTH_VIA_URL]
     return render_template("analysis.html", title="Málgreining", default_text=txt)
+
+
+class IotSupportedTOMLStructure(TypedDict):
+    """Structure of the iot_supported TOML file."""
+
+    connections: Dict[str, Dict[str, str]]
+
+
+@routes.route("/iot/<device>")
+@max_age(seconds=300)
+def iot(device: str):
+    """Handler for device connection views."""
+    args = request.args
+    iot_name: str = args.get("iot_name")
+    connection_info = {}
+    if iot_name:
+        fpath = Path(__file__).parent.parent / "resources" / "iot_supported.toml"
+        f = fpath.read_text()
+
+        # Read TOML file containing a list of resources for the dialogue
+        obj: IotSupportedTOMLStructure = tomllib.loads(f)  # type: ignore
+        if obj:
+            # for (_, connection) in obj["connections"].items():
+            connection_info = obj["connections"][iot_name]
+    print("Route device: ", device)
+    return render_template(f"{str(device)}.html", **connection_info)
+
+
+@routes.route("/iot-connect-success")
+def iot_connect_success():
+    """Handler for successful connection view."""
+    return render_template("iot-connect-success.html", title="Tenging tókst")
+
+
+@routes.route("/iot-connect-error")
+def iot_connect_error():
+    """Handler for unsuccessful connection view."""
+    return render_template("iot-connect-error.html", title="Tenging mistókst")
+
+
+@routes.route("/correct", methods=["GET", "POST"])
+def correct():
+    """Handler for a page for spelling and grammar correction
+    of user-entered text"""
+    try:
+        txt = text_from_request(request, post_field="txt", get_field="txt")
+    except Exception:
+        txt = ""
+    return render_template(
+        "correct.html",
+        title="Yfirlestur",
+        default_text=txt,
+        supported_mime_types=list(SUPPORTED_DOC_MIMETYPES),
+    )
 
 
 MAX_SIM_ARTICLES = 10  # Display at most 10 similarity matches

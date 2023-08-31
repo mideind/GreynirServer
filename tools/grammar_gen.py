@@ -27,7 +27,15 @@
     Use --help to see more information on usage.
 
 """
-from typing import Callable, Iterable, Iterator, List, Optional, Union
+from typing import (
+    Callable,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Union,
+    Match,
+)
 
 import re
 import sys
@@ -35,7 +43,7 @@ import itertools
 from pathlib import Path
 from functools import lru_cache
 
-from islenska.basics import BinEntry
+from islenska.basics import MarkOrder
 
 
 # Hack to make this Python program executable from the tools subdirectory
@@ -53,6 +61,7 @@ from queries import QueryGrammar
 
 # TODO: Create random traversal functionality (itertools.dropwhile?)
 # TODO: Allow replacing special terminals (no, sérnafn, lo, ...) with words
+# TODO: Unwrap recursion (for dealing with complex recursive grammar items as in Greynir.grammar)
 
 ColorF = Callable[[str], str]
 _reset: str = "\033[0m"
@@ -73,47 +82,6 @@ lightblue: ColorF = lambda s: f"\033[94m{s}{_reset}"
 pink: ColorF = lambda s: f"\033[95m{s}{_reset}"
 lightcyan: ColorF = lambda s: f"\033[96m{s}{_reset}"
 
-nonverb_variant_order = [
-    ("esb", "evb", "fsb", "fvb", "mst", "vb", "sb"),
-    ("kk", "kvk", "hk"),
-    ("nf", "þf", "þgf", "ef"),
-    ("et", "ft"),
-    ("gr",),
-    ("0", "1", "2", "3"),
-]
-verb_variant_order = [
-    ("gm", "mm"),
-    ("lhnt", "nh", "fh", "vh", "bh"),
-    ("þt", "nt"),
-    ("1p", "2p", "3p"),
-    ("et", "ft"),
-    ("0", "1", "2", "3"),
-]
-_order_len = max(len(nonverb_variant_order), len(verb_variant_order))
-
-_orderings = {
-    "hk": (
-        "NFET",
-        "ÞFET",
-        "ÞGFET",
-        "EFET",
-        "NFFT",
-        "ÞFFT",
-        "ÞGFFT",
-        "EFFT",
-        "NFETgr",
-        "ÞFETgr",
-        "ÞGFETgr",
-        "EFETgr",
-        "NFFTgr",
-        "ÞFFTgr",
-        "ÞGFFTgr",
-        "EFFTgr",
-    ),
-}
-# kk = kvk = hk
-_orderings["kk"] = _orderings["kvk"] = _orderings["hk"]
-
 # Grammar item type
 _GIType = Union[Nonterminal, Terminal]
 # BÍN, for word lookups
@@ -122,41 +90,31 @@ BIN = Bin()
 # Mebibyte
 MiB = 1024 * 1024
 
-# Preamble with a hacke in case we aren't testing a query grammar
+# Preamble hack in case we aren't testing a query grammar
 # (prevents an error in the QueryGrammar class)
 PREAMBLE = """
-QueryRoot →
-    Query
+QueryRoot → Query
 
 Query → ""
 
 """
 
-
-def _binentry_to_int(w: BinEntry) -> List[int]:
-    """Used for pretty ordering of variants in output :)."""
-    try:
-        return [_orderings[w.ofl].index(w.mark)]
-    except (KeyError, ValueError):
-        pass
-
-    # Fallback, manually compute order
-    val = [0 for _ in range(_order_len)]
-    if w.ofl == "so":
-        var_order = verb_variant_order
-    else:
-        var_order = nonverb_variant_order
-
-    for x, v_list in enumerate(var_order):
-        for y, v in enumerate(v_list):
-            if v in w.mark.casefold():
-                val[-x] = y + 1
-                break
-    return val
-
-
 # Word categories which should have some variant specified
-_STRICT_CATEGORIES = frozenset(("no", "so", "lo"))
+_STRICT_CATEGORIES = frozenset(
+    (
+        "no",
+        "kk",
+        "kvk",
+        "hk",
+        "so",
+        "lo",
+        "fn",
+        "pfn",
+        "gr",
+        "rt",
+        "to",
+    )
+)
 
 
 @lru_cache(maxsize=500)  # VERY useful cache
@@ -167,51 +125,36 @@ def get_wordform(gi: BIN_LiteralTerminal) -> str:
     """
     global strict
     word, cat, variants = gi.first, gi.category, "".join(gi.variants).casefold()
-    ll = BIN.lookup_lemmas(word)
+    bin_entries = BIN.lookup_lemmas(word)[1]
 
     if strict:
         # Strictness checks on usage of
         # single-quoted terminals in the grammar
-        assert len(ll[1]) > 0, f"Meaning not found, use root of word for: {gi.name}"
+        assert (
+            len(bin_entries) > 0
+        ), f"Meaning not found, use root of word for: {gi.name}"
         assert (
             cat is not None
         ), f"Specify category for single quoted terminal: {gi.name}"
         # Filter by word category
-        assert len(list(filter(lambda m: m.ofl == cat, ll[1]))) < 2, (
+        assert len(list(filter(lambda m: m.ofl == cat, bin_entries))) < 2, (
             "Category not specific enough, "
             "single quoted terminal has "
-            f"multiple meanings: {gi.name}"
+            f"multiple possible categories: {gi.name}"
         )
         if cat in _STRICT_CATEGORIES:
             assert (
                 len(variants) > 0
-            ), f"Specify variant for single quoted terminal: {gi.name}"
-        else:
-            assert len(variants) == 0, f"Too many variants for atviksorð: {gi.name}"
+            ), f"Specify variants for single quoted terminal: {gi.name}"
 
-    if not cat and len(ll[1]) > 0:
+    if not cat and len(bin_entries) > 0:
         # Guess category from lemma lookup
-        cat = ll[1][0].ofl
+        cat = bin_entries[0].ofl
 
-    # Have correct order of variants for form lookup (otherwise it doesn't work)
-    spec: List[str] = ["" for _ in range(_order_len)]
-    if cat == "so":
-        # Verb variants
-        var_order = verb_variant_order
-    else:
-        # Nonverb variants
-        var_order = nonverb_variant_order
-
-    # Re-order correctly
-    for i, v_list in enumerate(var_order):
-        for v in v_list:
-            if v in variants:
-                spec[i] = v
-
-    wordforms = BIN.lookup_forms(
+    wordforms = BIN.lookup_variants(
         word,
-        cat or None,  # type: ignore
-        "".join(spec),
+        cat or "",
+        variants or "",
     )
 
     if len(wordforms) == 0:
@@ -227,11 +170,42 @@ def get_wordform(gi: BIN_LiteralTerminal) -> str:
         # author of grammar should maybe use double-quotes instead
         return lightred(f"({'|'.join(wf.bmynd for wf in wordforms)})")
 
-    # Sort wordforms in a logical order
-    wordforms.sort(key=_binentry_to_int)
+    # Sort wordforms in a canonical order
+    wordforms.sort(key=lambda ks: MarkOrder.index(ks.ofl, ks.mark))
 
     # Join all matched wordforms together (within parenthesis)
     return lightcyan(f"({'|'.join(wf.bmynd for wf in wordforms)})")
+
+
+def _break_up_line(line: List[str], break_indices: List[int]) -> Iterable[List[str]]:
+    """
+    Breaks up a single line containing parenthesized word forms
+    and yields lines with all combinations of the word forms.
+    """
+    for comb in itertools.product(
+        *[set(line[i].lstrip("(").rstrip(")").split("|")) for i in break_indices]
+    ):
+        yield [
+            comb[break_indices.index(i)] if i in break_indices else line[i]
+            for i in range(len(line))
+        ]
+
+
+def expander(it: Iterable[List[str]]) -> Iterable[List[str]]:
+    """
+    Expand lines in iterator that include (word form 1|word form 2|...) items.
+    """
+    for line in it:
+        paren_indices = [
+            i
+            for i, w in enumerate(line)
+            if w.startswith("(") and w.endswith(")")
+            # ^ We can do this as ansi color is disabled when fully expanding lines
+        ]
+        if paren_indices:
+            yield from _break_up_line(line, paren_indices)
+        else:
+            yield line
 
 
 def generate_from_cfg(
@@ -240,6 +214,7 @@ def generate_from_cfg(
     root: Optional[Union[Nonterminal, str]] = None,
     depth: Optional[int] = None,
     n: Optional[int] = None,
+    expand: Optional[bool] = False,
 ) -> Iterable[str]:
     """
     Generates an iterator of all sentences from
@@ -276,7 +251,14 @@ def generate_from_cfg(
         for pt in grammar.nt_dict[root]
     )
 
-    # n=None means return all sentences, otherwise return n sentences
+    if expand:
+        # Expand condensed lines
+        # (containing parenthesized word forms)
+        # into separate lines
+        iter = expander(iter)
+
+    # n=None means return all sentences,
+    # otherwise return n sentences
     iter = itertools.islice(iter, 0, n)
 
     return (" ".join(sl) for sl in iter)
@@ -310,6 +292,9 @@ def _generate_all(
 # (note: there are probably more recursive
 # nonterminals, they can be added here)
 _RECURSIVE_NT = re.compile(r"^Nl([/_][a-zA-Z0-9]+)*$")
+_PLACEHOLDER_RE = re.compile(r"{([\w]+?)}")
+_PLACEHOLDER_PREFIX = "GENERATORPLACEHOLDER_"
+_PLACEHOLDER_PREFIX_LEN = len(_PLACEHOLDER_PREFIX)
 
 
 def _generate_one(
@@ -320,6 +305,9 @@ def _generate_one(
             # Special handling of Nl nonterminal,
             # since it is recursive
             yield [pink(f"<{gi.name}>")]
+        elif gi.name.startswith(_PLACEHOLDER_PREFIX):
+            # Placeholder nonterminal (replaces)
+            yield [blue(f"{{{gi.name[_PLACEHOLDER_PREFIX_LEN:]}}}")]
         elif isinstance(gi, Nonterminal):
             if gi.is_optional and gi.name.endswith("*"):
                 # Star nonterminal, signify using brackets and '...'
@@ -359,49 +347,58 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "files",
-        nargs="+",
-        help="File/s containing the grammar fragments",
+        nargs="*",
+        help="file/s containing the grammar fragments. "
+        "Always loads Greynir.grammar, so no file has to be specified "
+        "when generating sentences from Greynir.grammar",
     )
     parser.add_argument(
         "-r",
         "--root",
         default="Query",
-        help="Root nonterminal to start from",
+        help="root nonterminal to start from",
     )
     parser.add_argument(
         "-d",
         "--depth",
         type=int,
-        help="Maximum depth of the generated sentences",
+        help="maximum depth of the generated sentences",
     )
     parser.add_argument(
         "-n",
         "--num",
         type=int,
-        help="Maximum number of sentences to generate",
+        help="maximum number of sentences to generate",
+    )
+    parser.add_argument(
+        "-e",
+        "--expand",
+        action="store_true",
+        help="expand lines with multiple interpretations into separate lines",
     )
     parser.add_argument(
         "-s",
         "--strict",
         action="store_true",
-        help="Enable strict mode, adds some opinionated assertions about the grammar",
+        help="enable strict mode, adds some opinionated assertions about the grammar",
     )
     parser.add_argument(
         "-c",
         "--color",
         action="store_true",
-        help="Enables colored output (to stdout only)",
+        help="enables colored output, when not fully "
+        "expanding lines or writing output to file",
     )
     parser.add_argument(
         "-o",
         "--output",
         type=Path,
-        help="Write output to file instead of stdout (faster)",
+        help="write output to file instead of stdout (faster)",
     )
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Forcefully overwrite output file, ignoring any warnings",
+        help="forcefully overwrite output file, ignoring any warnings",
     )
     parser.add_argument("--max-size", type=int, help="Maximum output filesize in MiB.")
     args = parser.parse_args()
@@ -416,16 +413,16 @@ if __name__ == "__main__":
     if args.output:
         p = args.output
         assert isinstance(p, Path)
-        try:
-            p.touch(exist_ok=False)  # Raise error if we are overwriting a file
-        except FileExistsError:
-            if not args.force:
-                print("Output file already exists!")
-                exit(1)
+        if (p.is_file() or p.exists()) and not args.force:
+            print("Output file already exists!")
+            exit(1)
 
-    if not args.color or p is not None:
-        # Undefine color functions
+    # Expand and writing to file disables color
+    args.color = args.color and not args.expand and p is None
+
+    if not args.color:
         useless: ColorF = lambda s: s
+        # Undefine color functions
         [
             bold,
             black,
@@ -446,14 +443,39 @@ if __name__ == "__main__":
         ] = [useless] * 16
 
     grammar_fragments: str = PREAMBLE
+
+    # We replace {...} format strings with a placeholder
+    placeholder_defs: str = ""
+
+    def placeholder_func(m: Match[str]) -> str:
+        """
+        Replaces {...} format strings in grammar with an empty nonterminal.
+        We then handle these nonterminals specifically in _generate_one().
+        """
+        global placeholder_defs
+        new_nt = f"{_PLACEHOLDER_PREFIX}{m.group(1)}"
+        # Create empty production for this nonterminal ('keep'-tag just in case)
+        placeholder_defs += f"\n{new_nt} → ∅\n$tag(keep) {new_nt}\n"
+        # Replace format string with reference to new nonterminal
+        return new_nt
+
     for file in [BIN_Parser._GRAMMAR_FILE] + args.files:  # type: ignore
         with open(file, "r") as f:
             grammar_fragments += "\n"
-            grammar_fragments += f.read()
+            grammar_fragments += _PLACEHOLDER_RE.sub(placeholder_func, f.read())
+
+    # Add all the placeholder nonterminal definitions we added
+    grammar_fragments += placeholder_defs
+    if len(args.files) == 0:
+        # Generate Greynir.grammar by default
+        grammar_fragments = grammar_fragments.replace('Query → ""', "Query → S0", 1)
 
     # Initialize QueryGrammar class from grammar files
     grammar = QueryGrammar()
-    grammar.read_from_generator(args.files[0], iter(grammar_fragments.split("\n")))
+    grammar.read_from_generator(
+        args.files[0] if args.files else BIN_Parser._GRAMMAR_FILE,  # type: ignore
+        iter(grammar_fragments.split("\n")),
+    )
 
     # Create sentence generator
     g = generate_from_cfg(
@@ -461,6 +483,7 @@ if __name__ == "__main__":
         root=args.root,
         depth=args.depth,
         n=args.num,
+        expand=args.expand,
     )
 
     if p is not None:

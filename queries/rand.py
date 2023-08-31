@@ -32,7 +32,7 @@ from queries import Query, QueryStateDict, AnswerTuple
 from queries.util import gen_answer, read_grammar_file
 from queries.arithmetic import add_num, terminal_num
 from speech.trans import gssml
-from tree import Result, Node
+from tree import ParamList, Result, Node
 
 
 _RANDOM_QTYPE = "Random"
@@ -67,27 +67,27 @@ QUERY_NONTERMINALS = {"QRandom"}
 GRAMMAR = read_grammar_file("rand")
 
 
-def QRandomQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QRandomQuery(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = _RANDOM_QTYPE
 
 
-def QRandomHeadsOrTails(node: Node, params: QueryStateDict, result: Result) -> None:
+def QRandomHeadsOrTails(node: Node, params: ParamList, result: Result) -> None:
     result.action = "headstails"
 
 
-def QRandomBetween(node: Node, params: QueryStateDict, result: Result) -> None:
+def QRandomBetween(node: Node, params: ParamList, result: Result) -> None:
     result.action = "randbtwn"
 
 
-def QRandomDieRoll(node: Node, params: QueryStateDict, result: Result) -> None:
+def QRandomDieRoll(node: Node, params: ParamList, result: Result) -> None:
     result.action = "dieroll"
 
 
-def QRandomDiceSides(node: Node, params: QueryStateDict, result: Result) -> None:
+def QRandomDiceSides(node: Node, params: ParamList, result: Result) -> None:
     result.dice_sides = 6
 
 
-def QRandNumber(node: Node, params: QueryStateDict, result: Result) -> None:
+def QRandNumber(node: Node, params: ParamList, result: Result) -> None:
     d = result.find_descendant(t_base="tala")
     if d:
         add_num(terminal_num(d), result)

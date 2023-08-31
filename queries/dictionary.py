@@ -28,7 +28,7 @@ from typing import List
 import logging
 
 from queries import Query, QueryStateDict
-from tree import Result, Node
+from tree import Result, Node, ParamList
 
 from utility import cap_first, icequote
 from queries.util import (
@@ -48,11 +48,11 @@ QUERY_NONTERMINALS = {"QDictQuery"}
 GRAMMAR = read_grammar_file("dictionary")
 
 
-def QDictSubjectNom(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDictSubjectNom(node: Node, params: ParamList, result: Result) -> None:
     result.qkey = result._text
 
 
-def QDictWordQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDictWordQuery(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = "Dictionary"
 
 

@@ -36,7 +36,7 @@ from math import floor, log10
 
 from queries import Query, QueryStateDict, to_dative, to_accusative
 from queries.util import iceformat_float, parse_num, read_grammar_file, is_plural
-from tree import Result, Node
+from tree import ParamList, Result, Node
 from speech.trans import gssml
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
@@ -216,17 +216,17 @@ QUERY_NONTERMINALS = {"QUnitQuery"}
 GRAMMAR = read_grammar_file("unit")
 
 
-def QUnitConversion(node: Node, params: QueryStateDict, result: Result) -> None:
+def QUnitConversion(node: Node, params: ParamList, result: Result) -> None:
     """Unit conversion query"""
     result.qtype = "Unit"
     result.qkey = result.unit_to
 
 
-def QUnitNumber(node: Node, params: QueryStateDict, result: Result) -> None:
+def QUnitNumber(node: Node, params: ParamList, result: Result) -> None:
     result.number = parse_num(node, result._canonical)
 
 
-def QUnit(node: Node, params: QueryStateDict, result: Result) -> None:
+def QUnit(node: Node, params: ParamList, result: Result) -> None:
     # Unit in canonical (nominative, singular, indefinite) form
     unit = result._canonical.lower()
     # Convert irregular forms ('mílu', 'bollum') to canonical ones
@@ -235,14 +235,14 @@ def QUnit(node: Node, params: QueryStateDict, result: Result) -> None:
     result.unit_nf = result._nominative.lower()
 
 
-def QUnitTo(node: Node, params: QueryStateDict, result: Result) -> None:
+def QUnitTo(node: Node, params: ParamList, result: Result) -> None:
     result.unit_to = result.unit
     result.unit_to_nf = result.unit_nf
     del result["unit"]
     del result["unit_nf"]
 
 
-def QUnitFrom(node: Node, params: QueryStateDict, result: Result) -> None:
+def QUnitFrom(node: Node, params: ParamList, result: Result) -> None:
     if "unit" in result:
         result.unit_from = result.unit
         result.unit_from_nf = result.unit_nf
@@ -251,7 +251,7 @@ def QUnitFrom(node: Node, params: QueryStateDict, result: Result) -> None:
         del result["unit_nf"]
 
 
-def QUnitFromPounds(node: Node, params: QueryStateDict, result: Result) -> None:
+def QUnitFromPounds(node: Node, params: ParamList, result: Result) -> None:
     """Special hack for the case of '150 pund' which is
     tokenized as an amount token"""
     amount = node.first_child(lambda n: n.has_t_base("amount"))
@@ -266,7 +266,7 @@ def QUnitFromPounds(node: Node, params: QueryStateDict, result: Result) -> None:
     result._nominative = str(result.number).replace(".", ",") + " pund"
 
 
-def _convert(quantity: float, unit_from: str, unit_to: str) -> Tuple:
+def _convert(quantity: float, unit_from: str, unit_to: str) -> Tuple[bool, float, str, float]:
     """Converts a quantity from unit_from to unit_to, returning a tuple of:
     valid, result, si_unit, si_quantity"""
     u_from, factor_from = _UNITS[unit_from]

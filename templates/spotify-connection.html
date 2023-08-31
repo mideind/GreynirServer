@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="is">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="Content-Language" content="is">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <script type="text/javascript">
+        var urlParams = new URLSearchParams(window.location.search);
+        var dark = urlParams.get('dark');
+        if (dark != null) {
+            document.write(`<link rel="stylesheet" href="{{ url_for('static', filename = 'css/dark.css') }}">`);
+        }
+    </script>
+    <title>Spotify</title>
+
+    <meta name="robots" content="noindex, nofollow, noimageindex, noarchive">
+    <meta name="googlebot" content="noindex, nofollow, noimageindex, noarchive">
+</head>
+
+<div style="
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        " class="content">
+
+    <body>
+        <h1>Spotify</h1>
+        <p>Spotify er vinsælasta tónlistarveita heims.<br>
+            Með því að tengja Spotify aðganginn þinn getur þú beðið Emblu um að spila lögin sem þú vilt heyra.
+        <h2 class="h2-subsection">Leiðbeiningar</h2>
+        <ol>
+            <li>Veldu „Tengja“ hér að neðan og skráðu þig inn með Spotify aðgangnum þínum</li>
+        </ol>
+
+        <button id="connect_button" class="btn">Tengja</button>
+</div>
+
+<script>
+    const queryParams = new URLSearchParams(window.location.search);
+    const connectUrl = decodeURIComponent(queryParams.get('connect_url'));
+    let connectButton = document.getElementById('connect_button');
+    connectButton.onclick = function () {
+        window.location.href = connectUrl;
+    }
+
+    function createRipple(event) {
+        const button = event.currentTarget;
+
+        const circle = document.createElement("span");
+        const diameter = Math.max(button.clientWidth, button.clientHeight);
+        const radius = diameter / 2;
+
+        circle.style.width = circle.style.height = `${diameter}px`;
+        circle.style.left = `${event.clientX - button.offsetLeft - radius}px`;
+        circle.style.top = `${event.clientY - button.offsetTop - radius}px`;
+        circle.classList.add("ripple");
+
+        const ripple = button.getElementsByClassName("ripple")[0];
+
+        if (ripple) {
+            ripple.remove();
+        }
+
+        button.appendChild(circle);
+    }
+
+    const buttons = document.getElementsByTagName("button");
+    for (const button of buttons) {
+        button.addEventListener("click", createRipple);
+    }
+</script>
+
+</body>
+
+
+</html>

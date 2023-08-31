@@ -71,7 +71,7 @@ from queries.util import (
     sing_or_plur,
     read_grammar_file,
 )
-from tree import Result, Node, TerminalNode
+from tree import Result, Node, TerminalNode, ParamList
 from settings import changedlocale
 from speech.trans import gssml
 
@@ -143,43 +143,43 @@ QUERY_NONTERMINALS = {"QDate"}
 GRAMMAR = read_grammar_file("date")
 
 
-def QDateQuery(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateQuery(node: Node, params: ParamList, result: Result) -> None:
     result.qtype = _DATE_QTYPE
 
 
-def QDateCurrent(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateCurrent(node: Node, params: ParamList, result: Result) -> None:
     result["now"] = True
 
 
-def QDateNextDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateNextDay(node: Node, params: ParamList, result: Result) -> None:
     result["tomorrow"] = True
 
 
-def QDatePrevDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDatePrevDay(node: Node, params: ParamList, result: Result) -> None:
     result["yesterday"] = True
 
 
-def QDateHowLongUntil(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateHowLongUntil(node: Node, params: ParamList, result: Result) -> None:
     result["until"] = True
 
 
-def QDateHowLongSince(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateHowLongSince(node: Node, params: ParamList, result: Result) -> None:
     result["since"] = True
 
 
-def QDateWhenIs(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateWhenIs(node: Node, params: ParamList, result: Result) -> None:
     result["when"] = True
 
 
-def QDateWhichYear(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateWhichYear(node: Node, params: ParamList, result: Result) -> None:
     result["year"] = True
 
 
-def QDateLeapYear(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateLeapYear(node: Node, params: ParamList, result: Result) -> None:
     result["leap"] = True
 
 
-def Árið(node: Node, params: QueryStateDict, result: Result) -> None:
+def Árið(node: Node, params: ParamList, result: Result) -> None:
     y_node = node.first_child(lambda n: True)
     assert isinstance(y_node, TerminalNode)
     y = y_node.contained_year
@@ -188,7 +188,7 @@ def Árið(node: Node, params: QueryStateDict, result: Result) -> None:
     result["target"] = datetime(day=1, month=1, year=y)
 
 
-def QDateAbsOrRel(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateAbsOrRel(node: Node, params: ParamList, result: Result) -> None:
     datenode = node.first_child(lambda n: True)
     assert isinstance(datenode, TerminalNode)
     cdate = datenode.contained_date
@@ -217,106 +217,106 @@ def QDateAbsOrRel(node: Node, params: QueryStateDict, result: Result) -> None:
         raise ValueError(f"No date in {str(datenode)}")
 
 
-def QDateWhitsun(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateWhitsun(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "hvítasunnudagur"
     result["target"] = next_easter() + timedelta(days=49)
 
 
-def QDateAscensionDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateAscensionDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "uppstigningardagur"
     result["target"] = next_easter() + timedelta(days=39)
 
 
-def QDateAshDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateAshDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "öskudagur"
     result["target"] = next_easter() - timedelta(days=46)
 
 
-def QDateBunDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateBunDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "bolludagur"
     result["target"] = next_easter() - timedelta(days=48)  # 7 weeks before easter
 
 
-def QDateHalloween(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateHalloween(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "hrekkjavaka"
     result["target"] = dnext(datetime(year=datetime.today().year, month=10, day=31))
 
 
-def QDateSovereigntyDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateSovereigntyDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "fullveldisdagurinn"
     result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=1))
 
 
-def QDateFirstDayOfSummer(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateFirstDayOfSummer(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "sumardagurinn fyrsti"
     # !!! BUG: This is not correct in all cases
     d = dnext(datetime(year=datetime.today().year, month=4, day=18))
     result["target"] = next_weekday(d, 3)
 
 
-def QDateThorlaksMass(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateThorlaksMass(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "þorláksmessa"
     result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=23))
 
 
-def QDateChristmasEve(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateChristmasEve(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "aðfangadagur jóla"
     result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=24))
 
 
-def QDateChristmasDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateChristmasDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "jóladagur"
     result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=25))
 
 
-def QDateNewYearsEve(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateNewYearsEve(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "gamlársdagur"
     result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=31))
 
 
-def QDateNewYearsDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateNewYearsDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "nýársdagur"
     result["target"] = dnext(datetime(year=datetime.today().year, month=1, day=1))
 
 
-def QDateNewYear(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateNewYear(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "áramótin"
     result["is_verb"] = "eru"
     result["target"] = dnext(datetime(year=datetime.today().year, month=1, day=1))
 
 
-def QDateWorkersDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateWorkersDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "baráttudagur verkalýðsins"
     result["target"] = dnext(datetime(year=datetime.today().year, month=5, day=1))
 
 
-def QDateEaster(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateEaster(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "páskar"
     result["is_verb"] = "eru"
     result["target"] = next_easter()
 
 
-def QDateEasterSunday(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateEasterSunday(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "páskadagur"
     result["target"] = next_easter()
 
 
-def QDateGoodFriday(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateGoodFriday(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "föstudagurinn langi"
     result["target"] = next_easter() + timedelta(days=-2)
 
 
-def QDateMaundyThursday(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateMaundyThursday(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "skírdagur"
     result["target"] = next_easter() + timedelta(days=-3)
 
 
-def QDateNationalDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateNationalDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "þjóðhátíðardagurinn"
     result["target"] = dnext(datetime(year=datetime.today().year, month=6, day=17))
 
 
-def QDateBankHoliday(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateBankHoliday(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "frídagur verslunarmanna"
     # First Monday of August
     result["target"] = this_or_next_weekday(
@@ -324,7 +324,7 @@ def QDateBankHoliday(node: Node, params: QueryStateDict, result: Result) -> None
     )
 
 
-def QDateCultureNight(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateCultureNight(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "menningarnótt"
     # Culture night is on the first Saturday after Reykjavík's birthday on Aug 18th
     aug18 = dnext(datetime(year=datetime.today().year, month=8, day=18))
@@ -332,73 +332,73 @@ def QDateCultureNight(node: Node, params: QueryStateDict, result: Result) -> Non
     result["target"] = next_weekday(aug18, 5)  # Find the next Saturday
 
 
-def QDateValentinesDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateValentinesDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "valentínusardagur"
     result["target"] = dnext(datetime(year=datetime.today().year, month=2, day=14))
 
 
-def QDateMansDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateMansDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "bóndadagur"
     jan19 = dnext(datetime(year=datetime.today().year, month=1, day=19))
     result["target"] = next_weekday(jan19, 4)  # First Friday after Jan 19
 
 
-def QDateWomansDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateWomansDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "konudagur"
     feb18 = dnext(datetime(year=datetime.today().year, month=2, day=18))
     result["target"] = next_weekday(feb18, 6)  # First Sunday after Feb 18
 
 
-def QDateMardiGrasDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateMardiGrasDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "sprengidagur"
     result["target"] = next_easter() - timedelta(days=47)
 
 
-def QDatePalmSunday(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDatePalmSunday(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "pálmasunnudagur"
     result["target"] = next_easter() - timedelta(days=7)  # Week before Easter Sunday
 
 
-def QDateSeamensDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateSeamensDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "sjómannadagur"
     june1 = dnext(datetime(year=datetime.today().year, month=6, day=1))
     result["target"] = this_or_next_weekday(june1, 6)  # First Sunday in June
 
 
-def QDateMothersDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateMothersDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "mæðradagur"
     may8 = dnext(datetime(year=datetime.today().year, month=5, day=8))
     result["target"] = this_or_next_weekday(may8, 6)  # Second Sunday in May
 
 
-def QDateFathersDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateFathersDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "feðradagur"
     nov8 = dnext(datetime(year=datetime.today().year, month=11, day=8))
     result["target"] = this_or_next_weekday(nov8, 6)  # Second Sunday in November
 
 
-def QDateIcelandicTongueDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateIcelandicTongueDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "dagur íslenskrar tungu"
     result["target"] = dnext(datetime(year=datetime.today().year, month=11, day=16))
 
 
-def QDateSecondChristmasDay(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateSecondChristmasDay(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "annar í jólum"
     result["target"] = dnext(datetime(year=datetime.today().year, month=12, day=26))
 
 
-def QDateFirstDayOfWinter(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateFirstDayOfWinter(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "fyrsti vetrardagur"
     result["target"] = None  # To be completed
 
 
-def QDateSummerSolstice(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateSummerSolstice(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "sumarsólstöður"
     result["is_verb"] = "eru"
     result["target"] = None  # To be completed
 
 
-def QDateWinterSolstice(node: Node, params: QueryStateDict, result: Result) -> None:
+def QDateWinterSolstice(node: Node, params: ParamList, result: Result) -> None:
     result["desc"] = "vetrarsólstöður"
     result["is_verb"] = "eru"
     result["target"] = None  # To be completed

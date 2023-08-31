@@ -1,0 +1,401 @@
+# TODO: 2x of a topping. "Tvöfalt", "mikið", "extra"
+# TODO: Ban more than two instances of a topping.
+# TODO: Fix the toppings being a set. Doesn't handle "Ég vil skinku, ólífur og auka skinku."
+# TODO: Add to PizzaRequestBare, start conversation with an order.
+# TODO: Add the words for margherita to BinPackage
+# TODO: Fix bug where "E_QUERY_NOT_UNDERSTOOD" is stored between trees in a single module.
+# TODO: Fix ugly inches hotfix.
+# TODO: Fix the requirement of saying the number of pizzas to make a prime specification.
+
+/þgf = þgf
+/ef = ef
+
+Query →
+    QPizza '?'?
+
+QPizza →
+    QPizzaQuery
+    | QPizzaHotWord
+
+QPizzaQuery →
+    QPizzaDialogue
+
+# Hotwords are used to initialize the conversation.
+QPizzaHotWord →
+    QPizzaWord/nf # e.g. "Pítsa"
+    | QPizzaRequestBare # e.g. "Ég vil panta pizzu."
+
+# Doesn't allow for any order specification, e.g. the number of pizzas, only "Ég vil pizzu."
+QPizzaRequestBare →
+    QPizzaRequestPleasantries? QPizzaWord/þf
+
+QPizzaDialogue →
+    QPizzaYes
+    | QPizzaNo
+    | QPizzaCancel # Request to cancel the order.
+    | QPizzaStatus # Request for the status of the order.
+    | QPizzaQuestion # Question about the features of a particular pizza.
+    | QPizzaExtrasAnswer # Answer to the question "Do you want anything with your pizzas?"
+    | QPizzaNumberAndSpecificationAnswer # Answer specifying features of the pizza.
+
+QPizzaExtrasAnswer →
+    QPizzaRequestPleasantries? QPizzaExtraWords/þf QPizzaMedPitsunniPhrase? # e.g. "Ég vil brauðstangir með pizzunum."
+    | QPizzaEgVil "líka" QPizzaExtraWords/þf QPizzaMedPitsunniPhrase? # e.g. "Ég vil líka kanilgott með pizzunum."
+    | QPizzaExtraWords/nf # e.g. "Kók."
+
+QPizzaYes → "já" "já"* | "endilega" | "já" "takk" | "játakk" | "já" "þakka" "þér" "fyrir" | "já" "takk" "kærlega" "fyrir"? | "jább" "takk"?
+
+QPizzaNo → "nei" "takk"? | "nei" "nei"* | "neitakk" | "ómögulega"
+
+QPizzaCancel → 
+    "ég" "hætti" "við"
+    | QPizzaEgVil? "hætta" "við" 'pöntun:kvk'_et/þf?
+    | "hætta" 'pöntun:kvk'_et/þgf?
+    | "hættu"
+
+QPizzaStatus →
+    "staðan"
+    | "hver" "er" "staðan" "á" 'pöntun:kvk'_et/þgf?
+    | "hver" "er" "staðan"
+    | "segðu" "mér" "stöðuna"
+    | "hvernig" "er" "staðan"
+    | "hvar" "var" "ég"
+    | "hvert" "var" "ég" 'kominn'
+    | "hvert" "var" "ég" 'kominn' "í" 'pöntun:kvk'_et/þgf?
+    | "hver" "var" "staðan" "á"? 'pöntun:kvk'_et/þgf?
+    | QPizzaEgVil? "halda" "áfram" "með" 'pöntun:kvk'_et/þf?
+
+QPizzaQuestion ->
+    "hvað" "er" "á" QPizzaWord/þgf "númer"? QPizzaNum/nf
+    | "hvernig" "er" QPizzaWord/þgf "númer"? QPizzaNum/nf
+    | QPizzaWord/þgf "númer"? QPizzaNum/nf
+
+QPizzaNumberAndSpecificationAnswer →
+    QPizzaRequestPleasantries? QPizzaNumberAndSpecificationWrapper/þf
+    | QPizzaNumberAndSpecificationWrapper/nf
+
+# Wrapper necessary to account for multiple pizza specifications.
+QPizzaNumberAndSpecificationWrapper/fall →
+    QPizzaNumberAndSpecification/fall QPizzaOgNumberAndSpecification/fall*
+
+# The number is outside of the specification as it specifies the number of pizzas with the given specifications.
+# This clarity makes the handling in the pizza module easier.
+QPizzaNumberAndSpecification/fall →
+    QPizzaNum/fall? QPizzaSpecification/fall
+    #| QPizzaNum/fall QPizzaWord/fall
+
+QPizzaSpecification/fall →
+    QPizzaPrimeSpecification/fall # Specifies a single thing.
+    | QPizzaCompositeSpecification/fall # Specifies multiple things at once: size, toppings, crust.
+
+QPizzaPrimeSpecification/fall →
+    QPizzaMenuOrToppingsSpecification/fall # Specifying which menu item to order or custom toppings.
+    | QPizzaSizeSpecification/fall # Specifying the size of the pizza.
+    | QPizzaCrustSpecification/fall # Specifying the crust type on the pizza.
+
+QPizzaMenuOrToppingsSpecification/fall →
+    QPizzaMenuSpecification/fall # A specification for a pizza on the menu.
+    | QPizzaToppingsSpecification/fall # A specification for a custom pizza.
+
+QPizzaMenuSpecification/fall →
+    QPizzaMenuWords/fall # e.g. "Margaríta."
+
+QPizzaToppingsSpecification/fall →
+    QPizzaToppingsList/fall QPizzaAPitsunaPhrase? # e.g. "Skinku, ólífur og pepperóní á pítsuna."
+    | QPizzaWord/fall QPizzaMedToppingsPhrase # e.g. "Með ólífum og ananas."
+
+QPizzaSizeSpecification/fall →
+    QPizzaSizePhrase/fall # e.g. "Tólf tommu pítsa."
+
+QPizzaCrustSpecification/fall →
+    QPizzaCrustPhrase/fall QPizzaAPitsunaPhrase? # e.g. "Klassískan botn á pítsuna."
+    | QPizzaWord/fall QPizzaMedCrustPhrase # e.g. "Pizza með ítölskum botni."
+
+QPizzaCompositeSpecification/fall →
+    QPizzaSizeMenuPhrase/fall QPizzaToppingsCrustPermutation? # e.g. "Ég vil stóra margarítu."
+    | QPizzaSizeOrMenu/fall QPizzaToppingsCrustPermutation # e.g. "Ég vil tvær margarítur með ítölskum botni."
+
+# Ways of mentioning the pizza while specifying exactly one feature.
+QPizzaSizeOrMenu/fall →
+    QPizzaSizePhrase/fall # e.g. "Tólf tommu pitsa."
+    | QPizzaMenuWords/fall # e.g. "Margaríta."
+
+QPizzaToppingsList/fall →
+    QPizzaToppingsWord/fall QPizzaOgMedToppingsPhrase/fall*
+
+QPizzaSize/fall →
+    QPizzaSizeLarge/fall
+    | QPizzaSizeMedium/fall
+    | QPizzaSizeSmall/fall
+
+QPizzaOgNumberAndSpecification/fall →
+    "og"? "svo"? "síðan"? "líka"? "einnig"? QPizzaNumberAndSpecification/fall QPizzaIVidbotPhrase?
+
+QPizzaOgMedToppingsPhrase/fall →
+    "og"? 'með:fs'? QPizzaToppingsWord/fall
+$score(+100) QPizzaOgMedToppingsPhrase/fall
+
+# It is common to say "miðstærð af pítsu", which is handled separately here.
+QPizzaSizePhrase/fall →
+    QPizzaSize/fall QPizzaWord/fall
+    | QPizzaMediumWord/fall QPizzaAfPitsuPhrase?
+
+# This duplicate is a result of difficulties with the composite logic.
+QPizzaSizeMenuPhrase/fall →
+    QPizzaSize/fall QPizzaMenuWords/fall
+    | QPizzaMediumWord/fall QPizzaAfMenuPhrase
+
+QPizzaCrustPhrase/fall →
+    QPizzaCrustType/fall QPizzaCrustWord/fall?
+
+QPizzaToppingsCrustPermutation →
+    QPizzaMedToppingsPhrase "og:st"? 'með:fs'? QPizzaCrustPhrase/þgf?
+    | QPizzaMedCrustPhrase "og:st"? 'með:fs'? QPizzaToppingsList/þgf?
+
+# This duplicate is a result of difficulties with the composite logic.
+QPizzaAfMenuPhrase →
+    "af" QPizzaMenuWords/þgf
+
+QPizzaAPitsunaPhrase →
+    "á" QPizzaWord/þf
+
+QPizzaMedPitsunniPhrase →
+    "með" QPizzaWord/þgf
+
+QPizzaMedToppingsPhrase →
+    "með" QPizzaToppingsList/þgf
+
+QPizzaMedCrustPhrase →
+    "með" QPizzaCrustPhrase/þgf
+
+QPizzaIVidbotPhrase →
+    'í:fs' 'viðbót:kvk'_et/þf
+
+QPizzaAfPitsuPhrase →
+    "af" QPizzaWord/þgf
+
+QPizzaOrMenuWord/fall →
+    QPizzaWord/fall
+    | QPizzaMenuWords/fall
+
+# Toppings that are transcribed in different ways are in separate nonterminals for clarity.
+# This also helps standardize the handling of each topping in the module, i.e. not reading "ólífa" and "ólíva" as separate toppings.
+QPizzaToppingsWord/fall →
+    QPizzaMushroom/fall
+    | QPizzaPepperoni/fall
+    | 'ananas:kk'/fall
+    | 'skinka:kvk'/fall
+    | QPizzaOlive/fall
+
+QPizzaMenuWords/fall →
+    'prinsessa:kvk'/fall
+    | 'dóttir:kvk'/fall
+    | QPizzaMargherita/fall
+    | 'kjöt-veisla:kvk'/fall
+    | 'hvítlauksbrauð:hk'/fall
+    | QPizzaTokyo/fall
+
+QPizzaExtraWords/fall →
+    QPizzaSidesWords/fall
+    | QPizzaDrinksWords/fall
+    | QPizzaDipsWords/fall
+
+QPizzaSidesWords/fall →
+    QPizzaLargeBreadsticks/fall 
+    | QPizzaSmallBreadsticks/fall
+    | 'lítill:lo'_kvk_ft/fall 'brauðstöng:kvk'_ft/fall
+    | "ostagott"
+    | "kanilgott"
+    | "súkkulaðigott"
+    | 'kartöflubátur:kk'_ft/fall
+    | 'vængur:kk'_ft/fall
+
+QPizzaDrinksWords/fall →
+    QPizzaCoke/fall 
+    | QPizzaCokeZero/fall
+    | "fanta"
+    | 'toppur:kk'_et/fall
+    | 'sítrónu-toppur:kk'_et/fall
+    | 'appelsínu-svali:kk'_et/fall
+    | 'epla-svali:kk'_et/fall
+    | "monster"
+
+QPizzaDipsWords/fall →
+    'hvítlauks-olía:kvk'_et/fall
+    | 'hvítlauks-sósa:kvk'_et/fall
+    | 'brauð-stanga-sósa:kvk'_et/fall
+    | QPizzaBlueCheese/fall
+    | 'sterkur:lo'_kvk_et/fall 'sósa:kvk'_et/fall
+    | 'kokteilsósa:kvk'_et/fall
+    | "súkkulaðiglassúr"
+    | "glassúr"
+
+# A large pizza at Domino's is typically thought to be 16", some believe it to be 15".
+# The actual size is 14.5".
+QPizzaSizeLarge/fall →
+    'stór:lo'/fall
+    | QPizzaSixteenWord QPizzaInchesWord?
+    | QPizzaFifteenWord QPizzaInchesWord?
+    | QPizzaFourteenPointFiveWord QPizzaInchesWord?
+
+QPizzaSizeMedium/fall →
+    'millistór:lo'/fall
+    | 'meðalstór:lo'/fall
+    | QPizzaTwelveWord QPizzaInchesWord?
+
+QPizzaMediumWord/fall →
+    'mið-stærð:kvk'/fall
+
+QPizzaSizeSmall/fall →
+    'lítill:lo'/fall
+    | QPizzaNineWord QPizzaInchesWord?
+
+QPizzaCrustType/fall →
+    QPizzaItalianWord/fall 
+    | QPizzaClassicWord/fall
+
+QPizzaRequestPleasantries →
+    QPizzaEgVil QPizzaKaupaFaraFaPanta?
+
+QPizzaEgVil →
+    "ég"? "vil"
+    | "ég" "vill"
+    | "mig" "langar" "að"
+    | "mig" "langar" "í"
+    | "ég" "ætla" "að"
+
+QPizzaKaupaFaraFaPanta →
+    "kaupa" "mér"?
+    | "fá" "mér"?
+    | "panta" "mér"?
+
+QPizzaWord/fall →
+    'pizza:kvk'/fall
+    | 'pitsa:kvk'/fall
+    | 'pítsa:kvk'/fall
+    | 'flatbaka:kvk'/fall
+
+# The size nonterminals assume that the word pizza follows them.
+# This creates an issue as that requires the inches word to be in the possessive case.
+# That is not the case when answering the question "Hversu stór á pizzan að vera?", answer "sextán tommur."
+QPizzaInchesWord ->
+    'tomma:kvk'/nf
+    | 'tomma:kvk'/ef
+
+QPizzaSixteenWord →
+    "16"
+    | "sextán"
+
+QPizzaFifteenWord →
+    "15"
+    | "fimmtán"
+
+QPizzaFourteenPointFiveWord →
+    QPizzaFourteenWord "komma" QPizzaFiveWord
+
+QPizzaFourteenWord →
+    "14"
+    | "fjórtán"
+
+QPizzaFiveWord →
+    "5"
+    | "fimm"
+
+QPizzaTwelveWord →
+    "12"
+    | "tólf"
+
+QPizzaNineWord →
+    "9"
+    | "níu"
+
+QPizzaItalianWord/fall →
+    'ítalskur:lo'/fall
+
+QPizzaClassicWord/fall →
+    'klassískur:lo'/fall
+
+QPizzaCrustWord/fall →
+    'botn:kk'/fall
+
+QPizzaNum/fall →
+    # to is a declinable number word ('tveir/tvo/tveim/tveggja')
+    # töl is an undeclinable number word ('sautján')
+    # tala is a number ('17')
+    to | töl | tala
+
+QPizzaPepperoni/fall →
+    'pepperóní:hk'/fall
+    | "pepperoni"
+    | "pepperóni"
+    | "pepperoní"
+
+QPizzaOlive/fall →
+    'ólífa:kvk'/fall
+    | 'ólíva:kvk'/fall
+
+QPizzaMushroom/fall →
+    'sveppur:kk'/fall
+    | 'Sveppi:kk'
+
+# "Margaríta" is not recognized by bin, so I hack the grammar here to make it work.
+QPizzaMargherita_nf →
+    "margaríta"
+    | "margarítur"
+    | "margarita"
+    | "margaritur"
+
+QPizzaMargherita_þf →
+    "margarítu"
+    | "margarítur"
+    | "margaritu"
+    | "margaritur"
+
+QPizzaMargherita_þgf →
+    "margarítu"
+    | "margarítum"
+    | "margaritu"
+    | "margaritum"
+
+QPizzaMargherita_ef →
+    "margarítu"
+    | "margaríta"
+    | "margarítna"
+    | "margaritu"
+    | "margarita"
+    | "margaritna"
+
+QPizzaTokyo/fall →
+    'Tókýó:kvk'/fall
+    | "Tókíó"
+    | "Tokyo"
+    | "tókýó"
+    | "tókíó"
+    | "tokyo"
+
+QPizzaLargeBreadsticks/fall →
+    'stór:lo'_kvk_ft/fall? 'brauð-stöng:kvk'_ft/fall
+    | 'brauð-stöng:kvk'_ft/fall 'stór:lo'_kvk_ft/fall
+
+QPizzaSmallBreadsticks/fall →
+    'lítill:lo'_kvk_ft/fall 'brauð-stöng:kvk'_ft/fall
+    | 'brauð-stöng:kvk'_ft/fall 'lítill:lo'_kvk_ft/fall
+
+QPizzaCoke/fall →
+    QPizzaCokeWord/fall
+
+QPizzaCokeZero/fall →
+    QPizzaCokeWord/fall "zero"
+    | QPizzaCokeWord/fall "án" 'sykur:kk'_et_ef
+
+QPizzaBlueCheese/fall →
+    'gráðaosta-sósa:kvk'_et/fall
+    | 'gráðosta-sósa:kvk'_et/fall
+    | 'gráðaostur:kk'_et/fall
+    | 'gráðostur:kk'_et/fall
+
+QPizzaCokeWord/fall →
+    'kók:kvk'_et/fall
+    | "kóka-kóla"
+    | "coke"
+    | "coca-cola"
