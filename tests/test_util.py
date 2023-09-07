@@ -116,9 +116,6 @@ def test_util():
         QUERIES_UTIL_DIR.relative_to(GREYNIR_ROOT_DIR)
     ) == get_modules("queries", "util")
 
-    # TODO: Test read_api_key
-    # from util import read_api_key
-
     assert cap_first("yolo") == "Yolo"
     assert cap_first("YOLO") == "YOLO"
     assert cap_first("yoLo") == "YoLo"
@@ -128,3 +125,34 @@ def test_util():
 
     assert icequote("sæll") == "„sæll“"
     assert icequote(" Góðan daginn ") == "„Góðan daginn“"
+
+
+def test_read_json_api_key():
+    """Test reading API keys from JSON files."""
+
+    from utility import read_json_api_key, GREYNIR_ROOT_DIR
+
+    # Test reading a non-existent key
+    assert read_json_api_key("nonexistent") == {}
+
+    # Test reading a key from a JSON file
+    assert read_json_api_key(
+        "dummy_json_api_key", folder=GREYNIR_ROOT_DIR / "tests" / "files"
+    ) == {"key": 123456789}
+
+
+def test_read_txt_api_key():
+    """Test reading API keys from .txt files."""
+
+    from utility import read_txt_api_key, GREYNIR_ROOT_DIR
+
+    # Test reading a non-existent key
+    assert read_txt_api_key("nonexistent") == ""
+
+    # Test reading a key from a .txt file
+    assert (
+        read_txt_api_key(
+            "dummy_greynir_api_key", folder=GREYNIR_ROOT_DIR / "tests" / "files"
+        )
+        == "123456789"
+    )

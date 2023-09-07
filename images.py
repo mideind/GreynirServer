@@ -43,7 +43,7 @@ import requests
 from db import Session, SessionContext
 from db.models import Link, BlacklistedLink
 from settings import Settings
-from utility import read_api_key
+from utility import read_txt_api_key
 
 # HTTP request timeout
 QUERY_TIMEOUT = 4.0
@@ -138,7 +138,7 @@ def get_image_url(
 
         if not jdoc:
             # Not found in cache: prepare to ask Google
-            key = read_api_key("GoogleServerKey")
+            key = read_txt_api_key("GoogleServerKey")
             if not key:
                 # No API key: can't ask for an image
                 logging.warning("No API key for image lookup")
@@ -310,7 +310,7 @@ def get_staticmap_image(
     height: int = 180,
 ) -> Optional[BytesIO]:
     """Request image from Google Static Maps API, return image data as bytes."""
-    key = read_api_key("GoogleServerKey")
+    key = read_txt_api_key("GoogleServerKey")
     if not key:
         return None
 

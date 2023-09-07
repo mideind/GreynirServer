@@ -46,7 +46,7 @@ from settings import changedlocale
 from db import SessionContext
 from db.models import Query, QueryClientData  # , QueryLog
 from queries import ResponseDict
-from utility import read_api_key
+from utility import read_txt_api_key
 from speech.trans import strip_markup
 from utility import QUERIES_RESOURCES_DIR
 
@@ -148,15 +148,15 @@ def _has_no_numbers(v: str) -> bool:
 
 
 def has_google_api_key() -> bool:
-    return read_api_key("GoogleServerKey") != ""
+    return read_txt_api_key("GoogleServerKey") != ""
 
 
 def has_ja_api_key() -> bool:
-    return read_api_key("JaServerKey") != ""
+    return read_txt_api_key("JaServerKey") != ""
 
 
 def has_greynir_api_key() -> bool:
-    return read_api_key("GreynirServerKey") != ""
+    return read_txt_api_key("GreynirServerKey") != ""
 
 
 def has_atm_locations_file() -> bool:
@@ -444,12 +444,11 @@ def test_counting(client: FlaskClient) -> None:
     assert _has_no_numbers(json["voice"])
 
 
+@pytest.mark.skipif(
+    not has_atm_locations_file(), reason="no ATM locations file found on test server"
+)
 def test_atm(client: FlaskClient) -> None:
     """ATM module"""
-
-    if not has_atm_locations_file():
-        # NB: No ATM locations file found, skip this test
-        return
 
     _query_data_cleanup()  # Remove any data logged to DB on account of tests
 
@@ -854,12 +853,9 @@ def test_dictionary(client: FlaskClient) -> None:
     assert "skíthæll" in json["answer"].lower()
 
 
+@pytest.mark.skipif(not has_google_api_key(), reason="no Google API key on test server")
 def test_distance(client: FlaskClient) -> None:
     """Distance module."""
-
-    if not has_google_api_key():
-        # NB: No Google API key on test server
-        return
 
     json = qmcall(
         client, {"q": "hvað er ég langt frá perlunni", "voice": True}, "Distance"
@@ -1050,11 +1046,9 @@ def test_geography(client: FlaskClient) -> None:
     assert "Noregi" in json["answer"]
 
 
+@pytest.mark.skipif(not has_ja_api_key(), reason="no Ja.is API key on test server")
 def test_ja(client: FlaskClient) -> None:
     """Ja.is module."""
-
-    if not has_ja_api_key():
-        return
 
     json = qmcall(
         client,
@@ -1137,12 +1131,9 @@ def test_petrol(client: FlaskClient) -> None:
     assert "source" in json and json["source"].startswith("Gasvaktin")
 
 
+@pytest.mark.skipif(not has_google_api_key(), reason="no Google API key on test server")
 def test_pic(client: FlaskClient) -> None:
     """Pic module."""
-
-    if not has_google_api_key():
-        # NB: No Google API key on test server
-        return
 
     # TODO: Re-add test with "Katrín Jakobsdóttir" when fixed GreynirEngine is released
     json = qmcall(client, {"q": "Sýndu mér mynd af Bjarna Benediktssyni"}, "Picture")
@@ -1155,12 +1146,9 @@ def test_pic(client: FlaskClient) -> None:
     assert "answer" in json and json["answer"]
 
 
+@pytest.mark.skipif(not has_google_api_key(), reason="no Google API key on test server")
 def test_places(client: FlaskClient) -> None:
     """Places module."""
-
-    if not has_google_api_key():
-        # NB: No Google API key on test server
-        return
 
     json = qmcall(client, {"q": "Er lokað á Forréttabarnum?", "voice": True}, "Places")
     assert (
@@ -1186,12 +1174,9 @@ def test_places(client: FlaskClient) -> None:
     assert _has_no_numbers(json["voice"])
 
 
+@pytest.mark.skipif(not has_google_api_key(), reason="no Google API key on test server")
 def test_play(client: FlaskClient) -> None:
     """Play module."""
-
-    if not has_google_api_key():
-        # NB: No Google (YouTube) API key on test server
-        return
 
     json = qmcall(client, {"q": "spilaðu einhverja klassíska tónlist"}, "Play")
     assert "open_url" in json
@@ -1621,12 +1606,9 @@ def test_userinfo(client: FlaskClient) -> None:
     # assert json["answer"].startswith("Gaman að kynnast") and "Boutros" in json["answer"]
 
 
+@pytest.mark.skipif(not has_google_api_key(), reason="no Google API key on test server")
 def test_userloc(client: FlaskClient) -> None:
     """User location module."""
-
-    if not has_google_api_key():
-        # NB: No Google API key on test server
-        return
 
     json = qmcall(client, {"q": "Hvar er ég"}, "UserLocation")
     assert "Fiskislóð" in json["answer"]
@@ -1751,12 +1733,12 @@ def test_yulelads(client: FlaskClient) -> None:
     )
 
 
+@pytest.mark.skipif(
+    not has_greynir_api_key(),
+    reason="We don't run these tests unless a Greynir API key is present",
+)
 def test_query_history_api(client: FlaskClient) -> None:
     """Tests for the query history deletion API endpoint."""
-
-    if not has_greynir_api_key():
-        # We don't run these tests unless a Greynir API key is present
-        return
 
     def _verify_basic(r: Any) -> Dict:
         """Make sure the server response is minimally sane."""
@@ -1784,7 +1766,7 @@ def test_query_history_api(client: FlaskClient) -> None:
 
     # Create basic query param dict
     qdict: Dict[str, Any] = dict(
-        api_key=read_api_key("GreynirServerKey"),
+        api_key=read_txt_api_key("GreynirServerKey"),
         action="clear",
         client_id=DUMMY_CLIENT_ID,
     )
