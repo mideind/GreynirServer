@@ -4,16 +4,17 @@
 
 <img src="static/img/greynir-logo-large.png" alt="Greynir" width="200" height="200" align="right" style="margin-left:20px; margin-bottom: 20px;">
 
-# Greynir
+# GreynirServer
 
 ### Natural Language Processing for Icelandic
 
-*Greynir* is a natural language processing engine that
-**extracts processable information from Icelandic text**, allows
-**natural language querying** of that information and facilitates
-**natural language understanding**. Greynir is the core of
-[*Embla*](https://embla.is), a voice-driven virtual assistant app
-for smartphones and tablets.
+*GreynirServer* is the web API and frontend and for
+[GreynirEngine](https://github.com/mideind/GreynirEngine), a natural
+language processing engine that **extracts processable information from
+Icelandic text**, allows *natural language querying** of that information
+and facilitates **natural language understanding**. GreynirServer is the
+is also the backend of [*Embla*](https://embla.is), an Icelandic voice
+assistant app for smartphones, tablets, and other devices.
 
 Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 
@@ -58,7 +59,7 @@ functions that are linked to grammar nonterminals.
 
 **Greynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
 and many well-written articles can be parsed completely. It presently has over a million parsed articles
-in its database, containing over 15 million parsed sentences. A relatively recent (2021) version of this
+in its database, containing more than 14 million parsed sentences. A relatively recent (2021) version of this
 database is available via the [GreynirCorpus](https://github.com/mideind/GreynirCorpus) project.
 
 Greynir supports natural language querying of its databases. Users can ask about person names, titles and
