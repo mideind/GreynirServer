@@ -42,13 +42,13 @@ from db import desc, OperationalError, Session
 from db.models import Article, Person, Entity, Root, Column
 from db.sql import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
 
-from treeutil import TreeUtility
 from reynir import TOK, Tok, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
 from speech.trans import gssml
 from queries import AnswerTuple, Query, ResponseDict, ResponseType, QueryStateDict
 from tree import Result, Node
+from tree.util import TreeUtility
 from utility import cap_first, icequote
 from queries.util import read_grammar_file
 

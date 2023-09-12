@@ -53,7 +53,7 @@ from settings import Settings, ConfigError
 from db import GreynirDB, Session
 from db.models import Article, Person, Column, DateTime
 from tree import Tree, ProcEnv, TreeStateDict
-from treeutil import PgsList
+from tree.util import PgsList
 from utility import modules_in_dir
 
 

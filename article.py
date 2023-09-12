@@ -59,7 +59,7 @@ from db.models import Article as ArticleRow, Word, Root
 
 from fetcher import Fetcher
 from tree import Tree
-from treeutil import TreeUtility, WordTuple, PgsList
+from tree.util import TreeUtility, WordTuple, PgsList
 from settings import Settings, NoIndexWords
 
 
@@ -343,7 +343,6 @@ class Article:
     ) -> None:
         """Parse the article content to yield parse trees and annotated token list"""
         with SessionContext(enclosing_session) as session:
-
             # Convert the content soup to a token iterable (generator)
             toklist: Union[List[Tok], Iterator[Tok], None]
             if not self._url or not self._html:
@@ -372,11 +371,9 @@ class Article:
             num_sent = 0
 
             for p in ip.paragraphs():
-
                 pgs.append([])
 
                 for sent in p.sentences():
-
                     num_sent += 1
                     num_tokens = len(sent)
 
@@ -633,7 +630,6 @@ class Article:
         (or less) from the most recently parsed articles. After
         each sentence, None is yielded."""
         with SessionContext(commit=True, read_only=True) as session:
-
             q: SqlQuery[ArticleRow] = (
                 session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
                 .filter(ArticleRow.tokens != None)
@@ -673,7 +669,6 @@ class Article:
         sentences (or less) from the most recently parsed articles.
         Each sentence is a list of token dicts."""
         with SessionContext(commit=True, read_only=True) as session:
-
             q: SqlQuery[ArticleRow] = (
                 session.query(ArticleRow.url, ArticleRow.parsed, ArticleRow.tokens)
                 .filter(ArticleRow.tokens != None)
@@ -719,7 +714,6 @@ class Article:
         with SessionContext(
             commit=True, read_only=True, session=enclosing_session
         ) as session:
-
             # Only fetch articles that have a parse tree
             q: SqlQuery[ArticleRow] = session.query(ArticleRow).filter(
                 ArticleRow.tree != None
@@ -776,7 +770,6 @@ class Article:
         with SessionContext(
             commit=True, read_only=True, session=enclosing_session
         ) as session:
-
             # t0 = time.time()
             mcnt = acnt = tcnt = 0
             # print("Starting article loop")

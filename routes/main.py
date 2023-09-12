@@ -41,7 +41,7 @@ from db.models import Person, Article, ArticleTopic, Entity, Column
 from settings import Settings
 from article import Article as ArticleProxy
 from search import Search
-from treeutil import TreeUtility, StatsDict
+from tree.util import TreeUtility, StatsDict
 from images import Img, get_image_url, update_broken_image_url, blacklist_image_url
 
 from . import routes, max_age, cache, better_jsonify, restricted, Response
@@ -144,7 +144,6 @@ def page() -> Union[Response, str]:
     a: Optional[ArticleProxy] = None
 
     with SessionContext(commit=True) as session:
-
         if uuid:
             a = ArticleProxy.load_from_uuid(uuid, session)
         else:
@@ -176,7 +175,7 @@ TableType = List[List[Tuple[int, Any]]]
 
 
 @routes.route("/treegrid", methods=["GET"])
-def tree_grid() -> Union[Response,str]:
+def tree_grid() -> Union[Response, str]:
     """Show a simplified parse tree for a single sentence"""
 
     txt = request.args.get("txt", "")
@@ -242,7 +241,6 @@ def tree_grid() -> Union[Response,str]:
         height = 0  # Height of simplified table
         full_height = 0  # Height of full table
     else:
-
         # Build a table structure for a simplified tree
         width = _wrap_build_tbl(
             tbl,
@@ -424,7 +422,7 @@ def image() -> Response:
 
 @routes.route("/suggest", methods=["GET"])
 @cache.cached(timeout=30 * 60, key_prefix="suggest", query_string=True)
-def suggest(limit: int=10) -> Response:
+def suggest(limit: int = 10) -> Response:
     """Return suggestions for query field autocompletion"""
     limit = int(request.args.get("limit", limit))
     txt = request.args.get("q", "").strip()

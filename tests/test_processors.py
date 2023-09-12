@@ -40,7 +40,7 @@ from reynir import tokenize  # noqa
 from reynir.incparser import IncrementalParser  # noqa
 from reynir.fastparser import Fast_Parser, ParseForestDumper  # noqa
 from tree import Tree, Session  # noqa
-from treeutil import TreeUtility  # noqa
+from tree.util import TreeUtility  # noqa
 
 
 from processor import Processor, TokenContainer  # noqa

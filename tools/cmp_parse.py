@@ -10,27 +10,30 @@ import subprocess
 basepath, _ = os.path.split(os.path.realpath(__file__))
 _TOOLS = os.sep + "tools"
 if basepath.endswith(_TOOLS):
-    basepath = basepath[0:-len(_TOOLS)]
+    basepath = basepath[0 : -len(_TOOLS)]
     sys.path.append(basepath)
 
 from settings import Settings
 from db import SessionContext
-from treeutil import TreeUtility as tu
+from tree.util import TreeUtility as tu
 
 Settings.read(os.path.join(basepath, "config", "Greynir.conf"))
 Settings.DEBUG = False
-TEXTI = 'þróunarsafn_texti.txt'
-SBR = 'þróunarsafn.txt'
-SKIPUN = './EVALB/evalb -p ./stillingar.prm' # Þróunarsafnið kemur fyrst, svo þáttun til að prófa
+TEXTI = "þróunarsafn_texti.txt"
+SBR = "þróunarsafn.txt"
+SKIPUN = "./EVALB/evalb -p ./stillingar.prm"  # Þróunarsafnið kemur fyrst, svo þáttun til að prófa
 
-class Comparison():
+
+class Comparison:
     def start(self):
         # Sækja setningar úr þróunarmálheild
         print("Sæki setningar...\n")
         setningar = self.fá_setningar()
         print("Komið! Sæki þáttun... \n")
         # Fá þáttun frá Greyni á svigaformi sem búið er að hreinsa
-        þáttun = self.fá_þáttun(setningar) # Listi af þáttuðum setningum sem búið er að laga að Evalb-staðli
+        þáttun = self.fá_þáttun(
+            setningar
+        )  # Listi af þáttuðum setningum sem búið er að laga að Evalb-staðli
         print("Komið! Sæki niðurstöður í Evalb...\n")
         # Fá niðurstöður frá Evalb
         self.niðurstöður(þáttun)
@@ -39,9 +42,9 @@ class Comparison():
     def fá_þáttun(self, setningar):
         þáttun = []
         for setning in setningar:
-            with SessionContext(read_only = True) as session:
+            with SessionContext(read_only=True) as session:
                 pgs, stats = tu.parse_text_to_bracket_form(session, setning)
-            if len(pgs[0]) > 1: # Greint sem margar setningar, vil sameina
+            if len(pgs[0]) > 1:  # Greint sem margar setningar, vil sameina
                 allar = ""
                 for pg in pgs:
                     for þáttuð_setning in pg:
@@ -50,8 +53,10 @@ class Comparison():
                 þáttun.append(hrein_þáttun)
                 continue
             for pg in pgs:
-                if not pg[0]: # Tóm setning
-                    þáttun.append("(M (S x))") # Default grunngreining setningar -- breytt til að Evalb þoli!
+                if not pg[0]:  # Tóm setning
+                    þáttun.append(
+                        "(M (S x))"
+                    )  # Default grunngreining setningar -- breytt til að Evalb þoli!
                     continue
                 for þáttuð_setning in pg:
                     # Hreinsa setningu
@@ -68,11 +73,11 @@ class Comparison():
         hreinsuð_setning = ""
         liðir = Stack()
         # TODO eyða tvöföldum bilum eins oft og ég finn - lúppa?
-        #þáttuð_setning.replace("  ", " ") # Eyða tvöföldu bili eftir að greinarmerki hafa verið tekin út
+        # þáttuð_setning.replace("  ", " ") # Eyða tvöföldu bili eftir að greinarmerki hafa verið tekin út
         for orð in þáttuð_setning.split(" "):
-            if not orð: # Ef er með margföld bil - ný nálgun
+            if not orð:  # Ef er með margföld bil - ný nálgun
                 continue
-            if "(" in orð: # Byrja nýjan lið
+            if "(" in orð:  # Byrja nýjan lið
                 liðir.push(orð)
                 liður = orð.replace("(", "")
                 if not frasi:
@@ -81,7 +86,7 @@ class Comparison():
                     orðin = "_".join(frasi)
                     hreinsuð_setning = hreinsuð_setning + orðin + " " + orð + " "
                     frasi = []
-            elif ")" in orð: # Lið lýkur; þarf að telja hve mörgum
+            elif ")" in orð:  # Lið lýkur; þarf að telja hve mörgum
                 orðið = orð.replace(")", "")
                 frasi.append(orðið)
                 svigar = orð.count(")")
@@ -94,41 +99,45 @@ class Comparison():
                     liður = liðir.pop()
             else:
                 if "AO" in liður and (orð is "ekki" or orð is "Ekki"):
-                    continue # Vil ekki safna lið
+                    continue  # Vil ekki safna lið
                 else:
                     frasi.append(orð)
-        #print(þáttuð_setning)
-        #print("\t"+hreinsuð_setning)
-        hreinsuð_setning = hreinsuð_setning.replace(") )", "))") # Lok setningar
+        # print(þáttuð_setning)
+        # print("\t"+hreinsuð_setning)
+        hreinsuð_setning = hreinsuð_setning.replace(") )", "))")  # Lok setningar
         return hreinsuð_setning
 
     def niðurstöður(self, þáttun):
         # Byrjar á að skrifa þáttaðar setningar í skjal
         # kallar svo á skel fyrir prófunarmálheildina og útkomuna
         útkomuskjal = "útkoma.txt"
-        with open(útkomuskjal, 'w+') as útkoma: # TODO ætti að vera 'w+'
+        with open(útkomuskjal, "w+") as útkoma:  # TODO ætti að vera 'w+'
             for setning in þáttun:
                 if not setning:
                     continue
                 else:
-                    útkoma.write(setning+"\n")
+                    útkoma.write(setning + "\n")
         # Senda í skel
         evalb_niðurstöður = "evalb_niðurstöður.txt"
-        heilskipun = SKIPUN + " ./{} ./{} > ./{}".format(SBR, útkomuskjal, evalb_niðurstöður)
+        heilskipun = SKIPUN + " ./{} ./{} > ./{}".format(
+            SBR, útkomuskjal, evalb_niðurstöður
+        )
         print("Sendi í Evalb!")
-        skil = subprocess.Popen([heilskipun], shell=True, stdout=subprocess.PIPE).communicate()[0]
+        skil = subprocess.Popen(
+            [heilskipun], shell=True, stdout=subprocess.PIPE
+        ).communicate()[0]
         print(skil)
 
     def fá_setningar(self):
         # Les setningar úr þróunarmálheild
         setningar = []
-        with open(TEXTI, 'r') as þróun:
+        with open(TEXTI, "r") as þróun:
             for line in þróun:
                 setningar.append(line.strip())
         return setningar
 
-class Stack:
 
+class Stack:
     def __init__(self):
         self.items = []
 
@@ -142,10 +151,11 @@ class Stack:
         return self.items.pop()
 
     def peek(self):
-        return self.items[len(self.items)-1]
+        return self.items[len(self.items) - 1]
 
     def size(self):
         return len(self.items)
+
 
 if __name__ == "__main__":
     byrjun = timer()
@@ -155,4 +165,3 @@ if __name__ == "__main__":
     liðið = lok - byrjun
     print("")
     print("Keyrslan tók {:f} sekúndur, eða {:f} mínútur.".format(liðið, (liðið / 60.0)))
-

@@ -36,7 +36,7 @@ from tnttagger import ifd_tag
 from db import SessionContext
 from db.models import ArticleTopic, Query, QueryClientData, Summary
 from geo import LatLonTuple
-from treeutil import TreeUtility
+from tree.util import TreeUtility
 from reynir.bintokenizer import TokenDict
 from reynir.binparser import canonicalize_token
 from article import Article as ArticleProxy

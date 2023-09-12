@@ -74,7 +74,7 @@ from tokenizer.definitions import (
 )
 from tokenizer.tokenizer import Tok
 
-from treeutil import TreeUtility
+from tree.util import TreeUtility
 
 
 class IFD_Corpus:

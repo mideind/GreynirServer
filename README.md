@@ -170,8 +170,7 @@ in [`queries/examples`](queries/examples).
 * [`speech/*.py`](speech/): Speech synthesizer modules
 * [`tnttagger.py`](tnttagger.py): Statistical Part-of-speech tagging
 * [`tools/*.py`](tools/): Various command line utility tools
-* [`tree.py`](tree.py): Representation of parse trees for processing
-* [`treeutil.py`](treeutil.py): Utility functions for working with parse trees and tokens
+* [`tree/*.py`](tree/): Representation of parse trees for processing and related utility functions
 * [`utility.py`](utility.py): Assorted utility functions used throughout the codebase
 * [`vectors/builder.py`](vectors/builder.py): Article indexer and LSA topic vector builder
 

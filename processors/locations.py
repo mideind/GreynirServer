@@ -28,7 +28,7 @@ from db.models import Location
 from tokenizer import TOK
 from geo import location_info
 from tree import TreeStateDict, Loc
-from treeutil import TokenDict
+from tree.util import TokenDict
 
 
 MODULE_NAME = __name__

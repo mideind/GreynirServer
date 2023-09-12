@@ -60,7 +60,7 @@ if basepath.endswith(_UTILS):
 
 from reynir import Abbreviations
 from settings import Settings, StaticPhrases
-from treeutil import TreeUtility
+from tree.util import TreeUtility
 from postagger import IFD_Tagset, IFD_Corpus
 from tokenizer import canonicalize_token
 from fastparser import Fast_Parser
@@ -502,7 +502,6 @@ class Comparison:
         stikk.write(str(self.setnf) + ". " + setning + "\n")
         stikk.flush()
         for word in all_words:  # Komin á dict frá Greyni með öllum flokkunum.
-
             if (
                 i < len(orðalisti) and not orðalisti[i]
             ):  # Tómur hnútur fremst/aftast í setningu

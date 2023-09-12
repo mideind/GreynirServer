@@ -12,7 +12,7 @@ if basepath.endswith(_UTILS):
 
 from settings import Settings
 from db import SessionContext
-from treeutil import PgsList, TreeUtility as tu
+from tree.util import PgsList, TreeUtility as tu
 
 Settings.read(os.path.join(basepath, "config", "Greynir.conf"))
 Settings.DEBUG = False
