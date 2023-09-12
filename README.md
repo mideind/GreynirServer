@@ -8,13 +8,13 @@
 
 ### Natural Language Processing for Icelandic
 
-*GreynirServer* is the web API and frontend and for
-[GreynirEngine](https://github.com/mideind/GreynirEngine), a natural
-language processing engine that **extracts processable information from
-Icelandic text**, allows *natural language querying** of that information
-and facilitates **natural language understanding**. GreynirServer is
-also the backend of [*Embla*](https://embla.is), an Icelandic voice
-assistant app for smartphones, tablets, and other devices.
+*GreynirServer* is the web API and frontend for
+[GreynirEngine](https://github.com/mideind/GreynirEngine), a natural language processing
+engine that **extracts processable information from Icelandic text**, allows
+**natural language querying** of that information and facilitates
+**natural language understanding**. GreynirServer is also the backend of
+[*Embla*](https://embla.is), an Icelandic voice assistant app for
+smartphones, tablets, and other devices.
 
 Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)
 
@@ -105,7 +105,7 @@ Greynir works in stages, roughly as follows:
 
 Greynir has an embedded web server that displays news articles recently scraped into its
 database, as well as names of people extracted from those articles along with their titles.
-The web UI enables the user to type in any URL and have Greynir scrape it, tokenize it and
+The web interface enables the user to type in any URL and have Greynir scrape it, tokenize it and
 display the result as a web page. Queries can also be entered via the keyboard or using voice
 input. The server runs on the [Flask](http://flask.pocoo.org/) framework, implements WSGI and
 can for instance be plugged into [Gunicorn](http://gunicorn.org/) and
