@@ -12,8 +12,8 @@
 [GreynirEngine](https://github.com/mideind/GreynirEngine), a natural
 language processing engine that **extracts processable information from
 Icelandic text**, allows *natural language querying** of that information
-and facilitates **natural language understanding**. GreynirServer is the
-is also the backend of [*Embla*](https://embla.is), an Icelandic voice
+and facilitates **natural language understanding**. GreynirServer is
+also the backend of [*Embla*](https://embla.is), an Icelandic voice
 assistant app for smartphones, tablets, and other devices.
 
 Try Greynir (in Icelandic) at [https://greynir.is](https://greynir.is)
