@@ -42,7 +42,7 @@ from queries.util import (
     read_grammar_file,
 )
 from tree import Result, Node, NonterminalNode
-from speech.trans import gssml
+from icespeak import gssml
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS: Sequence[str] = [

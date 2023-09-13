@@ -45,7 +45,7 @@ from db.sql import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
 from reynir import TOK, Tok, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
-from speech.trans import gssml
+from icespeak import gssml
 from queries import AnswerTuple, Query, ResponseDict, ResponseType, QueryStateDict
 from tree import Result, Node
 from tree.util import TreeUtility

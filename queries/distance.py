@@ -47,7 +47,7 @@ from queries.util import (
     query_geocode_api_addr,
     query_traveltime_api,
 )
-from speech.trans import gssml
+from icespeak import gssml
 from geo import distance, capitalize_placename
 
 

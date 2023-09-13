@@ -161,7 +161,6 @@ def test_voices_api(client: FlaskClient):
     assert "valid" in resp.json and resp.json["valid"] == True
     assert "default" in resp.json
     assert "supported" in resp.json
-    assert "recommended" in resp.json
 
 
 _KEY_RESTRICTED_ROUTES = frozenset(

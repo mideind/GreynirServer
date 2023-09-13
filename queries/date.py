@@ -73,7 +73,7 @@ from queries.util import (
 )
 from tree import Result, Node, TerminalNode
 from settings import changedlocale
-from speech.trans import gssml
+from icespeak import gssml
 
 
 _DATE_QTYPE = "Date"
