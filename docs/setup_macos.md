@@ -13,7 +13,7 @@ brew install python3 pypy3 postgresql ossp-uuid
 Alternatively, you can install these packages manually:
 
 * [Python 3](https://www.python.org/downloads/mac-osx/)
-* [PyPy 3.8](https://pypy.org/download.html)
+* [PyPy 3.9](https://pypy.org/download.html)
 * [PostgreSQL](https://www.postgresql.org/download/macosx/)
 * [uuid-ossp module](https://www.postgresql.org/docs/devel/uuid-ossp.html)
 
