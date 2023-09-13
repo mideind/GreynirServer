@@ -474,7 +474,12 @@ def query_api(version: int = 1) -> Response:
             # Create audio data
             TTS_SETTINGS.AUDIO_DIR = TTS_AUDIO_DIR
             tts_options = TTSOptions(voice=vid, speed=voice_speed)
-            tts_output: TTSOutput = tts_to_file(v, tts_options=tts_options)
+            # Set transcribe to False here, as we don't need to transcribe twice
+            tts_output: TTSOutput = tts_to_file(
+                v,
+                tts_options=tts_options,
+                transcribe=False,
+            )
             url = tts_output.file.as_uri()
             if url:
                 result["audio"] = _audio_file_url_to_host_url(url, request)
@@ -570,10 +575,16 @@ def speech_api(version: int = 1) -> Response:
     if not text:
         return better_jsonify(**reply)
 
-    fmt: str = rv.get("format", "ssml")
-    text_format: TextFormats = TextFormats.SSML
-    if fmt in TextFormats._member_names_:
+    fmt: Optional[str] = rv.get("format")
+    if fmt == "ssml" or fmt is None:
         text_format = TextFormats.SSML
+        # Only transcribe input if not SSML (transcribing messes up SSML)
+        transcribe = False
+    elif fmt == "text":
+        text_format = TextFormats.TEXT
+        transcribe = True
+    else:
+        return better_jsonify(**reply)
 
     voice_id = icelandic_asciify(rv.get("voice_id", TTS_SETTINGS.DEFAULT_VOICE))
     try:
@@ -586,7 +597,11 @@ def speech_api(version: int = 1) -> Response:
         tts_options = TTSOptions(
             voice=voice_id, speed=voice_speed, text_format=text_format
         )
-        tts_output: TTSOutput = tts_to_file(text, tts_options=tts_options)
+        tts_output: TTSOutput = tts_to_file(
+            text,
+            tts_options=tts_options,
+            transcribe=transcribe,
+        )
         url = tts_output.file.as_uri()
         if url:
             url = _audio_file_url_to_host_url(url, request)
