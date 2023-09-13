@@ -68,7 +68,7 @@ from geo import in_iceland, RVK_COORDS, near_capital_region, ICE_PLACENAME_BLACK
 from iceaddr import placename_lookup  # type: ignore
 from iceweather import observation_for_closest, observation_for_station, forecast_text  # type: ignore
 
-from speech.trans import gssml
+from icespeak import gssml
 
 _WEATHER_QTYPE = "Weather"
 
@@ -351,9 +351,13 @@ def get_currweather_answer(query: Query, result: Result) -> AnswerTuple:
     return response, answer, voice
 
 
-def gpt_query(q: Query, query: str, time: str, location: str) -> Dict[str, Union[str, int, float]]:
+def gpt_query(
+    q: Query, query: str, time: str, location: str
+) -> Dict[str, Union[str, int, float]]:
     """Return a string response for a GPT query"""
-    weather: Dict[str, Union[str, int, float]] = dict(temperature=random.randint(-10, 30), wind=random.randint(0, 20))
+    weather: Dict[str, Union[str, int, float]] = dict(
+        temperature=random.randint(-10, 30), wind=random.randint(0, 20)
+    )
     return weather
 
 

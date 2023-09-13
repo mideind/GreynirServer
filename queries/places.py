@@ -50,7 +50,7 @@ from queries.util import (
     AnswerTuple,
     read_grammar_file,
 )
-from speech.trans import gssml
+from icespeak import gssml
 from tree import Result, Node
 
 
@@ -76,7 +76,10 @@ def help_text(lemma: str) -> str:
     one of the above lemmas is found in it"""
     return "Ég get svarað ef þú spyrð til dæmis: {0}?".format(
         random.choice(
-            ("Hvað er opið lengi á Forréttabarnum", "Hvenær lokar Bónus á Fiskislóð",)
+            (
+                "Hvað er opið lengi á Forréttabarnum",
+                "Hvenær lokar Bónus á Fiskislóð",
+            )
         )
     )
 

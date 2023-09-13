@@ -54,8 +54,8 @@ from queries import Query
 from queries.currency import fetch_exchange_rates
 from queries.userloc import locality_and_country
 from settings import Settings
-from speech.trans import gssml
-from speech.trans.num import numbers_to_ordinal, years_to_text
+from icespeak import gssml
+from icespeak.transcribe.num import numbers_to_ordinal, years_to_text
 from queries.util.openai_gpt import (
     OPENAI_KEY_PRESENT,
     jdump,

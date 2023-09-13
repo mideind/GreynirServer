@@ -37,7 +37,7 @@ from datetime import datetime, timedelta
 
 from tree import Result, Node
 from utility import cap_first
-from speech.trans import gssml
+from icespeak import gssml
 from queries import Query, QueryStateDict, ContextDict
 from queries.util import query_json_api, gen_answer, read_grammar_file
 

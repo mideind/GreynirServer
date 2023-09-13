@@ -21,18 +21,12 @@ timezonefinder>=6.2.0
 rjsmin>=1.2.1
 python-youtube>=0.9.0
 country-list>=1.0.0
-# AWS Polly text-to-speech
-botocore==1.21.40
-boto3==1.18.40
-# Azure text-to-speech.
-azure-cognitiveservices-speech>=1.28.0
-# Google text-to-speech
-# google-cloud-texttospeech>=2.14.1
 # For OpenAI GPT support
 openai>=0.27.6
 # Ours
 reynir>=3.5.4
 islenska>=0.4.8
+icespeak>=0.3.2
 iceaddr>=0.5.5
 iceweather>=0.2.3
 cityloc>=0.1.1

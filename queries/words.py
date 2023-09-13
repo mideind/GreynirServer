@@ -46,7 +46,7 @@ from reynir.bindb import GreynirBin
 from queries import Query, AnswerTuple
 from queries.util import gen_answer
 from utility import icequote
-from speech.trans import gssml
+from icespeak import gssml
 
 
 _WORDTYPE_RX_NOM = "(?:orðið|nafnið|nafnorðið)"

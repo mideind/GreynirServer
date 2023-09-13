@@ -47,7 +47,7 @@ from db import SessionContext
 from db.models import Query, QueryClientData  # , QueryLog
 from queries import ResponseDict
 from utility import read_txt_api_key
-from speech.trans import strip_markup
+from icespeak.transcribe import strip_markup
 from utility import QUERIES_RESOURCES_DIR
 
 

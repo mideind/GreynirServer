@@ -31,7 +31,7 @@ from datetime import datetime
 from queries import Query, QueryStateDict
 from tree import Result, Node, TerminalNode
 from queries.util import read_grammar_file
-from speech.trans.num import numbers_to_ordinal
+from icespeak.transcribe.num import numbers_to_ordinal
 
 
 def help_text(lemma: str) -> str:

@@ -36,7 +36,7 @@ from reynir import NounPhrase
 from reynir.bindb import GreynirBin
 
 from queries.util import query_json_api, gen_answer, read_grammar_file
-from speech.trans import gssml
+from icespeak import gssml
 
 from queries import AnswerTuple, Query, QueryStateDict
 from tree import Result, Node

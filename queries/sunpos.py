@@ -58,7 +58,7 @@ from geo import (
     ICE_PLACENAME_BLACKLIST,
 )
 from iceaddr import placename_lookup
-from speech.trans.num import numbers_to_ordinal, floats_to_text
+from icespeak.transcribe.num import numbers_to_ordinal, floats_to_text
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings
@@ -495,7 +495,6 @@ def _answer_city_solar_data(
 
 
 def _get_answer(q: Query, result: Result) -> AnswerTuple:
-
     qdate: datetime.date = result.get("date", datetime.date.today())
     sun_pos: int = result.get("solar_position")
 

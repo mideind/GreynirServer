@@ -182,8 +182,8 @@ in [`queries/examples`](queries/examples).
 
 ## Running Greynir
 
-Once you have followed the installation and setup instructions above, change to the
-Greynir repository and activate the virtual environment:
+Once you have followed the installation and setup instructions above, change
+to the Greynir repository and activate the virtual environment:
 
 ```bash
 cd Greynir
@@ -265,7 +265,7 @@ GNU GPLv3 or other compatible licenses.
 
 ## Acknowledgements
 
-Greynir uses the official BÍN ([Beygingarlýsing íslensks nútímamáls](https://bin.arnastofnun.is))
+Greynir uses the BÍN ([Beygingarlýsing íslensks nútímamáls](https://bin.arnastofnun.is))
 lexicon and database of Icelandic word forms to identify words and find their
 potential meanings and lemmas. The database is included in
 [BinPackage](https://github.com/mideind/BinPackage) in compressed form.

@@ -35,7 +35,7 @@ from db.sql import QueryTypesQuery
 from queries import Query
 from queries.util import gen_answer, natlang_seq, is_plural, iceformat_float
 from routes.people import top_persons
-from speech.trans import gssml
+from icespeak import gssml
 
 _STATS_QTYPE = "Stats"
 

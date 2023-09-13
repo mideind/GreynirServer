@@ -43,7 +43,7 @@ from queries.util import (
     AnswerTuple,
     LatLonTuple,
 )
-from speech.trans.num import number_to_text
+from icespeak.transcribe.num import number_to_text
 from utility import QUERIES_RESOURCES_DIR
 
 # TODO: fetch ATM data from a web service instead of a local file every once in a while
