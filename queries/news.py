@@ -34,7 +34,7 @@ import logging
 import cachetools  # type: ignore
 import random
 
-from speech.trans import gssml
+from icespeak import gssml
 from queries import Query, QueryStateDict, AnswerTuple
 from queries.util import gen_answer, query_json_api, read_grammar_file
 from tree import Result, Node
@@ -108,10 +108,10 @@ def top_news_answer() -> Optional[AnswerTuple]:
     news = "".join(items).strip()
     voice_news = ""
     for item in items:
-        # TODO: Transcribing the news using 'generic'
+        # TODO: Transcribing the news using 'parser_transcribe'
         # costs 6 seconds when not cached,
         # this is too costly at the moment
-        # voice_news += gssml(item, type="generic")
+        # voice_news += gssml(item, type="parser_transcribe")
         voice_news += item
         # Add a pause between individual news items
         voice_news += gssml(type="vbreak", time="1s")

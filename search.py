@@ -75,7 +75,9 @@ class Search:
             cls.similarity_client = SimilarityClient()
 
     @classmethod
-    def list_similar_to_article(cls, session: Session, uuid: str, n: int) -> List[SimilarDict]:
+    def list_similar_to_article(
+        cls, session: Session, uuid: str, n: int
+    ) -> List[SimilarDict]:
         """List n articles that are similar to the article with the given id"""
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
@@ -86,7 +88,9 @@ class Search:
         return cls.list_articles(session, articles, n)
 
     @classmethod
-    def list_similar_to_topic(cls, session: Session, topic_vector: List[float], n: int) -> List[SimilarDict]:
+    def list_similar_to_topic(
+        cls, session: Session, topic_vector: List[float], n: int
+    ) -> List[SimilarDict]:
         """List n articles that are similar to the given topic vector"""
         cls._connect()
         # Returns a list of tuples: (article_id, similarity)
@@ -97,7 +101,9 @@ class Search:
         return cls.list_articles(session, articles, n)
 
     @classmethod
-    def list_similar_to_terms(cls, session: Session, terms: List[Tuple[str, str]], n: int) -> WeightsDict:
+    def list_similar_to_terms(
+        cls, session: Session, terms: List[Tuple[str, str]], n: int
+    ) -> WeightsDict:
         """List n articles that are similar to the given terms. The
         terms are expected to be a list of (stem, category) tuples."""
         cls._connect()
@@ -108,7 +114,9 @@ class Search:
         articles: List[Tuple[str, float]] = result.get("articles", [])
         # Obtain the search term weights
         weights: List[float] = result.get("weights", [])
-        return WeightsDict(weights=weights, articles=cls.list_articles(session, articles, n))
+        return WeightsDict(
+            weights=weights, articles=cls.list_articles(session, articles, n)
+        )
 
     @classmethod
     def list_articles(
@@ -130,6 +138,8 @@ class Search:
                 continue
             # Similarity in percent
             spercent = 100.0 * similarity
+
+            assert sa.timestamp is not None  # Silence type checker
 
             def is_probably_same_as(last: SimilarDict) -> bool:
                 """Return True if the current article is probably different from

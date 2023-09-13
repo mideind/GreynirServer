@@ -44,7 +44,7 @@ from queries.util import (
     LatLonTuple,
     read_grammar_file,
 )
-from speech.trans import gssml
+from icespeak import gssml
 
 _PETROL_QTYPE = "Petrol"
 

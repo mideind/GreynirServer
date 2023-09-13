@@ -38,7 +38,7 @@ from queries import Query, QueryStateDict
 from queries.util import query_json_api, is_plural, read_grammar_file
 from tree import Result, Node
 from settings import changedlocale
-from speech.trans import gssml
+from icespeak import gssml
 
 from reynir import NounPhrase
 from geo import capitalize_placename, iceprep_for_placename, icelandic_city_name
@@ -140,6 +140,7 @@ _FLIGHT_CACHE: cachetools.TTLCache = cachetools.TTLCache(  # type: ignore
     maxsize=2, ttl=_FLIGHTS_CACHE_TTL
 )
 
+
 # For type checking
 class FlightType(TypedDict, total=False):
     No: str
@@ -219,7 +220,9 @@ def _filter_flight_data(
     """
     flight_time: datetime
     flight: FlightType
-    now: datetime = datetime.now(timezone.utc) # Timezone aware datetime (don't change to datetime.utcnow()!)
+    now: datetime = datetime.now(
+        timezone.utc
+    )  # Timezone aware datetime (don't change to datetime.utcnow()!)
 
     matching_flights: FlightList = []
     for flight in flights:
@@ -388,7 +391,9 @@ def _process_result(result: Result) -> Dict[str, str]:
 
     from_date: datetime
     to_date: datetime
-    now = datetime.now(timezone.utc)  # Timezone aware datetime, don't change to .utcnow()!
+    now = datetime.now(
+        timezone.utc
+    )  # Timezone aware datetime, don't change to .utcnow()!
     days: int = result.get("day_count", 5)  # Check 5 days into future by default
     from_date = result.get("from_date", now)
     to_date = result.get("to_date", now + timedelta(days=days))

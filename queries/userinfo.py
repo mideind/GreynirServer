@@ -35,7 +35,7 @@ from reynir.bindb import GreynirBin
 from geo import icelandic_addr_info, iceprep_for_placename, iceprep_for_street
 from queries import ClientDataDict, Query
 from queries.util import gen_answer
-from speech.trans.num import numbers_to_text
+from icespeak.transcribe.num import numbers_to_text
 
 
 _USERINFO_QTYPE = "UserInfo"
@@ -328,18 +328,18 @@ def _myaddris_handler(q: Query, ql: str) -> bool:
     return True
 
 
-#def _whatsmynum_handler(q: Query, ql: str) -> bool:
+# def _whatsmynum_handler(q: Query, ql: str) -> bool:
 #    """Handle queries of the form "Hvað er símanúmerið mitt?"""
 #    return False
 #
-#_MY_PHONE_IS_REGEXES = (
+# _MY_PHONE_IS_REGEXES = (
 #    r"símanúmer mitt er (.+)$",
 #    r"símanúmerið mitt er (.+)$",
 #    r"ég er með símanúmer (.+)$",
 #    r"ég er með símanúmerið (.+)$",
-#)
+# )
 #
-#_DUNNO_PHONE_NUM = "Ég veit ekki hvert símanúmer þitt er, en þú getur sagt mér það."
+# _DUNNO_PHONE_NUM = "Ég veit ekki hvert símanúmer þitt er, en þú getur sagt mér það."
 
 
 _DEVICE_TYPE_QUERIES = frozenset(

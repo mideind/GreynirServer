@@ -41,7 +41,7 @@ from geo import (
 )
 from queries import Query
 from queries.util import timezone4loc, gen_answer
-from speech.trans import gssml
+from icespeak import gssml
 from utility import icequote
 
 _TIME_QTYPE = "Time"

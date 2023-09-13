@@ -25,34 +25,29 @@
 from typing import Dict, Any, Iterable, List, Optional, cast
 
 from datetime import datetime
-import logging
 
 from flask import request, abort
 from flask.wrappers import Response, Request
 
-from settings import Settings
+from icespeak import GreynirSSMLParser, tts_to_file, TTSOptions, VOICES
+from icespeak.settings import SETTINGS as TTS_SETTINGS
+from icespeak.settings import TextFormats
+from icespeak.tts import TTSOutput
+from reynir.bintokenizer import TokenDict
+from reynir.binparser import canonicalize_token
 
+from settings import Settings
 from tnttagger import ifd_tag
 from db import SessionContext
 from db.models import ArticleTopic, Query, QueryClientData, Summary
 from geo import LatLonTuple
 from tree.util import TreeUtility
-from reynir.bintokenizer import TokenDict
-from reynir.binparser import canonicalize_token
 from article import Article as ArticleProxy
 from queries import process_query
 from queries import Query as QueryObject
-from speech import (
-    GreynirSSMLParser,
-    text_to_audio_url,
-    DEFAULT_VOICE,
-    SUPPORTED_VOICES,
-    RECOMMENDED_VOICES,
-    DEFAULT_VOICE_SPEED,
-)
-from speech.voices import voice_for_locale
 from queries.util.openai_gpt import summarize
-from utility import read_txt_api_key, icelandic_asciify
+from tts import voice_for_locale
+from utility import read_txt_api_key, icelandic_asciify, TTS_AUDIO_DIR
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH
@@ -349,8 +344,8 @@ def reparse_api(version: int = 1) -> Response:
     return better_jsonify(valid=True, result=tokens, register=register, stats=stats)
 
 
-def file_url_to_host_url(url: str, r: Request) -> str:
-    """Convert a local file:// URL to a http(s):// URL."""
+def _audio_file_url_to_host_url(url: str, r: Request) -> str:
+    """Convert a local audio file:// URL to a http(s):// URL."""
     if url.startswith("file://"):
         try:
             idx = url.index("static/audio/")  # A bit hacky
@@ -388,12 +383,12 @@ def query_api(version: int = 1) -> Response:
     # If voice is set, return a voice-friendly string
     voice = bool_from_request(request, "voice")
     # Request a particular voice
-    voice_id: str = icelandic_asciify(rv.get("voice_id", DEFAULT_VOICE))
+    voice_id: str = icelandic_asciify(rv.get("voice_id", TTS_SETTINGS.DEFAULT_VOICE))
     # Request a particular voice speed
     try:
-        voice_speed = float(rv.get("voice_speed", DEFAULT_VOICE_SPEED))
+        voice_speed = float(rv.get("voice_speed", TTS_SETTINGS.DEFAULT_VOICE_SPEED))
     except ValueError:
-        voice_speed = DEFAULT_VOICE_SPEED
+        voice_speed = TTS_SETTINGS.DEFAULT_VOICE_SPEED
 
     # If test is set to True, we
     # (1) add a synthetic location, if not given; and
@@ -459,7 +454,7 @@ def query_api(version: int = 1) -> Response:
         authenticated=_has_valid_api_key(request),
     )
 
-    # Get URL for response synthesized speech audio
+    # Get URL for synthesized speech audio
     if voice and "voice" in result:
         # If the result contains a "voice" key, return it
         v = result["voice"]
@@ -477,9 +472,17 @@ def query_api(version: int = 1) -> Response:
                 vid = voice_for_locale(result["voice_locale"])
             result["voice_id"] = vid
             # Create audio data
-            url = text_to_audio_url(v, voice_id=vid, speed=voice_speed)
+            TTS_SETTINGS.AUDIO_DIR = TTS_AUDIO_DIR
+            tts_options = TTSOptions(voice=vid, speed=voice_speed)
+            # Set transcribe to False here, as we don't need to transcribe twice
+            tts_output: TTSOutput = tts_to_file(
+                v,
+                tts_options=tts_options,
+                transcribe=False,
+            )
+            url = tts_output.file.as_uri()
             if url:
-                result["audio"] = file_url_to_host_url(url, request)
+                result["audio"] = _audio_file_url_to_host_url(url, request)
         response = cast(Optional[Dict[str, str]], result.get("response"))
         if response:
             if "sources" in response:
@@ -572,24 +575,36 @@ def speech_api(version: int = 1) -> Response:
     if not text:
         return better_jsonify(**reply)
 
-    fmt = rv.get("format", "ssml")
-    if fmt not in ["text", "ssml"]:
-        fmt = "ssml"
-    voice_id = icelandic_asciify(rv.get("voice_id", DEFAULT_VOICE))
+    fmt: Optional[str] = rv.get("format")
+    if fmt == "ssml" or fmt is None:
+        text_format = TextFormats.SSML
+        # Only transcribe input if not SSML (transcribing messes up SSML)
+        transcribe = False
+    elif fmt == "text":
+        text_format = TextFormats.TEXT
+        transcribe = True
+    else:
+        return better_jsonify(**reply)
+
+    voice_id = icelandic_asciify(rv.get("voice_id", TTS_SETTINGS.DEFAULT_VOICE))
     try:
-        voice_speed = float(rv.get("voice_speed", DEFAULT_VOICE_SPEED))
+        voice_speed = float(rv.get("voice_speed", TTS_SETTINGS.DEFAULT_VOICE_SPEED))
     except ValueError:
-        voice_speed = DEFAULT_VOICE_SPEED
+        voice_speed = TTS_SETTINGS.DEFAULT_VOICE_SPEED
 
     try:
-        url = text_to_audio_url(
-            text,
-            text_format=fmt,
-            voice_id=voice_id,
-            speed=voice_speed,
+        TTS_SETTINGS.AUDIO_DIR = TTS_AUDIO_DIR
+        tts_options = TTSOptions(
+            voice=voice_id, speed=voice_speed, text_format=text_format
         )
+        tts_output: TTSOutput = tts_to_file(
+            text,
+            tts_options=tts_options,
+            transcribe=transcribe,
+        )
+        url = tts_output.file.as_uri()
         if url:
-            url = file_url_to_host_url(url, request)
+            url = _audio_file_url_to_host_url(url, request)
     except Exception:
         return better_jsonify(**reply)
 
@@ -609,9 +624,8 @@ def voices_api(version: int = 1) -> Response:
 
     return better_jsonify(
         valid=True,
-        default=DEFAULT_VOICE,
-        supported=sorted(list(SUPPORTED_VOICES)),
-        recommended=sorted(list(RECOMMENDED_VOICES)),
+        default=TTS_SETTINGS.DEFAULT_VOICE,
+        supported=sorted(list(VOICES)),
     )
 
 

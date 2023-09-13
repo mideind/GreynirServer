@@ -37,7 +37,7 @@ from random import choice
 from utility import icequote
 
 from queries import Query
-from speech.trans import gssml
+from icespeak import gssml
 
 # Type definitions
 AnswerEntry = Union[str, bool]

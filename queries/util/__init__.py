@@ -48,7 +48,7 @@ from timezonefinder import TimezoneFinder
 from pytz import country_timezones
 
 from geo import country_name_for_isocode, iceprep_for_cc, LatLonTuple
-from speech.trans.num import number_to_text, float_to_text
+from icespeak.transcribe.num import number_to_text, float_to_text
 from reynir import NounPhrase
 from tree import Node
 from settings import changedlocale

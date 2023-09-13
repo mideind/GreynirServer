@@ -36,7 +36,7 @@ from reynir import NounPhrase
 from reynir.bindb import GreynirBin
 
 from queries.util import query_json_api, gen_answer, read_grammar_file
-from speech.trans import gssml
+from icespeak import gssml
 
 from queries import AnswerTuple, Query, QueryStateDict
 from tree import Result, Node
@@ -233,7 +233,7 @@ def _answer_name4phonenum_query(q: Query, result: Result) -> AnswerTuple:
     ).strip()
     voice = ans_templ.format(
         n=name,
-        o=f", {gssml(occup, type='generic')}" if occup else "",
+        o=f", {gssml(occup, type='parser_transcribe')}" if occup else "",
         f=f", {vfull_addr}" if vfull_addr else "",
     ).strip()
 

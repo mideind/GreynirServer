@@ -29,7 +29,7 @@ import logging
 import random
 from datetime import datetime, timedelta
 
-from speech.trans import gssml
+from icespeak import gssml
 from queries.util import parse_num, gen_answer, read_grammar_file
 from queries import Query, QueryStateDict
 from tree import Result, Node

@@ -45,7 +45,7 @@ from db.sql import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
 from reynir import TOK, Tok, correct_spaces
 from reynir.bintokenizer import stems_of_token
 from search import Search
-from speech.trans import gssml
+from icespeak import gssml
 from queries import AnswerTuple, Query, ResponseDict, ResponseType, QueryStateDict
 from tree import Result, Node
 from tree.util import TreeUtility
@@ -527,7 +527,7 @@ def query_person(query: Query, session: Session, name: str) -> AnswerTuple:
             return dict(answer=""), "", ""
         answer = title
         voice_answer = (
-            f"{gssml(name, type='person')} er {gssml(answer, type='generic')}."
+            f"{gssml(name, type='person')} er {gssml(answer, type='parser_transcribe')}."
         )
         # Set the context for a subsequent query
         query.set_context({"person_name": name})
@@ -639,7 +639,7 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
     response = make_response_list(rd)
     answer: str
     voice_answer: str
-    voice_title = gssml(title, type="generic")
+    voice_title = gssml(title, type="parser_transcribe")
     if response and title and "answer" in response[0]:
         first_response = response[0]
         # Return 'Seðlabankastjóri er Már Guðmundsson.'

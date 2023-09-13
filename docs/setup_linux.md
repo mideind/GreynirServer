@@ -50,14 +50,14 @@ Install [git](https://git-scm.com) if it's not already installed:
 sudo apt-get install git
 ```
 
-Install PyPy 3.8 or later ([available here](http://pypy.org/download.html)).
+Install PyPy 3.9 or later ([available here](http://pypy.org/download.html)).
 For example:
 
 ```bash
 mkdir ~/pypy
 cd ~/pypy
-wget https://downloads.python.org/pypy/pypy3.8-v7.3.11-linux64.tar.bz2
-tar --strip-components=1 -xvf pypy3.8-v7.3.11-linux64.tar.bz2
+wget https://downloads.python.org/pypy/pypy3.9-v7.3.12-linux64.tar.bz2
+tar --strip-components=1 -xvf pypy3.9-v7.3.12-linux64.tar.bz2
 ```
 
 The PyPy binary should now be installed in `~/pypy/bin/pypy3`.

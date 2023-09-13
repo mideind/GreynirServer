@@ -39,7 +39,7 @@ import cachetools
 
 from tokenizer import split_into_sentences
 
-from speech.trans import gssml
+from icespeak import gssml
 from settings import changedlocale
 from queries.util import query_json_api, read_grammar_file
 

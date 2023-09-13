@@ -37,7 +37,7 @@ from math import floor, log10
 from queries import Query, QueryStateDict, to_dative, to_accusative
 from queries.util import iceformat_float, parse_num, read_grammar_file, is_plural
 from tree import Result, Node
-from speech.trans import gssml
+from icespeak import gssml
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [
@@ -329,7 +329,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             unit_to = result.unit_to
             response = dict(answer=answer)
             voice_answer = "{0} {1} {2}.".format(result.desc, verb, answer).capitalize()
-            voice_answer = gssml(voice_answer, type="generic")
+            voice_answer = gssml(voice_answer, type="parser_transcribe")
             # Store the resulting quantity in the query context
             q.set_context(
                 {
