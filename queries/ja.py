@@ -233,7 +233,7 @@ def _answer_name4phonenum_query(q: Query, result: Result) -> AnswerTuple:
     ).strip()
     voice = ans_templ.format(
         n=name,
-        o=f", {gssml(occup, type='generic')}" if occup else "",
+        o=f", {gssml(occup, type='parser_transcribe')}" if occup else "",
         f=f", {vfull_addr}" if vfull_addr else "",
     ).strip()
 

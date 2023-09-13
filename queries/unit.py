@@ -329,7 +329,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
             unit_to = result.unit_to
             response = dict(answer=answer)
             voice_answer = "{0} {1} {2}.".format(result.desc, verb, answer).capitalize()
-            voice_answer = gssml(voice_answer, type="generic")
+            voice_answer = gssml(voice_answer, type="parser_transcribe")
             # Store the resulting quantity in the query context
             q.set_context(
                 {
