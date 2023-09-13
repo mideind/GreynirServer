@@ -26,7 +26,7 @@ openai>=0.27.6
 # Ours
 reynir>=3.5.4
 islenska>=0.4.8
-icespeak>=0.3.2
+icespeak<0.4.0
 iceaddr>=0.5.5
 iceweather>=0.2.3
 cityloc>=0.1.1
