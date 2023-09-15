@@ -2,15 +2,15 @@
 werkzeug>=2.2.1
 Flask==2.3.3
 flask-caching>=2.0.2
-Flask-Cors>=3.0.10
+Flask-Cors>=4.0.0
 # DB
 psycopg2cffi==2.9.0
 SQLAlchemy==1.4.49
-sqlalchemy2-stubs>=0.0.2a34
+sqlalchemy2-stubs>=0.0.2a35
 # Util
-cachetools>=5.3.0
-requests>=2.29.0
-typing-extensions>=4.5.0
+cachetools>=5.3.1
+requests>=2.31.0
+typing-extensions>=4.7.1
 python-dotenv>=1.0.0
 # Scraping
 beautifulsoup4>=4.12.2
@@ -19,16 +19,16 @@ feedparser>=6.0.10
 pytz>=2023.3
 timezonefinder>=6.2.0
 rjsmin>=1.2.1
-python-youtube>=0.9.0
+python-youtube>=0.9.1
 country-list>=1.0.0
 # For OpenAI GPT support
-openai>=0.27.6
+openai>=0.28.0
 # Ours
 reynir>=3.5.4
 islenska>=0.4.8
 icespeak<0.4.0
-iceaddr>=0.5.5
+iceaddr>=0.5.6
 iceweather>=0.2.3
 cityloc>=0.1.1
-straeto>=1.2.0
+straeto>=1.4.1
 
