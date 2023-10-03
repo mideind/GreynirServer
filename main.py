@@ -64,7 +64,7 @@ from utility import (
 )
 
 from reynir.version import __version__ as greynir_version
-from tokenizer.version import __version__ as tokenizer_version
+from tokenizer import __version__ as tokenizer_version
 
 
 # RUNNING_AS_SERVER is True if we're executing under nginx/Gunicorn,

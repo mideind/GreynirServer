@@ -45,7 +45,7 @@ from collections import defaultdict
 from sqlalchemy.orm.query import Query as SqlQuery
 from sqlalchemy.sql.expression import func
 
-from tokenizer.version import __version__ as tokenizer_version
+from tokenizer import __version__ as tokenizer_version
 from tokenizer import correct_spaces
 
 from reynir import TOK, Tok
