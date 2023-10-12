@@ -48,7 +48,7 @@ from timezonefinder import TimezoneFinder
 from pytz import country_timezones
 
 from geo import country_name_for_isocode, iceprep_for_cc, LatLonTuple
-from icespeak.transcribe.num import number_to_text, float_to_text
+from icespeak.transcribe.num import number_to_text, float_to_text, CaseType
 from reynir import NounPhrase
 from tree import Node
 from settings import changedlocale
@@ -313,7 +313,9 @@ def time_period_desc(
             if num_to_str:
                 # Convert number to spoken text
                 svalue = number_to_text(
-                    value, case=case, gender="kk" if unit == "d" else "kvk"
+                    value,
+                    case=cast(CaseType, case),
+                    gender="kk" if unit == "d" else "kvk",
                 )
             result.append(f"{svalue} {icename}")
 
@@ -348,7 +350,7 @@ def distance_desc(
         unit = "km" if abbr else unit_long
         sdist = dist
         if num_to_str:
-            sdist = float_to_text(rounded_km, case=case, gender="kk")
+            sdist = float_to_text(rounded_km, case=cast(CaseType, case), gender="kk")
     # E.g. 940 metrar
     else:
         # Round to nearest 10
@@ -361,7 +363,7 @@ def distance_desc(
         unit = "m" if abbr else unit_long
         sdist = str(rounded_dist)
         if num_to_str:
-            sdist = number_to_text(rounded_dist, case=case, gender="kk")
+            sdist = number_to_text(rounded_dist, case=cast(CaseType, case), gender="kk")
 
     return f"{sdist} {unit}"
 
