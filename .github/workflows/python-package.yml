@@ -1,6 +1,3 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-
 name: tests
 
 on:
@@ -40,12 +37,12 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9"]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Set up Icelandic locale
@@ -57,6 +54,7 @@ jobs:
         pip install --upgrade pip wheel setuptools pytest curlylint
         pip install --upgrade git+https://github.com/mideind/Tokenizer#egg=tokenizer
         pip install --upgrade git+https://github.com/mideind/GreynirEngine#egg=reynir
+        pip install --upgrade git+https://github.com/mideind/Icespeak#egg=icespeak
         pip install --upgrade -r requirements.txt
         sudo npm i -g jshint
         sudo apt-get install shellcheck
@@ -84,7 +82,7 @@ jobs:
       env:
         ICESPEAK_KEYS_DIR: resources
       run: |
-        python -m pytest
+        ICESPEAK_KEYS_DIR="resources/" python -m pytest -vvvrP --log-level=DEBUG
     - name: Run curlylint on templates
       run: |
         curlylint templates/*

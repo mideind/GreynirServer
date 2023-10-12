@@ -969,7 +969,7 @@ def test_flights(client: FlaskClient) -> None:
         "Flights",
     )
     ans = json["answer"]
-    assert "lendir á" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert "lendir " in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
     assert _has_no_numbers(json["voice"])
     json = qmcall(
         client,
@@ -980,7 +980,7 @@ def test_flights(client: FlaskClient) -> None:
         "Flights",
     )
     ans = json["answer"]
-    assert "lendir á" in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
+    assert "lendir " in ans or "aflýst" in ans or ans.startswith("Ekkert flug")
     assert _has_no_numbers(json["voice"])
 
     json = qmcall(

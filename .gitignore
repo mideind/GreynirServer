@@ -163,7 +163,7 @@ resources/*
 *.opus
 
 # Env file
-.env
+.env*
 
 # Coverage test cache
 .coverage
