@@ -21,7 +21,7 @@ SERVICE="greynir"
 # Check first argument
 if [[ "$1" = "staging" ]]; then
     MODE="STAGING"
-    DEST="/usr/share/nginx/staging" # Staging
+    DEST="/usr/share/nginx/staging.greynir.is" # Staging
     SERVICE="staging"
 fi
 
