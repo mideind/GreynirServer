@@ -2151,3 +2151,43 @@ class HeimildinScraper(ScrapeHelper):
         for elm in content.find_all("div", {"class": "paywall"}):
             elm.decompose()
         return content
+
+
+class SamstodinScraper(ScrapeHelper):
+    """Scraping helper for samstodin.is"""
+
+    def __init__(self, root: Root) -> None:
+        super().__init__(root)
+        self._feeds = ["https://samstodin.is/feed/"]
+
+    def get_metadata(self, soup: BeautifulSoup) -> Metadata:
+        """Analyze the article soup and return metadata"""
+        metadata = super().get_metadata(soup)
+
+        # Extract the heading from the OpenGraph og:title meta property
+        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+        heading.strip()
+        timestamp = datetime.utcnow()
+        author = "Ritstjórn Samstöðvarinnar"
+
+        article = soup.find("article")
+        if article and type(article) is Tag:
+            # Look for author name in article metadata
+            authorlinks = article.find_all(
+                "a", href=re.compile("^https://samstodin.is/author/")
+            )
+            if authorlinks:
+                author = authorlinks[0].text.strip()
+
+        metadata.heading = heading
+        metadata.author = author
+        metadata.timestamp = timestamp
+
+        return metadata
+
+    def get_content(self, soup: BeautifulSoup) -> Optional[Tag]:
+        """Find the article content (main text) in the soup."""
+        content = ScrapeHelper.div_class(soup, "entry-content")
+        if not content:
+            return BeautifulSoup("")
+        return content

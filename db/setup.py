@@ -250,6 +250,15 @@ ROOTS = [
         "HeimildinScraper",
         True,
     ),
+    (
+        "https://samstodin.is/",
+        "samstodin.is",
+        "Samstöðin",
+        0.5,
+        "scrapers.default",
+        "SamstodinScraper",
+        True,
+    ),
 ]
 
 

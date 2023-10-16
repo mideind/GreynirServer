@@ -46,6 +46,9 @@ from db.models import Root, Article as ArticleRow
 # _HTML_PARSER = "html5lib"
 _HTML_PARSER = "html.parser"
 
+# The user agent string to send in headers when fetching URLs
+_USER_AGENT = "GreynirScraper (https://greynir.is)"
+
 
 class Fetcher:
     """The worker class that scrapes the known roots"""
@@ -216,7 +219,8 @@ class Fetcher:
         html_doc = None
         try:
             # Normal external HTTP/HTTPS fetch
-            r = requests.get(url, timeout=10)
+            headers = {"User-Agent": _USER_AGENT}
+            r = requests.get(url, timeout=10, headers=headers)
             # pylint: disable=no-member
             if r.status_code == requests.codes.ok:
                 html_doc = r.text
