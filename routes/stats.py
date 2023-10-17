@@ -76,6 +76,7 @@ _SOURCE_ROOT_COLORS = {
     "Bændablaðið": "#41938A",
     "Viðskiptablaðið": "#00ffff",
     "Heimildin": "#f17030",
+    "Samstöðin": "#8b0000",
 }
 
 
