@@ -1133,11 +1133,10 @@ class Query:
             va = self.voice_answer()
             if va:
                 result["voice"] = va
-        if self._voice_id:
-            result["voice_id"] = self._voice_id
-        if self._voice_locale:
-            result["voice_locale"] = self._voice_locale
-        if self._voice:
+            if self._voice_id:
+                result["voice_id"] = self._voice_id
+            if self._voice_locale:
+                result["voice_locale"] = self._voice_locale
             # Optimize the response to voice queries:
             # we don't need detailed information about alternative
             # answers or their sources

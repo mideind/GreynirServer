@@ -50,7 +50,7 @@ from utility import QUERIES_RESOURCES_DIR
 # TODO: Handle multiple ATMs in same location, but with different services
 # TODO: "við" er ekki rétt í öllum tilfellum, td ætti að vera "í Norðurturni Smáralindar"
 
-_ATM_QTYPE = "Atm"
+_ATM_QTYPE = "ATM"
 
 _PATH_TO_ISB_JSON = QUERIES_RESOURCES_DIR / "isb_locations.json"
 
