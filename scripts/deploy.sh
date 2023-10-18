@@ -9,9 +9,9 @@
 # Defaults to deploying to production.
 # Run with argument "staging" to deploy to staging
 
-set -o errexit   # Exit when a command fails
+# set -o errexit   # Exit when a command fails
 # set -o nounset   # Disallow unset variables
-set -o pipefail  # Pipeline command fails if any command fails
+# set -o pipefail  # Pipeline command fails if any command fails
 
 SRC=~/github/Greynir
 MODE="PRODUCTION"
@@ -44,6 +44,7 @@ cd $DEST || exit 1
 
 # shellcheck disable=SC1091
 source "venv/bin/activate"
+pip install --upgrade pip wheel setuptools
 pip install --upgrade -r requirements.txt
 deactivate
 
@@ -73,12 +74,11 @@ cp settings.py $DEST/settings.py
 cp similar.py $DEST/similar.py
 cp speak.py $DEST/speak.py
 cp tnttagger.py $DEST/tnttagger.py
-cp tree.py $DEST/tree.py
-cp treeutil.py $DEST/treeutil.py
+cp tts.py $DEST/tts.py
 cp utility.py $DEST/utility.py
 cp -r db $DEST/
 cp -r routes $DEST/
-cp -r speech $DEST/
+cp -r tree $DEST/
 cp scrapers/*.py $DEST/scrapers/
 cp nn/*.py $DEST/nn/
 
