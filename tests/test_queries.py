@@ -444,9 +444,7 @@ def test_counting(client: FlaskClient) -> None:
     assert _has_no_numbers(json["voice"])
 
 
-@pytest.mark.skipif(
-    not has_atm_locations_file(), reason="no ATM locations file found on test server"
-)
+@pytest.mark.skipif(not has_atm_locations_file(), reason="no ATM locations file found")
 def test_atm(client: FlaskClient) -> None:
     """ATM module"""
 

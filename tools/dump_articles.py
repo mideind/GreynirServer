@@ -18,7 +18,8 @@
     along with this program.  If not, see http://www.gnu.org/licenses/.
 
 
-    This utility extracts the text of all articles on a given day, with
+    This utility extracts the text of all articles within a specified
+    time range from the Greynir database and outputs them as JSON with
     associated metadata such as URL, title, timestamp, etc.
 
 """
@@ -65,12 +66,12 @@ def main():
         items = list()
         for r in q.all():
             (url, ts, title, tokens) = r
-            text = ""
             if not tokens:
                 continue
             tokens = json.loads(tokens)
             if not tokens:
                 continue
+            text = ""
             # Paragraphs
             for p in tokens:
                 tx = ""
@@ -83,11 +84,7 @@ def main():
                 text += tx + "\n\n"
 
             d = dict(url=url, timestamp=ts.isoformat(), title=title, text=text)
-            # d["text"] = correct_spaces(d["text"])
             items.append(d)
-            # print(d)
-            # print(text)
-            # print("____________________________")
 
         print(json.dumps(items, ensure_ascii=False, sort_keys=True, indent=4))
 
