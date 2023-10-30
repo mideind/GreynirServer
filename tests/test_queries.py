@@ -446,12 +446,12 @@ def test_counting(client: FlaskClient) -> None:
 
 @pytest.mark.skipif(not has_atm_locations_file(), reason="no ATM locations file found")
 def test_atm(client: FlaskClient) -> None:
-    """ATM module"""
+    """ATM module."""
 
     _query_data_cleanup()  # Remove any data logged to DB on account of tests
 
     json = qmcall(
-        client, {"q": "hverjir eru opnunartímarnir þar?", "voice": True}, "Atm"
+        client, {"q": "hverjir eru opnunartímarnir þar?", "voice": True}, "ATM"
     )
     assert json["answer"].startswith("Ég veit ekki")
     assert "hraðbanka" in json["answer"]
@@ -460,19 +460,19 @@ def test_atm(client: FlaskClient) -> None:
     json = qmcall(
         client,
         {"q": "hvar er næsti hraðbanki?", "private": False, "voice": True},
-        "Atm",
+        "ATM",
     )
     assert "Eiðistorg" in json["answer"]
     assert _has_no_numbers(json["voice"])
 
     json = qmcall(
-        client, {"q": "hverjir eru opnunartímarnir þar?", "voice": True}, "Atm"
+        client, {"q": "hverjir eru opnunartímarnir þar?", "voice": True}, "ATM"
     )
     assert json["answer"].startswith("Hraðbankinn við")
     assert "fylgir" in json["answer"]
     assert _has_no_numbers(json["voice"])
 
-    json = qmcall(client, {"q": "hvar get ég lagt inn peninga?", "voice": True}, "Atm")
+    json = qmcall(client, {"q": "hvar get ég lagt inn peninga?", "voice": True}, "ATM")
     assert json["answer"].startswith("Næsti hraðbanki")
     assert "Eiðistorg" in json["answer"]
     assert _has_no_numbers(json["voice"])
@@ -484,7 +484,7 @@ def test_atm(client: FlaskClient) -> None:
             "private": False,
             "voice": True,
         },
-        "Atm",
+        "ATM",
     )
     assert "Suðurlandsbraut" in json["answer"]
     assert json["answer"].startswith("Hægt er að kaupa")
@@ -493,7 +493,7 @@ def test_atm(client: FlaskClient) -> None:
     json = qmcall(
         client,
         {"q": "hverjir eru opnunartímarnir þar?", "private": False, "voice": True},
-        "Atm",
+        "ATM",
     )
     assert json["answer"].startswith("Hraðbankinn við")
     assert "Suðurlandsbraut" in json["answer"]
@@ -503,7 +503,7 @@ def test_atm(client: FlaskClient) -> None:
     json = qmcall(
         client,
         {"q": "hver er úttektarheimildin þar?", "private": False, "voice": True},
-        "Atm",
+        "ATM",
     )
     assert json["answer"].startswith("Hámarksúttekt í hraðbankanum við")
     assert "Suðurlandsbraut" in json["answer"]
@@ -511,7 +511,7 @@ def test_atm(client: FlaskClient) -> None:
     assert _has_no_numbers(json["voice"])
 
     json = qmcall(
-        client, {"q": "er hægt að kaupa myntrúllur þar?", "voice": True}, "Atm"
+        client, {"q": "er hægt að kaupa myntrúllur þar?", "voice": True}, "ATM"
     )
     assert json["answer"].startswith("Hraðbankinn við")
     assert "Suðurlandsbraut" in json["answer"]
@@ -528,7 +528,7 @@ def test_atm(client: FlaskClient) -> None:
             "private": False,
             "voice": True,
         },
-        "Atm",
+        "ATM",
     )
     assert json["answer"].startswith("Næsti hraðbanki")
     assert "Hraunbæ" in json["answer"]
@@ -543,7 +543,7 @@ def test_atm(client: FlaskClient) -> None:
             "private": False,
             "voice": True,
         },
-        "Atm",
+        "ATM",
     )
     assert json["answer"].startswith("Hraðbankinn við")
     assert "Hraunbæ" in json["answer"]
@@ -559,7 +559,7 @@ def test_atm(client: FlaskClient) -> None:
             "private": False,
             "voice": True,
         },
-        "Atm",
+        "ATM",
     )
     assert json["answer"].startswith("Nei")
     assert "Hraunbæ" in json["answer"]
@@ -573,7 +573,7 @@ def test_atm(client: FlaskClient) -> None:
             "longitude": _HRAUNBAER_LOCATION[1],
             "voice": True,
         },
-        "Atm",
+        "ATM",
     )
     assert json["answer"].startswith("Ekki er hægt")
     assert "erlendan gjaldeyri" in json["answer"]
@@ -589,7 +589,7 @@ def test_atm(client: FlaskClient) -> None:
             "longitude": _SMARALIND_LOCATION[1],
             "voice": True,
         },
-        "Atm",
+        "ATM",
     )
     assert json["answer"].startswith("Hraðbankinn við")
     assert "Norðurturn Smáralindar" in json["answer"]
