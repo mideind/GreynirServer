@@ -59,7 +59,7 @@ class GreynirDB:
     """Wrapper around the SQLAlchemy connection, engine and session"""
 
     def __init__(self) -> None:
-        """Initialize SQLAlchemy connection to the scraper database"""
+        """Initialize SQLAlchemy connection to the database"""
 
         # Assemble the connection string, using psycopg2cffi which
         # supports both PyPy and CPython
@@ -130,7 +130,6 @@ class SessionContext:
         commit: bool = False,
         read_only: bool = False,
     ) -> None:
-
         if session is None:
             # Create a new session that will be automatically committed
             # (if commit == True) and closed upon exit from the context
@@ -156,7 +155,10 @@ class SessionContext:
 
     # noinspection PyUnusedLocal
     def __exit__(
-        self, exc_type: Optional[Type[BaseException]], exc_value: BaseException, traceback: Any
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: BaseException,
+        traceback: Any,
     ) -> Literal[False]:
         """Python context manager protocol"""
         if self._new_session:

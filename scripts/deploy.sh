@@ -72,7 +72,6 @@ cp scraper.py $DEST/scraper.py
 cp search.py $DEST/search.py
 cp settings.py $DEST/settings.py
 cp similar.py $DEST/similar.py
-cp speak.py $DEST/speak.py
 cp tnttagger.py $DEST/tnttagger.py
 cp tts.py $DEST/tts.py
 cp utility.py $DEST/utility.py
@@ -84,6 +83,7 @@ cp nn/*.py $DEST/nn/
 
 # Sync templates, static files and queries
 rm -rf queries/__pycache__/
+rsync -av --delete processors/ $DEST/templates/
 rsync -av --delete templates/ $DEST/templates/
 rsync -av --delete static/ $DEST/static/
 rsync -av --delete queries/ $DEST/queries/

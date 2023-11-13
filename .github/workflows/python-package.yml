@@ -79,8 +79,6 @@ jobs:
         echo '${{ secrets.AWSPOLLY_KEY_JSON }}' > "resources/AWSPollyServerKey.json"
         echo '${{ secrets.AZURE_KEY_JSON }}' > "resources/AzureSpeechServerKey.json"
     - name: Test with pytest
-      env:
-        ICESPEAK_KEYS_DIR: resources
       run: |
         ICESPEAK_KEYS_DIR="resources/" python -m pytest -vvvrP --log-level=DEBUG
     - name: Run curlylint on templates
