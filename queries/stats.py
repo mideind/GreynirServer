@@ -32,10 +32,11 @@ from db.models import Person
 from db.models import Query as QueryModel
 from db.sql import QueryTypesQuery
 
+from icespeak import gssml
+
 from queries import Query
 from queries.util import gen_answer, natlang_seq, is_plural, iceformat_float
 from routes.people import top_persons
-from icespeak import gssml
 
 _STATS_QTYPE = "Stats"
 

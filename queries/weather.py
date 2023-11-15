@@ -54,8 +54,11 @@ import logging
 import random
 from datetime import timedelta, datetime
 
+from iceaddr import placename_lookup  # type: ignore
+from iceweather import observation_for_closest, observation_for_station, forecast_text  # type: ignore
+from icespeak import gssml
+
 from queries import Query, QueryStateDict
-from utility import cap_first
 from queries.util import (
     JsonResponse,
     AnswerTuple,
@@ -65,10 +68,8 @@ from queries.util import (
 )
 from tree import Result, Node
 from geo import in_iceland, RVK_COORDS, near_capital_region, ICE_PLACENAME_BLACKLIST
-from iceaddr import placename_lookup  # type: ignore
-from iceweather import observation_for_closest, observation_for_station, forecast_text  # type: ignore
+from utility import cap_first
 
-from icespeak import gssml
 
 _WEATHER_QTYPE = "Weather"
 

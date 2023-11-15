@@ -32,6 +32,8 @@ import logging
 import cachetools  # type: ignore
 import random
 
+from icespeak import gssml
+
 from geo import distance
 from tree import Result, Node
 from queries import Query, QueryStateDict
@@ -44,7 +46,6 @@ from queries.util import (
     LatLonTuple,
     read_grammar_file,
 )
-from icespeak import gssml
 
 _PETROL_QTYPE = "Petrol"
 

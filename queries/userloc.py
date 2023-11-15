@@ -28,8 +28,10 @@ from typing import Any, Tuple, Optional, cast
 import re
 import logging
 
+from icespeak.transcribe.num import numbers_to_text
+from iceaddr import iceaddr_lookup, postcodes
+
 from queries import Query, QueryStateDict, AnswerTuple
-from utility import cap_first
 from queries.util import (
     gen_answer,
     query_geocode_api_coords,
@@ -37,9 +39,8 @@ from queries.util import (
     nom2dat,
     read_grammar_file,
 )
-from icespeak.transcribe.num import numbers_to_text
+from utility import cap_first
 from tree import Result, Node
-from iceaddr import iceaddr_lookup, postcodes
 from geo import (
     country_name_for_isocode,
     iceprep_for_placename,

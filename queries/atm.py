@@ -30,10 +30,12 @@ import logging
 import random
 import json
 
+from icespeak.transcribe.num import number_to_text
+from reynir import NounPhrase
+
 from geo import distance
 from tree import Result, Node
 from queries import ContextDict, Query, QueryStateDict
-from reynir import NounPhrase
 from queries.util import (
     gen_answer,
     distance_desc,
@@ -43,8 +45,8 @@ from queries.util import (
     AnswerTuple,
     LatLonTuple,
 )
-from icespeak.transcribe.num import number_to_text
 from utility import QUERIES_RESOURCES_DIR
+
 
 # TODO: fetch ATM data from a web service instead of a local file every once in a while
 # TODO: Handle multiple ATMs in same location, but with different services

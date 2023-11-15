@@ -28,10 +28,11 @@
 import random
 from datetime import datetime
 
+from icespeak.transcribe.num import numbers_to_ordinal
+
 from queries import Query, QueryStateDict
 from tree import Result, Node, TerminalNode
 from queries.util import read_grammar_file
-from icespeak.transcribe.num import numbers_to_ordinal
 
 
 def help_text(lemma: str) -> str:

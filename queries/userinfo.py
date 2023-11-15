@@ -31,11 +31,11 @@ import re
 
 from reynir import NounPhrase
 from reynir.bindb import GreynirBin
+from icespeak.transcribe.num import numbers_to_text
 
 from geo import icelandic_addr_info, iceprep_for_placename, iceprep_for_street
 from queries import ClientDataDict, Query
 from queries.util import gen_answer
-from icespeak.transcribe.num import numbers_to_text
 
 
 _USERINFO_QTYPE = "UserInfo"

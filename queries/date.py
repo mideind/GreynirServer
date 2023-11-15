@@ -63,6 +63,8 @@ import random
 from datetime import datetime, timedelta
 from calendar import monthrange, isleap
 
+from icespeak import gssml
+
 from queries import Query, QueryStateDict
 from utility import cap_first
 from queries.util import (
@@ -73,7 +75,6 @@ from queries.util import (
 )
 from tree import Result, Node, TerminalNode
 from settings import changedlocale
-from icespeak import gssml
 
 
 _DATE_QTYPE = "Date"

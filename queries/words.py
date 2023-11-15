@@ -42,11 +42,11 @@ from datetime import datetime, timedelta
 from tokenizer.definitions import BIN_Tuple
 from islenska.bindb import BinEntryIterable, BinEntryList
 from reynir.bindb import GreynirBin
+from icespeak import gssml
 
 from queries import Query, AnswerTuple
 from queries.util import gen_answer
 from utility import icequote
-from icespeak import gssml
 
 
 _WORDTYPE_RX_NOM = "(?:orðið|nafnið|nafnorðið)"

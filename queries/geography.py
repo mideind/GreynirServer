@@ -33,11 +33,11 @@ import re
 from datetime import datetime, timedelta
 
 from cityloc import capital_for_cc  # type: ignore
+from reynir import NounPhrase
 
 from queries import Query, QueryStateDict
-from utility import cap_first
 from queries.util import country_desc, nom2dat, read_grammar_file
-from reynir import NounPhrase
+from utility import cap_first
 from geo import (
     icelandic_city_name,
     isocode_for_country_name,

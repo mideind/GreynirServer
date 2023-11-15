@@ -46,10 +46,11 @@ import re
 import logging
 import random
 
+from icespeak import gssml
+
 from queries import AnswerTuple, ContextDict, Query, QueryStateDict
 from queries.util import iceformat_float, gen_answer, read_grammar_file
 from tree import Result, Node, TerminalNode
-from icespeak import gssml
 
 
 _ARITHMETIC_QTYPE = "Arithmetic"

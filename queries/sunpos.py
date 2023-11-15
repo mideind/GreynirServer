@@ -30,18 +30,6 @@
 
 from typing import Dict, List, Iterable, Tuple, Optional, Union, cast
 
-from tree import Result, Node
-from queries import Query, QueryStateDict
-
-from queries.util import (
-    AnswerTuple,
-    LatLonTuple,
-    MONTH_ABBREV_ORDERED,
-    read_grammar_file,
-    sing_or_plur,
-    gen_answer,
-)
-
 import datetime
 import logging
 import random
@@ -50,6 +38,20 @@ import requests
 
 from bs4 import BeautifulSoup  # type: ignore
 from cachetools import TTLCache
+
+from iceaddr import placename_lookup
+from icespeak.transcribe.num import numbers_to_ordinal, floats_to_text
+
+from tree import Result, Node
+from queries import Query, QueryStateDict
+from queries.util import (
+    AnswerTuple,
+    LatLonTuple,
+    MONTH_ABBREV_ORDERED,
+    read_grammar_file,
+    sing_or_plur,
+    gen_answer,
+)
 from settings import changedlocale
 from geo import (
     distance,
@@ -57,8 +59,6 @@ from geo import (
     capitalize_placename,
     ICE_PLACENAME_BLACKLIST,
 )
-from iceaddr import placename_lookup
-from icespeak.transcribe.num import numbers_to_ordinal, floats_to_text
 
 # Indicate that this module wants to handle parse trees for queries,
 # as opposed to simple literal text strings

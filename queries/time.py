@@ -29,9 +29,12 @@
 import random
 from datetime import datetime
 from typing import cast
+
 from pytz import country_timezones, timezone
 
 from reynir import NounPhrase
+from icespeak import gssml
+
 from geo import (
     isocode_for_country_name,
     lookup_city_info,
@@ -41,7 +44,6 @@ from geo import (
 )
 from queries import Query
 from queries.util import timezone4loc, gen_answer
-from icespeak import gssml
 from utility import icequote
 
 _TIME_QTYPE = "Time"

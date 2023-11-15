@@ -38,6 +38,8 @@ import re
 import logging
 
 from reynir import NounPhrase
+from icespeak import gssml
+
 from queries import AnswerTuple, Query
 from utility import cap_first
 from queries.util import (
@@ -47,7 +49,6 @@ from queries.util import (
     query_geocode_api_addr,
     query_traveltime_api,
 )
-from icespeak import gssml
 from geo import distance, capitalize_placename
 
 

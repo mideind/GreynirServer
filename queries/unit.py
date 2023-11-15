@@ -34,10 +34,11 @@ from typing import Tuple
 import random
 from math import floor, log10
 
+from icespeak import gssml
+
 from queries import Query, QueryStateDict, to_dative, to_accusative
 from queries.util import iceformat_float, parse_num, read_grammar_file, is_plural
 from tree import Result, Node
-from icespeak import gssml
 
 # Lemmas of keywords that could indicate that the user is trying to use this module
 TOPIC_LEMMAS = [

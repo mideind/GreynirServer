@@ -36,6 +36,7 @@ import random
 from datetime import datetime
 
 from reynir import NounPhrase
+from icespeak import gssml
 
 # from iceaddr import nearest_addr, nearest_placenames
 
@@ -50,7 +51,6 @@ from queries.util import (
     AnswerTuple,
     read_grammar_file,
 )
-from icespeak import gssml
 from tree import Result, Node
 
 

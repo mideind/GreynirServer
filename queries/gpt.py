@@ -47,6 +47,8 @@ import json
 import logging
 from datetime import datetime
 
+from icespeak import gssml
+from icespeak.transcribe.num import numbers_to_ordinal, years_to_text
 import straeto  # type: ignore
 from iceweather import forecast_text  # type: ignore
 
@@ -54,8 +56,6 @@ from queries import Query
 from queries.currency import fetch_exchange_rates
 from queries.userloc import locality_and_country
 from settings import Settings
-from icespeak import gssml
-from icespeak.transcribe.num import numbers_to_ordinal, years_to_text
 from queries.util.openai_gpt import (
     OPENAI_KEY_PRESENT,
     jdump,

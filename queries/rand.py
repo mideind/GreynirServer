@@ -28,10 +28,11 @@
 import logging
 import random
 
+from icespeak import gssml
+
 from queries import Query, QueryStateDict, AnswerTuple
 from queries.util import gen_answer, read_grammar_file
 from queries.arithmetic import add_num, terminal_num
-from icespeak import gssml
 from tree import Result, Node
 
 

@@ -54,6 +54,9 @@ from functools import lru_cache
 from datetime import datetime
 
 from reynir import NounPhrase
+from icespeak import gssml
+from icespeak.transcribe import strip_markup
+import straeto
 
 from queries import AnswerTuple, Query, QueryStateDict
 from tree import Result, Node, ParamList
@@ -64,12 +67,9 @@ from queries.util import (
     gen_answer,
     read_grammar_file,
 )
-from icespeak import gssml
-from icespeak.transcribe import strip_markup
 from settings import Settings
 from geo import in_iceland
 
-import straeto
 
 # Today's bus schedule, cached
 schedule_today: Optional[straeto.BusSchedule] = None

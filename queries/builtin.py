@@ -36,21 +36,20 @@ import logging
 
 from sqlalchemy import DateTime
 
-from settings import Settings
+from reynir import TOK, Tok, correct_spaces
+from reynir.bintokenizer import stems_of_token
+from icespeak import gssml
 
+from settings import Settings
 from db import desc, OperationalError, Session
 from db.models import Article, Person, Entity, Root, Column
 from db.sql import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
-
-from reynir import TOK, Tok, correct_spaces
-from reynir.bintokenizer import stems_of_token
 from search import Search
-from icespeak import gssml
 from queries import AnswerTuple, Query, ResponseDict, ResponseType, QueryStateDict
+from queries.util import read_grammar_file
 from tree import Result, Node
 from tree.util import TreeUtility
 from utility import cap_first, icequote
-from queries.util import read_grammar_file
 
 
 # The type of a name/entity register
@@ -526,9 +525,7 @@ def query_person(query: Query, session: Session, name: str) -> AnswerTuple:
             query.set_error("E_PERSON_NOT_FOUND")
             return dict(answer=""), "", ""
         answer = title
-        voice_answer = (
-            f"{gssml(name, type='person')} er {gssml(answer, type='parser_transcribe')}."
-        )
+        voice_answer = f"{gssml(name, type='person')} er {gssml(answer, type='parser_transcribe')}."
         # Set the context for a subsequent query
         query.set_context({"person_name": name})
         # Set source, if known

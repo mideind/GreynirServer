@@ -33,10 +33,10 @@
 import re
 import random
 
+from reynir import NounPhrase
+
 from queries import Query
 from queries.util import gen_answer
-
-from reynir import NounPhrase
 
 
 _TELEPHONE_QTYPE = "Telephone"
