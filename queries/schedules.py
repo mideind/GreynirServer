@@ -201,7 +201,8 @@ def QSchTime(node: Node, params: ParamList, result: Result) -> None:
 
 
 def QSchThisMorning(node: Node, params: ParamList, result: Result) -> None:
-    result["qdate"] = datetime.date.today()
+    now = _now()
+    result["qdate"] = now.date()
 
 
 def QSchThisEvening(node: Node, params: ParamList, result: Result) -> None:
@@ -209,27 +210,31 @@ def QSchThisEvening(node: Node, params: ParamList, result: Result) -> None:
     # occur in the client's time zone or in UTC (=Icelandic time)
     now = _now()
     evening = datetime.time(20, 0)
-    result["qdate"] = now.date()  # !!! FIXME: Use consistent date calculation functions
+    result["qdate"] = now.date()
     result["qtime"] = evening if now.time() < evening else now.time()
     result["PM"] = True
 
 
 def QSchTomorrow(node: Node, params: ParamList, result: Result) -> None:
-    result["qdate"] = datetime.date.today() + datetime.timedelta(days=1)
+    now = _now()
+    result["qdate"] = now.date() + datetime.timedelta(days=1)
 
 
 def QSchTomorrowEvening(node: Node, params: ParamList, result: Result) -> None:
-    result["qdate"] = datetime.date.today() + datetime.timedelta(days=1)
+    now = _now()
+    result["qdate"] = now.date() + datetime.timedelta(days=1)
     result["qtime"] = datetime.time(20, 0)
     result["PM"] = True
 
 
 def QSchYesterday(node: Node, params: ParamList, result: Result) -> None:
-    result["qdate"] = datetime.date.today() - datetime.timedelta(days=1)
+    now = _now()
+    result["qdate"] = now.date() - datetime.timedelta(days=1)
 
 
 def QSchYesterdayEvening(node: Node, params: ParamList, result: Result) -> None:
-    result["qdate"] = datetime.date.today() - datetime.timedelta(days=1)
+    now = _now()
+    result["qdate"] = now.date() - datetime.timedelta(days=1)
     result["qtime"] = datetime.time(20, 0)
     result["PM"] = True
 
@@ -525,8 +530,8 @@ def _answer_next_program(
         channel: tv/radio channel
         expire_time: when the answer becomes outdated.
     """
-    answer: str = ""
-    prog_endtime: datetime.datetime = _now()
+    answer = ""
+    prog_endtime = _now()
 
     if next_prog:
         next_title, next_desc = _extract_title_and_desc(next_prog, station)
@@ -596,7 +601,7 @@ def _answer_program(
         showtime = f" klukkan {qdatetime.strftime('%-H:%M')}"
         vshowtime = " klukkan " + gssml(qdatetime.strftime("%-H:%M"), type="time")
 
-        day_diff = qdatetime.date() - datetime.date.today()
+        day_diff = qdatetime.date() - now.date()
 
         if day_diff == datetime.timedelta(days=1):
             showtime += " á morgun"
@@ -652,7 +657,7 @@ def _get_schedule_answer(result: Result) -> _AnswerDict:
     qdate: datetime.date = result.get("qdate") or now_date
     qtime: datetime.time = result.get("qtime") or now_time
     # Construct datetime from date/time in query (by default use current date/time)
-    qdt: datetime.datetime = datetime.datetime.combine(qdate, qtime)
+    qdt: datetime.datetime = datetime.datetime.combine(qdate, qtime, tzinfo=datetime.timezone.utc)
 
     # If exact time isn't specified (e.g. "klukkan sjö" instead of "klukkan 7:00")
     if not result.get("exact_time"):

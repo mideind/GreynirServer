@@ -143,7 +143,7 @@ def wordfreq():
         date_from = datetime.strptime(request.args.get("date_from", ""), date_fmt)
         date_to = datetime.strptime(request.args.get("date_to", ""), date_fmt)
     except Exception as e:
-        logging.warning(f"Failed to parse date arg: {e}")
+        # logging.warning(f"Failed to parse date arg: {e}")
         return better_jsonify(**resp)
 
     # Words param should contain one or more comma-separated word

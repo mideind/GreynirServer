@@ -102,7 +102,7 @@ def test_routes(client: FlaskClient) -> None:
                 resp = method(route)
                 assert resp.status in ("200 OK", "202 ACCEPTED")
     resp = client.get("/this_does_not_exist")
-    assert resp.status in ("404 NOT FOUND")
+    assert resp.status == "404 NOT FOUND"
 
 
 API_CONTENT_TYPE = "application/json"
