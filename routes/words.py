@@ -114,9 +114,11 @@ def _str2words(
     if separate_on_whitespace:
         words = " ".join(words).split()
     return [
-        cast(Tuple[str, str], tuple(w.split(":")))
-        if len(w.split(":")) == 2
-        else (w, CAT_UNKNOWN)
+        (
+            cast(Tuple[str, str], tuple(w.split(":")))
+            if len(w.split(":")) == 2
+            else (w, CAT_UNKNOWN)
+        )
         for w in words
     ][:_MAX_NUM_WORDS]
 
@@ -140,9 +142,13 @@ def wordfreq():
     # Create datetime objects from query string args
     try:
         date_fmt = "%Y-%m-%d"
-        date_from = datetime.strptime(request.args.get("date_from", ""), date_fmt)
-        date_to = datetime.strptime(request.args.get("date_to", ""), date_fmt)
-    except Exception as e:
+        date_from = datetime.strptime(
+            request.args.get("date_from", ""), date_fmt
+        ).replace(tzinfo=timezone.utc)
+        date_to = datetime.strptime(request.args.get("date_to", ""), date_fmt).replace(
+            tzinfo=timezone.utc
+        )
+    except Exception:
         # logging.warning(f"Failed to parse date arg: {e}")
         return better_jsonify(**resp)
 
@@ -232,9 +238,11 @@ def wordfreq():
             timeunit = "day"
             label_days = [date_from + timedelta(days=i) for i in range(delta.days)]
             labels = [
-                d.strftime("%-d. %b")
-                if d.year == now.year
-                else d.strftime("%-d. %b %Y")
+                (
+                    d.strftime("%-d. %b")
+                    if d.year == now.year
+                    else d.strftime("%-d. %b %Y")
+                )
                 for d in label_days
             ]
             label_date_strings = [d.strftime("%Y-%m-%d") for d in label_days]
@@ -287,10 +295,12 @@ def wordfreq_details():
     # Parse date args
     try:
         date_fmt = "%Y-%m-%d"
-        date_from = datetime.strptime(request.args.get("date_from", ""), date_fmt)
+        date_from = datetime.strptime(
+            request.args.get("date_from", ""), date_fmt
+        ).replace(tzinfo=timezone.utc)
         dto = request.args.get("date_to")
         if dto:
-            date_to = datetime.strptime(dto, date_fmt)
+            date_to = datetime.strptime(dto, date_fmt).replace(tzinfo=timezone.utc)
         else:
             # If only one date provided, assume it's a period spanning a single day
             date_to = date_from + timedelta(days=1)

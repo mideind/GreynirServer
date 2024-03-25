@@ -22,6 +22,7 @@
     This module handles queries relating to air travel.
 
 """
+
 # TODO: Map country to capital city, e.g. "Svíþjóð" -> "Stokkhólmur"
 # TODO: Fetch more than one flight using "flight_count"?
 
@@ -134,6 +135,7 @@ _ISAVIA_FLIGHTS_URL = (
 )
 
 _FLIGHTS_CACHE_TTL = 600  # seconds, ttl = 10 mins
+
 
 # For type checking
 class FlightType(TypedDict, total=False):

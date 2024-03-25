@@ -837,7 +837,9 @@ class VisirScraper(ScrapeHelper):
             # Example: "21.1.2019 09:04"
             if re.search(r"^\d{1,2}\.\d{1,2}\.\d\d\d\d\s\d{1,2}:\d{1,2}", datestr):
                 try:
-                    timestamp = datetime.strptime(datestr, "%d.%m.%Y %H:%M")
+                    timestamp = datetime.strptime(datestr, "%d.%m.%Y %H:%M").replace(
+                        tzinfo=timezone.utc
+                    )
                 except Exception:
                     pass
             # Example: "17. janúar 2019 14:30"
@@ -1073,11 +1075,15 @@ class StjornarradScraper(ScrapeHelper):
         date = ScrapeHelper.nested_tag(soup, "main", "article")
         if date is not None and date.has_attr("data-last-modified"):
             date = date["data-last-modified"]
-            metadata.timestamp = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+            metadata.timestamp = datetime.strptime(date, "%Y-%m-%d %H:%M:%S").replace(
+                tzinfo=timezone.utc
+            )
         else:
             date = ScrapeHelper.tag_prop_val(body, "span", "class", "date")
             if date is not None:
-                metadata.timestamp = datetime.strptime(date.string, "%d.%m.%Y")
+                metadata.timestamp = datetime.strptime(date.string, "%d.%m.%Y").replace(
+                    tzinfo=timezone.utc
+                )
         # Name of the ministry in question
         metadata.author = self._description or "Stjórnarráð Íslands"
         return metadata
@@ -1963,7 +1969,9 @@ class SedlabankinnScraper(ScrapeHelper):
             media = ScrapeHelper.div_class(soup, "media")
             if media:
                 tstr = str(media["data-last-modified"])
-                timestamp = datetime.strptime(tstr, "%Y-%m-%d %H:%M:%S")
+                timestamp = datetime.strptime(tstr, "%Y-%m-%d %H:%M:%S").replace(
+                    tzinfo=timezone.utc
+                )
         except Exception as e:
             logging.warning(f"Unable to parse date for Sedlabankinn article: {e}")
 

@@ -326,6 +326,8 @@ def _get_program_start_end(
     if station == _SIMINN:
         start = datetime.datetime.strptime(program["start"], "%Y-%m-%dT%H:%M:%S.%fZ")
         end = datetime.datetime.strptime(program["end"], "%Y-%m-%dT%H:%M:%S.%fZ")
+        start = start.replace(tzinfo=datetime.timezone.utc)
+        end = end.replace(tzinfo=datetime.timezone.utc)
         return (start, end)
 
     if station == _RUV:
@@ -343,6 +345,7 @@ def _get_program_start_end(
         start = _now()
         duration = datetime.timedelta()
 
+    start = start.replace(tzinfo=datetime.timezone.utc)
     return (start, start + duration)
 
 
@@ -445,10 +448,10 @@ def _get_current_and_next_program(
                     # Get start time of next sub-event and next event
                     next_sub_start = datetime.datetime.strptime(
                         sub_progs[0]["start-time"], "%Y-%m-%d %H:%M:%S"
-                    )
+                    ).replace(tzinfo=datetime.timezone.utc)
                     next_event_start = datetime.datetime.strptime(
                         progs[1]["start-time"], "%Y-%m-%d %H:%M:%S"
-                    )
+                    ).replace(tzinfo=datetime.timezone.utc)
                 else:
                     next_sub_start = next_event_start = _now()
 

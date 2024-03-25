@@ -102,7 +102,7 @@ def validate_request(
 
     # Check the time stamp
     try:
-        dt = datetime.strptime(xsc_date, "%Y-%m-%d %H:%M:%S")
+        dt = datetime.strptime(xsc_date, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
     except ValueError:
         # Invalid date/time
         return False
