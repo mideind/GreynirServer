@@ -1,5 +1,5 @@
 # Flask
-werkzeug>=2.2.1
+werkzeug>=2.3.7
 Flask==2.3.3
 flask-caching>=2.0.2
 Flask-Cors>=4.0.0
@@ -22,7 +22,7 @@ rjsmin>=1.2.1
 python-youtube>=0.9.1
 country-list>=1.0.0
 # For OpenAI GPT support
-openai>=0.28.0
+openai>=1.14.0
 # Ours
 reynir>=3.5.4
 islenska>=0.4.8

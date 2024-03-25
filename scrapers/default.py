@@ -415,6 +415,7 @@ class KjarninnScraper(ScrapeHelper):
                 hour=int(ts[11:13]),
                 minute=int(ts[14:16]),
                 second=int(ts[17:19]),
+                tzinfo=timezone.utc,
             )
         else:
             timestamp = _now()
@@ -517,6 +518,7 @@ class RuvScraper(ScrapeHelper):
                     hour=int(ts[11:13]),
                     minute=int(ts[14:16]),
                     second=int(ts[17:19]),
+                    tzinfo=timezone.utc,
                 )
             except Exception as e:
                 logging.warning(f"RuvScraper: Could not parse timestamp {ts}: {e}")
@@ -671,6 +673,7 @@ class MblScraper(ScrapeHelper):
                         day=date[0],
                         hour=time[0],
                         minute=time[1],
+                        tzinfo=timezone.utc,
                     )
                 except Exception as e:
                     logging.warning(
@@ -851,6 +854,7 @@ class VisirScraper(ScrapeHelper):
                         day=int(mday),
                         hour=int(hour),
                         minute=int(mins),
+                        tzinfo=timezone.utc,
                     )
                 except Exception:
                     pass
@@ -964,6 +968,7 @@ class EyjanScraper(ScrapeHelper):
                     day=date[0],
                     hour=time[0],
                     minute=time[1],
+                    tzinfo=timezone.utc,
                 )
             except Exception as e:
                 logging.warning(
@@ -1138,6 +1143,7 @@ class KvennabladidScraper(ScrapeHelper):
                     hour=now.hour,
                     minute=now.minute,
                     second=now.second,
+                    tzinfo=timezone.utc,
                 )
             except Exception as e:
                 logging.warning(
@@ -1188,7 +1194,12 @@ class AlthingiScraper(ScrapeHelper):
             a = a[0].split("/", maxsplit=1)
             if len(a) > 1:
                 try:
-                    timestamp = datetime(year=int(a[1].strip()), month=1, day=1)
+                    timestamp = datetime(
+                        year=int(a[1].strip()),
+                        month=1,
+                        day=1,
+                        tzinfo=timezone.utc,
+                    )
                 except ValueError:
                     # Something wrong with the year: back off
                     timestamp = _now()
@@ -1240,6 +1251,7 @@ class StundinScraper(ScrapeHelper):
                     day=int(ts[8:10]),
                     hour=int(ts[11:13]),
                     minute=int(ts[14:16]),
+                    tzinfo=timezone.utc,
                 )
         except Exception as e:
             logging.warning(f"Exception obtaining date of stundin.is article: {e}")
@@ -1304,6 +1316,7 @@ class HringbrautScraper(ScrapeHelper):
                     day=int(mday),
                     hour=int(hour),
                     minute=int(mins),
+                    tzinfo=timezone.utc,
                 )
             except Exception as e:
                 logging.warning(
@@ -1421,6 +1434,7 @@ class FrettabladidScraper(ScrapeHelper):
                 hour=int(ts[11:13]),
                 minute=int(ts[14:16]),
                 second=int(ts[17:19]),
+                tzinfo=timezone.utc,
             )
         else:
             try:
@@ -1441,6 +1455,7 @@ class FrettabladidScraper(ScrapeHelper):
                         day=int(mday),
                         hour=int(hh),
                         minute=int(mm),
+                        tzinfo=timezone.utc,
                     )
             except Exception as e:
                 logging.warning(f"Error finding Frettabladid article date: {e}")
@@ -1549,6 +1564,7 @@ class HagstofanScraper(ScrapeHelper):
                     day=int(mday),
                     hour=timestamp.hour,
                     minute=timestamp.minute,
+                    tzinfo=timezone.utc,
                 )
             except Exception as e:
                 logging.warning(f"Exception obtaining date of hagstofa.is article: {e}")
@@ -1635,6 +1651,7 @@ class DVScraper(ScrapeHelper):
                     hour=int(ts[11:13]),
                     minute=int(ts[14:16]),
                     second=int(ts[17:19]),
+                    tzinfo=timezone.utc,
                 )
         except:
             pass
@@ -1699,6 +1716,7 @@ class BBScraper(ScrapeHelper):
                     hour=int(ts[11:13]),
                     minute=int(ts[14:16]),
                     second=int(ts[17:19]),
+                    tzinfo=timezone.utc,
                 )
         except Exception:
             pass
@@ -1766,6 +1784,7 @@ class LemurinnScraper(ScrapeHelper):
                     hour=int(ts[11:13]),
                     minute=int(ts[14:16]),
                     second=int(ts[17:19]),
+                    tzinfo=timezone.utc,
                 )
         except Exception:
             pass
@@ -1818,6 +1837,7 @@ class MannlifScraper(ScrapeHelper):
                     hour=int(ts[11:13]),
                     minute=int(ts[14:16]),
                     second=int(ts[17:19]),
+                    tzinfo=timezone.utc,
                 )
         except Exception as e:
             logging.warning(f"Exception when obtaining date of man.is article: {e}")
@@ -1889,6 +1909,7 @@ class VisindavefurScraper(ScrapeHelper):
                     hour=now.hour,
                     minute=now.minute,
                     second=now.second,
+                    tzinfo=timezone.utc,
                 )
         except Exception as e:
             logging.warning(
@@ -2063,6 +2084,7 @@ class VidskiptabladidScraper(ScrapeHelper):
                         day=int(mday),
                         hour=int(hour),
                         minute=int(mins),
+                        tzinfo=timezone.utc,
                     )
         except Exception as e:
             logging.warning(f"Exception obtaining date of vb.is article: {e}")
@@ -2132,6 +2154,7 @@ class HeimildinScraper(ScrapeHelper):
                         day=int(d.rstrip(".")),
                         hour=int(h),
                         minute=int(min),
+                        tzinfo=timezone.utc,
                     )
         except Exception as e:
             logging.warning(f"Exception obtaining date of heimildin.is article: {e}")

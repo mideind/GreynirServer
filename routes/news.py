@@ -140,7 +140,8 @@ def fetch_articles(
 
             @property
             def date(self) -> str:
-                if datetime.today().year == self.timestamp.year:
+                now = datetime.now(timezone.utc)
+                if now.year == self.timestamp.year:
                     return self.localized_date
                 return self.fulldate
 

@@ -29,7 +29,7 @@ from typing import Any, Dict, List
 import os
 import sys
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Hack to make this Python program executable from the tools subdirectory
 basepath, _ = os.path.split(os.path.realpath(__file__))
@@ -54,8 +54,8 @@ def main() -> None:
         exit()
 
     with SessionContext(commit=False) as session:
-        bef = datetime(2022, 10, 10, 0, 0, 1)
-        aft = datetime(2022, 10, 11, 0, 0, 1)
+        bef = datetime(2022, 10, 10, 0, 0, 1, tzinfo=timezone.utc)
+        aft = datetime(2022, 10, 11, 0, 0, 1, tzinfo=timezone.utc)
         q = (
             session.query(
                 Article.url, Article.timestamp, Article.heading, Article.tokens  # type: ignore

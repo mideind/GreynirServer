@@ -688,8 +688,8 @@ class Query:
         # Looks good
         # Store the resulting parsed query as a tree
         tree_string = "S1\n" + trees[1]
-        if Settings.DEBUG:
-            print(tree_string)
+        # if Settings.DEBUG:
+        #    print(tree_string)
         self._tree = QueryTree()
         self._tree.load(tree_string)
         # Store the token list

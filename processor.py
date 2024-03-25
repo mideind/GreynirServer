@@ -311,12 +311,16 @@ class Processor:
                         if update:
                             # If update, we re-process articles that have been parsed
                             # again in the meantime
-                            q = q.filter(Article.processed < Article.parsed).order_by(Article.processed)
+                            q = q.filter(Article.processed < Article.parsed).order_by(
+                                Article.processed
+                            )
                         else:
                             q = q.filter(Article.processed == None)
                     if from_date is not None:
                         # Only go through articles parsed since the given date
-                        q = q.filter(Article.parsed >= from_date).order_by(Article.parsed)
+                        q = q.filter(Article.parsed >= from_date).order_by(
+                            Article.parsed
+                        )
                 if limit > 0:
                     q = q.limit(limit)
                 for a in q.yield_per(200):
@@ -528,7 +532,11 @@ def _main(argv: Optional[List[str]] = None) -> int:
                     # --title overrides both --force and --update
                     force = False
                     update = False
-                from_date = None if update else datetime(year=2016, month=3, day=1)
+                from_date = (
+                    None
+                    if update
+                    else datetime(year=2016, month=3, day=1, tzinfo=timezone.utc)
+                )
                 process_articles(
                     from_date=from_date,
                     limit=limit,
