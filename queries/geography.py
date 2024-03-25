@@ -30,7 +30,7 @@
 import logging
 import random
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from cityloc import capital_for_cc  # type: ignore
 from reynir import NounPhrase
@@ -288,7 +288,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
 
     if handled:
         q.set_qtype(_GEO_QTYPE)
-        q.set_expires(datetime.utcnow() + timedelta(hours=24))
+        q.set_expires(datetime.now(timezone.utc) + timedelta(hours=24))
         # Beautify by fixing "Landi" issue
         q.set_beautified_query(q.beautified_query.replace(" Landi ", " landi "))
     else:

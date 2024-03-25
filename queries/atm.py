@@ -23,7 +23,7 @@
 
 """
 
-from typing import Any, Dict, List, Mapping, cast
+from typing import Any, Dict, List, Mapping
 
 import cachetools
 import logging
@@ -35,7 +35,7 @@ from reynir import NounPhrase
 
 from geo import distance
 from tree import Result, Node
-from queries import ContextDict, Query, QueryStateDict
+from queries import Query, QueryStateDict
 from queries.util import (
     gen_answer,
     distance_desc,
@@ -589,7 +589,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 # Pass the result into a query context having
                 # the 'result' property
                 if "last_atm" in result:
-                    ctx = cast(ContextDict, dict(result=result.last_atm))
+                    ctx = dict(result=result.last_atm)
                     q.set_context(ctx)
         except Exception as e:
             logging.warning(f"Exception while processing ATM query: {e}")

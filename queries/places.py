@@ -33,7 +33,7 @@ from typing import Iterable, Mapping, Optional
 import logging
 import re
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 
 from reynir import NounPhrase
 from icespeak import gssml
@@ -219,7 +219,7 @@ def answ_openhours(
     if not res or res.get("status") != "OK" or "result" not in res:
         return gen_answer(_PLACES_API_ERRMSG)
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     wday = now.weekday()
     answer = voice = ""
     p_voice: Optional[str] = None

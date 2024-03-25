@@ -26,7 +26,7 @@
 # TODO: hvað eru íslensku jólasveinarnir margir
 
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 
 from icespeak.transcribe.num import numbers_to_ordinal
 
@@ -216,7 +216,7 @@ def QYuleDay24(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QYuleToday(node: Node, params: QueryStateDict, result: Result) -> None:
     result.yule_lad = None
-    result.lad_date = datetime.utcnow().day
+    result.lad_date = datetime.now(timezone.utc).day
     if not (11 <= result.lad_date <= 24):
         result.invalid_date = True
     else:
@@ -229,7 +229,7 @@ def QYuleToday(node: Node, params: QueryStateDict, result: Result) -> None:
 
 def QYuleTomorrow(node: Node, params: QueryStateDict, result: Result) -> None:
     result.yule_lad = None
-    result.lad_date = datetime.utcnow().day + 1
+    result.lad_date = datetime.now(timezone.utc).day + 1
     if not (11 <= result.lad_date <= 24):
         result.invalid_date = True
     else:

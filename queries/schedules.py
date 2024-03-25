@@ -64,6 +64,11 @@ TOPIC_LEMMAS = [
 ]
 
 
+def _now() -> datetime.datetime:
+    """Return the current time in UTC"""
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
 def help_text(lemma: str) -> str:
     """Help text to return when query processor is unable unable to parse a query but
     one of the above lemmas is found in it"""
@@ -202,7 +207,7 @@ def QSchThisMorning(node: Node, params: ParamList, result: Result) -> None:
 def QSchThisEvening(node: Node, params: ParamList, result: Result) -> None:
     # It is debatable whether the following calculation should
     # occur in the client's time zone or in UTC (=Icelandic time)
-    now = datetime.datetime.utcnow()
+    now = _now()
     evening = datetime.time(20, 0)
     result["qdate"] = now.date()  # !!! FIXME: Use consistent date calculation functions
     result["qtime"] = evening if now.time() < evening else now.time()
@@ -230,7 +235,7 @@ def QSchYesterdayEvening(node: Node, params: ParamList, result: Result) -> None:
 
 
 def QSchNow(node: Node, params: ParamList, result: Result) -> None:
-    now = datetime.datetime.utcnow()
+    now = _now()
     result["qdate"] = now.date()
     result["qtime"] = now.time()
 
@@ -330,7 +335,7 @@ def _get_program_start_end(
         duration = datetime.timedelta(hours=d[0], minutes=d[1], seconds=0)
     else:
         # Unknown station
-        start = datetime.datetime.utcnow()
+        start = _now()
         duration = datetime.timedelta()
 
     return (start, start + duration)
@@ -440,7 +445,7 @@ def _get_current_and_next_program(
                         progs[1]["start-time"], "%Y-%m-%d %H:%M:%S"
                     )
                 else:
-                    next_sub_start = next_event_start = datetime.datetime.utcnow()
+                    next_sub_start = next_event_start = _now()
 
                 # If current event is last event of the day or
                 # next sub-event begins before next event
@@ -453,7 +458,7 @@ def _get_current_and_next_program(
                 # set it as the next program/event
                 next_playing = progs[1]
 
-    elif qdatetime > datetime.datetime.utcnow() - datetime.timedelta(minutes=5):
+    elif qdatetime > _now() - datetime.timedelta(minutes=5):
         # Nothing playing at qdatetime,
         # fetch next program if query isn't for past schedule
         next_playing = progs[0]
@@ -521,7 +526,7 @@ def _answer_next_program(
         expire_time: when the answer becomes outdated.
     """
     answer: str = ""
-    prog_endtime: datetime.datetime = datetime.datetime.utcnow()
+    prog_endtime: datetime.datetime = _now()
 
     if next_prog:
         next_title, next_desc = _extract_title_and_desc(next_prog, station)
@@ -567,7 +572,7 @@ def _answer_program(
         expire_time: when the answer becomes outdated.
     """
 
-    now = datetime.datetime.utcnow()
+    now = _now()
     answer: str = ""
     voice: str
     is_now: bool
@@ -640,7 +645,7 @@ def _get_schedule_answer(result: Result) -> _AnswerDict:
     station: str = result.get("station")
     is_radio: bool = result.get("channel_type") == _RADIO
 
-    now = datetime.datetime.utcnow()
+    now = _now()
     now_date: datetime.date = now.date()
     now_time: datetime.time = now.time()
 

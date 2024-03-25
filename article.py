@@ -39,7 +39,7 @@ from typing import (
 
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import defaultdict
 
 from sqlalchemy.orm.query import Query as SqlQuery
@@ -71,6 +71,11 @@ if TYPE_CHECKING:
 # since they may require lots of memory (>16 GB) and take
 # minutes to parse
 MAX_SENTENCE_TOKENS = 90
+
+
+def _now() -> datetime:
+    """Return the current time in UTC"""
+    return datetime.now(timezone.utc)
 
 
 class Article:
@@ -117,7 +122,7 @@ class Article:
         self._url = url
         self._heading = ""
         self._author = ""
-        self._timestamp = datetime.utcnow()
+        self._timestamp = _now()
         self._authority = 1.0
         self._scraped: Optional[datetime] = None
         self._parsed: Optional[datetime] = None
@@ -193,7 +198,7 @@ class Article:
                 a._author = metadata.author
                 a._timestamp = metadata.timestamp
                 a._authority = metadata.authority
-            a._scraped = datetime.utcnow()
+            a._scraped = _now()
             if helper is not None:
                 helper = cast(Any, helper)
                 a._scr_module = helper.scr_module
@@ -416,7 +421,7 @@ class Article:
 
             # parse_time = ip.parse_time
 
-            self._parsed = datetime.utcnow()
+            self._parsed = _now()
             self._parser_version = "{0}/{1}".format(bp.version, tokenizer_version)
             self._num_tokens = ip.num_tokens
             self._num_sentences = ip.num_sentences

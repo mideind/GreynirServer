@@ -27,7 +27,7 @@ from typing import Dict
 
 import logging
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from icespeak import gssml
 
@@ -131,7 +131,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
         try:
             r = _gen_count(q, result)
             q.set_answer(*r)
-            q.set_expires(datetime.utcnow() + timedelta(hours=24))
+            q.set_expires(datetime.now(timezone.utc) + timedelta(hours=24))
         except Exception as e:
             logging.warning(f"Exception while processing counting query: {e}")
             q.set_error(f"E_EXCEPTION: {e}")

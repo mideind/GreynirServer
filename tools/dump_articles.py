@@ -24,11 +24,12 @@
 
 """
 
+from typing import Any, Dict, List
+
 import os
 import sys
 import json
 from datetime import datetime
-
 
 # Hack to make this Python program executable from the tools subdirectory
 basepath, _ = os.path.split(os.path.realpath(__file__))
@@ -44,7 +45,7 @@ from db.models import Article
 from tokenizer import correct_spaces
 
 
-def main():
+def main() -> None:
     try:
         # Read configuration file
         Settings.read(os.path.join(basepath, "config", "GreynirSimple.conf"))
@@ -63,7 +64,7 @@ def main():
             .filter(Article.timestamp < aft)  # type: ignore
             .order_by(Article.timestamp)
         )
-        items = list()
+        items: List[Dict[str, Any]] = list()
         for r in q.all():
             (url, ts, title, tokens) = r
             if not tokens:

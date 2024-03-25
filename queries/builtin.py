@@ -30,11 +30,9 @@ from typing import Callable, Dict, Iterable, Optional, List, Any, Tuple, cast
 from typing_extensions import TypedDict
 
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import defaultdict
 import logging
-
-from sqlalchemy import DateTime
 
 from reynir import TOK, Tok, correct_spaces
 from reynir.bintokenizer import stems_of_token
@@ -42,7 +40,7 @@ from icespeak import gssml
 
 from settings import Settings
 from db import desc, OperationalError, Session
-from db.models import Article, Person, Entity, Root, Column
+from db.models import Article, Person, Entity, Root
 from db.sql import RelatedWordsQuery, ArticleCountQuery, ArticleListQuery
 from search import Search
 from queries import AnswerTuple, Query, ResponseDict, ResponseType, QueryStateDict
@@ -103,7 +101,7 @@ def append_answers(
     """Iterate over query results and add them to the result dictionary rd"""
     for p in q:
         s = correct_spaces(prop_func(p))
-        ts = p.timestamp or datetime.utcnow()
+        ts = p.timestamp or datetime.now(timezone.utc)
         ai = dict(
             domain=p.domain,
             uuid=p.id,
@@ -202,7 +200,7 @@ def append_names(
     s: Optional[str]
     for p in q:
         s = correct_spaces(prop_func(p))
-        ts = p.timestamp or datetime.utcnow()
+        ts = p.timestamp or datetime.now(timezone.utc)
         ai = dict(
             domain=p.domain,
             uuid=p.id,
@@ -243,7 +241,7 @@ def make_response_list(rd: RegisterType) -> List[Dict[str, Any]]:
         """Longer results are better than shorter ones, but only to a point"""
         return min(math.e * math.log(len(result)), 10.0)
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     def mention_weight(articles: Dict[str, Any]) -> float:
         """Newer mentions are better than older ones"""
@@ -608,7 +606,7 @@ def query_title(query: Query, session: Session, title: str) -> AnswerTuple:
         .filter(Root.visible == True)
         .join(Article, Article.url == Person.article_url)
         .join(Root)
-        .order_by(desc(cast(Column[DateTime], Article.timestamp)))
+        .order_by(desc(Article.timestamp))
         .limit(QUERY_LIMIT)
         .all()
     )

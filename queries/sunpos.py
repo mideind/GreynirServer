@@ -432,7 +432,10 @@ def _answer_city_solar_data(
             is_will_was = "var"
 
         degrees = cast(Union[int, float], data[city][closest_date][sun_pos])
-        answer = f"Sólarhæð um hádegi {when} {is_will_was} um {sing_or_plur(float(degrees), 'gráða', 'gráður')}."
+        answer = (
+            f"Sólarhæð um hádegi {when} {is_will_was} um "
+            f"{sing_or_plur(float(degrees), 'gráða', 'gráður')}."
+        )
 
     else:
         time: Optional[datetime.time] = cast(
@@ -441,7 +444,7 @@ def _answer_city_solar_data(
 
         if time:
             if in_past is None:
-                in_past = time <= datetime.datetime.utcnow().time()
+                in_past = time <= datetime.datetime.now(datetime.timezone.utc).time()
 
             # More specific answer when asking about today
             # (this morning/this evening/tonight/...)

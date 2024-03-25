@@ -25,7 +25,7 @@
 
 # TODO: Transition this module over to using query grammar.
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from db import SessionContext
 from db.models import Person
@@ -267,7 +267,7 @@ def _gen_num_people_answer(q: Query) -> bool:
         answer = answer.format(count=count)
         response = dict(answer=answer)
 
-        q.set_expires(datetime.utcnow() + timedelta(hours=1))
+        q.set_expires(datetime.now(timezone.utc) + timedelta(hours=1))
         q.set_answer(response, answer, voice)
         q.set_key("NumPeople")
         q.set_qtype(_STATS_QTYPE)
@@ -285,7 +285,7 @@ def _gen_num_queries_answer(q: Query) -> bool:
             session.query(QueryModel.id)
             .filter(
                 QueryModel.timestamp
-                >= datetime.utcnow() - timedelta(days=_QUERIES_PERIOD)
+                >= datetime.now(timezone.utc) - timedelta(days=_QUERIES_PERIOD)
             )
             .count()
         )
@@ -347,7 +347,7 @@ _QTYPE_TO_DESC = {
 def _gen_most_freq_queries_answer(q: Query) -> bool:
     """Answer question concerning most frequent queries."""
     with SessionContext(read_only=True) as session:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         start = now - timedelta(days=_QUERIES_PERIOD)
         end = now
         qr = list(
@@ -390,7 +390,7 @@ def _gen_most_mentioned_answer(q: Query) -> bool:
         answer = natlang_seq([t["name"] for t in top if "name" in t])
         response = dict(answer=answer)
         voice = f"Umtöluðustu einstaklingar síðustu daga eru {answer}."
-        q.set_expires(datetime.utcnow() + timedelta(hours=1))
+        q.set_expires(datetime.now(timezone.utc) + timedelta(hours=1))
         q.set_answer(response, answer, voice)
 
     return True

@@ -39,7 +39,7 @@ import logging
 from os import environ as ENV
 from platform import system as os_name
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Flask, send_from_directory, render_template
 from flask.wrappers import Response
@@ -211,7 +211,7 @@ if Settings.DEBUG:
         "\nStarting Greynir web app at {0} with debug={1}, "
         "host={2}:{3}, db_host={4}:{5}\n"
         "Python {6} on {7}\n{8}".format(
-            datetime.utcnow(),
+            datetime.now(timezone.utc),
             Settings.DEBUG,
             Settings.HOST,
             Settings.PORT,

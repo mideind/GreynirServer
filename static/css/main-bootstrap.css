@@ -567,10 +567,12 @@ p.header {
    margin-bottom: 24px;
 }
 
+/*
 .container>.navbar-header {
    margin-left: -6px;
    margin-right: -6px;
 }
+*/
 
 input::selection {
    color: white;

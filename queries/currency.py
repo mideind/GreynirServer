@@ -27,7 +27,7 @@
 # TODO: "hvað eru 10 evrur í íslenskum krónum"
 # TODO: "Hvert er gengi krónunnar?"
 
-from typing import Dict, List, Mapping, Optional, Sequence, cast
+from typing import Any, Dict, List, Mapping, Optional, Sequence, cast
 
 import cachetools  # type: ignore
 import random
@@ -116,7 +116,7 @@ NON_KVK_CURRENCY_GENDERS: Mapping[str, str] = {
 def add_currency(curr: str, result: Result) -> None:
     if "currencies" not in result:
         result.currencies = []
-    rn = cast(List[str], result.currencies)
+    rn = cast(List[str], cast(Any, result).currencies)
     rn.append(curr)
 
 

@@ -28,7 +28,7 @@ from __future__ import annotations
 from db import Session
 from typing import Any, Optional, cast
 
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
@@ -37,9 +37,9 @@ from sqlalchemy import (
     Integer,
     String,
     Float,
-    DateTime,
     Sequence,
     Boolean,
+    DateTime,  # type: ignore # Imported for re-export
     UniqueConstraint,
     Index,
     ForeignKey,
@@ -51,6 +51,29 @@ from sqlalchemy.dialects.postgresql import UUID as psql_UUID
 from sqlalchemy.ext.hybrid import Comparator, hybrid_property
 from sqlalchemy.orm.relationships import RelationshipProperty
 from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy import types
+
+
+class DateTimeUtc(types.TypeDecorator):  # type: ignore
+
+    impl = types.DateTime
+    cache_ok = True
+
+    def process_bind_param(
+        self, value: Optional[datetime], dialect: Any
+    ) -> Optional[datetime]:
+        if value is None:
+            return None
+        return value.astimezone(timezone.utc)
+
+    def process_result_value(
+        self, value: Optional[datetime], dialect: Any
+    ) -> Optional[datetime]:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
 
 
 # Hacks to get properly typed SQLAlchemy column definitions
@@ -83,7 +106,7 @@ def BooleanColumn(**kwargs: Any) -> Optional[bool]:
 
 
 def DateTimeColumn(**kwargs: Any) -> Optional[datetime]:
-    return cast(Optional[datetime], Column(DateTime, **kwargs))
+    return cast(Optional[datetime], Column(DateTimeUtc, **kwargs))
 
 
 class CaseInsensitiveComparator(Comparator):
@@ -131,7 +154,7 @@ class Root(Base):
     # Default authority of this source, 1.0 = most authoritative, 0.0 = least authoritative
     authority = FloatColumn()
     # Finish time of last scrape of this root
-    scraped = cast(datetime, Column(DateTime, index=True))
+    scraped = DateTimeColumn(index=True)
     # Module to use for scraping
     scr_module = StringColumn(80)
     # Class within module to use for scraping
@@ -612,7 +635,7 @@ class Link(Base):
     content = Column(String)
 
     # Timestamp of this entry
-    timestamp = Column(DateTime, nullable=False)
+    timestamp = DateTimeColumn(nullable=False)
 
     def __repr__(self):
         return "Link(ctype='{0}', key='{1}', content='{2}', ts='{3}')".format(
@@ -637,7 +660,7 @@ class BlacklistedLink(Base):
     link_type = Column(String(32))
 
     # Timestamp of this entry
-    timestamp = Column(DateTime, nullable=False)
+    timestamp = DateTimeColumn(nullable=False)
 
     def __repr__(self):
         return "BlacklistedLink(key='{0}', url='{1}', type='{2}', ts='{3}')".format(
@@ -661,7 +684,7 @@ class Query(Base):
     )
 
     # Timestamp of the incoming query
-    timestamp = Column(DateTime, index=True, nullable=False)
+    timestamp = DateTimeColumn(index=True, nullable=False)
 
     # Interpretations
     # JSON array containing list of possible interpretations
@@ -709,7 +732,7 @@ class Query(Base):
 
     # When does this answer expire, for caching purposes?
     # NULL=immediately
-    expires = Column(DateTime, index=True, nullable=True)
+    expires = DateTimeColumn(index=True, nullable=True)
 
     # The query type, NULL if not able to process
     qtype = Column(String(80), index=True, nullable=True)
@@ -772,7 +795,7 @@ class QueryLog(Base):
     )
 
     # See the Query class for documentation of these fields
-    timestamp = Column(DateTime, index=True, nullable=False)
+    timestamp = DateTimeColumn(index=True, nullable=False)
 
     interpretations = Column(JSONB, nullable=True)
 
@@ -818,16 +841,16 @@ class QueryClientData(Base):
 
     __table_args__ = (PrimaryKeyConstraint("client_id", "key", name="querydata_pkey"),)
 
-    client_id = cast(str, Column(String(256), nullable=False))
+    client_id = StringColumnRequired(256)
 
     # Key to distinguish between different types of JSON data that can be stored
-    key = cast(str, Column(String(64), nullable=False))
+    key = StringColumnRequired(64)
 
     # Created timestamp
-    created = cast(datetime, Column(DateTime, nullable=False))
+    created = DateTimeColumn(nullable=False)
 
     # Last modified timestamp
-    modified = cast(datetime, Column(DateTime, nullable=False))
+    modified = DateTimeColumn(nullable=False)
 
     # JSON data
     data = cast(Any, Column(JSONB, nullable=False))

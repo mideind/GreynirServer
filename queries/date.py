@@ -60,7 +60,7 @@
 
 import logging
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from calendar import monthrange, isleap
 
 from icespeak import gssml
@@ -114,6 +114,11 @@ TOPIC_LEMMAS = [
     "áramót",
     "ár",
 ]
+
+
+def _now() -> datetime:
+    """Return the current time in UTC"""
+    return datetime.now(timezone.utc)
 
 
 def help_text(lemma: str) -> str:
@@ -195,7 +200,7 @@ def QDateAbsOrRel(node: Node, params: QueryStateDict, result: Result) -> None:
     cdate = datenode.contained_date
     if cdate:
         y, m, d = cdate
-        now = datetime.utcnow()
+        now = _now()
 
         # This is a date that contains at least month & mday
         if d and m:
@@ -425,14 +430,14 @@ def this_or_next_weekday(d: datetime, weekday: int) -> datetime:
 
 def dnext(d: datetime) -> datetime:
     """Return datetime with year+1 if date was earlier in current year."""
-    if d < datetime.utcnow():
+    if d < _now():
         d = d.replace(year=d.year + 1)
     return d
 
 
 def next_easter() -> datetime:
     """Find the date of next easter in the Gregorian calendar."""
-    now = datetime.utcnow()
+    now = _now()
     e = calc_easter(now.year)
     if e < now:
         e = calc_easter(now.year + 1)
@@ -464,7 +469,7 @@ def _date_diff(d1: datetime, d2: datetime, unit: str = "days") -> int:
 
 def howlong_answ(q: Query, result: Result) -> None:
     """Generate answer to a query about number of days since/until a given date."""
-    now = datetime.utcnow()
+    now = _now()
     target = result["target"]
 
     q.set_key("HowLongUntilDate" if "until" in result else "HowLongSinceDate")
@@ -536,7 +541,7 @@ def when_answ(q: Query, result: Result) -> None:
 
 def curr_date_answ(q: Query, result: Result) -> None:
     """Generate answer to a question of the form "Hver er dagsetningin [í dag]?" etc."""
-    now = datetime.utcnow()
+    now = _now()
     date_str = now.strftime("%A %-d. %B %Y")
     answer = date_str.capitalize()
     response = dict(answer=answer)
@@ -548,7 +553,7 @@ def curr_date_answ(q: Query, result: Result) -> None:
 
 def tomorrow_date_answ(q: Query, result: Result) -> None:
     """Generate answer to a question of the form "Hvaða dagur er á morgun?" etc."""
-    now = datetime.utcnow() + timedelta(days=1)
+    now = _now() + timedelta(days=1)
     date_str = now.strftime("%A %-d. %B %Y")
     answer = date_str.capitalize()
     response = dict(answer=answer)
@@ -560,7 +565,7 @@ def tomorrow_date_answ(q: Query, result: Result) -> None:
 
 def yesterday_date_answ(q: Query, result: Result) -> None:
     """Generate answer to a question of the form "Hvaða dagur var í gær?" etc."""
-    now = datetime.utcnow() - timedelta(days=1)
+    now = _now() - timedelta(days=1)
     date_str = now.strftime("%A %-d. %B %Y")
     answer = date_str.capitalize()
     response = dict(answer=answer)
@@ -589,7 +594,7 @@ def days_in_month_answ(q: Query, result: Result) -> None:
 
 def year_answ(q: Query, result: Result) -> None:
     """Generate answer to a question of the form "Hvaða ár er núna?" etc."""
-    now = datetime.utcnow()
+    now = _now()
     y = now.year
     answer = f"{y}."
     response = dict(answer=answer)
@@ -601,7 +606,7 @@ def year_answ(q: Query, result: Result) -> None:
 
 def leap_answ(q: Query, result: Result) -> None:
     """Generate answer to a question of the form "Er hlaupár?" etc."""
-    now = datetime.utcnow()
+    now = _now()
     t = result.get("target")
     y = t.year if t else now.year
     verb = "er" if y >= now.year else "var"

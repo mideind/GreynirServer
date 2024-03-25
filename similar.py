@@ -26,6 +26,7 @@
 """
 
 from typing import Any, List, Optional, Tuple
+from typing import TYPE_CHECKING
 
 import os
 import sys
@@ -42,16 +43,20 @@ from settings import Settings
 # socket module. This, alas, means that our calls to the similarity
 # server are truly blocking, even under Gunicorn/eventlet.
 
-try:
-    import eventlet  # type: ignore
-
-    USING_EVENTLET = True
-    socket = eventlet.patcher.original("socket")  # type: ignore
-    assert socket is not None
-except ImportError:
+if TYPE_CHECKING:
     import socket
+    USING_EVENTLET = False
+else:
+    try:
+        import eventlet  # type: ignore
 
-    USING_EVENTLET = False  # type: ignore
+        USING_EVENTLET = True
+        socket = eventlet.patcher.original("socket")  # type: ignore
+        assert socket is not None
+    except ImportError:
+        import socket
+
+        USING_EVENTLET = False  # type: ignore
 
 # The following two functions replicate and hack/tweak corresponding functions
 # from multiprocessing.connection. This is necessary because the original

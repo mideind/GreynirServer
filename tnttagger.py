@@ -50,7 +50,7 @@
 
 """
 
-from typing import Any, DefaultDict, Dict, List, Optional, Tuple, Type
+from typing import Any, Callable, DefaultDict, Dict, List, Optional, Sequence, Tuple, Type
 
 import os
 import time
@@ -58,7 +58,6 @@ import pickle
 import logging
 
 from math import log
-from collections import defaultdict
 from contextlib import contextmanager
 
 from tokenizer import TOK, paragraphs, parse_tokens
@@ -111,12 +110,12 @@ class FreqDist(DefaultDict[str, int]):
         return self.get(sample, 0) / n
 
 
-class ConditionalFreqDist(defaultdict):
+class ConditionalFreqDist(DefaultDict[str, FreqDist]):
     """A collection of frequency distributions for a single experiment
     run under different conditions."""
 
     def __init__(
-        self, cls=FreqDist
+        self, cls: Type[Any]=FreqDist
     ) -> None:  # Note: the cls parameter seems to be required for pickling to work
         """Construct a new empty conditional frequency distribution."""
         super().__init__(cls)
@@ -137,7 +136,7 @@ class UnknownWordTagger:
     def __init__(self):
         self._ngram_tagger = NgramTagger()
 
-    def tagset(self, word, at_sentence_start=False):
+    def tagset(self, word: Sequence[str], at_sentence_start: bool=False) -> Optional[List[Tuple[str, float]]]:
         """Return a list of (probability, tag) tuples for the given word"""
         toklist = list(parse_tokens(" ".join(word)))
         token = toklist[0]
@@ -151,7 +150,7 @@ class UnknownWordTagger:
             token = TOK.Word(w, m)
         return self._ngram_tagger.tag_single_token(token)
 
-    def tag(self, word, at_sentence_start=False):
+    def tag(self, word: str, at_sentence_start: bool=False) -> List[Tuple[str, str]]:
         """Return a list with a single (word, tag) tuple for the given
         word list, containing a single word"""
         taglist = self.tagset(word, at_sentence_start)
@@ -435,7 +434,7 @@ class TnT:
         _C = self._C
 
         current_state: StateList = [(0.0, [("BOS", False), ("BOS", False)])]
-        keyfunc = lambda x: x[0]
+        keyfunc: Callable[[Any], float] = lambda x: x[0]
 
         for index, word in enumerate(sent):
 
@@ -508,7 +507,7 @@ _TAGGER: Optional[TnT] = None
 _XLT = {"—": "-", "–": "-"}
 
 
-def ifd_tag(text: str) -> List[List[str]]:
+def ifd_tag(text: str) -> List[List[Tuple[str, str]]]:
     """Tokenize the given text and use a global singleton TnT tagger to tag it"""
     global _TAGGER
     if _TAGGER is None:
@@ -520,7 +519,7 @@ def ifd_tag(text: str) -> List[List[str]]:
             return []  # No tagger model - unable to tag
 
     token_stream = tokenize(text)
-    result: List[List[str]] = []
+    result: List[List[Tuple[str, str]]] = []
 
     def xlt(txt: str) -> str:
         """Translate the token text as required before tagging it"""

@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Set, Tuple, cast, Counter as CounterType
 
 from . import routes, max_age, cache, restricted, days_from_period_arg
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict, Counter
 from itertools import permutations
 
@@ -34,7 +34,7 @@ from flask import request, render_template
 from settings import changedlocale
 
 from db import SessionContext, desc
-from db.models import Person, Article, Root, Word, Column
+from db.models import Person, Article, Root, Word
 
 from reynir import correct_spaces
 from reynir.bindb import GreynirBin
@@ -61,7 +61,7 @@ def recent_persons(limit: int=_RECENT_PERSONS_LENGTH):
             .join(Root)
             .filter(Root.visible)
             # Go through up to 2 * N records
-            .order_by(desc(cast(Column, Article.timestamp)))[0 : limit * 2]
+            .order_by(desc(Article.timestamp))[0 : limit * 2]
         )
 
         def is_better_title(new_title: str, old_title: str) -> bool:
@@ -123,7 +123,7 @@ def top_persons(
             .join(Article, Article.id == Word.article_id)
             .join(Root)
             .filter(Root.visible)
-            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
+            .filter(Article.timestamp > datetime.now(timezone.utc) - timedelta(days=days))
             .filter((Word.cat == "person_kk") | (Word.cat == "person_kvk"))
             .filter(Word.stem.like("% %"))  # Match whitespace for least two names.
             .distinct()

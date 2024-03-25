@@ -48,7 +48,7 @@ from types import FunctionType, ModuleType
 
 import importlib
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import re
 import random
@@ -132,6 +132,11 @@ _IGNORED_PREFIX_RE = re.compile(
 )
 # Auto-capitalization corrections
 _CAPITALIZATION_REPLACEMENTS = (("í Dag", "í dag"),)
+
+
+def _now() -> datetime:
+    """Return the current time in UTC"""
+    return datetime.now(timezone.utc)
 
 
 def beautify_query(query: str) -> str:
@@ -753,7 +758,7 @@ class Query:
         )
         if within_minutes > 0:
             # Apply a timestamp filter
-            since = datetime.utcnow() - timedelta(minutes=within_minutes)
+            since = _now() - timedelta(minutes=within_minutes)
             q = q.filter(QueryRow.timestamp >= since)
         # Sort to get the newest query that fulfills the criteria
         last = q.order_by(desc(QueryRow.timestamp)).limit(1).one_or_none()
@@ -774,7 +779,7 @@ class Query:
         )
         if within_minutes > 0:
             # Apply a timestamp filter
-            since = datetime.utcnow() - timedelta(minutes=within_minutes)
+            since = _now() - timedelta(minutes=within_minutes)
             q = q.filter(QueryRow.timestamp >= since)
         # Sort to get the newest query that fulfills the criteria
         ctx = cast(
@@ -1019,7 +1024,7 @@ class Query:
         """Save client query data in the database, under the given key"""
         if not client_id or not key:
             return False
-        now = datetime.utcnow()
+        now = _now()
         try:
             with SessionContext(commit=True) as session:
                 row = cast(
@@ -1388,7 +1393,7 @@ def process_query(
     or an iterable of strings that will be processed in
     order until a successful one is found."""
 
-    now = datetime.utcnow()
+    now = _now()
     result: ResponseDict = dict()
     client_id = client_id[:256] if client_id else None
     first_clean_q: Optional[str] = None

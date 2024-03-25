@@ -45,7 +45,7 @@ import os
 import re
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from icespeak import gssml
 from icespeak.transcribe.num import numbers_to_ordinal, years_to_text
@@ -61,8 +61,8 @@ from queries.util.openai_gpt import (
     jdump,
     detect_language,
     HistoryList,
-    OpenAiDict,
     Completion,
+    ChatCompletion,
 )
 
 
@@ -241,18 +241,14 @@ class AgentBase(abc.ABC):
         return AgentBase._registry.values()
 
     @staticmethod
-    def answer_from_gpt_response(response: Any) -> str:
+    def answer_from_gpt_response(response: ChatCompletion) -> str:
         """Utility function to extract the answer from a GPT response"""
-        r: Optional[OpenAiDict] = None
-        if response is not None:
-            r = json.loads(str(response))
-        if r is None:
-            return ""
         if Settings.DEBUG:
-            print(r)  # !!! DEBUG
-        # Extract the answer from the GPT response JSON
+            print(response.model_dump_json(indent=2))  # !!! DEBUG
+        # Extract the answer from the GPT response object
         try:
-            answer = r["choices"][0]["message"]["content"].strip('" \n\r\t')
+            content = response.choices[0].message.content or ""
+            answer = content.strip('" \n\r\t')
             return answer
         except (ValueError, KeyError, IndexError):
             # Something is wrong with the GPT response format
@@ -600,9 +596,9 @@ class NewsAgent(FollowUpAgent):
                 category=category,
                 headlines=[
                     # Höfundur: Tumi Þorsteinsson, þriggja ára, í miðju COVID-19
+                    "Jólin eru búin",
                     "Kaffihúsið er bilað",
                     "Bókasafnið er lokað",
-                    "Jólin eru búin",
                 ],
             )
         )
@@ -667,7 +663,7 @@ def handle_plain_text(q: Query) -> bool:
 
         ql = q.query
         loc = q.location
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         now_iso = now.isoformat()
         wd = now.weekday()  # 0=Monday, 6=Sunday
         location: str = "Óþekkt"
@@ -750,7 +746,7 @@ def handle_plain_text(q: Query) -> bool:
             voice_answer = answer
         # Set the query answer text and voice synthesis text
         q.set_answer(dict(answer=answer), answer, voice_answer)
-        duration = datetime.utcnow() - now
+        duration = datetime.now(timezone.utc) - now
         duration_str = f" ({duration.total_seconds():.1f} s)" if Settings.DEBUG else ""
         q.set_source(f"Takist með fyrirvara! {n + 1}/{GPT_LIMIT}{duration_str}")
 

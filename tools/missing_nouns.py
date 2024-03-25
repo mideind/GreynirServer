@@ -7,14 +7,15 @@
 """
 
 import json, sys, os
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import defaultdict
 from pprint import pprint
+from typing import Dict
 
 # Look for modules in parent directory
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
 
-from db import SessionContext, desc
+from db import SessionContext
 from db.models import Article
 
 with SessionContext(read_only=True) as session:
@@ -22,12 +23,12 @@ with SessionContext(read_only=True) as session:
         session.query(Article.id, Article.timestamp, Article.tokens)  # type: ignore
         .filter(Article.tree != None)
         .filter(Article.timestamp != None)
-        .filter(Article.timestamp <= datetime.utcnow())  # type: ignore
+        .filter(Article.timestamp <= datetime.now(timezone.utc))  # type: ignore
         .filter(Article.heading > "")  # type: ignore
         .filter(Article.num_sentences > 0)  # type: ignore
     )
 
-    nouns = defaultdict(int)
+    nouns: Dict[str, int] = defaultdict(int)
 
     for i, a in enumerate(q.yield_per(100)):
         print("%d\r" % i, end="")

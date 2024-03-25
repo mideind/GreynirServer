@@ -296,7 +296,7 @@ def add_num(num: Optional[Union[str, int, float]], result: Result):
     """Add a number to accumulated number args"""
     if "numbers" not in result:
         result.numbers = []
-    rn = cast(List[float], result.numbers)
+    rn = cast(List[float], cast(Any, result).numbers)
     if isinstance(num, str):
         rn.append(parse_num(num))
     elif num is not None:

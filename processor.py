@@ -46,18 +46,23 @@ else:
     from multiprocessing import Pool
 
 from contextlib import closing
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from settings import Settings, ConfigError
 from db import GreynirDB, Session
-from db.models import Article, Person, Column, DateTime
+from db.models import Article, Person
 from tree import Tree, ProcEnv, TreeStateDict
 from tree.util import PgsList
 from utility import modules_in_dir
 
 
 _profiling = False
+
+
+def _now() -> datetime:
+    """Return the current time in UTC"""
+    return datetime.now(timezone.utc)
 
 
 class TokenContainer:
@@ -255,7 +260,7 @@ class Processor:
                                 token_container.process(session, p)
 
                     # Mark the article as being processed
-                    article.processed = datetime.utcnow()
+                    article.processed = _now()
 
                 # So far, so good: commit to the database
                 session.commit()
@@ -306,17 +311,12 @@ class Processor:
                         if update:
                             # If update, we re-process articles that have been parsed
                             # again in the meantime
-                            q = q.filter(
-                                cast(Column[DateTime], Article.processed)
-                                < cast(Column[DateTime], Article.parsed)
-                            ).order_by(Article.processed)
+                            q = q.filter(Article.processed < Article.parsed).order_by(Article.processed)
                         else:
                             q = q.filter(Article.processed == None)
                     if from_date is not None:
                         # Only go through articles parsed since the given date
-                        q = q.filter(
-                            cast(Column[DateTime], Article.parsed) >= from_date
-                        ).order_by(Article.parsed)
+                        q = q.filter(Article.parsed >= from_date).order_by(Article.parsed)
                 if limit > 0:
                     q = q.limit(limit)
                 for a in q.yield_per(200):
@@ -361,7 +361,7 @@ def process_articles(
         print(f"Invoke single processor: {processor}")
     if num_workers:
         print(f"Number of workers: {num_workers}")
-    ts = str(datetime.utcnow())[0:19]
+    ts = str(_now())[0:19]
     print(f"Time: {ts}\n")
 
     t0 = time.time()
@@ -384,7 +384,7 @@ def process_articles(
 
     print("\n------ Processing completed -------")
     print("Total time: {0:.2f} seconds".format(t1 - t0))
-    ts = str(datetime.utcnow())[0:19]
+    ts = str(_now())[0:19]
     print(f"Time: {ts}\n")
 
 

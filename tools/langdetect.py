@@ -17,7 +17,6 @@ from db import SessionContext
 from db.models import Article
 
 from langdetect import detect as langdetect  # type: ignore
-from tokenizer import correct_spaces
 
 from get_articles_by_url import tokens2text
 

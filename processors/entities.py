@@ -35,7 +35,7 @@
 from typing import Any, List, Tuple, cast
 
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 from db.models import Entity
 from tokenizer import Abbreviations
@@ -527,7 +527,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 verb=verb,
                 definition=definition,
                 authority=authority,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc),
             )
             session.add(e)
 
@@ -765,7 +765,9 @@ def NlEind(node: NonterminalNode, params: ParamList, result: Result) -> None:
             if "entities" not in result:
                 result.entities = []
 
-            cast(EntityList, result.entities).append((entity, verb, definition))
+            cast(EntityList, cast(Any, result).entities).append(
+                (entity, verb, definition)
+            )
 
     result.del_attribs(("sviga_innihald", "sérnafn_eind_nom"))
 

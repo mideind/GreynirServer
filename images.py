@@ -35,7 +35,7 @@ import urllib.request
 import urllib.parse
 from urllib.error import HTTPError
 from io import BytesIO
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from contextlib import closing
 
 import requests
@@ -47,6 +47,11 @@ from utility import read_txt_api_key
 
 # HTTP request timeout
 QUERY_TIMEOUT = 4.0
+
+
+def _now() -> datetime:
+    """Return the current time in UTC"""
+    return datetime.now(timezone.utc)
 
 
 def _server_query(url: str, q: Dict[str, Union[int, str]]) -> Optional[bytes]:
@@ -127,7 +132,7 @@ def get_image_url(
         if link is not None:
             # Found in cache. If the result is old, purge it
             period = timedelta(days=_CACHE_EXPIRATION_DAYS)
-            expired = datetime.utcnow() - link.timestamp > period
+            expired = _now() - link.timestamp > period
             if expired and not cache_only:
                 _purge_single(name, ctype=ctype, enclosing_session=session)
             else:
@@ -166,7 +171,7 @@ def get_image_url(
             if jdoc:
                 # Store in the cache
                 lnk = Link(
-                    ctype=ctype, key=name, content=jdoc, timestamp=datetime.utcnow()
+                    ctype=ctype, key=name, content=jdoc, timestamp=_now()
                 )
                 session.add(lnk)
 
@@ -209,7 +214,7 @@ def blacklist_image_url(name: str, url: str) -> Optional[Img]:
 
         # Add to blacklist
         b = BlacklistedLink(
-            key=name, url=url, link_type="image", timestamp=datetime.utcnow()
+            key=name, url=url, link_type="image", timestamp=_now()
         )
         session.add(b)
 

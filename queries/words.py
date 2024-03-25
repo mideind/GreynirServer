@@ -37,7 +37,7 @@ from typing import Optional, Tuple
 
 import re
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from tokenizer.definitions import BIN_Tuple
 from islenska.bindb import BinEntryIterable, BinEntryList
@@ -239,7 +239,7 @@ def handle_plain_text(q: Query) -> bool:
 
     if answ is not None:
         q.set_answer(*answ)
-        q.set_expires(datetime.utcnow() + timedelta(hours=24))
+        q.set_expires(datetime.now(timezone.utc) + timedelta(hours=24))
         # Beautify query by placing word being asked about within Icelandic quotation marks
         # TODO: This needs to be fixed, mangles the query if asking about "maður", "orð", etc.
         # bq = re.sub(r"\s({0})".format(matching_word), r" „\1“", q.beautified_query)

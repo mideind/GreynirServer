@@ -24,7 +24,6 @@
 
 import os
 import sys
-import re
 
 # Hack to make this Python program executable from the tools subdirectory
 basepath, _ = os.path.split(os.path.realpath(__file__))

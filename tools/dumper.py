@@ -32,8 +32,8 @@ import time
 import json
 
 from contextlib import closing
-from datetime import datetime
-from typing import Any, cast
+from datetime import datetime, timezone
+from typing import Any, List, Optional, cast, IO
 
 from sqlalchemy.orm.query import Query
 
@@ -48,10 +48,9 @@ OUTPUT_FILE = "reynir_dump.txt"
 
 
 class Dumper:
-
     """The worker class that processes parsed articles"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     class AbortSentence(RuntimeError):
@@ -60,7 +59,7 @@ class Dumper:
 
         pass
 
-    def dump(self, tokens_json, file):
+    def dump(self, tokens_json: str, file: IO[str]) -> None:
         """Dump the sentences of a single article to a text file,
         one sentence per line"""
         tokens = json.loads(tokens_json)
@@ -69,7 +68,7 @@ class Dumper:
         for p in tokens:
             for sent in p:
                 try:
-                    out = []
+                    out: List[str] = []
                     wcnt = 0
                     err = False
                     for t in sent:
@@ -137,7 +136,6 @@ class Dumper:
                                     # know its stem: check whether the stem is lowercase
                                     # and if so, output the word in lowercase as well
                                     if m is None or not m[0][0].isupper():
-                                        original = text
                                         text = text[0].lower() + text[1:]
                                 if m is None:
                                     terminal = t.get("t")
@@ -182,6 +180,8 @@ class Dumper:
                 q = q.yield_per(4096)
             cnt = 0
             for a in q:
+                if not a.tokens:
+                    continue
                 if cnt % 1000 == 0:
                     print(f"Dumped {cnt} articles", end=chr(13))
                 self.dump(a.tokens, file)
@@ -189,12 +189,12 @@ class Dumper:
             print(f"Dumped {cnt} articles", end=chr(13))
 
 
-def process_articles(limit=0):
+def process_articles(limit: int = 0) -> None:
     print("------ Greynir starting dump -------")
     print("Output file: {0}".format(OUTPUT_FILE))
     if limit:
         print("Limit: {0} articles".format(limit))
-    ts = "{0}".format(datetime.utcnow())[0:19]
+    ts = "{0}".format(datetime.now(timezone.utc))[0:19]
     print("Time: {0}\n".format(ts))
 
     t0 = time.time()
@@ -205,12 +205,12 @@ def process_articles(limit=0):
 
     print("\n------ Dump completed -------")
     print("Total time: {0:.2f} seconds".format(t1 - t0))
-    ts = "{0}".format(datetime.utcnow())[0:19]
+    ts = "{0}".format(datetime.now(timezone.utc))[0:19]
     print("Time: {0}\n".format(ts))
 
 
 class Usage(Exception):
-    def __init__(self, msg):
+    def __init__(self, msg: str) -> None:
         self.msg = msg
 
 
@@ -231,7 +231,7 @@ __doc__ = """
 """
 
 
-def main(argv=None):
+def main(argv: Optional[List[str]] = None) -> int:
     """Guido van Rossum's pattern for a Python main function"""
 
     if argv is None:
@@ -240,7 +240,7 @@ def main(argv=None):
         try:
             opts, args = getopt.getopt(argv[1:], "hl:o:", ["help", "limit=", "output="])
         except getopt.error as msg:
-            raise Usage(msg)
+            raise Usage(str(msg))
         limit = 10  # !!! DEBUG default limit on number of articles to parse, unless otherwise specified
         # Process options
         for o, a in opts:
@@ -256,12 +256,12 @@ def main(argv=None):
             elif o in ("-o", "--output"):
                 if a:
                     global OUTPUT_FILE
-                    OUTPUT_FILE = a
+                    OUTPUT_FILE = a  # type: ignore
                 else:
                     raise Usage("Output file name must be nonempty")
 
         # Process arguments
-        for arg in args:
+        for _ in args:
             pass
 
         # Read the configuration settings file

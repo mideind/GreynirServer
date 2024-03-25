@@ -88,7 +88,7 @@ SKIP_ROUTES = frozenset(
 REQ_METHODS = frozenset(["GET", "POST"])
 
 
-def test_routes(client: FlaskClient):
+def test_routes(client: FlaskClient) -> None:
     """Test all non-argument routes in Flask app by requesting
     them without passing any query or post parameters"""
     for rule in app.url_map.iter_rules():
@@ -117,7 +117,7 @@ API_ROUTES = [
 ]
 
 
-def test_api(client: FlaskClient):
+def test_api(client: FlaskClient) -> None:
     """Call API routes and validate response."""
     # TODO: Route-specific validation of JSON responses
     for r in API_ROUTES:
@@ -127,7 +127,7 @@ def test_api(client: FlaskClient):
         assert resp.content_type.startswith(API_CONTENT_TYPE) == True
 
 
-def test_postag_api(client: FlaskClient):
+def test_postag_api(client: FlaskClient) -> None:
     resp = client.get(r"/postag.api?t=Hér%20er%20ást%20og%20friður")
     assert resp.status_code == 200
     assert resp.content_type == "application/json; charset=utf-8"
@@ -137,7 +137,7 @@ def test_postag_api(client: FlaskClient):
     assert len(resp.json["result"][0]) == 5
 
 
-def test_ifdtag_api(client: FlaskClient):
+def test_ifdtag_api(client: FlaskClient) -> None:
     resp = client.get(r"/ifdtag.api?t=Hér%20er%20ást%20og%20friður")
     assert resp.status_code == 200
     assert resp.content_type == "application/json; charset=utf-8"
@@ -153,7 +153,7 @@ def test_ifdtag_api(client: FlaskClient):
     # assert len(resp.json["result"][0]) == 5
 
 
-def test_voices_api(client: FlaskClient):
+def test_voices_api(client: FlaskClient) -> None:
     resp = client.get("/voices.api")
     assert resp.status_code == 200
     assert resp.content_type == "application/json; charset=utf-8"
@@ -171,7 +171,7 @@ _KEY_RESTRICTED_ROUTES = frozenset(
 )
 
 
-def test_api_key_restriction(client: FlaskClient):
+def test_api_key_restriction(client: FlaskClient) -> None:
     """Make calls to routes that are API key restricted, make sure they complain if no
     API key is provided as a parameter and accept when correct API key is provided."""
 
@@ -207,19 +207,19 @@ def test_api_key_restriction(client: FlaskClient):
     assert "errmsg" in resp.json and "missing API key" in resp.json["errmsg"]
 
 
-def test_nertokenizer():
+def test_nertokenizer() -> None:
     from nertokenizer import recognize_entities
 
     assert recognize_entities
 
 
-def test_postagger():
+def test_postagger() -> None:
     from postagger import NgramTagger
 
     assert NgramTagger
 
 
-def test_query():
+def test_query() -> None:
     # TODO: Import all query modules and test whether
     # they include all necessary functions/variables
     from queries import Query
@@ -231,25 +231,25 @@ def test_query():
     assert Query  # Silence linter
 
 
-def test_scraper():
+def test_scraper() -> None:
     from scraper import Scraper
 
     assert Scraper
 
 
-def test_search():
+def test_search() -> None:
     from search import Search
 
     assert Search  # Silence linter
 
 
-def test_tnttagger():
+def test_tnttagger() -> None:
     from tnttagger import TnT
 
     assert TnT  # Silence linter
 
 
-def test_geo():
+def test_geo() -> None:
     """Test geography and location-related functions in geo.py"""
     from geo import (
         icelandic_city_name,
@@ -392,7 +392,7 @@ def test_geo():
     assert location_info("Fiskislóð 31", "address")["country"] == "IS"
 
 
-def test_util():
+def test_util() -> None:
     """Test utility functions."""
 
     from utility import icelandic_asciify

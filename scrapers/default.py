@@ -35,7 +35,7 @@ import logging
 import urllib.parse as urlparse
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from bs4 import BeautifulSoup
 from bs4.element import Tag, NavigableString
@@ -79,6 +79,11 @@ MONTHS_ABBR: Sequence[str] = [
     "nóv",
     "des",
 ]
+
+
+def _now() -> datetime:
+    """Return the current time in UTC"""
+    return datetime.now(timezone.utc)
 
 
 class Metadata:
@@ -145,7 +150,7 @@ class ScrapeHelper:
         return Metadata(
             heading=None,
             author=self.author,
-            timestamp=datetime.utcnow(),
+            timestamp=_now(),
             authority=self.authority,
             icon=self.icon,
         )
@@ -189,11 +194,11 @@ class ScrapeHelper:
 
     @property
     def authority(self) -> float:
-        return self._authority
+        return 0 if self._authority is None else self._authority
 
     @property
     def author(self) -> str:
-        return self._author
+        return self._author or ""
 
     @property
     def feeds(self) -> List[str]:
@@ -412,7 +417,7 @@ class KjarninnScraper(ScrapeHelper):
                 second=int(ts[17:19]),
             )
         else:
-            timestamp = datetime.utcnow()
+            timestamp = _now()
         # Exctract the author name
         # Start with <span itemprop="author">
         f = lambda xtag: ScrapeHelper.general_filter(xtag, "span", "itemprop", "author")
@@ -501,7 +506,7 @@ class RuvScraper(ScrapeHelper):
             heading = heading[0 : heading.index(" - ")].rstrip()
 
         # Extract the publication time from the article:published_time meta property
-        timestamp = datetime.utcnow()
+        timestamp = _now()
         ts = ScrapeHelper.meta_property(soup, "article:published_time")
         if ts:
             try:
@@ -675,7 +680,7 @@ class MblScraper(ScrapeHelper):
 
         if timestamp is None:
             logging.warning(f"Failed to obtain date of mbl.is article '{url}'")
-            timestamp = datetime.utcnow()
+            timestamp = _now()
 
         # Extract the author name
         rp = ScrapeHelper.div_class(soup.html.body, "frett-main", "reporter-profile")
@@ -852,7 +857,7 @@ class VisirScraper(ScrapeHelper):
 
         if timestamp is None:
             logging.warning(f"Could not parse date in visir.is article {url}")
-            timestamp = datetime.utcnow()
+            timestamp = _now()
 
         # Author
         author = ScrapeHelper.tag_prop_val(soup, "a", "itemprop", "author")
@@ -966,7 +971,7 @@ class EyjanScraper(ScrapeHelper):
                 )
                 timestamp = None
         if timestamp is None:
-            timestamp = datetime.utcnow()
+            timestamp = _now()
         # Extract the author name
         author = "Ritstjórn eyjan.is"
         metadata.heading = heading
@@ -1125,7 +1130,7 @@ class KvennabladidScraper(ScrapeHelper):
                 month = MONTHS_ABBR.index(dateline[1]) + 1
                 year = int(dateline[2])
                 # Use current H:M:S as there is no time of day in the document itself
-                now = datetime.utcnow()
+                now = _now()
                 timestamp = datetime(
                     year=year,
                     month=month,
@@ -1140,7 +1145,7 @@ class KvennabladidScraper(ScrapeHelper):
                 )
                 timestamp = None
         if timestamp is None:
-            timestamp = datetime.utcnow()
+            timestamp = _now()
         # Extract the author name
         author = ScrapeHelper.div_class(soup, "blog-info-wrapper", "blog-author")
         if author is not None and author.a is not None:
@@ -1175,7 +1180,7 @@ class AlthingiScraper(ScrapeHelper):
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         heading = self.unescape(heading)
         # Default timestamp
-        timestamp = datetime.utcnow()
+        timestamp = _now()
         # Check whether this heading starts with 'NN/YYYY:',
         # and if so, extract the year
         a = heading.split(":", maxsplit=1)
@@ -1186,7 +1191,7 @@ class AlthingiScraper(ScrapeHelper):
                     timestamp = datetime(year=int(a[1].strip()), month=1, day=1)
                 except ValueError:
                     # Something wrong with the year: back off
-                    timestamp = datetime.utcnow()
+                    timestamp = _now()
         metadata.heading = heading
         metadata.author = "Lagasafn Alþingis"
         metadata.timestamp = timestamp
@@ -1223,7 +1228,7 @@ class StundinScraper(ScrapeHelper):
             author = "Ritstjórn Stundarinnar"
 
         # Timestamp
-        timestamp = datetime.utcnow()
+        timestamp = _now()
         try:
             time_el = soup.find("time", {"class": "datetime"})
             ts: Optional[str] = time_el["datetime"]  # type: ignore
@@ -1279,7 +1284,7 @@ class HringbrautScraper(ScrapeHelper):
         author = "Ritstjórn Hringbrautar"
 
         # Timestamp
-        timestamp = datetime.utcnow()
+        timestamp = _now()
 
         info = cast(Optional[Tag], soup.find("div", {"class": "entryInfo"}))
         date_span = info.find("span", {"class": "date"}) if info else None
@@ -1406,7 +1411,7 @@ class FrettabladidScraper(ScrapeHelper):
         author = name.get_text() if name else "Ritstjórn Fréttablaðsins"
 
         # Timestamp
-        timestamp = datetime.utcnow()
+        timestamp = _now()
         ts = ScrapeHelper.meta_property(soup, "article:published_time")
         if ts:
             timestamp = datetime(
@@ -1439,7 +1444,7 @@ class FrettabladidScraper(ScrapeHelper):
                     )
             except Exception as e:
                 logging.warning(f"Error finding Frettabladid article date: {e}")
-                timestamp = datetime.utcnow()
+                timestamp = _now()
 
         metadata.heading = heading
         metadata.author = author
@@ -1525,7 +1530,7 @@ class HagstofanScraper(ScrapeHelper):
             heading = heading[len(prefix) :].strip()
 
         # Timestamp
-        timestamp = datetime.utcnow()
+        timestamp = _now()
 
         info: Optional[Tag] = soup.find("div", {"class": "page-header"})
         date_span: Optional[Tag] = info.find("i", {"class": "date"}) if info else None
@@ -1619,7 +1624,7 @@ class DVScraper(ScrapeHelper):
             heading = heading[: -len(suffix)].strip()
 
         # Extract the publication time from the article:published_time meta property
-        timestamp = datetime.utcnow()
+        timestamp = _now()
         try:
             ts = ScrapeHelper.meta_property(soup, "article:published_time")
             if ts:
@@ -1683,7 +1688,7 @@ class BBScraper(ScrapeHelper):
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
 
         # Extract the publication time from the article:published_time meta property
-        timestamp = datetime.utcnow()
+        timestamp = _now()
         try:
             ts = ScrapeHelper.meta_property(soup, "article:published_time")
             if ts:
@@ -1750,7 +1755,7 @@ class LemurinnScraper(ScrapeHelper):
                 author = author[0].upper() + author[1:]
 
         # Extract the publication time from the article:published_time meta property
-        timestamp = datetime.utcnow()
+        timestamp = _now()
         try:
             ts = ScrapeHelper.meta_property(soup, "article:published_time")
             if ts:
@@ -1818,7 +1823,7 @@ class MannlifScraper(ScrapeHelper):
             logging.warning(f"Exception when obtaining date of man.is article: {e}")
 
         if not timestamp:
-            timestamp = datetime.utcnow()
+            timestamp = _now()
 
         metadata.heading = heading
         metadata.author = author
@@ -1866,7 +1871,7 @@ class VisindavefurScraper(ScrapeHelper):
             author = auth_tag.get_text()
 
         timestamp = None
-        now = datetime.utcnow()
+        now = _now()
         try:
             # Extract date (no timestamp available) from pubdate tag
             pubdate_tag = soup.find("div", {"class": "publish-date"})
@@ -1932,7 +1937,7 @@ class SedlabankinnScraper(ScrapeHelper):
         author = "Seðlabanki Íslands"
 
         # Extract the publication time from the media tag
-        timestamp = datetime.utcnow()
+        timestamp = _now()
         try:
             media = ScrapeHelper.div_class(soup, "media")
             if media:
@@ -1979,7 +1984,7 @@ class BaendabladidScraper(ScrapeHelper):
         # Author
         author = "Ritstjórn Bændablaðsins"
 
-        timestamp = datetime.utcnow()
+        timestamp = _now()
 
         metadata.heading = heading
         metadata.author = author
@@ -2029,7 +2034,7 @@ class VidskiptabladidScraper(ScrapeHelper):
         else:
             author = "Ritstjórn Viðskiptablaðsins"
 
-        timestamp = datetime.utcnow()
+        timestamp = _now()
 
         try:
             datestr = None
@@ -2107,7 +2112,7 @@ class HeimildinScraper(ScrapeHelper):
         if not author:
             author = "Ritstjórn Heimildarinnar"
 
-        timestamp = datetime.utcnow()
+        timestamp = _now()
 
         try:
             datestr: Optional[str] = None
@@ -2167,7 +2172,7 @@ class SamstodinScraper(ScrapeHelper):
         # Extract the heading from the OpenGraph og:title meta property
         heading = ScrapeHelper.meta_property(soup, "og:title") or ""
         heading.strip()
-        timestamp = datetime.utcnow()
+        timestamp = _now()
         author = "Ritstjórn Samstöðvarinnar"
 
         article = soup.find("article")

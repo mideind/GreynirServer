@@ -30,7 +30,7 @@
 
 from typing import Dict, Tuple, Union, Callable, cast
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from inspect import isfunction
 from random import choice
 
@@ -2712,6 +2712,6 @@ def handle_plain_text(q: Query) -> bool:
         q.set_source(cast(str, source))
     # Caching for non-dynamic answers
     if is_func or response.get("can_cache", False):
-        q.set_expires(datetime.utcnow() + timedelta(hours=24))
+        q.set_expires(datetime.now(timezone.utc) + timedelta(hours=24))
 
     return True

@@ -28,7 +28,7 @@ import os
 import sys
 import pytest
 from copy import deepcopy
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 from flask.testing import FlaskClient
@@ -70,6 +70,11 @@ DUMMY_CLIENT_ID = "QueryTesting123"
 # API endpoints tested in this module
 QUERY_API_ENDPOINT = "/query.api"
 QUERY_HISTORY_API_ENDPOINT = "/query_history.api"
+
+
+def _now() -> datetime:
+    """Return the current time in UTC"""
+    return datetime.now(timezone.utc)
 
 
 def qmcall(
@@ -758,15 +763,15 @@ def test_date(client: FlaskClient) -> None:
         json = qmcall(client, {"q": qstr}, "Date")
 
     json = qmcall(client, {"q": "hver er dagsetningin?", "voice": True}, "Date")
-    assert json["answer"].endswith(datetime.utcnow().strftime("%Y"))
+    assert json["answer"].endswith(_now().strftime("%Y"))
     assert "tvö þúsund" in json["voice"]
 
     json = qmcall(client, {"q": "hvaða dagur er í dag?", "voice": True}, "Date")
-    assert json["answer"].endswith(datetime.utcnow().strftime("%Y"))
+    assert json["answer"].endswith(_now().strftime("%Y"))
     assert "tvö þúsund" in json["voice"]
 
     json = qmcall(client, {"q": "hvaða dagur er á morgun", "voice": True}, "Date")
-    assert json["answer"].endswith(datetime.utcnow().strftime("%Y"))
+    assert json["answer"].endswith(_now().strftime("%Y"))
     assert "tvö þúsund" in json["voice"]
 
     json = qmcall(client, {"q": "hvaða mánaðardagur var í gær", "voice": True}, "Date")
@@ -786,7 +791,7 @@ def test_date(client: FlaskClient) -> None:
     json = qmcall(client, {"q": "Hvað er langt í jólin?"}, "Date")
     json = qmcall(client, {"q": "Hvað er langt í páska?"}, "Date")
 
-    now = datetime.utcnow()
+    now = _now()
 
     with changedlocale(category="LC_TIME"):
         # Today
@@ -1738,7 +1743,7 @@ def test_yulelads(client: FlaskClient) -> None:
 def test_query_history_api(client: FlaskClient) -> None:
     """Tests for the query history deletion API endpoint."""
 
-    def _verify_basic(r: Any) -> Dict:
+    def _verify_basic(r: Any) -> Dict[str, Any]:
         """Make sure the server response is minimally sane."""
         assert r.content_type.startswith(API_CONTENT_TYPE)
         assert r.is_json

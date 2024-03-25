@@ -25,7 +25,7 @@
 # TODO: Map country to capital city, e.g. "Svíþjóð" -> "Stokkhólmur"
 # TODO: Fetch more than one flight using "flight_count"?
 
-from typing import List, Dict, Optional
+from typing import Any, List, Dict, Optional, cast
 from typing_extensions import TypedDict
 
 import re
@@ -135,12 +135,6 @@ _ISAVIA_FLIGHTS_URL = (
 
 _FLIGHTS_CACHE_TTL = 600  # seconds, ttl = 10 mins
 
-# Cache for flights either departing or arriving
-_FLIGHT_CACHE: cachetools.TTLCache = cachetools.TTLCache(  # type: ignore
-    maxsize=2, ttl=_FLIGHTS_CACHE_TTL
-)
-
-
 # For type checking
 class FlightType(TypedDict, total=False):
     No: str
@@ -161,6 +155,11 @@ class FlightType(TypedDict, total=False):
 
 
 FlightList = List[FlightType]
+
+# Cache for flights either departing or arriving
+_FLIGHT_CACHE: Dict[bool, FlightList] = cast(Any, cachetools).TTLCache(
+    maxsize=2, ttl=_FLIGHTS_CACHE_TTL
+)
 
 
 def _fetch_flight_data(
@@ -220,9 +219,7 @@ def _filter_flight_data(
     """
     flight_time: datetime
     flight: FlightType
-    now: datetime = datetime.now(
-        timezone.utc
-    )  # Timezone aware datetime (don't change to datetime.utcnow()!)
+    now: datetime = datetime.now(timezone.utc)
 
     matching_flights: FlightList = []
     for flight in flights:
@@ -391,9 +388,7 @@ def _process_result(result: Result) -> Dict[str, str]:
 
     from_date: datetime
     to_date: datetime
-    now = datetime.now(
-        timezone.utc
-    )  # Timezone aware datetime, don't change to .utcnow()!
+    now = datetime.now(timezone.utc)
     days: int = result.get("day_count", 5)  # Check 5 days into future by default
     from_date = result.get("from_date", now)
     to_date = result.get("to_date", now + timedelta(days=days))
@@ -410,7 +405,6 @@ def _process_result(result: Result) -> Dict[str, str]:
 
     flight_count: int = result.get("flight_count", 1)
 
-    flight_data: FlightList
     # Check first if function result in cache, else fetch data from API
     if departing in _FLIGHT_CACHE:
         flight_data = _FLIGHT_CACHE[departing]

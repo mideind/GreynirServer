@@ -76,7 +76,7 @@
 """
 
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, cast
 
 from reynir import NounPhrase
@@ -221,7 +221,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 title_lc=titill.lower(),
                 gender=kyn,
                 authority=authority,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc),
             )
             session.add(person)
 

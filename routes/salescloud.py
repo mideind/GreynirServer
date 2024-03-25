@@ -22,14 +22,16 @@
 
 """
 
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional, Tuple, cast
 
 import logging
 import json
 import hmac
 import hashlib
 
-from datetime import datetime
+from datetime import datetime, timezone
+
+from flask import Request
 
 # from db.models import Customer, Subscription
 
@@ -84,8 +86,8 @@ _SECRET = _Secret()
 
 
 def validate_request(
-    method, url, payload, xsc_date, xsc_key, xsc_digest, max_time=_MAX_TIME_WINDOW
-):
+    method: str, url: str, payload: bytes, xsc_date: str, xsc_key: str, xsc_digest: str, max_time: float=_MAX_TIME_WINDOW
+) -> bool:
     """Validate an incoming request against our secret key. All parameters
     are assumed to be strings (str) except payload and xsc_digest,
     which are bytes."""
@@ -104,7 +106,7 @@ def validate_request(
     except ValueError:
         # Invalid date/time
         return False
-    delta = (datetime.utcnow() - dt).total_seconds()
+    delta = (datetime.now(timezone.utc) - dt).total_seconds()
     if not -2.0 < delta < max_time:
         # The request must be made in a time window ranging from 2 seconds in
         # the future (allowing for a slightly wrong clock) to 100 seconds in
@@ -129,7 +131,7 @@ def validate_request(
     return xsc_digest == my_digest
 
 
-def handle_request(request):
+def handle_request(request: Request) -> Tuple[Optional[Dict[str, Any]], int]:
     """Handle a SalesCloud request, extracting its contents"""
     # Validate the request
     if request.headers.get("User-Agent") != "SalesCloud":
@@ -141,7 +143,7 @@ def handle_request(request):
     payload = b""
     try:
         # Do not accept request bodies larger than 2K
-        if int(request.headers.get("Content-length", 0)) < 2048:
+        if int(request.headers.get("Content-length", "0")) < 2048:
             payload = request.get_data(cache=False, as_text=False)
     except Exception:
         # Something is wrong with the Content-length header or the request body

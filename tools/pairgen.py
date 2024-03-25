@@ -29,7 +29,7 @@
 import os
 import sys
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Hack to make this Python program executable from the tools subdirectory
 basepath, _ = os.path.split(os.path.realpath(__file__))
@@ -177,7 +177,7 @@ def main(dev_size, train_size, shuffle, scores, parse_date_gt=None):
 
     # Generate the parse trees from visible roots only,
     # in descending order by time of parse
-    stats = {"parsed": datetime.utcnow()}
+    stats = {"parsed": datetime.now(timezone.utc)}
 
     criteria = {"order_by_parse": True, "visible": True}
     if parse_date_gt is not None:

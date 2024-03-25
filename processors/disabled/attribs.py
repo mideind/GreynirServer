@@ -89,7 +89,7 @@ def sentence(state: QueryStateDict, result: Result) -> None:
                 verb = a.verb,
                 value = a.value,
                 authority = 1.0,
-                timestamp = datetime.utcnow()
+                timestamp = datetime.now(timezone.utc)
             )
             session.add(attrib)
     """

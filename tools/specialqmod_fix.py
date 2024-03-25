@@ -13,8 +13,6 @@ if basepath.endswith(_TOOLS):
     basepath = basepath[0 : -len(_TOOLS)]
     sys.path.append(basepath)
 
-from pprint import pprint
-
 from queries.special import _SPECIAL_QUERIES
 
 _VERBS = {

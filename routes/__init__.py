@@ -31,7 +31,7 @@ import time
 import uuid
 import json
 from functools import wraps
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 
 from flask import (
     Blueprint,
@@ -47,13 +47,11 @@ from flask import _request_ctx_stack  # type: ignore
 from flask.ctx import RequestContext
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import HTTPException, InternalServerError
-import flask_caching  # type: ignore
+import flask_caching
 
 
 CacheableFunc = Callable[..., Union[str, Response]]
 ProgressFunc = Callable[[float], None]
-
-utcnow = datetime.utcnow  # Funny hack to satisfy Pylance/Pyright
 
 # Maximum length of incoming GET/POST parameters
 MAX_TEXT_LENGTH = 16384

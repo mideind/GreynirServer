@@ -24,7 +24,7 @@
 """
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from queries import Query, QueryStateDict
 from queries.util import gen_answer, read_grammar_file
@@ -68,4 +68,4 @@ def sentence(state: QueryStateDict, result: Result) -> None:
     q.set_qtype(_OPINION_QTYPE)
     q.set_context(dict(subject=subj))
     q.set_key(subj)
-    q.set_expires(datetime.utcnow() + timedelta(hours=24))
+    q.set_expires(datetime.now(timezone.utc) + timedelta(hours=24))

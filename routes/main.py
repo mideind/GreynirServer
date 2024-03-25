@@ -27,7 +27,7 @@ import platform
 import sys
 import random
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import render_template, request, redirect, url_for
 
@@ -36,7 +36,7 @@ import reynir
 from reynir.fastparser import ParseForestFlattener
 
 from db import SessionContext, desc, dbfunc
-from db.models import Person, Article, ArticleTopic, Entity, Column
+from db.models import Person, Article, ArticleTopic, Entity
 
 from settings import Settings
 from article import Article as ArticleProxy
@@ -299,11 +299,11 @@ def parsefail() -> str:
             session.query(Article.id, Article.timestamp, Article.tokens)
             .filter(Article.tree != None)
             .filter(Article.timestamp != None)
-            .filter(Article.timestamp <= datetime.utcnow())
+            .filter(Article.timestamp <= datetime.now(timezone.utc))
             .filter(Article.heading > "")
             .filter(Article.num_sentences > 0)
             .filter(Article.num_sentences != Article.num_parsed)
-            .order_by(desc(cast(Column, Article.timestamp)))
+            .order_by(desc(Article.timestamp))
             .limit(num)
         )
 

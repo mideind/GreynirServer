@@ -1,4 +1,4 @@
-# type: ignore
+#type: ignore
 """
     Greynir: Natural language processing for Icelandic
 
@@ -60,8 +60,7 @@ import sys
 import getopt
 import json
 import time
-from datetime import datetime
-from collections import defaultdict
+from datetime import datetime, timezone
 
 from settings import Settings, Topics, NoIndexWords
 from db import SessionContext
@@ -71,6 +70,11 @@ from similar import SimilarityClient
 
 import numpy as np
 from gensim import corpora, models, matutils
+
+
+def _now() -> datetime:
+    """Return the current time in UTC"""
+    return datetime.now(timezone.utc)
 
 
 def w_from_stem(stem, cat):
@@ -527,7 +531,7 @@ class ReynirCorpus:
             # Update the indexed timestamp and the article topic vector
             a = session.query(Article).filter(Article.id == article_id).one_or_none()
             if a is not None:
-                a.indexed = datetime.utcnow()
+                a.indexed = _now()
                 if article_vector:
                     # Store a pure list of floats
                     topic_vector = [t[1] for t in article_vector]
@@ -562,7 +566,7 @@ def build_model(verbose=False):
     """Build a new model from the words (and articles) table"""
 
     print("------ Greynir starting model build -------")
-    ts = "{0}".format(datetime.utcnow())[0:19]
+    ts = "{0}".format(_now())[0:19]
     print("Time: {0}".format(ts))
 
     t0 = time.time()
@@ -584,7 +588,7 @@ def build_model(verbose=False):
 
     print("\n------ Model build completed -------")
     print("Total time: {0:.2f} seconds".format(t1 - t0))
-    ts = "{0}".format(datetime.utcnow())[0:19]
+    ts = "{0}".format(_now())[0:19]
     print("Time: {0}\n".format(ts))
 
 
@@ -609,7 +613,7 @@ def tag_articles(limit, verbose=False, process_all=False, uuid=None):
         print("Processing all articles")
     elif limit:
         print("Limit: {0} articles".format(limit))
-    ts = "{0}".format(datetime.utcnow())[0:19]
+    ts = "{0}".format(_now())[0:19]
     print("Time: {0}".format(ts))
 
     t0 = time.time()
@@ -622,7 +626,7 @@ def tag_articles(limit, verbose=False, process_all=False, uuid=None):
 
     print("\n------ Tagging completed -------")
     print("Total time: {0:.2f} seconds".format(t1 - t0))
-    ts = "{0}".format(datetime.utcnow())[0:19]
+    ts = "{0}".format(_now())[0:19]
     print("Time: {0}\n".format(ts))
 
 

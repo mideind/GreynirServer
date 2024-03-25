@@ -267,7 +267,7 @@ def QUnitFromPounds(node: Node, params: QueryStateDict, result: Result) -> None:
     result._nominative = str(result.number).replace(".", ",") + " pund"
 
 
-def _convert(quantity: float, unit_from: str, unit_to: str) -> Tuple:
+def _convert(quantity: float, unit_from: str, unit_to: str) -> Tuple[bool, float, str, float]:
     """Converts a quantity from unit_from to unit_to, returning a tuple of:
     valid, result, si_unit, si_quantity"""
     u_from, factor_from = _UNITS[unit_from]

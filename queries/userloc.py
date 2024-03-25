@@ -87,7 +87,7 @@ def _addrinfo_from_api_result(
     comp = result["address_components"]
 
     num = None
-    street = None
+    street: Optional[str] = None
     locality = None
     country = None
     postcode = None
@@ -117,7 +117,7 @@ def _addrinfo_from_api_result(
     return (street, num, locality, postcode, country)
 
 
-def street_desc(street_nom: str, street_num: int, locality_nom: str) -> str:
+def street_desc(street_nom: str, street_num: Optional[int], locality_nom: Optional[str]) -> str:
     """Generate description of being on a particular (Icelandic) street with
     correct preposition and case + locality e.g. 'á Fiskislóð 31 í Reykjavík'."""
     street_dat = None
@@ -138,7 +138,7 @@ def street_desc(street_nom: str, street_num: int, locality_nom: str) -> str:
     # API are generic terms such as "Göngustígur" and the like.
     if not street_dat:
         street_dat = nom2dat(street_nom)
-    if not locality_dat:
+    if locality_nom and not locality_dat:
         locality_dat = nom2dat(locality_nom)
 
     # Create street descr. ("á Fiskislóð 31")
@@ -147,7 +147,7 @@ def street_desc(street_nom: str, street_num: int, locality_nom: str) -> str:
         street_comp += " " + str(street_num)
 
     # Append locality if available ("í Reykjavík")
-    if locality_dat:
+    if locality_dat and locality_nom:
         ldesc = iceprep_for_placename(locality_nom) + " " + locality_dat
         street_comp += " " + ldesc
 
@@ -193,8 +193,9 @@ def locality_and_country(loc: LatLonTuple) -> Optional[str]:
 
     # Extract locality and country info from top result
     _, _, locality, _, country_code = _addrinfo_from_api_result(top)
+    if country_code is None:
+        return None
     country_name = country_name_for_isocode(country_code) or country_code
-
     return locality + ", " + country_name if locality else country_name
 
 
@@ -224,7 +225,9 @@ def answer_for_location(loc: LatLonTuple) -> Optional[AnswerTuple]:
 
     # Special handling of Icelandic locations since we have more info
     # about them and street/locality names need to be declined.
-    if country_code == "IS":
+    if not country_code:
+        pass
+    elif country_code == "IS":
         # We received a street name from the API
         if street:
             descr = street_desc(street, num, locality)
@@ -275,7 +278,7 @@ def answer_for_postcode(loc: LatLonTuple):
     # if the top result doesn't even contain a locality.
 
     # Extract address info from top result
-    (street, num, locality, postcode, country_code) = _addrinfo_from_api_result(top)
+    _, _, _, postcode, country_code = _addrinfo_from_api_result(top)
 
     # Only support Icelandic postcodes for now
     if country_code == "IS" and postcode:
@@ -309,7 +312,7 @@ def answer_for_country(loc: LatLonTuple):
     top = res["results"][0]
 
     # Extract address info from top result
-    street, num, locality, postcode, country_code = _addrinfo_from_api_result(top)
+    _, _, _, _, country_code = _addrinfo_from_api_result(top)
     if not country_code or len(country_code) != 2:
         return gen_answer(_LOC_LOOKUP_FAIL_MSG)
 

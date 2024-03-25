@@ -24,7 +24,7 @@
 
 from typing import Dict, Any, Iterable, List, Optional, cast
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import request, abort
 from flask.wrappers import Response, Request
@@ -273,7 +273,7 @@ def summary_api(version: int = 1) -> Response:
         missing = [k for k, v in summary_rows.items() if v is None]
         if missing:
             # At least one summary is missing: generate it
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             # Collect the text of the article from the tokens
             text = a.text()
             # Update our summaries

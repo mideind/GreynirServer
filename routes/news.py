@@ -23,18 +23,18 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Union, cast
+from typing import List, Optional, Union
 
-from werkzeug.wrappers import Response
+from flask.wrappers import Response
 from . import routes, max_age, better_jsonify
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import request, render_template
 
 from settings import changedlocale
 
 from db import Session, SessionContext, desc
-from db.models import Article, Root, Location, ArticleTopic, Topic, Column
+from db.models import Article, Root, Location, ArticleTopic, Topic
 
 
 # Default number of top news items to show in /news
@@ -56,13 +56,14 @@ def fetch_articles(
     """Return a list of articles in chronologically reversed order.
     Articles can be filtered by start date, location, country, root etc."""
     toplist: List[ArticleDisplay] = []
+    now = datetime.now(timezone.utc)
 
     with SessionContext(read_only=True, session=enclosing_session) as session:
         q = (
             session.query(Article)
             .filter(Article.tree != None)
             .filter(Article.timestamp != None)
-            .filter(Article.timestamp <= datetime.utcnow())
+            .filter(Article.timestamp <= now)
             .filter(Article.heading > "")
             .filter(Article.num_sentences > 0)
             .join(Root)
@@ -95,7 +96,7 @@ def fetch_articles(
             q = q.join(ArticleTopic).join(Topic).filter(Topic.identifier == topic)
 
         q = (
-            q.order_by(desc(cast(Column, Article.timestamp)))
+            q.order_by(desc(Article.timestamp))
             .offset(offset)
             .limit(limit)
         )
@@ -172,7 +173,7 @@ def fetch_articles(
 
 @routes.route("/news")
 @max_age(seconds=60)
-def news() -> Union[Response, str]:
+def news() -> Union[str, Response]:
     """Handler for a page with a list of articles + pagination"""
     topic = request.args.get("topic")
     root = request.args.get("root")
@@ -186,6 +187,7 @@ def news() -> Union[Response, str]:
         limit = _DEFAULT_NUM_ARTICLES
 
     limit = min(limit, _MAX_NUM_ARTICLES)  # Cap at max 100 results per page
+    now = datetime.now(timezone.utc)
 
     with SessionContext(read_only=True) as session:
         # Fetch articles
@@ -201,7 +203,7 @@ def news() -> Union[Response, str]:
         # If all articles in the list are timestamped within 24 hours of now,
         # we display their times in HH:MM format. Otherwise, we display full date.
         display_time = True
-        if articles and (datetime.utcnow() - articles[-1].timestamp).days >= 1:
+        if articles and (now - articles[-1].timestamp).days >= 1:
             display_time = False
 
         # Fetch lists of article topics
@@ -230,21 +232,19 @@ def news() -> Union[Response, str]:
             author=author,
         )
 
-    return Response("Error", status=403)
-
 
 ARTICLES_LIST_MAXITEMS = 50
 
 
 @routes.route("/articles", methods=["GET"])
-def articles_list():
+def articles_list() -> Response:
     """Returns rendered HTML article list as a JSON payload"""
     locname = request.args.get("locname")
     country = request.args.get("country")
     period = request.args.get("period")
 
     days = 7 if period == "week" else 1
-    start_date = datetime.utcnow() - timedelta(days=days)
+    start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
     # Fetch articles
     articles = fetch_articles(

@@ -32,7 +32,6 @@ from typing import (
     List,
     Mapping,
     Tuple,
-    cast,
 )
 from typing_extensions import TypedDict
 
@@ -41,42 +40,9 @@ import os
 import json
 
 import openai
+from openai.types.chat import ChatCompletion, ChatCompletionMessageParam
 
 from settings import Settings
-
-
-class ChatMessage(TypedDict):
-    """A single chat message"""
-
-    role: str
-    content: str
-
-
-class OpenAiChoiceDict(TypedDict):
-    """The 'choices' part of the GPT model response"""
-
-    finish_reason: str
-    index: int
-    message: ChatMessage
-
-
-class UsageDict(TypedDict):
-    """The 'usage' part of the GPT model response"""
-
-    completion_tokens: int
-    prompt_tokens: int
-    total_tokens: int
-
-
-class OpenAiDict(TypedDict):
-    """The GPT model response"""
-
-    choices: List[OpenAiChoiceDict]
-    created: int
-    id: str
-    model: str
-    object: str
-    usage: UsageDict
 
 
 class HistoryDict(TypedDict):
@@ -91,7 +57,6 @@ HistoryList = List[HistoryDict]
 
 # Set the OpenAI API key
 api_key = os.getenv("OPENAI_API_KEY") or ""
-openai.api_key = api_key
 
 OPENAI_KEY_PRESENT = bool(api_key)
 
@@ -100,6 +65,9 @@ MODEL = os.getenv("OPENAI_MODEL") or "text-davinci-003"
 
 LANG_MACRO = "$LANG="
 LANG_REGEX = re.compile(r"\$LANG=([a-z]{2}_[A-Z]{2})\$(.*)", re.DOTALL)
+
+# Global OpenAI client
+client = openai.Client(api_key=api_key)
 
 
 def jdump(s: Any) -> str:
@@ -112,18 +80,18 @@ class Completion:
     """Generates OpenAI completions"""
 
     @classmethod
-    def _create(cls, *args: Any, **kwargs: Any) -> OpenAiDict:
+    def _create(cls, *args: Any, **kwargs: Any) -> ChatCompletion:
         """
         Creates a new completion while handling formatting and parsing.
         """
-        return cast(Any, openai).ChatCompletion.create(*args, model=MODEL, **kwargs)
+        return client.chat.completions.create(*args, model=MODEL, **kwargs)
 
     @classmethod
     def create_from_preamble_and_history(
         cls, *, system: str, preamble: str = "", history_list: HistoryList = [], query: str, **kwargs: Any,
-    ) -> OpenAiDict:
+    ) -> ChatCompletion:
         """Assemble a prompt for the GPT model given a preamble and history"""
-        messages: List[ChatMessage] = []
+        messages: List[ChatCompletionMessageParam] = []
         messages.append({"role": "system", "content": system})
         for h in history_list:
             if "q" in h and "a" in h:
@@ -177,7 +145,7 @@ def summarize(text: str, languages: Iterable[str]) -> Dict[str, str]:
         f"---\n\n{text}\n\n---\n\n"
         "Summarize the article in each of the languages indicated, "
         "in 3 sentences or less for each language. "
-        "Output the summaries in JSON, like so:"
+        "Output the summaries in JSON, formatted like so:"
         f"\n\n{{ {examples} }}\n\n"
     )
     response = Completion.create_from_preamble_and_history(
@@ -185,10 +153,11 @@ def summarize(text: str, languages: Iterable[str]) -> Dict[str, str]:
         query=query,
         max_tokens=500,
         temperature=0.0,
+        response_format= { "type":"json_object" },
     )
     try:
-        choice = response["choices"][0]
-        answ = json.loads(choice["message"]["content"].strip())
-        return answ
+        choice = response.choices[0]
+        content = choice.message.content
+        return dict() if content is None else json.loads(content.strip())
     except Exception:
         return dict()  # No answer from GPT model: No summary available

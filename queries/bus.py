@@ -51,7 +51,7 @@ import re
 import random
 from threading import Lock
 from functools import lru_cache
-from datetime import datetime
+from datetime import datetime, timezone
 
 from reynir import NounPhrase
 from icespeak import gssml
@@ -584,7 +584,7 @@ def query_arrival_time(query: Query, result: Result) -> AnswerTuple:
         # real-time bus location server
         assert stop is not None
         prediction = schedule_today.predicted_arrival(route_number, stop)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         hms_now = (now.hour, now.minute + (now.second // 30), 0)
         first = True
 

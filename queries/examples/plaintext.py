@@ -28,7 +28,7 @@
 
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from queries import Query
 
@@ -52,7 +52,7 @@ def handle_plain_text(q: Query) -> bool:
         q.set_answer(response, answer, voice)
 
         # Caching (optional)
-        q.set_expires(datetime.utcnow() + timedelta(hours=24))
+        q.set_expires(datetime.now(timezone.utc) + timedelta(hours=24))
 
         # Context (optional)
         # q.set_context(dict(subject="Prufuviðfangsefni"))

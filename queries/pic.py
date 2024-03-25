@@ -105,7 +105,7 @@ def _gen_pic_answer(result: Result, q: Query):
             if o and o.hostname:
                 src = o.hostname
             q.set_source(src)
-            # q.set_expires(datetime.utcnow() + timedelta(hours=1))
+            # q.set_expires(datetime.now(timezone.utc) + timedelta(hours=1))
         else:
             # No picture found
             q.set_answer(*gen_answer(f"Engin mynd fannst af {icequote(subj_þgf)}"))

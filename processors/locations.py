@@ -22,7 +22,7 @@
 """
 
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 
 from db.models import Location
 from tokenizer import TOK
@@ -186,7 +186,7 @@ def article_end(state: TreeStateDict) -> None:
         loc = location_info(name=name, kind=kind, placename_hints=placenames)
 
         loc["article_url"] = url
-        loc["timestamp"] = datetime.utcnow()
+        loc["timestamp"] = datetime.now(timezone.utc)
 
         print(f"Location '{loc['name']}' is a {loc['kind']}")
 

@@ -30,7 +30,7 @@ from typing import Dict, List, Mapping, Optional, Any, Callable, cast
 import re
 import logging
 from urllib.parse import urlencode
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from reynir import NounPhrase
 from reynir.bindb import GreynirBin
@@ -190,7 +190,7 @@ def _answer_name4phonenum_query(q: Query, result: Result) -> AnswerTuple:
     clean_num = re.sub(r"[^0-9]", "", num).strip()
 
     # This answer can be safely cached
-    q.set_expires(datetime.utcnow() + timedelta(hours=24))
+    q.set_expires(datetime.now(timezone.utc) + timedelta(hours=24))
 
     if not clean_num or len(clean_num) < 3:
         answer = gen_answer(f"{num} er ekki gilt símanúmer")

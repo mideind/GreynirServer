@@ -27,7 +27,7 @@ import logging
 
 from . import routes, better_jsonify, cache
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import request, render_template
 
 from settings import changedlocale
@@ -37,7 +37,7 @@ from tokenizer import TOK, Tok
 from reynir.bintokenizer import tokenize
 
 from db import SessionContext, desc
-from db.models import Article, Word, Root, Column, DateTime
+from db.models import Article, Word, Root
 from db.sql import WordFrequencyQuery
 
 
@@ -195,7 +195,7 @@ def wordfreq():
     words = words[:_MAX_NUM_WORDS]
 
     # Generate date labels
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     delta = date_to - date_from
     with changedlocale(category="LC_TIME"):
         # Group by week if period longer than 3 months
@@ -299,7 +299,7 @@ def wordfreq_details():
         return better_jsonify(**resp)
 
     # Fetch list of articles for each word for the given period
-    wlist = list()
+    wlist: List[Dict[str, Any]] = list()
     colors = list(_LINE_COLORS)
     with SessionContext(read_only=True) as session:
         for wd, cat in words:
@@ -313,7 +313,7 @@ def wordfreq_details():
                 .filter(Word.stem == wd)
                 .filter(Word.cat == cat)
                 .join(Root)
-                .order_by(desc(cast(Column[DateTime], Article.timestamp)))
+                .order_by(desc(Article.timestamp))
             )
             articles = [
                 {"id": a[0], "heading": a[1], "domain": a[2], "cnt": a[3]}

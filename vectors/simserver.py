@@ -73,7 +73,7 @@ import operator
 import numpy as np
 
 from threading import Thread, Lock
-from datetime import datetime
+from datetime import datetime, timezone
 from multiprocessing import AuthenticationError
 from multiprocessing.connection import Listener, Client
 
@@ -112,7 +112,7 @@ class SimilarityServer:
             print("Starting load of all article topic vectors")
             t0 = time.time()
             # Do the next refresh from this time point
-            self._timestamp = datetime.utcnow()
+            self._timestamp = datetime.now(timezone.utc)
             q = (
                 session.query(Article)
                 .join(Root)
@@ -154,7 +154,7 @@ class SimilarityServer:
         with self._lock:
             with SessionContext(commit=True, read_only=True) as session:
                 # Do the next refresh from this time point
-                ts = datetime.utcnow()
+                ts = datetime.now(timezone.utc)
                 q = (
                     session.query(Article)
                     .join(Root)

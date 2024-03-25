@@ -29,7 +29,7 @@ from werkzeug.wrappers import Response
 import json
 import logging
 from colorsys import hsv_to_rgb
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from flask import request, render_template
@@ -80,9 +80,14 @@ _SOURCE_ROOT_COLORS = {
 }
 
 
+def _now() -> datetime:
+    """Return the current time in UTC"""
+    return datetime.now(timezone.utc)
+
+
 def chart_stats(session: Optional[Session] = None, num_days: int = 7) -> Dict[str, Any]:
     """Return scraping and parsing stats for charts"""
-    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    today = _now().replace(hour=0, minute=0, second=0, microsecond=0)
     labels: List[str] = []
     sources: Dict[str, List[int]] = {}
     parsed_data: List[float] = []
@@ -139,7 +144,7 @@ def top_authors(
     days: int = _TOP_AUTHORS_PERIOD, session: Optional[Session] = None
 ) -> List[Dict[str, Any]]:
     """Generate list of top authors w. parse percentage."""
-    end = datetime.utcnow()
+    end = _now()
     start = end - timedelta(days=days)
     authors = list(
         BestAuthorsQuery.period(start, end, enclosing_session=session, min_articles=10)
@@ -229,7 +234,7 @@ def query_stats_data(
     session: Optional[Session] = None, num_days: int = _DEFAULT_QUERY_STATS_PERIOD
 ) -> Dict[str, Any]:
     """Return all data for query stats dashboard."""
-    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    today = _now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     labels = []
     query_count_data = []
@@ -258,7 +263,7 @@ def query_stats_data(
     unique_avg = sum(unique_count_data) / num_days
 
     start = today - timedelta(days=num_days)
-    end = datetime.utcnow()
+    end = _now()
 
     # Query types
     res = list(

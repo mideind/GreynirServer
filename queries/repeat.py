@@ -28,7 +28,7 @@
 # TODO: Migrate repeat functionality in builtin to this module
 # TODO: Hvað spurði ég þig um síðast? Hvert var síðasta svar þitt? Endurtaktu þetta, o.s.frv.
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from queries import Query
 from queries.util import gen_answer
@@ -71,7 +71,7 @@ def gen_repeat_answ(text: str, cmd_prefix: str, q: Query) -> None:
     q.set_answer(*gen_answer(atxt))
     q.set_qtype(_REPEAT_QTYPE)
     q.set_key(atxt)
-    q.set_expires(datetime.utcnow() + timedelta(hours=24))
+    q.set_expires(datetime.now(timezone.utc) + timedelta(hours=24))
     q.set_context(dict(subject=text))
     # Beautify query by placing text to repeat within quotation marks
     q.set_beautified_query(

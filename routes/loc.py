@@ -26,15 +26,15 @@ from typing_extensions import TypedDict
 
 from . import routes, better_jsonify, cache, days_from_period_arg
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 import json
 
-from flask import request, render_template, abort, send_file
+from flask import Response, request, render_template, abort, send_file
 from country_list import countries_for_language  # type: ignore
 
 from db import SessionContext, dbfunc, desc
-from db.models import Location, Article, Root, Column, DateTime
+from db.models import Location, Article, Root
 
 from geo import (
     location_info,
@@ -95,6 +95,9 @@ def top_locations(
     """Return a list of recent locations along with the list of
     articles in which they are mentioned."""
 
+    now = datetime.now(timezone.utc)
+    from_time = now - timedelta(days=days)
+
     with SessionContext(read_only=True) as session:
         q = (
             session.query(
@@ -109,7 +112,7 @@ def top_locations(
                 Root.domain,
             )
             .join(Article, Article.url == Location.article_url)
-            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
+            .filter(Article.timestamp > from_time)
             .join(Root)
             .filter(Root.visible)
         )
@@ -118,7 +121,7 @@ def top_locations(
         if kind:
             q = q.filter(Location.kind == kind)
 
-        q = q.order_by(desc(cast(Column[DateTime], Article.timestamp)))
+        q = q.order_by(desc(Article.timestamp))
 
         # Group articles by unique location
         locs: Dict[KeyTuple, List[ArticleDict]] = defaultdict(list)
@@ -159,16 +162,18 @@ def top_locations(
 
 def icemap_markers(days: int = _TOP_LOC_PERIOD) -> List[MarkerTuple]:
     """Return a list of recent Icelandic locations and their coordinates."""
+    now = datetime.now(timezone.utc)
+    from_time = now - timedelta(days=days)
     with SessionContext(read_only=True) as session:
         q: Iterable[LocTuple] = (
             session.query(Location.name, Location.latitude, Location.longitude)
             .join(Article)
             .filter(Article.tree != None)
             .filter(Article.timestamp != None)
-            .filter(Article.timestamp <= datetime.utcnow())
+            .filter(Article.timestamp >= from_time)
+            .filter(Article.timestamp < now)
             .filter(Article.heading > "")
             .filter(Article.num_sentences > 0)
-            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
             .join(Root)
             .filter(Root.visible)
             .filter(Location.country == ICELAND_ISOCODE)
@@ -185,6 +190,8 @@ def icemap_markers(days: int = _TOP_LOC_PERIOD) -> List[MarkerTuple]:
 
 def world_map_data(days: int = _TOP_LOC_PERIOD) -> Dict[str, int]:
     """Return data for world map. List of country iso codes with article count."""
+    now = datetime.now(timezone.utc)
+    from_time = now - timedelta(days=days)
     with SessionContext(read_only=True) as session:
         q: Iterable[Tuple[str, int]] = (
             session.query(Location.country, dbfunc.count(Location.id))
@@ -192,10 +199,10 @@ def world_map_data(days: int = _TOP_LOC_PERIOD) -> Dict[str, int]:
             .join(Article)
             .filter(Article.tree != None)
             .filter(Article.timestamp != None)
-            .filter(Article.timestamp <= datetime.utcnow())
+            .filter(Article.timestamp >= from_time)
+            .filter(Article.timestamp < now)
             .filter(Article.heading > "")
             .filter(Article.num_sentences > 0)
-            .filter(Article.timestamp > datetime.utcnow() - timedelta(days=days))
             .join(Root)
             .filter(Root.visible)
             .group_by(Location.country)
@@ -279,7 +286,7 @@ ZOOM_FOR_LOC_KIND = {"street": 11, "address": 12, "placename": 5, "country": 2}
 
 @routes.route("/locinfo", methods=["GET"])
 @cache.cached(timeout=60 * 60 * 24, key_prefix="locinfo", query_string=True)
-def locinfo():
+def locinfo() -> Response:
     """Return info about a location as JSON."""
     resp: Dict[str, Union[None, str, bool]] = dict(found=False)
 
