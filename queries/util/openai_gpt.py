@@ -76,7 +76,6 @@ def jdump(s: Any) -> str:
 
 
 class Completion:
-
     """Generates OpenAI completions"""
 
     @classmethod
@@ -88,7 +87,13 @@ class Completion:
 
     @classmethod
     def create_from_preamble_and_history(
-        cls, *, system: str, preamble: str = "", history_list: HistoryList = [], query: str, **kwargs: Any,
+        cls,
+        *,
+        system: str,
+        preamble: str = "",
+        history_list: HistoryList = [],
+        query: str,
+        **kwargs: Any,
     ) -> ChatCompletion:
         """Assemble a prompt for the GPT model given a preamble and history"""
         messages: List[ChatCompletionMessageParam] = []
@@ -136,6 +141,9 @@ LANGUAGE_NAMES: Mapping[str, str] = {
 def summarize(text: str, languages: Iterable[str]) -> Dict[str, str]:
     """Summarize the given text in Icelandic and English using the GPT model"""
     # Compose a one-shot guidance prompt for GPT
+    if Settings.DEBUG:
+        print(f"Summarizing text using model {MODEL}")
+
     examples = ", ".join(
         f'"{lang}": "{{{LANGUAGE_NAMES.get(lang, lang)} summary}}"'
         for lang in languages
@@ -153,11 +161,13 @@ def summarize(text: str, languages: Iterable[str]) -> Dict[str, str]:
         query=query,
         max_tokens=500,
         temperature=0.0,
-        response_format= { "type":"json_object" },
+        response_format={"type": "json_object"},
     )
     try:
         choice = response.choices[0]
         content = choice.message.content
+        if Settings.DEBUG:
+            print(f"Summarization result: {content}")
         return dict() if content is None else json.loads(content.strip())
     except Exception:
         return dict()  # No answer from GPT model: No summary available
