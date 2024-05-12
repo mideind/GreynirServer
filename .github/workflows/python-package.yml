@@ -42,7 +42,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Set up Icelandic locale
@@ -51,6 +51,7 @@ jobs:
           sudo update-locale
     - name: Install dependencies
       run: |
+        pip cache purge
         pip install --upgrade pip wheel setuptools pytest curlylint
         pip install --upgrade git+https://github.com/mideind/Tokenizer#egg=tokenizer
         pip install --upgrade git+https://github.com/mideind/GreynirEngine#egg=reynir
@@ -93,7 +94,7 @@ jobs:
       run: |
         shellcheck -x scripts/*.sh
     - name: Slack notification
-      uses: 8398a7/action-slack@v2
+      uses: 8398a7/action-slack@v3
       with:
         status: ${{ job.status }}
         author_name: Integration Testing (Python ${{ matrix.python-version }})
