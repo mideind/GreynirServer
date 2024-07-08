@@ -39,7 +39,7 @@ import threading
 from reynir.basics import ConfigError, LineReader
 
 # Do not remove, relied on by other modules who import changedlocale via settings
-from reynir.basics import changedlocale
+from reynir.basics import changedlocale  # type: ignore
 
 
 class NoIndexWords:

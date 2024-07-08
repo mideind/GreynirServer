@@ -1508,8 +1508,8 @@ def process_query(
                     return result
 
         except Exception as e:
-            logging.error(f"Error processing query: {e}")
-            result = dict(valid=False, error=f"E_EXCEPTION: {e}")
+            logging.error(f"Error processing query: {repr(e)}")
+            result = dict(valid=False, error=f"E_EXCEPTION: {repr(e)}")
 
         # If we get here, we failed to answer the query
         result["valid"] = False
