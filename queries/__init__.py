@@ -456,7 +456,9 @@ class Query:
                 if is_proc:
                     all_procs.append(m)
             except ImportError as e:
-                logging.error(f"Error importing query processor module {modname}: {e}")
+                logging.error(f"Error importing query processor module {modname}: {repr(e)}")
+            except Exception as e:
+                logging.error(f"Error initializing query processor module {modname}: {repr(e)}")
 
         # Sort the processors by descending priority
         # so that the higher-priority ones get invoked bfore the lower-priority ones
@@ -518,7 +520,9 @@ class Query:
                         )
                     )
             except ImportError as e:
-                logging.error(f"Error importing utility module {modname}: {e}")
+                logging.error(f"Error importing utility module {modname}: {repr(e)}")
+            except Exception as e:
+                logging.error(f"Error initializing utility module {modname}: {repr(e)}")
 
         for processor in cls._tree_processors:
             # Check whether this tree processor supplies a query grammar fragment
