@@ -361,7 +361,7 @@ def stats_queries() -> Union[Response, str]:
     # Accessing this route requires an API key
     key = request.args.get("key")
     if key is None or key != read_txt_api_key("GreynirServerKey"):
-        return Response(f"Not authorized", status=401)
+        return Response("Not authorized", status=401)
 
     days = _DEFAULT_QUERY_STATS_PERIOD
     try:
