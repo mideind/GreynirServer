@@ -275,7 +275,7 @@ class Article:
                     for t in sent:
                         if t.get("k") == TOK.ENTITY:
                             # The entity name
-                            yield cast(str, t.get("x", ""))
+                            yield t.get("x", "")
 
     def gen_text(self) -> Iterator[str]:
         """A generator for text from an article token stream"""
