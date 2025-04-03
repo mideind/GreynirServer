@@ -59,9 +59,10 @@ HistoryList = List[HistoryDict]
 api_key = os.getenv("OPENAI_API_KEY") or ""
 
 OPENAI_KEY_PRESENT = bool(api_key)
+DEFAUL_MODEL = "gpt-3.5-turbo"
 
 # GPT model to use
-MODEL = os.getenv("OPENAI_MODEL") or "text-davinci-003"
+MODEL = os.getenv("OPENAI_MODEL") or DEFAUL_MODEL
 
 LANG_MACRO = "$LANG="
 LANG_REGEX = re.compile(r"\$LANG=([a-z]{2}_[A-Z]{2})\$(.*)", re.DOTALL)
