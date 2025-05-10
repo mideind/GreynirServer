@@ -1,33 +1,35 @@
 # Flask
 werkzeug>=2.3.7
 Flask==2.3.3
-flask-caching>=2.0.2
-Flask-Cors>=4.0.0
+flask-caching>=2.3.1
+Flask-Cors>=5.0.1
 # DB
 psycopg2cffi==2.9.0
-SQLAlchemy==1.4.50
-sqlalchemy2-stubs>=0.0.2a35
+SQLAlchemy==1.4.54
+sqlalchemy2-stubs>=0.0.2a38
+sqlalchemy-stubs>=0.4
 # Util
-cachetools>=5.3.1
-requests>=2.31.0
-typing-extensions>=4.7.1
-python-dotenv>=1.0.0
+cachetools>=5.5.2
+requests>=2.32.3
+typing-extensions>=4.13.2
+python-dotenv>=1.1.0
 # Scraping
-beautifulsoup4>=4.12.2
-feedparser>=6.0.10
+beautifulsoup4>=4.13.4
+feedparser>=6.0.11
 # Query modules
-pytz>=2023.3
-timezonefinder>=6.2.0
-rjsmin>=1.2.1
+pytz>=2025.2
+timezonefinder>=6.5.9
+rjsmin>=1.2.4
 python-youtube>=0.9.1
-country-list>=1.0.0
+country-list>=1.1.0
 # For OpenAI GPT support
 openai==1.14.3
+httpx==0.27.2 # to address issue in old version of OpenAI API
 # Ours
-reynir>=3.5.4
-islenska>=0.4.8
-icespeak<0.4.0
-iceaddr>=0.5.6
+reynir>=3.5.7
+islenska>=1.0.3
+icespeak<=0.3.6
+iceaddr>=0.5.8
 iceweather>=0.2.3
 cityloc>=0.1.1
 straeto>=1.4.1
