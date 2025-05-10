@@ -39,7 +39,7 @@ from sqlalchemy import (
     Float,
     Sequence,
     Boolean,
-    DateTime,  # type: ignore # Imported for re-export
+    DateTime,  # type: ignore # noqa: F401 # Imported for re-export
     UniqueConstraint,
     Index,
     ForeignKey,

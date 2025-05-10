@@ -63,7 +63,7 @@ from utility import (
     QUERIES_UTIL_GRAMMAR_DIR,
 )
 
-from reynir.version import __version__ as greynir_version
+from reynir import __version__ as greynir_version
 from tokenizer import __version__ as tokenizer_version
 
 
@@ -101,7 +101,7 @@ cache_type = "SimpleCache" if RUNNING_AS_SERVER else "null"
 app.config["CACHE"] = Cache(app, config={"CACHE_TYPE": cache_type})
 
 # Register blueprint routes
-from routes import routes, max_age  # type: ignore
+from routes import routes, max_age  # type: ignore  # noqa: E402
 
 app.register_blueprint(routes)
 
@@ -288,8 +288,7 @@ if not RUNNING_AS_SERVER:
     except socket_error as e:
         if e.errno == errno.EADDRINUSE:  # Address already in use
             logging.error(
-                f"Another application is already running at"
-                " host {Settings.HOST}:{Settings.PORT}"
+                f"Another application is already running at host {Settings.HOST}:{Settings.PORT}"
             )
             sys.exit(1)
         else:
