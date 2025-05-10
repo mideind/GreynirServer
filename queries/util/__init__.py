@@ -21,8 +21,6 @@
 
 """
 
-from __future__ import annotations
-
 from typing import (
     Any,
     Mapping,
@@ -33,8 +31,8 @@ from typing import (
     Tuple,
     Union,
     cast,
+    TypedDict,
 )
-from typing_extensions import TypedDict
 
 import logging
 import requests

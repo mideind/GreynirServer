@@ -26,8 +26,6 @@
 
 """
 
-from __future__ import annotations
-
 from typing import Iterable, Match, Optional, Sequence, Union, List, cast
 
 import re
@@ -653,13 +651,13 @@ class MblScraper(ScrapeHelper):
                     # Might be date
                     try:
                         date = [int(x) for x in dateline[ix].split(".")]
-                    except:
+                    except:  # noqa: E722
                         date = None
                 elif ":" in dateline[ix]:
                     # Might be time
                     try:
                         time = [int(x) for x in dateline[ix].split(":")]
-                    except:
+                    except:  # noqa: E722
                         time = None
                 if time and date:
                     # Seems we're done
@@ -882,12 +880,12 @@ class VisirScraper(ScrapeHelper):
                 if article:
                     try:
                         author = article.span.a.string
-                    except:
+                    except:  # noqa: E722
                         author = ""
                     if not author:
                         try:
                             author = article.span.string
-                        except:
+                        except:  # noqa: E722
                             pass
         if not author:
             author = "Ritstjórn visir.is"
@@ -1659,7 +1657,7 @@ class DVScraper(ScrapeHelper):
                     second=int(ts[17:19]),
                     tzinfo=timezone.utc,
                 )
-        except:
+        except:  # noqa: E722
             pass
 
         metadata.heading = heading

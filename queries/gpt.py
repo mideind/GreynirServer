@@ -36,8 +36,9 @@ from typing import (
     Type,
     Union,
     cast,
+    TypedDict,
 )
-from typing_extensions import TypedDict, NotRequired
+from typing_extensions import NotRequired
 
 import abc
 import inspect

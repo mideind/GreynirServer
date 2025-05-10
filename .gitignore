@@ -125,6 +125,8 @@ p3*/
 p7*/
 pypy/
 pypy*
+pypy39/*
+pypy310/*
 cpython*/
 venv
 p313/

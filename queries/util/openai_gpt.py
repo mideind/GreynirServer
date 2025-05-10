@@ -23,8 +23,6 @@
 
 """
 
-from __future__ import annotations
-
 from typing import (
     Any,
     Dict,
@@ -32,8 +30,8 @@ from typing import (
     List,
     Mapping,
     Tuple,
+    TypedDict,
 )
-from typing_extensions import TypedDict
 
 import re
 import os

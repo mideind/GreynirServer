@@ -327,8 +327,7 @@ def get_staticmap_image(
         return None
 
     if r.status_code == 200:
-        r.raw.decode_content = True
-        return BytesIO(r.raw.data)
+        return BytesIO(r.content)
 
     logging.warning(f"Status {r.status_code} when requesting static map image")
     return None
