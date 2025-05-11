@@ -199,6 +199,8 @@ def QCurAmountConversion(node: Node, params: QueryStateDict, result: Result) -> 
     result.op = "convert"
 
 
+# https://www.arionbanki.is/markadir/gjaldmidlar/gengi/xml-export
+
 _CURR_API_URL = "https://apis.is/currency/arion"
 _CURR_CACHE_TTL = 3600  # seconds
 
