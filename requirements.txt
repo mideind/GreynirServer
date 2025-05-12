@@ -14,13 +14,13 @@ requests>=2.32.3
 typing-extensions>=4.13.2
 python-dotenv>=1.1.0
 # Scraping
-beautifulsoup4>=4.13.4
-feedparser>=6.0.11
+beautifulsoup4==4.13.4
+feedparser==6.0.11
 # Query modules
-pytz>=2025.2
-timezonefinder>=6.5.9
+pytz==2025.2
+timezonefinder==6.5.9
 rjsmin>=1.2.4
-python-youtube>=0.9.1
+python-youtube==0.9.1
 country-list>=1.1.0
 # For OpenAI GPT support
 openai==1.14.3
@@ -28,7 +28,9 @@ httpx==0.27.2 # to address issue in old version of OpenAI API
 # Ours
 reynir>=3.5.7
 islenska>=1.0.3
-icespeak<=0.3.6
+# Pinning old version of Icespeak since newer require
+# grpcio, which doesn't work under PyPy. :/
+icespeak @ git+https://github.com/mideind/Icespeak@greynir
 iceaddr>=0.5.8
 iceweather>=0.2.3
 cityloc>=0.1.1
