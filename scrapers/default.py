@@ -651,13 +651,13 @@ class MblScraper(ScrapeHelper):
                     # Might be date
                     try:
                         date = [int(x) for x in dateline[ix].split(".")]
-                    except:  # noqa: E722
+                    except Exception:
                         date = None
                 elif ":" in dateline[ix]:
                     # Might be time
                     try:
                         time = [int(x) for x in dateline[ix].split(":")]
-                    except:  # noqa: E722
+                    except Exception:
                         time = None
                 if time and date:
                     # Seems we're done
@@ -880,12 +880,12 @@ class VisirScraper(ScrapeHelper):
                 if article:
                     try:
                         author = article.span.a.string
-                    except:  # noqa: E722
+                    except Exception:
                         author = ""
                     if not author:
                         try:
                             author = article.span.string
-                        except:  # noqa: E722
+                        except Exception:
                             pass
         if not author:
             author = "Ritstjórn visir.is"
@@ -1657,7 +1657,7 @@ class DVScraper(ScrapeHelper):
                     second=int(ts[17:19]),
                     tzinfo=timezone.utc,
                 )
-        except:  # noqa: E722
+        except Exception:
             pass
 
         metadata.heading = heading
