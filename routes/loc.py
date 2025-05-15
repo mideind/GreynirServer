@@ -21,8 +21,7 @@
 
 """
 
-from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple, Union, cast
-from typing_extensions import TypedDict
+from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple, Union, cast, TypedDict
 
 from . import routes, better_jsonify, cache, days_from_period_arg
 
@@ -269,7 +268,7 @@ def staticmap():
         lat = float(request.args.get("lat", "0.0"))
         lon = float(request.args.get("lon", "0.0"))
         zoom = int(request.args.get("z", "7"))
-    except:
+    except Exception:
         return abort(400)
 
     imgdata = get_staticmap_image(lat, lon, zoom=zoom)

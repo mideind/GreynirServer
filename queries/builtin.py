@@ -26,8 +26,7 @@
 
 """
 
-from typing import Callable, Dict, Iterable, Optional, List, Any, Tuple, cast
-from typing_extensions import TypedDict
+from typing import Callable, Dict, Iterable, Optional, List, Any, Tuple, cast, TypedDict
 
 import math
 from datetime import datetime, timezone

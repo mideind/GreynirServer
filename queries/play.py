@@ -23,16 +23,13 @@
 
 """
 
-from __future__ import annotations
-
-from typing import Optional, List, Any, Match
-from typing_extensions import TypedDict
+from typing import Optional, List, Any, Match, TypedDict
 
 import re
 import logging
 from random import choice
 
-from pyyoutube import Api, SearchListResponse  # type: ignore
+from pyyoutube import Api
 
 from queries import Query
 from queries.util import gen_answer

@@ -26,8 +26,7 @@
 # TODO: Map country to capital city, e.g. "Svíþjóð" -> "Stokkhólmur"
 # TODO: Fetch more than one flight using "flight_count"?
 
-from typing import Any, List, Dict, Optional, cast
-from typing_extensions import TypedDict
+from typing import Any, List, Dict, Optional, cast, TypedDict
 
 import re
 import random

@@ -111,7 +111,7 @@ def QPetrolClosestCheapestStation(
 _COMPANY_NAME_FIXES = {"Costco Iceland": "Costco"}
 
 
-_PETROL_API = "https://apis.is/petrol"
+_PETROL_API = "https://raw.githubusercontent.com/gasvaktin/gasvaktin/refs/heads/master/vaktin/gas.min.json"
 _PETROL_CACHE_TTL = 3600  # seconds, ttl 1 hour
 
 
@@ -119,15 +119,15 @@ _PETROL_CACHE_TTL = 3600  # seconds, ttl 1 hour
 def _get_petrol_station_data() -> Optional[List]:
     """Fetch list of petrol stations w. prices from apis.is (Gasvaktin)"""
     pd = query_json_api(_PETROL_API)
-    if not isinstance(pd, dict) or "results" not in pd:
+    if not isinstance(pd, dict) or "stations" not in pd:
         return None
 
     # Fix company names
-    for s in pd["results"]:
+    for s in pd["stations"]:
         name = s.get("company", "")
         s["company"] = _COMPANY_NAME_FIXES.get(name, name)
 
-    return pd["results"]
+    return pd["stations"]
 
 
 def _stations_with_distance(loc: Optional[LatLonTuple]) -> Optional[List]:

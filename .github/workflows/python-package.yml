@@ -10,7 +10,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     # Service containers to run with `container-job`
@@ -37,7 +36,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.9"]
+        python-version: ["3.9", "3.12", "pypy3.9", "pypy3.10"]
 
     steps:
     - uses: actions/checkout@v4
@@ -51,12 +50,9 @@ jobs:
           sudo update-locale
     - name: Install dependencies
       run: |
-        pip cache purge
-        pip install --upgrade pip wheel setuptools pytest curlylint
-        pip install --upgrade git+https://github.com/mideind/Tokenizer#egg=tokenizer
-        pip install --upgrade git+https://github.com/mideind/GreynirEngine#egg=reynir
-        pip install --upgrade git+https://github.com/mideind/Icespeak#egg=icespeak
-        pip install --upgrade -r requirements.txt
+        pip install uv
+        uv pip install --system --upgrade wheel setuptools pytest curlylint
+        uv pip install --system --upgrade -r requirements.txt
         sudo npm i -g jshint
         sudo apt-get install shellcheck
     - name: Set up database

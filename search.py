@@ -26,8 +26,7 @@
 
 """
 
-from typing import Iterable, Iterator, Optional, List, Tuple
-from typing_extensions import TypedDict
+from typing import Iterable, Iterator, Optional, List, Tuple, TypedDict
 
 from datetime import datetime, timedelta
 
