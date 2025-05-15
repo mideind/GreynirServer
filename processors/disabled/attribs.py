@@ -43,8 +43,6 @@
 
 """
 
-from __future__ import annotations
-
 from queries import QueryStateDict
 from tree import Node, ParamList, Result, TreeStateDict
 

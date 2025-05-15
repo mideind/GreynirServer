@@ -46,8 +46,9 @@ from typing import (
     Iterator,
     NamedTuple,
     cast,
+    TypedDict,
 )
-from typing_extensions import Required, TypedDict
+from typing_extensions import Required
 from types import ModuleType
 
 

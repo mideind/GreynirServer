@@ -434,7 +434,7 @@ class TnT:
         _C = self._C
 
         current_state: StateList = [(0.0, [("BOS", False), ("BOS", False)])]
-        keyfunc: Callable[[Any], float] = lambda x: x[0]
+        keyfunc: Callable[[Any], float] = lambda x: x[0]  # noqa: E731
 
         for index, word in enumerate(sent):
 

@@ -44,8 +44,6 @@
 # TODO: "Hvernig er færðin"
 # TODO: Er rigning úti? Er sól úti? Er sól á Húsavík? Er rigning í Reykjavík?
 
-from __future__ import annotations
-
 from typing import Dict, Mapping, Optional, Union
 
 import os

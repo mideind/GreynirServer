@@ -30,7 +30,6 @@
 
 """
 
-from __future__ import annotations
 from types import ModuleType
 
 from typing import Any, Iterable, List, Optional, Set, Union, cast

@@ -27,8 +27,7 @@
 # TODO: Channels provided by Síminn
 # TODO: "Rás tveir" vandamál, ætti að vera "Rás tvö"
 
-from typing import List, Dict, Optional, Tuple, Any, cast
-from typing_extensions import TypedDict
+from typing import List, Dict, Optional, Tuple, Any, cast, TypedDict
 from queries import Query, QueryStateDict
 from tree import Node, TerminalNode, ParamList, Result
 

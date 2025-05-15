@@ -29,9 +29,11 @@ database and processed by grammatical pattern matching modules to obtain stateme
 of fact and relations between stated facts.
 
 An overview of the technology behind Greynir can be found in the paper
-[A Wide-Coverage Context-Free Grammar for Icelandic
-and an Accompanying Parsing System](https://acl-bg.org/proceedings/2019/RANLP%202019/pdf/RANLP160.pdf)
-by Vilhjálmur Þorsteinsson, Hulda Óladóttir and Hrafn Loftsson *(Proceedings of Recent Advances in Natural Language Processing, pages 1397–1404, Varna, Bulgaria, Sep 2–4, 2019).*
+[A Wide-Coverage Context-Free Grammar for Icelandic and an Accompanying
+Parsing System](https://acl-bg.org/proceedings/2019/RANLP%202019/pdf/RANLP160.pdf)
+by Vilhjálmur Þorsteinsson, Hulda Óladóttir and Hrafn Loftsson
+*(Proceedings of Recent Advances in Natural Language Processing,
+pages 1397–1404, Varna, Bulgaria, Sep 2–4, 2019).*
 
 <a href="https://raw.githubusercontent.com/mideind/Greynir/master/static/img/tree-example.png" title="Greynir parse tree">
 <img src="static/img/tree-example-small.png" width="400" height="450" alt="Greynir parse tree">
@@ -57,10 +59,11 @@ structured, recursive trees that directly correspond to the original grammar.
 These trees can then be further processed and acted upon by sets of Python
 functions that are linked to grammar nonterminals.
 
-**Greynir is currently able to parse about *90%* of sentences** in a typical news article from the web,
-and many well-written articles can be parsed completely. It presently has well over a million parsed articles
-in its database, containing more than 16 million parsed sentences. A relatively recent (2021) version of this
-database is available via the [GreynirCorpus](https://github.com/mideind/GreynirCorpus) project.
+**Greynir is currently able to parse about *90%* of sentences** in a typical news article
+from the web, and many well-written articles can be parsed completely. It presently has about
+1.3 million parsed articles in its database, containing about 18 million parsed sentences.
+A 2021 version of this database is available via the
+[GreynirCorpus](https://github.com/mideind/GreynirCorpus) project.
 
 Greynir supports natural language querying of its databases. Users can ask about person names, titles and
 entity definitions and get appropriate replies. The HTML5 Web Speech API is supported to allow
@@ -235,7 +238,7 @@ See [Contributing to Greynir](CONTRIBUTING.md).
 
 ## License
 
-Greynir is Copyright &copy; 2023 [Miðeind ehf.](https://mideind.is)  
+Greynir is Copyright &copy; 2025 [Miðeind ehf.](https://mideind.is)  
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
 <a href="https://mideind.is"><img src="static/img/mideind-horizontal-small.png" alt="Miðeind ehf."
