@@ -205,10 +205,31 @@ _CURR_CACHE_TTL = 3600  # seconds
 
 @cachetools.cached(cachetools.TTLCache(1, _CURR_CACHE_TTL))
 def _fetch_exchange_rates() -> Optional[Dict[str, float]]:
+<<<<<<< Updated upstream
     """Fetch exchange rate data from apis.is and cache it."""
     res = query_json_api(_CURR_API_URL)
     if not isinstance(res, dict) or "results" not in res:
         logging.warning(f"Unable to fetch exchange rate data from {_CURR_API_URL}")
+=======
+    """Fetch exchange rate data from Arion banki and cache it."""
+    try:
+        resp = requests.get(_ARION_EXCHR_XML_API_URL, timeout=5)
+        # Parse the XML response
+        root = ET.fromstring(resp.content)
+        exchange_rates = {}
+        items_element = root.find('items')
+        if items_element is None:
+            return None
+        # Build dict mapping currency ID to sale rate
+        for currency_element in items_element.findall('Currency'):
+            currency_id = currency_element.find('mynt').text
+            sale_rate_str = currency_element.find('Solugengi').text
+            sale_rate_float = float(sale_rate_str)
+            exchange_rates[currency_id] = sale_rate_float
+        return exchange_rates
+    except Exception as e:
+        logging.warning(f"Error fetching exchange rate data from {_ARION_EXCHR_XML_API_URL}: {e}")
+>>>>>>> Stashed changes
         return None
     return {
         c["shortName"]: c["value"]
