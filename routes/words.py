@@ -96,7 +96,7 @@ _SHOW_WEEKS_CUTOFF = 90  # days
 
 # Word frequency chart line colors (Miðeind colors)
 _LINE_COLORS = frozenset(
-    ("#006eff", "#eb3732", "#00b450", "#ffb400", "#4600c8", "#f0f")
+    ("#006eff", "#eb3732", "#00b450", "#ffb400", "#4600c8", "#ff00ff")
 )
 
 
