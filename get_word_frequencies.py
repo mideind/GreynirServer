@@ -1,6 +1,6 @@
 import csv
 from datetime import datetime, timedelta, date, time
-from db.sql import WordFrequencyQuery
+from db.sql import WordFrequencyQuery, ArticleFrequencyQuery
 from settings import Settings
 
 def get_frequencies_to_csv_per_word():
@@ -14,10 +14,10 @@ def get_frequencies_to_csv_per_word():
     # Set the end date to the end of yesterday to exclude the current, unfinished day.
     today = date.today()
     end_date = datetime.combine(today, time.min) - timedelta(seconds=1)
-    start_date = end_date - timedelta(days=7 * 365)  # 7 years back
+    start_date = end_date - timedelta(days=(7 * 365) - 1)
 
     words_to_check = [
-        # ("stýrivextir", "kk"),
+        ("stýrivextir", "kk"),
         ("verðbólga", "kvk")
     ]
 
@@ -27,9 +27,9 @@ def get_frequencies_to_csv_per_word():
 
         with open(output_filename, 'w', newline='', encoding='utf-8') as csvfile:
             csv_writer = csv.writer(csvfile)
-            csv_writer.writerow(['date', 'count'])
+            csv_writer.writerow(['date', 'count', 'article_count'])
 
-            results = WordFrequencyQuery.frequency(
+            word_freq = WordFrequencyQuery.frequency(
                 stem=stem,
                 cat=cat,
                 start=start_date,
@@ -37,9 +37,26 @@ def get_frequencies_to_csv_per_word():
                 timeunit="day"
             )
 
+            article_freq = ArticleFrequencyQuery.frequency(
+                stem=stem,
+                cat=cat,
+                start=start_date,
+                end=end_date,
+                timeunit="day"
+            )
+
+            # Create dictionaries for quick lookup
+            word_freq_dict = {d: c for d, c in word_freq}
+            article_freq_dict = {d: c for d, c in article_freq}
+
+            # Get all unique dates from both queries
+            all_dates = sorted(list(set(word_freq_dict.keys()) | set(article_freq_dict.keys())))
+
             rows_written = 0
-            for d, count in results:
-                csv_writer.writerow([d, count])
+            for d in all_dates:
+                count = word_freq_dict.get(d, 0)
+                article_count = article_freq_dict.get(d, 0)
+                csv_writer.writerow([d, count, article_count])
                 rows_written += 1
 
             if rows_written > 0:

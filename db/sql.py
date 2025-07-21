@@ -464,3 +464,59 @@ class WordFrequencyQuery(_BaseQuery):
                 datefmt=datefmt,
             )
         return result
+
+
+class ArticleFrequencyQuery(_BaseQuery):
+    """A query yielding the number of articles a given word occurs in
+    over a given period of time, broken down by either
+    day or week."""
+
+    _Q = """
+        with days as (
+            select to_char(d, :datefmt) date
+            from generate_series(
+                :start,
+                :end,
+                :timeunit
+            ) d
+        ),
+        appearances as (
+            select to_char(a.timestamp, :datefmt) date, count(distinct w.article_id) cnt
+            from words w, articles a
+            where w.stem = :stem
+            and w.cat = :cat
+            and w.article_id = a.id
+            and a.timestamp >= :start
+            and a.timestamp <= :end
+            group by date
+            order by date
+        )
+        select days.date, coalesce(appearances.cnt,0) from days
+        left outer join appearances on days.date = appearances.date;
+        """
+
+    @classmethod
+    def frequency(
+        cls,
+        stem: str,
+        cat: str,
+        start: datetime,
+        end: datetime,
+        timeunit: str = "day",
+        enclosing_session: Optional[Session] = None,
+    ) -> Iterable[Any]:
+        result: Iterable[Any] = []
+        with SessionContext(session=enclosing_session, read_only=True) as session:
+            assert timeunit in ["week", "day"]
+            datefmt = "IYYY-IW" if timeunit == "week" else "YYYY-MM-DD"
+            tu = f"1 {timeunit}"
+            result = cls().execute(
+                session,
+                stem=stem,
+                cat=cat,
+                start=start,
+                end=end,
+                timeunit=tu,
+                datefmt=datefmt,
+            )
+        return result
