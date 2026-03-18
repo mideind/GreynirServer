@@ -51,7 +51,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install uv
-        uv pip install --system --upgrade wheel setuptools pytest curlylint
+        uv pip install --system --upgrade wheel "setuptools<82" pytest curlylint
         uv pip install --system --upgrade -r requirements.txt
         sudo npm i -g jshint
         sudo apt-get install shellcheck
