@@ -404,6 +404,11 @@ def gen_answer(a: str) -> AnswerTuple:
     return dict(answer=a), a, a
 
 
+_DEFAULT_HEADERS: Dict[str, str] = {
+    "User-Agent": "Greynir/1.0 (https://greynir.is; mailto:mideind@mideind.is)"
+}
+
+
 def query_json_api(
     url: str, headers: Optional[Dict[str, str]] = None, *, timeout: int = 10
 ) -> JsonResponse:
@@ -412,7 +417,8 @@ def query_json_api(
 
     # Send request
     try:
-        r = requests.get(url, headers=headers, timeout=timeout)
+        h = {**_DEFAULT_HEADERS, **(headers or {})}
+        r = requests.get(url, headers=h, timeout=timeout)
     except Exception as e:
         logging.warning(f"Exception when fetching {url}: {e}")
         return None
