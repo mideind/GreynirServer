@@ -2,11 +2,15 @@
 
 DIR = "/usr/share/nginx/greynir.is/"
 
+proc_name = "greynir.is"
 bind = "unix:" + DIR + "gunicorn.sock"
 worker_class = "eventlet"
-workers = 3
+workers = 4
 threads = 2
 timeout = 120
+preload_app = True
+max_requests = 1000
+max_requests_jitter = 50
 
 # Read user and group name from text config file
 with open(DIR + "gunicorn_user.txt") as f:
