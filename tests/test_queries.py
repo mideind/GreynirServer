@@ -1119,7 +1119,7 @@ def test_petrol(client: FlaskClient) -> None:
     """Petrol module."""
 
     json = qmcall(client, {"q": "Hvar er næsta bensínstöð", "voice": True}, "Petrol")
-    assert "Ánanaust" in json["answer"]
+    assert "N1 Fiskislóð" in json["answer"]
     assert "source" in json and json["source"].startswith("Gasvaktin")
 
     json = qmcall(
@@ -1286,19 +1286,19 @@ def test_schedules(client: FlaskClient) -> None:
         or caseless_in("dagskrárlið", json["answer"])
     )
 
-    # Stöð 2 tests
-    json = qmcall(client, {"q": "hvað er næsti þáttur á stöð 2"}, "Schedule")
-    assert json["key"] == "Stöð 2 - Stöð 2"
-    assert "Stöð 2" in json["answer"] and (
-        caseless_in("ekkert er á dagskrá", json["answer"])
-        or caseless_in("næst á dagskrá", json["answer"])
-    )
-    json = qmcall(client, {"q": "Hvaða efni er verið að spila á Stöð 2"}, "Schedule")
-    assert json["key"] == "Stöð 2 - Stöð 2"
-    assert "Stöð 2" in json["answer"] and (
-        caseless_in("ekkert er á dagskrá", json["answer"])
-        or caseless_in("dagskrárliðinn", json["answer"])
-    )
+    # Stöð 2 tests disabled: Stöð 2 rebranded to Sýn, api.stod2.is is defunct
+    # json = qmcall(client, {"q": "hvað er næsti þáttur á stöð 2"}, "Schedule")
+    # assert json["key"] == "Stöð 2 - Stöð 2"
+    # assert "Stöð 2" in json["answer"] and (
+    #     caseless_in("ekkert er á dagskrá", json["answer"])
+    #     or caseless_in("næst á dagskrá", json["answer"])
+    # )
+    # json = qmcall(client, {"q": "Hvaða efni er verið að spila á Stöð 2"}, "Schedule")
+    # assert json["key"] == "Stöð 2 - Stöð 2"
+    # assert "Stöð 2" in json["answer"] and (
+    #     caseless_in("ekkert er á dagskrá", json["answer"])
+    #     or caseless_in("dagskrárliðinn", json["answer"])
+    # )
 
     # Radio tests
     json = qmcall(client, {"q": "hvað er í útvarpinu?"}, "Schedule")
