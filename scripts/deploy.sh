@@ -57,6 +57,7 @@ cd $SRC || exit 1
 echo "Copying files"
 
 cp config/Index.conf $DEST/config/Index.conf
+cp config/gunicorn_config.py $DEST/gunicorn_config.py
 # Note: config/Greynir.conf is not copied
 
 cp .env $DEST/.env
@@ -83,7 +84,7 @@ cp nn/*.py $DEST/nn/
 
 # Sync templates, static files and queries
 rm -rf queries/__pycache__/
-rsync -av --delete processors/ $DEST/templates/
+rsync -av --delete processors/ $DEST/processors/
 rsync -av --delete templates/ $DEST/templates/
 rsync -av --delete static/ $DEST/static/
 rsync -av --delete queries/ $DEST/queries/
@@ -98,7 +99,9 @@ GITVERS=${GITVERS:0:7} # Truncate it
 sed -i "s/\[Git-útgáfa\]/${GITVERS}/g" "${ABOUT_TPL}"
 
 echo "Reloading gunicorn server..."
-
 sudo systemctl reload $SERVICE
+
+echo "Restarting similarity server..."
+sudo systemctl restart similarity
 
 echo "Deployment done"
