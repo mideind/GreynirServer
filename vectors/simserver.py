@@ -1,6 +1,4 @@
 #!/usr/bin/env/python
-# type: ignore
-
 """
     Greynir: Natural language processing for Icelandic
 
@@ -63,51 +61,58 @@
 
 """
 
+from __future__ import annotations
+
 import json
 import time
-import math
-import heapq
 import sys
-import operator
 
 import numpy as np
+from numpy.typing import NDArray
 
 from threading import Thread, Lock
 from datetime import datetime, timezone
 from multiprocessing import AuthenticationError
-from multiprocessing.connection import Listener, Client
+from multiprocessing.connection import Connection, Listener, Client
 
-from settings import Settings, ConfigError
-from db import SessionContext, desc
-from db.models import Article, Root
-from builder import ReynirCorpus
+from settings import Settings, ConfigError  # type: ignore[attr-defined]
+from db import SessionContext, desc  # type: ignore[import-not-found]
+from db.models import Article, Root  # type: ignore[import-not-found]
+from builder import ReynirCorpus  # type: ignore[attr-defined]
 
 
 class InternalError(RuntimeError):
     """Exception thrown from within the server, causing it to terminate"""
 
-    def __init__(self, s):
+    def __init__(self, s: str) -> None:
         super().__init__(s)
 
 
 class SimilarityServer:
 
-    """A class that manages an in-memory dictionary of articles
-    and their topic vectors, and allows similarity queries of that
-    dictionary. The dictionary is refreshed upon request from the
-    articles database table.
+    """A class that manages an in-memory matrix of article topic vectors
+    and allows similarity queries via vectorized matrix operations.
+    The matrix is refreshed upon request from the articles database table.
     """
 
-    def __init__(self):
-        # Do an initial load of all article topic vectors
-        self._lock = Lock()
-        self._timestamp = None
-        self._atopics = {}
-        self._corpus = None
+    def __init__(self) -> None:
+        self._lock: Lock = Lock()
+        self._timestamp: datetime | None = None
+        # Article topic vectors stored as a single (N, dims) float32 matrix
+        self._matrix: NDArray[np.float32] | None = None
+        # Precomputed squared norms for each row, shape (N,)
+        self._norms_sq: NDArray[np.float32] | None = None
+        # Article IDs, index-aligned with matrix rows
+        self._ids: list[str] = []
+        # Reverse mapping: article ID -> row index
+        self._id_to_index: dict[str, int] = {}
+        self._corpus: ReynirCorpus | None = None
 
-    def _load_topics(self):
-        """Load all article topics into the self._atopics dictionary"""
-        self._atopics = {}
+    def _load_topics(self) -> None:
+        """Load all article topics into a single NumPy matrix"""
+        assert self._corpus is not None
+        ids: list[str] = []
+        vectors: list[list[float]] = []
         with SessionContext(commit=True, read_only=True) as session:
             print("Starting load of all article topic vectors")
             t0 = time.time()
@@ -122,35 +127,55 @@ class SimilarityServer:
 
             for a in q.yield_per(2000):
                 if a.topic_vector:
-                    # Load topic vector in to a numpy array
                     vec = json.loads(a.topic_vector)
                     if isinstance(vec, list) and len(vec) == self._corpus.dimensions:
-                        self._atopics[a.id] = np.array(vec)
+                        ids.append(a.id)
+                        vectors.append(vec)
                     else:
                         print(
                             "Warning: faulty topic vector for article {0}".format(a.id)
                         )
 
             t1 = time.time()
-            print(
-                "Loading of {0} topic vectors completed in {1:.2f} seconds".format(
-                    len(self._atopics), t1 - t0
-                )
-            )
 
-    def article_topic(self, article_id):
+        dims = self._corpus.dimensions
+        if vectors:
+            self._matrix = np.array(vectors, dtype=np.float32)
+            # Precompute squared norms for cosine similarity
+            self._norms_sq = np.einsum("ij,ij->i", self._matrix, self._matrix)
+        else:
+            self._matrix = np.empty((0, dims), dtype=np.float32)
+            self._norms_sq = np.empty((0,), dtype=np.float32)
+        self._ids = ids
+        self._id_to_index = {aid: idx for idx, aid in enumerate(ids)}
+
+        print(
+            "Loading of {0} topic vectors completed in {1:.2f} seconds".format(
+                len(ids), t1 - t0
+            )
+        )
+
+    def article_topic(self, article_id: str) -> NDArray[np.float32] | None:
         """Return the topic vector of the article having the given uuid,
         or None if no such article exists"""
-        return self._atopics.get(article_id)
+        idx = self._id_to_index.get(article_id)
+        if idx is None or self._matrix is None:
+            return None
+        return self._matrix[idx]
 
-    def reload_topics(self):
+    def reload_topics(self) -> None:
         """Reload all article topic vectors from the database"""
         with self._lock:
             # Can't serve queries while we're doing this
             self._load_topics()
 
-    def refresh_topics(self):
-        """Load any new article topics into the _atopics dict"""
+    def refresh_topics(self) -> None:
+        """Load any new or updated article topics into the matrix.
+        Existing articles are updated in-place; new articles are
+        appended in a single batch operation."""
+        assert self._corpus is not None
+        assert self._matrix is not None
+        assert self._norms_sq is not None
         with self._lock:
             with SessionContext(commit=True, read_only=True) as session:
                 # Do the next refresh from this time point
@@ -163,67 +188,94 @@ class SimilarityServer:
                     .with_entities(Article.id, Article.topic_vector)
                 )
                 self._timestamp = ts
-                count = 0
+                updated: int = 0
+                new_ids: list[str] = []
+                new_vectors: list[list[float]] = []
                 for a in q.yield_per(100):
                     if a.topic_vector:
-                        # Load topic vector in to a numpy array
                         vec = json.loads(a.topic_vector)
                         if (
                             isinstance(vec, list)
                             and len(vec) == self._corpus.dimensions
                         ):
-                            self._atopics[a.id] = np.array(vec)
-                            count += 1
+                            idx = self._id_to_index.get(a.id)
+                            if idx is not None:
+                                # Update existing row in place
+                                row = np.array(vec, dtype=np.float32)
+                                self._matrix[idx] = row
+                                self._norms_sq[idx] = np.dot(row, row)
+                                updated += 1
+                            else:
+                                # Accumulate for batch append
+                                new_ids.append(a.id)
+                                new_vectors.append(vec)
                         else:
                             print(
                                 "Warning: faulty topic vector for article {0}".format(
                                     a.id
                                 )
                             )
+                # Append new vectors in a single batch
+                if new_vectors:
+                    new_matrix = np.array(new_vectors, dtype=np.float32)
+                    new_norms = np.einsum(
+                        "ij,ij->i", new_matrix, new_matrix
+                    )
+                    self._matrix = np.concatenate(
+                        [self._matrix, new_matrix]
+                    )
+                    self._norms_sq = np.concatenate(
+                        [self._norms_sq, new_norms]
+                    )
+                    base_idx = len(self._ids)
+                    for i, aid in enumerate(new_ids):
+                        self._id_to_index[aid] = base_idx + i
+                    self._ids.extend(new_ids)
                 print(
-                    "Completed refresh_topics, {0} article vectors added".format(count)
-                )
-
-    def _iter_similarities(self, vector):
-        """Generator of (id, similarity) tuples for all articles to the given vector"""
-        base = np.array(vector)
-        norm_base = np.dot(base, base)  # This is faster than linalg.norm()
-        if norm_base < 1.0e-6:
-            # No data to search by
-            return
-
-        def cosine_similarity(v):
-            """Compute cosine similarity of v1 to v2: (v1 dot v2)/(|v1|*|v2|)"""
-            norm_v = np.dot(v, v)  # This is faster than linalg.norm()
-            dot_product = np.dot(v, base)
-            return float(dot_product / math.sqrt(norm_v * norm_base))
-
-        for article_id, topic_vector in self._atopics.items():
-            try:
-                cs = cosine_similarity(topic_vector)
-                yield article_id, cs
-            except Exception as ex:
-                # If there is an error in the calculations, probably
-                # due to a faulty topic vector, simply don't include
-                # the article
-                print(
-                    "Error in cosine similarity for article {0}: {1}".format(
-                        article_id, ex
+                    "Completed refresh_topics, {0} updated, {1} new".format(
+                        updated, len(new_ids)
                     )
                 )
-                pass
 
-    def find_similar(self, n, vector):
+    def find_similar(
+        self, n: int, vector: list[float] | NDArray[np.float32] | None
+    ) -> list[tuple[str, float]]:
         """Return the N articles with the highest similarity score to the given vector,
-        as a list of tuples (article_uuid, similarity)"""
+        as a list of tuples (article_uuid, similarity).
+        Uses vectorized matrix multiplication for efficient computation."""
         if vector is None or len(vector) == 0 or all(e == 0.0 for e in vector):
             return []
         with self._lock:
-            return heapq.nlargest(
-                n, self._iter_similarities(vector), key=operator.itemgetter(1)
+            if self._matrix is None or len(self._ids) == 0:
+                return []
+            base = np.array(vector, dtype=np.float32)
+            norm_base_sq = np.dot(base, base)
+            if norm_base_sq < 1.0e-6:
+                return []
+            # Compute all dot products in one matrix-vector multiply
+            dot_products = self._matrix @ base
+            # Cosine similarity: dot(v, base) / sqrt(|v|^2 * |base|^2)
+            denominators = np.sqrt(self._norms_sq * norm_base_sq)
+            # Avoid division by zero for any zero-norm vectors
+            with np.errstate(divide="ignore", invalid="ignore"):
+                similarities = dot_products / denominators
+            # Replace NaN/inf with -1 so they won't appear in top N
+            np.nan_to_num(
+                similarities, copy=False, nan=-1.0, posinf=-1.0, neginf=-1.0
             )
+            # Efficiently select top N using argpartition
+            if n >= len(self._ids):
+                top_indices = np.argsort(similarities)[::-1]
+            else:
+                top_indices = np.argpartition(similarities, -n)[-n:]
+                top_indices = top_indices[
+                    np.argsort(similarities[top_indices])[::-1]
+                ]
+            return [
+                (self._ids[i], float(similarities[i])) for i in top_indices
+            ]
 
-    def run(self, host, port):
+    def run(self, host: str, port: int) -> None:
         """Run a similarity server serving requests that come in at the given port"""
         address = (host, port)  # Family is deduced to be 'AF_INET'
         # Load the secret password that clients must use to authenticate themselves
@@ -263,13 +315,13 @@ class SimilarityServer:
                 finally:
                     sys.stdout.flush()
 
-    def _command_loop(self, conn):
+    def _command_loop(self, conn: Connection) -> None:
         """Run a command loop for this server inside a client thread"""
 
         class ClientError(RuntimeError):
             """Local exception class for handling erroneous requests from clients"""
 
-            def __init__(self, request):
+            def __init__(self, request: object) -> None:
                 super().__init__("Invalid request received: {0!r}".format(request))
 
         with conn:
@@ -316,6 +368,7 @@ class SimilarityServer:
                             if not isinstance(terms, list):
                                 raise ClientError(request)
                             # Convert the list of search terms to a topic vector
+                            assert self._corpus is not None
                             topic, term_weights = self._corpus.get_topic_vector(terms)
                             result["weights"] = term_weights
                         elif "topic" in request:
