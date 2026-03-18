@@ -98,17 +98,19 @@ GITVERS=$(git rev-parse HEAD) # Get git commit ID
 GITVERS=${GITVERS:0:7} # Truncate it
 sed -i "s/\[Git-útgáfa\]/${GITVERS}/g" "${ABOUT_TPL}"
 
-echo "Updating similarity server dependencies..."
-# shellcheck disable=SC1091
-source "$SRC/vectors/venv/bin/activate"
-pip install --upgrade pip wheel setuptools
-pip install --upgrade -r "$SRC/vectors/requirements.txt"
-deactivate
-
 echo "Reloading gunicorn server..."
 sudo systemctl reload $SERVICE
 
-echo "Restarting similarity server..."
-sudo systemctl restart similarity
+if [[ "$MODE" = "PRODUCTION" ]]; then
+    echo "Updating similarity server dependencies..."
+    # shellcheck disable=SC1091
+    source "$SRC/vectors/venv/bin/activate"
+    pip install --upgrade pip wheel setuptools
+    pip install --upgrade -r "$SRC/vectors/requirements.txt"
+    deactivate
+
+    echo "Restarting similarity server..."
+    sudo systemctl restart similarity
+fi
 
 echo "Deployment done"
