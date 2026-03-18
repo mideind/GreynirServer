@@ -238,7 +238,7 @@ class SimilarityServer:
                 )
 
     def find_similar(
-        self, n: int, vector: list[float] | NDArray[np.float32] | None
+        self, n: int, vector: NDArray[np.float32] | None
     ) -> list[tuple[str, float]]:
         """Return the N articles with the highest similarity score to the given vector,
         as a list of tuples (article_uuid, similarity).
@@ -373,9 +373,9 @@ class SimilarityServer:
                             result["weights"] = term_weights
                         elif "topic" in request:
                             # Compare similarity to the given topic vector
-                            topic = request["topic"]
-                            if not isinstance(topic, list):
+                            if not isinstance(request["topic"], list):
                                 raise ClientError(request)
+                            topic = np.array(request["topic"], dtype=np.float32)
                         else:
                             raise ClientError(request)
                         # Launch the command and send the reply back to the client
