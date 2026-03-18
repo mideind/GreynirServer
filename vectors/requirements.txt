@@ -1,6 +1,9 @@
-cffi==1.14.0
+cffi>=1.15.1
 gensim==3.8.2
-psycopg2cffi==2.8.1
-pycparser==2.20
-SQLAlchemy==1.4.0
-typing_extensions>=3.10.0
+numpy>=1.24.3
+psycopg2cffi>=2.9.0
+pycparser>=2.20
+scipy>=1.10.1
+smart-open>=6.3.0
+SQLAlchemy>=1.4.48,<2.0
+typing_extensions>=4.5.0
