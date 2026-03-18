@@ -8,7 +8,7 @@ worker_class = "eventlet"
 workers = 4
 threads = 2
 timeout = 120
-preload_app = True
+# Note: preload_app is not compatible with eventlet on PyPy
 max_requests = 1000
 max_requests_jitter = 50
 
