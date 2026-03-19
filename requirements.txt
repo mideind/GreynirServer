@@ -27,8 +27,8 @@ rjsmin>=1.2.4
 python-youtube==0.9.1
 country-list>=1.1.0
 # For OpenAI GPT support
-openai==1.14.3
-httpx==0.27.2 # to address issue in old version of OpenAI API
+openai>=1.60.0
+httpx>=0.27.2
 # Ours
 reynir>=3.5.7
 islenska>=1.0.3
