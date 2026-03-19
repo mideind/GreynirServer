@@ -59,7 +59,7 @@ cp config/Index.conf $DEST/config/Index.conf
 cp config/gunicorn_config.py $DEST/gunicorn_config.py
 # Note: config/Greynir.conf is not copied
 
-cp .env $DEST/.env
+# Note: .env is not copied (environment-specific)
 cp article.py $DEST/article.py
 cp fetcher.py $DEST/fetcher.py
 cp geo.py $DEST/geo.py
@@ -106,9 +106,8 @@ if [[ "$MODE" = "PRODUCTION" ]]; then
     source "$SRC/vectors/venv/bin/activate"
     pip install -r "$SRC/vectors/requirements.txt"
     deactivate
-
-    echo "Restarting similarity server..."
-    sudo systemctl restart similarity
+    # Note: similarity server is NOT restarted here (13 min downtime).
+    # Restart it manually if needed: sudo systemctl restart similarity
 fi
 
 echo "Deployment done"
