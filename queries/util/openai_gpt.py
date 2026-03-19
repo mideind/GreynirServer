@@ -81,10 +81,20 @@ class Completion:
     def _create(cls, *args: Any, **kwargs: Any) -> ChatCompletion:
         """
         Creates a new completion while handling formatting and parsing.
+        Newer OpenAI models require max_completion_tokens instead of
+        max_tokens; try the new parameter first and fall back to the old.
         """
-        # Newer OpenAI models use max_completion_tokens instead of max_tokens
         if "max_tokens" in kwargs:
-            kwargs["max_completion_tokens"] = kwargs.pop("max_tokens")
+            max_val = kwargs.pop("max_tokens")
+            try:
+                return client.chat.completions.create(
+                    *args, model=MODEL, max_completion_tokens=max_val, **kwargs
+                )
+            except TypeError:
+                # Older openai library doesn't support max_completion_tokens
+                return client.chat.completions.create(
+                    *args, model=MODEL, max_tokens=max_val, **kwargs
+                )
         return client.chat.completions.create(*args, model=MODEL, **kwargs)
 
     @classmethod

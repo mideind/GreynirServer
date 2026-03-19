@@ -27,7 +27,7 @@ rjsmin>=1.2.4
 python-youtube==0.9.1
 country-list>=1.1.0
 # For OpenAI GPT support
-openai>=1.40.0,<2.0
+openai>=1.14.3,<1.40
 httpx>=0.27.2
 # Ours
 reynir>=3.5.7
