@@ -98,8 +98,8 @@ GITVERS=$(git rev-parse HEAD) # Get git commit ID
 GITVERS=${GITVERS:0:7} # Truncate it
 sed -i "s/\[Git-útgáfa\]/${GITVERS}/g" "${ABOUT_TPL}"
 
-echo "Reloading gunicorn server..."
-sudo systemctl reload $SERVICE
+echo "Restarting gunicorn server..."
+sudo systemctl restart $SERVICE
 
 if [[ "$MODE" = "PRODUCTION" ]]; then
     echo "Updating similarity server dependencies..."
