@@ -1,8 +1,11 @@
-# Gunicorn configuration file for greynir.is
+# Gunicorn configuration file for Greynir
+# Works for both production and staging — derives paths from working directory
 
-DIR = "/usr/share/nginx/greynir.is/"
+import os
 
-proc_name = "greynir.is"
+DIR = os.getcwd() + "/"
+proc_name = os.path.basename(os.getcwd())
+
 bind = "unix:" + DIR + "gunicorn.sock"
 worker_class = "eventlet"
 workers = 4
@@ -21,9 +24,6 @@ pidfile = DIR + "gunicorn.pid"
 
 # Remove the Greynir.grammar.bin file to ensure that
 # the grammar will be reparsed and a fresh copy generated
-
-import os
-
 try:
     os.remove(DIR + "Greynir.grammar.bin")
 except OSError:
