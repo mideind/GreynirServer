@@ -60,44 +60,41 @@ class Search:
     """This class wraps search queries to the similarity server
     via the similarity client."""
 
-    # Similarity query client
-    similarity_client: Optional[SimilarityClient] = None
-
     def __init__(self) -> None:
         """This class is normally not instantiated"""
         pass
 
     @classmethod
-    def _connect(cls):
-        """Ensure that the client is connected, if possible"""
-        if cls.similarity_client is None:
-            cls.similarity_client = SimilarityClient()
+    def _new_client(cls) -> SimilarityClient:
+        """Create a new similarity client for each request to avoid
+        connection sharing issues between concurrent greenlets/threads"""
+        return SimilarityClient()
 
     @classmethod
     def list_similar_to_article(
         cls, session: Session, uuid: str, n: int
     ) -> List[SimilarDict]:
         """List n articles that are similar to the article with the given id"""
-        cls._connect()
-        # Returns a list of tuples: (article_id, similarity)
-        assert cls.similarity_client is not None
-        result = cls.similarity_client.list_similar_to_article(uuid, n=n + 5)
-        articles: List[Tuple[str, float]] = result.get("articles", [])
-        # Convert the result tuples into article descriptors
-        return cls.list_articles(session, articles, n)
+        client = cls._new_client()
+        try:
+            result = client.list_similar_to_article(uuid, n=n + 5)
+            articles: List[Tuple[str, float]] = result.get("articles", [])
+            return cls.list_articles(session, articles, n)
+        finally:
+            client.close()
 
     @classmethod
     def list_similar_to_topic(
         cls, session: Session, topic_vector: List[float], n: int
     ) -> List[SimilarDict]:
         """List n articles that are similar to the given topic vector"""
-        cls._connect()
-        # Returns a list of tuples: (article_id, similarity)
-        assert cls.similarity_client is not None
-        result = cls.similarity_client.list_similar_to_topic(topic_vector, n=n + 5)
-        articles: List[Tuple[str, float]] = result.get("articles", [])
-        # Convert the result tuples into article descriptors
-        return cls.list_articles(session, articles, n)
+        client = cls._new_client()
+        try:
+            result = client.list_similar_to_topic(topic_vector, n=n + 5)
+            articles: List[Tuple[str, float]] = result.get("articles", [])
+            return cls.list_articles(session, articles, n)
+        finally:
+            client.close()
 
     @classmethod
     def list_similar_to_terms(
@@ -105,17 +102,16 @@ class Search:
     ) -> WeightsDict:
         """List n articles that are similar to the given terms. The
         terms are expected to be a list of (stem, category) tuples."""
-        cls._connect()
-        # Returns a list of tuples: (article_id, similarity)
-        assert cls.similarity_client is not None
-        result = cls.similarity_client.list_similar_to_terms(terms, n=n + 5)
-        # Convert the result tuples into article descriptors
-        articles: List[Tuple[str, float]] = result.get("articles", [])
-        # Obtain the search term weights
-        weights: List[float] = result.get("weights", [])
-        return WeightsDict(
-            weights=weights, articles=cls.list_articles(session, articles, n)
-        )
+        client = cls._new_client()
+        try:
+            result = client.list_similar_to_terms(terms, n=n + 5)
+            articles: List[Tuple[str, float]] = result.get("articles", [])
+            weights: List[float] = result.get("weights", [])
+            return WeightsDict(
+                weights=weights, articles=cls.list_articles(session, articles, n)
+            )
+        finally:
+            client.close()
 
     @classmethod
     def list_articles(
