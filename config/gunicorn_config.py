@@ -10,7 +10,7 @@ bind = "unix:" + DIR + "gunicorn.sock"
 worker_class = "gevent"
 workers = 4
 timeout = 120
-preload_app = True
+# Note: preload_app is not compatible with PyPy + async workers (gevent/eventlet)
 max_requests = 1000
 max_requests_jitter = 50
 
