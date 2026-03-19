@@ -8,6 +8,8 @@ psycopg2cffi==2.9.0
 SQLAlchemy==1.4.54
 sqlalchemy2-stubs>=0.0.2a38
 sqlalchemy-stubs>=0.4
+# Server
+gevent>=24.2.1
 # Util
 cachetools>=5.5.2
 requests>=2.32.3

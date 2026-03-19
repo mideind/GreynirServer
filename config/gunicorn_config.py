@@ -7,11 +7,9 @@ DIR = os.getcwd() + "/"
 proc_name = os.path.basename(os.getcwd())
 
 bind = "unix:" + DIR + "gunicorn.sock"
-worker_class = "eventlet"
+worker_class = "gevent"
 workers = 4
-threads = 2
 timeout = 120
-# Note: preload_app is not compatible with eventlet on PyPy
 max_requests = 1000
 max_requests_jitter = 50
 

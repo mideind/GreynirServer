@@ -35,34 +35,33 @@ from multiprocessing.connection import Connection, answer_challenge, deliver_cha
 
 from settings import Settings
 
-# Hack to allow the similarity client run both under Gunicorn/eventlet
-# on a live server, and stand-alone using the regular Python 3.x library.
-# Under Gunicorn/eventlet, the socket class is 'monkey-patched' in ways
-# that are not compatible with multiprocessing.connection.Connection().
-# We make sure that we obtain access to the original, non-patched
-# socket module. This, alas, means that our calls to the similarity
-# server are truly blocking, even under Gunicorn/eventlet.
+# Hack to allow the similarity client to run both under Gunicorn
+# with monkey-patched async workers (gevent/eventlet) and stand-alone.
+# Under such workers, the socket class is monkey-patched in ways that
+# are not compatible with multiprocessing.connection.Connection().
+# We obtain the original, non-patched socket module so that our calls
+# to the similarity server are truly blocking.
 
 if TYPE_CHECKING:
     import socket
-    USING_EVENTLET = False
 else:
     try:
-        import eventlet  # type: ignore
-
-        USING_EVENTLET = True
-        socket = eventlet.patcher.original("socket")  # type: ignore
-        assert socket is not None
+        # gevent: get the original stdlib socket module
+        from gevent import monkey as _monkey  # type: ignore
+        socket = _monkey.get_original("socket")  # type: ignore
     except ImportError:
-        import socket
-
-        USING_EVENTLET = False  # type: ignore
+        try:
+            # eventlet: get the original stdlib socket module
+            import eventlet  # type: ignore
+            socket = eventlet.patcher.original("socket")  # type: ignore
+        except ImportError:
+            # No async worker: use the stdlib socket directly
+            import socket
 
 # The following two functions replicate and hack/tweak corresponding functions
 # from multiprocessing.connection. This is necessary because the original
 # multiprocessing.connection.SocketClient() function uses the context protocol
-# on a socket, but this is not allowed by the monkey-patched GreenSocket
-# that eventlet inserts instead of the original socket class.
+# on a socket, but this is not allowed by monkey-patched green sockets.
 
 Address = Tuple[str, int]
 
