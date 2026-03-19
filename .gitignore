@@ -63,7 +63,7 @@ cffi_test/
 backup/
 
 # Vectors directory
-vectors/resources/
+vectors/resources
 vectors/bz2.py
 vectors/gensim-0.13.2/
 vectors/numpy-1.11.1/
