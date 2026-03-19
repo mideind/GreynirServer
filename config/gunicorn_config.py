@@ -8,7 +8,7 @@ proc_name = os.path.basename(os.getcwd())
 
 bind = "unix:" + DIR + "gunicorn.sock"
 worker_class = "gevent"
-workers = 4
+workers = 2 if "staging" in proc_name else 4
 timeout = 120
 # Note: preload_app is not compatible with PyPy + async workers (gevent/eventlet)
 max_requests = 1000
