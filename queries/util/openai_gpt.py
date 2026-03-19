@@ -82,19 +82,26 @@ class Completion:
         """
         Creates a new completion while handling formatting and parsing.
         Newer OpenAI models require max_completion_tokens instead of
-        max_tokens; try the new parameter first and fall back to the old.
+        max_tokens. We send max_tokens (compatible with the installed
+        openai library) but catch API rejection and construct a raw
+        request with max_completion_tokens if needed.
         """
         if "max_tokens" in kwargs:
             max_val = kwargs.pop("max_tokens")
             try:
                 return client.chat.completions.create(
-                    *args, model=MODEL, max_completion_tokens=max_val, **kwargs
-                )
-            except TypeError:
-                # Older openai library doesn't support max_completion_tokens
-                return client.chat.completions.create(
                     *args, model=MODEL, max_tokens=max_val, **kwargs
                 )
+            except openai.BadRequestError as e:
+                if "max_completion_tokens" in str(e):
+                    # Model requires the new parameter name
+                    return client.chat.completions.create(
+                        *args,
+                        model=MODEL,
+                        extra_body={"max_completion_tokens": max_val},
+                        **kwargs,
+                    )
+                raise
         return client.chat.completions.create(*args, model=MODEL, **kwargs)
 
     @classmethod
