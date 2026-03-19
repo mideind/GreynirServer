@@ -116,9 +116,13 @@ def similar() -> Response:
         return better_jsonify(**resp)
 
     with SessionContext(commit=True) as session:
-        similar = Search.list_similar_to_article(session, uuid, n=MAX_SIM_ARTICLES)
+        similar, not_indexed = Search.list_similar_to_article(
+            session, uuid, n=MAX_SIM_ARTICLES
+        )
 
-        resp["payload"] = render_template("similar.html", similar=similar)
+        resp["payload"] = render_template(
+            "similar.html", similar=similar, not_indexed=not_indexed
+        )
         resp["err"] = False
 
         return better_jsonify(**resp)

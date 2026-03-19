@@ -73,13 +73,16 @@ class Search:
     @classmethod
     def list_similar_to_article(
         cls, session: Session, uuid: str, n: int
-    ) -> List[SimilarDict]:
-        """List n articles that are similar to the article with the given id"""
+    ) -> Tuple[List[SimilarDict], bool]:
+        """List n articles that are similar to the article with the given id.
+        Returns a tuple of (similar_articles, not_indexed) where not_indexed
+        is True if the article has not yet been indexed for similarity."""
         client = cls._new_client()
         try:
             result = client.list_similar_to_article(uuid, n=n + 5)
+            not_indexed: bool = result.get("not_indexed", False)
             articles: List[Tuple[str, float]] = result.get("articles", [])
-            return cls.list_articles(session, articles, n)
+            return cls.list_articles(session, articles, n), not_indexed
         finally:
             client.close()
 

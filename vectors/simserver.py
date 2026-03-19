@@ -369,6 +369,8 @@ class SimilarityServer:
                                 # Compare similarity to an article identified by UUID
                                 uuid = request["id"].strip().lower()
                                 topic = self.article_topic(uuid)
+                                if topic is None:
+                                    result["not_indexed"] = True
                             except:
                                 raise ClientError(request)
                         elif "terms" in request:

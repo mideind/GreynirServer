@@ -1,3 +1,6 @@
+{% if not_indexed %}
+<p class="similar-pending">Svipaðar greinar verða tiltækar þegar greinin hefur verið flokkuð.</p>
+{% elif similar %}
 <ul id="similarlist">
    {% for sa in similar %}
       <li>
@@ -8,3 +11,4 @@
       </li>
    {% endfor %}
 </ul>
+{% endif %}
