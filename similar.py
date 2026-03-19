@@ -42,21 +42,23 @@ from settings import Settings
 # We obtain the original, non-patched socket module so that our calls
 # to the similarity server are truly blocking.
 
+import socket
+
 if TYPE_CHECKING:
-    import socket
+    _original_socket = socket.socket
 else:
     try:
-        # gevent: get the original stdlib socket module
-        from gevent import monkey as _monkey  # type: ignore
-        socket = _monkey.get_original("socket")  # type: ignore
+        # gevent: get the original, non-patched socket class
+        from gevent.monkey import get_original  # type: ignore
+        _original_socket = get_original("socket", "socket")
     except ImportError:
         try:
-            # eventlet: get the original stdlib socket module
+            # eventlet: get the original, non-patched socket class
             import eventlet  # type: ignore
-            socket = eventlet.patcher.original("socket")  # type: ignore
+            _original_socket = eventlet.patcher.original("socket").socket  # type: ignore
         except ImportError:
-            # No async worker: use the stdlib socket directly
-            import socket
+            # No async worker: stdlib socket is already the original
+            _original_socket = socket.socket
 
 # The following two functions replicate and hack/tweak corresponding functions
 # from multiprocessing.connection. This is necessary because the original
@@ -68,7 +70,7 @@ Address = Tuple[str, int]
 
 def _SocketClient(address: Address) -> Connection:
     """Return a connection object connected to the socket given by `address`"""
-    with closing(socket.socket(socket.AF_INET)) as s:
+    with closing(_original_socket(socket.AF_INET)) as s:
         s.setblocking(True)
         s.connect(address)
         # The following cast() hack is required since Connection()
