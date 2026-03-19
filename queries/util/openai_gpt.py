@@ -82,6 +82,9 @@ class Completion:
         """
         Creates a new completion while handling formatting and parsing.
         """
+        # Newer OpenAI models use max_completion_tokens instead of max_tokens
+        if "max_tokens" in kwargs:
+            kwargs["max_completion_tokens"] = kwargs.pop("max_tokens")
         return client.chat.completions.create(*args, model=MODEL, **kwargs)
 
     @classmethod
