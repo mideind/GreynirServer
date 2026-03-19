@@ -109,11 +109,19 @@ class SimilarityServer:
         self._id_to_index: dict[str, int] = {}
         self._corpus: ReynirCorpus | None = None
 
+    # Initial allocation and growth chunk size for the topic vector matrix
+    _CHUNK_SIZE = 100_000
+
     def _load_topics(self) -> None:
-        """Load all article topics into a single NumPy matrix"""
+        """Load all article topics into a single NumPy matrix.
+        Uses chunked pre-allocation to avoid building a large
+        intermediate Python list of vectors."""
         assert self._corpus is not None
+        dims = self._corpus.dimensions
         ids: list[str] = []
-        vectors: list[list[float]] = []
+        # Pre-allocate matrix in chunks to avoid a giant Python list
+        matrix = np.empty((self._CHUNK_SIZE, dims), dtype=np.float32)
+        row = 0
         with SessionContext(commit=True, read_only=True) as session:
             print("Starting load of all article topic vectors")
             t0 = time.time()
@@ -129,9 +137,13 @@ class SimilarityServer:
             for a in q.yield_per(2000):
                 if a.topic_vector:
                     vec = json.loads(a.topic_vector)
-                    if isinstance(vec, list) and len(vec) == self._corpus.dimensions:
+                    if isinstance(vec, list) and len(vec) == dims:
+                        # Grow the matrix if needed
+                        if row >= matrix.shape[0]:
+                            matrix = np.resize(matrix, (matrix.shape[0] + self._CHUNK_SIZE, dims))
+                        matrix[row] = vec
                         ids.append(a.id)
-                        vectors.append(vec)
+                        row += 1
                     else:
                         print(
                             "Warning: faulty topic vector for article {0}".format(a.id)
@@ -139,23 +151,14 @@ class SimilarityServer:
 
             t1 = time.time()
 
-        dims = self._corpus.dimensions
-        if vectors:
-            self._matrix = np.array(vectors, dtype=np.float32)
-            # Free the temporary list before computing norms
-            del vectors
-            gc.collect()
-            # Precompute squared norms for cosine similarity
-            self._norms_sq = np.einsum("ij,ij->i", self._matrix, self._matrix)
-        else:
-            del vectors
-            self._matrix = np.empty((0, dims), dtype=np.float32)
-            self._norms_sq = np.empty((0,), dtype=np.float32)
+        # Trim the matrix to the actual number of rows
+        self._matrix = matrix[:row]
+        del matrix
+        gc.collect()
+        # Precompute squared norms for cosine similarity
+        self._norms_sq = np.einsum("ij,ij->i", self._matrix, self._matrix)
         self._ids = ids
         self._id_to_index = {aid: idx for idx, aid in enumerate(ids)}
-
-        # Release any remaining temporary memory back to the OS
-        gc.collect()
 
         print(
             "Loading of {0} topic vectors completed in {1:.2f} seconds".format(
