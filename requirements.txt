@@ -10,6 +10,8 @@ sqlalchemy2-stubs>=0.0.2a38
 sqlalchemy-stubs>=0.4
 # Server
 gevent>=24.2.1
+# Pin setuptools<82: version 82 removed pkg_resources, breaking cityloc
+setuptools>=67,<82
 # Util
 cachetools>=5.5.2
 requests>=2.32.3
