@@ -100,30 +100,47 @@ class SimilarityServer:
         self._lock: Lock = Lock()
         self._timestamp: datetime | None = None
         # Article topic vectors stored as a single (N, dims) float32 matrix
+        # The matrix may have spare rows beyond _num_rows for in-place appends
         self._matrix: NDArray[np.float32] | None = None
-        # Precomputed squared norms for each row, shape (N,)
+        # Precomputed squared norms for each row, shape (capacity,)
         self._norms_sq: NDArray[np.float32] | None = None
+        # Number of live rows in the matrix
+        self._num_rows: int = 0
+        # Allocated row capacity of the matrix
+        self._capacity: int = 0
         # Article IDs, index-aligned with matrix rows
         self._ids: list[str] = []
         # Reverse mapping: article ID -> row index
         self._id_to_index: dict[str, int] = {}
         self._corpus: ReynirCorpus | None = None
 
-    # Initial allocation and growth chunk size for the topic vector matrix
-    _CHUNK_SIZE = 100_000
+    # Spare capacity added when allocating/growing the topic vector matrix
+    _SPARE_ROWS = 10_000
 
     def _load_topics(self) -> None:
         """Load all article topics into a single NumPy matrix.
-        Uses chunked pre-allocation to avoid building a large
-        intermediate Python list of vectors."""
+        Pre-allocates based on a COUNT query to avoid repeated
+        reallocations during loading."""
         assert self._corpus is not None
         dims = self._corpus.dimensions
         ids: list[str] = []
-        # Pre-allocate matrix in chunks to avoid a giant Python list
-        matrix = np.empty((self._CHUNK_SIZE, dims), dtype=np.float32)
-        row = 0
         with SessionContext(commit=True, read_only=True) as session:
-            print("Starting load of all article topic vectors")
+            # Get an estimated row count to pre-allocate the matrix
+            est_count: int = (
+                session.query(Article)
+                .join(Root)
+                .filter(Root.visible)
+                .filter(Article.topic_vector != None)  # noqa: E711
+                .count()
+            )
+            # Allocate once, with spare capacity for new articles
+            capacity = est_count + self._SPARE_ROWS
+            matrix = np.empty((capacity, dims), dtype=np.float32)
+            row = 0
+            print(
+                "Starting load of all article topic vectors"
+                " (estimated {0})".format(est_count)
+            )
             t0 = time.time()
             # Do the next refresh from this time point
             self._timestamp = datetime.now(timezone.utc)
@@ -138,9 +155,14 @@ class SimilarityServer:
                 if a.topic_vector:
                     vec = json.loads(a.topic_vector)
                     if isinstance(vec, list) and len(vec) == dims:
-                        # Grow the matrix if needed
-                        if row >= matrix.shape[0]:
-                            matrix = np.resize(matrix, (matrix.shape[0] + self._CHUNK_SIZE, dims))
+                        if row >= capacity:
+                            # Shouldn't normally happen, but handle it
+                            capacity += self._SPARE_ROWS
+                            new_matrix = np.empty(
+                                (capacity, dims), dtype=np.float32
+                            )
+                            new_matrix[:row] = matrix[:row]
+                            matrix = new_matrix
                         matrix[row] = vec
                         ids.append(a.id)
                         row += 1
@@ -151,12 +173,16 @@ class SimilarityServer:
 
             t1 = time.time()
 
-        # Trim the matrix to the actual number of rows
-        self._matrix = matrix[:row]
-        del matrix
-        gc.collect()
+        # Keep the loading array directly — it already has spare capacity
+        # (est_count + _SPARE_ROWS) for future appends via refresh_topics.
+        self._matrix = matrix
+        self._num_rows = row
+        self._capacity = matrix.shape[0]
         # Precompute squared norms for cosine similarity
-        self._norms_sq = np.einsum("ij,ij->i", self._matrix, self._matrix)
+        self._norms_sq = np.empty(self._capacity, dtype=np.float32)
+        self._norms_sq[:row] = np.einsum(
+            "ij,ij->i", self._matrix[:row], self._matrix[:row]
+        )
         self._ids = ids
         self._id_to_index = {aid: idx for idx, aid in enumerate(ids)}
 
@@ -170,7 +196,7 @@ class SimilarityServer:
         """Return the topic vector of the article having the given uuid,
         or None if no such article exists"""
         idx = self._id_to_index.get(article_id)
-        if idx is None or self._matrix is None:
+        if idx is None or self._matrix is None or idx >= self._num_rows:
             return None
         return self._matrix[idx]
 
@@ -180,10 +206,25 @@ class SimilarityServer:
             # Can't serve queries while we're doing this
             self._load_topics()
 
+    def _grow_matrix(self, needed: int) -> None:
+        """Grow the matrix and norms arrays to accommodate `needed` new rows."""
+        assert self._matrix is not None
+        assert self._norms_sq is not None
+        dims = self._matrix.shape[1]
+        new_capacity = self._capacity + max(needed, self._SPARE_ROWS)
+        new_matrix = np.empty((new_capacity, dims), dtype=np.float32)
+        new_matrix[: self._num_rows] = self._matrix[: self._num_rows]
+        new_norms = np.empty(new_capacity, dtype=np.float32)
+        new_norms[: self._num_rows] = self._norms_sq[: self._num_rows]
+        self._matrix = new_matrix
+        self._norms_sq = new_norms
+        self._capacity = new_capacity
+        gc.collect()
+
     def refresh_topics(self) -> None:
         """Load any new or updated article topics into the matrix.
         Existing articles are updated in-place; new articles are
-        appended in a single batch operation."""
+        appended into spare capacity without reallocating."""
         assert self._corpus is not None
         assert self._matrix is not None
         assert self._norms_sq is not None
@@ -200,8 +241,7 @@ class SimilarityServer:
                 )
                 self._timestamp = ts
                 updated: int = 0
-                new_ids: list[str] = []
-                new_vectors: list[list[float]] = []
+                new_count: int = 0
                 for a in q.yield_per(100):
                     if a.topic_vector:
                         vec = json.loads(a.topic_vector)
@@ -217,34 +257,27 @@ class SimilarityServer:
                                 self._norms_sq[idx] = np.dot(row, row)
                                 updated += 1
                             else:
-                                # Accumulate for batch append
-                                new_ids.append(a.id)
-                                new_vectors.append(vec)
+                                # Append new row, growing if needed
+                                if self._num_rows >= self._capacity:
+                                    self._grow_matrix(1)
+                                row = np.array(vec, dtype=np.float32)
+                                self._matrix[self._num_rows] = row
+                                self._norms_sq[self._num_rows] = np.dot(
+                                    row, row
+                                )
+                                self._id_to_index[a.id] = self._num_rows
+                                self._ids.append(a.id)
+                                self._num_rows += 1
+                                new_count += 1
                         else:
                             print(
                                 "Warning: faulty topic vector for article {0}".format(
                                     a.id
                                 )
                             )
-                # Append new vectors in a single batch
-                if new_vectors:
-                    new_matrix = np.array(new_vectors, dtype=np.float32)
-                    new_norms = np.einsum(
-                        "ij,ij->i", new_matrix, new_matrix
-                    )
-                    self._matrix = np.concatenate(
-                        [self._matrix, new_matrix]
-                    )
-                    self._norms_sq = np.concatenate(
-                        [self._norms_sq, new_norms]
-                    )
-                    base_idx = len(self._ids)
-                    for i, aid in enumerate(new_ids):
-                        self._id_to_index[aid] = base_idx + i
-                    self._ids.extend(new_ids)
                 print(
                     "Completed refresh_topics, {0} updated, {1} new".format(
-                        updated, len(new_ids)
+                        updated, new_count
                     )
                 )
 
@@ -257,16 +290,19 @@ class SimilarityServer:
         if vector is None or len(vector) == 0 or all(e == 0.0 for e in vector):
             return []
         with self._lock:
-            if self._matrix is None or len(self._ids) == 0:
+            if self._matrix is None or self._num_rows == 0:
                 return []
             base = np.array(vector, dtype=np.float32)
             norm_base_sq = np.dot(base, base)
             if norm_base_sq < 1.0e-6:
                 return []
+            # Use only the live rows of the matrix
+            live_matrix = self._matrix[: self._num_rows]
+            live_norms = self._norms_sq[: self._num_rows]
             # Compute all dot products in one matrix-vector multiply
-            dot_products = self._matrix @ base
+            dot_products = live_matrix @ base
             # Cosine similarity: dot(v, base) / sqrt(|v|^2 * |base|^2)
-            denominators = np.sqrt(self._norms_sq * norm_base_sq)
+            denominators = np.sqrt(live_norms * norm_base_sq)
             # Avoid division by zero for any zero-norm vectors
             with np.errstate(divide="ignore", invalid="ignore"):
                 similarities = dot_products / denominators
@@ -275,7 +311,7 @@ class SimilarityServer:
                 similarities, copy=False, nan=-1.0, posinf=-1.0, neginf=-1.0
             )
             # Efficiently select top N using argpartition
-            if n >= len(self._ids):
+            if n >= self._num_rows:
                 top_indices = np.argsort(similarities)[::-1]
             else:
                 top_indices = np.argpartition(similarities, -n)[-n:]
