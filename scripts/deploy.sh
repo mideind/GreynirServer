@@ -44,8 +44,7 @@ cd $DEST || exit 1
 
 # shellcheck disable=SC1091
 source "venv/bin/activate"
-pip install --upgrade pip wheel setuptools
-pip install --upgrade -r requirements.txt
+pip install -r requirements.txt
 deactivate
 
 echo "Removing binary grammar files"
@@ -105,8 +104,7 @@ if [[ "$MODE" = "PRODUCTION" ]]; then
     echo "Updating similarity server dependencies..."
     # shellcheck disable=SC1091
     source "$SRC/vectors/venv/bin/activate"
-    pip install --upgrade pip wheel setuptools
-    pip install --upgrade -r "$SRC/vectors/requirements.txt"
+    pip install -r "$SRC/vectors/requirements.txt"
     deactivate
 
     echo "Restarting similarity server..."
