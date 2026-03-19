@@ -63,6 +63,7 @@
 
 from __future__ import annotations
 
+import gc
 import json
 import time
 import sys
@@ -141,13 +142,20 @@ class SimilarityServer:
         dims = self._corpus.dimensions
         if vectors:
             self._matrix = np.array(vectors, dtype=np.float32)
+            # Free the temporary list before computing norms
+            del vectors
+            gc.collect()
             # Precompute squared norms for cosine similarity
             self._norms_sq = np.einsum("ij,ij->i", self._matrix, self._matrix)
         else:
+            del vectors
             self._matrix = np.empty((0, dims), dtype=np.float32)
             self._norms_sq = np.empty((0,), dtype=np.float32)
         self._ids = ids
         self._id_to_index = {aid: idx for idx, aid in enumerate(ids)}
+
+        # Release any remaining temporary memory back to the OS
+        gc.collect()
 
         print(
             "Loading of {0} topic vectors completed in {1:.2f} seconds".format(
