@@ -1644,7 +1644,7 @@ class DVScraper(ScrapeHelper):
             heading = heading[: -len(suffix)].strip()
 
         # Extract the publication time from the article:published_time meta property
-        timestamp = _now()
+        timestamp: Optional[datetime] = None
         try:
             ts = ScrapeHelper.meta_property(soup, "article:published_time")
             if ts:
@@ -1660,6 +1660,37 @@ class DVScraper(ScrapeHelper):
         except Exception:
             pass
 
+        if timestamp is None:
+            # The Drupal layout (June 2026 onwards) carries no
+            # article:published_time meta property, no <time> element and no
+            # JSON-LD. The only publication date on the page is the rendered
+            # Icelandic date line, e.g. "Þriðjudaginn 28. júlí 2026 17:30".
+            date_div = ScrapeHelper.div_class(soup, "article-date")
+            if date_div:
+                datestr = date_div.get_text(" ", strip=True)
+                try:
+                    m = re.search(
+                        r"(\d{1,2})\.\s+([^\s]+)\s+(\d{4})(?:\s+(\d{1,2}):(\d{2}))?",
+                        datestr,
+                    )
+                    if m:
+                        timestamp = datetime(
+                            year=int(m.group(3)),
+                            month=MONTHS.index(m.group(2).lower()) + 1,
+                            day=int(m.group(1)),
+                            hour=int(m.group(4) or 0),
+                            minute=int(m.group(5) or 0),
+                            tzinfo=timezone.utc,
+                        )
+                except Exception as e:
+                    logging.warning(
+                        f"Exception obtaining date of dv.is article "
+                        f"from '{datestr}': {e}"
+                    )
+
+        if timestamp is None:
+            timestamp = _now()
+
         metadata.heading = heading
         metadata.author = author
         metadata.timestamp = timestamp
@@ -1668,8 +1699,16 @@ class DVScraper(ScrapeHelper):
 
     def get_content(self, soup: BeautifulSoup) -> Optional[Tag]:
         """Find the article content (main text) in the soup"""
-        content = ScrapeHelper.div_class(soup, "textinn")
+        # dv.is migrated from WordPress to Drupal on 2026-06-18; the article
+        # body is now a 'field--name-body' div. Scope the lookup to the article
+        # node, because the same class is also used by two footer blocks.
+        node = ScrapeHelper.div_class(soup, "node__content")
+        content = ScrapeHelper.div_class(node, "field--name-body") if node else None
         if not content:
+            # Pre-2026-06-18 layout
+            content = ScrapeHelper.div_class(soup, "textinn")
+        if not content:
+            logging.warning("Could not find article content in dv.is article")
             return BeautifulSoup("", _HTML_PARSER)  # Return empty soup.
 
         for t in content.find_all("style"):
@@ -2175,6 +2214,7 @@ class HeimildinScraper(ScrapeHelper):
         """Find the article content (main text) in the soup."""
         content = ScrapeHelper.div_class(soup, "article__body")
         if not content:
+            logging.warning("Could not find article content in heimildin.is article")
             return BeautifulSoup("")
         for elm in content.find_all("figure"):
             elm.decompose()
@@ -2223,5 +2263,6 @@ class SamstodinScraper(ScrapeHelper):
         """Find the article content (main text) in the soup."""
         content = ScrapeHelper.div_class(soup, "entry-content")
         if not content:
+            logging.warning("Could not find article content in samstodin.is article")
             return BeautifulSoup("")
         return content
