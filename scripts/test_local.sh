@@ -109,5 +109,6 @@ echo "==> Populating test data"
 psql_test -q -d scraper -f tests/files/populate_testdb.sql >/dev/null
 
 echo "==> Running pytest against port $TESTDB_PORT"
-GREYNIR_DB_PORT="$TESTDB_PORT" ICESPEAK_KEYS_DIR="resources/" \
-    uv run python -m pytest "$@"
+# ICESPEAK_KEYS_DIR is not set here: utility.py points icespeak at resources/
+# unconditionally, so setting it would be a no-op.
+GREYNIR_DB_PORT="$TESTDB_PORT" uv run python -m pytest "$@"
