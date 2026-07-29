@@ -70,6 +70,14 @@ dev = [
     "sqlalchemy-stubs>=0.4",
 ]
 
+[tool.pytest.ini_options]
+# Confine collection to tests/. Without this, pytest walks the whole repository
+# from its rootdir, which picks up any local virtualenv or interpreter tree
+# (e.g. a pypy/ or venv/ directory) and puts vendored third-party packages on
+# sys.path, where they shadow the real ones. CI never hit this because its
+# checkout is clean, but any developer with a local interpreter directory did.
+testpaths = ["tests"]
+
 [tool.uv]
 # GreynirServer is an application, not an installable library: modules live at
 # the repository root and are run in place. Tell uv to manage the environment
