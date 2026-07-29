@@ -1,3 +1,9 @@
+# NOTE: dependencies are now declared in pyproject.toml, and CI installs from
+# uv.lock. This file is kept only because scripts/deploy.sh still does
+# `pip install -r requirements.txt` against the production venv, which is not
+# yet on PyPy 3.11. Keep it in sync with pyproject.toml by hand until deploy.sh
+# moves to `uv sync`, at which point this file should be deleted.
+
 # Flask
 werkzeug>=2.3.7
 Flask==2.3.3

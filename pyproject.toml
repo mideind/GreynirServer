@@ -1,0 +1,80 @@
+[project]
+name = "greynir-server"
+# GreynirServer is deployed from a git checkout, not published to an index, so
+# this version is not currently meaningful to anything -- the running versions
+# reported in the UI come from GreynirEngine and Tokenizer.
+version = "1.0.0"
+description = "Web API and frontend for Greynir, natural language processing for Icelandic"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "GPL-3.0-or-later"
+authors = [{ name = "Miðeind ehf." }]
+
+dependencies = [
+    # Flask
+    "werkzeug>=2.3.7",
+    "Flask==2.3.3",
+    "flask-caching>=2.3.1",
+    "Flask-Cors>=5.0.1",
+    # DB
+    "psycopg2cffi==2.9.0",
+    "SQLAlchemy==1.4.54",
+    # Server
+    "gevent>=24.2.1",
+    # Pin setuptools<82: version 82 removed pkg_resources, breaking cityloc
+    "setuptools>=67,<82",
+    # Util
+    "cachetools>=5.5.2",
+    "requests>=2.32.3",
+    "typing-extensions>=4.13.2",
+    "python-dotenv>=1.1.0",
+    # Scraping
+    "beautifulsoup4==4.13.4",
+    "feedparser==6.0.11",
+    # Query modules
+    "pytz==2025.2",
+    "timezonefinder==6.5.9",
+    "rjsmin>=1.2.4",
+    "python-youtube==0.9.1",
+    "country-list>=1.1.0",
+    # For OpenAI GPT support.
+    # openai>=1.40 requires jiter, which needs Rust and fails to build on PyPy.
+    # httpx<0.28 because openai only stopped passing proxies= in 1.55.3.
+    "openai>=1.14.3,<1.40",
+    "httpx>=0.27.2,<0.28",
+    # Ours
+    "reynir>=3.5.7",
+    "islenska>=1.0.3",
+    # Pinned to a branch: newer Icespeak requires grpcio, which doesn't work
+    # under PyPy. See [tool.uv.sources] below.
+    "icespeak",
+    "iceaddr>=0.5.8",
+    "iceweather>=0.2.3",
+    "cityloc>=0.1.1",
+    "straeto>=1.4.1",
+]
+
+[project.urls]
+Homepage = "https://greynir.is"
+Repository = "https://github.com/mideind/GreynirServer"
+
+[dependency-groups]
+# Installed by `uv sync`, excluded by `uv sync --no-dev` (i.e. in production).
+dev = [
+    "pytest>=8.0",
+    "curlylint>=0.13",
+    # Type stubs, consumed by pyright/pylance. These are never imported at
+    # runtime, and sqlalchemy-stubs declares mypy as a dependency, which drags
+    # in a Rust/PyO3 extension -- so keep them out of the production install.
+    "sqlalchemy2-stubs>=0.0.2a38",
+    "sqlalchemy-stubs>=0.4",
+]
+
+[tool.uv]
+# GreynirServer is an application, not an installable library: modules live at
+# the repository root and are run in place. Tell uv to manage the environment
+# without trying to build or install the project itself.
+package = false
+
+[tool.uv.sources]
+icespeak = { git = "https://github.com/mideind/Icespeak", branch = "greynir" }
