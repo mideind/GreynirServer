@@ -54,8 +54,11 @@ jobs:
     - name: Install dependencies
       run: |
         pip install uv
-        uv pip install --system --upgrade wheel "setuptools<82" pytest curlylint
-        uv pip install --system --upgrade -r requirements.txt
+        # --frozen: install exactly what uv.lock pins, and fail rather than
+        # silently re-resolving if the lock is out of date with pyproject.toml.
+        # Bind to the interpreter setup-python provisioned above, so uv does
+        # not go and fetch a different one.
+        uv sync --frozen --python "$(which python)"
         sudo npm i -g jshint
         sudo apt-get install shellcheck
     - name: Set up database
@@ -70,7 +73,7 @@ jobs:
         PGPASSWORD=postgres psql -h localhost -U postgres -c "create database scraper with encoding 'UTF8' TEMPLATE=template0;"
         PGPASSWORD=postgres psql -h localhost -U postgres -d scraper -c "create extension if not exists \"uuid-ossp\";"
         PGPASSWORD=postgres psql -h localhost -U postgres -d scraper -c "alter database scraper owner to reynir;"
-        python scraper.py --init
+        uv run scraper.py --init
         psql -f tests/files/populate_testdb.sql postgresql://postgres:postgres@localhost:5432/scraper
     - name: Create API keys
       run: |
@@ -80,11 +83,11 @@ jobs:
         echo '${{ secrets.AZURE_KEY_JSON }}' > "resources/AzureSpeechServerKey.json"
     - name: Test with pytest
       run: |
-        ICESPEAK_KEYS_DIR="resources/" python -m pytest -vvvrP --log-level=DEBUG
+        ICESPEAK_KEYS_DIR="resources/" uv run python -m pytest -vvvrP --log-level=DEBUG
     - name: Run curlylint on templates
       run: |
-        curlylint templates/*
-        curlylint templates/*/*
+        uv run curlylint templates/*
+        uv run curlylint templates/*/*
     - name: Run jshint on JavaScript files
       run: |
         jshint static/js/common.js
