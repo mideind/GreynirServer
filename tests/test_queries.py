@@ -604,6 +604,10 @@ def test_atm(client: FlaskClient) -> None:
     _query_data_cleanup()  # Remove any data logged to DB on account of tests
 
 
+@pytest.mark.skip(
+    reason="arionbanki.is XML export is currently malformed; re-enable once the "
+    "currency module is updated to the new format"
+)
 def test_currency(client: FlaskClient) -> None:
     """Currency module."""
 
