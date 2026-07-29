@@ -83,7 +83,7 @@ jobs:
         echo '${{ secrets.AZURE_KEY_JSON }}' > "resources/AzureSpeechServerKey.json"
     - name: Test with pytest
       run: |
-        ICESPEAK_KEYS_DIR="resources/" uv run python -m pytest -vvvrP --log-level=DEBUG
+        uv run python -m pytest -vvvrP --log-level=DEBUG
     - name: Run curlylint on templates
       run: |
         uv run curlylint templates/*

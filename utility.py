@@ -22,6 +22,7 @@
 """
 from typing import Any, Dict, List, Optional
 
+import os
 import json
 import string
 import logging
@@ -35,6 +36,20 @@ GREYNIR_ROOT_DIR: Path = Path(__file__).parent.resolve()
 CONFIG_DIR = GREYNIR_ROOT_DIR / "config"
 
 RESOURCES_DIR = GREYNIR_ROOT_DIR / "resources"
+
+# Tell icespeak where our API keys live. Its own default is a relative "keys"
+# directory, which this project has never had -- the keys are in resources/.
+# icespeak reads this at import time and asserts that at least one speech
+# engine is configured, so without it any import of icespeak fails outright
+# with "No voices available". Deployments used to paper over this by setting
+# ICESPEAK_KEYS_DIR in .env, which meant a fresh checkout could not run the
+# server or the tests without one. Set it unconditionally, and to an absolute
+# path, so it holds no matter the working directory.
+#
+# NB: this must be set before icespeak is first imported. utility is imported
+# early by main.py (well before routes, which pulls in icespeak), so importing
+# utility is what guarantees the ordering.
+os.environ["ICESPEAK_KEYS_DIR"] = str(RESOURCES_DIR)
 
 STATIC_DIR = GREYNIR_ROOT_DIR / "static"
 TTS_AUDIO_DIR = STATIC_DIR / "audio" / "tmp"
