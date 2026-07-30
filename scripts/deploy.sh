@@ -31,6 +31,37 @@ if [[ "$1" = "staging" ]]; then
     SERVICE="staging"
 fi
 
+# Fail closed before doing anything, rather than part way through.
+#
+# errexit is disabled above, so a user who cannot write the deployment would
+# otherwise watch every cp and pip install fail in turn while the script
+# carried on regardless -- and still reach the `sudo systemctl restart` at the
+# end, restarting the service after copying nothing. Deriving SRC from the
+# script's own location made that reachable: the previous hardcoded
+# SRC=~/github/Greynir aborted at `cd $SRC` for anyone but the deployment
+# owner, which failed closed by accident rather than by design.
+#
+# Checking $DEST alone is not enough. On production it is group-writable
+# (drwxrwxr-x greynir:greynir), so anyone in the greynir group passes, while
+# the files inside -- owned by greynir, mode 0644/0755 -- do not. Test the
+# things actually written instead.
+if [[ ! -f "$SRC/main.py" ]]; then
+    echo "Error: $SRC does not look like a Greynir checkout (no main.py)." >&2
+    exit 1
+fi
+
+for target in "$DEST" "$DEST/main.py" "$DEST/config" "$DEST/scrapers"; do
+    if [[ ! -e "$target" ]]; then
+        echo "Error: $target does not exist. Is $DEST a deployment?" >&2
+        exit 1
+    fi
+    if [[ ! -w "$target" ]]; then
+        echo "Error: $target is not writable by $(id -un)." >&2
+        echo "Run scripts/deploy.sh as the user owning the deployment (greynir)." >&2
+        exit 1
+    fi
+done
+
 read -rp "This will deploy Greynir to **${MODE}**. Confirm? (y/n): " CONFIRMED
 
 if [[ "$CONFIRMED" != "y" ]]; then
