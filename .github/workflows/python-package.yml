@@ -39,7 +39,11 @@ jobs:
       # single version is exactly when the others' results are most informative.
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "pypy3.11"]
+        # CPython 3.12 and PyPy 3.11 only. Running CPython 3.11 as well was
+        # redundant: PyPy 3.11 implements the 3.11 language level, so the
+        # requires-python = ">=3.11" floor stays covered, and PyPy is the
+        # implementation that actually runs this code in production.
+        python-version: ["3.12", "pypy3.11"]
 
     steps:
     - uses: actions/checkout@v4
