@@ -13,7 +13,13 @@
 # set -o nounset   # Disallow unset variables
 # set -o pipefail  # Pipeline command fails if any command fails
 
-SRC=~/github/Greynir
+# Repository root, derived from this script's own location rather than a
+# hardcoded path under $HOME. The old value was ~/github/Greynir, which broke
+# in two ways: it depended on which user ran the script, and it did not survive
+# the repository being renamed from Greynir to GreynirServer. Since errexit is
+# disabled below, a wrong SRC does not abort the run -- it silently deploys
+# whatever happens to be in the current directory instead.
+SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 MODE="PRODUCTION"
 DEST="/usr/share/nginx/greynir.is" # Production
 SERVICE="greynir"
@@ -34,7 +40,7 @@ fi
 
 echo "Deploying $SRC to $DEST..."
 
-cd $SRC || exit 1
+cd "$SRC" || exit 1
 
 cp requirements.txt $DEST/requirements.txt
 
@@ -51,7 +57,7 @@ echo "Removing binary grammar files"
 rm venv/site-packages/reynir/Greynir.grammar.bin
 rm venv/site-packages/reynir/Greynir.grammar.query.bin
 
-cd $SRC || exit 1
+cd "$SRC" || exit 1
 
 echo "Copying files"
 
