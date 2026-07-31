@@ -417,7 +417,9 @@
    function fetchSummaries() {
       const errmsg = "Ekki tókst að sækja samantekt.";
       serverQuery('/summary.api',
-         { id: "{{ article.uuid | safe }}" },
+         // The token authorizes generating a summary that is not already
+         // stored; without it the server returns only what it has cached
+         { id: "{{ article.uuid | safe }}", t: "{{ summary_token }}" },
          (resp) => {
             summaryLanguage = "is_IS";
             if (resp && resp.summary) {

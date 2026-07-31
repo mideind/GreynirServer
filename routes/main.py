@@ -46,6 +46,7 @@ from images import Img, get_image_url, update_broken_image_url, blacklist_image_
 
 from . import routes, max_age, cache, better_jsonify, restricted, Response
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH, MAX_TEXT_LENGTH_VIA_URL
+from .summary_token import make_summary_token
 
 
 # Default text shown in the URL/text box
@@ -170,8 +171,19 @@ def page() -> Union[Response, str]:
         )
         topics = [dict(name=t.topic.name, id=t.topic.identifier) for t in topics]
 
+        # The page's own JavaScript hands this back to /summary.api to
+        # authorize generating a summary that is not already stored.
+        # Note this response must stay uncacheable: nginx has proxy_cache on
+        # location /, and it only declines to cache /page because we send no
+        # cache headers. Adding @max_age here would let one token be served
+        # to many clients and go stale, silently ending summary generation.
         return render_template(
-            "page.html", title=a.heading, article=a, register=register, topics=topics
+            "page.html",
+            title=a.heading,
+            article=a,
+            register=register,
+            topics=topics,
+            summary_token=make_summary_token(a.uuid),
         )
 
 

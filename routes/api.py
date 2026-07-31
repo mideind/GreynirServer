@@ -51,6 +51,7 @@ from utility import read_txt_api_key, icelandic_asciify, TTS_AUDIO_DIR
 
 from . import routes, better_jsonify, text_from_request, bool_from_request
 from . import MAX_URL_LENGTH, MAX_UUID_LENGTH
+from .summary_token import check_summary_token
 
 
 @routes.route("/ifdtag.api", methods=["GET", "POST"])
@@ -271,7 +272,11 @@ def summary_api(version: int = 1) -> Response:
                 summary_rows[s.language] = s
         # Find out which summaries are missing
         missing = [k for k, v in summary_rows.items() if v is None]
-        if missing:
+        # Generating a missing summary calls a paid LLM API, so it takes a
+        # token minted when the article's page was rendered. Callers without
+        # one still get whatever summaries are already stored, so reading
+        # stays open; only generation is gated. See routes/summary_token.py.
+        if missing and check_summary_token(a.uuid, rv.get("t")):
             # At least one summary is missing: generate it
             now = datetime.now(timezone.utc)
             # Collect the text of the article from the tokens
