@@ -316,6 +316,10 @@ def summary_api(version: int = 1) -> Response:
             num_sentences=a.num_sentences,
             topics=topics,
             summary={k: v.summary for k, v in summary_rows.items() if v},
+            # Whether this article is inside the generation window at all, so
+            # a client with no summary to show can tell "too old to summarise"
+            # apart from an outright failure and say so
+            summarizable=article_is_recent(a.timestamp),
         )
 
 

@@ -416,16 +416,24 @@
 
    function fetchSummaries() {
       const errmsg = "Ekki tókst að sækja samantekt.";
+      // Shown when the article is outside the summarization window, rather
+      // than an error: nothing went wrong, we just do not summarize old news
+      const oldmsg = "Samantektir eru aðeins fáanlegar fyrir nýlegar fréttir.";
       serverQuery('/summary.api',
          // The token authorizes generating a summary that is not already
          // stored; without it the server returns only what it has cached
          { id: "{{ article.uuid | safe }}", t: "{{ summary_token }}" },
          (resp) => {
             summaryLanguage = "is_IS";
-            if (resp && resp.summary) {
-               // We have a valid set of summaries
-               currentSummary = resp.summary;
+            // Note an empty summary object is truthy, so it must be tested
+            // for content rather than existence
+            const summary = (resp && resp.summary) || {};
+            if (Object.keys(summary).length > 0) {
+               // We have at least one summary to show
+               currentSummary = summary;
                createSummaryDiv();
+            } else if (resp && resp.summarizable === false) {
+               $("#summary").html("<p>" + oldmsg + "</p>");
             } else {
                $("#summary").html("<p>" + errmsg + "</p>");
             }
@@ -438,27 +446,43 @@
    // Create a div for summaries where the user can select a language
    // from icons on the right hand side
    function createSummaryDiv() {
+      // Only offer languages we actually hold. An older article keeps the
+      // summaries it already had, which may not be all three, and those gaps
+      // are no longer filled in on view now that generation is limited to
+      // recent articles - so an unconditional flag row would offer languages
+      // that silently show nothing.
+      const flags = {
+         // Icelandic, UK and Polish flag icon images
+         "is_IS": "{{ url_for('static', filename='img/flags/IS.png') }}",
+         "en_US": "{{ url_for('static', filename='img/flags/GB.png') }}",
+         "pl_PL": "{{ url_for('static', filename='img/flags/PL.png') }}"
+      };
+      const available = Object.keys(flags).filter((l) => currentSummary[l]);
+      if (!available.length) {
+         return;
+      }
+      if (available.indexOf(summaryLanguage) === -1) {
+         // Preferred language is missing for this article; show what we have
+         summaryLanguage = available[0];
+      }
       const lang = summaryLanguage;
+      let langHtml = "";
+      if (available.length > 1) {
+         // A selector offering a single language is just clutter
+         available.forEach((l) => {
+            langHtml +=
+               "<div class='lang' id='" + l + "'>" +
+                  "<img src='" + flags[l] + "' />" +
+               "</div>";
+         });
+      }
       const html =
          "<div class='summary-wrapper'>" +
             "<div id='summary-text'>" +
                "<p>" + (currentSummary[lang] || "") + "</p>" +
             "</div>" +
             "<div>" +
-               "<div id='summary-langs'>" +
-                  "<div class='lang' id='is_IS'>" +
-                     // Icelandic flag icon image
-                     "<img src='{{ url_for('static', filename='img/flags/IS.png') }}' />" +
-                  "</div>" +
-                  "<div class='lang' id='en_US'>" +
-                     // UK flag icon image
-                     "<img src='{{ url_for('static', filename='img/flags/GB.png') }}' />" +
-                  "</div>" +
-                  "<div class='lang' id='pl_PL'>" +
-                     // Polish flag icon image
-                     "<img src='{{ url_for('static', filename='img/flags/PL.png') }}' />" +
-                  "</div>" +
-               "</div>" +
+               "<div id='summary-langs'>" + langHtml + "</div>" +
             "</div>" +
          "</div>";
       $("#summary").html(html);
