@@ -28,21 +28,12 @@
 
 from typing import Iterable, Iterator, Optional, List, Tuple, TypedDict
 
-from contextlib import contextmanager
 from datetime import datetime, timedelta
-from threading import Lock
 
 from settings import Settings
 from db import Session
 from db.models import Root, Article
 from similar import SimilarityClient
-
-# One similarity connection per worker process, shared by all greenlets in it.
-# See Search._client() for why this is a lock rather than a pool. Under gevent
-# these are monkey-patched, so the lock yields the hub instead of blocking the
-# OS thread; unpatched (the batch pipeline) it is an ordinary thread lock.
-_SIM_CLIENT: Optional[SimilarityClient] = None
-_SIM_CLIENT_LOCK = Lock()
 
 
 class SimilarDict(TypedDict):
@@ -74,41 +65,10 @@ class Search:
         pass
 
     @classmethod
-    @contextmanager
-    def _client(cls) -> Iterator[SimilarityClient]:
-        """Yield the process-wide similarity client, held under a lock.
-
-        A fresh SimilarityClient used to be built and closed per request, to
-        stop two greenlets interleaving send/recv on one connection and
-        desynchronising the protocol. That hazard is real, but the cure was
-        expensive: every /similar opened and closed a TCP connection, and the
-        server spawns a *thread per connection*. At the observed ~285
-        requests/minute that is ~285 connect/thread/teardown cycles a minute,
-        plus two syslog lines each — the bulk of a 476 MB /var/log/syslog.
-
-        Serialising on a lock costs no throughput, because the server already
-        computes every similarity query under one global lock: concurrent
-        connections queue there regardless. One connection per worker is
-        therefore exactly as parallel as N were, without the churn. Do not
-        "improve" this into a pool until that server-side lock is narrowed.
-
-        The client self-heals — _connect() is idempotent and _retry_list()
-        reconnects when the server has dropped an idle connection. Any other
-        exception may leave the stream mid-message, so the connection is
-        discarded and rebuilt rather than reused.
-        """
-        global _SIM_CLIENT
-        with _SIM_CLIENT_LOCK:
-            if _SIM_CLIENT is None:
-                _SIM_CLIENT = SimilarityClient()
-            try:
-                yield _SIM_CLIENT
-            except Exception:
-                try:
-                    _SIM_CLIENT.close()
-                finally:
-                    _SIM_CLIENT = None
-                raise
+    def _new_client(cls) -> SimilarityClient:
+        """Create a new similarity client for each request to avoid
+        connection sharing issues between concurrent greenlets/threads"""
+        return SimilarityClient()
 
     @classmethod
     def list_similar_to_article(
@@ -117,21 +77,27 @@ class Search:
         """List n articles that are similar to the article with the given id.
         Returns a tuple of (similar_articles, not_indexed) where not_indexed
         is True if the article has not yet been indexed for similarity."""
-        with cls._client() as client:
+        client = cls._new_client()
+        try:
             result = client.list_similar_to_article(uuid, n=n + 5)
             not_indexed: bool = result.get("not_indexed", False)
             articles: List[Tuple[str, float]] = result.get("articles", [])
-        return cls.list_articles(session, articles, n), not_indexed
+            return cls.list_articles(session, articles, n), not_indexed
+        finally:
+            client.close()
 
     @classmethod
     def list_similar_to_topic(
         cls, session: Session, topic_vector: List[float], n: int
     ) -> List[SimilarDict]:
         """List n articles that are similar to the given topic vector"""
-        with cls._client() as client:
+        client = cls._new_client()
+        try:
             result = client.list_similar_to_topic(topic_vector, n=n + 5)
             articles: List[Tuple[str, float]] = result.get("articles", [])
-        return cls.list_articles(session, articles, n)
+            return cls.list_articles(session, articles, n)
+        finally:
+            client.close()
 
     @classmethod
     def list_similar_to_terms(
@@ -139,13 +105,16 @@ class Search:
     ) -> WeightsDict:
         """List n articles that are similar to the given terms. The
         terms are expected to be a list of (stem, category) tuples."""
-        with cls._client() as client:
+        client = cls._new_client()
+        try:
             result = client.list_similar_to_terms(terms, n=n + 5)
             articles: List[Tuple[str, float]] = result.get("articles", [])
             weights: List[float] = result.get("weights", [])
-        return WeightsDict(
-            weights=weights, articles=cls.list_articles(session, articles, n)
-        )
+            return WeightsDict(
+                weights=weights, articles=cls.list_articles(session, articles, n)
+            )
+        finally:
+            client.close()
 
     @classmethod
     def list_articles(
