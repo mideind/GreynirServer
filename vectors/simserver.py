@@ -195,10 +195,18 @@ class SimilarityServer:
     def article_topic(self, article_id: str) -> NDArray[np.float32] | None:
         """Return the topic vector of the article having the given uuid,
         or None if no such article exists"""
-        idx = self._id_to_index.get(article_id)
-        if idx is None or self._matrix is None or idx >= self._num_rows:
-            return None
-        return self._matrix[idx]
+        # Snapshot under the lock. Reading _id_to_index and _matrix without it
+        # can pair an index from a newer generation with an older, smaller
+        # matrix. A copy rather than a view, because the caller passes this
+        # straight to find_similar() and refresh_topics() may rewrite the row
+        # in place in between; 200 float32 is 800 bytes.
+        with self._lock:
+            matrix = self._matrix
+            num_rows = self._num_rows
+            idx = self._id_to_index.get(article_id)
+            if idx is None or matrix is None or idx >= num_rows:
+                return None
+            return matrix[idx].copy()
 
     def reload_topics(self) -> None:
         """Reload all article topic vectors from the database"""
@@ -289,38 +297,64 @@ class SimilarityServer:
         Uses vectorized matrix multiplication for efficient computation."""
         if vector is None or len(vector) == 0 or all(e == 0.0 for e in vector):
             return []
+        # Hold the lock only long enough to capture a consistent view of the
+        # matrix and its metadata, then release it. The matrix-vector product
+        # below dominates a query -- it streams the whole matrix, ~1.2 GB at
+        # 1.5M x 200 float32 -- and numpy releases the GIL while it runs, so
+        # computing under the lock serialised every client for no reason.
+        #
+        # This is safe because no writer invalidates a captured snapshot:
+        #   * _grow_matrix() rebinds self._matrix and self._norms_sq to freshly
+        #     allocated arrays; a reader holding the previous ones keeps them
+        #     alive and internally consistent.
+        #   * refresh_topics() appends at indices >= the num_rows captured
+        #     here, which this reader never looks at.
+        #   * reload_topics() rebinds everything, leaving this reader an older
+        #     but still coherent generation.
+        # Capturing all four together is the part that matters: reading
+        # _num_rows separately from _matrix could pair a new row count with an
+        # older, shorter matrix, leaving live_matrix and live_norms different
+        # lengths and raising in the division below.
+        #
+        # One race is accepted knowingly: refresh_topics() rewrites existing
+        # rows in place, so a reader can observe a row half-updated and score
+        # that single article wrongly. Harmless for a similar-articles list,
+        # and rare -- refreshes are typically all-new, no updates. Removing it
+        # would mean copy-on-write on update, doubling peak memory by 1.2 GB.
         with self._lock:
-            if self._matrix is None or self._num_rows == 0:
-                return []
-            base = np.array(vector, dtype=np.float32)
-            norm_base_sq = np.dot(base, base)
-            if norm_base_sq < 1.0e-6:
-                return []
-            # Use only the live rows of the matrix
-            live_matrix = self._matrix[: self._num_rows]
-            live_norms = self._norms_sq[: self._num_rows]
-            # Compute all dot products in one matrix-vector multiply
-            dot_products = live_matrix @ base
-            # Cosine similarity: dot(v, base) / sqrt(|v|^2 * |base|^2)
-            denominators = np.sqrt(live_norms * norm_base_sq)
-            # Avoid division by zero for any zero-norm vectors
-            with np.errstate(divide="ignore", invalid="ignore"):
-                similarities = dot_products / denominators
-            # Replace NaN/inf with -1 so they won't appear in top N
-            np.nan_to_num(
-                similarities, copy=False, nan=-1.0, posinf=-1.0, neginf=-1.0
-            )
-            # Efficiently select top N using argpartition
-            if n >= self._num_rows:
-                top_indices = np.argsort(similarities)[::-1]
-            else:
-                top_indices = np.argpartition(similarities, -n)[-n:]
-                top_indices = top_indices[
-                    np.argsort(similarities[top_indices])[::-1]
-                ]
-            return [
-                (self._ids[i], float(similarities[i])) for i in top_indices
+            matrix = self._matrix
+            norms = self._norms_sq
+            ids = self._ids
+            num_rows = self._num_rows
+        if matrix is None or norms is None or num_rows == 0:
+            return []
+        base = np.array(vector, dtype=np.float32)
+        norm_base_sq = np.dot(base, base)
+        if norm_base_sq < 1.0e-6:
+            return []
+        # Use only the live rows of the matrix
+        live_matrix = matrix[:num_rows]
+        live_norms = norms[:num_rows]
+        # Compute all dot products in one matrix-vector multiply
+        dot_products = live_matrix @ base
+        # Cosine similarity: dot(v, base) / sqrt(|v|^2 * |base|^2)
+        denominators = np.sqrt(live_norms * norm_base_sq)
+        # Avoid division by zero for any zero-norm vectors
+        with np.errstate(divide="ignore", invalid="ignore"):
+            similarities = dot_products / denominators
+        # Replace NaN/inf with -1 so they won't appear in top N
+        np.nan_to_num(
+            similarities, copy=False, nan=-1.0, posinf=-1.0, neginf=-1.0
+        )
+        # Efficiently select top N using argpartition
+        if n >= num_rows:
+            top_indices = np.argsort(similarities)[::-1]
+        else:
+            top_indices = np.argpartition(similarities, -n)[-n:]
+            top_indices = top_indices[
+                np.argsort(similarities[top_indices])[::-1]
             ]
+        return [(ids[i], float(similarities[i])) for i in top_indices]
 
     def run(self, host: str, port: int) -> None:
         """Run a similarity server serving requests that come in at the given port"""
