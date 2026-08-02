@@ -11,16 +11,15 @@ worker_class = "gevent"
 workers = 2 if "staging" in proc_name else 4
 timeout = 120
 # Note: preload_app is not compatible with PyPy + async workers (gevent/eventlet)
-# Recycling a gevent worker drops the connections nginx has already handed to
-# the socket backlog. nginx retries idempotent requests, so GETs recover, but
-# POSTs surface to the client as a 502. At 1000/50 each worker recycled about
-# every 16 minutes under production load, which cost ~700 502s an hour on
-# POST /similar and POST /summary.api — 4.7% of all requests.
+# Raised 2026-08-02, from 1000/50. At the old ceiling a worker recycled every
+# ~5 minutes under production load, which is pure overhead: there is no leak to
+# guard against. Staging workers sit at ~200 MB after 19 hours without
+# recycling, and production RSS fluctuates in a 440-535 MB band with no
+# relation to worker age. The daily 05:05 restart bounds worker lifetime
+# anyway, so this is only a backstop.
 #
-# Raised 2026-08-02. There is no leak to guard against: staging workers sit at
-# ~200 MB after 19 hours without recycling, and production RSS fluctuates in a
-# 440-535 MB band with no relation to worker age. The daily 05:05 restart
-# bounds worker lifetime anyway; this is only a backstop.
+# The jitter matters as much as the ceiling: at 50 on 1000, four equally loaded
+# workers recycled almost in lockstep.
 max_requests = 20000
 max_requests_jitter = 2000
 
