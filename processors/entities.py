@@ -32,7 +32,7 @@
 
 """
 
-from typing import Any, List, Tuple, cast
+from typing import Any, List, Tuple, cast, TYPE_CHECKING
 
 import re
 from datetime import datetime, timezone
@@ -40,7 +40,21 @@ from datetime import datetime, timezone
 from db.models import Entity
 from tokenizer import Abbreviations
 
-from queries import QueryStateDict
+# QueryStateDict is used only as a type annotation, on sentence() below.
+# Importing it at runtime pulls in the whole `queries` package, which imports
+# icespeak, which asserts at import time that a speech synthesis engine is
+# configured. That made this batch processor -- which never synthesises
+# anything -- fail to import whenever no TTS key was present, and the
+# processor was then silently skipped: entity extraction was dead from
+# 2024-03-26 to 2026-08-02, two years and four months, because the failure
+# was logged as one line in a run that otherwise completed normally.
+#
+# Under TYPE_CHECKING the import happens for type checkers only, so the
+# runtime dependency is gone and a missing TTS key can no longer disable
+# entity extraction.
+if TYPE_CHECKING:
+    from queries import QueryStateDict
+
 from tree import Node, NonterminalNode, ParamList, Result, TreeStateDict
 
 
@@ -408,7 +422,7 @@ def article_end(state: TreeStateDict) -> None:
     pass
 
 
-def sentence(state: QueryStateDict, result: Result) -> None:
+def sentence(state: "QueryStateDict", result: Result) -> None:
     """Called at the end of sentence processing"""
 
     if "entities" not in result:
