@@ -68,11 +68,34 @@ else:
 Address = Tuple[str, int]
 
 
+# Bound on how long connecting to the similarity server may take. The socket
+# above is deliberately the original, un-monkey-patched one, so connect()
+# blocks the whole gevent hub -- every greenlet in the worker, not just this
+# one. Measured: with a timeout the hub is frozen for exactly that long; with
+# none it stayed frozen past 25 seconds and never recovered on its own.
+#
+# Unbounded, that is an outage. If the server is listening but not yet
+# accepting, Linux drops the SYN rather than refusing it and connect() sits in
+# retransmit backoff for minutes. That is what took greynir.is down on
+# 2026-08-02, during a routine restart of similarity.service.
+#
+# The server binds its listener only after loading now, so the normal warm-up
+# gives an immediate ECONNREFUSED instead. This bounds the damage from any
+# future variant. Kept short because the server is on localhost, where a
+# healthy connect is sub-millisecond -- so this only ever fires on a fault.
+_CONNECT_TIMEOUT = 0.5  # seconds
+
+
 def _SocketClient(address: Address) -> Connection:
     """Return a connection object connected to the socket given by `address`"""
     with closing(_original_socket(socket.AF_INET)) as s:
-        s.setblocking(True)
+        s.settimeout(_CONNECT_TIMEOUT)
         s.connect(address)
+        # Back to blocking: Connection() does raw os.read()/os.write() on the
+        # bare fd, which would raise BlockingIOError on a non-blocking one.
+        # settimeout() above leaves the fd non-blocking, so this must be reset
+        # before detach().
+        s.setblocking(True)
         # The following cast() hack is required since Connection()
         # appears to have a wrong signature in typeshed
         return Connection(s.detach())

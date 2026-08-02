@@ -372,15 +372,35 @@ class SimilarityServer:
                 "Unable to load server key when starting similarity server"
             )
 
-        print(
-            "Greynir similarity server started\nListening for connections on port {0}".format(
-                port
-            )
-        )
+        # Load the corpus BEFORE binding the listener. Listener() binds and
+        # listens straight away, but accept() is not reached until
+        # _load_topics() returns, roughly sixteen minutes later. A listening
+        # socket that never accepts fills its backlog immediately, and Linux
+        # silently drops further SYNs rather than refusing them, so clients do
+        # not fail fast -- they hang in TCP retransmit backoff. Worse, the
+        # handful that do get in are answered by nobody and block in recv().
+        #
+        # multiprocessing.connection.Connection reads with a bare os.read(),
+        # which gevent does not monkey-patch, so each of those blocked calls
+        # freezes an entire gunicorn worker's event loop rather than one
+        # greenlet. On 2026-08-02 that took greynir.is down completely for
+        # about ten minutes during a routine restart of this service.
+        #
+        # Loading first means the port is simply closed while warming up:
+        # clients get ECONNREFUSED immediately, SimilarityClient._connect()
+        # gives up, and Search returns empty results. The similar-articles
+        # list is missing for the duration, which is the intended degradation.
+        print("Greynir similarity server starting; loading topic vectors")
+        sys.stdout.flush()
+        self._corpus = ReynirCorpus()
+        self._load_topics()
 
-        with Listener(address, authkey=secret_password) as listener:
-            self._corpus = ReynirCorpus()
-            self._load_topics()
+        print("Listening for connections on port {0}".format(port))
+        sys.stdout.flush()
+
+        # backlog=64 rather than the default of 1: a burst of clients arriving
+        # between accept() calls should queue, not be dropped.
+        with Listener(address, authkey=secret_password, backlog=64) as listener:
             while True:
                 try:
                     conn = listener.accept()
