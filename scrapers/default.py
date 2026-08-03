@@ -540,7 +540,8 @@ class RuvScraper(ScrapeHelper):
         # content is now stored in a huge JSON object in a script tag.
         script = soup.find("script", {"id": "__NEXT_DATA__"})
         if not script:
-            return content
+            # No __NEXT_DATA__ blob: this is a pre-redesign Drupal page.
+            return self._get_drupal_content(soup)
 
         try:
             data = json.loads(script.text)
@@ -550,9 +551,42 @@ class RuvScraper(ScrapeHelper):
                     continue
                 content.append(BeautifulSoup(b["text_block"]["html"], _HTML_PARSER))
         except Exception as e:
+            # Note that video clips and live-blog entries legitimately have no
+            # 'body' key at all, so this fires for them too. That is expected;
+            # they have no article text to extract.
             logging.warning(f"RuvScraper: Could not parse JSON: {e}")
             return content
 
+        return content
+
+    @staticmethod
+    def _get_drupal_content(soup: BeautifulSoup) -> Tag:
+        """Find the article content in a pre-December-2022 ruv.is page.
+
+        ruv.is moved to Next.js client-side rendering in December 2022, but
+        articles scraped before that are still in the database and are
+        re-extracted from their stored HTML whenever the parser version
+        advances. Without this path they are silently rewritten with an empty
+        body: that is what emptied 181,712 ruv.is articles between May 2025
+        and August 2026.
+
+        The old layout is Drupal. The lead paragraph is a separate
+        'field-name-field-summary' field from the body, and is not duplicated
+        inside it, so both are needed. There may be more than one body field:
+        continuation sections live in 'field-name-field-news-paragraph' and
+        carry the same class. Short items sometimes have a summary and no body
+        at all, which is why an empty body alone is not treated as a failure.
+        """
+        content = BeautifulSoup("", _HTML_PARSER)
+        # Collect before appending: appending moves nodes out of `soup`.
+        divs: List[Tag] = []
+        for cls in ("field-name-field-summary", "field-name-field-body"):
+            divs.extend(soup.find_all("div", {"class": cls}))
+        for div in divs:
+            content.append(div)
+
+        if not content.get_text(strip=True):
+            logging.warning("Could not find article content in ruv.is article")
         return content
 
 
