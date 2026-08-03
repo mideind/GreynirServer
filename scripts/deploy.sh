@@ -85,8 +85,26 @@ pip install -r requirements.txt
 deactivate
 
 echo "Removing binary grammar files"
-rm venv/site-packages/reynir/Greynir.grammar.bin
-rm venv/site-packages/reynir/Greynir.grammar.query.bin
+# Ask the venv's own interpreter where reynir lives instead of assuming
+# venv/site-packages/reynir/. That path resolves ONLY on production, where
+# venv/site-packages happens to be a symlink to lib/pypy3.9/site-packages.
+# Staging has no such symlink, so this rm has been failing there on every
+# deploy -- and because errexit is disabled at the top of this script, the
+# deploy carried on and silently kept a stale compiled grammar whenever the
+# grammar had changed. Deriving the path works on any venv layout and any
+# interpreter, which also matters for the CPython 3.13 migration (PLAN.md 3.1),
+# where the directory becomes lib/python3.13/site-packages.
+#
+# rm -f, not rm: a venv whose grammar has not been compiled yet is a normal
+# state, not an error. The failure worth reporting is not finding reynir at all.
+REYNIR_DIR="$(venv/bin/python -c 'import os, reynir; print(os.path.dirname(reynir.__file__))' 2>/dev/null)"
+if [ -z "$REYNIR_DIR" ] || [ ! -d "$REYNIR_DIR" ]; then
+    echo "!!! Could not locate the reynir package in $DEST/venv." >&2
+    echo "!!! Refusing to continue: the app would run against a stale grammar." >&2
+    exit 1
+fi
+rm -f "$REYNIR_DIR/Greynir.grammar.bin" "$REYNIR_DIR/Greynir.grammar.query.bin"
+echo "  cleared compiled grammar in $REYNIR_DIR"
 
 cd "$SRC" || exit 1
 
