@@ -838,13 +838,19 @@ def test_date(client: FlaskClient) -> None:
     assert "tuttugu og níu" in json["voice"]
 
     # verslunarmannahelgi is the first Monday of August, so it is normally weeks
-    # away and the answer is a day count starting with a digit. When the target
-    # lands on today or tomorrow, queries/date.py:490-503 answers
-    # "Það er 3. ágúst í dag." / "... á morgun." instead, which has no leading
-    # digit. A bare ^\d+ assertion therefore fails on exactly two days a year:
-    # it did on 2026-08-02 and 2026-08-03, turning CI red across six unrelated
-    # commits and inviting a bisect of changes that had nothing to do with it.
-    # Both shapes are correct answers, so accept either.
+    # away and the answer is a day count starting with a digit. On the day
+    # BEFORE it, queries/date.py:497-503 answers "Það er 3. ágúst á morgun."
+    # instead, which has no leading digit, so a bare ^\d+ assertion fails for
+    # that whole day, every year. It did on 2026-08-02, turning CI red across
+    # six unrelated commits and inviting a bisect of changes that had nothing
+    # to do with it.
+    #
+    # Not the day itself: the holiday resolves to midnight and date.py:448-449
+    # rolls the target to next year once it is in the past, so from 00:00:01
+    # onwards the answer is a day count again and the test passes. Verified --
+    # every failing run was dated 2026-08-02 and the run on 2026-08-03 was
+    # green. The "í dag" branch is only reachable in the first second of the
+    # day; it is accepted below for completeness, not because it was observed.
     json = qmcall(client, {"q": "Hvað er langt fram að verslunarmannahelgi"}, "Date")
     assert re.search(r"^\d+", json["answer"]) or re.search(
         r"\d+\. \w+ (í dag|á morgun)", json["answer"]
