@@ -16,6 +16,9 @@ sqlalchemy2-stubs>=0.0.2a38
 sqlalchemy-stubs>=0.4
 # Server
 gevent>=24.2.1
+# Pinned exactly; see the note in pyproject.toml. Production has carried a
+# hand-installed 21.2.0 that was declared in neither file.
+gunicorn==21.2.0
 setuptools>=67
 # Util
 cachetools>=5.5.2

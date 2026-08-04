@@ -550,6 +550,7 @@ dependencies = [
     { name = "flask-caching" },
     { name = "flask-cors" },
     { name = "gevent" },
+    { name = "gunicorn" },
     { name = "httpx" },
     { name = "iceaddr" },
     { name = "icespeak" },
@@ -590,6 +591,7 @@ requires-dist = [
     { name = "flask-caching", specifier = ">=2.3.1" },
     { name = "flask-cors", specifier = ">=5.0.1" },
     { name = "gevent", specifier = ">=24.2.1" },
+    { name = "gunicorn", specifier = "==21.2.0" },
     { name = "httpx", specifier = ">=0.27.2" },
     { name = "iceaddr", specifier = ">=0.5.8" },
     { name = "icespeak", git = "https://github.com/mideind/Icespeak?branch=master" },
@@ -617,6 +619,18 @@ dev = [
     { name = "pytest", specifier = ">=8.0" },
     { name = "sqlalchemy-stubs", specifier = ">=0.4" },
     { name = "sqlalchemy2-stubs", specifier = ">=0.0.2a38" },
+]
+
+[[package]]
+name = "gunicorn"
+version = "21.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/06/89/acd9879fa6a5309b4bf16a5a8855f1e58f26d38e0c18ede9b3a70996b021/gunicorn-21.2.0.tar.gz", hash = "sha256:88ec8bff1d634f98e61b9f65bc4bf3cd918a90806c6f5c48bc5603849ec81033", size = 3632557, upload-time = "2023-07-19T11:46:46.917Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0e/2a/c3a878eccb100ccddf45c50b6b8db8cf3301a6adede6e31d48e8531cab13/gunicorn-21.2.0-py3-none-any.whl", hash = "sha256:3213aa5e8c24949e792bcacfc176fef362e7aac80b76c56f6b5122bf350722f0", size = 80176, upload-time = "2023-07-19T11:46:44.51Z" },
 ]
 
 [[package]]
