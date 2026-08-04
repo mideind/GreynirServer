@@ -37,7 +37,34 @@ from sqlalchemy.exc import OperationalError
 
 from settings import Settings, ConfigError
 
+# Which DBAPI driver SQLAlchemy should use.
+#
+# psycopg2 is the C implementation; psycopg2cffi is the cffi port that exists
+# because psycopg2 cannot be built on PyPy. This module hardcoded the cffi port
+# for as long as production ran PyPy, which cost CPython consumers speed for no
+# reason.
+#
+# It is detected rather than pinned because two interpreters share this file.
+# The web apps and the scraper pipeline are CPython 3.14 and have psycopg2. The
+# topic tagger and similarity server run from vectors/venv on CPython 3.9 --
+# gensim 3.8.2 imports Mapping from collections and so cannot go past 3.9 -- and
+# that venv has only psycopg2cffi, installed from its own requirements.txt.
+# Requiring psycopg2 here would break both of them, and one of the two is
+# simserver, which costs ~16 minutes of degraded similarity to restart.
+#
+# Preferring rather than requiring also means the fallback disappears on its own
+# when that venv is eventually retired (see PLAN.md 3.7, pgvector).
+try:
+    import psycopg2 as _driver  # noqa: F401
+
+    DB_DRIVER = "psycopg2"
+except ImportError:  # pragma: no cover
+    import psycopg2cffi as _driver  # noqa: F401
+
+    DB_DRIVER = "psycopg2cffi"
+
 __all__ = (
+    "DB_DRIVER",
     "create_engine",
     "desc",
     "dbfunc",
@@ -61,10 +88,10 @@ class GreynirDB:
     def __init__(self) -> None:
         """Initialize SQLAlchemy connection to the database"""
 
-        # Assemble the connection string, using psycopg2cffi which
-        # supports both PyPy and CPython
+        # Assemble the connection string. See DB_DRIVER above for why the
+        # driver is detected rather than named here.
         conn_str = "postgresql+{0}://{1}:{2}@{3}:{4}/scraper".format(
-            "psycopg2cffi",
+            DB_DRIVER,
             Settings.DB_USERNAME,
             Settings.DB_PASSWORD,
             Settings.DB_HOSTNAME,

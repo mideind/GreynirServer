@@ -71,6 +71,9 @@ jobs:
     - name: Install dependencies
       run: |
         pip install uv
+        # psycopg2 is built from source (not psycopg2-binary), so libpq headers
+        # and pg_config must be present before the sync, not after.
+        sudo apt-get install -y libpq-dev
         # --frozen: install exactly what uv.lock pins, and fail rather than
         # silently re-resolving if the lock is out of date with pyproject.toml.
         # Bind to the interpreter setup-python provisioned above, so uv does

@@ -17,6 +17,16 @@ dependencies = [
     "flask-caching>=2.3.1",
     "Flask-Cors>=5.0.1",
     # DB
+    #
+    # psycopg2 is the C driver and is what db/__init__.py prefers. It was not
+    # usable while production ran PyPy, which is the only reason the cffi port
+    # was ever here. Built from source rather than psycopg2-binary, as upstream
+    # advises for production: the binary wheel bundles its own libpq and libssl,
+    # and this process also runs gevent and TLS against a second OpenSSL.
+    "psycopg2>=2.9.12",
+    # Kept as the fallback for vectors/venv, which is stuck on CPython 3.9 by
+    # gensim and installs from vectors/requirements.txt. Harmless in the 3.14
+    # environments, where psycopg2 wins the detection in db/__init__.py.
     "psycopg2cffi==2.9.0",
     "SQLAlchemy==1.4.54",
     # Server
