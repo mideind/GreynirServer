@@ -21,8 +21,7 @@ dependencies = [
     "SQLAlchemy==1.4.54",
     # Server
     "gevent>=24.2.1",
-    # Pin setuptools<82: version 82 removed pkg_resources, breaking cityloc
-    "setuptools>=67,<82",
+    "setuptools>=67",
     # Util
     "cachetools>=5.5.2",
     "requests>=2.32.3",
@@ -37,20 +36,24 @@ dependencies = [
     "rjsmin>=1.2.4",
     "python-youtube==0.9.1",
     "country-list>=1.1.0",
-    # For OpenAI GPT support.
-    # openai>=1.40 requires jiter, which needs Rust and fails to build on PyPy.
-    # httpx<0.28 because openai only stopped passing proxies= in 1.55.3.
-    "openai>=1.14.3,<1.40",
-    "httpx>=0.27.2,<0.28",
+    # For OpenAI GPT support. Icespeak requires openai>=1.44, so the old
+    # <1.40 ceiling is gone; jiter, which openai pulls in from 1.40 onwards,
+    # ships no PyPy wheels but does build from source on PyPy 3.11.
+    "openai>=1.44",
+    "httpx>=0.27.2",
     # Ours
     "reynir>=3.5.7",
     "islenska>=1.0.3",
-    # Pinned to a branch: newer Icespeak requires grpcio, which doesn't work
-    # under PyPy. See [tool.uv.sources] below.
+    # Tracked from git rather than PyPI: the latest release (0.3.7) still pins
+    # pydantic==2.3.0, whose pydantic-core has no wheels past cp312 and cannot
+    # be built on 3.13+. Master has unpinned it. Switch this to a plain version
+    # specifier once 0.3.8 is on PyPI. See [tool.uv.sources] below.
     "icespeak",
     "iceaddr>=0.5.8",
     "iceweather>=0.2.3",
-    "cityloc>=0.1.1",
+    # >=0.1.3 dropped the pkg_resources import, so setuptools need not be
+    # held below 82 (which removed pkg_resources) any more.
+    "cityloc>=0.1.3",
     "straeto>=1.4.1",
 ]
 
@@ -85,4 +88,4 @@ testpaths = ["tests"]
 package = false
 
 [tool.uv.sources]
-icespeak = { git = "https://github.com/mideind/Icespeak", branch = "greynir" }
+icespeak = { git = "https://github.com/mideind/Icespeak", branch = "master" }

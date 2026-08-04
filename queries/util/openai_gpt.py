@@ -29,6 +29,7 @@ from typing import (
     Iterable,
     List,
     Mapping,
+    Optional,
     Tuple,
     TypedDict,
 )
@@ -65,8 +66,21 @@ MODEL = os.getenv("OPENAI_MODEL") or DEFAUL_MODEL
 LANG_MACRO = "$LANG="
 LANG_REGEX = re.compile(r"\$LANG=([a-z]{2}_[A-Z]{2})\$(.*)", re.DOTALL)
 
-# Global OpenAI client
-client = openai.Client(api_key=api_key)
+# Global OpenAI client, constructed on first use.
+#
+# Constructing it at import time breaks every import of this module when no key
+# is configured: openai 1.x accepted a falsy api_key and only failed on the
+# request itself, but 2.x raises OpenAIError from the constructor. routes/api.py
+# imports us at startup, so an eager client took the whole app down with it.
+_client: Optional[openai.Client] = None
+
+
+def _get_client() -> openai.Client:
+    """Return the shared OpenAI client, creating it on first use."""
+    global _client
+    if _client is None:
+        _client = openai.Client(api_key=api_key)
+    return _client
 
 
 def jdump(s: Any) -> str:
@@ -89,20 +103,20 @@ class Completion:
         if "max_tokens" in kwargs:
             max_val = kwargs.pop("max_tokens")
             try:
-                return client.chat.completions.create(
+                return _get_client().chat.completions.create(
                     *args, model=MODEL, max_tokens=max_val, **kwargs
                 )
             except openai.BadRequestError as e:
                 if "max_completion_tokens" in str(e):
                     # Model requires the new parameter name
-                    return client.chat.completions.create(
+                    return _get_client().chat.completions.create(
                         *args,
                         model=MODEL,
                         extra_body={"max_completion_tokens": max_val},
                         **kwargs,
                     )
                 raise
-        return client.chat.completions.create(*args, model=MODEL, **kwargs)
+        return _get_client().chat.completions.create(*args, model=MODEL, **kwargs)
 
     @classmethod
     def create_from_preamble_and_history(

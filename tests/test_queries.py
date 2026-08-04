@@ -152,6 +152,28 @@ def _has_no_numbers(v: str) -> bool:
     return NUM_RE.search(strip_markup(v)) is None
 
 
+# All genders of "open" and "closed". The adjective agrees with the place name,
+# and which name comes back is Google's business, not ours: "Forréttabarinn"
+# yields the masculine "opinn", while "Forréttabarinn - Nýlendugata" -- the same
+# place, renamed upstream -- yields the neuter "opið".
+_OPENING_STATE_WORDS = frozenset(
+    ("opinn", "opin", "opið", "lokaður", "lokuð", "lokað")
+)
+
+WORD_RE = re.compile(r"\w+")
+
+
+def _states_opening_hours(v: str) -> bool:
+    """Return True if the text says a place is either open or closed.
+
+    Asserting on one specific word makes the test depend on the time of day it
+    runs (open vs. closed) and on the gender of whatever place name Google
+    resolves to -- neither of which says anything about the code under test.
+    Match whole words, so that "opin" does not silently match inside "opinn".
+    """
+    return bool(_OPENING_STATE_WORDS & set(WORD_RE.findall(strip_markup(v).lower())))
+
+
 def has_google_api_key() -> bool:
     return read_txt_api_key("GoogleServerKey") != ""
 
@@ -1177,7 +1199,7 @@ def test_places(client: FlaskClient) -> None:
     assert (
         "answer" in json
         and "Forréttabarinn" in json["answer"]
-        and "opinn" in json["answer"]
+        and _states_opening_hours(json["answer"])
     )
     assert _has_no_numbers(json["voice"])
 
@@ -1188,30 +1210,40 @@ def test_places(client: FlaskClient) -> None:
         "answer" in json
         and "voice" in json
         and "Melabúðin" in json["voice"]
-        and "opin" in json["voice"]
+        and _states_opening_hours(json["voice"])
     )
     assert _has_no_numbers(json["voice"])
 
     json = qmcall(client, {"q": "Hvenær opnar sundhöllin?", "voice": True}, "Places")
-    assert "answer" in json and "voice" in json and " opin " in json["voice"]
+    assert "answer" in json and "voice" in json and _states_opening_hours(json["voice"])
     assert _has_no_numbers(json["voice"])
 
 
+PLAY_QUERIES = (
+    "spilaðu einhverja klassíska tónlist",
+    "Spilaðu lag með rolling stones",
+    "spilaðu skemmtilega tónlist",
+    "spilaðu kvikmynd fyrir mig",
+)
+
+
 @pytest.mark.skipif(not has_google_api_key(), reason="no Google API key on test server")
-def test_play(client: FlaskClient) -> None:
+def test_play(client: FlaskClient, caplog: pytest.LogCaptureFixture) -> None:
     """Play module."""
 
-    json = qmcall(client, {"q": "spilaðu einhverja klassíska tónlist"}, "Play")
-    assert "open_url" in json
-
-    json = qmcall(client, {"q": "Spilaðu lag með rolling stones"}, "Play")
-    assert "open_url" in json
-
-    json = qmcall(client, {"q": "spilaðu skemmtilega tónlist"}, "Play")
-    assert "open_url" in json
-
-    json = qmcall(client, {"q": "spilaðu kvikmynd fyrir mig"}, "Play")
-    assert "open_url" in json
+    for q in PLAY_QUERIES:
+        caplog.clear()
+        json = qmcall(client, {"q": q}, "Play")
+        if "open_url" in json:
+            continue
+        # A 429 from YouTube means the request mechanism works and we are
+        # merely out of quota for the day: a search costs 100 units of a
+        # default 10,000/day budget, so a handful of full suite runs exhausts
+        # it. queries/play.py swallows the error and returns no videos, so the
+        # status code only reaches us through the log it writes.
+        assert any(
+            "status_code=429" in r.getMessage() for r in caplog.records
+        ), f"no video for {q!r}, and YouTube did not report a rate limit"
 
 
 def test_rand(client: FlaskClient) -> None:

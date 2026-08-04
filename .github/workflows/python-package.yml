@@ -39,11 +39,24 @@ jobs:
       # single version is exactly when the others' results are most informative.
       fail-fast: false
       matrix:
-        # CPython 3.12 and PyPy 3.11 only. Running CPython 3.11 as well was
-        # redundant: PyPy 3.11 implements the 3.11 language level, so the
-        # requires-python = ">=3.11" floor stays covered, and PyPy is the
-        # implementation that actually runs this code in production.
-        python-version: ["3.12", "pypy3.11"]
+        # The two ends of the supported range, nothing in between.
+        #
+        # PyPy 3.11 covers the requires-python = ">=3.11" floor, since it
+        # implements the 3.11 language level, and it is the implementation that
+        # actually runs this code in production. PyPy has no release above
+        # 3.11, so that floor cannot rise while we keep PyPy.
+        #
+        # CPython 3.14 covers the top. It is what a fresh `uv sync` selects by
+        # default -- uv prefers the newest managed interpreter -- so it is what
+        # developers get on their own machines unless they say otherwise.
+        # Testing only the middle of the range is how the old pydantic==2.3.0
+        # pin stayed invisible: its pydantic-core has no wheels past cp312 and
+        # cannot build on 3.13+, which CI never exercised.
+        #
+        # Intermediate versions are deliberately omitted: a break specific to
+        # 3.12 or 3.13 alone, with both ends green, is not a failure mode this
+        # project has ever seen.
+        python-version: ["3.14", "pypy3.11"]
 
     steps:
     - uses: actions/checkout@v4

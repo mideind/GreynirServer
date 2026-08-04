@@ -29,6 +29,8 @@ import logging
 from functools import lru_cache
 from pathlib import Path
 
+from tts import DEFAULT_LOCALE, LOCALE_TO_VOICE_ID
+
 # Path which points to the root folder of Greynir
 GREYNIR_ROOT_DIR: Path = Path(__file__).parent.resolve()
 
@@ -50,6 +52,16 @@ RESOURCES_DIR = GREYNIR_ROOT_DIR / "resources"
 # early by main.py (well before routes, which pulls in icespeak), so importing
 # utility is what guarantees the ordering.
 os.environ["ICESPEAK_KEYS_DIR"] = str(RESOURCES_DIR)
+
+# Pin the default voice rather than inheriting whatever icespeak's own default
+# happens to be. icespeak changed it from Gudrun to Gunnar, which silently
+# altered the voice greynir.is answers in: routes/api.py falls back to
+# TTS_SETTINGS.DEFAULT_VOICE whenever a request does not name a voice.
+#
+# tts.py already declares the intended voice per locale, so take it from there
+# instead of repeating the name. tts is a leaf module that imports nothing --
+# keep it that way, or this becomes an import cycle.
+os.environ["ICESPEAK_DEFAULT_VOICE"] = LOCALE_TO_VOICE_ID[DEFAULT_LOCALE]
 
 STATIC_DIR = GREYNIR_ROOT_DIR / "static"
 TTS_AUDIO_DIR = STATIC_DIR / "audio" / "tmp"
