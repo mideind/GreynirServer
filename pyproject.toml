@@ -22,12 +22,14 @@ dependencies = [
     # Server
     "gevent>=24.2.1",
     # Every web unit is ExecStart=$DEST/venv/bin/gunicorn, but gunicorn was
-    # declared nowhere -- production has carried a hand-installed 21.2.0, so a
-    # venv built from this file alone had no gunicorn and the service would have
-    # failed to start. Pinned exactly, not >=, to hold the running version
-    # constant across the CPython 3.14 migration; 26.0.0 is verified working on
-    # 3.14 and is a separate, later bump.
-    "gunicorn==21.2.0",
+    # declared nowhere -- production carried a hand-installed 21.2.0 that no
+    # file recorded, so a venv built from this file alone had no gunicorn at all.
+    #
+    # >=22.0.0 is a security floor, not a preference: 21.2.0 has CVE-2024-1135
+    # and CVE-2024-6827, both HTTP request smuggling, both fixed in 22.0.0.
+    # Production had been running it for as long as it has been installed by
+    # hand; declaring the dependency is what finally surfaced it to Dependabot.
+    "gunicorn>=22.0.0",
     "setuptools>=67",
     # Util
     "cachetools>=5.5.2",
