@@ -45,6 +45,8 @@ if TYPE_CHECKING:
 else:
     from multiprocessing import Pool
 
+from multiprocessing import get_context
+
 from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
@@ -333,7 +335,30 @@ class Processor:
         else:
             # Use a multiprocessing pool to process the articles
             # Defaults to using as many processes as there are CPUs
-            with Pool(self.num_workers) as pool:
+            #
+            # The "fork" context is requested explicitly rather than taken as
+            # the default. Python 3.14 changed the default start method on
+            # Linux from "fork" to "forkserver", and this pool depends on
+            # inheriting the parent's state: Processor._db is a *class*
+            # attribute, set once by _init_class() in the parent, and
+            # go_single() asserts it is not None. A forkserver worker is a
+            # fresh interpreter in which that attribute is None, so every task
+            # died with an AssertionError -- taking down all of person,
+            # location and entity extraction from the moment the pipeline moved
+            # to CPython 3.14. scraper.py's pools are unaffected because their
+            # workers open a SessionContext of their own rather than relying on
+            # anything inherited.
+            #
+            # fork is safe here: this is a single-threaded batch script, and
+            # what motivated CPython's change is fork() in processes that hold
+            # threads. The forward-looking fix is to stop depending on
+            # inherited state at all -- give the pool an initializer that sets
+            # the class up in each worker, the way scraper.py effectively does
+            # -- but that also has to account for Settings, which a fresh
+            # interpreter has not read either. Restoring the previous semantics
+            # exactly is the smaller and safer change while the pipeline is down.
+            ctx = get_context("fork")
+            with ctx.Pool(self.num_workers) as pool:
                 for _ in pool.imap_unordered(self.go_single, iter_parsed_articles()):
                     pass
                 pool.close()

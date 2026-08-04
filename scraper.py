@@ -47,7 +47,21 @@ import traceback
 # for instance for debugging
 # from multiprocessing.dummy import Pool
 # cpu_count = lambda: 1
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool, cpu_count, get_context
+
+# Pools below are created from an explicit "fork" context rather than the
+# default one. Python 3.14 changed the default start method on Linux from
+# "fork" to "forkserver", and a forkserver worker is a fresh interpreter that
+# never runs main(): it therefore never calls Settings.read(), so every setting
+# from config/Greynir.conf silently reverts to its default in the worker.
+#
+# This does not currently break scraping -- db_hostname and db_port are
+# commented out in the conf, so the worker picks the same values out of the
+# environment that the parent used -- but it means any setting the workers come
+# to depend on would silently be wrong rather than absent, which is the kind of
+# failure this codebase has been bitten by before. processor.py hit the fatal
+# version of the same change: see the comment on its pool.
+_FORK_CTX = get_context("fork")
 
 from settings import Settings, ConfigError
 from fetcher import Fetcher
@@ -288,7 +302,7 @@ class Scraper:
 
                 # Use a multiprocessing pool to scrape the roots
 
-                with Pool(CPU_COUNT) as pool:
+                with _FORK_CTX.Pool(CPU_COUNT) as pool:
                     try:
                         for _ in pool.imap_unordered(
                             self._scrape_single_root, iter_roots()
@@ -317,7 +331,7 @@ class Scraper:
 
                 # Use a multiprocessing pool to scrape the articles
 
-                with Pool(CPU_COUNT) as pool:
+                with _FORK_CTX.Pool(CPU_COUNT) as pool:
                     try:
                         for _ in pool.imap_unordered(
                             self._scrape_single_article, iter_unscraped_articles()
@@ -408,7 +422,7 @@ class Scraper:
                     # Run garbage collection to minimize common memory footprint
                     gc.collect()
                     logging.info(f"Parser processes forking, chunk of {lcnt} articles")
-                    with Pool(CPU_COUNT) as pool:
+                    with _FORK_CTX.Pool(CPU_COUNT) as pool:
                         try:
                             for _ in pool.imap_unordered(
                                 self._parse_single_article, adlist
