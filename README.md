@@ -1,6 +1,6 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
-[![Build](https://github.com/mideind/Greynir/actions/workflows/python-package.yml/badge.svg)]()
+[![Python 3.14](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/downloads/release/python-3140/)
+[![Build](https://github.com/mideind/GreynirServer/actions/workflows/python-package.yml/badge.svg)]()
 
 <img src="static/img/greynir-logo-large.png" alt="Greynir" width="200" height="200" align="right" style="margin-left:20px; margin-bottom: 20px;">
 
@@ -35,7 +35,7 @@ by Vilhjálmur Þorsteinsson, Hulda Óladóttir and Hrafn Loftsson
 *(Proceedings of Recent Advances in Natural Language Processing,
 pages 1397–1404, Varna, Bulgaria, Sep 2–4, 2019).*
 
-<a href="https://raw.githubusercontent.com/mideind/Greynir/master/static/img/tree-example.png" title="Greynir parse tree">
+<a href="https://raw.githubusercontent.com/mideind/GreynirServer/master/static/img/tree-example.png" title="Greynir parse tree">
 <img src="static/img/tree-example-small.png" width="400" height="450" alt="Greynir parse tree">
 </a>
 
@@ -60,8 +60,10 @@ These trees can then be further processed and acted upon by sets of Python
 functions that are linked to grammar nonterminals.
 
 **Greynir is currently able to parse about *90%* of sentences** in a typical news article
-from the web, and many well-written articles can be parsed completely. It presently has about
-1.3 million parsed articles in its database, containing about 18 million parsed sentences.
+from the web, and many well-written articles can be parsed completely. As of August 2026
+the production database holds about 1.5 million articles, of which some 1.46 million are
+parsed, containing 23.7 million sentences with 20.6 million parsed — an overall ratio of
+87%, measured across the whole archive rather than over current news.
 A 2021 version of this database is available via the
 [GreynirCorpus](https://github.com/mideind/GreynirCorpus) project.
 
@@ -82,9 +84,21 @@ Greynir may in due course be expanded, for instance:
 Greynir is written in [Python 3](https://www.python.org/) except for its core
 Earley-based parser module which is written in C++ and called
 via [CFFI](https://cffi.readthedocs.org/en/latest/index.html).
-Greynir requires Python 3.11 or later, and runs on CPython and
-[PyPy](http://pypy.org/), with the latter being recommended for performance reasons.
-PyPy 3.11 is the supported PyPy version.
+Greynir requires Python 3.11 or later and runs on both CPython and
+[PyPy](http://pypy.org/). **CPython is now recommended**, and is what
+greynir.is runs in production (currently CPython 3.14).
+
+This reverses earlier advice. PyPy was faster for years, but on a fixed corpus
+CPython 3.13+ measured ~1.10–1.13× faster than PyPy 3.11 across four
+interleaved rounds, and CPython also gets `abi3` wheels — one `cp310-abi3`
+wheel serves every CPython from 3.10 up — where several dependencies ship no
+PyPy wheels at all. CI tests both ends of the supported range, CPython 3.14 and
+PyPy 3.11.
+
+⚠ If you benchmark this yourself, **interleave the environments (A,B,C,A,B,C…)
+and compare paired rounds**. Run-to-run spread on a loaded machine is easily
+larger than the effect being measured; sequential one-shot runs produced two
+confidently wrong conclusions before this was understood.
 
 Greynir works in stages, roughly as follows:
 
@@ -169,14 +183,18 @@ in [`queries/examples`](queries/examples).
 * [`routes/*.py`](routes/): Routes for the web application
 * [`scraper.py`](scraper.py): Web scraper, collecting articles from a set of pre-selected websites
 * [`scrapers/*.py`](scrapers): Scraper code for various websites
+* [`processors/*.py`](processors/): Plug-in modules that extract information from parse trees
+* [`scripts/*.sh`](scripts/): Deployment and cron pipeline scripts
+* [`search.py`](search.py): Article similarity and search queries
 * [`settings.py`](settings.py): Management of global settings and configuration data
-* [`speak.py`](speak.py): Command line interface for speech synthesis
-* [`speech/*.py`](speech/): Speech synthesizer modules
+* [`similar.py`](similar.py): Client for the similarity server (see `vectors/simserver.py`)
 * [`tnttagger.py`](tnttagger.py): Statistical Part-of-speech tagging
 * [`tools/*.py`](tools/): Various command line utility tools
 * [`tree/*.py`](tree/): Representation of parse trees for processing and related utility functions
+* [`tts.py`](tts.py): Text-to-speech support, built on [Icespeak](https://github.com/mideind/Icespeak)
 * [`utility.py`](utility.py): Assorted utility functions used throughout the codebase
 * [`vectors/builder.py`](vectors/builder.py): Article indexer and LSA topic vector builder
+* [`vectors/simserver.py`](vectors/simserver.py): Standalone similarity server process
 
 ## Installation and setup
 
@@ -186,13 +204,18 @@ in [`queries/examples`](queries/examples).
 
 ## Running Greynir
 
-Once you have followed the installation and setup instructions above, change
-to the Greynir repository and activate the virtual environment:
+Dependencies are managed with [uv](https://docs.astral.sh/uv/) and pinned in
+`uv.lock`. From the repository root:
 
 ```bash
-cd Greynir
-source venv/bin/activate
+cd GreynirServer
+uv sync                     # creates .venv from the lock file
 ```
+
+Prefix the commands below with `uv run`, or activate the environment with
+`source .venv/bin/activate` and run them directly. Add `--python 3.14` to
+`uv sync` to choose an interpreter explicitly; uv otherwise picks the newest one
+it can find.
 
 You should now be able to run Greynir.
 
@@ -239,7 +262,7 @@ See [Contributing to Greynir](CONTRIBUTING.md).
 
 ## License
 
-Greynir is Copyright &copy; 2025 [Miðeind ehf.](https://mideind.is)  
+Greynir is Copyright &copy; 2026 [Miðeind ehf.](https://mideind.is)  
 The original author of this software is *Vilhjálmur Þorsteinsson*.
 
 <a href="https://mideind.is"><img src="static/img/mideind-horizontal-small.png" alt="Miðeind ehf."
@@ -258,7 +281,7 @@ A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 align="right" style="margin-left:15px;" width="180" height="60"></a>
 
 The full text of the GNU General Public License v3 is
-[included here](https://github.com/mideind/Greynir/blob/master/LICENSE.txt)
+[included here](https://github.com/mideind/GreynirServer/blob/master/LICENSE.txt)
 and also available here: [https://www.gnu.org/licenses/gpl-3.0.html](https://www.gnu.org/licenses/gpl-3.0.html).
 
 If you wish to use this set of programs in ways that are not covered under the
