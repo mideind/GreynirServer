@@ -73,16 +73,37 @@ echo "Deploying $SRC to $DEST..."
 
 cd "$SRC" || exit 1
 
-cp requirements.txt $DEST/requirements.txt
+# Dependencies come from uv.lock, not requirements.txt.
+#
+# This replaced `pip install -r requirements.txt` run inside an activated venv.
+# That had to go for the CPython 3.14 migration (PLAN.md 3.1): the new venvs are
+# built with `uv venv`, which does not seed pip, so the old line would have died
+# with command-not-found -- and since errexit is disabled at the top of this
+# script, the deploy would have carried on and restarted the service having
+# installed nothing at all.
+#
+# --frozen installs exactly what the lock pins and fails rather than silently
+# re-resolving, so a deployment matches what CI tested.
+# --no-dev omits the type stubs, which drag in mypy's Rust extension (gotcha 13).
+# --python binds the sync to the interpreter already in the deployment instead
+# of letting uv choose one. uv prefers the newest interpreter it can find, which
+# on this box is a 3.15 beta under /home/villi; CI passes --python for the same
+# reason.
+UV="$(command -v uv || echo /usr/local/bin/uv)"
+if [[ ! -x "$UV" ]]; then
+    echo "Error: uv not found, but the deployment installs dependencies with it." >&2
+    exit 1
+fi
 
-cd $DEST || exit 1
+echo "Installing dependencies from uv.lock into $DEST/venv"
+if ! UV_PROJECT_ENVIRONMENT="$DEST/venv" "$UV" sync --frozen --no-dev \
+        --project "$SRC" --python "$DEST/venv/bin/python"; then
+    echo "!!! uv sync failed. $DEST/venv may be half-installed." >&2
+    echo "!!! Refusing to continue rather than restarting onto it." >&2
+    exit 1
+fi
 
-# echo "Upgrading dependencies according to requirements.txt"
-
-# shellcheck disable=SC1091
-source "venv/bin/activate"
-pip install -r requirements.txt
-deactivate
+cd "$DEST" || exit 1
 
 echo "Removing binary grammar files"
 # Ask the venv's own interpreter where reynir lives instead of assuming
@@ -92,8 +113,8 @@ echo "Removing binary grammar files"
 # deploy -- and because errexit is disabled at the top of this script, the
 # deploy carried on and silently kept a stale compiled grammar whenever the
 # grammar had changed. Deriving the path works on any venv layout and any
-# interpreter, which also matters for the CPython 3.13 migration (PLAN.md 3.1),
-# where the directory becomes lib/python3.13/site-packages.
+# interpreter, which also matters for the CPython 3.14 migration (PLAN.md 3.1),
+# where the directory becomes lib/python3.14/site-packages.
 #
 # rm -f, not rm: a venv whose grammar has not been compiled yet is a normal
 # state, not an error. The failure worth reporting is not finding reynir at all.

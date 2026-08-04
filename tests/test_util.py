@@ -60,7 +60,7 @@ def test_util():
         (GREYNIR_ROOT_DIR / "utility.py").is_file()
         # A few files that are found in the root dir
         and (GREYNIR_ROOT_DIR / "LICENSE.txt").is_file()
-        and (GREYNIR_ROOT_DIR / "requirements.txt").is_file()
+        and (GREYNIR_ROOT_DIR / "pyproject.toml").is_file()
         and (GREYNIR_ROOT_DIR / "main.py").is_file()
     ), f"Was utility.py moved from the root folder?"
 

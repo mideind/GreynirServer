@@ -37,10 +37,13 @@ cd ~/Greynir
 Create and activate virtual environment, install required Python packages:
 
 ```bash
-virtualenv -p /usr/local/bin/pypy3 venv
-source venv/bin/activate
-pip install -r requirements.txt
+uv sync
 ```
+
+This creates `.venv/` from `uv.lock`, so you get exactly the dependency set CI
+tests. Add `--no-dev` to omit the type stubs, as production does. To pick a
+specific interpreter rather than letting uv choose the newest one it can find,
+pass `--python 3.14`.
 
 ## Set up database
 
