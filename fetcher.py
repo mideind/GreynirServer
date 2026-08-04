@@ -102,60 +102,83 @@ class Fetcher:
 
     class TextList:
 
-        """Accumulates raw text blocks and eliminates
-        unnecessary nesting indicators"""
+        """Accumulates raw text blocks as a flat list of paragraphs.
+
+        The result is a sequence of balanced, non-nested [[...]]
+        paragraph markers. This form must be maintained strictly:
+        the tokenizer only recognizes '[[' at the start of a text
+        chunk, ']]' at its end, and exact ']][[' splits in between.
+        A marker in any other position - for instance when inline
+        text occurs as a sibling of block elements - is tokenized
+        as literal bracket punctuation, which then leaks into
+        stored parses and the displayed article text."""
 
         def __init__(self) -> None:
-            self._result: List[str] = []
-            self._nesting = 0
+            self._paragraphs: List[str] = []
+            # Text fragments of the paragraph being accumulated
+            self._current: List[str] = []
+            self._in_para = False
             self._white = False
 
         def append(self, w: str) -> None:
-            if self._nesting > 0:
+            if not self._in_para:
                 if w.isspace():
-                    # Whitespace is not reason to emit nesting markers
+                    # Whitespace alone doesn't open a new paragraph
                     return
-                self._result.append("[[" * self._nesting)
-                self._nesting = 0
-            self._result.append(w)
+                self._in_para = True
+            self._current.append(w)
             self._white = False
 
         def append_whitespace(self) -> None:
-            if self._nesting == 0:
-                # No need to append whitespace if we're just inside a begin-block
-                if not self._white:
-                    self._result.append(" ")
-                    self._white = True
+            if self._in_para and not self._white:
+                self._current.append(" ")
+                self._white = True
 
         def begin(self) -> None:
-            self._nesting += 1
+            """Enter a block element: any open paragraph ends here,
+            so that inline text preceding the block gets its own
+            paragraph instead of orphaning the block's markers"""
+            self._close()
 
         def end(self) -> None:
-            if self._nesting > 0:
-                self._nesting -= 1
-            else:
-                self._result.append("]]")
-                self._white = True
+            """Exit a block element: close the paragraph, if any"""
+            self._close()
 
         def insert_break(self) -> None:
             """Used to cut paragraphs at <br> and <hr> tags"""
-            if self._nesting == 0:
-                self._result.append("]][[")
-                self._white = True
+            self._close()
+
+        def _close(self) -> None:
+            """Complete the paragraph currently being accumulated"""
+            if self._in_para:
+                text = "".join(self._current)
+                # Eliminate soft hyphen and zero width space characters
+                text = re.sub("\u00AD|\u200B", "", text)
+                # Eliminate consecutive whitespace
+                text = re.sub(r"\s+", " ", text).strip()
+                # Collapse literal bracket runs in the content itself;
+                # they would otherwise be indistinguishable from
+                # paragraph markers
+                text = re.sub(r"\[\[+", "[", text)
+                text = re.sub(r"\]\]+", "]", text)
+                if text:
+                    self._paragraphs.append(text)
+                self._current = []
+                self._in_para = False
+            self._white = False
 
         def result(self) -> str:
             """Return the accumulated result as a string"""
-            assert self._nesting == 0
-            text = "".join(self._result).strip()
-            # Eliminate soft hyphen and zero width space characters
-            text = re.sub("\u00AD|\u200B", "", text)
-            # Eliminate space before and after paragraph begin markers
-            text = re.sub(r"\s*\[\[\s*", "[[", text)
-            # Eliminate space before and after paragraph end markers
-            text = re.sub(r"\s*\]\]\s*", "]]", text)
-            # Eliminate consecutive whitespace
-            text = re.sub(r"\s+", " ", text)
-            return text
+            self._close()
+            parts: List[str] = []
+            for p in self._paragraphs:
+                # Content that starts with '[' or ends with ']' would fuse
+                # with the enclosing markers; pad with a space to keep
+                # the markers recognizable
+                head = " " if p.startswith("[") else ""
+                tail = " " if p.endswith("]") else ""
+                parts.append("[[" + head + p + tail + "]]")
+            return "".join(parts)
 
     @staticmethod
     def extract_text(soup: Optional[Tag], result: "Fetcher.TextList") -> None:
