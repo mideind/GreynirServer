@@ -62,6 +62,27 @@ for target in "$DEST" "$DEST/main.py" "$DEST/config" "$DEST/scrapers"; do
     fi
 done
 
+# Require the deploying user to actually OWN the deployment, not merely be able
+# to write the four paths above.
+#
+# Those four are group-writable on production (drwxrwxr-x greynir:greynir), so
+# any member of the greynir group passes the loop and the deploy proceeds --
+# until it reaches something that is owner-writable only. The __pycache__
+# directories are exactly that: mode 0755 greynir:greynir, so `rm -rf
+# queries/__pycache__/` fails for a group member with "Permission denied" per
+# file, and errexit is disabled, so the run carries on and restarts the service
+# having half-cleaned the tree. Observed 2026-08-04, deploying as villi.
+#
+# Ownership is the honest test, because it is what determines whether every
+# subsequent write succeeds -- not just the ones this script remembered to check.
+DEST_OWNER="$(stat -c '%U' "$DEST")"
+if [[ "$(id -un)" != "$DEST_OWNER" ]]; then
+    echo "Error: $DEST is owned by $DEST_OWNER, but you are $(id -un)." >&2
+    echo "Group write is not enough -- files inside are owner-writable only." >&2
+    echo "Run:  sudo -u $DEST_OWNER $0${1:+ $1}" >&2
+    exit 1
+fi
+
 read -rp "This will deploy Greynir to **${MODE}**. Confirm? (y/n): " CONFIRMED
 
 if [[ "$CONFIRMED" != "y" ]]; then
