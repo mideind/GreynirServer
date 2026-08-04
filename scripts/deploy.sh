@@ -176,14 +176,27 @@ sed -i "s/\[Git-útgáfa\]/${GITVERS}/g" "${ABOUT_TPL}"
 echo "Restarting gunicorn server..."
 sudo systemctl restart $SERVICE
 
-if [[ "$MODE" = "PRODUCTION" ]]; then
-    echo "Updating similarity server dependencies..."
-    # shellcheck disable=SC1091
-    source "$SRC/vectors/venv/bin/activate"
-    pip install -r "$SRC/vectors/requirements.txt"
-    deactivate
-    # Note: similarity server is NOT restarted here (13 min downtime).
-    # Restart it manually if needed: sudo systemctl restart similarity
-fi
+# The similarity server's dependencies are deliberately NOT updated here.
+#
+# There used to be a block doing `source $SRC/vectors/venv/bin/activate` and
+# `pip install -r $SRC/vectors/requirements.txt`. It could not work from the
+# checkout web deploys actually run from: simserver runs out of
+# /home/greynir/github/Greynir/vectors, so $SRC/vectors/venv does not exist and
+# the `source` failed. With errexit disabled, `pip` then ran as the *system*
+# pip, and only Debian's PEP 668 guard stopped it installing into /usr. The
+# step had therefore been a silent no-op, and reported "Deployment done".
+#
+# It is not worth repairing by pointing at the right path. That venv is the
+# topic tagger and similarity server, which stay on CPython 3.9 (gensim 3.8.2
+# imports Mapping from collections, removed in 3.10) with their own unlocked
+# requirements. And the block never restarted similarity.service anyway -- the
+# warm-up costs ~16 minutes of no similar-articles -- so at best it left new
+# packages on disk under a process still running the old ones, which is gotcha
+# 9's divergence with extra steps.
+#
+# Update it deliberately when it needs updating:
+#   sudo -u greynir bash -c 'cd /home/greynir/github/Greynir/vectors && \
+#       source venv/bin/activate && pip install -r requirements.txt'
+#   sudo systemctl restart similarity      # ~16 min of degraded similarity
 
 echo "Deployment done"
