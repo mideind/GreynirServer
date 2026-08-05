@@ -595,9 +595,9 @@ requires-dist = [
     { name = "gunicorn", specifier = ">=22.0.0" },
     { name = "httpx", specifier = ">=0.27.2" },
     { name = "iceaddr", specifier = ">=0.5.8" },
-    { name = "icespeak", git = "https://github.com/mideind/Icespeak?branch=master" },
+    { name = "icespeak", specifier = ">=0.4.0" },
     { name = "iceweather", specifier = ">=0.2.3" },
-    { name = "islenska", specifier = ">=1.0.3" },
+    { name = "islenska", specifier = ">=1.3.2" },
     { name = "openai", specifier = ">=1.44" },
     { name = "psycopg2", specifier = ">=2.9.12" },
     { name = "psycopg2cffi", specifier = "==2.9.0" },
@@ -605,7 +605,7 @@ requires-dist = [
     { name = "python-youtube", specifier = "==0.9.1" },
     { name = "pytz", specifier = "==2025.2" },
     { name = "requests", specifier = ">=2.32.3" },
-    { name = "reynir", specifier = ">=3.5.7" },
+    { name = "reynir", specifier = ">=3.8.0" },
     { name = "rjsmin", specifier = ">=1.2.4" },
     { name = "setuptools", specifier = ">=67" },
     { name = "sqlalchemy", specifier = "==1.4.54" },
@@ -719,8 +719,8 @@ wheels = [
 
 [[package]]
 name = "icespeak"
-version = "0.3.8"
-source = { git = "https://github.com/mideind/Icespeak?branch=master#d727e3955071c90200e36100b71ee5789e912c50" }
+version = "0.4.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "azure-cognitiveservices-speech" },
     { name = "boto3" },
@@ -734,6 +734,10 @@ dependencies = [
     { name = "reynir" },
     { name = "tokenizer" },
     { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/29/ed/a0eb4dac619a15dc0e1eb3d4704b5f78bab6abbaf1c9134353504068146d/icespeak-0.4.0.tar.gz", hash = "sha256:2956fbd529259d076a205ea21c8ab6e5debacdbfb1fddc2c0d73fe89a559f798", size = 65658, upload-time = "2026-08-05T14:32:58.439Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b0/aa/5006ab0e46d2cae997a31cc2f5dc646bbf0a090e96085f4fd06ce2d9aed7/icespeak-0.4.0-py3-none-any.whl", hash = "sha256:6a395c2fe1f50e181e0961f1f28e864524168a6e513cccd54654e03efebf0c44", size = 60593, upload-time = "2026-08-05T14:32:57.25Z" },
 ]
 
 [[package]]
@@ -1582,7 +1586,7 @@ wheels = [
 
 [[package]]
 name = "reynir"
-version = "3.7.2"
+version = "3.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cffi" },
@@ -1591,16 +1595,16 @@ dependencies = [
     { name = "tokenizer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/24/08/b0c190a6f2efca41131d2ae6df6dfc11ff67d59807a8da3e5264a5eff8fc/reynir-3.7.2.tar.gz", hash = "sha256:6243de7c6d5b2554652fd118838c874da7db86e4575488746b7f84669e416fb3", size = 440953, upload-time = "2026-07-14T11:32:45.957Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1b/c1/6b0874df77d250d152559892e1b2b9f124642e5d2f2ff788aedd64a49bfa/reynir-3.8.0.tar.gz", hash = "sha256:921d1a39435e6bdd7f28627eb0f8a52074f3f30fd7646a9e26bffff3bedcf22a", size = 445694, upload-time = "2026-08-05T14:05:21.699Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/42/8f/2f3e47faac39150321ebcb1a863b6dbadad511c7370dc7b573cd11a97406/reynir-3.7.2-cp310-abi3-macosx_10_9_x86_64.whl", hash = "sha256:0e4462df4548a4a8faa3310ac9e5b5a609a903a0c98aab679600f966465d0f8b", size = 444779, upload-time = "2026-07-14T11:32:34.828Z" },
-    { url = "https://files.pythonhosted.org/packages/ec/2e/63b42f85e8269df776b53538fabe47306fbd8e82e6339fdbe7277e82f01f/reynir-3.7.2-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:f5c9efe174ccaf093570c92e36a9cb1a59312cd670260c711e0856486753d170", size = 444779, upload-time = "2026-07-14T11:32:36.335Z" },
-    { url = "https://files.pythonhosted.org/packages/b1/00/119ec5a97d84a4c1cc825d904da0334ba1ac22a2b5070a248930c4916857/reynir-3.7.2-cp310-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:4fcef451ee0ae913cb7c6bba9822b89603b3b024d7e34c431a44a9db051a41ee", size = 513887, upload-time = "2026-07-14T11:32:37.702Z" },
-    { url = "https://files.pythonhosted.org/packages/ef/3f/dd068e72220778e84c2ac5b3b2a5b4b6870aed2d8479cfe68976f4da1a55/reynir-3.7.2-cp310-abi3-win_amd64.whl", hash = "sha256:60342658ce4428f60225744d74296ab1057ef5eefb3df39909496cd194bafbeb", size = 440573, upload-time = "2026-07-14T11:32:39.19Z" },
-    { url = "https://files.pythonhosted.org/packages/a6/81/7673a6832dde53e7995c0bd37ff39d54b9058b90acade07391f0449d492c/reynir-3.7.2-pp311-pypy311_pp73-macosx_10_15_x86_64.whl", hash = "sha256:2f587684cb9b61a378c316b997f4b9c5195d83c12cfbc1d35f279095692842d4", size = 437974, upload-time = "2026-07-14T11:32:40.469Z" },
-    { url = "https://files.pythonhosted.org/packages/d8/19/7d107d1842b3844760112d0e13969332358ec9953329e7519523b8e68608/reynir-3.7.2-pp311-pypy311_pp73-macosx_11_0_arm64.whl", hash = "sha256:78ed13d5bbb50e5c18fcbf531d301c500336257b7363e1d6456e43e253faf016", size = 438527, upload-time = "2026-07-14T11:32:41.925Z" },
-    { url = "https://files.pythonhosted.org/packages/c4/22/1644277959cf1776d265988be9f7dbd36c5dc3569c96158f2cc62dc4101d/reynir-3.7.2-pp311-pypy311_pp73-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:7fe1ed301c3546df12f84f1222c51ab399e62b713ca6d40bf1a272579a5c777c", size = 442537, upload-time = "2026-07-14T11:32:43.264Z" },
-    { url = "https://files.pythonhosted.org/packages/7d/02/29c4938bab97d3beb678fb25670eaabe627871095ab10b7133f842e46099/reynir-3.7.2-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:b9f8389e16e00eca040dea47afa8f56544f4f5c51ca90cf6821c898d17933606", size = 465216, upload-time = "2026-07-14T11:32:44.717Z" },
+    { url = "https://files.pythonhosted.org/packages/15/df/f7745eb6c0d3f2bc7116166978993a8dd7566cf989d38368a22549357c9c/reynir-3.8.0-cp310-abi3-macosx_10_9_x86_64.whl", hash = "sha256:8838109a4464b517ab9f3c97683e72246179eeb912793a3199ad85fc66692f3d", size = 446606, upload-time = "2026-08-05T14:05:10.761Z" },
+    { url = "https://files.pythonhosted.org/packages/da/f2/3318612d480719a75c8f20a674c7caa1f5cf7a74d2acb51908877d2df960/reynir-3.8.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:8619e473524a2d7208b45e008b2d395d5ab7bd365fa93db5acdb2f9dacae9c83", size = 446612, upload-time = "2026-08-05T14:05:12.681Z" },
+    { url = "https://files.pythonhosted.org/packages/98/2e/cd60c3f3a63b488d08ef7bb09ab4b85f57210fd9a784ccf6c74c15f4cc75/reynir-3.8.0-cp310-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:10b6c0cab799ec239afa09733f2a8613a7cb179c018297c558cce5851a13042d", size = 515717, upload-time = "2026-08-05T14:05:14.02Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/33/1ad618cd02ff77cebf25148e6389c4dc6548beeada9bd82dad0fb6c58452/reynir-3.8.0-cp310-abi3-win_amd64.whl", hash = "sha256:f70992c54be5a0fbff3885bae65739e4c362cff00efe368f4be1ca0783ccfdde", size = 442399, upload-time = "2026-08-05T14:05:15.224Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/31/bb86076d9e4345f637464a868ec403d045ffe3c4fab2867f991ffdf51efa/reynir-3.8.0-pp311-pypy311_pp73-macosx_10_15_x86_64.whl", hash = "sha256:eb71016fd856a2f15d6231acdd38b68cb4df588cace36ff1be43c29182494ae7", size = 439805, upload-time = "2026-08-05T14:05:16.502Z" },
+    { url = "https://files.pythonhosted.org/packages/95/ae/08b30e0f7fc544674ba3f1675174d998be0c275ba02497f4f9687181ff01/reynir-3.8.0-pp311-pypy311_pp73-macosx_11_0_arm64.whl", hash = "sha256:3e602b7a275720c63bf9a157af908eff34968b0e97512183bcc89d0d2a70417c", size = 440356, upload-time = "2026-08-05T14:05:17.769Z" },
+    { url = "https://files.pythonhosted.org/packages/ce/bc/799e89cb5cbb6c0bc0868c26272534de59b7a27d690e506ee98d3bf3a419/reynir-3.8.0-pp311-pypy311_pp73-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e5947313be259f7ea753eacea07ee51217a0ebe8396e45024da3989de9e04f46", size = 444369, upload-time = "2026-08-05T14:05:19.251Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/13/382a8e6acff6316ef3e655d8cb6551f226ea599a00f0948995dd8d9d8b69/reynir-3.8.0-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:90cce6120f68930ec54b1eb2e5ec12bcc9a83af30f09a7aec30efa79b2cabe0a", size = 467041, upload-time = "2026-08-05T14:05:20.484Z" },
 ]
 
 [[package]]
