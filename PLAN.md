@@ -143,7 +143,7 @@ the `scraper` database. Machine-wide step, recorded here for completeness.
    misaligned; the fix, if ever wanted, is re-tagging those 17 articles
    (`builder.py tag <uuid>`), not repairing the stored text.
 
-5. **Index** ☐:
+5. **Index** ☑ 2026-08-17:
 
    ```sql
    SET maintenance_work_mem = '2GB';   -- build is much slower without it
@@ -153,10 +153,24 @@ the `scraper` database. Machine-wide step, recorded here for completeness.
 
    HNSW over IVFFlat: better recall and latency, no training step, and it
    handles incremental inserts — which matters because new articles arrive
-   continuously. Expect a long build; `CONCURRENTLY` because the table serves
-   production while it runs. Expected index size roughly 1.5–2 GB. The name
-   must match the model's `articles_topic_embedding_hnsw` so `create_all` on
-   a fresh database and the hand-built production index agree.
+   continuously. `CONCURRENTLY` because the table serves production while it
+   runs. The name matches the model's `articles_topic_embedding_hnsw` so
+   `create_all` on a fresh database and the hand-built production index
+   agree.
+
+   Outcome: built in ~9 minutes, 1,597 MB (within the predicted 1.5–2 GB).
+   The phase-2 query shape (kNN + `roots.visible` join, LIMIT 15) runs in
+   ~7 ms mostly-cold against simserver's ~325 ms median, `EXPLAIN` confirms
+   an Index Scan over the HNSW index, and a spot check returns the source
+   article at similarity 1.0000 followed by topically coherent neighbours.
+   One operational note: `CREATE INDEX CONCURRENTLY` must be launched from a
+   session that nothing will kill mid-flight — a first attempt under a
+   10-minute client timeout was cancelled and left an INVALID index, which
+   had to be dropped (`DROP INDEX CONCURRENTLY`) before retrying detached.
+
+**Phase 1 is complete.** The embedding column is live, trigger-maintained,
+fully backfilled and indexed; nothing yet reads it. Phase 2 (cutting the
+`id` and `topic` read paths over to SQL) is next.
 
 ## Phase 2 — read-path cutover for `id` and `topic`, with A/B verification ☐
 
