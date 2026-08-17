@@ -14,8 +14,9 @@ Production is `greynir.is`, on a single host, `frida.mideind.is`.
 
 ## Environment
 
-- **CPython 3.14** in production. `requires-python = ">=3.11"`. CI tests the two
-  ends of the range: CPython 3.14 and PyPy 3.11.
+- **CPython 3.14** in production. `requires-python = ">=3.11"`. CI tests
+  CPython 3.14 only; the PyPy leg was dropped 2026-08-17, so the 3.11 floor
+  is nominal rather than CI-enforced.
 - **Dependencies are managed with `uv` and pinned in `uv.lock`.** There is no
   `requirements.txt` — it was deleted once `deploy.sh` moved to `uv sync`.
   Do not reintroduce one.

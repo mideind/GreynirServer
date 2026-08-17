@@ -92,8 +92,8 @@ This reverses earlier advice. PyPy was faster for years, but on a fixed corpus
 CPython 3.13+ measured ~1.10–1.13× faster than PyPy 3.11 across four
 interleaved rounds, and CPython also gets `abi3` wheels — one `cp310-abi3`
 wheel serves every CPython from 3.10 up — where several dependencies ship no
-PyPy wheels at all. CI tests both ends of the supported range, CPython 3.14 and
-PyPy 3.11.
+PyPy wheels at all. CI tests CPython 3.14 only; the PyPy leg was dropped in
+August 2026, since no deployment is going back to that interpreter.
 
 ⚠ If you benchmark this yourself, **interleave the environments (A,B,C,A,B,C…)
 and compare paired rounds**. Run-to-run spread on a loaded machine is easily
