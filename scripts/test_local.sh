@@ -78,6 +78,12 @@ echo "==> Setting up the scraper database (mirrors the CI steps)"
 psql_test -q -c "create user reynir with password 'reynir';"
 psql_test -q -c "create database scraper with encoding 'UTF8' TEMPLATE=template0;"
 psql_test -q -d scraper -c "create extension if not exists \"uuid-ossp\";"
+# pgvector, for articles.topic_embedding. On Debian: apt install postgresql-NN-pgvector
+psql_test -q -d scraper -c "create extension if not exists vector;" || {
+    echo "ERROR: could not create the pgvector extension. Install it for" >&2
+    echo "your PostgreSQL version (e.g. apt install postgresql-17-pgvector)." >&2
+    exit 1
+}
 psql_test -q -c "alter database scraper owner to reynir;"
 
 echo "==> Writing dummy API keys (all gitignored and absent by default)"

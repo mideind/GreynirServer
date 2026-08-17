@@ -16,8 +16,11 @@ jobs:
     services:
       # Label used to access the service container
       postgres:
-        # Docker Hub image
-        image: postgres:15
+        # The official pgvector image: postgres plus the pgvector extension,
+        # which articles.topic_embedding needs. pg17 also matches production
+        # (frida runs PostgreSQL 17 since 2026-08-17); plain postgres:NN
+        # images do not ship pgvector.
+        image: pgvector/pgvector:pg17
         # Provide the password for postgres
         env:
           POSTGRES_DB: postgres
@@ -92,6 +95,7 @@ jobs:
         PGPASSWORD=postgres psql -h localhost -U postgres -c "create user reynir with password 'reynir';"
         PGPASSWORD=postgres psql -h localhost -U postgres -c "create database scraper with encoding 'UTF8' TEMPLATE=template0;"
         PGPASSWORD=postgres psql -h localhost -U postgres -d scraper -c "create extension if not exists \"uuid-ossp\";"
+        PGPASSWORD=postgres psql -h localhost -U postgres -d scraper -c "create extension if not exists vector;"
         PGPASSWORD=postgres psql -h localhost -U postgres -d scraper -c "alter database scraper owner to reynir;"
         uv run scraper.py --init
         psql -f tests/files/populate_testdb.sql postgresql://postgres:postgres@localhost:5432/scraper

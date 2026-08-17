@@ -65,48 +65,85 @@ effectively all the load, and `terms` is dealt with separately in phase 3.
 `postgresql-17-pgvector` installed via apt; `CREATE EXTENSION vector` run in
 the `scraper` database. Machine-wide step, recorded here for completeness.
 
-## Phase 1 — column, sync trigger, backfill, index ☐
+## Phase 1 — column, sync trigger, backfill, index
 
-1. **Column:**
+1. **Column** ☑ 2026-08-17:
 
    ```sql
    ALTER TABLE articles ADD COLUMN topic_embedding vector(200);
    ```
 
-2. **Sync trigger, not a write-path code change.** The only place a vector is
-   persisted is `vectors/builder.py` (`assign_article_topics`), which runs from
-   the frozen CPython 3.9 venv. Editing it was considered and ruled out: it
-   would drag a pgvector client dependency into an environment that is
-   deliberately never touched (see CLAUDE.md on `vectors/`), and any skew
-   between "tagger writes both columns" and "backfill fills old rows" is a
-   correctness hazard during the transition. A trigger keeps the 3.9 world
+2. **Sync trigger, not a write-path code change** ☑ 2026-08-17. The only place
+   a vector is persisted is `vectors/builder.py` (`assign_article_topics`),
+   which runs from the frozen CPython 3.9 venv. Editing it was considered and
+   ruled out: it would drag a pgvector client dependency into an environment
+   that is deliberately never touched (see CLAUDE.md on `vectors/`), and any
+   skew between "tagger writes both columns" and "backfill fills old rows" is
+   a correctness hazard during the transition. A trigger keeps the 3.9 world
    byte-identical, costs one cast per tagged article (a few hundred per day),
-   and closes the backfill/cutover gap automatically:
+   and closes the backfill/cutover gap automatically.
+
+   The applied form guards with an exception handler, not a JSON pre-check:
+   pgvector's input function has no soft-error support (`pg_input_is_valid`
+   raises instead of returning false — verified on 0.8.6), and a malformed
+   vector must yield NULL rather than abort the tagger's transaction:
 
    ```sql
-   CREATE OR REPLACE FUNCTION sync_topic_embedding() RETURNS trigger AS $$
+   CREATE OR REPLACE FUNCTION public.sync_topic_embedding() RETURNS trigger
+   LANGUAGE plpgsql AS $$
    BEGIN
-     IF NEW.topic_vector IS NOT NULL
-        AND json_array_length(NEW.topic_vector::json) = 200 THEN
-       NEW.topic_embedding := NEW.topic_vector::vector;
-     ELSE
+     IF NEW.topic_vector IS NULL THEN
        NEW.topic_embedding := NULL;
+     ELSE
+       BEGIN
+         NEW.topic_embedding := NEW.topic_vector::public.vector;
+       EXCEPTION WHEN OTHERS THEN
+         NEW.topic_embedding := NULL;
+       END;
      END IF;
      RETURN NEW;
-   END $$ LANGUAGE plpgsql;
+   END $$;
 
    CREATE TRIGGER trg_sync_topic_embedding
      BEFORE INSERT OR UPDATE OF topic_vector ON articles
-     FOR EACH ROW EXECUTE FUNCTION sync_topic_embedding();
+     FOR EACH ROW EXECUTE FUNCTION public.sync_topic_embedding();
    ```
 
-3. **Backfill, batched and guarded.** ~1.47M rows; batch by id range or
-   `ctid`, guarded by the same `json_array_length(...) = 200` predicate so a
-   malformed row skips rather than aborts. Verify the cast on ~10 rows by hand
-   first. Keep an eye on WAL volume and autovacuum; this rewrites most of the
-   table.
+   Verified live: a self-assignment `UPDATE ... SET topic_vector =
+   topic_vector` on one row populated `topic_embedding` with the expected
+   200-dim value.
 
-4. **Index:**
+3. **Schema-as-code** ☑ 2026-08-17. A fresh database built by
+   `scraper.py --init` → `Base.metadata.create_all()` now gets all of the
+   above: `db/models.py` defines a minimal `Vector` UserDefinedType (pure
+   SQLAlchemy 1.4, importable on the 3.9 venv — deliberately not
+   pgvector-python), the `topic_embedding` column, the HNSW index in
+   `__table_args__`, and `event.listen` DDL for `CREATE EXTENSION IF NOT
+   EXISTS vector` plus the trigger. CI's postgres service image moved from
+   `postgres:15` to `pgvector/pgvector:pg17` (plain postgres images do not
+   ship pgvector; pg17 also matches production), and both CI and
+   `scripts/test_local.sh` create the extension during database setup, like
+   `uuid-ossp`. Local test runs need `postgresql-17-pgvector` installed.
+
+4. **Backfill, batched and guarded** ☑ 2026-08-17. ~1.5M rows in id-ordered
+   batches of 5,000, paginated by `id > last` (not by `topic_embedding IS
+   NULL`, so a skipped bad row cannot loop forever). Guarded by a nested-CASE
+   predicate — `pg_input_is_valid(tv,'json')`, then `json_typeof = 'array'`,
+   then `json_array_length = 200` — nested CASE rather than AND because AND
+   does not guarantee evaluation order and the later checks raise on inputs
+   the earlier ones reject. Cast verified on 10 rows by hand first.
+
+   Outcome (2026-08-17): 1,469,493 of 1,469,510 vectored rows embedded in
+   ~21 minutes. The 17 skipped rows are valid JSON arrays of **199** elements
+   — the same pre-existing faulty vectors simserver warns about and skips
+   (it, too, requires exactly 200), so behaviour is preserved: those articles
+   stay out of similarity results. Root cause is almost certainly gensim
+   returning a sparse LSI result that omits a near-zero component while
+   `builder.py` stores only the values, so the stored 199 floats may even be
+   misaligned; the fix, if ever wanted, is re-tagging those 17 articles
+   (`builder.py tag <uuid>`), not repairing the stored text.
+
+5. **Index** ☐:
 
    ```sql
    SET maintenance_work_mem = '2GB';   -- build is much slower without it
@@ -117,7 +154,9 @@ the `scraper` database. Machine-wide step, recorded here for completeness.
    HNSW over IVFFlat: better recall and latency, no training step, and it
    handles incremental inserts — which matters because new articles arrive
    continuously. Expect a long build; `CONCURRENTLY` because the table serves
-   production while it runs. Expected index size roughly 1.5–2 GB.
+   production while it runs. Expected index size roughly 1.5–2 GB. The name
+   must match the model's `articles_topic_embedding_hnsw` so `create_all` on
+   a fresh database and the hand-built production index agree.
 
 ## Phase 2 — read-path cutover for `id` and `topic`, with A/B verification ☐
 

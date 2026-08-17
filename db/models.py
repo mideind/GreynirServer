@@ -45,6 +45,8 @@ from sqlalchemy import (
     ForeignKey,
     PrimaryKeyConstraint,
     func,
+    event,
+    DDL,
 )
 from sqlalchemy.dialects.postgresql import JSONB, INET
 from sqlalchemy.dialects.postgresql import UUID as psql_UUID
@@ -74,6 +76,25 @@ class DateTimeUtc(types.TypeDecorator):  # type: ignore
         if value.tzinfo is None:
             return value.replace(tzinfo=timezone.utc)
         return value.astimezone(timezone.utc)
+
+
+class Vector(types.UserDefinedType):  # type: ignore
+
+    """Minimal column type for pgvector's vector(n). Deliberately not the
+    pgvector-python package: this module must remain importable from the
+    frozen CPython 3.9 venv in vectors/, so it can take no new dependencies.
+    Values pass through in pgvector's text format ('[0.1,0.2,...]'); no
+    bind/result conversion is needed, because the only writer is the
+    sync_topic_embedding trigger (below) and nearest-neighbour queries
+    are expressed in SQL, not on Python-side values."""
+
+    cache_ok = True
+
+    def __init__(self, dimensions: int) -> None:
+        self.dimensions = dimensions
+
+    def get_col_spec(self, **kw: Any) -> str:
+        return "vector({0})".format(self.dimensions)
 
 
 # Hacks to get properly typed SQLAlchemy column definitions
@@ -242,6 +263,20 @@ class Article(Base):
     tokens = StringColumn()
     # The article topic vector as an array of floats in JSON string format
     topic_vector = StringColumn()
+    # The same topic vector as a pgvector value, for similar-article queries
+    # via the HNSW index below. Derived state: topic_vector remains the source
+    # of truth, written by the tagger in vectors/builder.py, and the
+    # sync_topic_embedding trigger (below) keeps this column in step.
+    topic_embedding = cast(Optional[str], Column(Vector(200)))
+
+    __table_args__ = (
+        Index(
+            "articles_topic_embedding_hnsw",
+            "topic_embedding",
+            postgresql_using="hnsw",
+            postgresql_ops={"topic_embedding": "vector_cosine_ops"},
+        ),
+    )
 
     # The back-reference to the Root parent of this Article
     root: RelationshipProperty[Root] = relationship(
@@ -254,6 +289,64 @@ class Article(Base):
         return "Article(url='{0}', heading='{1}', scraped={2})".format(
             self.url, self.heading, self.scraped
         )
+
+
+# DDL that create_all() cannot express, applied when the articles table is
+# created. The trigger keeps Article.topic_embedding derived from
+# Article.topic_vector, whose JSON array text is byte-for-byte pgvector's
+# input format. It lives in the database rather than in the tagger because
+# the tagger runs from the frozen CPython 3.9 venv in vectors/ and must not
+# acquire a pgvector dependency; the exception handler makes a malformed
+# vector yield NULL rather than aborting the tagger's transaction (pgvector
+# has no soft-error input support, so it cannot be pre-checked with
+# pg_input_is_valid). The production database received this same DDL by hand
+# on 2026-08-17; see PLAN.md.
+#
+# CREATE EXTENSION requires superuser (pgvector is not marked trusted), but
+# with IF NOT EXISTS it degrades to a notice when the extension is already
+# present -- as in production, and in CI/test clusters, which create it
+# during database setup just like uuid-ossp.
+
+event.listen(
+    Base.metadata,
+    "before_create",
+    DDL("CREATE EXTENSION IF NOT EXISTS vector"),
+)
+
+event.listen(
+    Article.__table__,  # type: ignore[attr-defined]
+    "after_create",
+    DDL(
+        """
+        CREATE OR REPLACE FUNCTION public.sync_topic_embedding() RETURNS trigger
+        LANGUAGE plpgsql AS $$
+        BEGIN
+            IF NEW.topic_vector IS NULL THEN
+                NEW.topic_embedding := NULL;
+            ELSE
+                BEGIN
+                    NEW.topic_embedding := NEW.topic_vector::public.vector;
+                EXCEPTION WHEN OTHERS THEN
+                    NEW.topic_embedding := NULL;
+                END;
+            END IF;
+            RETURN NEW;
+        END $$
+        """
+    ),
+)
+
+event.listen(
+    Article.__table__,  # type: ignore[attr-defined]
+    "after_create",
+    DDL(
+        """
+        CREATE TRIGGER trg_sync_topic_embedding
+            BEFORE INSERT OR UPDATE OF topic_vector ON articles
+            FOR EACH ROW EXECUTE FUNCTION public.sync_topic_embedding()
+        """
+    ),
+)
 
 
 class Summary(Base):
