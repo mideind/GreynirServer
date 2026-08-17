@@ -98,8 +98,14 @@ jobs:
         echo '${{ secrets.AWSPOLLY_KEY_JSON }}' > "resources/AWSPollyServerKey.json"
         echo '${{ secrets.AZURE_KEY_JSON }}' > "resources/AzureSpeechServerKey.json"
     - name: Test with pytest
+      # -ra: short summary of everything except passes. Not -rP: replaying
+      # passing tests' captured logs floods the output with the *intentional*
+      # ERROR lines from misconfiguration-path tests (bad
+      # GREYNIR_SUMMARY_MAX_AGE_DAYS, missing API key files), which read as
+      # failures to anyone scanning the log. Failed tests still print their
+      # captured logs in full.
       run: |
-        uv run python -m pytest -vvvrP --log-level=DEBUG
+        uv run python -m pytest -vv -ra
     - name: Run curlylint on templates
       run: |
         uv run curlylint templates/*

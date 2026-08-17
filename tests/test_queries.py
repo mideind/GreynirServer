@@ -190,6 +190,26 @@ def has_atm_locations_file() -> bool:
     return (QUERIES_RESOURCES_DIR / "isb_locations.json").is_file()
 
 
+def petrol_api_available() -> bool:
+    """Check whether the Gasvaktin petrol price API answers. It is served
+    from raw.githubusercontent.com, which aggressively rate-limits CI
+    runners (HTTP 429), so an unreachable API means the environment is
+    rate-limited, not that the petrol module is broken -- skip rather
+    than fail. If the API answers here but the module still fails, that
+    is a genuine failure and the test runs normally."""
+    import requests
+    from queries.petrol import _PETROL_API
+
+    try:
+        # Streamed GET rather than HEAD: raw.githubusercontent has been seen
+        # stalling HEAD requests while answering GET. stream=True means only
+        # the headers are fetched before the connection is closed.
+        with requests.get(_PETROL_API, timeout=10, stream=True) as r:
+            return r.status_code == 200
+    except Exception:
+        return False
+
+
 def test_nonsense(client: FlaskClient) -> None:
     """Make sure nonsensical queries are not answered."""
 
@@ -1157,6 +1177,10 @@ def test_opinion(client: FlaskClient) -> None:
     assert json["key"] == "blurghsmurgdurg"
 
 
+@pytest.mark.skipif(
+    not petrol_api_available(),
+    reason="Gasvaktin API unreachable (raw.githubusercontent.com rate limit?)",
+)
 def test_petrol(client: FlaskClient) -> None:
     """Petrol module."""
 
