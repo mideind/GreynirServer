@@ -275,6 +275,14 @@ class Article(Base):
             "topic_embedding",
             postgresql_using="hnsw",
             postgresql_ops={"topic_embedding": "vector_cosine_ops"},
+            # Above-default graph parameters, and not tuning for its own sake:
+            # 73k articles share byte-identical embeddings (verbatim wire
+            # copies), and such duplicate clusters break HNSW graph
+            # connectivity when built with the defaults -- measured 2026-08-17
+            # as articles whose recall@10 was zero. With m=24 and
+            # ef_construction=200, worst-case recall@10 rose from 0.00 to
+            # 0.80 and mean from 0.97 to 0.99; see PLAN.md.
+            postgresql_with={"m": 24, "ef_construction": 200},
         ),
     )
 

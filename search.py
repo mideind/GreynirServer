@@ -24,15 +24,23 @@
     a search string into list of word stems and creates a topic vector from it,
     which is then used in a similarity query to find related articles.
 
+    Similarity by article and by topic vector is answered directly from
+    PostgreSQL, via a pgvector HNSW index over articles.topic_embedding.
+    Similarity by search terms still goes through the similarity server,
+    which holds the gensim LSI model needed to project terms into topic
+    space; see PLAN.md phase 3 for its planned retirement.
+
 """
 
-from typing import Iterable, Iterator, Optional, List, Tuple, TypedDict
+from typing import Iterable, List, Optional, Tuple, TypedDict
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from uuid import UUID
+
+from sqlalchemy import text as sql_text
 
 from settings import Settings
 from db import Session
-from db.models import Root, Article
 from similar import SimilarityClient
 
 
@@ -55,10 +63,48 @@ class WeightsDict(TypedDict):
     articles: List[SimilarDict]
 
 
+# A similarity candidate: article metadata plus a similarity fraction,
+# in decreasing order of similarity
+CandidateTuple = Tuple[str, Optional[str], str, str, Optional[datetime], float]
+
+# k nearest neighbours by cosine similarity, served by the
+# articles_topic_embedding_hnsw index. The LIMIT values used here
+# (n + 5, i.e. at most 25) are comfortably below the hnsw.ef_search
+# default of 40; materially larger limits need a SET LOCAL
+# hnsw.ef_search to keep recall up.
+_SIMILAR_TO_VECTOR_SQL = """
+    SELECT a.id::text, a.heading, a.url, r.domain, a.timestamp,
+           1.0 - (a.topic_embedding <=> CAST(:vec AS vector)) AS similarity
+      FROM articles a
+      JOIN roots r ON r.id = a.root_id
+     WHERE r.visible
+       AND a.topic_embedding IS NOT NULL
+     ORDER BY a.topic_embedding <=> CAST(:vec AS vector)
+     LIMIT :n
+"""
+
+# The stored embedding of a single article, in pgvector text format,
+# ready to be passed back into _SIMILAR_TO_VECTOR_SQL
+_ARTICLE_VECTOR_SQL = """
+    SELECT topic_embedding::text FROM articles WHERE id = :uuid
+"""
+
+# Bulk metadata fetch for externally supplied (article id, similarity)
+# pairs -- the shape the similarity server returns for the terms path
+_HYDRATE_SQL = """
+    SELECT a.id::text, a.heading, a.url, r.domain, a.timestamp
+      FROM articles a
+      JOIN roots r ON r.id = a.root_id
+     WHERE a.id = ANY(CAST(:ids AS uuid[]))
+"""
+
+
 class Search:
 
-    """This class wraps search queries to the similarity server
-    via the similarity client."""
+    """This class wraps similarity queries: nearest-neighbour lookups
+    against the pgvector index for article and topic vector queries,
+    and the similarity server (via the similarity client) for term
+    queries."""
 
     def __init__(self) -> None:
         """This class is normally not instantiated"""
@@ -77,27 +123,48 @@ class Search:
         """List n articles that are similar to the article with the given id.
         Returns a tuple of (similar_articles, not_indexed) where not_indexed
         is True if the article has not yet been indexed for similarity."""
-        client = cls._new_client()
         try:
-            result = client.list_similar_to_article(uuid, n=n + 5)
-            not_indexed: bool = result.get("not_indexed", False)
-            articles: List[Tuple[str, float]] = result.get("articles", [])
-            return cls.list_articles(session, articles, n), not_indexed
-        finally:
-            client.close()
+            UUID(uuid)
+        except ValueError:
+            # Not a valid UUID: treat like an unknown article
+            return [], True
+        row = session.execute(  # type: ignore[attr-defined]
+            sql_text(_ARTICLE_VECTOR_SQL), {"uuid": uuid}
+        ).fetchone()
+        if row is None or row[0] is None:
+            # Unknown article, or one that the tagger has not
+            # (successfully) indexed yet
+            return [], True
+        return cls._list_similar_to_vector(session, row[0], n), False
 
     @classmethod
     def list_similar_to_topic(
         cls, session: Session, topic_vector: List[float], n: int
     ) -> List[SimilarDict]:
         """List n articles that are similar to the given topic vector"""
-        client = cls._new_client()
-        try:
-            result = client.list_similar_to_topic(topic_vector, n=n + 5)
-            articles: List[Tuple[str, float]] = result.get("articles", [])
-            return cls.list_articles(session, articles, n)
-        finally:
-            client.close()
+        if not topic_vector or all(e == 0.0 for e in topic_vector):
+            # A zero vector has no direction: cosine similarity is undefined
+            return []
+        vec = "[" + ",".join(str(float(e)) for e in topic_vector) + "]"
+        return cls._list_similar_to_vector(session, vec, n)
+
+    @classmethod
+    def _list_similar_to_vector(
+        cls, session: Session, vec: str, n: int
+    ) -> List[SimilarDict]:
+        """Run a kNN query for the given vector (in pgvector text format),
+        over-fetching by 5 to leave room for the filtering below"""
+        # Raise the HNSW search queue over its default of 40: measured
+        # 2026-08-17 against exact search, recall@10 improves for a few
+        # milliseconds of per-query cost (see PLAN.md phase 2). SET LOCAL
+        # scopes the setting to the enclosing transaction.
+        session.execute(  # type: ignore[attr-defined]
+            sql_text("SET LOCAL hnsw.ef_search = 100")
+        )
+        rows = session.execute(  # type: ignore[attr-defined]
+            sql_text(_SIMILAR_TO_VECTOR_SQL), {"vec": vec, "n": n + 5}
+        )
+        return cls._filter_candidates(rows, n)
 
     @classmethod
     def list_similar_to_terms(
@@ -108,46 +175,72 @@ class Search:
         client = cls._new_client()
         try:
             result = client.list_similar_to_terms(terms, n=n + 5)
-            articles: List[Tuple[str, float]] = result.get("articles", [])
-            weights: List[float] = result.get("weights", [])
-            return WeightsDict(
-                weights=weights, articles=cls.list_articles(session, articles, n)
-            )
         finally:
             client.close()
+        articles: List[Tuple[str, float]] = result.get("articles", [])
+        weights: List[float] = result.get("weights", [])
+        return WeightsDict(
+            weights=weights, articles=cls.list_articles(session, articles, n)
+        )
 
     @classmethod
     def list_articles(
         cls, session: Session, result: Iterable[Tuple[str, float]], n: int
     ) -> List[SimilarDict]:
-        """Convert similarity result tuples into article descriptors"""
+        """Convert (article id, similarity) tuples into article descriptors.
+        Metadata for all candidates is fetched in a single query; this used
+        to be one query per candidate."""
+        pairs = list(result)
+        if not pairs:
+            return []
+        rows = session.execute(  # type: ignore[attr-defined]
+            sql_text(_HYDRATE_SQL), {"ids": [sid for sid, _ in pairs]}
+        )
+        meta = {row[0]: row for row in rows}
+
+        def gen_candidates():
+            for sid, similarity in pairs:
+                row = meta.get(sid)
+                if row is not None:
+                    yield (row[0], row[1], row[2], row[3], row[4], similarity)
+
+        return cls._filter_candidates(gen_candidates(), n)
+
+    @classmethod
+    def _filter_candidates(
+        cls, candidates: Iterable[CandidateTuple], n: int
+    ) -> List[SimilarDict]:
+        """Filter and deduplicate similarity candidates, arriving in
+        decreasing order of similarity, into at most n article descriptors.
+        The logic is unchanged from the simserver era: a near-perfect match
+        is the source article itself (or a verbatim copy of it), and
+        candidates from the same domain with near-identical timestamps and
+        similarities are duplicate feeds of the same story, where the newer
+        article wins."""
         similar: List[SimilarDict] = []
-        for sid, similarity in result:
+        for sid, heading, url, domain, ts, similarity in candidates:
             if similarity > 0.9999:
                 # The original article (or at least a verbatim copy of it)
                 continue
-            q = session.query(Article).join(Root).filter(Article.id == sid)
-            sa: Optional[Article] = q.one_or_none()
-            if sa is None:
-                # Article not found
-                continue
-            if not sa.heading:
+            if not heading:
                 # Skip articles without headings
                 continue
+            if ts is None:
+                continue
+            if ts.tzinfo is None:
+                # Raw SQL rows bypass the DateTimeUtc type decorator;
+                # the database stores UTC
+                ts = ts.replace(tzinfo=timezone.utc)
             # Similarity in percent
             spercent = 100.0 * similarity
 
-            assert sa.timestamp is not None  # Silence type checker
-
             def is_probably_same_as(last: SimilarDict) -> bool:
-                """Return True if the current article is probably different from
-                the one already described in the last object"""
-                assert sa is not None
-                if last["domain"] != sa.root.domain:
+                """Return True if the current article is probably the same
+                as the one already described in the last object"""
+                if last["domain"] != domain:
                     # Another root domain: can't be the same content
                     return False
-                assert sa.timestamp is not None
-                if abs(last["ts"] - sa.timestamp) > timedelta(minutes=10):
+                if abs(last["ts"] - ts) > timedelta(minutes=10):
                     # More than 10 minutes timestamp difference
                     return False
                 # Quite similar: probably the same article
@@ -157,9 +250,9 @@ class Search:
                         print(
                             "Rejecting {0}, domain {1}, ts {2} because of similarity with {3},"
                             " {4}, {5}; ratio is {6:.3f}".format(
-                                sa.heading,
-                                sa.root.domain,
-                                sa.timestamp,
+                                heading,
+                                domain,
+                                ts,
                                 last["heading"],
                                 last["domain"],
                                 last["ts"],
@@ -169,25 +262,21 @@ class Search:
                     return True
                 return False
 
-            def gen_similar() -> Iterator[Tuple[int, SimilarDict]]:
-                """Generate the entries in the result list that are probably
-                the same as the one we are considering"""
-                for ix, p in enumerate(similar):
-                    if is_probably_same_as(p):
-                        yield (ix, p)
-
             d = SimilarDict(
-                heading=sa.heading,
-                url=sa.url,
+                heading=heading,
+                url=url,
                 uuid=sid,
-                domain=sa.root.domain,
-                ts=sa.timestamp,
-                ts_text=sa.timestamp.isoformat()[0:10],
+                domain=domain,
+                ts=ts,
+                ts_text=ts.isoformat()[0:10],
                 similarity=spercent,
             )
             # Don't add another article with practically the same similarity
             # as the previous one, as it is very probably a duplicate
-            same = next(gen_similar(), None)
+            same = next(
+                ((ix, p) for ix, p in enumerate(similar) if is_probably_same_as(p)),
+                None,
+            )
             if same is None:
                 # No similar article
                 similar.append(d)
@@ -198,13 +287,13 @@ class Search:
                 # Similar article, and the one we're considering is
                 # newer: replace the one in the list
                 if Settings.DEBUG:
-                    print("Replacing: {0} ({1:.2f})".format(sa.heading, spercent))
+                    print("Replacing: {0} ({1:.2f})".format(heading, spercent))
                 similar[same[0]] = d
             else:
                 # Similar article, and the previous one is newer:
                 # drop the one we're considering
                 if Settings.DEBUG:
-                    print("Ignoring: {0} ({1:.2f})".format(sa.heading, spercent))
+                    print("Ignoring: {0} ({1:.2f})".format(heading, spercent))
                 pass
 
         if Settings.DEBUG and similar:

@@ -158,48 +158,81 @@ the `scraper` database. Machine-wide step, recorded here for completeness.
    `create_all` on a fresh database and the hand-built production index
    agree.
 
-   Outcome: built in ~9 minutes, 1,597 MB (within the predicted 1.5–2 GB).
-   The phase-2 query shape (kNN + `roots.visible` join, LIMIT 15) runs in
-   ~7 ms mostly-cold against simserver's ~325 ms median, `EXPLAIN` confirms
-   an Index Scan over the HNSW index, and a spot check returns the source
-   article at similarity 1.0000 followed by topically coherent neighbours.
-   One operational note: `CREATE INDEX CONCURRENTLY` must be launched from a
+   Outcome: the default-parameter build took ~9 minutes and produced
+   1,597 MB, with ~7 ms queries against simserver's ~325 ms median — but
+   recall measurement against exact (seqscan) ground truth exposed a bad
+   tail: mean recall@10 was 0.966 yet some articles scored **zero**, with
+   their true neighbours unreachable even at `hnsw.ef_search = 100`. Root
+   cause: 73,326 rows share byte-identical embeddings (32,859 duplicate
+   groups; the largest is 1,603 copies of one vector — verbatim wire copies
+   and near-empty articles), and dense clusters of identical points break
+   HNSW graph connectivity when built with default parameters, stranding
+   nodes on graph "islands".
+
+   The index was therefore rebuilt with `WITH (m = 24, ef_construction =
+   200)` — more and better-chosen edges per node, the standard mitigation —
+   built concurrently alongside the old one and measured before switching:
+   ~44 minutes, 1,862 MB, and recall@10 vs exact went from mean 0.966 /
+   min 0.00 to **mean 0.986 / min 0.80** at ef_search=40, and 0.992 / 0.80
+   at ef_search=100. The previously pathological articles now return the
+   exact ground-truth top-8. The old index was dropped and the new one
+   renamed to the canonical `articles_topic_embedding_hnsw`; the model's
+   Index() carries the same parameters via `postgresql_with`.
+
+   Operational notes: `CREATE INDEX CONCURRENTLY` must be launched from a
    session that nothing will kill mid-flight — a first attempt under a
    10-minute client timeout was cancelled and left an INVALID index, which
    had to be dropped (`DROP INDEX CONCURRENTLY`) before retrying detached.
+   And 2 GB of `maintenance_work_mem` does not hold the m=24 graph of 1.47M
+   vectors; the build spills and slows, which is where most of the 44
+   minutes went.
 
 **Phase 1 is complete.** The embedding column is live, trigger-maintained,
 fully backfilled and indexed; nothing yet reads it. Phase 2 (cutting the
 `id` and `topic` read paths over to SQL) is next.
 
-## Phase 2 — read-path cutover for `id` and `topic`, with A/B verification ☐
+## Phase 2 — read-path cutover for `id` and `topic`, with A/B verification
 
-Rewrite `Search.list_similar_to_article` (`search.py:74`) and
-`Search.list_similar_to_topic` (`search.py:90`) as direct SQL. Cosine distance
-is `<=>`, so similarity is `1 - distance`:
+**Code complete and verified 2026-08-17; goes live at the next web deploy.**
+Until `deploy.sh` runs, production `/similar` still talks to simserver — the
+cutover is the deploy, and rolling back is redeploying the previous commit.
 
-```sql
-SELECT a.id, 1 - (a.topic_embedding <=> $1) AS similarity
-  FROM articles a JOIN roots r ON r.id = a.root_id
- WHERE r.visible AND a.topic_embedding IS NOT NULL
- ORDER BY a.topic_embedding <=> $1
- LIMIT $2;
-```
+What was done, in `search.py`:
 
-- **Preserve simserver's semantics:** it filters `Root.visible`
-  (`db/models.py:163`), and `search.py` drops results with
-  `similarity > 0.9999` (the article itself or a verbatim copy). The existing
-  `n + 5` over-fetch covers that. The `visible` filter passes ~98% of rows, so
-  filtered HNSW scans are a non-issue on pgvector 0.8.
-- **Collapse the N+1 while there.** `Search.list_articles` (`search.py:120`)
-  currently issues one query per result to hydrate each article; with pgvector
-  the kNN and the hydration are the same query. A free latency win.
-- **A/B verify before trusting it.** simserver keeps running through this
-  phase. Compare pgvector's top-10 against simserver's for a few hundred
-  sample articles. Expect high but not perfect overlap: HNSW is approximate
-  (recall tunable via `hnsw.ef_search`), and that is fine for a
-  similar-articles list — but establish it by measurement, not assumption.
-- Line numbers above verified 2026-08-17.
+- `list_similar_to_article` and `list_similar_to_topic` are now direct SQL:
+  kNN via `<=>` (similarity = `1 - distance`) joined with `roots` and
+  hydrated in the same query, `LIMIT n + 5`, preserving simserver's
+  semantics — the `Root.visible` filter, the `similarity > 0.9999`
+  self/verbatim-copy drop, and the same-domain near-duplicate collapse
+  (extracted into `_filter_candidates`, shared by all three paths).
+  An invalid or unknown uuid, or an article without an embedding, reports
+  `not_indexed` exactly as before. The query runs with
+  `SET LOCAL hnsw.ef_search = 100` (see the recall numbers under phase 1).
+- The N+1 hydration is gone everywhere: the kNN paths hydrate in the kNN
+  query itself, and the `terms` path (still simserver, until phase 3) bulk
+  fetches all candidates in one `id = ANY(...)` query inside
+  `list_articles`.
+- `similar.py` and the `SimilarityClient` remain, used only by the `terms`
+  path.
+
+Verification against the live database:
+
+- Functional: all paths exercised — article, unknown uuid, invalid uuid
+  text, faulty-vector article, topic vector, zero vector, terms — with
+  expected results and `not_indexed` flags.
+- A/B vs simserver, 200 random articles, final index, ef_search=100:
+  top-10 overlap mean **0.990**, median 1.000, 198/200 at ≥ 0.9;
+  similarity values agree to 6 decimals on common ids. The two sub-0.9
+  cases are articles inside exact-duplicate embedding clusters, where both
+  systems return an arbitrary selection of similarity-1.0 ties — and the
+  app filters everything above 0.9999 as a verbatim copy anyway, so the
+  user-visible output is unaffected.
+- During the A/B, simserver and exact pg search were also cross-checked and
+  agree perfectly; an apparent simserver staleness in an early reading of
+  the diff was a misreading, not a real discrepancy.
+
+After the deploy, simserver's load drops to the low-volume `terms` path
+only, and phase 3 can retire it at leisure.
 
 ## Phase 3 — the `terms` path ☐
 
