@@ -108,6 +108,12 @@ hard-won gotchas. It is not in this repository. Read it before infrastructure,
 deployment or database work, and treat its claims as dated rather than certain:
 verify anything load-bearing, and correct it when you find it wrong.
 
+`PLAN.md` in this repository is the working plan for retiring the similarity
+server (`vectors/simserver.py`) in favour of pgvector. Read it before touching
+`similar.py`, `search.py`, `vectors/`, or the `articles.topic_vector` /
+`topic_embedding` columns, and keep its phase checkboxes and dated facts
+current as the migration proceeds.
+
 ## Conventions
 
 - Commit messages in this repository explain **why**, at length, including what
