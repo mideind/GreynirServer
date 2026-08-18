@@ -325,20 +325,28 @@ accepted as no-ops per the house pattern for retired keys
 `deploy.sh` no longer copies `similar.py`; CLAUDE.md and the
 `db/__init__.py` driver comment updated.
 
-**Host side ☐** — in this order, since a `git pull` of the pipeline
-checkout would otherwise change `simserver.py` under the running service:
+**Host side ☑ 2026-08-18**: `similarity.service` stopped and disabled
+(verified inactive/disabled), the pipeline checkout pulled to the cleanup
+commit, production `/similar` re-verified healthy afterwards, and the
+machine PLAN.md brought up to date (service inventory, gotchas 9/27/51,
+the syslog-volume note, and §3.7 marked completed).
 
-1. `sudo systemctl stop similarity && sudo systemctl disable similarity` —
-   nothing calls it any more. This also retires the 16-minute warm-up
-   gotcha and most of the 476 MB/rotation syslog volume.
-2. `sudo -u greynir git -C /home/greynir/github/Greynir pull`
-3. Optionally clean up: remove `-n` from the tagger line in greynir's
-   crontab; delete `resources/SimilarityServerKey.txt` from the
-   deployments and the pipeline checkout; delete the stale `similar.py`
-   left in `/usr/share/nginx/*/` (deploy.sh copies but never deletes) and
-   the stale `/usr/share/nginx/*/vectors/` copies.
-4. Update the machine PLAN.md service inventory (gotcha 9, the warm-up
-   note, the syslog note) — simserver no longer exists.
+**Loose ends, no urgency:**
+
+- ⚠ **The health check**: `/usr/local/sbin/greynir-healthcheck.sh`
+  (root-owned) checks "the seven units that must be active" every
+  half-hour — if `similarity` is on that list it now reports a fault
+  until removed.
+- Crontab cosmetics: `-n` on the tagger line is a no-op now; remove at
+  leisure.
+- Delete `resources/SimilarityServerKey.txt` from the deployments and the
+  pipeline checkout; delete the stale `similar.py` left in
+  `/usr/share/nginx/*/` (deploy.sh copies but never deletes) and the
+  stale `/usr/share/nginx/*/vectors/` copies.
+
+**The migration is complete.** All similarity traffic is served by
+pgvector; the CPython 3.9 venv's only remaining tenant is the topic
+tagger.
 - **Keep `articles.topic_vector` (the JSON column) indefinitely.** It is the
   source of truth for the backfill, the rollback path, and what the 3.9 tagger
   writes. `topic_embedding` is derived state.
