@@ -333,10 +333,10 @@ the syslog-volume note, and §3.7 marked completed).
 
 **Loose ends, no urgency:**
 
-- ⚠ **The health check**: `/usr/local/sbin/greynir-healthcheck.sh`
-  (root-owned) checks "the seven units that must be active" every
-  half-hour — if `similarity` is on that list it now reports a fault
-  until removed.
+- ~~The health check~~ — ☑ 2026-08-18: `similarity` removed from the
+  required-units list in `greynir-healthcheck.sh`/`.conf`, and the
+  postgresql unit check default fixed to version 17 (was 12) in the same
+  edit.
 - Crontab cosmetics: `-n` on the tagger line is a no-op now; remove at
   leisure.
 - Delete `resources/SimilarityServerKey.txt` from the deployments and the
