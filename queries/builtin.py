@@ -801,8 +801,9 @@ def launch_search(query: Query, session: Session, qkey: str) -> AnswerTuple:
     result = Search.list_similar_to_terms(session, terms, _MAXLEN_SEARCH)
 
     if "weights" not in result or not result["weights"]:
-        # Probably unable to connect to the similarity server
-        raise RuntimeError("Unable to connect to the similarity server")
+        # The LSI model files (resources/lsi/) are missing or unloadable,
+        # so terms cannot be projected into topic space
+        raise RuntimeError("Search-by-terms is unavailable: no LSI model")
 
     weights = result["weights"]
     assert len(weights) == len(terms)

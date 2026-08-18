@@ -242,32 +242,60 @@ Verification against the live database:
 After the deploy, simserver's load drops to the low-volume `terms` path
 only, and phase 3 can retire it at leisure.
 
-## Phase 3 — the `terms` path ☐
+## Phase 3 — the `terms` path
 
-`ReynirCorpus.get_topic_vector` is the only query-time Gensim dependency. Its
-actual math is small: dictionary lookup (`doc2bow`) → tf-idf weighting → one
-matrix multiply against the LSI projection (`lsi-200.model.projection.u`,
-vocab × 200), plus a words-table fallback that is already pure SQL + numpy.
-Only ~135 MB of the model files are needed for inference.
+**Code complete and verified 2026-08-18; goes live at the next web deploy,
+after the model files are copied into the deployments (see below).**
 
-Preferred: **export the dictionary (token→id), idf weights, and projection
-matrix as plain numpy files and reimplement those ~30 lines Gensim-free** in
-the web app on CPython 3.14 (lazy-loaded on first search-box use). This kills
-Gensim from the query path without a gensim-4 port and without keeping any
-extra service alive. The projection matrix is ~160 MB float32; if per-worker
-copies are unacceptable, mmap it read-only so workers share pages.
+`ReynirCorpus.get_topic_vector` was the only query-time Gensim dependency.
+Its math turned out to be exactly as small as predicted: dictionary lookup
+(`doc2bow`) → tf-idf weighting with L2 normalization → one matrix multiply
+against the LSI projection (`u.T @ x`, unscaled), plus a words-table
+fallback that is pure SQL + numpy.
 
-Ruled out / fallback options, in order:
+What was done:
 
-1. A slim terms→vector service on the 3.9 venv (no matrix, no warm-up) — the
-   previous preference; still viable as an interim if the export takes longer
-   than expected, but it keeps a bespoke service and socket alive.
-2. Porting gensim 3.8.2 to run on 3.14 — a gensim 4.x port, judged not worth it
-   for 30 lines of linear algebra.
-3. Accepting that search-by-terms is unavailable — only as a temporary state.
+- `tools/export_lsi_model.py` (runs under the 3.9 venv, which has gensim,
+  with `vectors/` as cwd — unpickling `reynir.dict` imports `builder.py`)
+  exports `resources/lsi/`: `token2id.json` (82,856 terms), `idfs.npy`,
+  `u.npy` (82,856 × 200 float32, ~66 MB), `meta.json`, and
+  `reference.json` — gensim's own outputs for 22 sample token lists.
+- `topicvector.py` reimplements the pipeline gensim-free: lazy singleton,
+  `u.npy` loaded with `mmap_mode="r"` so gunicorn workers share pages, and
+  a faithful port of `get_topic_vector`'s term-weight logic (2.0 for
+  person/entity, 1.6 for capitalized non-initial nouns, 1.2 for
+  out-of-dictionary terms, words-table averaging via `TermTopicsQuery`).
+  One deliberate fix over the original: malformed 199-element stored
+  vectors are skipped in the fallback averaging, where `builder.py` would
+  have crashed on a shape mismatch.
+- `search.py`'s `list_similar_to_terms` now projects locally and runs the
+  same pgvector kNN as the other paths. The web app no longer imports
+  `SimilarityClient`; missing model files degrade exactly like an
+  unreachable simserver used to (empty weights → caller raises).
+- `numpy` is now an explicit dependency (it was only transitive before).
 
-Until phase 3 lands, either keep simserver alive solely for `terms`, or accept
-the degraded search box briefly.
+Verification:
+
+- `topicvector.LsiModel.project` reproduces gensim's reference outputs to
+  max abs error 8e-10 (max relative 8e-8, from the float32 projection
+  matrix).
+- End-to-end A/B against the live simserver on six term queries covering
+  every code path (dictionary terms, person, entity, capitalized noun,
+  NoIndexWords-suppressed term, nonsense term): term weights identical,
+  top-10 article overlap 1.00 on every case with results.
+
+The `resources/lsi/` files are gitignored and deployed out-of-band, like
+API keys. **Before the next deploy**, copy them into both deployments:
+
+```bash
+sudo -u greynir cp -r /home/villi/github/GreynirServer/resources/lsi \
+    /usr/share/nginx/greynir.is/resources/
+sudo -u greynir cp -r /home/villi/github/GreynirServer/resources/lsi \
+    /usr/share/nginx/staging.greynir.is/resources/
+```
+
+If the LSI model is ever rebuilt (`builder.py model`), the export must be
+re-run and re-copied; `meta.json` records provenance.
 
 Note: the topic **tagger** needs Gensim regardless of anything in this plan —
 it produces the vectors. It stays on the 3.9 venv until/unless the embedding
@@ -275,17 +303,31 @@ strategy itself changes (see "Vör" below).
 
 ## Phase 4 — decommission ☐
 
-- `similarity.service` (systemd unit) — its retirement also deletes the
-  16-minute warm-up gotcha and most of the 476 MB/rotation syslog volume.
-- `vectors/simserver.py`, `similar.py` (`SimilarityClient` becomes dead code),
-  `resources/SimilarityServerKey.txt` and its shared-secret handling.
-- The stale `/usr/share/nginx/*/vectors/simserver.py` copies.
+Prerequisite: phase 3 deployed and the production search box verified.
+Then, in order:
+
+1. `sudo systemctl stop similarity && sudo systemctl disable similarity` —
+   nothing calls it any more. This also retires the 16-minute warm-up
+   gotcha and most of the 476 MB/rotation syslog volume.
+2. Remove the `--notify`/`-n` flag from the tagger invocation in greynir's
+   crontab (it pings the now-dead similarity server; `builder.py` catches
+   the failure and just logs noise, but the noise is pointless).
+3. Repo cleanup commit: delete `vectors/simserver.py` and `similar.py`,
+   drop `notify_similarity_server()` and the `--notify` option from
+   `vectors/builder.py` (a 3.9-compatible edit), and drop the
+   `SIMSERVER_HOST`/`SIMSERVER_PORT` settings. `git pull` the pipeline
+   checkout afterwards.
+4. Delete `resources/SimilarityServerKey.txt` from the deployments and the
+   pipeline checkout, and the stale `/usr/share/nginx/*/vectors/` copies.
+5. Update the machine PLAN.md service inventory (gotcha 9, the warm-up
+   note, the syslog note) — simserver no longer exists.
 - **Keep `articles.topic_vector` (the JSON column) indefinitely.** It is the
   source of truth for the backfill, the rollback path, and what the 3.9 tagger
   writes. `topic_embedding` is derived state.
 
-Rollback at any point before phase 4: the old path is untouched — stop routing
-queries to SQL, and simserver (or a restart of it) serves as before.
+Rollback at any point before phase 4's deletions: the old path is untouched —
+redeploy the previous commit, and simserver (or a restart of it) serves as
+before.
 
 ## Out of scope: the Vör / Gemini embeddings
 

@@ -26,9 +26,9 @@
 
     Similarity by article and by topic vector is answered directly from
     PostgreSQL, via a pgvector HNSW index over articles.topic_embedding.
-    Similarity by search terms still goes through the similarity server,
-    which holds the gensim LSI model needed to project terms into topic
-    space; see PLAN.md phase 3 for its planned retirement.
+    Similarity by search terms first projects the terms into LSI topic
+    space via topicvector.py (a gensim-free reimplementation of the model
+    pipeline; see PLAN.md phase 3) and then runs the same kNN query.
 
 """
 
@@ -41,7 +41,7 @@ from sqlalchemy import text as sql_text
 
 from settings import Settings
 from db import Session
-from similar import SimilarityClient
+from topicvector import terms_to_vector
 
 
 class SimilarDict(TypedDict):
@@ -89,32 +89,15 @@ _ARTICLE_VECTOR_SQL = """
     SELECT topic_embedding::text FROM articles WHERE id = :uuid
 """
 
-# Bulk metadata fetch for externally supplied (article id, similarity)
-# pairs -- the shape the similarity server returns for the terms path
-_HYDRATE_SQL = """
-    SELECT a.id::text, a.heading, a.url, r.domain, a.timestamp
-      FROM articles a
-      JOIN roots r ON r.id = a.root_id
-     WHERE a.id = ANY(CAST(:ids AS uuid[]))
-"""
-
-
 class Search:
 
     """This class wraps similarity queries: nearest-neighbour lookups
-    against the pgvector index for article and topic vector queries,
-    and the similarity server (via the similarity client) for term
-    queries."""
+    against the pgvector index, with search terms first projected into
+    LSI topic space by topicvector.py."""
 
     def __init__(self) -> None:
         """This class is normally not instantiated"""
         pass
-
-    @classmethod
-    def _new_client(cls) -> SimilarityClient:
-        """Create a new similarity client for each request to avoid
-        connection sharing issues between concurrent greenlets/threads"""
-        return SimilarityClient()
 
     @classmethod
     def list_similar_to_article(
@@ -172,39 +155,15 @@ class Search:
     ) -> WeightsDict:
         """List n articles that are similar to the given terms. The
         terms are expected to be a list of (stem, category) tuples."""
-        client = cls._new_client()
-        try:
-            result = client.list_similar_to_terms(terms, n=n + 5)
-        finally:
-            client.close()
-        articles: List[Tuple[str, float]] = result.get("articles", [])
-        weights: List[float] = result.get("weights", [])
-        return WeightsDict(
-            weights=weights, articles=cls.list_articles(session, articles, n)
-        )
-
-    @classmethod
-    def list_articles(
-        cls, session: Session, result: Iterable[Tuple[str, float]], n: int
-    ) -> List[SimilarDict]:
-        """Convert (article id, similarity) tuples into article descriptors.
-        Metadata for all candidates is fetched in a single query; this used
-        to be one query per candidate."""
-        pairs = list(result)
-        if not pairs:
-            return []
-        rows = session.execute(  # type: ignore[attr-defined]
-            sql_text(_HYDRATE_SQL), {"ids": [sid for sid, _ in pairs]}
-        )
-        meta = {row[0]: row for row in rows}
-
-        def gen_candidates():
-            for sid, similarity in pairs:
-                row = meta.get(sid)
-                if row is not None:
-                    yield (row[0], row[1], row[2], row[3], row[4], similarity)
-
-        return cls._filter_candidates(gen_candidates(), n)
+        vec, weights = terms_to_vector(session, terms)
+        if vec is None:
+            # The LSI model files are not available: search-by-terms is
+            # down, in the same way it used to be when the similarity
+            # server was unreachable. The empty weights list makes the
+            # caller raise rather than render an empty result.
+            return WeightsDict(weights=[], articles=[])
+        articles = cls.list_similar_to_topic(session, [float(x) for x in vec], n)
+        return WeightsDict(weights=weights, articles=articles)
 
     @classmethod
     def _filter_candidates(

@@ -74,6 +74,7 @@ dependencies = [
     # held below 82 (which removed pkg_resources) any more.
     "cityloc>=0.1.3",
     "straeto>=1.4.1",
+    "numpy>=2.4.6",
 ]
 
 [project.urls]
