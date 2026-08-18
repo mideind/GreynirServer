@@ -193,9 +193,17 @@ fully backfilled and indexed; nothing yet reads it. Phase 2 (cutting the
 
 ## Phase 2 — read-path cutover for `id` and `topic`, with A/B verification
 
-**Code complete and verified 2026-08-17; goes live at the next web deploy.**
-Until `deploy.sh` runs, production `/similar` still talks to simserver — the
-cutover is the deploy, and rolling back is redeploying the previous commit.
+**☑ Live in production since 2026-08-18.** Staging and production were
+deployed and checked; a warm `/similar` request completes in ~80 ms
+end-to-end over HTTPS, versus ~325 ms previously for the kNN computation
+alone. Rolling back is redeploying the previous commit (`ea79edb6^`); the
+database changes are inert under the old code. simserver now serves only
+the low-volume `terms` path.
+
+Deployment note: `/home/greynir/github/Greynir` (the deploy/pipeline
+checkout) had an SSH origin that cannot authenticate under
+`sudo -u greynir`; since the repo is public and that checkout is
+pull-only, its origin was switched to https on 2026-08-18.
 
 What was done, in `search.py`:
 
