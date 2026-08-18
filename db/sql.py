@@ -368,17 +368,40 @@ class ArticleCountQuery(_BaseQuery):
 
 class ArticleListQuery(_BaseQuery):
     """A query returning a list of the newest articles that contain
-    a particular word stem."""
+    a particular word stem.
 
-    _Q_lower = """
-        select distinct a.id, a.heading, a.timestamp, r.domain, a.url
-            from words w, articles a, roots r
-            where w.stem = :stem and w.article_id = a.id and a.root_id = r.id and r.visible
-            order by a.timestamp desc
-            limit :limit;
+    Two query plans, chosen by how common the stem is, because neither
+    wins on its own (measured 2026-08-18 on ~1.5M articles):
+
+    * For a COMMON stem, walking the articles newest-first and probing
+      each for the stem finds the limit quickly. But for a rare stem it
+      probes hundreds of thousands of articles before filling the limit
+      ('fótboltalið', in 1,421 articles, took 24 s cold), and for a stem
+      with no matches at all it walks every article for nothing.
+
+    * For a RARE stem, gathering the matching article ids first and then
+      sorting is milliseconds — but for 'Ísland' (308k matches) that
+      plan took 60 s.
+
+    The postgres planner cannot make this choice from statistics (stem
+    frequencies are too skewed), so we count first — an index-only scan,
+    tens of ms even for the most common stems — and pick the plan. The
+    crossover is around sqrt(n_articles * limit) ≈ 5,000 matches."""
+
+    _RARE_STEM_THRESHOLD = 5000
+
+    # Capped count: we only need to know whether the stem clears the
+    # threshold, so never scan more than :cap index entries — an exact
+    # count of a very common stem ('Ísland', 308k rows) costs seconds
+    # by itself
+    _Q_count = """
+        select count(*) from (
+            select 1 from words where stem = :stem or stem = :lstem limit :cap
+        ) s;
         """
 
-    _Q_upper = """
+    # Common stem: walk articles newest-first, probe each for the stem
+    _Q_common = """
         select distinct a.id, a.heading, a.timestamp, r.domain, a.url
             from words w, articles a, roots r
             where (w.stem = :stem or w.stem = :lstem) and w.article_id = a.id
@@ -387,27 +410,46 @@ class ArticleListQuery(_BaseQuery):
             limit :limit;
         """
 
+    # Rare stem: gather the matching article ids first, then sort.
+    # MATERIALIZED fences the CTE so the planner cannot flatten it back
+    # into the newest-first walk.
+    _Q_rare = """
+        with w as materialized (
+            select article_id from words where stem = :stem or stem = :lstem
+        )
+        select distinct a.id, a.heading, a.timestamp, r.domain, a.url
+            from w
+            join articles a on a.id = w.article_id
+            join roots r on r.id = a.root_id and r.visible
+            order by a.timestamp desc
+            limit :limit;
+        """
+
     @classmethod
     def articles(
         cls, stem: str, limit: int = 20, enclosing_session: Optional[Session] = None
     ) -> Iterable[ArticleListItem]:
-        """Return a list of the newest articles containing the given stem."""
-        r: Iterable[ArticleListItem] = []
+        """Return a list of the newest articles containing the given stem.
+        An upper case stem matches its lower case form as well."""
         with SessionContext(session=enclosing_session, read_only=True) as session:
-            if stem == stem.lower():
-                # Lower case stem
-                r = cast(
-                    Iterable[ArticleListItem],
-                    cls().execute_q(session, cls._Q_lower, stem=stem, limit=limit),
+            lstem = stem.lower()
+            q = cls()
+            cnt = cast(
+                int,
+                cast(Any, session)
+                .execute(
+                    cls._Q_count,
+                    dict(stem=stem, lstem=lstem, cap=cls._RARE_STEM_THRESHOLD),
                 )
-            # Upper case stem: include the lower case as well
-            r = cast(
-                Iterable[ArticleListItem],
-                cls().execute_q(
-                    session, cls._Q_upper, stem=stem, lstem=stem.lower(), limit=limit
-                ),
+                .scalar(),
             )
-        return r
+            if not cnt:
+                return []
+            sql = cls._Q_rare if cnt < cls._RARE_STEM_THRESHOLD else cls._Q_common
+            return cast(
+                Iterable[ArticleListItem],
+                q.execute_q(session, sql, stem=stem, lstem=lstem, limit=limit),
+            )
 
 
 class WordFrequencyQuery(_BaseQuery):
