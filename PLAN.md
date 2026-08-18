@@ -355,6 +355,44 @@ Rollback at any point before phase 4's deletions: the old path is untouched —
 redeploy the previous commit, and simserver (or a restart of it) serves as
 before.
 
+## Next (decided, not yet scheduled): port the topic tagger off gensim/3.9
+
+Agreed 2026-08-18 as the likely next step, to be picked up in a later
+session. Phase 3 removed most of the original rationale for keeping the
+CPython 3.9 venv: the tagger's daily work is exactly the math that
+`topicvector.py` already implements gensim-free and verified against
+gensim to 8e-10 — gensim is now genuinely needed only to *retrain* the
+model (`builder.py model`), which has not happened since May 2023.
+
+Sketch:
+
+- Reimplement `builder.py`'s `tag` path as a CPython 3.14 module in the
+  main environment, reusing `topicvector.LsiModel.project` against the
+  `resources/lsi/` export: per article, read its stems from the `words`
+  table (as `assign_article_topics` does), project, write
+  `articles.topic_vector` (the trigger derives `topic_embedding`), assign
+  topics by cosine against the `topics` table vectors (stored as JSON
+  under the `"lsi"` key, with per-topic thresholds), replace
+  `ArticleTopic` rows, stamp `indexed`.
+- Port `calculate_topics` (keyword lists → topic vectors) the same way —
+  it is the same projection.
+- Cron: `runtagger.sh` switches from `vectors/venv` to the main
+  environment. Keep the tagger runnable article-by-article for testing.
+- **Verify like phase 3, not by assumption**: run old and new taggers on
+  the same sample of articles and compare the produced vectors
+  (tolerance ~1e-6; note gensim's sparse-output quirk that produced the
+  17 known 199-element vectors — the new tagger should write dense 200
+  and thereby fix that bug class) and require identical topic
+  assignments.
+- Afterwards `vectors/venv` has no daily tenant. Retraining, if ever
+  wanted, needs a disposable gensim environment (or a gensim-4 port, or
+  is mooted by the Vör/Gemini decision below). Do NOT delete the venv
+  hastily — see the machine PLAN.md on venvs-as-rollback — but nothing
+  runs from it on cron any more.
+
+Estimated scope: similar to phase 3 (the hard part, the verified
+projection, already exists).
+
 ## Out of scope: the Vör / Gemini embeddings
 
 Vör (`vthorsteinsson/vor-news`) re-embeds Greynir articles with Google's Gemini
