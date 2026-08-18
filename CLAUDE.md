@@ -82,21 +82,23 @@ staging. It installs with `uv sync --frozen --no-dev` and restarts the service.
   defaults to `override=False`, so anything already in the environment wins.
   Editing a drop-in needs `systemctl daemon-reload`; a bare restart re-reads
   nothing.
-- **`vectors/` is stuck on CPython 3.9.** The topic tagger and the similarity
-  server run from `vectors/venv` with `gensim==3.8.2`, which does
+- **`vectors/` is stuck on CPython 3.9.** The topic tagger runs from
+  `vectors/venv` with `gensim==3.8`, which does
   `from collections import Mapping` — removed in Python 3.10 — so it cannot
   move without a gensim 4 port. That venv installs from
   `vectors/requirements.txt` with pip and is deliberately outside the lock.
   Code shared with it (`db/`, `settings.py`) must therefore stay importable on
   3.9. This is why `db/__init__.py` *detects* its Postgres driver rather than
   naming one: `psycopg2` on 3.14, `psycopg2cffi` on 3.9.
-- **`similar.py` uses un-monkey-patched sockets on purpose.** Every call to the
-  similarity server is a genuinely blocking syscall, which under gevent freezes
-  the whole worker — all greenlets, not just the caller. A timeout there bounds
-  an outage; it does not keep the app responsive. Do not put it behind a shared
-  lock.
-- **`similarity.service` has a ~16 minute warm-up** and does not serve during
-  it. Restarting it is a scheduled degradation, not a routine bounce.
+- **Similarity queries are served by pgvector** (`articles.topic_embedding`,
+  HNSW index, trigger-synced from `topic_vector`) — see `PLAN.md` before
+  touching `search.py`, `topicvector.py`, or the vector columns. The old
+  similarity server was decommissioned in August 2026. `resources/lsi/` (the
+  exported LSI model that the search box needs) is deployed out-of-band like
+  API keys and must be re-exported if the LSI model is ever rebuilt.
+- **A new root-level module must be added to `deploy.sh`'s copy allowlist**,
+  or it simply is not deployed — and an import of it then takes the site down
+  at worker boot.
 - **A `ScrapeHelper.get_content` that cannot find its container returns an
   empty document silently.** This destroyed 181,712 article bodies once and went
   unnoticed for ten months. If you touch `scrapers/`, make failure loud.

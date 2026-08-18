@@ -168,7 +168,6 @@ cp processor.py $DEST/processor.py
 cp scraper.py $DEST/scraper.py
 cp search.py $DEST/search.py
 cp settings.py $DEST/settings.py
-cp similar.py $DEST/similar.py
 cp tnttagger.py $DEST/tnttagger.py
 cp topicvector.py $DEST/topicvector.py
 cp tts.py $DEST/tts.py
@@ -198,27 +197,23 @@ sed -i "s/\[Git-útgáfa\]/${GITVERS}/g" "${ABOUT_TPL}"
 echo "Restarting gunicorn server..."
 sudo systemctl restart $SERVICE
 
-# The similarity server's dependencies are deliberately NOT updated here.
+# The topic tagger's dependencies (vectors/venv) are deliberately NOT updated
+# here.
 #
 # There used to be a block doing `source $SRC/vectors/venv/bin/activate` and
 # `pip install -r $SRC/vectors/requirements.txt`. It could not work from the
-# checkout web deploys actually run from: simserver runs out of
+# checkout web deploys actually run from: the tagger runs out of
 # /home/greynir/github/Greynir/vectors, so $SRC/vectors/venv does not exist and
 # the `source` failed. With errexit disabled, `pip` then ran as the *system*
 # pip, and only Debian's PEP 668 guard stopped it installing into /usr. The
 # step had therefore been a silent no-op, and reported "Deployment done".
 #
 # It is not worth repairing by pointing at the right path. That venv is the
-# topic tagger and similarity server, which stay on CPython 3.9 (gensim 3.8.2
-# imports Mapping from collections, removed in 3.10) with their own unlocked
-# requirements. And the block never restarted similarity.service anyway -- the
-# warm-up costs ~16 minutes of no similar-articles -- so at best it left new
-# packages on disk under a process still running the old ones, which is gotcha
-# 9's divergence with extra steps.
+# topic tagger, which stays on CPython 3.9 (gensim 3.8 imports Mapping from
+# collections, removed in 3.10) with its own unlocked requirements.
 #
 # Update it deliberately when it needs updating:
 #   sudo -u greynir bash -c 'cd /home/greynir/github/Greynir/vectors && \
 #       source venv/bin/activate && pip install -r requirements.txt'
-#   sudo systemctl restart similarity      # ~16 min of degraded similarity
 
 echo "Deployment done"

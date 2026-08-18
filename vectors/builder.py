@@ -66,7 +66,6 @@ from settings import Settings, Topics, NoIndexWords
 from db import SessionContext
 from db.models import Article, Topic, ArticleTopic, Word
 from db.sql import TermTopicsQuery
-from similar import SimilarityClient
 
 import numpy as np
 from gensim import corpora, models, matutils
@@ -630,16 +629,6 @@ def tag_articles(limit, verbose=False, process_all=False, uuid=None):
     print("Time: {0}\n".format(ts))
 
 
-def notify_similarity_server():
-    """Notify the similarity server - if running - that article tags have been updated"""
-    try:
-        client = SimilarityClient()
-        client.refresh_topics()
-        client.close()
-    except Exception as e:
-        print("Exception in notify_similarity_server(): {0}".format(e))
-
-
 class Usage(Exception):
     def __init__(self, msg):
         self.msg = msg
@@ -677,6 +666,9 @@ def _main(argv=None):
             opts, args = getopt.getopt(
                 argv[1:], "hl:van", ["help", "limit=", "verbose", "all", "notify"]
             )
+            # Note: -n/--notify is still accepted (as a no-op) so that
+            # existing crontab entries keep working; it used to ping the
+            # similarity server, which has been replaced by pgvector
         except getopt.error as msg:
             raise Usage(msg)
 
@@ -684,7 +676,6 @@ def _main(argv=None):
         limit = 10
         verbose = False
         process_all = False
-        notify = False
 
         # Process options
         for o, a in opts:
@@ -703,7 +694,8 @@ def _main(argv=None):
             elif o in ("-a", "--all"):
                 process_all = True
             elif o in ("-n", "--notify"):
-                notify = True
+                # Accepted as a no-op; see above
+                pass
 
         # if process_all and limit_specified:
         #    raise Usage("--all and --limit cannot be used together")
@@ -731,9 +723,6 @@ def _main(argv=None):
             tag_articles(
                 limit=limit, verbose=verbose, process_all=process_all, uuid=uuid
             )
-            if notify:
-                # Inform the similarity server that we have new article tags
-                notify_similarity_server()
         elif arg == "topics":
             # Calculate topics
             if la > 1:

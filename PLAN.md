@@ -310,25 +310,34 @@ Note: the topic **tagger** needs Gensim regardless of anything in this plan —
 it produces the vectors. It stays on the 3.9 venv until/unless the embedding
 strategy itself changes (see "Vör" below).
 
-## Phase 4 — decommission ☐
+## Phase 4 — decommission
 
-Prerequisite: phase 3 deployed and the production search box verified.
-Then, in order:
+Phase 3 deployed to staging and production 2026-08-18 and verified.
+
+**Repo side ☑ 2026-08-18** (this commit): `vectors/simserver.py` and
+`similar.py` deleted; `notify_similarity_server()` removed from
+`vectors/builder.py` while `-n`/`--notify` stays accepted as a no-op, so
+existing crontab entries keep working (edit the crontab at leisure, not
+under time pressure); `SIMSERVER_HOST`/`SIMSERVER_PORT` removed from
+`settings.py`, with the `simserver_host`/`simserver_port` config keys
+accepted as no-ops per the house pattern for retired keys
+(`vectors/settings.py`, the frozen 3.9 shim, is deliberately untouched);
+`deploy.sh` no longer copies `similar.py`; CLAUDE.md and the
+`db/__init__.py` driver comment updated.
+
+**Host side ☐** — in this order, since a `git pull` of the pipeline
+checkout would otherwise change `simserver.py` under the running service:
 
 1. `sudo systemctl stop similarity && sudo systemctl disable similarity` —
    nothing calls it any more. This also retires the 16-minute warm-up
    gotcha and most of the 476 MB/rotation syslog volume.
-2. Remove the `--notify`/`-n` flag from the tagger invocation in greynir's
-   crontab (it pings the now-dead similarity server; `builder.py` catches
-   the failure and just logs noise, but the noise is pointless).
-3. Repo cleanup commit: delete `vectors/simserver.py` and `similar.py`,
-   drop `notify_similarity_server()` and the `--notify` option from
-   `vectors/builder.py` (a 3.9-compatible edit), and drop the
-   `SIMSERVER_HOST`/`SIMSERVER_PORT` settings. `git pull` the pipeline
-   checkout afterwards.
-4. Delete `resources/SimilarityServerKey.txt` from the deployments and the
-   pipeline checkout, and the stale `/usr/share/nginx/*/vectors/` copies.
-5. Update the machine PLAN.md service inventory (gotcha 9, the warm-up
+2. `sudo -u greynir git -C /home/greynir/github/Greynir pull`
+3. Optionally clean up: remove `-n` from the tagger line in greynir's
+   crontab; delete `resources/SimilarityServerKey.txt` from the
+   deployments and the pipeline checkout; delete the stale `similar.py`
+   left in `/usr/share/nginx/*/` (deploy.sh copies but never deletes) and
+   the stale `/usr/share/nginx/*/vectors/` copies.
+4. Update the machine PLAN.md service inventory (gotcha 9, the warm-up
    note, the syslog note) — simserver no longer exists.
 - **Keep `articles.topic_vector` (the JSON column) indefinitely.** It is the
   source of truth for the backfill, the rollback path, and what the 3.9 tagger

@@ -97,24 +97,6 @@ class Settings:
     # Flask debug parameter
     DEBUG = False
 
-    # Similarity server
-    SIMSERVER_HOST = os.environ.get("SIMSERVER_HOST", "localhost")
-    SIMSERVER_PORT_STR = os.environ.get("SIMSERVER_PORT", "5001")
-    try:
-        SIMSERVER_PORT = int(SIMSERVER_PORT_STR)
-    except ValueError:
-        raise ConfigError(
-            "Invalid environment variable value: SIMSERVER_PORT={0}".format(
-                SIMSERVER_PORT_STR
-            )
-        )
-
-    if SIMSERVER_PORT == PORT:
-        raise ConfigError(
-            "Can't run both main server and "
-            "similarity server on port {0}".format(PORT)
-        )
-
     NN_PARSING_ENABLED = os.environ.get("NN_PARSING_ENABLED", False)
     try:
         NN_PARSING_ENABLED = bool(int(NN_PARSING_ENABLED))
@@ -185,9 +167,12 @@ class Settings:
             elif par == "port":
                 Settings.PORT = int(val or 0)
             elif par == "simserver_host":
-                Settings.SIMSERVER_HOST = str(val)
+                # The similarity server is gone (replaced by pgvector);
+                # accepted as a no-op so old config files still parse
+                pass
             elif par == "simserver_port":
-                Settings.SIMSERVER_PORT = int(val or 0)
+                # See above
+                pass
             elif par == "debug":
                 Settings.DEBUG = bool(val)
             else:
