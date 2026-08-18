@@ -297,6 +297,15 @@ sudo -u greynir cp -r /home/villi/github/GreynirServer/resources/lsi \
 If the LSI model is ever rebuilt (`builder.py model`), the export must be
 re-run and re-copied; `meta.json` records provenance.
 
+Deployment gotcha, learned the hard way (staging 502, 2026-08-18):
+`deploy.sh` copies root-level modules from an explicit allowlist, so **a
+new root-level module is not deployed until it is added to that list** —
+the first staging deploy of phase 3 shipped a `search.py` importing a
+`topicvector.py` that was never copied, and every worker died at import.
+Deliberate design (the allowlist keeps dev junk out of deployments), but
+it means "add the file to deploy.sh" belongs on the checklist for any new
+module.
+
 Note: the topic **tagger** needs Gensim regardless of anything in this plan —
 it produces the vectors. It stays on the 3.9 venv until/unless the embedding
 strategy itself changes (see "Vör" below).
