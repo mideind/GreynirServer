@@ -170,6 +170,7 @@ cp search.py $DEST/search.py
 cp settings.py $DEST/settings.py
 cp similar.py $DEST/similar.py
 cp tnttagger.py $DEST/tnttagger.py
+cp topicvector.py $DEST/topicvector.py
 cp tts.py $DEST/tts.py
 cp utility.py $DEST/utility.py
 cp -r db $DEST/
