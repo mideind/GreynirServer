@@ -31,7 +31,7 @@ from flask.wrappers import Response, Request
 
 from icespeak import GreynirSSMLParser, tts_to_file, TTSOptions, VOICES
 from icespeak.settings import SETTINGS as TTS_SETTINGS
-from icespeak.settings import TextFormats
+from icespeak.settings import AudioFormats, TextFormats
 from icespeak.tts import TTSOutput
 from reynir.bintokenizer import TokenDict
 from reynir.binparser import canonicalize_token
@@ -489,7 +489,11 @@ def query_api(version: int = 1) -> Response:
             result["voice_id"] = vid
             # Create audio data
             TTS_SETTINGS.AUDIO_DIR = TTS_AUDIO_DIR
-            tts_options = TTSOptions(voice=vid, speed=voice_speed)
+            # Icespeak >=0.4.0 defaults to WAV, which the Azure voices
+            # don't support, so the audio format must be given explicitly
+            tts_options = TTSOptions(
+                voice=vid, speed=voice_speed, audio_format=AudioFormats.MP3
+            )
             # Set transcribe to False here, as we don't need to transcribe twice
             tts_output: TTSOutput = tts_to_file(
                 v,
@@ -611,7 +615,10 @@ def speech_api(version: int = 1) -> Response:
     try:
         TTS_SETTINGS.AUDIO_DIR = TTS_AUDIO_DIR
         tts_options = TTSOptions(
-            voice=voice_id, speed=voice_speed, text_format=text_format
+            voice=voice_id,
+            speed=voice_speed,
+            text_format=text_format,
+            audio_format=AudioFormats.MP3,
         )
         tts_output: TTSOutput = tts_to_file(
             text,
