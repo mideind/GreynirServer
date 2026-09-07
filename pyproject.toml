@@ -61,7 +61,7 @@ dependencies = [
     "openai>=1.44",
     "httpx>=0.27.2",
     # Ours
-    "reynir>=3.8.0",
+    "reynir>=3.9.0",
     "islenska>=1.3.2",
     # Back on PyPI as of 0.4.0, which declares pydantic>=2.8,<3 instead of the
     # ==2.3.0 pin that made every release up to 0.3.7 uninstallable on 3.13+
