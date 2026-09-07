@@ -2256,7 +2256,11 @@ class HeimildinScraper(ScrapeHelper):
             elm.decompose()
         for elm in content.find_all("h3", {"class": "inline-seemore-label"}):
             elm.decompose()
-        for elm in content.find_all("div", {"class": "paywall"}):
+        # The paywall block ("Skráðu þig inn til að lesa ... Innskrá með
+        # Facebook ...") used to be a div; since March 2024 it is an
+        # <aside class="paywall clearfix fade">, which the div-only match
+        # let through into ~2,700 article bodies. Match on the class alone.
+        for elm in content.find_all(class_="paywall"):
             elm.decompose()
         return content
 
