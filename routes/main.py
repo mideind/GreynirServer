@@ -372,8 +372,12 @@ def terms() -> str:
 def about() -> str:
     """Handler for the 'About' page"""
     try:
-        parser_version = reynir.version.__version__
-        tokenizer_version = tokenizer.version.__version__
+        # Both packages dropped their version.py in 2024 in favour of
+        # importlib.metadata; the version now lives on the package itself.
+        # Reading the old reynir.version attribute raised AttributeError,
+        # which the handler below turned into an empty footer for two years.
+        parser_version = reynir.__version__
+        tokenizer_version = tokenizer.__version__
         python_version = "{0} ({1})".format(
             ".".join(str(n) for n in sys.version_info[:3]),
             platform.python_implementation(),
