@@ -413,21 +413,18 @@ break that way again; the 3.14 one links libffi statically.
   200-dim `topic_embedding` from the trigger (float32 rounding, 2.5e-9),
   one `atopics` row (Viðskipti, 0.2324 against 0.22, as before) and
   `indexed` stamped. 16 misaligned articles remain.
-- ☐ **Cutover** (planned 2026-10-14; its precondition is met: everything
-  taggable after the libffi fix was done by ~15:30 UTC 2026-10-13. The ~40k
-  rows still matching `indexed is null or indexed < parsed` have no `words`
-  rows, so neither tagger ever selects them). In order:
-  1. `sudo -u greynir cp -r /usr/share/nginx/greynir.is/resources/lsi
-     /home/greynir/github/Greynir/resources/`. The pipeline checkout has no
-     `resources/lsi/`, and without it the tagger exits 1.
-  2. `sudo -u greynir git -C /home/greynir/github/Greynir pull`. The next
-     :20/:50 cron run uses the new tagger.
-  3. Re-run the verification against the first new-tagger output. Watch
-     `runscraper.log` and the health check's topic-embedding check.
-  4. Re-tag the remaining 16 articles with misaligned 199-element vectors
-     (`topic_vector is not null and topic_embedding is null`):
-     `python topictagger.py tag <uuid>` for each. Confirm they gain a
-     `topic_embedding`.
+- ☑ 2026-10-14 **Cutover.** `resources/lsi/` was copied into the pipeline
+  checkout (checksums identical to the deployed copy), then the checkout was
+  pulled at 16:29 UTC. Before the first cron run, the read-only verification
+  passed from the pipeline checkout as `greynir`, with its own venv: 862
+  articles, all identical. The first production run at 16:50 tagged 10
+  articles in 198 s, all with 200-value vectors, embeddings and the topics
+  it logged. Runs under builder.py took 190–247 s, nearly all of it the
+  shared article-selection query (the join to `words` over the backlog), not
+  the tagging. The remaining 16 misaligned articles were then re-tagged one
+  by one. All now have 200-value vectors and embeddings, every topic set
+  is unchanged, and `topic_vector is not null and topic_embedding is null`
+  matches no rows.
 - ☐ Afterwards `vectors/venv` has no daily tenant. **Do not delete it**: it
   is the rollback, and the only environment that can retrain the model. A
   disposable gensim environment, a gensim-4 port, or the Vör/Gemini decision
