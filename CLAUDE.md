@@ -92,7 +92,8 @@ staging. It installs with `uv sync --frozen --no-dev` and restarts the service.
   LSI model and as the tagger's rollback. While it exists, code shared with
   it (`db/`, `vectors/settings.py`'s `Topics.conf`) must stay usable on 3.9.
   This is why `db/__init__.py` *detects* its Postgres driver rather than
-  naming one: `psycopg2` on 3.14, `psycopg2cffi` on 3.9. Rebuilding the
+  naming one. Every environment, `vectors/venv` included, has had `psycopg2`
+  since 2026-08-13; `psycopg2cffi` is only the fallback. Rebuilding the
   model invalidates every stored vector, all ~1.5M of them plus the topics,
   and `resources/lsi/` must then be re-exported.
 - **Similarity queries are served by pgvector** (`articles.topic_embedding`,

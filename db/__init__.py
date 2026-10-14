@@ -45,13 +45,16 @@ from settings import Settings, ConfigError
 # reason.
 #
 # It is detected rather than pinned because two interpreters share this file.
-# The web apps and the scraper pipeline are CPython 3.14 and have psycopg2. The
-# topic tagger runs from vectors/venv on CPython 3.9 -- gensim 3.8 imports
-# Mapping from collections and so cannot go past 3.9 -- and that venv has only
-# psycopg2cffi, installed from its own requirements.txt. Requiring psycopg2
-# here would break it.
+# The web apps, the scraper pipeline and the topic tagger are CPython 3.14.
+# vectors/venv is CPython 3.9 -- gensim 3.8 imports Mapping from collections
+# and so cannot go past 3.9 -- and is kept to rebuild the LSI model and as the
+# tagger's rollback. It installs from its own requirements.txt. psycopg2 was
+# installed into it on 2026-08-13, and the file has named psycopg2 instead of
+# psycopg2cffi since 2026-10-14, so every environment now picks psycopg2. The
+# fallback stays because a venv built from an older requirements.txt would
+# still have only the cffi port.
 #
-# Preferring rather than requiring also means the fallback disappears on its own
+# Preferring rather than requiring also means the fallback can go quietly
 # when that venv is eventually retired (see PLAN.md, the Vör/Gemini note).
 try:
     import psycopg2 as _driver  # noqa: F401

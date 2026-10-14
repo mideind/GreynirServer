@@ -1,7 +1,7 @@
 cffi>=1.15.1
 gensim==3.8.2
 numpy>=1.24.3
-psycopg2cffi>=2.9.0
+psycopg2>=2.9,<3
 pycparser>=2.20
 scipy>=1.10.1
 smart-open>=6.3.0
