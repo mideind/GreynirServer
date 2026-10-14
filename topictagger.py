@@ -77,6 +77,8 @@ import time
 from datetime import datetime, timezone
 
 import numpy as np
+from sqlalchemy import exists
+from sqlalchemy.orm import Query
 
 from reynir.basics import ConfigError, LineReader
 
@@ -271,19 +273,31 @@ def tag_article(
             )
 
 
+def selection_query(session: Session, process_all: bool, uuid: Optional[str]) -> Query:
+    """The articles to tag: those never indexed, or parsed again since they
+    were, and that have at least one row in the words table. This is the
+    same set that builder.py assign_topics selects, but builder.py asks
+    for it as a join to words grouped by article, and that form is slow.
+    Postgres overestimates the candidates more than tenfold, so it plans
+    a merge join that walks every article and the whole 11 GB words
+    primary key on every run, about 200 s even when ten articles qualify.
+    EXISTS gives a semi join that probes words once per candidate (2.6 s
+    measured 2026-10-14). The order is unspecified in both forms, so
+    under a limit, which articles come first may differ."""
+    q = session.query(Article.id, Article.heading)
+    if uuid:
+        q = q.filter(Article.id == uuid)
+    elif not process_all:
+        q = q.filter((Article.indexed == None) | (Article.indexed < Article.parsed))
+    return q.filter(exists().where(Word.article_id == Article.id))
+
+
 def articles_to_tag(
     limit: Optional[int], process_all: bool, uuid: Optional[str]
 ) -> List[Tuple[str, Optional[str]]]:
-    """Select the articles to tag, as builder.py assign_topics does:
-    those never indexed, or parsed again since they were, and that have
-    at least one row in the words table"""
+    """Select the articles to tag; see selection_query"""
     with SessionContext(read_only=True) as session:
-        q = session.query(Article.id, Article.heading)
-        if uuid:
-            q = q.filter(Article.id == uuid)
-        elif not process_all:
-            q = q.filter((Article.indexed == None) | (Article.indexed < Article.parsed))
-        q = q.join(Word).group_by(Article.id, Article.heading)
+        q = selection_query(session, process_all, uuid)
         rows = q.all() if (uuid or limit is None) else q[0:limit]
         return [(str(article_id), heading) for article_id, heading in rows]
 

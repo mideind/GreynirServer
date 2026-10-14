@@ -34,6 +34,8 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import pytest
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.orm import Session as OrmSession
 
 # Shenanigans to enable Pytest to discover modules in the
 # main workspace directory (the parent of /tests)
@@ -190,3 +192,26 @@ def test_read_topics_conf_spaces_and_repeats(tmp_path) -> None:
         "Veðurstofa_Íslands/entity",
         "vindur/kk",
     }
+
+
+def _selection_sql(process_all: bool, uuid=None) -> str:
+    # An unbound session builds and compiles the query without a database
+    q = tt.selection_query(OrmSession(), process_all, uuid)
+    return " ".join(str(q.statement.compile(dialect=postgresql.dialect())).split())
+
+
+def test_selection_is_a_semi_join_not_a_grouped_join() -> None:
+    # The join-and-group form that builder.py uses makes Postgres walk the
+    # whole words table on every run; the set is the same either way
+    for args in ((False,), (True,), (False, "00000000-0000-0000-0000-000000000000")):
+        sql = _selection_sql(*args)
+        assert "EXISTS (SELECT * FROM words WHERE words.article_id = articles.id)" in sql
+        assert "JOIN" not in sql and "GROUP BY" not in sql
+
+
+def test_selection_filters() -> None:
+    backlog = "articles.indexed IS NULL OR articles.indexed < articles.parsed"
+    assert backlog in _selection_sql(False)
+    assert backlog not in _selection_sql(True)
+    by_id = _selection_sql(False, "00000000-0000-0000-0000-000000000000")
+    assert "articles.id = %(id_1)s" in by_id and backlog not in by_id
