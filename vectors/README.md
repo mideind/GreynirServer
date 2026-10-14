@@ -1,6 +1,15 @@
 
 # Vectors directory
 
+> **Since October 2026, daily tagging no longer runs from here.** Articles
+> and topics are tagged by `topictagger.py` in the repository root, on the
+> main CPython 3.14 environment and without gensim (see `PLAN.md`, phase 5).
+> It reads `Topics.conf` from this directory. `builder.py` and its gensim
+> venv remain for one job, rebuilding the LSI model (`builder.py model`),
+> and as the tagger's rollback. After a rebuild, re-export the model with
+> `tools/export_lsi_model.py`, then re-tag everything (`topictagger.py --all
+> tag`) and recalculate the topics (`topictagger.py topics`).
+
 ## Text similarity functionality of Greynir
 
 This directory contains most of the text similarity

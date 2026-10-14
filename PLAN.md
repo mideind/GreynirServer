@@ -27,8 +27,8 @@ given; it does not care that ours come from a Gensim LSI model rather than a
 neural embedding. The vectors already live in the `articles.topic_vector`
 column as JSON array text, which is byte-for-byte pgvector's text input format,
 so the backfill is a straight `::vector` cast. The Gensim model is needed only
-to *produce* vectors — the topic tagger (`vectors/builder.py`), which keeps
-running unchanged on its CPython 3.9 venv — and to project free-text search
+to *produce* vectors — the topic tagger (`vectors/builder.py`, which kept
+running unchanged on its CPython 3.9 venv until phase 5 ported it) — and to project free-text search
 terms into LSI space (phase 3 below). The hot path, "similar to article X", is
 a lookup of X's stored vector plus a cosine kNN: one SQL query.
 
@@ -355,43 +355,81 @@ Rollback at any point before phase 4's deletions: the old path is untouched —
 redeploy the previous commit, and simserver (or a restart of it) serves as
 before.
 
-## Next (decided, not yet scheduled): port the topic tagger off gensim/3.9
+## Phase 5 — port the topic tagger off gensim/3.9
 
-Agreed 2026-08-18 as the likely next step, to be picked up in a later
-session. Phase 3 removed most of the original rationale for keeping the
-CPython 3.9 venv: the tagger's daily work is exactly the math that
-`topicvector.py` already implements gensim-free and verified against
-gensim to 8e-10 — gensim is now genuinely needed only to *retrain* the
-model (`builder.py model`), which has not happened since May 2023.
+Agreed 2026-08-18 and started 2026-10-13. Phase 3 removed most of the
+reason for keeping the CPython 3.9 venv: the tagger's daily work is exactly
+the arithmetic that `topicvector.py` already does without gensim. Gensim is
+now needed only to *retrain* the model (`builder.py model`), last done May 2023.
 
-Sketch:
+The timing was not a coincidence. On 2026-08-23 an `apt autoremove` removed
+`libffi6`, which the hand-built `/usr/local` CPython 3.9.4 links against. The
+tagger then died on every run for seven weeks, until 2026-10-13, and no
+article got a vector (machine PLAN.md, gotcha 53). The old interpreter can
+break that way again; the 3.14 one links libffi statically.
 
-- Reimplement `builder.py`'s `tag` path as a CPython 3.14 module in the
-  main environment, reusing `topicvector.LsiModel.project` against the
-  `resources/lsi/` export: per article, read its stems from the `words`
-  table (as `assign_article_topics` does), project, write
-  `articles.topic_vector` (the trigger derives `topic_embedding`), assign
-  topics by cosine against the `topics` table vectors (stored as JSON
-  under the `"lsi"` key, with per-topic thresholds), replace
-  `ArticleTopic` rows, stamp `indexed`.
-- Port `calculate_topics` (keyword lists → topic vectors) the same way —
-  it is the same projection.
-- Cron: `runtagger.sh` switches from `vectors/venv` to the main
-  environment. Keep the tagger runnable article-by-article for testing.
-- **Verify like phase 3, not by assumption**: run old and new taggers on
-  the same sample of articles and compare the produced vectors
-  (tolerance ~1e-6; note gensim's sparse-output quirk that produced the
-  17 known 199-element vectors — the new tagger should write dense 200
-  and thereby fix that bug class) and require identical topic
-  assignments.
-- Afterwards `vectors/venv` has no daily tenant. Retraining, if ever
-  wanted, needs a disposable gensim environment (or a gensim-4 port, or
-  is mooted by the Vör/Gemini decision below). Do NOT delete the venv
-  hastily — see the machine PLAN.md on venvs-as-rollback — but nothing
-  runs from it on cron any more.
+- ☑ 2026-10-13 `topictagger.py`: the `tag` and `topics` commands of
+  `builder.py`, on CPython 3.14 in the pipeline venv, through
+  `topicvector.LsiModel.project`. It mirrors builder.py's edge cases (see
+  its docstring): the bag of words from the `words` table; gensim's sparse
+  form, where |x| ≤ 1e-9 does not exist; a NULL vector and no topics when
+  that form is empty; `matutils.cossim` reproduced exactly; one commit per
+  article; topic vectors stored in the old sparse `{"lsi": [[i, f], ...]}`
+  format, so builder.py can still read them as a rollback. Two deliberate
+  differences: `topic_vector` is written dense, all 200 components; and it
+  refuses to run with an empty topics table, where builder.py would stamp
+  articles with NULL vectors.
+- ☑ 2026-10-13 `calculate_topics` ported. Recomputed in memory, all 11 topic
+  vectors match the stored ones to ≤ 3e-9, with the same components,
+  keywords, thresholds and identifiers.
+- ☑ 2026-10-13 **A/B verification, read-only**
+  (`tools/verify_topictagger.py`, which runs in a READ ONLY transaction and
+  calls the tagger's own `compute_article`):
 
-Estimated scope: similar to phase 3 (the hard part, the verified
-projection, already exists).
+  | stratum | sampled | vectors equal (≤1e-6) | topics identical | worst abs diff |
+  |---|---|---|---|---|
+  | written by builder.py today, 11:20 UTC onwards | 2,000 | 2,000 | 2,000 | 1.1e-8 |
+  | written 2023-05-03 → 2026-10-13 | 2,000 | 2,000 | 2,000 | 1.3e-8 |
+  | written before 2023-05-03 | 515 | 515 | 515 | 6.3e-9 |
+
+  The last row settles a question the port raised: the model files date from
+  2023-05-03, and 7,948 vectors were written earlier, possibly by an older
+  model. They match, so they share the space. **No stored vector needs
+  recomputing.**
+- ☑ 2026-10-13 `tests/test_topictagger.py` (CI; no database or model files
+  needed). It checks that `cossim` agrees with gensim's bit for bit, the 1e-9
+  sparsity cutoff, tf-idf and the projection on a synthetic model, the
+  NULL-vector cases, inclusive thresholds, and the `Topics.conf` parser.
+  Mutation-checked: an off-by-epsilon cutoff and a mathematically equivalent
+  dense cosine are both caught.
+- ☑ 2026-10-13 `scripts/runtagger.sh` runs `topictagger.py` from the repo
+  root in the main venv. The old command line is kept in its comments as the
+  rollback.
+- ☐ **Cutover** (planned 2026-10-14; its precondition is met: everything
+  taggable after the libffi fix was done by ~15:30 UTC 2026-10-13. The ~40k
+  rows still matching `indexed is null or indexed < parsed` have no `words`
+  rows, so neither tagger ever selects them). In order:
+  1. `sudo -u greynir cp -r /usr/share/nginx/greynir.is/resources/lsi
+     /home/greynir/github/Greynir/resources/`. The pipeline checkout has no
+     `resources/lsi/`, and without it the tagger exits 1.
+  2. `sudo -u greynir git -C /home/greynir/github/Greynir pull`. The next
+     :20/:50 cron run uses the new tagger.
+  3. Re-run the verification against the first new-tagger output. Watch
+     `runscraper.log` and the health check's topic-embedding check.
+  4. Re-tag the 17 articles with misaligned 199-element vectors
+     (`topic_vector is not null and topic_embedding is null`):
+     `python topictagger.py tag <uuid>` for each. Confirm they gain a
+     `topic_embedding`.
+- ☐ Afterwards `vectors/venv` has no daily tenant. **Do not delete it**: it
+  is the rollback, and the only environment that can retrain the model. A
+  disposable gensim environment, a gensim-4 port, or the Vör/Gemini decision
+  below would replace it for retraining. `vectors/settings.py` stays until
+  builder.py goes, because `topictagger.py` reads the same
+  `vectors/Topics.conf`.
+
+Not added to `deploy.sh`'s allowlist: nothing in the web app imports
+`topictagger.py`, and it runs from the pipeline checkout, which is updated
+by `git pull`, not by `deploy.sh`.
 
 ## Out of scope: the Vör / Gemini embeddings
 

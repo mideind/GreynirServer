@@ -82,14 +82,19 @@ staging. It installs with `uv sync --frozen --no-dev` and restarts the service.
   defaults to `override=False`, so anything already in the environment wins.
   Editing a drop-in needs `systemctl daemon-reload`; a bare restart re-reads
   nothing.
-- **`vectors/` is stuck on CPython 3.9.** The topic tagger runs from
-  `vectors/venv` with `gensim==3.8`, which does
-  `from collections import Mapping` — removed in Python 3.10 — so it cannot
-  move without a gensim 4 port. That venv installs from
-  `vectors/requirements.txt` with pip and is deliberately outside the lock.
-  Code shared with it (`db/`, `settings.py`) must therefore stay importable on
-  3.9. This is why `db/__init__.py` *detects* its Postgres driver rather than
-  naming one: `psycopg2` on 3.14, `psycopg2cffi` on 3.9.
+- **The topic tagger is `topictagger.py`** (CPython 3.14, pipeline venv),
+  which replaced `vectors/builder.py`'s `tag` and `topics` commands without
+  gensim. It shares `topicvector.LsiModel` with search, and it must keep
+  matching gensim's arithmetic exactly, including the 1e-9 sparsity cutoff
+  and `matutils.cossim`; `tools/verify_topictagger.py` checks this read-only
+  against stored vectors. `vectors/builder.py` remains on CPython 3.9
+  (`vectors/venv`, `gensim==3.8`, outside the lock) only to *rebuild* the
+  LSI model and as the tagger's rollback. While it exists, code shared with
+  it (`db/`, `vectors/settings.py`'s `Topics.conf`) must stay usable on 3.9.
+  This is why `db/__init__.py` *detects* its Postgres driver rather than
+  naming one: `psycopg2` on 3.14, `psycopg2cffi` on 3.9. Rebuilding the
+  model invalidates every stored vector, all ~1.5M of them plus the topics,
+  and `resources/lsi/` must then be re-exported.
 - **Similarity queries are served by pgvector** (`articles.topic_embedding`,
   HNSW index, trigger-synced from `topic_vector`) — see `PLAN.md` before
   touching `search.py`, `topicvector.py`, or the vector columns. The old
