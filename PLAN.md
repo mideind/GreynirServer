@@ -405,6 +405,14 @@ break that way again; the 3.14 one links libffi statically.
 - ☑ 2026-10-13 `scripts/runtagger.sh` runs `topictagger.py` from the repo
   root in the main venv. The old command line is kept in its comments as the
   rollback.
+- ☑ 2026-10-14 **Write path, live, one article.** `topictagger.py tag
+  5eaf5bce-f194-11ec-b896-d728d7ffec93`, one of the 17 misaligned
+  articles. Its vector has exactly one component under the 1e-9 cutoff,
+  which is why builder.py stored 199 values. Result: a 200-value
+  `topic_vector` identical to the read-only prediction (max diff 0.0), a
+  200-dim `topic_embedding` from the trigger (float32 rounding, 2.5e-9),
+  one `atopics` row (Viðskipti, 0.2324 against 0.22, as before) and
+  `indexed` stamped. 16 misaligned articles remain.
 - ☐ **Cutover** (planned 2026-10-14; its precondition is met: everything
   taggable after the libffi fix was done by ~15:30 UTC 2026-10-13. The ~40k
   rows still matching `indexed is null or indexed < parsed` have no `words`
@@ -416,7 +424,7 @@ break that way again; the 3.14 one links libffi statically.
      :20/:50 cron run uses the new tagger.
   3. Re-run the verification against the first new-tagger output. Watch
      `runscraper.log` and the health check's topic-embedding check.
-  4. Re-tag the 17 articles with misaligned 199-element vectors
+  4. Re-tag the remaining 16 articles with misaligned 199-element vectors
      (`topic_vector is not null and topic_embedding is null`):
      `python topictagger.py tag <uuid>` for each. Confirm they gain a
      `topic_embedding`.
