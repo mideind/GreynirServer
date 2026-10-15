@@ -436,6 +436,56 @@ Not added to `deploy.sh`'s allowlist: nothing in the web app imports
 `topictagger.py`, and it runs from the pipeline checkout, which is updated
 by `git pull`, not by `deploy.sh`.
 
+## Future — the topic set is incomplete
+
+Recorded 2026-10-15; not started. The tagger assigns a topic when an
+article's cosine similarity to a topic vector reaches that topic's threshold.
+The 11 topics in `vectors/Topics.conf` leave a large share of the news with
+none:
+
+- **43.8% of articles dated 2026 have no topic** (42,308 of 96,547 with a
+  vector); 41.6% of the last 30 days'. Pre-outage samples showed 40–48%, so
+  this is the topic set's coverage, not a tagger fault.
+- **Fisheries have no topic.** `Veiði` (identifier `salmon`) is recreational
+  angling: lax, urriði, stöng, veiðifluga, vöðlur. Of 125 articles in the
+  30 days to 2026-10-15 from mbl.is's fisheries section (`/200milur/`), 42 got
+  no topic and **43 were tagged `Veiði`**, so commercial fishing is filed as
+  salmon angling. Example: `972d267c-c887-11f1-b420-04014c605401`, "23 prósent
+  aflasamdráttur milli ára". Its best score was Efnahagsmál, 0.18 against 0.28.
+- **War and international conflict have no topic.** Example:
+  `960bee28-c887-11f1-b420-04014c605401`, attacks on Russian oil refineries.
+  Its best score was Slys og lögreglumál, 0.21 against 0.26, and every other
+  topic was under 0.07.
+
+Plan:
+
+1. **Survey the untagged articles** to find the major missing categories,
+   rather than guessing. Cheap signals: URL sections (`/200milur/`,
+   `/erlent/`, `/sport/`...), the most frequent `words` stems among untagged
+   articles against tagged ones, and clustering of their `topic_embedding`s
+   (pgvector) with a few headlines read per cluster.
+2. **Draft topics and keywords** in `vectors/Topics.conf`. Consider renaming
+   `Veiði` to `Stangveiði` once fisheries has its own topic. A topic's vector is
+   built from its keywords, so a keyword list close to the vocabulary of real
+   articles matters more than a long one.
+3. **Calibrate thresholds read-only** before writing anything. Score known
+   positives (for fisheries, the `/200milur/` articles) and a general sample
+   with `topictagger.compute_article` and `cossim`, as
+   `tools/verify_topictagger.py` does, and pick the threshold from those
+   distributions. Check that existing topics keep their hit rates.
+4. **Recompute topic vectors**: `topictagger.py topics`. This rewrites the
+   `topics` table, which builder.py, the rollback, still reads.
+5. **Re-tag 2026 to date in one scan**: about 96,500 articles. `tag` has no
+   date option today. It takes a UUID, the backlog, or `--all` (all ~1.5M).
+   Add `--since <date>`, which selects by `timestamp` and ignores the backlog
+   condition, rather than nulling `indexed` to push the articles through the
+   backlog. Nulling `indexed` would also mix the scan into the half-hourly
+   cron runs. builder.py tagged ~14 articles/s (2,500 in ~3 min on
+   2026-10-13), which puts the scan at about 2 h. topictagger.py hasn't been
+   timed at volume, so time a `--limit` run first. Vectors don't change (same model), so the effect is only on
+   `atopics`. Run it outside :20/:50, or pause the tagger's cron entry during
+   it.
+
 ## Out of scope: the Vör / Gemini embeddings
 
 Vör (`vthorsteinsson/vor-news`) re-embeds Greynir articles with Google's Gemini

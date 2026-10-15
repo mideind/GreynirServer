@@ -95,7 +95,10 @@ staging. It installs with `uv sync --frozen --no-dev` and restarts the service.
   naming one. Every environment, `vectors/venv` included, has had `psycopg2`
   since 2026-08-13; `psycopg2cffi` is only the fallback. Rebuilding the
   model invalidates every stored vector, all ~1.5M of them plus the topics,
-  and `resources/lsi/` must then be re-exported.
+  and `resources/lsi/` must then be re-exported. The *topic set* is a
+  separate matter. It is known to be incomplete: ~44% of articles get no
+  topic, fisheries has none, and `Veiði` means angling. Adding topics needs
+  no model rebuild; see PLAN.md, "the topic set is incomplete".
 - **Similarity queries are served by pgvector** (`articles.topic_embedding`,
   HNSW index, trigger-synced from `topic_vector`) — see `PLAN.md` before
   touching `search.py`, `topicvector.py`, or the vector columns. The old
