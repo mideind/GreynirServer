@@ -13,7 +13,7 @@ authors = [{ name = "Miðeind ehf." }]
 dependencies = [
     # Flask
     "werkzeug>=2.3.7",
-    "Flask==2.3.3",
+    "Flask==3.1.3",
     "flask-caching>=2.3.1",
     "Flask-Cors>=5.0.1",
     # DB

@@ -43,7 +43,6 @@ from flask import (
     url_for,
 )
 from flask.wrappers import Response, Request
-from flask import _request_ctx_stack  # type: ignore
 from flask.ctx import RequestContext
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import HTTPException, InternalServerError
