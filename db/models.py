@@ -496,6 +496,23 @@ class Entity(Base):
     # Add an index on the entity name in lower case
     name_lc_index = Index("ix_entities_name_lc", func.lower(name))
 
+    # Index for prefix matches on the name. nertokenizer.fetch_entities() asks
+    # for `name LIKE 'Word %' OR name = 'Word'` for every capitalised word in an
+    # article. The plain ix_entities_name btree cannot serve a LIKE prefix
+    # unless the database collation is C, and ours is is_IS.utf8, so each such
+    # query was a sequential scan of the whole table: ~125 ms over 1.2 million
+    # rows, ~3.4 s for a typical article -- far more than parsing it.
+    # varchar_pattern_ops compares bytewise, which serves both the prefix and
+    # the equality and brings the query down to a few ms.
+    # On an existing database:
+    #   CREATE INDEX CONCURRENTLY ix_entities_name_pattern
+    #       ON entities (name varchar_pattern_ops);
+    name_pattern_index = Index(
+        "ix_entities_name_pattern",
+        name,
+        postgresql_ops={"name": "varchar_pattern_ops"},
+    )
+
     def __repr__(self):
         return "Entity(id='{0}', name='{1}', verb='{2}', definition='{3}')".format(
             self.id, self.name, self.verb, self.definition
