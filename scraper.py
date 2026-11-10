@@ -282,6 +282,11 @@ class Scraper:
         numprocs: Optional[int] = None,
     ):
         """Run a scraping pass from all roots in the scraping database"""
+        # NB: this call also creates the Fast_Parser instance (Article._parser)
+        # here in the parent, before any parser pool is forked below. The
+        # workers inherit it and Article.get_parser() returns it at once;
+        # without it, every worker of every chunk would build its own parser
+        # (~1 s each). Keep it ahead of the pools.
         version = Article.parser_version()
         cnt = 0
 
