@@ -51,7 +51,9 @@ dependencies = [
     "feedparser==6.0.11",
     # Query modules
     "pytz==2025.2",
-    "timezonefinder==6.5.9",
+    # 8.2.5 is the last release that bundles its own data and the first line
+    # that accepts cffi 2.x, which islenska>=2.1.0 requires (6.5.9 capped cffi<2).
+    "timezonefinder==8.2.5",
     "rjsmin>=1.2.4",
     "python-youtube==0.9.1",
     "country-list>=1.1.0",
@@ -61,8 +63,8 @@ dependencies = [
     "openai>=1.44",
     "httpx>=0.27.2",
     # Ours
-    "reynir>=3.9.0",
-    "islenska>=1.3.2",
+    "reynir>=4.0.0",
+    "islenska>=2.1.0",
     # Back on PyPI as of 0.4.0, which declares pydantic>=2.8,<3 instead of the
     # ==2.3.0 pin that made every release up to 0.3.7 uninstallable on 3.13+
     # (pydantic-core has no wheels past cp312). That pin is why this was
@@ -106,3 +108,9 @@ testpaths = ["tests"]
 # the repository root and are run in place. Tell uv to manage the environment
 # without trying to build or install the project itself.
 package = false
+# icespeak 0.4.0 declares reynir<4.0.0 and islenska<2.0.0, caps written before
+# either major version existed. GreynirEngine 4.0.0 (the faster parser) needs
+# islenska>=2.1.0, so the caps are overridden here. The test suite and the
+# icespeak transcription paths pass on the new stack. Remove this override once
+# an icespeak release lifts the caps.
+override-dependencies = ["reynir>=4.0.0", "islenska>=2.1.0"]
