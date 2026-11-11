@@ -625,11 +625,16 @@ class Article:
         enclosing_session: Optional[Session] = None,
         verbose: bool = False,
         reload_parser: bool = False,
+        force: bool = False,
     ) -> bool:
         """Force a parse of the article. Returns False if the article was
         already parsed and the new result was refused because it would have
         replaced the existing parse with a far smaller one or none at all;
-        the article is then unchanged, both in memory and in the database."""
+        the article is then unchanged, both in memory and in the database.
+        If force is True, the new result is stored even if it is far
+        smaller; this is for articles whose existing parse is known to be
+        bloated, for instance by page furniture that a corrected scrape
+        helper now leaves out."""
         with SessionContext(enclosing_session, commit=True) as session:
             if reload_parser:
                 # We need a parse: Make sure we're using the newest grammar
@@ -639,7 +644,7 @@ class Article:
             old_parsed = (self._num_parsed or 0) if self._tree else 0
             saved = {attr: getattr(self, attr) for attr in self._PARSE_STATE}
             self._parse(session, verbose=verbose)
-            if self.reparse_is_degraded(
+            if not force and self.reparse_is_degraded(
                 old_sentences, old_parsed, self._num_sentences, self._num_parsed
             ):
                 self._refuse_reparse(session, old_sentences, old_parsed)
@@ -654,7 +659,7 @@ class Article:
                     # A successful reparse clears any earlier refusal
                     session.query(ReparseRefusal).filter(
                         ReparseRefusal.url == self._url
-                    ).delete(synchronize_session=False)
+                    ).delete(synchronize_session="fetch")
         return True
 
     @property

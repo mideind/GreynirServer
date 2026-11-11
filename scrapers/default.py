@@ -1083,8 +1083,97 @@ class StjornlagaradScraper(ScrapeHelper):
         return soup
 
 
+def _veva_date(datestr: str) -> Optional[datetime]:
+    """Parse a date of the form '4. nóvember 2026', as shown on webs
+    running the Veva content management system"""
+    m = re.search(r"(\d{1,2})\.\s*([a-záéíóúýþæö]+)\s+(\d{4})", datestr.lower())
+    if m is None or m.group(2) not in MONTHS:
+        return None
+    try:
+        return datetime(
+            year=int(m.group(3)),
+            month=MONTHS.index(m.group(2)) + 1,
+            day=int(m.group(1)),
+            tzinfo=timezone.utc,
+        )
+    except ValueError:
+        return None
+
+
+def _veva_timestamp(
+    published: Optional[datetime], modified: Optional[str]
+) -> Optional[datetime]:
+    """Combine the publication date shown on a Veva page with its
+    last-modified stamp. The page only shows the date of publication;
+    the last-modified stamp has a time of day, but may be from a later
+    edit. We thus only borrow the time of day if the dates agree."""
+    mod: Optional[datetime] = None
+    if modified:
+        # Examples: '2026-11-04T08:39:00.0000000', '2026-11-10 16:50'
+        m = re.match(r"(\d{4})-(\d\d)-(\d\d)[T ](\d\d):(\d\d)", modified.strip())
+        if m is not None:
+            try:
+                mod = datetime(*(int(g) for g in m.groups()), tzinfo=timezone.utc)
+            except ValueError:
+                mod = None
+    if published is None:
+        return mod
+    if mod is not None and mod.date() == published.date():
+        return mod
+    return published
+
+
+def _veva_clean(content: Tag) -> None:
+    """Remove furniture that is common to article bodies on webs
+    running the Veva content management system"""
+    # An inline image is followed by its caption, which is a paragraph
+    # container holding bare text, whereas body text is within <p> tags
+    for img in content.find_all("img"):
+        caption = img.find_next_sibling()
+        if (
+            caption is not None
+            and ScrapeHelper.div_class_filter(caption, "veva-paragraph")
+            and caption.find(["p", "ul", "ol", "h2", "h3", "blockquote"]) is None
+        ):
+            caption.extract()
+    # Images, with their captions; embedded video, charts and pages; tables
+    for name in ("figure", "figcaption", "img", "iframe", "table", "style", "svg"):
+        ScrapeHelper.del_tag(content, name)
+    for cls in (
+        "paragraph-attachment",
+        "embedded-page",
+        "infogram-embed",
+        "veva-youtube-player",
+        "veva-vimeo-player",
+        "table-caption",
+        "table-responsive",
+        "wrap-grid",
+        "rsbtn",
+    ):
+        ScrapeHelper.del_div_class(content, cls)
+    # Hidden elements (search metadata and such)
+    for t in content.find_all(lambda tag: tag.has_attr("hidden")):
+        t.extract()
+    # Links to downloads and related pages, which are
+    # stand-alone items below or beside the article text
+    for cls in ("hide-link-icon", "btn"):
+        ScrapeHelper.del_tag_prop_val(content, "a", "class", cls)
+
+
+def _text_of(tag: Optional[Tag]) -> str:
+    """Return the text within a tag, with soft hyphens removed
+    and whitespace normalized"""
+    if tag is None:
+        return ""
+    s = tag.get_text(" ").replace("\u00ad", "").replace("\u200b", "")
+    return re.sub(r"\s+", " ", s).strip()
+
+
 class StjornarradScraper(ScrapeHelper):
     """Scraping helper for the webs of Icelandic ministries"""
+
+    # Version 2.0: handles the Veva layout, in use since September 2026
+    VERSION = "2.0"
 
     def __init__(self, root: Root) -> None:
         super().__init__(root)
@@ -1096,8 +1185,66 @@ class StjornarradScraper(ScrapeHelper):
             return True
         return False
 
+    @staticmethod
+    def _is_article_page(soup: Optional[BeautifulSoup]) -> bool:
+        """Return True if the page contains an actual article. The ministry
+        webs have at times answered with HTTP status 200 while delivering
+        a 'page not found' message, or an empty application shell."""
+        if soup is None or soup.html is None:
+            return False
+        if StjornarradScraper._veva_body(soup) is not None:
+            return True
+        # Older layouts
+        if ScrapeHelper.nested_tag(soup, "main", "article") is not None:
+            return True
+        return ScrapeHelper.div_class(soup, "pgmain", "article", "boxbody") is not None
+
+    def fetch_url(self, url: str) -> Optional[str]:
+        """Fetch the article page, returning None if what we get is
+        not an article. The URL will then be tried again later, instead
+        of being stored as an article without content."""
+        from fetcher import Fetcher  # Avoid a circular import
+
+        html_doc = Fetcher.raw_fetch_url(url)
+        if not html_doc:
+            return None
+        if not self._is_article_page(self.make_soup(html_doc)):
+            logging.warning(f"No article found at {url}; will retry later")
+            return None
+        return html_doc
+
+    @staticmethod
+    def _veva_body(soup: BeautifulSoup) -> Optional[Tag]:
+        """Return the article container of the Veva layout
+        (in use since September 2026), or None if not present"""
+        main = soup.find("main")
+        if main is None:
+            return None
+        body = ScrapeHelper.div_class(main, "rs-content")
+        # The article container always has the heading in a <h1>
+        return body if body is not None and body.h1 is not None else None
+
     def get_metadata(self, soup: BeautifulSoup) -> Metadata:
         metadata = super().get_metadata(soup)
+        # Name of the ministry in question
+        metadata.author = self._description or "Stjórnarráð Íslands"
+        veva = self._veva_body(soup)
+        if veva is not None:
+            # Veva layout
+            metadata.heading = _text_of(veva.h1)
+            # The date of publication is at the top of the article,
+            # followed by the names of the ministries involved
+            group = ScrapeHelper.div_class(veva, "component-group")
+            published = _veva_date(_text_of(group.strong)) if group else None
+            modified = veva.find(
+                lambda t: t.name == "meta" and t.get("itemprop") == "lastModified"
+            )
+            timestamp = _veva_timestamp(
+                published, str(modified.get("content", "")) if modified else None
+            )
+            if timestamp is not None:
+                metadata.timestamp = timestamp
+            return metadata
         body = ScrapeHelper.div_class(soup, "pgmain", "article", "boxbody")
         heading = ScrapeHelper.nested_tag(soup, "main", "article", "header", "h1")
         if heading:
@@ -1116,17 +1263,28 @@ class StjornarradScraper(ScrapeHelper):
                 metadata.timestamp = datetime.strptime(date.string, "%d.%m.%Y").replace(
                     tzinfo=timezone.utc
                 )
-        # Name of the ministry in question
-        metadata.author = self._description or "Stjórnarráð Íslands"
         return metadata
 
     def get_content(self, soup: BeautifulSoup) -> Optional[Tag]:
         """Find the article content (main text) in the soup"""
+        veva = self._veva_body(soup)
+        if veva is not None:
+            # Veva layout. Delete the heading
+            ScrapeHelper.del_tag(veva, "h1")
+            # Delete the hero image with its caption and sharing links
+            ScrapeHelper.del_div_class(veva, "page-share-header")
+            # Delete the date and ministry names above the heading, and the
+            # topic tags and 'back' button below the text (component groups)
+            ScrapeHelper.del_div_class(veva, "component-group")
+            _veva_clean(veva)
+            return veva
         result_soup = ScrapeHelper.nested_tag(soup, "main", "article", "section")
         if result_soup is None:
             result_soup = ScrapeHelper.div_class(soup, "pgmain", "article", "boxbody")
             if result_soup is None:
-                return soup
+                # No article here (for instance a 'page not found' message):
+                # return no content, rather than all the furniture of the page
+                return None
             # Older layout: delete extra inline stuff
             # Delete h1
             if result_soup.h1:
@@ -2018,33 +2176,68 @@ class VisindavefurScraper(ScrapeHelper):
 class SedlabankinnScraper(ScrapeHelper):
     """Scraping helper for sedlabanki.is"""
 
+    # Version 2.0: handles the Veva layout, in use since April 2025
+    VERSION = "2.0"
+
     def __init__(self, root):
         super().__init__(root)
         self._feeds = [
             "https://www.sedlabanki.is/extensions/news/rss/Frettatilkynningar.rss"
         ]
 
+    @staticmethod
+    def _veva_body(soup: BeautifulSoup) -> Optional[Tag]:
+        """Return the article container of the Veva layout
+        (in use since April 2025), or None if not present"""
+        main = soup.find("main")
+        if main is None:
+            return None
+        return ScrapeHelper.div_class(main, "rs-content")
+
     def get_metadata(self, soup):
         """Analyze the article soup and return metadata"""
         metadata = super().get_metadata(soup)
 
-        # Extract the heading from the OpenGraph og:title meta property
-        heading = ScrapeHelper.meta_property(soup, "og:title") or ""
-
         # Author
         author = "Seðlabanki Íslands"
-
-        # Extract the publication time from the media tag
         timestamp = _now()
-        try:
-            media = ScrapeHelper.div_class(soup, "media")
-            if media:
-                tstr = str(media["data-last-modified"])
-                timestamp = datetime.strptime(tstr, "%Y-%m-%d %H:%M:%S").replace(
-                    tzinfo=timezone.utc
+
+        veva = self._veva_body(soup)
+        if veva is not None:
+            # Veva layout: the heading is in the page header
+            heading = _text_of(
+                ScrapeHelper.nested_tag(
+                    ScrapeHelper.div_class(soup, "veva-page-title"), "h1"
                 )
-        except Exception as e:
-            logging.warning(f"Unable to parse date for Sedlabankinn article: {e}")
+            )
+            # The date of publication is shown beside the article
+            datestr = _text_of(ScrapeHelper.div_class(soup, "eyebrow"))
+            if not heading:
+                # Fall back to og:title, which has the date appended
+                heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+                heading = heading.replace("\u00ad", "")
+                if datestr and heading.endswith(datestr):
+                    heading = heading[: -len(datestr)].strip()
+            modified = veva.find(lambda t: t.has_attr("data-last-modified"))
+            ts = _veva_timestamp(
+                _veva_date(datestr),
+                str(modified["data-last-modified"]) if modified else None,
+            )
+            if ts is not None:
+                timestamp = ts
+        else:
+            # Extract the heading from the OpenGraph og:title meta property
+            heading = ScrapeHelper.meta_property(soup, "og:title") or ""
+            # Extract the publication time from the media tag
+            try:
+                media = ScrapeHelper.div_class(soup, "media")
+                if media:
+                    tstr = str(media["data-last-modified"])
+                    timestamp = datetime.strptime(tstr, "%Y-%m-%d %H:%M:%S").replace(
+                        tzinfo=timezone.utc
+                    )
+            except Exception as e:
+                logging.warning(f"Unable to parse date for Sedlabankinn article: {e}")
 
         metadata.heading = heading
         metadata.author = author
@@ -2054,6 +2247,27 @@ class SedlabankinnScraper(ScrapeHelper):
 
     def get_content(self, soup: BeautifulSoup) -> Optional[Tag]:
         """Find the article content (main text) in the soup"""
+        veva = self._veva_body(soup)
+        if veva is not None:
+            # Veva layout
+            content = ScrapeHelper.div_class(veva, "article-content")
+            if content is None or not content.get_text().strip():
+                # On some pages, the article-content wrapper is missing or
+                # empty, with the text beside it: use the enclosing
+                # container, without heading, tags and header
+                content = veva
+                ScrapeHelper.del_tag_prop_val(content, "h2", "class", "hidden-heading")
+                ScrapeHelper.del_div_class(content, "tag")
+                ScrapeHelper.del_div_class(content, "content-header")
+            _veva_clean(content)
+            # Table headings within cards are left dangling
+            # when the tables are removed
+            for card in content.find_all(
+                lambda t: ScrapeHelper.div_class_filter(t, "card")
+            ):
+                if not card.find("p"):
+                    card.extract()
+            return content
         content = ScrapeHelper.div_class(soup, "media-body")
         if content is None:
             return None
