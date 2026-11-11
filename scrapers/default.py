@@ -1210,7 +1210,7 @@ class StjornarradScraper(ScrapeHelper):
         if not html_doc:
             return None
         if not self._is_article_page(self.make_soup(html_doc)):
-            logging.warning(f"No article found at {url}; will retry later")
+            logging.warning(f"No article found at {url}")
             return None
         return html_doc
 

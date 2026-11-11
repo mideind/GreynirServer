@@ -42,6 +42,7 @@ import time
 import logging
 
 import traceback
+from datetime import datetime, timedelta, timezone
 
 # Uncomment the following to force running in a single process,
 # for instance for debugging
@@ -68,12 +69,32 @@ from fetcher import Fetcher
 from article import Article
 
 from db import SessionContext, IntegrityError
-from sqlalchemy import and_, exists
+from sqlalchemy import and_, exists, or_
 
-from db.models import Root, Article as ArticleRow, ReparseRefusal
+from db.models import Root, Article as ArticleRow, ReparseRefusal, ScrapeFailure
 from db.setup import init_roots
 
 import feedparser  # type: ignore
+
+
+# An article that could not be fetched is attempted this many times in all
+SCRAPE_MAX_ATTEMPTS = 8
+# The wait after the first failed attempt; it doubles after each failure.
+# With the scraper running every 30 minutes, the eight attempts are thus
+# made about 0, 0.5, 1.5, 3.5, 7, 14, 27.5 and 54.5 hours after the
+# article was first seen. The wait is a little short of the scraping
+# interval, so that an attempt is not put off by a whole run just because
+# the previous one was made a few seconds into its run.
+SCRAPE_RETRY_BASE = timedelta(minutes=25)
+
+
+def scrape_retry_delay(attempts: int) -> Optional[timedelta]:
+    """Return how long to wait before fetching an article again, given the
+    number of attempts that have failed so far, or None if that was the
+    last one"""
+    if attempts >= SCRAPE_MAX_ATTEMPTS:
+        return None
+    return SCRAPE_RETRY_BASE * 2 ** (max(attempts, 1) - 1)
 
 
 class ArticleDescr:
@@ -194,11 +215,64 @@ class Scraper:
 
         with SessionContext(commit=True) as session:
             a = Article.scrape_from_url(url, session)
-            if a is not None:
+            if a is not None and a.html:
                 a.store(session)
+                # Forget any earlier failures to fetch this article
+                session.query(ScrapeFailure).filter(ScrapeFailure.url == url).delete(
+                    synchronize_session="fetch"
+                )
+            else:
+                # Nothing was fetched. Leave the article row as it is, and
+                # note when to try again; storing the empty article would
+                # detach it from its root, never to be scraped again.
+                self.note_scrape_failure(session, url)
 
         t1 = time.time()
         logging.info("Scraping completed in {0:.2f} seconds".format(t1 - t0))
+
+    # noinspection PyComparisonWithNone
+    @staticmethod
+    def unscraped_articles(session: Any, now: Optional[datetime] = None) -> Any:
+        """Return a query for the articles that are to be fetched now"""
+        now = now or datetime.now(timezone.utc)
+        return (
+            session.query(ArticleRow)
+            .outerjoin(ScrapeFailure, ScrapeFailure.url == ArticleRow.url)
+            .filter(ArticleRow.scraped == None)
+            .filter(ArticleRow.root_id != None)
+            # Skip articles that we failed to fetch earlier, until they
+            # are due for another attempt; a NULL next_attempt means
+            # that we have given up on them
+            .filter(or_(ScrapeFailure.url == None, ScrapeFailure.next_attempt <= now))
+        )
+
+    @staticmethod
+    def note_scrape_failure(
+        session: Any, url: str, now: Optional[datetime] = None
+    ) -> Optional[datetime]:
+        """Record a failed attempt to fetch an article. Returns the time
+        before which it will not be attempted again, or None if that was
+        the last attempt."""
+        now = now or datetime.now(timezone.utc)
+        f = session.query(ScrapeFailure).filter(ScrapeFailure.url == url).one_or_none()
+        if f is None:
+            f = ScrapeFailure(url=url, first_failed=now, attempts=0)
+            session.add(f)
+        f.attempts += 1
+        f.last_failed = now
+        delay = scrape_retry_delay(f.attempts)
+        f.next_attempt = None if delay is None else now + delay
+        session.flush()
+        if delay is None:
+            logging.warning(
+                f"Unable to fetch article {url}: giving up after {f.attempts} attempts"
+            )
+        else:
+            logging.warning(
+                f"Unable to fetch article {url} (attempt {f.attempts} of "
+                f"{SCRAPE_MAX_ATTEMPTS}): trying again after {f.next_attempt:%Y-%m-%d %H:%M}"
+            )
+        return f.next_attempt
 
     def parse_article(self, seq: int, url: str, helper: ModuleType) -> None:
         """Parse a single article"""
@@ -341,12 +415,7 @@ class Scraper:
                     # to query(ArticleRow.root, ArticleRow.url) since
                     # ArticleRow.root is a joined subrecord
                     seq = 0
-                    for a in (
-                        session.query(ArticleRow)
-                        .filter(ArticleRow.scraped == None)
-                        .filter(ArticleRow.root_id != None)
-                        .yield_per(100)
-                    ):
+                    for a in self.unscraped_articles(session).yield_per(100):
                         yield ArticleDescr(seq, a.root, a.url)
                         seq += 1
 
