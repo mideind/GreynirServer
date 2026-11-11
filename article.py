@@ -38,6 +38,7 @@ from typing import (
 )
 
 import json
+import logging
 import uuid
 from datetime import datetime, timezone
 from collections import defaultdict
@@ -55,7 +56,7 @@ from reynir.incparser import IncrementalParser
 from reynir.simpletree import SimpleTree
 
 from db import Session, SessionContext, DataError, desc
-from db.models import Article as ArticleRow, Word, Root
+from db.models import Article as ArticleRow, Word, Root, ReparseRefusal
 
 from fetcher import Fetcher
 from tree import Tree
@@ -71,6 +72,11 @@ if TYPE_CHECKING:
 # since they may require lots of memory (>16 GB) and take
 # minutes to parse
 MAX_SENTENCE_TOKENS = 90
+
+# A reparse of an article that already has parsed sentences is refused if the
+# fresh result has no parsed sentences at all, or fewer than this fraction of
+# the sentences already stored. See Article.parse().
+REPARSE_MIN_SENTENCE_RATIO = 0.5
 
 
 def _now() -> datetime:
@@ -541,21 +547,115 @@ class Article:
                     # Store the updated article in the database
                     self.store(session)
 
+    # The attributes that _parse() overwrites
+    _PARSE_STATE = (
+        "_parsed",
+        "_parser_version",
+        "_num_tokens",
+        "_num_sentences",
+        "_num_parsed",
+        "_ambiguity",
+        "_raw_tokens",
+        "_tokens",
+        "_words",
+        "_tree",
+    )
+
+    @staticmethod
+    def reparse_is_degraded(
+        old_sentences: int, old_parsed: int, new_sentences: int, new_parsed: int
+    ) -> bool:
+        """Return True if a fresh parse result should not be allowed to
+        replace an existing one.
+
+        A reparse re-extracts the article text from the stored HTML with the
+        current scrape helper. If the helper no longer matches the markup of
+        that HTML, it yields nothing, or only page chrome such as a header or
+        a navigation menu -- which tokenizes into a few sentences and may even
+        parse. Either way the result is much shorter than what we have, while
+        a legitimate reparse hardly changes the sentence count at all."""
+        if old_parsed <= 0:
+            # Nothing parsed to protect
+            return False
+        if new_parsed <= 0:
+            # We had parse trees; now there are none
+            return True
+        return new_sentences < old_sentences * REPARSE_MIN_SENTENCE_RATIO
+
+    def _refuse_reparse(
+        self, session: Session, old_sentences: int, old_parsed: int
+    ) -> None:
+        """Log and record that the result just produced by _parse()
+        is not being stored. Called before the previous state is restored."""
+        helper = Fetcher.helper_for(session, self._url) if self._url else None
+        logging.warning(
+            "Reparse REFUSED for {0}: had {1}/{2} sentences parsed, the stored "
+            "HTML now yields {3}/{4}. Keeping the existing parse; the scrape "
+            "helper probably no longer matches this article's HTML.".format(
+                self._url,
+                old_parsed,
+                old_sentences,
+                self._num_parsed,
+                self._num_sentences,
+            )
+        )
+        # merge() makes this an upsert on the primary key (the URL)
+        session.merge(
+            ReparseRefusal(
+                url=self._url,
+                timestamp=_now(),
+                # The parser's own version string, as returned by
+                # Article.parser_version() and compared by scraper.py
+                # --reparse; NOT self._parser_version, which has the
+                # tokenizer version appended and would never match there
+                parser_version=self.get_parser().version,
+                scr_module=getattr(helper, "scr_module", None),
+                scr_class=getattr(helper, "scr_class", None),
+                scr_version=getattr(helper, "scr_version", None),
+                old_sentences=old_sentences,
+                old_parsed=old_parsed,
+                new_sentences=self._num_sentences,
+                new_parsed=self._num_parsed,
+            )
+        )
+        session.flush()
+
     def parse(
         self,
         enclosing_session: Optional[Session] = None,
         verbose: bool = False,
         reload_parser: bool = False,
-    ) -> None:
-        """Force a parse of the article"""
+    ) -> bool:
+        """Force a parse of the article. Returns False if the article was
+        already parsed and the new result was refused because it would have
+        replaced the existing parse with a far smaller one or none at all;
+        the article is then unchanged, both in memory and in the database."""
         with SessionContext(enclosing_session, commit=True) as session:
             if reload_parser:
                 # We need a parse: Make sure we're using the newest grammar
                 self.reload_parser()
+            # Note what we have, so that it can be protected
+            old_sentences = self._num_sentences or 0
+            old_parsed = (self._num_parsed or 0) if self._tree else 0
+            saved = {attr: getattr(self, attr) for attr in self._PARSE_STATE}
             self._parse(session, verbose=verbose)
+            if self.reparse_is_degraded(
+                old_sentences, old_parsed, self._num_sentences, self._num_parsed
+            ):
+                self._refuse_reparse(session, old_sentences, old_parsed)
+                # Put the article object back as it was
+                for attr, value in saved.items():
+                    setattr(self, attr, value)
+                return False
             if self._tree is not None or self._tokens is not None:
                 # Store the updated article in the database
                 self.store(session)
+                if old_parsed > 0 and self._url:
+                    # A successful reparse clears any earlier refusal
+                    session.query(ReparseRefusal).filter(
+                        ReparseRefusal.url == self._url
+                    ).delete(synchronize_session=False)
+        return True
 
     @property
     def url(self) -> Optional[str]:

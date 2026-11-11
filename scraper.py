@@ -68,7 +68,9 @@ from fetcher import Fetcher
 from article import Article
 
 from db import SessionContext, IntegrityError
-from db.models import Root, Article as ArticleRow
+from sqlalchemy import and_, exists
+
+from db.models import Root, Article as ArticleRow, ReparseRefusal
 from db.setup import init_roots
 
 import feedparser  # type: ignore
@@ -202,16 +204,24 @@ class Scraper:
         t0 = time.time()
         num_sentences = 0
         num_parsed = 0
+        refused = False
 
         # Load the article
         with SessionContext(commit=True) as session:
             a = Article.load_from_url(url, session)
             if a is not None:
-                a.parse(session)
+                refused = not a.parse(session)
                 num_sentences = a.num_sentences
                 num_parsed = a.num_parsed
 
         t1 = time.time()
+        if refused:
+            # The details were logged by Article.parse()
+            logging.info(
+                f"[{seq}] Reparse refused, existing parse kept "
+                f"({num_parsed}/{num_sentences} sentences)"
+            )
+            return
         logging.info(
             "[{3}] Parsing of {2}/{1} sentences completed in {0:.2f} seconds".format(
                 t1 - t0, num_sentences, num_parsed, seq
@@ -363,6 +373,21 @@ class Scraper:
                     q = q.filter(
                         cast(str, ArticleRow.parser_version) < version
                     ).order_by(ArticleRow.parsed)
+                    # Skip articles whose reparse was already refused under
+                    # this parser version (see Article.parse()). Their rows
+                    # are left untouched, so they would otherwise stay at the
+                    # head of this oldest-first queue and be selected again
+                    # on every run. They get another try with each new parser
+                    # version, or at once if their refusal row is deleted,
+                    # e.g. after the scrape helper has been fixed.
+                    q = q.filter(
+                        ~exists().where(
+                            and_(
+                                ReparseRefusal.url == ArticleRow.url,
+                                ReparseRefusal.parser_version == version,
+                            )
+                        )
+                    )
                 else:
                     # Only parse articles that have no parse tree
                     q = q.filter(ArticleRow.tree == None)
