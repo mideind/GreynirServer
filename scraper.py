@@ -5,7 +5,7 @@
 
     Scraper module
 
-    Copyright (C) 2023 Miðeind ehf.
+    Copyright (C) 2026 Miðeind ehf.
     Original author: Vilhjálmur Þorsteinsson
 
        This program is free software: you can redistribute it and/or modify
@@ -92,6 +92,9 @@ class Scraper:
 
     def __init__(self) -> None:
         logging.info("Initializing scraper instance")
+        # If True, parse results are stored even if the reparse guard
+        # in Article.parse() would refuse them (set by go())
+        self._force = False
 
     def urls2fetch(self, root: Root, helper: Optional[ModuleType]) -> Set[str]:
         """Returns a set of URLs to fetch. If the scraper helper class has
@@ -210,7 +213,7 @@ class Scraper:
         with SessionContext(commit=True) as session:
             a = Article.load_from_url(url, session)
             if a is not None:
-                refused = not a.parse(session)
+                refused = not a.parse(session, force=self._force)
                 num_sentences = a.num_sentences
                 num_parsed = a.num_parsed
 
@@ -290,8 +293,11 @@ class Scraper:
         urls: Optional[str] = None,
         uuid: Optional[str] = None,
         numprocs: Optional[int] = None,
+        force: bool = False,
     ):
         """Run a scraping pass from all roots in the scraping database"""
+        # Only an explicit list of articles can be forced past the reparse guard
+        self._force = force and (urls is not None or uuid is not None)
         # NB: this call also creates the Fast_Parser instance (Article._parser)
         # here in the parent, before any parser pool is forked below. The
         # workers inherit it and Article.get_parser() returns it at once;
@@ -536,6 +542,7 @@ def scrape_articles(
     urls: Optional[str] = None,
     uuid: Optional[str] = None,
     numprocs: Optional[int] = None,
+    force: bool = False,
 ):
     # Create kwargs dict that will be passed to Scraper.go()
     kwargs = dict(locals())
@@ -594,6 +601,12 @@ __doc__ = """
         -u filename, --urls=filename: Reparse the URLs listed in the given file
         -d uuid, --uuid=filename: Reparse the article having the given UUID
         -l N, --limit=N: Limit parsing session to N articles (default 10)
+        -n N, --numprocs=N: Use at most N processes for parsing
+        -f, --force: With --urls or --uuid, store the new parse even if it
+            has far fewer sentences than the existing one (which the
+            reparse guard otherwise refuses). Use only for articles whose
+            existing parse is known to be wrong, e.g. bloated by page
+            furniture that a corrected scrape helper now leaves out.
 
     If --reparse is not specified, the scraper will read all previously
     unseen articles from the root domains and then proceed to parse any
@@ -616,7 +629,7 @@ def main(argv: Optional[List[str]] = None):
         try:
             opts, _ = getopt.getopt(
                 argv[1:],
-                "hirbl:u:d:n:",
+                "hirbfl:u:d:n:",
                 [
                     "help",
                     "init",
@@ -626,6 +639,7 @@ def main(argv: Optional[List[str]] = None):
                     "urls=",
                     "uuid=",
                     "numprocs=",
+                    "force",
                 ],
             )
         except getopt.error as msg:
@@ -638,6 +652,7 @@ def main(argv: Optional[List[str]] = None):
         uuid: Optional[str] = None
         numprocs: Optional[int] = None
         debug = False
+        force = False
 
         def parse_int(a: Union[int, str]) -> Optional[int]:
             try:
@@ -670,6 +685,9 @@ def main(argv: Optional[List[str]] = None):
             elif o in ("-d", "--uuid"):
                 # UUID of a single article to reparse
                 uuid = a
+            elif o in ("-f", "--force"):
+                # Bypass the reparse guard (with --urls or --uuid only)
+                force = True
             elif o in ("-n", "--numprocs"):
                 # Max number of processes to fork when parsing
                 # (default: use all CPU cores)
@@ -689,13 +707,21 @@ def main(argv: Optional[List[str]] = None):
             print("Configuration error: {0}".format(e), file=sys.stderr)
             return 2
 
+        if force and urls is None and uuid is None:
+            raise Usage("--force requires --urls or --uuid")
+
         if init:
             # Initialize the scraper database
             init_roots()
         else:
             # Run the scraper
             scrape_articles(
-                reparse=reparse, limit=limit, urls=urls, uuid=uuid, numprocs=numprocs
+                reparse=reparse,
+                limit=limit,
+                urls=urls,
+                uuid=uuid,
+                numprocs=numprocs,
+                force=force,
             )
 
     except Usage as err:

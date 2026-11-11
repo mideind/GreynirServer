@@ -2,7 +2,7 @@
 
     Greynir: Natural language processing for Icelandic
 
-    Copyright (C) 2023 Miðeind ehf.
+    Copyright (C) 2026 Miðeind ehf.
 
        This program is free software: you can redistribute it and/or modify
        it under the terms of the GNU General Public License as published by
@@ -157,6 +157,21 @@ def test_reparse_guard():
             row = _row(session)
             assert row.num_sentences == good_ns and row.num_parsed == good_np
             assert row.parsed >= good_parsed_ts
+            assert _refusal(session) is None
+
+            # A forced reparse stores the far smaller result. This is for
+            # articles whose existing parse is bloated by page furniture
+            # that a corrected scrape helper now leaves out.
+            _set_html(session, CHROME_HTML)
+            a = Article.load_from_url(URL, session)
+            assert a is not None
+            assert a.parse(session) is False
+            assert _refusal(session) is not None
+            a = Article.load_from_url(URL, session)
+            assert a is not None
+            assert a.parse(session, force=True) is True
+            row = _row(session)
+            assert row.num_sentences == 1
             assert _refusal(session) is None
         finally:
             session.rollback()
