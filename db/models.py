@@ -357,6 +357,75 @@ event.listen(
 )
 
 
+class ReparseRefusal(Base):
+    """Records that a reparse of an already parsed article was refused,
+    because the fresh extraction from the stored HTML yielded far less than
+    what the article already had (see Article.parse()).
+
+    Reparsing re-extracts the text from the *stored* HTML with the *current*
+    scrape helper. If the site's markup has changed since the article was
+    scraped, the current helper may find nothing, or only page chrome, in the
+    old HTML. Storing that result would erase a good parse; this is how
+    181,000 ruv.is article bodies were wiped in 2025. The reparse is instead
+    refused, the article row is left untouched, and a row is written here.
+
+    The table is thus the work list of articles that need a new or updated
+    extractor for an older HTML layout. To see which sources and time ranges
+    are affected:
+
+        select r.domain, date_trunc('month', a.timestamp) as month,
+            count(*), min(a.timestamp), max(a.timestamp)
+        from reparse_refusals f
+            join articles a on a.url = f.url
+            left join roots r on r.id = a.root_id
+        group by 1, 2 order by 1, 2;
+
+    There is at most one row per article: a later refusal replaces the
+    earlier one, and a later successful reparse deletes it."""
+
+    __tablename__ = "reparse_refusals"
+
+    # The article whose reparse was refused
+    url = Column(
+        String,
+        ForeignKey("articles.url", onupdate="CASCADE", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    # When the reparse was refused
+    timestamp = DateTimeColumn(nullable=False, index=True)
+
+    # The parser version of the refused attempt. scraper.py --reparse skips
+    # articles already refused under the current version, so that refused
+    # articles do not stay at the head of its oldest-first queue forever.
+    parser_version = Column(String, index=True)
+
+    # The scrape helper that produced the refused extraction
+    scr_module = Column(String(80))
+    scr_class = Column(String(80))
+    scr_version = Column(String(16))
+
+    # Sentence counts stored in the article, i.e. what was protected
+    old_sentences = Column(Integer, nullable=False)
+    old_parsed = Column(Integer, nullable=False)
+
+    # Sentence counts of the refused result
+    new_sentences = Column(Integer, nullable=False)
+    new_parsed = Column(Integer, nullable=False)
+
+    def __repr__(self):
+        return (
+            "ReparseRefusal(url='{0}', old={1}/{2}, new={3}/{4}, ts='{5}')".format(
+                self.url,
+                self.old_parsed,
+                self.old_sentences,
+                self.new_parsed,
+                self.new_sentences,
+                self.timestamp,
+            )
+        )
+
+
 class Summary(Base):
     """Represents a summary of an article"""
 
