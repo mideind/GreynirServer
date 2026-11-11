@@ -40,6 +40,7 @@ from reynir import tokenize, Tok
 from nertokenizer import recognize_entities
 
 from db import SessionContext, Session
+from safe_http import NonPublicAddressError, safe_get
 from db.models import Root, Article as ArticleRow
 
 # The HTML parser to use with BeautifulSoup
@@ -243,13 +244,21 @@ class Fetcher:
         try:
             # Normal external HTTP/HTTPS fetch
             headers = {"User-Agent": _USER_AGENT}
-            r = requests.get(url, timeout=10, headers=headers)
+            # The URL may come from a user of the web server: only
+            # fetch from public addresses (see safe_http.py)
+            r = safe_get(url, timeout=10, headers=headers)
             # pylint: disable=no-member
             if r.status_code == requests.codes.ok:
                 html_doc = r.text
             else:
                 logging.warning(f"HTTP status {r.status_code} for URL {url}")
 
+        except NonPublicAddressError as e:
+            logging.warning(f"{e} (URL {url})")
+            html_doc = None
+        except requests.exceptions.TooManyRedirects as e:
+            logging.warning(f"TooManyRedirects: {e} for URL {url}")
+            html_doc = None
         except requests.exceptions.ConnectionError as e:
             logging.error(f"ConnectionError: {e} for URL {url}")
             html_doc = None
@@ -264,6 +273,10 @@ class Fetcher:
             html_doc = None
         except UnicodeDecodeError as e:
             logging.error(f"Exception when decoding HTML of {url}: {e}")
+            html_doc = None
+        except requests.exceptions.RequestException as e:
+            # Timeouts, invalid URLs and such
+            logging.warning(f"{type(e).__name__}: {e} for URL {url}")
             html_doc = None
         return html_doc
 

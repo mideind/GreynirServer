@@ -39,6 +39,7 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag, NavigableString
 
 from db.models import Root
+from safe_http import safe_get
 
 MODULE_NAME = __name__
 
@@ -1723,7 +1724,8 @@ class HagstofanScraper(ScrapeHelper):
     def fetch_url(self, url: str) -> str:
         # Requests defaults to ISO-8859-1 because content-type
         # does not declare encoding. In fact, charset is UTF-8.
-        r = requests.get(url, timeout=10)
+        # (Only fetches from public addresses; see safe_http.py)
+        r = safe_get(url, timeout=10)
         r.encoding = r.apparent_encoding
         return r.text
 
