@@ -165,6 +165,7 @@ cp main.py $DEST/main.py
 cp nertokenizer.py $DEST/nertokenizer.py
 cp postagger.py $DEST/postagger.py
 cp processor.py $DEST/processor.py
+cp safe_http.py $DEST/safe_http.py
 cp scraper.py $DEST/scraper.py
 cp search.py $DEST/search.py
 cp settings.py $DEST/settings.py
