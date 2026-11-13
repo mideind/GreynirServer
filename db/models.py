@@ -426,6 +426,55 @@ class ReparseRefusal(Base):
         )
 
 
+class ScrapeFailure(Base):
+    """Records that the scraper failed to fetch an article, and when it
+    should try again (see Scraper.scrape_article() in scraper.py).
+
+    A fetch can fail for reasons that pass: the site is down or slow, it
+    answers with an error status, or it delivers a page without an article
+    in it. The scraper thus tries again, at growing intervals, and gives up
+    after a fixed number of attempts. The article row itself is left as it
+    was, unscraped and with its root, for as long as a row exists here.
+
+    The table also shows which sources are failing. To see them:
+
+        select r.domain, count(*), sum(f.attempts) as attempts,
+            count(*) filter (where f.next_attempt is null) as given_up,
+            min(f.first_failed), max(f.last_failed)
+        from scrape_failures f
+            join articles a on a.url = f.url
+            left join roots r on r.id = a.root_id
+        group by 1 order by 2 desc;
+
+    There is at most one row per article. A successful fetch deletes it.
+    To have an article that was given up on tried again, delete its row."""
+
+    __tablename__ = "scrape_failures"
+
+    # The article that could not be fetched
+    url = Column(
+        String,
+        ForeignKey("articles.url", onupdate="CASCADE", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    # When the first and the most recent attempts failed
+    first_failed = DateTimeColumn(nullable=False)
+    last_failed = DateTimeColumn(nullable=False, index=True)
+
+    # The number of failed attempts so far
+    attempts = Column(Integer, nullable=False)
+
+    # The article is not to be fetched before this time.
+    # NULL means that the scraper has given up on it.
+    next_attempt = DateTimeColumn(index=True)
+
+    def __repr__(self):
+        return "ScrapeFailure(url='{0}', attempts={1}, next_attempt='{2}')".format(
+            self.url, self.attempts, self.next_attempt
+        )
+
+
 class Summary(Base):
     """Represents a summary of an article"""
 
