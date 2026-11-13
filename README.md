@@ -84,7 +84,7 @@ Greynir may in due course be expanded, for instance:
 Greynir is written in [Python 3](https://www.python.org/) except for its core
 Earley-based parser module which is written in C++ and called
 via [CFFI](https://cffi.readthedocs.org/en/latest/index.html).
-Greynir requires Python 3.11 or later and runs on both CPython and
+Greynir requires Python 3.11.5 or later and runs on both CPython and
 [PyPy](http://pypy.org/). **CPython is now recommended**, and is what
 greynir.is runs in production (currently CPython 3.14).
 
