@@ -48,7 +48,7 @@ jobs:
         # PyPy 3.11 was dropped from the matrix 2026-08-17: production
         # migrated to CPython and is not going back, so the PyPy leg only
         # guarded a floor no deployment uses, at the cost of a second slow
-        # test run. The requires-python = ">=3.11" floor is now nominal
+        # test run. The requires-python = ">=3.11.5" floor is now nominal
         # rather than CI-enforced; if it ever matters again, restore a
         # matrix entry rather than trusting it.
         python-version: ["3.14"]

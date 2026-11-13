@@ -6,7 +6,11 @@ name = "greynir-server"
 version = "1.0.0"
 description = "Web API and frontend for Greynir, natural language processing for Icelandic"
 readme = "README.md"
-requires-python = ">=3.11"
+# The 3.11.5 patch floor is soupsieve's: 4.x requires it, and 4.x is the only
+# line with the fixes for GHSA-mmhr-3c5m-f64f, GHSA-6655-6qjp-jx7x and
+# GHSA-7g44-g9rc-x53w. With a plain ">=3.11" the lock forks and keeps a
+# vulnerable soupsieve 2.10 for 3.11.0-3.11.4.
+requires-python = ">=3.11.5"
 license = "GPL-3.0-or-later"
 authors = [{ name = "Miðeind ehf." }]
 
