@@ -9,7 +9,7 @@ resolution-markers = [
 [manifest]
 overrides = [
     { name = "islenska", specifier = ">=2.1.0" },
-    { name = "reynir", specifier = ">=4.0.0" },
+    { name = "reynir", specifier = ">=4.1.0" },
 ]
 
 [[package]]
@@ -675,7 +675,7 @@ requires-dist = [
     { name = "python-youtube", specifier = "==0.9.1" },
     { name = "pytz", specifier = "==2025.2" },
     { name = "requests", specifier = ">=2.32.3" },
-    { name = "reynir", specifier = ">=4.0.0" },
+    { name = "reynir", specifier = ">=4.1.0" },
     { name = "rjsmin", specifier = ">=1.2.4" },
     { name = "setuptools", specifier = ">=67" },
     { name = "sqlalchemy", specifier = "==1.4.54" },
@@ -1686,7 +1686,7 @@ wheels = [
 
 [[package]]
 name = "reynir"
-version = "4.0.0"
+version = "4.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cffi" },
@@ -1695,16 +1695,28 @@ dependencies = [
     { name = "tokenizer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a2/1d/564ccda1acee2b4c6ba6eb727515c63f0a10870dda29e31ecd4715ba3a53/reynir-4.0.0.tar.gz", hash = "sha256:19725375160222fb8c08d8b45e3a1cd2848f29a21880b7f6f234156bad27adc4", size = 534356, upload-time = "2026-11-10T23:01:11.964Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/24/46/aff7499e8d60def98cd39528b0f21e66d6a596b0dbcfae3d23dc099f81d4/reynir-4.1.0.tar.gz", hash = "sha256:0b049970ad629f4970375223897ca039bf5af80b42fe77bdb272cb0e366c8a74", size = 540944, upload-time = "2026-11-18T17:48:01.121Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2c/0d/31b078b136cc2f0c996bdadee08c746b3418602564806da54e9ef6103820/reynir-4.0.0-cp310-abi3-macosx_10_9_x86_64.whl", hash = "sha256:5c1f1a23df01aed99f8a3a7b461e02b4bdd7e043c8daa750687364b02384bce0", size = 535040, upload-time = "2026-11-10T23:01:00.283Z" },
-    { url = "https://files.pythonhosted.org/packages/71/b6/6ebf68079a147fd510f71042f21b2b62971a2a6578f3f6a4dce16872b0fe/reynir-4.0.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:184d5dd692886c252f0c6f0fcf4ce9f9db52aa1f308978a4fc11c9cc9cc1c7ea", size = 530496, upload-time = "2026-11-10T23:01:02.273Z" },
-    { url = "https://files.pythonhosted.org/packages/81/1b/5452f7467ae2d9ef2143bd7e32bd0de92ac5308d2cc4de24fc2ded1d3c7b/reynir-4.0.0-cp310-abi3-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:689da2d8608d20d221a1d848731bfb8dad4666ba7f7fad99240eb746e6ded157", size = 1086656, upload-time = "2026-11-10T23:01:03.558Z" },
-    { url = "https://files.pythonhosted.org/packages/9f/63/4e9857b06959a54e9de8a63c40e67c79d890e74da2c4e7042a45eaf30315/reynir-4.0.0-cp310-abi3-win_amd64.whl", hash = "sha256:81366faeb984f2cc280051c621289365d29a6199c69a85806aa18ed31494799e", size = 711730, upload-time = "2026-11-10T23:01:04.845Z" },
-    { url = "https://files.pythonhosted.org/packages/23/a7/a16ffadc07cec99c874ff12dc6ab2969ad4e2d83227ceb37e66987a41aaa/reynir-4.0.0-pp311-pypy311_pp73-macosx_10_15_x86_64.whl", hash = "sha256:9605e68ebbf076c6f6568fd4999931300b9e83dc3d6fec4588d9b5f401213daa", size = 524478, upload-time = "2026-11-10T23:01:06.297Z" },
-    { url = "https://files.pythonhosted.org/packages/da/b8/6c03127c5d713b7f49f7f468b83a5550837bd373d96b7dad0e0e20c62932/reynir-4.0.0-pp311-pypy311_pp73-macosx_11_0_arm64.whl", hash = "sha256:998de654ec0d85460626eca60c27d60b1276c5fc9d0017b9be47ec092e48b2db", size = 519704, upload-time = "2026-11-10T23:01:07.699Z" },
-    { url = "https://files.pythonhosted.org/packages/31/36/d2d775af7c58ac4ff7f3b4371eb9709a804bfcc2be2e47cada43d9cadd6e/reynir-4.0.0-pp311-pypy311_pp73-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:5a6dd378818115e10b19891756c4263dfe6dabc2700db9b6c218307a5d1b86ce", size = 529451, upload-time = "2026-11-10T23:01:09.248Z" },
-    { url = "https://files.pythonhosted.org/packages/84/21/86f0269b96700d74eaa46f8345a0e7bd492c54779bc018ec92be66fee4c2/reynir-4.0.0-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:c415193df1f379c5ee172f096177eff998c78250bd4832bb229f44641db2039d", size = 723488, upload-time = "2026-11-10T23:01:10.63Z" },
+    { url = "https://files.pythonhosted.org/packages/66/06/4736efce4c9be4e897c58f9355107bbd0a15efbba1f4f7151472ada7ac5c/reynir-4.1.0-cp310-abi3-macosx_10_9_x86_64.whl", hash = "sha256:56a2fe353413d7ae58bb7075143e4e76fcb98d411d758bf7f91601b66aaf8d7c", size = 537959, upload-time = "2026-11-18T17:47:26.202Z" },
+    { url = "https://files.pythonhosted.org/packages/81/85/dd2b9cef707155f634eac3dd641a16c525b00c65495f50bfff66ed5b89f4/reynir-4.1.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:6fc0ab9a8887dab8d44d05a437b3ae96d84c55f2072f07a2d497160d09633344", size = 533284, upload-time = "2026-11-18T17:47:28.284Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/2f/14699da9feacfc8c6d023e341809cb253f8823ac411e613d79f62242d603/reynir-4.1.0-cp310-abi3-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d3456bd5697f59dafbef9fb9994095ee7808501eca153c7a5015115c5f7d58a3", size = 1092363, upload-time = "2026-11-18T17:47:29.996Z" },
+    { url = "https://files.pythonhosted.org/packages/23/9f/27c5e4599248fbfd0bfd7450574453ec750faa70ef112f654ec71553ba81/reynir-4.1.0-cp310-abi3-win_amd64.whl", hash = "sha256:f9c3c2fcd808f2c6f188af0541284f0aa13adf0aca68329928d16683c9604a8f", size = 714432, upload-time = "2026-11-18T17:47:31.636Z" },
+    { url = "https://files.pythonhosted.org/packages/28/aa/b2543a88d888a7bbd02fafe2c835a1ce5cbf5187a20fa59cc8e3625a5007/reynir-4.1.0-cp314-cp314t-macosx_10_15_x86_64.whl", hash = "sha256:2a90ebbab6b8ebfc43b47ce4004f6d458f9aad4722ffa4f4760519111e4d0a2b", size = 538370, upload-time = "2026-11-18T17:47:33.627Z" },
+    { url = "https://files.pythonhosted.org/packages/0a/5c/cb691bc2eb19e558b73b2f3e163d4d13fbda34f0143805dc03951d046c49/reynir-4.1.0-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:e2203e214b19f8e5e1907e961b2871f47710ced09221bfb67eb61286d3d58636", size = 533778, upload-time = "2026-11-18T17:47:35.392Z" },
+    { url = "https://files.pythonhosted.org/packages/43/d3/d1a40ce30328365250038abf5453e99a5b4981bae06b766fa6e45528ad26/reynir-4.1.0-cp314-cp314t-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:663dcd1abfff4e01d68a7db94ee16845585a29b2d37020f06e4bd229f6edea7d", size = 1101225, upload-time = "2026-11-18T17:47:37.058Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/3a/10adb3493de754ed62cca3256d4ee7dd32efcd614cf26765ad247029cc0f/reynir-4.1.0-cp314-cp314t-win_amd64.whl", hash = "sha256:8e7ed390677c183a4f56e632700d9aecb77f57927bd45409ad2dbab96381f5e1", size = 725116, upload-time = "2026-11-18T17:47:38.67Z" },
+    { url = "https://files.pythonhosted.org/packages/d6/66/088314ff62e22f53abfed3fe8c156d35183ab037b987ed2805ad13758d27/reynir-4.1.0-cp315-cp315t-macosx_10_15_x86_64.whl", hash = "sha256:9da12a641b71786e8638b6b91a5add89f9ceaa9d5b250f0a38f65c3e45a4d49c", size = 538077, upload-time = "2026-11-18T17:47:40.527Z" },
+    { url = "https://files.pythonhosted.org/packages/4a/99/d2deeb15ca1cba3e8912d9c7483663ba094e99137dbf7276960af8a1fb41/reynir-4.1.0-cp315-cp315t-macosx_11_0_arm64.whl", hash = "sha256:ebca12e18eadb89e932a1a4a2e22735a1cda8ab0391436c5aa56a1b4f9219cb3", size = 533675, upload-time = "2026-11-18T17:47:42.502Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/29/ca52bf119ccea58706e17c0b1c6e7bdacd7c4ebb9cfae02565c46232c019/reynir-4.1.0-cp315-cp315t-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e50464874c9e57d998784d4c1e0e8822d37e7c0dbc18b9f59af31d85cb6d5ab6", size = 1091542, upload-time = "2026-11-18T17:47:44.068Z" },
+    { url = "https://files.pythonhosted.org/packages/35/ca/9e2344544ba77d6fdc16f7d12118a38f323b446dec93994390ad35fde0f2/reynir-4.1.0-cp315-cp315t-win_amd64.whl", hash = "sha256:f4dfadbf37d0fdec828e55b9f58112f65348be6237189ded3fef0dd99b7e5e7b", size = 724962, upload-time = "2026-11-18T17:47:45.655Z" },
+    { url = "https://files.pythonhosted.org/packages/5b/8a/6d62b4b8f8e1f654bb6e24788a61f4f64a3bb8bf9e30cfbf9c3c0acf6b7c/reynir-4.1.0-pp311-pypy311_pp73-macosx_10_15_x86_64.whl", hash = "sha256:756b776288cb3115fbb35b89ee2feae75964cd798f821da385bd7261140fc868", size = 573623, upload-time = "2026-11-18T17:47:47.412Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/b2/f4d32c0f8228b998d2b7a7af13b95a5dfae6ed93dbc1fb47ae819534db7c/reynir-4.1.0-pp311-pypy311_pp73-macosx_11_0_arm64.whl", hash = "sha256:57b75e956fb9d0b07551ff2c35cdcf35d8301eac14aaa8d7586821a6f80c3058", size = 564155, upload-time = "2026-11-18T17:47:49.474Z" },
+    { url = "https://files.pythonhosted.org/packages/43/90/25cdb39e04629f81e9ccba25f7e8096dfeb4185a328aad624b5979a1c93f/reynir-4.1.0-pp311-pypy311_pp73-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:b1472f9cb245d844b85bb48cea3f159ca6ca88f72a94d67daea1e42d89e1a5f5", size = 532026, upload-time = "2026-11-18T17:47:50.914Z" },
+    { url = "https://files.pythonhosted.org/packages/7a/86/7a373dfbe75b5e8b4c12c2bd2bdecef0353955a5c7b716581de03ee6e119/reynir-4.1.0-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:722069507552dc5f377d4fb7aa453348b290e7865f5a11472815667382091ca6", size = 769622, upload-time = "2026-11-18T17:47:52.546Z" },
+    { url = "https://files.pythonhosted.org/packages/36/16/a8f2f52abaa60682cdec07db42e132701eb470d0a85811c2b58fcd766f52/reynir-4.1.0-pp311-pypy311_pp80-macosx_10_15_x86_64.whl", hash = "sha256:53b531617491e48bd755e1d974ba571d85316a9dd67f03e7b6e54d7783d98461", size = 526877, upload-time = "2026-11-18T17:47:54.235Z" },
+    { url = "https://files.pythonhosted.org/packages/77/22/105562d8dde0aebaf5cc0e197621e88fced370667c7c90b0c19aa9ac5ad8/reynir-4.1.0-pp311-pypy311_pp80-macosx_11_0_arm64.whl", hash = "sha256:d5c02e1da6bd556f6fd5a85963a4f26c56b52ce594fe3a56b64969617bd1cff3", size = 522144, upload-time = "2026-11-18T17:47:56.226Z" },
+    { url = "https://files.pythonhosted.org/packages/91/9d/c4fb044aac4fe8bdfe21edfe7cf87cf6cd21aeed643ac3272532c39085c0/reynir-4.1.0-pp311-pypy311_pp80-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:9845505de1d90065e78fbcd2265b57004b55b61b3e50a7d58e84138317493300", size = 532025, upload-time = "2026-11-18T17:47:57.923Z" },
+    { url = "https://files.pythonhosted.org/packages/d8/ec/2816b50efddc388ce6d9f8c491572470a2758c56f0e861cfdd6132771699/reynir-4.1.0-pp311-pypy311_pp80-win_amd64.whl", hash = "sha256:fb88643e968beb861a3f67788e2264c8e2cbe807d88f66c20bbdf41043f01fdc", size = 772705, upload-time = "2026-11-18T17:47:59.526Z" },
 ]
 
 [[package]]
