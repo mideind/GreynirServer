@@ -67,7 +67,7 @@ dependencies = [
     "openai>=1.44",
     "httpx>=0.27.2",
     # Ours
-    "reynir>=4.0.0",
+    "reynir>=4.1.0",
     "islenska>=2.1.0",
     # Back on PyPI as of 0.4.0, which declares pydantic>=2.8,<3 instead of the
     # ==2.3.0 pin that made every release up to 0.3.7 uninstallable on 3.13+
@@ -117,4 +117,4 @@ package = false
 # islenska>=2.1.0, so the caps are overridden here. The test suite and the
 # icespeak transcription paths pass on the new stack. Remove this override once
 # an icespeak release lifts the caps.
-override-dependencies = ["reynir>=4.0.0", "islenska>=2.1.0"]
+override-dependencies = ["reynir>=4.1.0", "islenska>=2.1.0"]
